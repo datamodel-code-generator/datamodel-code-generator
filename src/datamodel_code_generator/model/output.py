@@ -131,6 +131,7 @@ class OutputModelContext:
     __slots__ = (
         "_data_model_root_type",
         "_data_model_type",
+        "checks_constraints",
         "decodes_mixed_enum_values",
         "decodes_value_unions",
         "layers_repeated_constraints",
@@ -158,6 +159,7 @@ class OutputModelContext:
         decodes_value_unions: bool = True,
         literal_holds_enum_members: bool = True,
         layers_repeated_constraints: bool = True,
+        checks_constraints: bool = False,
     ) -> None:
         """Initialize capabilities with the established keyword signature."""
         self._data_model_type = data_model_type
@@ -172,6 +174,7 @@ class OutputModelContext:
         self.decodes_value_unions = decodes_value_unions
         self.literal_holds_enum_members = literal_holds_enum_members
         self.layers_repeated_constraints = layers_repeated_constraints
+        self.checks_constraints = checks_constraints
 
     @classmethod
     def from_generation_types(  # noqa: PLR0913
@@ -213,6 +216,7 @@ class OutputModelContext:
             decodes_value_unions=data_model_type._DECODES_VALUE_UNIONS,  # ruff: ignore[private-member-access]
             literal_holds_enum_members=data_model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
             layers_repeated_constraints=data_model_type._LAYERS_REPEATED_CONSTRAINTS,  # ruff: ignore[private-member-access]
+            checks_constraints=data_model_type._CHECKS_CONSTRAINTS,  # ruff: ignore[private-member-access]
         )
 
     def resolve_nested_constrained_model_type(self) -> type[DataModel]:

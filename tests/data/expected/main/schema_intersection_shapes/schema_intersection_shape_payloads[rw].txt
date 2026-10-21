@@ -89,3 +89,68 @@ msgspec.Struct --collapse-root-models s2 "x" accepted
 msgspec.Struct --collapse-root-models s2 "123456789" accepted
 msgspec.Struct --collapse-root-models s2 "" rejected
 msgspec.Struct --collapse-root-models s2 "1234567890" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs id "abcde" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs id "abcdef" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs id 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name "n" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs secret "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs secret "123456789" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs secret "" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs secret "1234567890" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs s2 "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs s2 "123456789" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs s2 "" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs s2 "1234567890" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs id "abcde" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs id "abcdef" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs id 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name "n" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs secret "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs secret "123456789" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs secret "" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs secret "1234567890" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs s2 "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs s2 "123456789" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs s2 "" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs s2 "1234567890" rejected
+msgspec.Struct --use-site-models-for-constrained-refs id "abcde" accepted
+msgspec.Struct --use-site-models-for-constrained-refs id "abcdef" rejected
+msgspec.Struct --use-site-models-for-constrained-refs id 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs name "n" accepted
+msgspec.Struct --use-site-models-for-constrained-refs name 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs secret "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs secret "123456789" accepted
+msgspec.Struct --use-site-models-for-constrained-refs secret "" rejected
+msgspec.Struct --use-site-models-for-constrained-refs secret "1234567890" rejected
+msgspec.Struct --use-site-models-for-constrained-refs s2 "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs s2 "123456789" accepted
+msgspec.Struct --use-site-models-for-constrained-refs s2 "" rejected
+msgspec.Struct --use-site-models-for-constrained-refs s2 "1234567890" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs id "abcde" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs id "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs id 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name "n" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs secret "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs secret "123456789" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs secret "" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs secret "1234567890" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs s2 "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs s2 "123456789" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs s2 "" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs s2 "1234567890" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs id "abcde" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs id "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs id 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name "n" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs secret "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs secret "123456789" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs secret "" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs secret "1234567890" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs s2 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs s2 "123456789" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs s2 "" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs s2 "1234567890" rejected

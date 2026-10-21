@@ -112,8 +112,8 @@ class Level2(IntEnum):
     integer_3 = 3
 
 
-class Number5(RootModel[Number]):
-    root: Annotated[Number, Field(ge=5)]
+class Number5(RootModel[int]):
+    root: Annotated[int, Field(ge=5)]
 
 
 class NonNegative(RootModel[float]):
@@ -125,11 +125,11 @@ class TwoRefs(RootModel[int]):
 
 
 class StampLen(RootModel[Stamp]):
-    root: Annotated[Stamp, Field(max_length=40)]
+    root: Stamp
 
 
-class AllOfRoot(RootModel[Quantity]):
-    root: Annotated[Quantity, Field(le=10)]
+class AllOfRoot(RootModel[int]):
+    root: Annotated[int, Field(ge=1, le=10)]
 
 
 class AllOfRoot2(RootModel[int]):

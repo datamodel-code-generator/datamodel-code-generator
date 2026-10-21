@@ -7962,6 +7962,10 @@ python-3.11-collapse-root-models	main/jsonschema/rust_unsupported_typed_extra_py
 	main/jsonschema/simple_pydantic_v2_fields.py
 [test_main_simple_pydantic_v2_fields_with_custom_template]
 	main/jsonschema/simple_pydantic_v2_fields.py
+[test_main_site_models_for_constrained_refs]
+default	main/jsonschema/site_models_for_constrained_refs.py
+msgspec_option	main/jsonschema/site_models_for_constrained_refs.py	= main/jsonschema/site_models_for_constrained_refs~main_site_models_for_constrained_refs[msgspec_option].py
+option	main/jsonschema/site_models_for_constrained_refs.py	= main/jsonschema/site_models_for_constrained_refs~main_site_models_for_constrained_refs[option].py
 [test_main_space_field_enum_snake_case_field]
 	main/jsonschema/space_field_enum_snake_case_field.py
 [test_main_strict_decimal_beside_a_field_named_decimal]

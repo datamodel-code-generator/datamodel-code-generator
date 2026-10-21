@@ -68,6 +68,56 @@ msgspec.Struct --collapse-root-models inline_items [] accepted
 msgspec.Struct --collapse-root-models inline_items ["abcd"] rejected
 msgspec.Struct --collapse-root-models inline_items [1] rejected
 msgspec.Struct --collapse-root-models inline_items "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items ["ab"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items [] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_items ["ab"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_items [] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_items "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items ["ab"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items [] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items ["abcd"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_items ["ab"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_items [] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_items ["abcd"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_items "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_items ["ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_items [] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_items ["abcd"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_items "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_items ["ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_items [] accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_items ["abcd"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_items "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items [] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_items [] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_items "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items [] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_items [] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_items "ab" rejected
 pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items ["ab"] accepted
 pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items [] accepted
 pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items ["abcd"] rejected

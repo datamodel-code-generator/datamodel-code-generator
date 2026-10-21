@@ -81,6 +81,7 @@ Field naming, aliases, defaults, and constraints.
 - `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and single-key branches ({"granular": ...} -> AskForApprovalGranular)
 - `--field-constraints`: Use field constraints and not con* annotations
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values
+- `--use-site-models-for-constrained-refs`: Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out
 - `--set-default-enum-member` (deprecated): Deprecated: --set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
 - `--use-enum-values-in-discriminator`: Use enum member literals in discriminator fields instead of string literals
 - `--capitalise-enum-members`: Capitalize field names on enum

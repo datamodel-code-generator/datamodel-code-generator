@@ -201,3 +201,148 @@ msgspec.Struct --collapse-root-models ref_more ["a"] accepted
 msgspec.Struct --collapse-root-models ref_more [] rejected
 msgspec.Struct --collapse-root-models ref_more ["a", "a", "a", "a"] rejected
 msgspec.Struct --collapse-root-models ref_more [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline [1, 2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested [[1]] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": [1]} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs annotation_only [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs annotation_only {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs annotation_only ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_only ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_only [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_only [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_more ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_more [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_more ["a", "a", "a", "a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_more [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline [1, 2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested [[1]] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": [1]} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs annotation_only [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs annotation_only {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs annotation_only ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_only ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_only [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_only [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_more ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_more [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_more ["a", "a", "a", "a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_more [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs named ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs named [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs named [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline [1, 2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested [[1]] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested [[1, 2, 3]] rejected
+msgspec.Struct --use-site-models-for-constrained-refs map {"k": [1]} accepted
+msgspec.Struct --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} rejected
+msgspec.Struct --use-site-models-for-constrained-refs any_of [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs any_of "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs any_of [1, 2, 3] rejected
+msgspec.Struct --use-site-models-for-constrained-refs null_or_array null accepted
+msgspec.Struct --use-site-models-for-constrained-refs null_or_array [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs null_or_array [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs member_items [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs annotation_only [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs annotation_only {} rejected
+msgspec.Struct --use-site-models-for-constrained-refs annotation_only ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_only ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_only [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_only [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_more ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_more [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_more ["a", "a", "a", "a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_more [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline [1, 2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested [[1]] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested [[1, 2, 3]] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs map {"k": [1]} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_of [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_of "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_of [1, 2, 3] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs null_or_array null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs null_or_array [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs null_or_array [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs annotation_only [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs annotation_only {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs annotation_only ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_only ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_only [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_only [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_more ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_more [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_more ["a", "a", "a", "a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_more [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline [1, 2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested [[1]] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": [1]} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs annotation_only [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs annotation_only {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs annotation_only ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_only ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_only [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_only [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_more ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_more [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_more ["a", "a", "a", "a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_more [1] rejected

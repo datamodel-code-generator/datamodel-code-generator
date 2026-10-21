@@ -45,8 +45,8 @@ class Point(BaseModel):
     x: int | None = None
 
 
-class Score(RootModel[Count]):
-    root: Annotated[Count, Field(le=100)]
+class Score(RootModel[int]):
+    root: Annotated[int, Field(le=100)]
 
 
 class Status(Enum):

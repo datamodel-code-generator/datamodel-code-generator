@@ -95,6 +95,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,
     is_literal_kind,
+    keeps_member_value,
     literal_value_kind,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type
@@ -117,6 +118,8 @@ from datamodel_code_generator.model.enum import (
     SUBCLASS_BASE_CLASSES,
     Enum,
     EnumMemberValue,
+    IntEnum,
+    StrEnum,
     _enum_class,
 )
 from datamodel_code_generator.model.output import OutputModelContext
@@ -183,6 +186,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
+    _DERIVED_FROM_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     SPECIAL_PATH_FORMAT,
@@ -388,6 +392,7 @@ _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
 })
 """The sites that read the answer ``JsonSchemaObject.type_has_null`` recorded when it was first asked."""
 _INHERITED_OVERRIDE_KEY = "_inherited_override"
+_DERIVED_FROM_REF_KEY = "_derived_from_ref"
 _REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
 _VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
 _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
@@ -834,6 +839,29 @@ _ALL_OF_PARTS: Final = "its allOf members and its own keywords"
 """The parts the unsatisfiable warning names for an allOf site no value satisfies."""
 _ALL_OF_MEMBER_ANNOTATIONS: Final = frozenset({"description", "default", "examples", "deprecated"})
 """The annotations an allOf site takes from its members when it does not write them itself."""
+
+
+def _bare_ref_members(obj: JsonSchemaObject) -> list[str]:
+    """Return the references of the ``$ref`` members of an allOf, or none when one of them has sibling keywords.
+
+    A member written with sibling keywords is the site's own inline schema (decision 4), so the site is no reference
+    with more assertions.
+    """
+    members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]
+    if any(member.has_ref_with_schema_keywords for member in members):
+        return []
+    return [ref for member in members if (ref := member.ref)]
+
+
+def _derived_site(site: JsonSchemaObject, refs: Sequence[str]) -> JsonSchemaObject:
+    """Mark a site schema built from the parts of its one ``$ref`` target without the reference, and return it.
+
+    The model built from it records that target (``JsonSchemaParser._record_derived_from``), so a model-level type
+    override of the target applies to it as well.
+    """
+    if len(refs) == 1 and not site.ref and not site.allOf:
+        site.__dict__[_DERIVED_FROM_REF_KEY] = refs[0]
+    return site
 
 
 def _enum_without_positions(obj: JsonSchemaObject, excluded: Collection[int]) -> JsonSchemaObject:
@@ -4959,8 +4987,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> None:
         """Record the schema object the model of ``reference`` is built from, and take its template data."""
         self._record_schema_location(reference, obj.schema_location, variant_of=variant_of)
+        self._record_derived_from(reference, obj)
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
+
+    def _record_derived_from(self, reference: Reference, obj: JsonSchemaObject) -> None:
+        """Record the target a site schema is built from (``_derived_site``) on the Reference of its model."""
+        if (ref := obj.__dict__.get(_DERIVED_FROM_REF_KEY)) is None:
+            return
+        data_type = self.get_ref_data_type(ref)
+        reference.__dict__[_DERIVED_FROM_KEY] = data_type.reference
+        self._unregister_temporary_type(data_type)
 
     def _set_schema_metadata(self, path: str, obj: JsonSchemaObject) -> None:
         """Set title, $id, additionalProperties and unevaluatedProperties in extra template data."""
@@ -7122,33 +7159,114 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             written,
         )
 
-    def _all_of_reference_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Return the value schema of an allOf site whose earlier form writes constraints a reference cannot take.
+    def _output_enforced_value_keywords(
+        self, schema: JsonSchemaObject
+    ) -> tuple[frozenset[str], bool, dict[str, Any], dict[str, Any]]:
+        """Return what a value schema enforces in this output: its constraints only where the output checks them.
 
-        That form is the type of the first ``$ref`` member with the site's own constraints. It fails to validate when
-        the referenced type is a model class (a root model), or when the output rejects a constraint that the
-        referenced alias sets as well (msgspec ``Meta``). The site then takes the reference alone when the
-        intersection of its parts enforces nothing beyond the referenced schema, else that intersection. None for
-        every other site, which keeps its earlier form: members that are no value schemas and nested combinators.
+        Types, null, formats, literals and item schemas count in every output (``_enforced_value_keywords``). The
+        constraints beside an ``enum`` or ``const`` count in none: its literals are those that meet them.
+        """
+        types, null, constraints, written = self._enforced_value_keywords(schema)
+        checked = self._output_model_context.checks_constraints and not (schema.enum or "const" in schema.extras)
+        return types, null, constraints if checked else {}, written
+
+    def _layers_on_reference(self, target_keys: Collection[str], keys: Collection[str]) -> bool:
+        """Return whether the output writes constraints ``keys`` beside a reference to a target with ``target_keys``.
+
+        Only an alias takes them, and an output that rejects a constraint the alias sets as well (msgspec ``Meta``)
+        takes only the others.
+        """
+        return self.data_model_root_type.IS_ALIAS and (
+            self._output_model_context.layers_repeated_constraints or not set(target_keys).intersection(keys)
+        )
+
+    def _reference_site_value(
+        self, obj: JsonSchemaObject, *, layered: bool
+    ) -> tuple[list[JsonSchemaObject], dict[str, Any]] | None:
+        """Return the parts and the value of an allOf site whose earlier form leaves out what its parts enforce.
+
+        That form is the type of the site's first ``$ref`` member; with ``layered`` it writes the site's own
+        constraints beside it, as an output with field constraints does where the site is a model. It fails when the
+        reference is a model class or the output rejects a constraint the referenced alias sets as well, unless
+        ``--collapse-root-models`` inlines the site into its holders, which merge the constraints; else it enforces the
+        target's constraints with the written ones over those of the same keyword. Where it does not fail, the site
+        keeps it (None), under ``--use-site-models-for-constrained-refs`` only where it also enforces what the
+        intersection of the parts enforces in this output (``_output_enforced_value_keywords``). None also for a site
+        with a ``$ref`` member written with siblings, whose parts are no value schemas or are not intersected here
+        (``_intersects_value_parts``), and for one whose parts have no value in common (warned about) where that form
+        does not fail. The value is the reference alone when the intersection enforces nothing beyond the referenced
+        schema, the reference with the intersection's other constraints layered on it where the output writes field
+        constraints and takes them exactly, else the intersection.
+        """
+        if (
+            not (refs := _bare_ref_members(obj))
+            or (parts := self._all_of_value_parts(obj)) is None
+            or not self._intersects_value_parts(parts)
+            or (target_parts := self._reference_value_parts(refs[0])) is None
+        ):
+            return None
+        satisfiable = self._satisfiable_all_of_value_parts(obj) is not None
+        written = self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0])) if layered else {}
+        target = self._intersect_typed_value_parts(target_parts, None)
+        intersection = self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf"))
+        target_dump = target.model_dump(exclude_unset=True, by_alias=True)
+        target_keys = {keyword for keyword in target.__constraint_field_order__ if getattr(target, keyword) is not None}
+        fails = bool(written) and not (self.collapse_root_models or self._layers_on_reference(target_keys, written))
+        if not fails and (
+            not satisfiable
+            or not self.config.use_site_models_for_constrained_refs
+            or self._output_enforced_value_keywords(self.SCHEMA_OBJECT_TYPE.model_validate({**target_dump, **written}))
+            == self._output_enforced_value_keywords(intersection)
+        ):
+            return None
+        enforced = self._enforced_value_keywords(intersection)
+        target_enforced = self._enforced_value_keywords(target)
+        if len(refs) == 1 and enforced == target_enforced:
+            return parts, {"$ref": refs[0]}
+        value = intersection.model_dump(exclude_unset=True, by_alias=True)
+        added = {
+            keyword: value[keyword]
+            for keyword in intersection.__constraint_field_order__
+            if keyword in value and value[keyword] != target_dump.get(keyword)
+        }
+        if (
+            self.field_constraints
+            and len(refs) == 1
+            and (enforced[0], enforced[1], enforced[3]) == (target_enforced[0], target_enforced[1], target_enforced[3])
+            and self._layers_on_reference(target_keys, added)
+        ):
+            return parts, {"allOf": [{"$ref": refs[0]}], **added}
+        return parts, value
+
+    def _all_of_reference_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the value schema of an allOf site whose earlier form writes its own constraints beside a reference.
+
+        That form is the type of the first ``$ref`` member with the site's own constraints. Under
+        ``--use-site-models-for-constrained-refs`` a site of bare ``$ref`` members keeps it where it enforces what the
+        site's parts enforce together and does not fail (``_reference_site_value``). Any other site keeps it wherever
+        the output takes the constraints beside the reference, else it takes the reference alone where the intersection
+        of its parts enforces nothing beyond it, and else that intersection. None for every other site, which keeps its
+        earlier form: a site without own constraints the referenced type takes, members that are no value schemas and
+        nested combinators.
         """
         members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
         refs = [member.ref for member in members if member.ref]
-        if (
-            not refs
-            or any(member.allOf or member.anyOf or member.oneOf for member in members)
-            or not (constraints := self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0])))
-        ):
+        if not refs or not (constraints := self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0]))):
             return None
+        if self.config.use_site_models_for_constrained_refs and _bare_ref_members(obj):
+            site = self._reference_site_value(obj, layered=True)
+            return None if site is None else _derived_site(self.SCHEMA_OBJECT_TYPE.model_validate(site[1]), refs)
         parts: list[JsonSchemaObject] = []
-        if (target_parts := self._reference_value_parts(refs[0])) is None or not self._collect_all_of_value_parts(
-            obj, parts, resolve_refs=True
+        if (
+            any(member.allOf or member.anyOf or member.oneOf for member in members)
+            or (target_parts := self._reference_value_parts(refs[0])) is None
+            or not self._collect_all_of_value_parts(obj, parts, resolve_refs=True)
         ):
             return None
         target = self._intersect_typed_value_parts(target_parts, None)
         target_keys = {keyword for keyword in target.__constraint_field_order__ if getattr(target, keyword) is not None}
-        if self.data_model_root_type.IS_ALIAS and (
-            self._output_model_context.layers_repeated_constraints or not target_keys.intersection(constraints)
-        ):
+        if self._layers_on_reference(target_keys, constraints):
             return None
         intersection = self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf"))
         if len(refs) == 1 and self._enforced_value_keywords(intersection) == self._enforced_value_keywords(target):
@@ -9484,6 +9602,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if supports_literal_validation or narrows_literals:
                         self._merge_all_of_root_validation_keywords(merged, [referenced_schema, item, obj])
                     merged_root = self.SCHEMA_OBJECT_TYPE.model_validate(merged)
+                if not merged_root and ref:
+                    merged_root = self._reference_site_schema(obj, layered=self.field_constraints)
                 return merged_root or (
                     obj.model_copy(update={"ref": ref, "allOf": []})
                     if ref
@@ -9609,12 +9729,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return reference
         return merged
 
-    def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
-        """Return the parts of an allOf site whose members each describe one value, references resolved, else None.
-
-        A site whose parts no value meets in common gets a warning and None: it keeps the form it is written in, and a
-        form that cannot be generated takes its first part.
-        """
+    def _all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
+        """Return the parts of an allOf site whose members each describe one value, references resolved, else None."""
         parts: list[JsonSchemaObject] = []
         if (
             self._schema_requires_model_type(obj)
@@ -9622,7 +9738,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or not self._collect_all_of_value_parts(obj, parts, resolve_refs=True)
         ):
             return None
-        if len(parts) <= 1:
+        return parts
+
+    def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
+        """Return the parts of an allOf site whose members each describe one value, references resolved, else None.
+
+        A site whose parts no value meets in common gets a warning and None: it keeps the form it is written in, and a
+        form that cannot be generated takes its first part.
+        """
+        if (parts := self._all_of_value_parts(obj)) is None or len(parts) <= 1:
             return parts
         dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
         row: dict[str, Any] = {}
@@ -9632,32 +9756,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._warn_unsatisfiable(str(obj.schema_location or "allOf"), unsatisfiable, _ALL_OF_PARTS)
         return None if unsatisfiable else parts
 
-    def _all_of_root_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Return the schema of an allOf site of values that would get a model without fields: its parts intersected.
+    def _intersects_value_parts(self, parts: Sequence[JsonSchemaObject], *, literals: bool = True) -> bool:
+        """Return whether the intersection of value parts is taken here, which needs a value keyword in some part.
 
-        A single ``$ref`` member stays the type when the intersection enforces nothing beyond the referenced schema.
-        The site's own annotations win, the members' fill in. None when no part has a value keyword, and where the site
-        keeps its earlier form: a part with an ``enum`` or ``const`` (literal references are base classes), two parts
-        with ``items`` (their conjunction is not intersected here), and two different ``format``.
+        It is not for two parts with ``items`` (their conjunction is not intersected here), two different ``format``,
+        and, unless ``literals``, a part with an ``enum`` or ``const``.
         """
-        if (parts := self._satisfiable_all_of_value_parts(obj)) is None:
-            return None
-        if (
-            not any(self._schema_has_own_value_keywords(part) for part in parts)
-            or any(part.enum or "const" in part.extras for part in parts)
-            or sum(part.items is not None for part in parts) > 1
-            or len({part.format for part in parts if part.format}) > 1
-        ):
-            return None
-        intersection = self._intersect_typed_value_parts(parts, None)
-        value: dict[str, Any] = intersection.model_dump(exclude_unset=True, by_alias=True)
-        if (
-            len(refs := [item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]) == 1
-            and (target_parts := self._reference_value_parts(refs[0])) is not None
-            and self._enforced_value_keywords(intersection)
-            == self._enforced_value_keywords(self._intersect_typed_value_parts(target_parts, None))
-        ):
-            value = {"$ref": refs[0]}
+        return (
+            any(self._schema_has_own_value_keywords(part) for part in parts)
+            and (literals or not any(part.enum or "const" in part.extras for part in parts))
+            and sum(part.items is not None for part in parts) <= 1
+            and len({part.format for part in parts if part.format}) <= 1
+        )
+
+    def _all_of_site_schema(
+        self, obj: JsonSchemaObject, parts: Sequence[JsonSchemaObject], value: dict[str, Any]
+    ) -> JsonSchemaObject:
+        """Return the schema of an allOf site with the ``value`` of its parts; its own annotations win, the parts' fill.
+
+        The site admits null as its null facts say (``all-of-value``).
+        """
         annotations: dict[str, Any] = {}
         for part in reversed(parts):
             annotations.update(part.model_dump(include=_ALL_OF_MEMBER_ANNOTATIONS, exclude_unset=True, by_alias=True))
@@ -9671,6 +9789,96 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     "null",
                 ]
         return self.SCHEMA_OBJECT_TYPE.model_validate({**value, **annotations, **own})
+
+    def _all_of_root_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the schema of an allOf site of values that would get a model without fields: its parts intersected.
+
+        A single ``$ref`` member stays the type when the intersection enforces nothing beyond the referenced schema.
+        The site's own annotations win, the members' fill in (``_all_of_site_schema``). None when no part has a value
+        keyword, and where the site keeps its earlier form: a part with an ``enum`` or ``const`` (an allOf of enum
+        references is decided by ``_all_of_enum_site_schema``) and the parts ``_intersects_value_parts`` leaves out.
+        """
+        if (parts := self._satisfiable_all_of_value_parts(obj)) is None or not self._intersects_value_parts(
+            parts, literals=False
+        ):
+            return None
+        intersection = self._intersect_typed_value_parts(parts, None)
+        value: dict[str, Any] = intersection.model_dump(exclude_unset=True, by_alias=True)
+        if (
+            len(refs := [item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]) == 1
+            and (target_parts := self._reference_value_parts(refs[0])) is not None
+            and self._enforced_value_keywords(intersection)
+            == self._enforced_value_keywords(self._intersect_typed_value_parts(target_parts, None))
+        ):
+            value = {"$ref": refs[0]}
+        return self._all_of_site_schema(obj, parts, value)
+
+    def _reference_site_schema(self, obj: JsonSchemaObject, *, layered: bool = False) -> JsonSchemaObject | None:
+        """Return the schema of an allOf site whose earlier form, the type of its first ``$ref`` member, it leaves.
+
+        ``_reference_site_value`` decides; the site's own annotations win, the parts' fill (``_all_of_site_schema``).
+        """
+        if (site := self._reference_site_value(obj, layered=layered)) is None:
+            return None
+        return _derived_site(self._all_of_site_schema(obj, *site), _bare_ref_members(obj))
+
+    def _all_of_enum_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the schema of an allOf site of enum references whose merged enum leaves out what its parts enforce.
+
+        Such a site gets a model without fields that ``Parser.__extract_inherited_enum`` writes as one enum of the
+        members of every referenced enum, in the class of the first. That enum stays where each referenced enum lists
+        exactly the values the parts admit together, and where the parts are no value schemas or are not intersected
+        here. Where they admit no value in common (warned about), it stays where it is generated and imports, else the
+        site takes its first part. Elsewhere, under ``--use-site-models-for-constrained-refs``, the site is the
+        intersection of its parts.
+        """
+        if (
+            not (refs := _bare_ref_members(obj))
+            or (parts := self._all_of_value_parts(obj)) is None
+            or not self._intersects_value_parts(parts)
+        ):
+            return None
+        targets = [
+            self._intersect_typed_value_parts(target_parts, None)
+            for ref in refs
+            if (target_parts := self._reference_value_parts(ref)) is not None
+        ]
+        if not (enums := [target for target in targets if target.enum]):
+            return None
+        if self._satisfiable_all_of_value_parts(obj) is None:
+            return (
+                self._all_of_site_schema(obj, parts, parts[0].model_dump(exclude_unset=True, by_alias=True))
+                if self._merged_enum_fails(enums)
+                else None
+            )
+        if not self.config.use_site_models_for_constrained_refs:
+            return None
+        intersection = self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf"))
+        literals = intersection.enum
+        if all(
+            all(any(_json_literal_values_equal(value, other) for other in literals) for value in target.enum)
+            and all(any(_json_literal_values_equal(value, other) for other in target.enum) for value in literals)
+            for target in enums
+        ):
+            return None
+        return self._all_of_site_schema(obj, parts, intersection.model_dump(exclude_unset=True, by_alias=True))
+
+    def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
+        """Return whether the enum merged from the members of ``enums``, in the class of the first, fails at import.
+
+        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not keep, as on
+        ``None``; an output that writes the first enum as a ``Literal`` or as its const merges no enum class.
+        """
+        first = enums[0]
+        if self.should_parse_enum_as_literal(first) or self._reads_enum_as_const(first):
+            return False
+        enum_class = self._get_enum_model_class(
+            self._get_enum_type(first), [value for value in first.enum if value is not None]
+        )[0]
+        value_type = "int" if issubclass(enum_class, IntEnum) else "str" if issubclass(enum_class, StrEnum) else None
+        return value_type is not None and not all(
+            value is not None and keeps_member_value(value_type, value) for target in enums for value in target.enum
+        )
 
     def _array_all_of_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Return an array site with ``allOf`` as the intersection of its own keywords and its members, else ``obj``.
@@ -11937,7 +12145,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if not (fields or required or union_models) and (
             value_root := self._merge_all_of_value_schema(obj, path, base_classes)
-            or (None if ignore_duplicate_model and len(base_classes) == 1 else self._all_of_root_value_schema(obj))
+            or (
+                self._reference_site_schema(obj)
+                if ignore_duplicate_model and len(base_classes) == 1
+                else self._all_of_root_value_schema(obj) or self._all_of_enum_site_schema(obj)
+            )
         ):
             return self._parse_all_of_merged_root(name, value_root.with_schema_location(obj.schema_location), path)
         if not union_models:
@@ -13185,15 +13397,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if len(item.allOf) == 1 and not item.properties:
                 single_item = item.allOf[0]
                 if isinstance(single_item, JsonSchemaObject) and single_item.ref:
-                    return self.get_ref_data_type(single_item.ref)
+                    if (site := self._reference_site_schema(item)) is None:
+                        return self.get_ref_data_type(single_item.ref)
+                    all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
+                    with self.model_resolver.yielding_new_references():
+                        site_type = self._parse_all_of_merged_root(
+                            self.model_resolver.add(
+                                all_of_path, name, singular_name=singular_name, class_name=True
+                            ).name,
+                            site.with_schema_location(item.schema_location),
+                            all_of_path,
+                        )
+                    self._site_model_reference_ids.add(id(site_type.reference))
+                    return site_type
             all_of_path = get_special_path("allOf", path)
             all_of_path = [self.model_resolver.resolve_ref(all_of_path)]
-            return self.parse_all_of(
-                self.model_resolver.add(all_of_path, name, singular_name=singular_name, class_name=True).name,
-                item,
-                all_of_path,
-                ignore_duplicate_model=True,
-            )
+            with (
+                self.model_resolver.yielding_new_references()
+                if self.config.use_site_models_for_constrained_refs
+                else nullcontext()
+            ):
+                site_name = self.model_resolver.add(
+                    all_of_path, name, singular_name=singular_name, class_name=True
+                ).name
+            return self.parse_all_of(site_name, item, all_of_path, ignore_duplicate_model=True)
         if item.is_object or item.patternProperties or item.propertyNames is not None:
             if item.properties:
                 return self._parse_object_model_item(name, item, path, singular_name=singular_name)
@@ -13762,6 +13989,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not reference:
             reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
         self._record_schema_object(reference, obj)
+        self._record_derived_from(reference, constraint_obj)
         constraints = array_constraints or {}
         untaken: dict[str, Any] = {}
         if not constraints and (self.field_constraints or preserve_constraints):

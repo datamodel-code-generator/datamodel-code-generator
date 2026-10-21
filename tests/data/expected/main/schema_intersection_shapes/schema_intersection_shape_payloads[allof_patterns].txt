@@ -355,3 +355,258 @@ msgspec.Struct --collapse-root-models inherited {"s": "ab"} accepted
 msgspec.Struct --collapse-root-models inherited {"s": "axb"} accepted
 msgspec.Struct --collapse-root-models inherited {"s": "a"} rejected
 msgspec.Struct --collapse-root-models inherited {"s": "xb"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail "axb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail "xb" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail_sibling "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail_sibling "axb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail_sibling "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail_sibling "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchored_tail_sibling "xb" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs implied_sibling "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs implied_sibling "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs implied_sibling "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs implied_sibling "xab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs class_prefix "bx" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs class_prefix "zbxx" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs class_prefix "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs class_prefix "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs escape_prefix "1x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs escape_prefix "a1x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs escape_prefix "x1" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs escape_prefix "1" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs literal_head "a1" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs literal_head "xa2" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs literal_head "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs literal_head "1" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs both_anchored "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs both_anchored "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs both_anchored "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs both_anchored "xab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchor_mismatch "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchor_mismatch "aXab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchor_mismatch "xab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs anchor_mismatch "aX" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs alternation "ac" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs alternation "cb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs alternation "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs alternation "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs three "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs three "axbyc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs three "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs three "bc" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs three "ac" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unportable "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unportable "xab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unportable "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unportable "ax" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"s": "ab"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"s": "axb"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"s": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"s": "xb"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail "axb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail "xb" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail_sibling "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail_sibling "axb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail_sibling "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail_sibling "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchored_tail_sibling "xb" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs implied_sibling "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs implied_sibling "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs implied_sibling "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs implied_sibling "xab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs class_prefix "bx" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs class_prefix "zbxx" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs class_prefix "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs class_prefix "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs escape_prefix "1x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs escape_prefix "a1x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs escape_prefix "x1" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs escape_prefix "1" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs literal_head "a1" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs literal_head "xa2" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs literal_head "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs literal_head "1" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs both_anchored "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs both_anchored "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs both_anchored "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs both_anchored "xab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchor_mismatch "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchor_mismatch "aXab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchor_mismatch "xab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs anchor_mismatch "aX" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs alternation "ac" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs alternation "cb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs alternation "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs alternation "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs three "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs three "axbyc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs three "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs three "bc" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs three "ac" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unportable "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unportable "xab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unportable "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unportable "ax" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"s": "ab"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"s": "axb"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"s": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"s": "xb"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail "ba" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail "xb" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail_sibling "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail_sibling "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail_sibling "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail_sibling "ba" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchored_tail_sibling "xb" rejected
+msgspec.Struct --use-site-models-for-constrained-refs implied_sibling "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs implied_sibling "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs implied_sibling "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs implied_sibling "xab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs class_prefix "bx" accepted
+msgspec.Struct --use-site-models-for-constrained-refs class_prefix "zbxx" accepted
+msgspec.Struct --use-site-models-for-constrained-refs class_prefix "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs class_prefix "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs escape_prefix "1x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs escape_prefix "a1x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs escape_prefix "x1" rejected
+msgspec.Struct --use-site-models-for-constrained-refs escape_prefix "1" rejected
+msgspec.Struct --use-site-models-for-constrained-refs literal_head "a1" accepted
+msgspec.Struct --use-site-models-for-constrained-refs literal_head "xa2" accepted
+msgspec.Struct --use-site-models-for-constrained-refs literal_head "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs literal_head "1" rejected
+msgspec.Struct --use-site-models-for-constrained-refs both_anchored "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs both_anchored "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs both_anchored "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs both_anchored "xab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchor_mismatch "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchor_mismatch "aXab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs anchor_mismatch "xab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs anchor_mismatch "aX" rejected
+msgspec.Struct --use-site-models-for-constrained-refs alternation "ac" accepted
+msgspec.Struct --use-site-models-for-constrained-refs alternation "cb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs alternation "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs alternation "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs three "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs three "axbyc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs three "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs three "bc" rejected
+msgspec.Struct --use-site-models-for-constrained-refs three "ac" rejected
+msgspec.Struct --use-site-models-for-constrained-refs unportable "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs unportable "xab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs unportable "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs unportable "ax" accepted
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"s": "ab"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"s": "axb"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"s": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"s": "xb"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail "ba" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail "xb" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail_sibling "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail_sibling "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail_sibling "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail_sibling "ba" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchored_tail_sibling "xb" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs implied_sibling "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs implied_sibling "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs implied_sibling "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs implied_sibling "xab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs class_prefix "bx" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs class_prefix "zbxx" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs class_prefix "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs class_prefix "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs escape_prefix "1x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs escape_prefix "a1x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs escape_prefix "x1" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs escape_prefix "1" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs literal_head "a1" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs literal_head "xa2" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs literal_head "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs literal_head "1" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs both_anchored "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs both_anchored "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs both_anchored "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs both_anchored "xab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchor_mismatch "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchor_mismatch "aXab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchor_mismatch "xab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs anchor_mismatch "aX" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs alternation "ac" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs alternation "cb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs alternation "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs alternation "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs three "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs three "axbyc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs three "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs three "bc" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs three "ac" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unportable "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unportable "xab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unportable "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unportable "ax" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"s": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"s": "axb"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"s": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"s": "xb"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail "xb" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail_sibling "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail_sibling "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail_sibling "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail_sibling "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchored_tail_sibling "xb" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs implied_sibling "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs implied_sibling "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs implied_sibling "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs implied_sibling "xab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs class_prefix "bx" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs class_prefix "zbxx" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs class_prefix "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs class_prefix "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs escape_prefix "1x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs escape_prefix "a1x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs escape_prefix "x1" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs escape_prefix "1" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs literal_head "a1" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs literal_head "xa2" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs literal_head "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs literal_head "1" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs both_anchored "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs both_anchored "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs both_anchored "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs both_anchored "xab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchor_mismatch "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchor_mismatch "aXab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchor_mismatch "xab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs anchor_mismatch "aX" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs alternation "ac" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs alternation "cb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs alternation "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs alternation "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs three "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs three "axbyc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs three "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs three "bc" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs three "ac" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unportable "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unportable "xab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unportable "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unportable "ax" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"s": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"s": "axb"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"s": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"s": "xb"} rejected

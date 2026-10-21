@@ -199,6 +199,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-serialize-as-any": "Wrap fields with subtypes in Pydantic's SerializeAsAny.",
     "--use-single-line-docstring": "Emit short docstrings on a single line.",
     "--use-single-value-enum-as-const": "Treat `enum` with a single value as `const` with that value.",
+    "--use-site-models-for-constrained-refs": "Give an allOf of `$ref` members whose other parts add assertions its...",
     "--use-specialized-enum": "Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).",
     "--use-standard-collections": "Use built-in dict/list instead of typing.Dict/List.",
     "--use-standard-primitive-types": "Use Python standard library types for string formats instead of str.",

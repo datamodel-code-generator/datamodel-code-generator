@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "quantity": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        }
+      ],
+      "maximum": 10
+    },
+    "sizes": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Size"
+          },
+          {
+            "enum": [
+              "m",
+              "l"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Size": {
+      "type": "string",
+      "enum": [
+        "s",
+        "m",
+        "l"
+      ]
+    }
+  }
+}

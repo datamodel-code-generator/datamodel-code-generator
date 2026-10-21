@@ -666,6 +666,15 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Site models for constrained references",
+        config=PresetConfig(use_site_models_for_constrained_refs=True),
+        description=(
+            "Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
+            "values all parts admit, instead of the referenced type, which leaves the added assertions out; an "
+            "allOf of enum references gets the enum of the members they share."
+        ),
+    ),
+    PresetOptionGroup(
         title="Redundant constraints omitted",
         config=PresetConfig(omit_redundant_constraints=True),
         description=(
@@ -987,8 +996,10 @@ def render_presets_markdown() -> str:
             "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
             "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
             "`--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks "
-            "scopes get the model a schema definition of the same body gets, and `--omit-redundant-constraints`: a "
-            "constraint that a zero-bound class or a const or enum Literal already enforces is not written again."
+            "scopes get the model a schema definition of the same body gets, `--omit-redundant-constraints`: a "
+            "constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and "
+            "`--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type "
+            "to a referenced schema gets its own model of the values all parts admit instead of the referenced type."
         ),
         "",
         "## Override Preset Options",

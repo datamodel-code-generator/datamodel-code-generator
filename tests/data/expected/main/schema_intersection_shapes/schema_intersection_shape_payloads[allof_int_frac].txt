@@ -58,10 +58,10 @@ msgspec.Struct default frac_map {"k": 9} import error
 msgspec.Struct default frac_map {"k": 0} import error
 msgspec.Struct default frac_map {"k": 10} import error
 msgspec.Struct default frac_map {"k": 1.5} import error
-pydantic_v2.BaseModel --field-constraints frac 1 raised TypeError
-pydantic_v2.BaseModel --field-constraints frac 9 raised TypeError
-pydantic_v2.BaseModel --field-constraints frac 0 raised TypeError
-pydantic_v2.BaseModel --field-constraints frac 10 raised TypeError
+pydantic_v2.BaseModel --field-constraints frac 1 accepted
+pydantic_v2.BaseModel --field-constraints frac 9 accepted
+pydantic_v2.BaseModel --field-constraints frac 0 rejected
+pydantic_v2.BaseModel --field-constraints frac 10 rejected
 pydantic_v2.BaseModel --field-constraints frac 1.5 rejected
 pydantic_v2.BaseModel --field-constraints frac_prop 1 accepted
 pydantic_v2.BaseModel --field-constraints frac_prop 9 accepted
@@ -78,10 +78,10 @@ pydantic_v2.BaseModel --field-constraints frac_map {"k": 9} accepted
 pydantic_v2.BaseModel --field-constraints frac_map {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints frac_map {"k": 10} rejected
 pydantic_v2.BaseModel --field-constraints frac_map {"k": 1.5} rejected
-pydantic_v2.BaseModel --use-annotated frac 1 raised TypeError
-pydantic_v2.BaseModel --use-annotated frac 9 raised TypeError
-pydantic_v2.BaseModel --use-annotated frac 0 raised TypeError
-pydantic_v2.BaseModel --use-annotated frac 10 raised TypeError
+pydantic_v2.BaseModel --use-annotated frac 1 accepted
+pydantic_v2.BaseModel --use-annotated frac 9 accepted
+pydantic_v2.BaseModel --use-annotated frac 0 rejected
+pydantic_v2.BaseModel --use-annotated frac 10 rejected
 pydantic_v2.BaseModel --use-annotated frac 1.5 rejected
 pydantic_v2.BaseModel --use-annotated frac_prop 1 accepted
 pydantic_v2.BaseModel --use-annotated frac_prop 9 accepted
@@ -138,3 +138,103 @@ msgspec.Struct --collapse-root-models frac_map {"k": 9} accepted
 msgspec.Struct --collapse-root-models frac_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models frac_map {"k": 10} rejected
 msgspec.Struct --collapse-root-models frac_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac 9 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac 10 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_prop 9 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_prop 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_prop 10 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_prop 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_items [9] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_items [10] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_items [1.5] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs frac_map {"k": 1.5} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac 9 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac 10 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_prop 9 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_prop 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_prop 10 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_prop 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_items [9] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_items [10] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_items [1.5] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_map {"k": 9} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_map {"k": 10} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs frac_map {"k": 1.5} rejected
+msgspec.Struct --use-site-models-for-constrained-refs frac 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac 9 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac 0 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac 10 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac 1.5 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_prop 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_prop 9 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_prop 0 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_prop 10 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_prop 1.5 import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_items [9] import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_items [0] import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_items [10] import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_items [1.5] import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_map {"k": 9} import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_map {"k": 0} import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_map {"k": 10} import error
+msgspec.Struct --use-site-models-for-constrained-refs frac_map {"k": 1.5} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac 9 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac 10 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_prop 9 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_prop 10 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_items [9] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_items [10] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs frac_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac 9 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac 10 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_prop 9 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_prop 10 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_map {"k": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs frac_map {"k": 1.5} rejected

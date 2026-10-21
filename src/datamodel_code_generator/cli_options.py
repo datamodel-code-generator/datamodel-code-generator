@@ -494,6 +494,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--use-single-line-docstring": CLIOptionMeta(name="--use-single-line-docstring", category=OptionCategory.FIELD),
     "--field-constraints": CLIOptionMeta(name="--field-constraints", category=OptionCategory.FIELD),
     "--omit-redundant-constraints": CLIOptionMeta(name="--omit-redundant-constraints", category=OptionCategory.FIELD),
+    "--use-site-models-for-constrained-refs": CLIOptionMeta(
+        name="--use-site-models-for-constrained-refs", category=OptionCategory.FIELD
+    ),
     "--field-extra-keys": CLIOptionMeta(name="--field-extra-keys", category=OptionCategory.FIELD),
     "--field-extra-keys-without-x-prefix": CLIOptionMeta(
         name="--field-extra-keys-without-x-prefix", category=OptionCategory.FIELD

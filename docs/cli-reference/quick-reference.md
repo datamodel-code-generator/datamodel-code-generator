@@ -104,6 +104,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-schema-description`](field-customization.md#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](field-customization.md#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing (Pydantic v2 only). |
 | [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) | Emit short docstrings on a single line. |
+| [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assertions its own model. |
 | [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what `--infer-union-varia... |
 | [`--use-title-as-name`](field-customization.md#use-title-as-name) | Use schema title as the generated class name. |
 
@@ -502,6 +503,7 @@ All options sorted alphabetically:
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) - Wrap fields with subtypes in Pydantic's SerializeAsAny.
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) - Emit short docstrings on a single line.
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const) - Treat `enum` with a single value as `const` with that value.
+- [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs) - Give an allOf of `$ref` members whose other parts add assert...
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) - Generate StrEnum/IntEnum for string/integer enums (Python 3....
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections) - Use built-in dict/list instead of typing.Dict/List.
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) - Use Python standard library types for string formats instead...

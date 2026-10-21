@@ -18,8 +18,8 @@ class Tags(RootModel[list[str]]):
     root: list[str] = Field(..., max_length=3)
 
 
-class TagsLen(RootModel[Tags]):
-    root: Tags = Field(..., max_length=5, min_length=1)
+class TagsLen(RootModel[list[str]]):
+    root: list[str] = Field(..., max_length=3, min_length=1)
 
 
 class Model(BaseModel):

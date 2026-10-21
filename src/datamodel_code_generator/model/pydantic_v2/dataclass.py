@@ -126,6 +126,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
     _READ_BY_PYDANTIC: ClassVar[bool] = True
+    _CHECKS_CONSTRAINTS: ClassVar[bool] = True
     _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT

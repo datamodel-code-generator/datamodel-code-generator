@@ -131,3 +131,98 @@ msgspec.Struct --collapse-root-models inline_integer 5 accepted
 msgspec.Struct --collapse-root-models inline_integer null accepted
 msgspec.Struct --collapse-root-models inline_integer 2 rejected
 msgspec.Struct --collapse-root-models inline_integer 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_integers "3" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_integer 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_integer 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_integer null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_integer 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_integer 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_integers "3" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_integer 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_integer 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_integer null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_integer 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_integer 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_array null accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_array [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers null accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_integers "3" rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_array null accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_array [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_integer 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_integer 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_integer null accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_integer 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_integer 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_integers "3" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_integer 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_integer 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_integer null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_integer 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_integer 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_integers "3" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_integer 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_integer 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_integer null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_integer 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_integer 6 rejected

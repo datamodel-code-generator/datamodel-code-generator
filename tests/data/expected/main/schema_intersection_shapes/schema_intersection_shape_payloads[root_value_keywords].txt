@@ -117,3 +117,88 @@ msgspec.Struct --collapse-root-models ref_bounded [1] rejected
 msgspec.Struct --collapse-root-models ref_no_parts ["a"] accepted
 msgspec.Struct --collapse-root-models ref_no_parts [1] rejected
 msgspec.Struct --collapse-root-models ref_no_parts "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_later ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_later [] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_later [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_later "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_first [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_first [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_first ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unevaluated_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unevaluated_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_bounded ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_bounded [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_bounded [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_no_parts ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_no_parts [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_no_parts "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_later ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_later [] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_later [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_later "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_first [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_first [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_first ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unevaluated_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unevaluated_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_bounded ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_bounded [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_bounded [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_no_parts ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_no_parts [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_no_parts "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs items_later ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs items_later [] accepted
+msgspec.Struct --use-site-models-for-constrained-refs items_later [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs items_later "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs items_first [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs items_first [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs items_first ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs unevaluated_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs unevaluated_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_bounded ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_bounded [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_bounded [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_no_parts ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_no_parts [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_no_parts "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_later ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_later [] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_later [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_later "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_first [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_first [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_first ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unevaluated_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unevaluated_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_bounded ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_bounded [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_bounded [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_no_parts ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_no_parts [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_no_parts "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_later ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_later [] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_later [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_later "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_first [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_first [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_first ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unevaluated_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unevaluated_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_bounded ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_bounded [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_bounded [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_no_parts ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_no_parts [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_no_parts "a" rejected

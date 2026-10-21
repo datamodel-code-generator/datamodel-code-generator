@@ -313,3 +313,228 @@ msgspec.Struct --collapse-root-models root_multi "ab" accepted
 msgspec.Struct --collapse-root-models root_multi "a" rejected
 msgspec.Struct --collapse-root-models inline_root "ab" accepted
 msgspec.Struct --collapse-root-models inline_root "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs a ["x"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs a [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs a [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs b ["x"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs b [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs b [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs c "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs c "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs c "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs d "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs d "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs d "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "axb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs u "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs u 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs u "" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs u "abcdef" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_refs 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_refs 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_refs 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_refs 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m {"k": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m2 {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m2 {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m2 null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m2 {"k": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs m2 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs path_a "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs path_a "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs path_a 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs root_multi "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs root_multi "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_root "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_root "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs a ["x"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs a [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs a [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs b ["x"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs b [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs b [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs c "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs c "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs c "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs d "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs d "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs d "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "axb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs u "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs u 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs u "" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs u "abcdef" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_refs 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_refs 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_refs 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_refs 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m {"k": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m2 {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m2 {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m2 null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m2 {"k": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs m2 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs path_a "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs path_a "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs path_a 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs root_multi "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs root_multi "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_root "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_root "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs a ["x"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs a [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs a [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs b ["x"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs b [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs b [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs c "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs c "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs c "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs d "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs d "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs d "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs v 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs v 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs v 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs p "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs p "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs p "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs p "ba" rejected
+msgspec.Struct --use-site-models-for-constrained-refs u "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs u 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs u "" accepted
+msgspec.Struct --use-site-models-for-constrained-refs u "abcdef" accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_refs 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_refs 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_refs 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_refs 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs m {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m null accepted
+msgspec.Struct --use-site-models-for-constrained-refs m {"k": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs m2 {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m2 {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m2 null accepted
+msgspec.Struct --use-site-models-for-constrained-refs m2 {"k": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs m2 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs path_a "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs path_a "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs path_a 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs root_multi "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs root_multi "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_root "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline_root "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs a ["x"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs a [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs a [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs b ["x"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs b [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs b [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs c "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs c "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs c "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs d "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs d "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs d "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "ba" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs u "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs u 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs u "" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs u "abcdef" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_refs 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_refs 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_refs 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_refs 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m2 {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m2 {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m2 null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m2 {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs m2 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs path_a "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs path_a "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs path_a 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs root_multi "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs root_multi "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_root "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_root "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs a ["x"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs a [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs a [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs b ["x"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs b [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs b [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs c "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs c "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs c "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs d "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs d "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs d "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs u "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs u 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs u "" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs u "abcdef" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_refs 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_refs 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_refs 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_refs 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m2 {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m2 {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m2 null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m2 {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs m2 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs path_a "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs path_a "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs path_a 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs root_multi "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs root_multi "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_root "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_root "a" rejected

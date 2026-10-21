@@ -1100,7 +1100,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             True,
             id="openapi-30-set-default-enum-member-alias",
         ),
-        pytest.param("msgspec_nullable_enum_inherited.yaml", [], "openapi_inherited.py", False, id="inherited"),
+        pytest.param("msgspec_nullable_enum_inherited.yaml", [], "openapi_inherited.py", True, id="inherited"),
     ],
 )
 def test_main_openapi_msgspec_nullable_enum(
@@ -1109,8 +1109,8 @@ def test_main_openapi_msgspec_nullable_enum(
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
     The `IntEnum` of `type: integer`, which cannot hold a `None` member, is written without it also without the
-    option, and without the alias, as its `type` rejects null. An allOf of enums still merges into the class of its
-    first enum, an `IntEnum` with a `None` member that fails at import, so only its source is compared.
+    option, and without the alias, as its `type` rejects null. An allOf of enums that no value meets in common, whose
+    merged `IntEnum` would hold a `None` member and fail at import, takes its first enum.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")

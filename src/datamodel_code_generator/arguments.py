@@ -807,6 +807,13 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-site-models-for-constrained-refs",
+    help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
+    "values all parts admit, instead of the referenced type, which leaves the added assertions out",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--set-default-enum-member",
     help=f"Deprecated: {deprecation_message('cli.set-default-enum-member')}",
     action="store_true",

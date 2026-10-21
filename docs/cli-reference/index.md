@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 31 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 46 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
@@ -368,6 +368,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring)
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const)
+- [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs)
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum)
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)

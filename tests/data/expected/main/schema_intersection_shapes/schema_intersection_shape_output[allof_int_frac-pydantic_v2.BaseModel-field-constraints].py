@@ -18,8 +18,8 @@ class Number(RootModel[int]):
     root: int
 
 
-class Frac(RootModel[Number]):
-    root: Number = Field(..., ge=0.5, le=9.5)
+class Frac(RootModel[int]):
+    root: int = Field(..., ge=1, le=9)
 
 
 class Model(BaseModel):

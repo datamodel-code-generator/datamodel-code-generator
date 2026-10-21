@@ -40,3 +40,33 @@ msgspec.Struct --collapse-root-models pet {"petType": "dog"} import error
 msgspec.Struct --collapse-root-models pet {"petType": "bird"} import error
 msgspec.Struct --collapse-root-models pet {} import error
 msgspec.Struct --collapse-root-models pet {"petType": "cat", "meow": 1} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"petType": "dog"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"petType": "bird"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"petType": "cat"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": "m"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"petType": "dog"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"petType": "bird"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pet {"petType": "cat"} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": "m"} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"petType": "dog"} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"petType": "bird"} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": 1} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"petType": "dog"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"petType": "bird"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": "m"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"petType": "dog"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"petType": "bird"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"petType": "cat", "meow": 1} rejected

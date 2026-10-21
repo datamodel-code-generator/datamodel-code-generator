@@ -19,3 +19,18 @@ pydantic_v2.BaseModel --collapse-root-models status "x" rejected
 msgspec.Struct --collapse-root-models status "active" accepted
 msgspec.Struct --collapse-root-models status "pending" rejected
 msgspec.Struct --collapse-root-models status "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "active" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "pending" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "active" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "pending" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs status "active" accepted
+msgspec.Struct --use-site-models-for-constrained-refs status "pending" rejected
+msgspec.Struct --use-site-models-for-constrained-refs status "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "active" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "pending" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "active" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "pending" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "x" rejected

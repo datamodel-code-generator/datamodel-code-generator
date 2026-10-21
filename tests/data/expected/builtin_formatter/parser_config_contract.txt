@@ -130,6 +130,7 @@ reviewed-safe use_serialization_alias
 reviewed-safe use_serialize_as_any
 reviewed-safe use_single_line_docstring
 reviewed-safe use_single_value_enum_as_const
+reviewed-safe use_site_models_for_constrained_refs
 reviewed-safe use_specialized_enum
 reviewed-safe use_standard_collections
 reviewed-safe use_standard_primitive_types

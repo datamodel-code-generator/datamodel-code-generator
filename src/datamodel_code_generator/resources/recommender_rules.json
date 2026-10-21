@@ -1252,6 +1252,10 @@
         "enums.read-as-their-const"
       ]
     },
+    "use_site_models_for_constrained_refs": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset from 20261019; the recommendation starts from the preset."
+    },
     "use_specialized_enum": {
       "not_recommended": "preset",
       "reason": "Set by the dated presets for Python 3.11 and later; the recommendation starts from the preset."

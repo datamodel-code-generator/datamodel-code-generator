@@ -256,6 +256,7 @@ class Struct(DataModel):
     _DECODES_VALUE_UNIONS: ClassVar[bool] = False
     _LITERAL_HOLDS_ENUM_MEMBERS: ClassVar[bool] = False
     _LAYERS_REPEATED_CONSTRAINTS: ClassVar[bool] = False
+    _CHECKS_CONSTRAINTS: ClassVar[bool] = True
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True

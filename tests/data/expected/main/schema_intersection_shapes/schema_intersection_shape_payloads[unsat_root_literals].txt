@@ -54,6 +54,46 @@ msgspec.Struct --collapse-root-models sibling_enum "c" rejected
 msgspec.Struct --collapse-root-models item_enums [] rejected
 msgspec.Struct --collapse-root-models item_enums ["a"] rejected
 msgspec.Struct --collapse-root-models item_enums ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_member "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_member "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_member "" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_enum "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_enum "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs item_enums [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs item_enums ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs item_enums ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_member "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_member "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_member "" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_enum "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_enum "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs item_enums [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs item_enums ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs item_enums ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs const_member "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs const_member "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs const_member "" rejected
+msgspec.Struct --use-site-models-for-constrained-refs sibling_enum "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs sibling_enum "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs item_enums [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs item_enums ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs item_enums ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_member "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_member "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_member "" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_enum "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs item_enums [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs item_enums ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs item_enums ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_member "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_member "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_member "" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_enum "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs item_enums [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs item_enums ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs item_enums ["c"] rejected
 pydantic_v2.BaseModel --generate-schema-validators const_member "a" accepted
 pydantic_v2.BaseModel --generate-schema-validators const_member "c" rejected
 pydantic_v2.BaseModel --generate-schema-validators const_member "" rejected

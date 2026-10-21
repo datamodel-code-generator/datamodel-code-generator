@@ -99,8 +99,8 @@ class Level2(IntEnum):
     integer_3 = 3
 
 
-class Number5(RootModel[Number]):
-    root: Number = Field(..., ge=5)
+class Number5(RootModel[int]):
+    root: int = Field(..., ge=5)
 
 
 class NonNegative(RootModel[float]):
@@ -112,11 +112,11 @@ class TwoRefs(RootModel[int]):
 
 
 class StampLen(RootModel[Stamp]):
-    root: Stamp = Field(..., max_length=40)
+    root: Stamp
 
 
-class AllOfRoot(RootModel[Quantity]):
-    root: Quantity = Field(..., le=10)
+class AllOfRoot(RootModel[int]):
+    root: int = Field(..., ge=1, le=10)
 
 
 class AllOfRoot2(RootModel[int]):

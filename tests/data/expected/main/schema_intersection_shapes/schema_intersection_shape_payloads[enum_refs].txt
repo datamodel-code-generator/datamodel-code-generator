@@ -110,3 +110,83 @@ msgspec.Struct --collapse-root-models v_map {"k": "b"} accepted
 msgspec.Struct --collapse-root-models v_map {"k": "a"} accepted
 msgspec.Struct --collapse-root-models v_map {"k": "c"} accepted
 msgspec.Struct --collapse-root-models v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "d" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_prop "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_prop "d" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_items ["d"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v_map {"k": "d"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "d" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_prop "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_prop "d" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_items ["d"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_map {"k": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v_map {"k": "d"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs v "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs v "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v "d" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs v_prop "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_prop "d" rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs v_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_items ["d"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs v_map {"k": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "d" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_prop "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_prop "d" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_items ["d"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_map {"k": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "d" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_prop "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_prop "d" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_items ["d"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_map {"k": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v_map {"k": "d"} rejected

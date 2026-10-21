@@ -44,8 +44,8 @@ class Point(BaseModel):
     x: int | None = None
 
 
-class Score(RootModel[Count]):
-    root: Count = Field(..., le=100)
+class Score(RootModel[int]):
+    root: int = Field(..., le=100)
 
 
 class Status(Enum):

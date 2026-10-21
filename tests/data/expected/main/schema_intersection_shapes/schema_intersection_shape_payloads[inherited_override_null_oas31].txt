@@ -173,3 +173,128 @@ msgspec.Struct --collapse-root-models direct_obj_first null rejected
 msgspec.Struct --collapse-root-models list_null_first "x" accepted
 msgspec.Struct --collapse-root-models list_null_first null rejected
 msgspec.Struct --collapse-root-models list_null_first 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind2 "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind2 null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind3 null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind3 "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind3 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind4 "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind4 null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kind4 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ckind "xy" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ckind null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ckind "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct_obj null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct_obj "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs direct_obj_first null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_null_first "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_null_first null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_null_first 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind2 "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind2 null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind3 null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind3 "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind3 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind4 "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind4 null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kind4 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ckind "xy" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ckind null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ckind "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct_obj {"n": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct_obj null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct_obj "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct_obj_first {"n": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs direct_obj_first null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_null_first "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_null_first null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_null_first 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs kind null rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind2 "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs kind2 null rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind3 null accepted
+msgspec.Struct --use-site-models-for-constrained-refs kind3 "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs kind3 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind4 "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs kind4 null rejected
+msgspec.Struct --use-site-models-for-constrained-refs kind4 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ckind "xy" accepted
+msgspec.Struct --use-site-models-for-constrained-refs ckind null rejected
+msgspec.Struct --use-site-models-for-constrained-refs ckind "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs direct "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs direct null rejected
+msgspec.Struct --use-site-models-for-constrained-refs direct 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs direct_obj {"n": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs direct_obj null rejected
+msgspec.Struct --use-site-models-for-constrained-refs direct_obj "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs direct_obj_first {"n": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs direct_obj_first null rejected
+msgspec.Struct --use-site-models-for-constrained-refs list_null_first "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs list_null_first null rejected
+msgspec.Struct --use-site-models-for-constrained-refs list_null_first 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind2 "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind2 null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind3 null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind3 "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind3 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind4 "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind4 null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kind4 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ckind "xy" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ckind null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ckind "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct_obj null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct_obj "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs direct_obj_first null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_null_first "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_null_first null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_null_first 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind2 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind2 null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind3 null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind3 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind3 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind4 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind4 null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kind4 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ckind "xy" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ckind null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ckind "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct_obj null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct_obj "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs direct_obj_first null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_null_first "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_null_first null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_null_first 1 rejected

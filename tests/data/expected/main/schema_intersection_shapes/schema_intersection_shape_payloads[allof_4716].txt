@@ -154,8 +154,8 @@ pydantic_v2.BaseModel --field-constraints tags ["a"] accepted
 pydantic_v2.BaseModel --field-constraints tags [] accepted
 pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d"] rejected
 pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d", "e", "f"] rejected
-pydantic_v2.BaseModel --field-constraints score 100 raised TypeError
-pydantic_v2.BaseModel --field-constraints score 101 raised TypeError
+pydantic_v2.BaseModel --field-constraints score 100 accepted
+pydantic_v2.BaseModel --field-constraints score 101 rejected
 pydantic_v2.BaseModel --field-constraints counts [5] accepted
 pydantic_v2.BaseModel --field-constraints counts [4] rejected
 pydantic_v2.BaseModel --field-constraints limits {"k": 10} accepted
@@ -203,8 +203,8 @@ pydantic_v2.BaseModel --use-annotated tags ["a"] accepted
 pydantic_v2.BaseModel --use-annotated tags [] accepted
 pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d"] rejected
 pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d", "e", "f"] rejected
-pydantic_v2.BaseModel --use-annotated score 100 raised TypeError
-pydantic_v2.BaseModel --use-annotated score 101 raised TypeError
+pydantic_v2.BaseModel --use-annotated score 100 accepted
+pydantic_v2.BaseModel --use-annotated score 101 rejected
 pydantic_v2.BaseModel --use-annotated counts [5] accepted
 pydantic_v2.BaseModel --use-annotated counts [4] rejected
 pydantic_v2.BaseModel --use-annotated limits {"k": 10} accepted
@@ -341,6 +341,251 @@ msgspec.Struct --collapse-root-models q_map {"k": 1} accepted
 msgspec.Struct --collapse-root-models q_map {"k": 10} accepted
 msgspec.Struct --collapse-root-models q_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models q_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs status "other" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_allof 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_allof 11 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_items [11] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs status "other" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_allof 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_allof 11 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_items [11] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs count 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs count 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs code "A" accepted
+msgspec.Struct --use-site-models-for-constrained-refs code "ABCD" rejected
+msgspec.Struct --use-site-models-for-constrained-refs code "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs tags [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs score 100 accepted
+msgspec.Struct --use-site-models-for-constrained-refs score 101 rejected
+msgspec.Struct --use-site-models-for-constrained-refs counts [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs counts [4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs point {"x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs point {"x": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs label 123 accepted
+msgspec.Struct --use-site-models-for-constrained-refs label "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs status "open" accepted
+msgspec.Struct --use-site-models-for-constrained-refs status "closed" accepted
+msgspec.Struct --use-site-models-for-constrained-refs status "other" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pair [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs single ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs single [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs single ["a", "b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 9} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 11 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_items [11] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs status "other" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_allof 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_allof 11 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_items [11] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs status "other" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_allof 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_allof 11 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 11} rejected
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 5 accepted
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 4 accepted
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "A" accepted
@@ -390,3 +635,52 @@ pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 10} accepted
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 0} accepted
 pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 11} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "other" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 0 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 11 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [0] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [11] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 11} accepted

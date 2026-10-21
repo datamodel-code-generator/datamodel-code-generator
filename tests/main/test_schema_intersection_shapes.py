@@ -42,8 +42,11 @@ DOCUMENTS: dict[str, Path] = {
 OUTPUT_DOCUMENTS: dict[str, Path] = {
     **DOCUMENTS,
     "pattern_conjunction_edges": JSON_SCHEMA_DATA_PATH / "pattern_conjunctions" / "edges.yaml",
+    "ref_sibling_member_item_constraints": JSON_SCHEMA_DATA_PATH / "ref_sibling_member_item_constraints.json",
 }
-"""The documents whose output is pinned: the shapes, and patterns that some engine does not read (no payloads)."""
+"""The documents whose output is pinned: the shapes, patterns that some engine does not read, and item constraints
+beside an allOf member written as a ``$ref`` with siblings, which keep their earlier form (no payloads)."""
+SITE_MODELS = "--use-site-models-for-constrained-refs"
 RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
     (DataModelType.PydanticV2BaseModel, ()),
     (DataModelType.PydanticV2Dataclass, ()),
@@ -54,10 +57,21 @@ RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
     (DataModelType.PydanticV2BaseModel, ("--use-annotated",)),
     (DataModelType.PydanticV2BaseModel, ("--collapse-root-models",)),
     (DataModelType.MsgspecStruct, ("--collapse-root-models",)),
+    (DataModelType.PydanticV2BaseModel, (SITE_MODELS,)),
+    (DataModelType.PydanticV2Dataclass, (SITE_MODELS,)),
+    (DataModelType.DataclassesDataclass, (SITE_MODELS,)),
+    (DataModelType.TypingTypedDict, (SITE_MODELS,)),
+    (DataModelType.MsgspecStruct, (SITE_MODELS,)),
+    (DataModelType.PydanticV2BaseModel, ("--field-constraints", SITE_MODELS)),
+    (DataModelType.PydanticV2BaseModel, ("--collapse-root-models", SITE_MODELS)),
 )
 EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "allof_4716": (
         (DataModelType.PydanticV2BaseModel, ("--type-overrides", json.dumps({"Quantity": "decimal.Decimal"}))),
+        (
+            DataModelType.PydanticV2BaseModel,
+            ("--type-overrides", json.dumps({"Quantity": "decimal.Decimal"}), SITE_MODELS),
+        ),
     ),
     "allof_ref_item_constraints": (
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),

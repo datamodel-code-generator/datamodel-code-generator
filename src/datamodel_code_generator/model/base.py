@@ -2143,6 +2143,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the output validates a ``Literal`` of enum members (msgspec does not)."""
     _LAYERS_REPEATED_CONSTRAINTS: ClassVar[bool] = True
     """Whether the output checks a constraint written on an alias whose type sets the same one (msgspec raises)."""
+    _CHECKS_CONSTRAINTS: ClassVar[bool] = False
+    """Whether the output checks the constraints of a value (bounds, lengths, patterns) when it reads data."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False

@@ -20,8 +20,8 @@ class Number(RootModel[int]):
     root: int
 
 
-class Frac(RootModel[Number]):
-    root: Annotated[Number, Field(ge=0.5, le=9.5)]
+class Frac(RootModel[int]):
+    root: Annotated[int, Field(ge=1, le=9)]
 
 
 class Model(BaseModel):

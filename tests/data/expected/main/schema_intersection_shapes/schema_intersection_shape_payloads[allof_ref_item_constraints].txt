@@ -467,6 +467,341 @@ msgspec.Struct --collapse-root-models point_items [{"x": "a"}] import error
 msgspec.Struct --collapse-root-models point_map {"k": {"x": 1}} import error
 msgspec.Struct --collapse-root-models point_map {"k": {"x": "a"}} import error
 msgspec.Struct --collapse-root-models false_items [1] import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [11] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_items [6] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_items [4] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [9] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_items [10] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_items [3] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_items [20] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_map {"k": 20} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_items [9] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_items [10] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [11] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_map {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_map {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_items [6] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_items [4] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_map {"k": 6} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs overlap_map {"k": 4} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [9] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_items [10] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 9} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 10} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_items [3] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_items [20] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_map {"k": 3} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_map {"k": 20} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_items [9] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_items [10] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [10] import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [0] import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [11] import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 10} import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 0} import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 11} import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [5] import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [6] import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [4] import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 6} import error
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 4} import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [2] import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [0] import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 2} import error
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 0} import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [2] import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [0] import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 2} import error
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 0} import error
+msgspec.Struct --use-site-models-for-constrained-refs member_items [2] import error
+msgspec.Struct --use-site-models-for-constrained-refs member_items [9] import error
+msgspec.Struct --use-site-models-for-constrained-refs member_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs member_items [10] import error
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 2} import error
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 9} import error
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 10} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_items [4] import error
+msgspec.Struct --use-site-models-for-constrained-refs two_items [5] import error
+msgspec.Struct --use-site-models-for-constrained-refs two_items [3] import error
+msgspec.Struct --use-site-models-for-constrained-refs two_items [6] import error
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 4} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 3} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 6} import error
+msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] import error
+msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
+msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [2] import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [3] import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [20] import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 2} import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 3} import error
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 20} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [2] import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [9] import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [10] import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 2} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 9} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 10} import error
+msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": 1}] import error
+msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": "a"}] import error
+msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} import error
+msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} import error
+msgspec.Struct --use-site-models-for-constrained-refs false_items [1] import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [11] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_items [6] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_items [4] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [9] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_items [10] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_map {"k": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_items [3] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_items [20] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_map {"k": 20} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_items [9] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_items [10] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_items [20] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_map {"k": 20} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [10] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [0] rejected

@@ -324,6 +324,8 @@ _TOP_LEVEL_FUTURE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from __future__ impo
 _TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = TYPE_DEPENDENT_CONSTRAINTS_KEY
+_DERIVED_FROM_KEY: Final = "_derived_from"
+"""The Reference of the one ``$ref`` target a site model is built from with the site's other parts."""
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
 _DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
@@ -3950,6 +3952,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
         self.typed_nullable_map_reference_ids: set[int] = set()
+        self._site_model_reference_ids: set[int] = set()
         self.typed_map_values_may_move_models = False
         self.model_placement: dict[ModulePath, frozenset[str]] = {}
         self.reuse_scope: ReuseScope | None = config.reuse_scope
@@ -4480,7 +4483,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> Reference | None:
         if not (root_reference := root_data_type.reference) or root_data_type.is_dict or root_data_type.is_list:
             return None
-        if root_reference.source not in models_set:
+        if root_reference.source not in models_set or (
+            self.config.use_site_models_for_constrained_refs and _has_root_field_constraints(model.fields[0])
+        ):
             return None
         expected_name = self.model_resolver.get_class_name(model.reference.original_name, unique=False).name
         if root_reference.name != expected_name:
@@ -4519,7 +4524,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if self._reuse_optimization_context.type_override_model_names
             else None
         )
-        for model in models:
+        for model in self._site_models_last(models):
             if model in models_to_remove:  # pragma: no cover
                 continue
             reuse_allowed = reuse_constraint is None or reuse_constraint(model)
@@ -4641,6 +4646,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             *(config.default_value_overrides or ()),
         )
         return bool(names & class_keys) or any(key.rpartition(".")[0] in names for key in scoped_keys)
+
+    def _site_models_last(self, models: list[DataModel]) -> list[DataModel]:
+        """Order the site models a reference with more assertions gets after the others, which then stay canonical.
+
+        A site model of the same name and rendering as another model is removed for it and takes no name of its own.
+        """
+        if site_models := self._site_model_reference_ids:
+            return sorted(models, key=lambda model: id(model.reference) in site_models)
+        return models
 
     def _typed_map_values_last(self, models: list[DataModel]) -> list[DataModel]:
         """Order models of typed map values after the others, so the others stay canonical and keep their names."""
@@ -7332,10 +7346,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         for model in models:
             fields_overridden = False
+            derived_import = self.__derived_override_import(model)
             for field in model.fields:
                 # Check scoped override first: "ClassName.field_name"
                 scoped_key = f"{model.class_name}.{field.name}"
-                match self._type_override_imports.get(scoped_key):
+                match self._type_override_imports.get(scoped_key) or derived_import:
                     case Import() as override_import:
                         self._apply_override_to_field(field, override_import)
                         fields_overridden = True
@@ -7346,6 +7361,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         pass
             if fields_overridden:
                 model.clear_imports_cache()
+
+    def __derived_override_import(self, model: DataModel) -> Import | None:
+        """Return the model-level override of the target a site root model is built from, which applies to it too.
+
+        A site model built from one ``$ref`` target and the site's other parts (``_DERIVED_FROM_KEY``) holds the
+        target's values, so its root type takes the type that replaces the target, with the constraints that type
+        takes.
+        """
+        if (
+            not (model.IS_ROOT_MODEL or model.IS_ALIAS)
+            or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
+        ):
+            return None
+        return self._model_type_override_imports.get(target.name)
 
     def __apply_base_class_type_overrides(self, models: list[DataModel]) -> None:
         """Replace base classes that model-level overrides name with custom import types, before constructor ordering.

@@ -783,7 +783,7 @@ The 20261015 presets keep the 20260909 options and add Python 3.15 targets.
 
 The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal all` for stdlib dataclass and TypedDict output. These models keep raw JSON values without conversion, so enums render as Literal values instead of enum classes. Options of an output model scope take precedence over the options for all output model types.
 
-The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks scopes get the model a schema definition of the same body gets, and `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again.
+The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks scopes get the model a schema definition of the same body gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
 
 ## Override Preset Options
 
@@ -4220,6 +4220,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-standard-collections = true
     use-subclass-enum = true
     use-union-operator = true
@@ -4228,7 +4229,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4242,6 +4243,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `standard-py311-20261019`
@@ -4279,6 +4281,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4288,7 +4291,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4303,6 +4306,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `standard-py312-20261019`
@@ -4340,6 +4344,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4349,7 +4354,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4364,6 +4369,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `standard-py313-20261019`
@@ -4401,6 +4407,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4410,7 +4417,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4425,6 +4432,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `standard-py314-20261019`
@@ -4462,6 +4470,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4471,7 +4480,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4486,6 +4495,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `standard-py315-20261019`
@@ -4523,6 +4533,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-annotated = true
     use-frozen-field = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4532,7 +4543,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4547,6 +4558,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 
 ### `practical-py310-20261019`
@@ -4593,6 +4605,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-standard-collections = true
     use-subclass-enum = true
     use-title-as-name = true
@@ -4604,7 +4617,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4618,6 +4631,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -4667,6 +4681,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4679,7 +4694,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4694,6 +4709,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -4743,6 +4759,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4755,7 +4772,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4770,6 +4787,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -4819,6 +4837,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4831,7 +4850,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4846,6 +4865,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -4895,6 +4915,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4907,7 +4928,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4922,6 +4943,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -4971,6 +4993,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-schema-description = true
     use-single-line-docstring = true
     use-single-value-enum-as-const = true
+    use-site-models-for-constrained-refs = true
     use-specialized-enum = true
     use-standard-collections = true
     use-subclass-enum = true
@@ -4983,7 +5006,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --omit-redundant-constraints --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4998,6 +5021,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Built-in formatting | `--formatters builtin` | Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort. |
 | Enums read as their const | `--use-single-value-enum-as-const` | Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum. |
 | Paths bodies modeled as definitions | `--openapi-paths-bodies-as-definitions` | Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type. |
+| Site models for constrained references | `--use-site-models-for-constrained-refs` | Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share. |
 | Redundant constraints omitted | `--omit-redundant-constraints` | Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -22042,7 +22066,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 31 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 46 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
@@ -22400,6 +22424,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring)
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const)
+- [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs)
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum)
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
@@ -30973,6 +30998,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/field-custom
 | [`--use-schema-description`](#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing ... |
 | [`--use-single-line-docstring`](#use-single-line-docstring) | Emit short docstrings on a single line. |
+| [`--use-site-models-for-constrained-refs`](#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assert... |
 | [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what ... |
 | [`--use-title-as-name`](#use-title-as-name) | Use schema title as the generated class name. |
 
@@ -35677,6 +35703,155 @@ format as the default.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-site-models-for-constrained-refs` {#use-site-models-for-constrained-refs}
+
+Give an allOf of `$ref` members whose other parts add assertions its own model.
+
+Without the option such an allOf is written as the referenced type, which leaves out the constraints, the enum values
+or the type its other parts add: `allOf: [{$ref: Quantity}], maximum: 10` accepts 11. With the option the site gets
+its own model of the values all parts admit (`conint(ge=1, le=10)`), named after the site, and an allOf of enum
+references gets an enum of the members they share. The referenced type stays where it enforces what the parts enforce
+together in the output (dataclasses and TypedDict check no constraints, so only types and literals count there), and
+msgspec writes the added constraints beside the reference where its `Meta` takes them. A model-level
+`--type-overrides` entry of the referenced model applies to its site models too.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input site_models_for_constrained_refs.json --use-site-models-for-constrained-refs # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-site-models-for-constrained-refs` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Order",
+      "type": "object",
+      "properties": {
+        "quantity": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            }
+          ],
+          "maximum": 10
+        },
+        "sizes": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Size"
+              },
+              {
+                "enum": [
+                  "m",
+                  "l"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "$defs": {
+        "Quantity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "Size": {
+          "type": "string",
+          "enum": [
+            "s",
+            "m",
+            "l"
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  site_models_for_constrained_refs.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel, conint
+
+
+        class Quantity1(RootModel[conint(ge=1, le=10)]):
+            root: conint(ge=1, le=10)
+
+
+        class Size2(Enum):
+            m = 'm'
+            l = 'l'
+
+
+        class Order(BaseModel):
+            quantity: Quantity1 | None = None
+            sizes: list[Size2] | None = None
+
+
+        class Quantity(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Size(Enum):
+            s = 's'
+            m = 'm'
+            l = 'l'
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  site_models_for_constrained_refs.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel, conint
+
+
+        class Quantity(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Size(Enum):
+            s = 's'
+            m = 'm'
+            l = 'l'
+
+
+        class Order(BaseModel):
+            quantity: Quantity | None = None
+            sizes: list[Size] | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -59551,6 +59726,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-schema-description`](field-customization.md#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](field-customization.md#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing (Pydantic v2 only). |
 | [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) | Emit short docstrings on a single line. |
+| [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assertions its own model. |
 | [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what `--infer-union-varia... |
 | [`--use-title-as-name`](field-customization.md#use-title-as-name) | Use schema title as the generated class name. |
 
@@ -59949,6 +60125,7 @@ All options sorted alphabetically:
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) - Wrap fields with subtypes in Pydantic's SerializeAsAny.
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) - Emit short docstrings on a single line.
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const) - Treat `enum` with a single value as `const` with that value.
+- [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs) - Give an allOf of `$ref` members whose other parts add assert...
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) - Generate StrEnum/IntEnum for string/integer enums (Python 3....
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections) - Use built-in dict/list instead of typing.Dict/List.
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) - Use Python standard library types for string formats instead...
@@ -61865,16 +62042,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 183 | Shared generation options. |
-| `GenerateConfig` | 198 | Public `generate()` configuration. |
-| `ParserConfig` | 148 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 150 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 157 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 158 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 151 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 151 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 150 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 151 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 184 | Shared generation options. |
+| `GenerateConfig` | 199 | Public `generate()` configuration. |
+| `ParserConfig` | 149 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 151 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 158 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 159 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 152 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 152 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 151 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 152 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

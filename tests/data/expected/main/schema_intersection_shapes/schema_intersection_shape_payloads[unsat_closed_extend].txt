@@ -54,3 +54,43 @@ msgspec.Struct --collapse-root-models child {} rejected
 msgspec.Struct --collapse-root-models child {"b": "x"} accepted
 msgspec.Struct --collapse-root-models child {"a": "x"} rejected
 msgspec.Struct --collapse-root-models child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sib {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sib {"b": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sib {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"b": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sib {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sib {"b": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sib {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sib {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"b": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"a": "x", "b": "y"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs sib {} rejected
+msgspec.Struct --use-site-models-for-constrained-refs sib {"b": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs sib {"a": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs sib {"a": "x", "b": "y"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs child {} rejected
+msgspec.Struct --use-site-models-for-constrained-refs child {"b": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs child {"a": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sib {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sib {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sib {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sib {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sib {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sib {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"a": "x", "b": "y"} accepted

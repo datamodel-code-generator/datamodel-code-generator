@@ -54,3 +54,43 @@ msgspec.Struct --collapse-root-models v "c" accepted
 msgspec.Struct --collapse-root-models merged {} accepted
 msgspec.Struct --collapse-root-models merged {"w": "a"} accepted
 msgspec.Struct --collapse-root-models merged {"w": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs f 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs f "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs f null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs v "c" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs merged {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs merged {"w": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs merged {"w": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs f 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs f "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs f null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs v "c" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs merged {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs merged {"w": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs merged {"w": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs f 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs f "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs f null accepted
+msgspec.Struct --use-site-models-for-constrained-refs v "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs v "c" accepted
+msgspec.Struct --use-site-models-for-constrained-refs merged {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs merged {"w": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs merged {"w": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs f 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs f "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs f null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs v "c" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs merged {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs merged {"w": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs merged {"w": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs f 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs f "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs f null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs v "c" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs merged {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs merged {"w": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs merged {"w": "b"} accepted

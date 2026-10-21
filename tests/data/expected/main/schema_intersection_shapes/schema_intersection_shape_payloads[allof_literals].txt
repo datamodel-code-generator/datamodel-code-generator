@@ -117,3 +117,88 @@ msgspec.Struct --collapse-root-models own_length_enum "bb" accepted
 msgspec.Struct --collapse-root-models own_length_enum "ccc" rejected
 msgspec.Struct --collapse-root-models pattern_enum_class "aa" accepted
 msgspec.Struct --collapse-root-models pattern_enum_class "bb" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound_enum 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound_enum 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound_enum 5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound_enum 30 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length_enum "bb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length_enum "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs length_enum "cc" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum "bb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum "b" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum_items ["bb"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_length_enum "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_length_enum "bb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_length_enum "ccc" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum_class "aa" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_enum_class "bb" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound_enum 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound_enum 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound_enum 5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound_enum 30 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length_enum "bb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length_enum "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs length_enum "cc" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum "bb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum "b" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum_items ["bb"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own_length_enum "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own_length_enum "bb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own_length_enum "ccc" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum_class "aa" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_enum_class "bb" rejected
+msgspec.Struct --use-site-models-for-constrained-refs bound_enum 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bound_enum 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bound_enum 5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs bound_enum 30 rejected
+msgspec.Struct --use-site-models-for-constrained-refs length_enum "bb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs length_enum "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs length_enum "cc" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum "bb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum "b" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum_items ["bb"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs own_length_enum "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs own_length_enum "bb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs own_length_enum "ccc" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum_class "aa" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_enum_class "bb" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound_enum 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound_enum 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound_enum 5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound_enum 30 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length_enum "bb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length_enum "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs length_enum "cc" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum "bb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum "b" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum_items ["bb"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_length_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_length_enum "bb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_length_enum "ccc" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum_class "aa" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_enum_class "bb" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound_enum 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound_enum 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound_enum 5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound_enum 30 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length_enum "bb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length_enum "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs length_enum "cc" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum "bb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum "b" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum_items ["bb"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_length_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_length_enum "bb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_length_enum "ccc" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum_class "aa" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_enum_class "bb" rejected

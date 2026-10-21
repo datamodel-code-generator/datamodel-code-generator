@@ -6644,6 +6644,44 @@ def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: 
 
 
 @pytest.mark.cli_doc(
+    options=["--use-site-models-for-constrained-refs"],
+    option_description="""Give an allOf of `$ref` members whose other parts add assertions its own model.
+
+Without the option such an allOf is written as the referenced type, which leaves out the constraints, the enum values
+or the type its other parts add: `allOf: [{$ref: Quantity}], maximum: 10` accepts 11. With the option the site gets
+its own model of the values all parts admit (`conint(ge=1, le=10)`), named after the site, and an allOf of enum
+references gets an enum of the members they share. The referenced type stays where it enforces what the parts enforce
+together in the output (dataclasses and TypedDict check no constraints, so only types and literals count there), and
+msgspec writes the added constraints beside the reference where its `Meta` takes them. A model-level
+`--type-overrides` entry of the referenced model applies to its site models too.""",
+    input_schema="jsonschema/site_models_for_constrained_refs.json",
+    cli_args=["--use-site-models-for-constrained-refs"],
+    golden_output="main/jsonschema/site_models_for_constrained_refs~main_site_models_for_constrained_refs[option].py",
+    comparison_output="main/jsonschema/site_models_for_constrained_refs.py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-site-models-for-constrained-refs"], id="option"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-site-models-for-constrained-refs"], id="msgspec_option"
+        ),
+    ],
+)
+def test_main_site_models_for_constrained_refs(output_file: Path, extra_args: list[str]) -> None:
+    """Test ``--use-site-models-for-constrained-refs`` gives an allOf that narrows a reference its own model."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "site_models_for_constrained_refs.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
     options=["--omit-redundant-constraints"],
     option_description="""Do not write a constraint again beside a type that already enforces it.
 
