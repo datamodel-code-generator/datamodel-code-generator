@@ -16,7 +16,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: paths, schemas)
   integer/number/boolean schemas   9
 
 Start from  --preset standard-py314-20261019
-  already sets --use-single-value-enum-as-const   [enums.read-as-their-const]
+  already sets --use-single-value-enum-as-const --read-const-beside-enum   [enums.read-as-their-const]
 
 Add (2 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]

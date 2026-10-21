@@ -683,6 +683,124 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "its values, which also keeps such a const branch inline instead of a root model."
         ),
     ),
+    PresetOptionGroup(
+        title="Const read beside an enum",
+        config=PresetConfig(read_const_beside_enum=True),
+        description=(
+            "Read a const beside an enum as JSON Schema does: a value is typed by the const that narrows the "
+            "enum, and an enum that admits its const is read as that const."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Literal values filtered",
+        config=PresetConfig(filter_literal_values=True),
+        description=(
+            "Keep only the values of a const or enum that meet the length, pattern, bound and multipleOf "
+            "constraints beside them."
+        ),
+    ),
+    PresetOptionGroup(
+        title="allOf keywords intersected",
+        config=PresetConfig(intersect_allof_keywords=True),
+        description=(
+            "Combine the keywords of every part of an allOf, a $ref with sibling keywords and an inherited "
+            "property override as JSON Schema validates them: the tightest bounds and the values every part "
+            "admits."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Nullable beside a type list",
+        config=PresetConfig(read_nullable_beside_type_list=True),
+        description=(
+            "Write the null that nullable: true declares beside a type list with an object into the root model of "
+            "that schema under strict nullable output."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Field defaults kept off branch roots",
+        config=PresetConfig(keep_field_defaults_off_branch_roots=True),
+        description=(
+            "Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Tuples for closed arrays",
+        config=PresetConfig(use_tuple_for_closed_arrays=True),
+        description=(
+            "Generate tuple types for positional arrays that no other item can follow, so that each position "
+            "keeps its own type."
+        ),
+    ),
+    PresetOptionGroup(
+        title="One dict for object maps",
+        config=PresetConfig(use_single_dict_for_object_maps=True),
+        description=(
+            "Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values "
+            "of every key class."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Typed map values beside other types",
+        config=PresetConfig(use_typed_map_values_beside_other_types=True),
+        description=(
+            "Under --use-typed-nullable-map-values, also type the map values of a type array that lists object "
+            "beside other types, such as [object, string]."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Enum member values kept",
+        config=PresetConfig(keep_enum_member_values=True),
+        description=(
+            "Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, "
+            "such as 2.5 beside integer members."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Unevaluated properties read",
+        config=PresetConfig(read_unevaluated_properties=True),
+        description=(
+            "Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the "
+            "object in place."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Aliases pinned beside an alias generator",
+        config=PresetConfig(pin_aliases_with_alias_generator=True),
+        description=(
+            "Write the generated alias on every field of a pydantic dataclass whose config names an alias "
+            "generator, for pydantic versions older than 2.8."
+        ),
+    ),
+    PresetOptionGroup(
+        title="msgspec tags by payload name",
+        config=PresetConfig(tag_msgspec_by_payload_name=True),
+        description=(
+            "Tag the structs of a discriminated union with the property name the document carries instead of the "
+            "Python name it resolves to."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Constructor fields ordered by final names",
+        config=PresetConfig(order_constructor_fields_by_final_names=True),
+        description=(
+            "Order the constructor fields of dataclass and msgspec models after every field has its final name."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Constructor fields ordered by written defaults",
+        config=PresetConfig(order_constructor_fields_by_written_defaults=True),
+        description=("Order the fields of msgspec models by the defaults they write."),
+    ),
+    PresetOptionGroup(
+        title="Request and response variants deduplicated",
+        config=PresetConfig(dedupe_request_response_variants=True),
+        description=("Decide Request and Response variants from the schema graph and build each inline model once."),
+    ),
+    PresetOptionGroup(
+        title="Redundant reference null omitted",
+        config=PresetConfig(omit_redundant_reference_null=True),
+        description=("Do not write None again where a field references a model that holds null itself."),
+    ),
 )
 
 _STANDARD_20261019_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {

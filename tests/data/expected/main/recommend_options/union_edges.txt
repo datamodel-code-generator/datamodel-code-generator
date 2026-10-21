@@ -16,7 +16,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   integer/number/boolean schemas   0
 
 Start from  --preset standard-py314-20261019
-  already sets --use-single-value-enum-as-const   [enums.read-as-their-const]
+  already sets --use-single-value-enum-as-const --read-const-beside-enum   [enums.read-as-their-const]
 
 Add (2 options)
   --use-title-as-name   [titles.names-from-unique-titles]

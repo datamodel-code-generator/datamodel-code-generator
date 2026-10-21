@@ -183,7 +183,8 @@
         ]
       },
       "set": {
-        "use_single_value_enum_as_const": true
+        "use_single_value_enum_as_const": true,
+        "read_const_beside_enum": true
       },
       "reason": "The schema has enums of one value or enums beside a const (one-value enums: {single_value_enums}; enums beside a const: {enums_beside_const}), which JSON Schema reads as that const. Read so, a value is typed as the const's Literal instead of an enum class that lists values the schema excludes, and one-value enum branches of a oneOf or anyOf merge into one enum.",
       "evidence": [
@@ -600,7 +601,7 @@
     },
     "dedupe_request_response_variants": {
       "not_recommended": "preset",
-      "reason": "Request/response class naming chosen by the practical presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "default_value_overrides": {
       "not_recommended": "runtime-behaviour",
@@ -713,7 +714,7 @@
     },
     "filter_literal_values": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "force_optional": {
       "not_recommended": "runtime-behaviour",
@@ -839,7 +840,7 @@
     },
     "intersect_allof_keywords": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "job": {
       "not_recommended": "command",
@@ -851,7 +852,7 @@
     },
     "keep_field_defaults_off_branch_roots": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "keep_model_order": {
       "not_recommended": "style",
@@ -913,7 +914,7 @@
     },
     "omit_redundant_reference_null": {
       "not_recommended": "preset",
-      "reason": "Nullability spelling chosen by the practical presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "openapi_include_info_version": {
       "not_recommended": "style",
@@ -934,11 +935,11 @@
     },
     "order_constructor_fields_by_final_names": {
       "not_recommended": "preset",
-      "reason": "Dataclass and msgspec.Struct output only: set by the dated presets from 20261019; the recommendation starts from the preset."
+      "reason": "Dataclass and msgspec.Struct output only: set by the 20261019 presets; the recommendation starts from a preset."
     },
     "order_constructor_fields_by_written_defaults": {
       "not_recommended": "preset",
-      "reason": "msgspec.Struct output under --strip-default-none only: set by the dated presets from 20261019; the recommendation starts from the preset."
+      "reason": "msgspec.Struct output under --strip-default-none only: set by the 20261019 presets; the recommendation starts from a preset."
     },
     "original_field_name_delimiter": {
       "not_recommended": "style",
@@ -978,7 +979,7 @@
     },
     "pin_aliases_with_alias_generator": {
       "not_recommended": "preset",
-      "reason": "pydantic_v2.dataclass output only: set by the dated presets from 20261019; the recommendation starts from the preset."
+      "reason": "pydantic_v2.dataclass output only: set by the 20261019 presets; the recommendation starts from a preset."
     },
     "preset": {
       "not_recommended": "preset",
@@ -989,12 +990,13 @@
       "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
     },
     "read_const_beside_enum": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+      "rules": [
+        "enums.read-as-their-const"
+      ]
     },
     "read_nullable_beside_type_list": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
@@ -1140,7 +1142,7 @@
     },
     "tag_msgspec_by_payload_name": {
       "not_recommended": "preset",
-      "reason": "msgspec.Struct output only: set by the dated presets from 20261019; the recommendation starts from the preset."
+      "reason": "msgspec.Struct output only: set by the 20261019 presets; the recommendation starts from a preset."
     },
     "target_pydantic_version": {
       "not_recommended": "target",
@@ -1293,11 +1295,11 @@
     },
     "read_unevaluated_properties": {
       "not_recommended": "preset",
-      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "use_single_dict_for_object_maps": {
       "not_recommended": "preset",
-      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "use_single_line_docstring": {
       "not_recommended": "preset",
@@ -1349,7 +1351,7 @@
     },
     "use_tuple_for_closed_arrays": {
       "not_recommended": "preset",
-      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
     "use_tuple_for_fixed_items": {
       "not_recommended": "preset",
