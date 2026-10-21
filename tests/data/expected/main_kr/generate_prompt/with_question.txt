@@ -545,11 +545,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         3.11 (implies --use-type-alias; experimental)
   --use-typed-nullable-map-values
                         Type the values of nullable maps, schemas whose type
-                        array lists object alone or with null, such as
-                        [object, null] or [object], with additionalProperties,
-                        as their schema says, with a model for object values.
-                        Without it the 0.83.0 form is kept, dict[str, Any] |
-                        None, or dict[str, Any] without null.
+                        array lists object, alone or with null or other types,
+                        such as [object, null], [object] or [object, string],
+                        with additionalProperties, as their schema says, with
+                        a model for object values. Without it the 0.83.0 form
+                        is kept, dict[str, Any] | None, or dict[str, Any]
+                        without null.
   --use-union-operator, --no-use-union-operator
                         Use | operator for Union type (PEP 604). Default:
                         enabled

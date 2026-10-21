@@ -5742,10 +5742,11 @@ continues to use native `type` statements.
 
 Type the values of nullable maps as their schemas say instead of Any.
 
-A nullable map here is a schema whose type array lists `object` alone or with `null`, such as
-`type: [object, "null"]` or `type: [object]`, and that declares its values with `additionalProperties`. Without the
-`--use-typed-nullable-map-values` flag the output keeps the 0.83.0 form, `dict[str, Any] | None`, or
-`dict[str, Any]` when the type array has no `null`, whatever the values are. A map made nullable by `nullable: true`
+A nullable map here is a schema whose type array lists `object`, alone or with `null`, such as
+`type: [object, "null"]` or `type: [object]`, or with other types, such as `type: [object, string]`, and that
+declares its values with `additionalProperties`. Without the `--use-typed-nullable-map-values` flag the output keeps
+the 0.83.0 form, `dict[str, Any] | None`, `dict[str, Any]` when the type array has no `null`, or
+`dict[str, Any] | str` beside the other types, whatever the values are. A map made nullable by `nullable: true`
 and a map typed `type: object` keep their typed values either way.
 
 With the flag the values follow their schema, such as `dict[str, int] | None` or `dict[str, Player] | None`, and an

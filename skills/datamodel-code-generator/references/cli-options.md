@@ -49,7 +49,7 @@ Type annotation, import, and primitive type behavior.
 - `--use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--no-use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--use-object-type`: Use object instead of Any for unspecified JSON Schema object and array values
-- `--use-typed-nullable-map-values`: Type the values of nullable maps, schemas whose type array lists object alone or with null, such as [object, null] or [object], with additionalProperties, as their schema says, with a model for object values. Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.
+- `--use-typed-nullable-map-values`: Type the values of nullable maps, schemas whose type array lists object, alone or with null or other types, such as [object, null], [object] or [object, string], with additionalProperties, as their schema says, with a model for object values. Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.
 - `--use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
 - `--no-use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
 - `--use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled

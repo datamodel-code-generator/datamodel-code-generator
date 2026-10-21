@@ -1,0 +1,14 @@
+valid: accepted
+invalid pStringOrCounts: accepted
+invalid rStringOrCounts: accepted
+invalid iStringOrCounts: accepted
+invalid mStringOrCounts: accepted
+invalid pStringOrNamed: accepted
+invalid rStringOrNamed: accepted
+invalid iStringOrNamed: accepted
+invalid mStringOrNamed: accepted
+invalid pArrayOrCounts: rejected
+invalid rArrayOrCounts: rejected
+invalid iArrayOrCounts: rejected
+invalid mArrayOrCounts: rejected
+invalid cStringOrCounts: accepted

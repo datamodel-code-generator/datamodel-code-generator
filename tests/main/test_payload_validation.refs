@@ -507,6 +507,7 @@ jsonschema/numeric_constraint_precision/large.json	payloads/native_numeric_empty
 jsonschema/numeric_constraint_precision/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_has_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_maps/cross_document_other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/object_maps/type_array_typed_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_max_properties_zero.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_property_count_additional_true.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/one_of_with_sub_schema_array_item.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2154,6 +2155,7 @@ jsonschema/numeric_constraint_precision/large.json	payloads/native_numeric_empty
 jsonschema/numeric_constraint_precision/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_has_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_maps/cross_document_other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/object_maps/type_array_typed_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_max_properties_zero.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_property_count_additional_true.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/oneof_const_enum.yaml	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

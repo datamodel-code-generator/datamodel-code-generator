@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pStringOrCounts": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rStringOrCounts": {
+      "$ref": "#/$defs/StringOrCounts"
+    },
+    "iStringOrCounts": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mStringOrCounts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "pStringOrNamed": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rStringOrNamed": {
+      "$ref": "#/$defs/StringOrNamed"
+    },
+    "iStringOrNamed": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "string",
+          "null"
+        ],
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "mStringOrNamed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "string",
+          "null"
+        ],
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "pArrayOrCounts": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rArrayOrCounts": {
+      "$ref": "#/$defs/ArrayOrCounts"
+    },
+    "iArrayOrCounts": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "array"
+        ],
+        "items": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mArrayOrCounts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "array"
+        ],
+        "items": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "cStringOrCounts": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "minLength": 2,
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "$defs": {
+    "StringOrCounts": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "StringOrNamed": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ArrayOrCounts": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+valid: accepted
+invalid pStringOrCounts: accepted
+invalid rStringOrCounts: accepted
+invalid iStringOrCounts: accepted
+invalid mStringOrCounts: accepted
+invalid pStringOrNamed: accepted
+invalid rStringOrNamed: accepted
+invalid iStringOrNamed: accepted
+invalid mStringOrNamed: accepted
+invalid pArrayOrCounts: rejected (dict_type)
+invalid rArrayOrCounts: rejected (dict_type)
+invalid iArrayOrCounts: rejected (dict_type)
+invalid mArrayOrCounts: rejected (dict_type)
+invalid cStringOrCounts: accepted
