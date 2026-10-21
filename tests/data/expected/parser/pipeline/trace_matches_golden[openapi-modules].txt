@@ -345,6 +345,8 @@ mark_set_item_models_hashable
 finalize_structured_imports
 clear_default_factory_import_caches
 finalize_sequence_interface
+decide_nested_model_default_factories
+freeze_field_render_plans
 snapshot_model_imports
 append_model_imports
 remove_unused_models

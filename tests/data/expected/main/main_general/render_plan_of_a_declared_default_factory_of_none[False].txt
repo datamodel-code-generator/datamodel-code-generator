@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from typing import Literal, Optional, TypeAlias
+
+from pydantic import BaseModel, Field
+
+Boolean: TypeAlias = bool
+"""
+The `Boolean` scalar type represents `true` or `false`.
+"""
+
+
+Int: TypeAlias = int
+"""
+The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+"""
+
+
+String: TypeAlias = str
+"""
+The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+"""
+
+
+class Inner(BaseModel):
+    x: Optional[Int] = None
+    typename__: Optional[Literal['Inner']] = Field('Inner', alias='__typename')
+
+
+class Outer(BaseModel):
+    inner: Optional[Inner] = None
+    name: Optional[String] = None
+    typename__: Optional[Literal['Outer']] = Field('Outer', alias='__typename')

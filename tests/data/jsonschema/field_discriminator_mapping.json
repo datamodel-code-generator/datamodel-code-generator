@@ -1,0 +1,7 @@
+{
+  "type": "object",
+  "title": "Model",
+  "properties": {
+    "tagged": {"type": "string", "x-discriminator": {"propertyName": "kind"}}
+  }
+}

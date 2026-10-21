@@ -4,3 +4,4 @@
 {"pass_name": "finalize_type_alias_users", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
 {"pass_name": "mark_set_item_models_hashable", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
 {"pass_name": "finalize_structured_imports", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "freeze_field_render_plans", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}

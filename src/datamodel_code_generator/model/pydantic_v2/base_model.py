@@ -28,6 +28,17 @@ from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._decisions.union_assembly import join_union
+from datamodel_code_generator.model._render_plan import (
+    CallPlan,
+    FieldDefault,
+    FieldRenderPlan,
+    Kwarg,
+    Omitted,
+    Positional,
+    RuleId,
+    Why,
+    frozen_render_plan,
+)
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
     TEMPLATE_DIR,
@@ -47,7 +58,7 @@ from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
 from datamodel_code_generator.model.pydantic_base import (
     BaseModelBase,
     _constraint_arguments,
-    _PydanticFieldRenderPlan,
+    _FieldArguments,
 )
 from datamodel_code_generator.model.pydantic_base import Constraints as _Constraints
 from datamodel_code_generator.model.pydantic_base import (
@@ -100,6 +111,7 @@ from datamodel_code_generator.model.runtime_validation import (
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     _normalize_string,
+    represent_python_value,
     represent_untrusted_python_value,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
@@ -273,7 +285,22 @@ _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
 _MIN_QUOTED_STRING_LENGTH = 2
 _LEGACY_CONFIG_LITERAL_STRINGS: frozenset[str] = frozenset({"False", "None", "True"})
-_EMPTY_FIELD_RENDER_PLAN = _PydanticFieldRenderPlan("", None, (), None)
+_COMPILED_PATTERN = Why(RuleId("D2.pydantic.compiled-pattern"), keyword="pattern")
+_CONST = Why(RuleId("D5.const.literal"), keyword="const")
+_UNIQUE_ITEMS = Why(RuleId("D2.pydantic.unique-items"), keyword="uniqueItems")
+_FROZEN = Why(RuleId("D11.pydantic.frozen"), keyword="readOnly", option="--use-frozen-field")
+_UNION_MODE = Why(RuleId("D6.union-mode"), keyword="union_mode")
+_ALIAS_GENERATOR = Why(RuleId("D9.alias.generator"), keyword="alias")
+_ALIAS_GENERATOR_PIN = Why(RuleId("D9.alias.generator-pinned"), keyword="alias")
+_VALIDATION_ALIASES = Why(RuleId("D9.alias.validation-choices"), keyword="validation_aliases")
+_SERIALIZATION_ALIAS = Why(RuleId("D9.alias.serialization"), keyword="serialization_alias")
+_SERIALIZATION_ALIAS_FROM_ALIAS = Why(
+    RuleId("D9.alias.serialization"), keyword="alias", option="--use-serialization-alias"
+)
+_JSON_SCHEMA_EXTRA = Why(RuleId("D11.pydantic.json-schema-extra"))
+_NULL_DEFAULT = Why(RuleId("D4.default.pydantic-null-type"), keyword="default")
+_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
+_MISSING_DEFAULT = Why(RuleId("D4.default.missing-sentinel"), option="--use-missing-sentinel")
 _LEGACY_PYDANTIC_EXTRA_TEMPLATE_PATTERN = re.compile(
     r"{%-?\s*(?:if|elif)\s+(?:not\s+)?field\.use_pydantic_extra_annotation_assignment\b"
 )
@@ -668,10 +695,10 @@ def _prepare_type_alias_field(
     return True
 
 
-def _remove_compiled_pattern_metadata(data: dict[str, Any]) -> None:
+def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
     """Keep prepared expressions out of json_schema_extra while preserving user-supplied extras."""
-    if isinstance(data.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression):
-        data.pop(_COMPILED_PATTERN_KEY)
+    if isinstance(args.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression):
+        args.pop(_COMPILED_PATTERN_KEY, "compiled-pattern-metadata", _COMPILED_PATTERN)
 
 
 class DataModelField(_PydanticBaseDataModelField):
@@ -767,9 +794,15 @@ class DataModelField(_PydanticBaseDataModelField):
     @property
     def use_missing_sentinel_default(self) -> bool:
         """Return whether this field should use the Pydantic MISSING sentinel as its default."""
+        if (plan := frozen_render_plan(self)) is not None:
+            return plan.default.missing_sentinel
+        return self._uses_missing_sentinel(factory_present=False) and not self.has_default_factory_in_field
+
+    @override
+    def _uses_missing_sentinel(self, *, factory_present: bool) -> bool:
         if not self.use_missing_sentinel:
             return False
-        if self.is_class_var or self.required or self.has_default or self.has_default_factory_in_field:
+        if self.is_class_var or self.required or self.has_default or factory_present:
             return False
         return self.default is None or self.default is UNDEFINED
 
@@ -777,6 +810,9 @@ class DataModelField(_PydanticBaseDataModelField):
     @override
     def represented_default(self) -> str:
         """Get the rendered default value for the field."""
+        if (plan := frozen_render_plan(self)) is not None:
+            default = plan.default
+            return _MISSING_SENTINEL if default.missing_sentinel else represent_python_value(default.value)
         if self.use_missing_sentinel_default:
             return _MISSING_SENTINEL
         return super().represented_default
@@ -796,48 +832,50 @@ class DataModelField(_PydanticBaseDataModelField):
             return super().fall_back_to_nullable
         return bool(self.nullable or self.type_has_null)
 
-    def _requires_null_default_field(self) -> bool:
-        if self.use_missing_sentinel_default:
+    def _requires_null_default(self, *, missing_sentinel: bool) -> bool:
+        """Return whether Pydantic 2 needs ``Field(None)`` for a ``None`` type that has no default."""
+        if missing_sentinel:
             return False
         if self.required or self.default is not None or self.has_default_factory:
             return False
         return self.data_type.type == "None"
 
-    @override
-    def _has_field_statement(self) -> bool:
-        if self._requires_null_default_field():
-            return True
-        if self.is_class_var:
-            return False
-        if self._alias_generator_name_from_parent() is None:
-            return super()._has_field_statement()
-        return self._has_processed_field_statement()
-
-    def _has_processed_field_statement(self) -> bool:
-        """Return whether the processed render plan contains a Field() call."""
-        return bool(self._get_field_render_plan().rendered)
-
-    @override
-    def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
-        """Include the explicit null default required by Pydantic v2."""
-        can_use_empty_plan = (
+    def _writes_no_field_metadata(self) -> bool:
+        """Return whether the field has nothing a ``Field()`` call could write, so its plan needs no call."""
+        return (
             type(self) is DataModelField
             and not self.is_class_var
-            and not self._requires_null_default_field()
             and not super()._may_have_field_statement()
+            and self._alias_generator_name_from_parent() is None
+            and ((parent := self.parent) is None or not parent._uses_custom_root_template)  # noqa: SLF001
         )
-        if can_use_empty_plan:
-            can_use_empty_plan = self._alias_generator_name_from_parent() is None
-        if can_use_empty_plan:
-            can_use_empty_plan = (parent := self.parent) is None or not parent._uses_custom_root_template  # noqa: SLF001
-        if can_use_empty_plan:
-            return _EMPTY_FIELD_RENDER_PLAN
-        plan = super()._get_field_render_plan()
-        if plan.rendered or not self._requires_null_default_field():
+
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Include the explicit null default required by Pydantic v2; a field without metadata writes no call."""
+        if self._writes_no_field_metadata() and not self._requires_null_default(
+            missing_sentinel=(missing := self._uses_missing_sentinel(factory_present=False))
+        ):
+            return self._field_render_plan(
+                None,
+                FieldDefault(self.default, missing, _MISSING_DEFAULT if missing else _DEFAULT),
+                has_default_factory_in_field=False,
+                omitted=tuple(self._warned_omissions()[0]),
+            )
+        plan = super()._build_render_plan()
+        if (
+            plan.annotation_form == "classvar"
+            or plan.call is not None
+            or not self._requires_null_default(missing_sentinel=plan.default.missing_sentinel)
+        ):
             return plan
-        return self._get_single_argument_field_render_plan(
-            "None",
-            assignment_argument="default=None" if self.use_default_kwarg else None,
+        return self._field_render_plan(
+            CallPlan(
+                Positional("none", _NULL_DEFAULT), None, (), default_keyword=self.use_default_kwarg, why=_NULL_DEFAULT
+            ),
+            plan.default,
+            has_default_factory_in_field=plan.has_default_factory_in_field,
+            omitted=plan.omitted,
         )
 
     @property
@@ -894,91 +932,121 @@ class DataModelField(_PydanticBaseDataModelField):
         return self._type_hint_from_data_type(data_type.model_copy(update={"use_standard_collections": False}))
 
     @override
-    def _get_normalized_constraint_data(self) -> dict[str, Any]:
+    def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
         """Use prepared patterns after the shared constraint filtering and normalization."""
-        data = super()._get_normalized_constraint_data()
-        if isinstance(pattern := self.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression) and data.get(
-            "pattern"
-        ) == str(pattern):
-            data["pattern"] = pattern
-        return data
+        arguments = super()._normalized_constraint_arguments(omitted)
+        if (
+            isinstance(pattern := self.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression)
+            and (argument := arguments.get("pattern")) is not None
+            and argument.value == str(pattern)
+        ):
+            arguments["pattern"] = argument._replace(value=pattern, why=_COMPILED_PATTERN)
+        return arguments
 
     @override
-    def _process_data_in_str(self, data: dict[str, Any]) -> None:
-        _remove_compiled_pattern_metadata(data)
+    def _process_field_arguments(self, args: _FieldArguments) -> None:
+        _remove_compiled_pattern_metadata(args)
         if self.const:
-            # const is removed in pydantic 2.0
-            data.pop("const")
+            args.pop("const", "consumed-by-type", _CONST)
 
-        # unique_items is not supported in pydantic 2.0
-        data.pop("unique_items", None)
+        args.pop("unique_items", "backend-cannot-express", _UNIQUE_ITEMS)
 
         if self.use_frozen_field and self.read_only:
-            data["frozen"] = True
+            args.put("frozen", True, _FROZEN, ("read_only",))  # noqa: FBT003
 
-        if (union_mode := data.pop("union_mode", None)) and self.data_type.is_union and "discriminator" not in data:
-            data["union_mode"] = union_mode.value
+        match args.take("union_mode"):
+            case None:
+                pass
+            case union_mode if union_mode.value and self.data_type.is_union and "discriminator" not in args:
+                args.put("union_mode", cast("Any", union_mode.value).value, _UNION_MODE, union_mode.items)
+            case union_mode:
+                args.omit_entry(union_mode, "union-mode-inapplicable", _UNION_MODE)
 
-        pinned_alias = self._update_alias_for_alias_generator(data)
-        has_alias = "alias" in data
-        alias = data.get("alias")
+        self._put_alias_arguments(args)
+        self._bundle_json_schema_extra(args)
 
-        # Handle multiple aliases using AliasChoices (Pydantic v2 feature)
+    def _put_alias_arguments(self, args: _FieldArguments) -> None:
+        """Write the alias, validation aliases and serialization alias arguments the field's aliases need."""
+        pinned_alias = self._update_alias_for_alias_generator(args)
+        has_alias = "alias" in args
         if self.validation_aliases:
-            unique_validation_aliases = list(dict.fromkeys(self.validation_aliases))
-            serialization_alias = (
-                self.serialization_alias
-                if self.serialization_alias is not None
-                else alias
-                if has_alias
-                else unique_validation_aliases[0]
-            )
-            # Remove single alias if present (validation_aliases takes precedence)
-            data.pop("alias", None)
-            # Format as AliasChoices(...) - use _RawRepr to prevent double-quoting
-            aliases_repr = ", ".join(repr(a) for a in unique_validation_aliases)
-            data["validation_alias"] = _RawRepr(f"AliasChoices({aliases_repr})")
-            if (
-                self.use_serialization_alias
-                and serialization_alias is not None
-                and (serialization_alias != self.name or self._alias_generator_renames(serialization_alias))
-            ):
-                data["serialization_alias"] = serialization_alias
+            self._put_validation_aliases(args, self.validation_aliases, has_alias=has_alias)
 
         if self.serialization_alias is not None and (
             self.serialization_alias != self.name
             or has_alias
             or self._alias_generator_renames(self.serialization_alias)
         ):
-            data["serialization_alias"] = self.serialization_alias
+            args.put("serialization_alias", self.serialization_alias, _SERIALIZATION_ALIAS, ("serialization_alias",))
 
-        if self.use_serialization_alias and "alias" in data:
-            serialization_alias = self.serialization_alias if self.serialization_alias is not None else data["alias"]
-            data.pop("alias")
+        if self.use_serialization_alias and (alias_entry := args.take("alias")) is not None:
+            if self.serialization_alias is not None:
+                serialization_alias, serialization_items = self.serialization_alias, ("serialization_alias",)
+            else:
+                serialization_alias, serialization_items = cast("str", alias_entry.value), ()
             if serialization_alias != self.name or self._alias_generator_renames(serialization_alias):
-                data["serialization_alias"] = serialization_alias
+                args.put(
+                    "serialization_alias",
+                    serialization_alias,
+                    _SERIALIZATION_ALIAS_FROM_ALIAS,
+                    (*alias_entry.items, *serialization_items),
+                )
+            else:
+                args.omit_entry(alias_entry, "serialization-alias-is-name", _SERIALIZATION_ALIAS_FROM_ALIAS)
 
-        if pinned_alias is not None and "alias" not in data:
-            data["alias"] = pinned_alias
+        if self.serialization_alias is not None and not args.writes("serialization_alias"):
+            args.omit(
+                "serialization_alias", self.serialization_alias, "serialization-alias-is-name", _SERIALIZATION_ALIAS
+            )
 
-        # **extra is not supported in pydantic 2.0
+        if pinned_alias is not None and "alias" not in args:
+            args.put("alias", pinned_alias, _ALIAS_GENERATOR_PIN)
+
+    def _put_validation_aliases(self, args: _FieldArguments, validation_aliases: list[str], *, has_alias: bool) -> None:
+        """Write ``AliasChoices`` in place of the alias, and the serialization alias it leaves to write."""
+        alias = args.get("alias")
+        alias_items = () if (alias_entry := args.entry("alias")) is None else alias_entry.items
+        unique_validation_aliases = list(dict.fromkeys(validation_aliases))
+        if self.serialization_alias is not None:
+            serialization_alias, serialization_items = self.serialization_alias, ("serialization_alias",)
+        elif has_alias:
+            serialization_alias, serialization_items = alias, alias_items
+        else:
+            serialization_alias, serialization_items = unique_validation_aliases[0], ("validation_aliases",)
+        args.pop("alias", "validation-aliases", _VALIDATION_ALIASES)
+        aliases_repr = ", ".join(repr(a) for a in unique_validation_aliases)
+        args.put(
+            "validation_alias", _RawRepr(f"AliasChoices({aliases_repr})"), _VALIDATION_ALIASES, ("validation_aliases",)
+        )
+        if (
+            self.use_serialization_alias
+            and serialization_alias is not None
+            and (serialization_alias != self.name or self._alias_generator_renames(serialization_alias))
+        ):
+            args.put("serialization_alias", serialization_alias, _SERIALIZATION_ALIAS, serialization_items)
+
+    def _bundle_json_schema_extra(self, args: _FieldArguments) -> None:
+        """Move the arguments ``Field()`` does not take into ``json_schema_extra``."""
         extra_field_keys = tuple(
             k
-            for k in data
+            for k in args.names()
             if k not in self._DEFAULT_FIELD_KEYS
             and (k != "deprecated" or not model_target_meets(self.parent, "pydantic.field_deprecated"))
         )
-        existing_json_schema_extra = data.get("json_schema_extra") or {}
+        existing = args.entry("json_schema_extra")
         json_schema_extra = {
-            **existing_json_schema_extra,
-            **{k: data[k] for k in extra_field_keys},
+            **((existing.value if existing is not None else None) or {}),  # ty: ignore[invalid-argument-type]
+            **{k: args.get(k) for k in extra_field_keys},
         }
         if json_schema_extra:
-            data["json_schema_extra"] = json_schema_extra
-            for key in extra_field_keys:
-                data.pop(key)
+            moved = [cast("Kwarg", args.take(key)) for key in extra_field_keys]
+            items = tuple(item for argument in moved for item in argument.items)
+            if existing is None:
+                args.put("json_schema_extra", json_schema_extra, _JSON_SCHEMA_EXTRA, items)
+            else:
+                args.update("json_schema_extra", json_schema_extra, _JSON_SCHEMA_EXTRA, items)
 
-    def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
+    def _update_alias_for_alias_generator(self, args: _FieldArguments) -> str | None:
         """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
 
         A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel and, with
@@ -996,15 +1064,18 @@ class DataModelField(_PydanticBaseDataModelField):
             or (self._pins_aliases() and _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in self._parent_config_items())
         ):
             pinned_alias = self.name if generated_alias is None else generated_alias
-        alias = data.get("alias")
+        alias = args.get("alias")
         if alias is None and self._automatic_alias_disabled_for_alias_generator():
             return pinned_alias
         if (wire_name := alias if alias is not None else self.original_name) is None:
             return pinned_alias
         if generated_alias == wire_name:
-            data.pop("alias", None)
+            args.pop("alias", "alias-generator-reproduces", _ALIAS_GENERATOR)
             return pinned_alias
-        data["alias"] = wire_name
+        if "alias" in args:
+            args.update("alias", wire_name, _ALIAS_GENERATOR)
+        else:
+            args.put("alias", wire_name, _ALIAS_GENERATOR)
         return pinned_alias
 
     def _pins_aliases(self) -> bool:

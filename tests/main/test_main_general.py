@@ -62,8 +62,10 @@ from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import (
+    CHECK_FACT_FINALITY_ENV,
     CHECK_MODEL_GRAPH_ENV,
     CHECK_MODULE_IMPORTS_ENV,
+    CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
@@ -3063,6 +3065,88 @@ def test_module_imports_written_outside_the_import_ledger(
     parser = DirectImportWriter(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.parametrize("flag", ["check", "report"])
+def test_render_plan_that_drops_a_declared_item(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str) -> None:
+    """A field whose ``Field()`` arguments lose a declared item without a reason fails its render plan's accounting.
+
+    The check (`1`, as the test suite sets it) raises when render preparation freezes the plan; `report:<path>`
+    appends a JSON line and goes on, and the output reads as the field writes it.
+    """
+    from datamodel_code_generator.model.pydantic_v2 import DataModelField
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class SilentlyDroppedDescription(DataModelField):
+        def _process_field_arguments(self, args: Any) -> None:
+            super()._process_field_arguments(args)
+            args.take("description")
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
+    parser = JsonSchemaParser(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        data_model_field_type=SilentlyDroppedDescription,
+        formatters=[Formatter.BUILTIN],
+    )
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan of Person.firstName leaves"):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_render_plan_of_a_declared_default_factory_of_none(monkeypatch: pytest.MonkeyPatch, nested: bool) -> None:
+    """A declared ``default_factory`` of ``None`` is not written and passes the render plan's accounting."""
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.graphql import GraphQLParser
+
+    types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_310)
+    monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, "1")
+    schema = "type Inner { x: Int }\ntype Outer { inner: Inner, name: String }\n"
+    parser = GraphQLParser(
+        schema,
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type=types.field_model,
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        default_field_extras={"default_factory": None},
+        use_default_factory_for_optional_nested_models=nested,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(parser.parse()))
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_render_plan_whose_field_changes_after_render_preparation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A field that a pass after render preparation changes renders from the plan frozen before the change.
+
+    The check (`1`) raises when the modules are written; `report:<path>` appends a JSON line, and the output keeps the
+    frozen plan's ``Field()`` call with the check off (`0`) too.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class LateDescription(JsonSchemaParser):
+        def _check_model_inheritance(self, contexts: Any) -> None:
+            super()._check_model_inheritance(contexts)
+            contexts[0].models[0].fields[0].extras["description"] = "Changed after render preparation."
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = LateDescription(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan frozen for field firstName"):
             parser.parse()
         return
     assert_output(str(parser.parse()))

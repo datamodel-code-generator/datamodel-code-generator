@@ -18628,6 +18628,30 @@ def test_main_jsonschema_serialization_aliases_inline_json_pydantic_v2(output_fi
     )
 
 
+def test_main_jsonschema_serialization_alias_equal_to_the_field_name_pydantic_v2(output_file: Path) -> None:
+    """A serialization alias that equals the field name is not written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--serialization-aliases", '{"age": "age"}', "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
+@pytest.mark.parametrize("name", ["field_discriminator_mapping", "field_discriminator_not_a_name"])
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_jsonschema_field_discriminator_value_pydantic_v2(output_file: Path, name: str, output_model: str) -> None:
+    """A field's discriminator is written as its property name; a value that names none is not written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--field-extra-keys-without-x-prefix", "x-discriminator", "--output-model-type", output_model],
+    )
+
+
 def test_main_jsonschema_serialization_aliases_with_use_serialization_alias_pydantic_v2(output_file: Path) -> None:
     """Test explicit serialization aliases override alias removal mode."""
     run_main_and_assert(

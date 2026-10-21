@@ -1622,7 +1622,7 @@ def test_pydantic_v2_empty_field_render_plan_is_shared_for_builtin_fields() -> N
 
 
 def test_pydantic_v2_empty_field_render_plan_falls_back_for_extensions_and_field_syntax() -> None:
-    """Custom templates, subclasses, and Field() features retain the conventional plan."""
+    """Custom templates and subclasses build the conventional plan, which writes no call; Field() features write one."""
     plain = PydanticV2DataModelField(name="plain", data_type=DataType(type="str"), required=True)
     BaseModel(fields=[plain], reference=Reference(path="Plain", name="Plain"))
     shared_plan = plain._get_field_render_plan()
@@ -1676,7 +1676,9 @@ def test_pydantic_v2_empty_field_render_plan_falls_back_for_extensions_and_field
         ),
     ):
         assert field.parent is model
-        assert field._get_field_render_plan() is not shared_plan
+        assert (field._get_field_render_plan() == shared_plan) is (
+            field is custom_field or field is custom_template_field
+        )
 
     assert hook_calls == 1
     assert str(constrained_field) == "Field(None, min_length=1)"

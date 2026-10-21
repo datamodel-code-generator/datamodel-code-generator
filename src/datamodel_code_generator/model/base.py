@@ -49,7 +49,7 @@ from datamodel_code_generator.model._decisions.assignment import (
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
-from datamodel_code_generator.model._render_plan import AssignmentFacts
+from datamodel_code_generator.model._render_plan import AssignmentFacts, visible_nested_factories
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
     _normalize_string,
@@ -79,6 +79,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
+    from datamodel_code_generator.model._render_plan import FieldRenderPlan, NestedFactoryMetadata
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -798,6 +799,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     @property
     def _can_apply_constraints(self) -> bool:
         """Apply constraints to containers without suppressing recursive item types."""
+        return self._constraints_blocked_by() is None
+
+    def _constraints_blocked_by(self) -> Literal["self-reference-container", "strict-kwargs"] | None:
+        """Return why the field's call cannot write its constraints, or None when it can.
+
+        A field naming its own model outside a container takes none; a strict type with arguments writes them itself.
+        """
         if self.self_reference():
             data_type = self.data_type
             while True:
@@ -812,9 +820,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
                 ):
                     break
                 if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
-                    return False
+                    return "self-reference-container"
                 data_type = data_type.data_types[0]
-        return not (self.data_type.strict and self.data_type.kwargs)
+        return "strict-kwargs" if self.data_type.strict and self.data_type.kwargs else None
 
     @property
     def _use_union_operator(self) -> bool:
@@ -1359,6 +1367,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the constructor default of the field, as its own written assignment gives it."""
         return _classify_field_assignment(self, self._FIELD_ASSIGNMENT_ROW).default_info
 
+    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:  # noqa: PLR6301
+        """Build the render plan the parse freezes for this field at B2, or None when it renders without one."""
+        return None
+
     def _written_assignment(self) -> WrittenAssignment:
         """Return what the field's backend writes after its annotation, as assignment classification reads it."""
         return _model_written(self)
@@ -1529,15 +1541,51 @@ def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
     )
 
 
-def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> str | None:
-    """Return the nested model name usable as a default_factory for optional fields."""
+@final
+@dataclass(frozen=True, slots=True, eq=False)
+class _NestedModelFactory:
+    """The default factory of an optional field holding a nested model: the model's class, or a lambda building it.
+
+    Its text names the model as the module finally names it, so a plan that holds it keeps it across renames.
+    """
+
+    data_type: DataType
+    source: DataModel
+    builds_by_name: bool
+
+    @override
+    def __str__(self) -> str:
+        """Return the factory as the field's call writes it."""
+        if self.builds_by_name:
+            return f"lambda: {self.source.class_name}()"
+        return _default_factory_type_name(self.data_type)
+
+
+def _nested_factory_decision(model: DataModel) -> tuple[tuple[int, int] | None, Collection[ModelKey]]:
+    """Return the module and position of ``model`` and the models of its reference cycle, for its nested factories.
+
+    While the parse freezes the render plans they come from the decision of render preparation; otherwise from what
+    ``Parser`` published on the models, which is nothing before it publishes (row ``legacy.L-NF`` of
+    ``model/_render_plan.py``).
+    """
+    if (metadata := visible_nested_factories()) is not None:
+        return metadata.order.get(id(model)), metadata.recursive.get(model_key_of(model.reference), ())
+    return (
+        model.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY),
+        model.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY, ()),
+    )
+
+
+def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> _NestedModelFactory | None:
+    """Return the factory of the nested model an optional field holds, or None when it cannot have one."""
     for data_type in field.data_type.data_types or (field.data_type,):
         if data_type.is_dict:
             continue
         if data_type.reference and isinstance(source := data_type.reference.source, model_cls):
-            if field.parent is not None and model_key_of(source.reference) in field.parent.__dict__.get(
-                _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY, ()
-            ):
+            parent_order, parent_cycle = (
+                (None, ()) if (parent := field.parent) is None else _nested_factory_decision(parent)
+            )
+            if model_key_of(source.reference) in parent_cycle:
                 return None
             if (required_fields := source.__dict__.get(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)) is None:
                 required_fields = _nested_model_has_required_constructor_fields(source)
@@ -1545,31 +1593,27 @@ def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[Dat
             if required_fields:
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
-                return f"lambda: {source.class_name}()"
-            factory_name = _default_factory_type_name(data_type)
-            parent_order = (
-                field.parent.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY) if field.parent is not None else None
-            )
-            source_order = source.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY)
-            match (parent_order, source_order):
+                return _NestedModelFactory(data_type, source, builds_by_name=True)
+            match (parent_order, _nested_factory_decision(source)[0]):
                 case ((parent_module, parent_index), (source_module, source_index)) if (
                     parent_module == source_module and source_index >= parent_index
                 ):
-                    return f"lambda: {source.class_name}()"
+                    return _NestedModelFactory(data_type, source, builds_by_name=True)
                 case _:
-                    return factory_name
+                    return _NestedModelFactory(data_type, source, builds_by_name=False)
     return None
 
 
-def _set_nested_model_default_factory_order(
-    models: list[DataModel],
-    module_index: int,
-    recursive_keys_by_model: Mapping[ModelKey, frozenset[ModelKey]],
-) -> None:
-    """Record final declaration order and the models of each model's reference cycle for nested model factories."""
-    for model_index, model in enumerate(models):
-        model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY] = (module_index, model_index)
-        if recursive_keys := recursive_keys_by_model.get(model_key_of(model.reference)):
+def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> str | None:
+    """Return the nested model name usable as a default_factory for optional fields."""
+    return None if (factory := _nested_model_factory(field, model_cls)) is None else str(factory)
+
+
+def _set_nested_model_default_factory_order(models: list[DataModel], metadata: NestedFactoryMetadata) -> None:
+    """Publish the declaration order and the reference cycle of each model for the nested model factories."""
+    for model in models:
+        model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY] = metadata.order[id(model)]
+        if recursive_keys := metadata.recursive.get(model_key_of(model.reference)):
             model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY] = recursive_keys
 
 
@@ -2195,6 +2239,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str | None] = None
     REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK: ClassVar[bool] = False
     REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS: ClassVar[bool] = False
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = False
+    """Whether the parse freezes a render plan for each field at B2 (``model/_render_plan.py``)."""
     SUPPORTS_SCHEMA_RUNTIME_VALIDATION: ClassVar[bool] = False
     ROOT_MODEL_CONSTRAINTS_FALLBACK: ClassVar[
         Callable[[Path | None], Callable[[list[DataModelFieldBase]], type[DataModel] | None] | None] | None

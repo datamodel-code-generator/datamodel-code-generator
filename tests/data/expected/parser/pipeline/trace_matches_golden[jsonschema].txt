@@ -63,6 +63,7 @@ prepare_type_alias_fields
 finalize_type_alias_users
 mark_set_item_models_hashable
 finalize_structured_imports
+freeze_field_render_plans
 snapshot_model_imports
 append_model_imports
 remove_unused_models

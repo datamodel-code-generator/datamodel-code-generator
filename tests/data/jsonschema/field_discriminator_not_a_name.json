@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "title": "Model",
+  "properties": {
+    "number": {"type": "string", "x-discriminator": 5},
+    "list": {"type": "string", "x-discriminator": ["kind"]},
+    "flag": {"type": "string", "x-discriminator": true}
+  }
+}

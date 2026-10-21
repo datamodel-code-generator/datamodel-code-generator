@@ -132,6 +132,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     tag_key,
     variant_tags,
 )
+from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
@@ -291,6 +292,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch, VariantTagSource
+    from datamodel_code_generator.model._render_plan import FieldRenderPlan, PlannedField
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
@@ -1622,6 +1624,19 @@ class _FinalizeState:
             model for model in self.all_models if len(model.additional_properties_reference_classes)
         ]
         return bool(self.additional_properties_models)
+
+
+def _check_render_plan_accounting(
+    mode: CheckMode, model: DataModel, field: PlannedField, plan: FieldRenderPlan
+) -> None:
+    """Report a frozen plan that drops a declared item without a reason or writes an undeclared one."""
+    missing, extra = plan.unaccounted(field._declared_render_items())  # noqa: SLF001
+    if missing or extra:
+        mode.violation(
+            Error,
+            f"the render plan of {model.class_name}.{field.name} leaves {sorted(missing)} unaccounted and "
+            f"accounts for undeclared {sorted(extra)}",
+        )
 
 
 def _same_state(state: _FinalizeState) -> _FinalizeState:
@@ -9218,7 +9233,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module, which ``_process_single_module`` hands over.
         """
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
-        self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
+        render_ready = RENDER_READY.set(RenderReady()) if RENDER_READY.get() is None else None
+        try:
+            self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
+        finally:
+            if render_ready is not None:
+                RENDER_READY.reset(render_ready)
         if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
             self.generation_store.check_emitted_models(mode, (model for ctx in contexts for model in ctx.models))
 
@@ -9261,9 +9281,67 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in state.all_models:
             model.finalize_sequence_interface()
 
+    def __decide_nested_model_default_factories(self, state: _FinalizeState) -> None:
+        """Decide the nested models' default factories over the model lists the modules write, unused models gone."""
+        written_lists = {id(ctx.models) for ctx in state.contexts}
+        leaving = {
+            id(model)
+            for model, _, models in self.__unused_model_lists(state)
+            if id(models) in written_lists and model in models
+        }
+        cast("RenderReady", RENDER_READY.get()).nested_factories = self._nested_model_default_factory_decision(
+            [[model for model in ctx.models if id(model) not in leaving] for ctx in state.contexts],
+            self._recursion_facts["require_update"],
+        )
+
+    def __freeze_field_render_plans(self, state: _FinalizeState) -> None:  # noqa: PLR6301
+        """Freeze one render plan for every field of the models that render fields from plans (B2 follows).
+
+        Under row ``legacy.L-NF`` the plan reads the nested-factory decision, and a field whose factory it changes
+        keeps the plan without it for the import snapshot. With ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS`` each
+        plan must account for every item its field declares.
+        """
+        ready = cast("RenderReady", RENDER_READY.get())
+        mode = check_mode(CheckArea.RENDER_PLANS)
+        for model in state.all_models:
+            if not model._FREEZES_FIELD_RENDER_PLANS:  # noqa: SLF001
+                continue
+            for model_field in model.fields:
+                if (plan := model_field._build_frozen_render_plan()) is None:  # noqa: SLF001
+                    continue
+                field = cast("PlannedField", model_field)
+                import_plan = None
+                if ready.nested_factories is not None:
+                    import_text = field._render_plan_text(plan)  # noqa: SLF001
+                    with ready.nested_factories_decided():
+                        decided = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
+                        if field._render_plan_text(decided) != import_text:  # noqa: SLF001
+                            import_plan = plan
+                    plan = decided
+                ready.freeze(field, plan, import_plan)
+                if mode is not None:
+                    _check_render_plan_accounting(mode, model, field, plan)
+
+    def __check_frozen_render_plans(self) -> None:  # noqa: PLR6301
+        """Report a frozen render plan that renders other text than its field's plan rebuilt now."""
+        if (mode := check_mode(CheckArea.RENDER_PLANS)) is None:
+            return
+        ready = cast("RenderReady", RENDER_READY.get())
+        for frozen_field, plan in ready.frozen():
+            field = cast("PlannedField", frozen_field)
+            with ready.rebuilding():
+                rebuilt = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
+                rebuilt_text = field._render_plan_text(rebuilt)  # noqa: SLF001
+            if (frozen_text := field._render_plan_text(plan)) != rebuilt_text:  # noqa: SLF001
+                mode.violation(
+                    Error,
+                    f"the render plan frozen for field {field.name} renders {frozen_text}, rebuilt {rebuilt_text}",
+                )
+
     def __snapshot_model_imports(self, state: _FinalizeState) -> None:  # noqa: PLR6301
-        """Collect the imports of every model once."""
-        state.model_imports = {model: model.imports for ctx in state.contexts for model in ctx.models}
+        """Collect the imports of every model once, reading the plans row ``legacy.L-NF`` keeps for imports."""
+        with cast("RenderReady", RENDER_READY.get()).import_view():
+            state.model_imports = {model: model.imports for ctx in state.contexts for model in ctx.models}
 
     def __append_model_imports(self, state: _FinalizeState) -> None:
         """Add the imports of every model to its module."""
@@ -9280,6 +9358,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         writes; the list the module structure recorded may be an earlier one.
         """
         written_lists = {id(ctx.models) for ctx in state.contexts}
+        with cast("RenderReady", RENDER_READY.get()).import_view():
+            for unused_model, module, models in self.__unused_model_lists(state):
+                if unused_model in models:  # pragma: no branch
+                    self._import_ledger.remove(
+                        state.module_to_import[module],
+                        state.model_imports.get(unused_model, unused_model.imports),
+                        ImportProducer("unused-models", unused_model),
+                    )
+                    models.remove(unused_model)
+                    if id(models) in written_lists:
+                        self.generation_store.retire_model(unused_model)
+
+    def __unused_model_lists(self, state: _FinalizeState) -> Iterator[tuple[DataModel, ModulePath, list[DataModel]]]:
+        """Yield each unused model with the module and the model list it leaves.
+
+        A root model that collapsing replaced leaves the list of the module that writes it now.
+        """
         replaced_root_modules = (
             {
                 id(model): (ctx.module_key, ctx.models)
@@ -9294,15 +9389,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module, models = (
                 replaced_root_modules.pop(id(unused_model), None) or state.model_to_module_models[unused_model]
             )
-            if unused_model in models:  # pragma: no branch
-                self._import_ledger.remove(
-                    state.module_to_import[module],
-                    state.model_imports.get(unused_model, unused_model.imports),
-                    ImportProducer("unused-models", unused_model),
-                )
-                models.remove(unused_model)
-                if id(models) in written_lists:
-                    self.generation_store.retire_model(unused_model)
+            yield unused_model, module, models
 
     def __validate_explicit_field_aliases(self, state: _FinalizeState) -> None:
         """Reject the explicit field aliases that no field name can carry."""
@@ -9547,16 +9634,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if not uses[parent]:
                     del linearizations[parent]
 
-    def _set_nested_model_default_factory_metadata(
+    def _nested_model_default_factory_decision(
         self,
-        contexts: list[ModuleContext],
+        modules: Sequence[Sequence[DataModel]],
         require_update: Collection[ModelKey],
-    ) -> None:
-        """Record declaration order and recursive model components for default factories."""
+    ) -> NestedFactoryMetadata:
+        """Decide the declaration order and the reference cycles that the nested models' default factories read.
+
+        ``modules`` are the model lists the modules write, in order; a model's position is its index in its list.
+        """
         recursive_keys_by_model: dict[ModelKey, frozenset[ModelKey]] = {}
         if require_update:
             snapshot = GraphSnapshot.NESTED_MODEL_DEFAULT_FACTORIES
-            keyed = keyed_models((model for ctx in contexts for model in ctx.models), snapshot.value)
+            keyed = keyed_models((model for models in modules for model in models), snapshot.value)
             index = self.generation_store.index
             graph = reference_graph(
                 snapshot,
@@ -9578,9 +9668,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for component in graph_answer(snapshot, graph.circular_components((EdgeKind.REFERENCE,)), old):
                 recursive_keys = frozenset(component)
                 recursive_keys_by_model.update(dict.fromkeys(recursive_keys, recursive_keys))
+        order = {
+            id(model): (module_index, model_index)
+            for module_index, models in enumerate(modules)
+            for model_index, model in enumerate(models)
+        }
+        return NestedFactoryMetadata(order, recursive_keys_by_model)
 
-        for module_index, ctx in enumerate(contexts):
-            _set_nested_model_default_factory_order(ctx.models, module_index, recursive_keys_by_model)
+    def _set_nested_model_default_factory_metadata(self, contexts: list[ModuleContext]) -> None:  # noqa: PLR6301
+        """Publish the nested-factory decision of render preparation on the models of every module.
+
+        The outputs that do not read render plans read it from here on (row ``legacy.L-NF`` of
+        ``model/_render_plan.py``).
+        """
+        metadata = cast("RenderReady", RENDER_READY.get()).nested_factories
+        for ctx in contexts:
+            _set_nested_model_default_factory_order(ctx.models, cast("NestedFactoryMetadata", metadata))
 
     def _generate_module_output(  # noqa: PLR0912, PLR0913, PLR0917
         self,
@@ -9887,12 +9990,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             suppress_parse_warnings=run_context is not None and run_context.suppress_parse_warnings,
         )
         token = SCHEMA_GRAPH.set(self._schema_graph)
+        render_ready = RENDER_READY.set(RenderReady())
         caller = anchor_parse_caller()
         try:
             with read_check_flags(), parse_checks(self, Error):
                 self.__runner().run_steps(Parser.__PIPELINE, self, run)
         finally:
             release_parse_caller(caller)
+            RENDER_READY.reset(render_ready)
             SCHEMA_GRAPH.reset(token)
         return run.output
 
@@ -10159,6 +10264,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __render(self, run: _FinishRun) -> None:
         """Render every module into the output of ``parse()``."""
+        self.__check_frozen_render_plans()
         run.output = self.__render_modules(
             run.module_results,
             contexts=run.contexts,
@@ -10438,6 +10544,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     when=lambda self, _: self.use_root_model_sequence_interface,
                     checked_models=_all_models,
                 ),
+                PassSpec(
+                    decls.DECIDE_NESTED_MODEL_DEFAULT_FACTORIES,
+                    lambda self, s: self.__decide_nested_model_default_factories(s),
+                    when=lambda self, _: self.use_default_factory_for_optional_nested_models,
+                ),
+                PassSpec(decls.FREEZE_FIELD_RENDER_PLANS, lambda self, s: self.__freeze_field_render_plans(s)),
             ),
             enters_phase=False,
         ),
@@ -10776,9 +10888,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ),
                 PassSpec(
                     decls.SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA,
-                    lambda self, run: self._set_nested_model_default_factory_metadata(
-                        run.contexts, self._recursion_facts["require_update"]
-                    ),
+                    lambda self, run: self._set_nested_model_default_factory_metadata(run.contexts),
                     when=lambda self, _: self.use_default_factory_for_optional_nested_models,
                 ),
                 PassSpec(decls.RECORD_PYDANTIC_FLOOR, lambda self, run: self.__record_pydantic_floor(run.contexts)),

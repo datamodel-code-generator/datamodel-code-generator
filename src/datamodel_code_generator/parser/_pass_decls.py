@@ -866,6 +866,34 @@ FINALIZE_SEQUENCE_INTERFACE = PassDecl(
     after=(After("finalize_type_alias_users", "both write backend config; the sequence interface is decided last"),),
     condition="use_root_model_sequence_interface",
 )
+DECIDE_NESTED_MODEL_DEFAULT_FACTORIES = PassDecl(
+    "decide_nested_model_default_factories",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.PLAN,
+    reads=_facts(Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, RenderFact.MODEL_ORDER),
+    condition="use_default_factory_for_optional_nested_models",
+    summary=(
+        "Decides, from the final model order and reference cycles, the default factories of optional nested models"
+        " that the render plans read (row legacy.L-NF)."
+    ),
+)
+FREEZE_FIELD_RENDER_PLANS = PassDecl(
+    "freeze_field_render_plans",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.PLAN,
+    reads=_facts(
+        *Fact,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.DEFAULT_VALIDATION,
+        RenderFact.DEFAULT_EXPRESSION,
+        RenderFact.BACKEND_CONFIG,
+    ),
+    summary="Freezes one render plan per field of the Pydantic models, which rendering reads; B2 follows.",
+)
 
 SNAPSHOT_MODEL_IMPORTS = PassDecl(
     "snapshot_model_imports",
@@ -1108,10 +1136,13 @@ SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA = PassDecl(
     Phase.IMPORTS,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.DEFAULTS, Fact.FIELD_TYPES),
     writes=_facts(RenderFact.DEFAULT_EXPRESSION),
     condition="use_default_factory_for_optional_nested_models",
-    target=Phase.RENDER_PREPARATION,
+    removed_by="RP14c",
+    summary=(
+        "Publishes the nested-factory decision on the models, for the outputs that do not read render plans"
+        " (row legacy.L-NF)."
+    ),
 )
 RECORD_PYDANTIC_FLOOR = PassDecl(
     "record_pydantic_floor",

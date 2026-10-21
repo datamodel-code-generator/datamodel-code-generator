@@ -113,7 +113,7 @@ default = 1
 nullable = 1
 required = 1
 
-["src/datamodel_code_generator/model/base.py"."_nested_model_default_factory"]
+["src/datamodel_code_generator/model/base.py"."_nested_model_factory"]
 '__dict__[_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY]' = 1
 
 ["src/datamodel_code_generator/model/base.py"."_set_nested_model_default_factory_order"]

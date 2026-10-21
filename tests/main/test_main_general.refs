@@ -721,6 +721,16 @@ True	main/person.py
 [test_pyproject_msgspec_derives_constraints_from_final_config]
 batch	main/jsonschema/msgspec_array_length_constraints_use_annotated.py
 single	main/jsonschema/msgspec_array_length_constraints_use_annotated.py
+[test_render_plan_of_a_declared_default_factory_of_none]
+False	main/main_general/render_plan_of_a_declared_default_factory_of_none[False].txt
+True	main/main_general/render_plan_of_a_declared_default_factory_of_none[True].txt	= main/main_general/render_plan_of_a_declared_default_factory_of_none[False].txt
+[test_render_plan_that_drops_a_declared_item]
+report	main/main_general/render_plan_that_drops_a_declared_item[report].report.txt
+report	main/main_general/render_plan_that_drops_a_declared_item[report].txt
+[test_render_plan_whose_field_changes_after_render_preparation]
+off	main/main_general/render_plan_whose_field_changes_after_render_preparation[off].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
+report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].report.txt
+report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 [test_ruff_batch_formatting_directory]
 	main/jsonschema/all_exports_multi_file_ruff//*.py
 [test_ruff_check_and_format_combined]

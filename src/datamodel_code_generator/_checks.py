@@ -57,6 +57,10 @@ class CheckArea(Enum):
     GENERATED_CODE_REQUIREMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
     """Every Pydantic ``ConfigDict`` key that the generator can write has a row in ``_requirements.py``."""
 
+    RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
+    """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
+    modules are written, as the plan the field's facts give then."""
+
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final."""
 

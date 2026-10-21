@@ -18,11 +18,13 @@ from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     participates_in_constructor,
 )
+from datamodel_code_generator.model._render_plan import Kwarg, RuleId, Why
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
     _find_base_classes,
-    _nested_model_default_factory,
+    _nested_model_factory,
+    _NestedModelFactory,
     _reference_names_model,
 )
 from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
@@ -59,6 +61,7 @@ from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_ke
 from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
+_MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
 _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
 
 
@@ -100,7 +103,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
-    from datamodel_code_generator.model.pydantic_base import _PydanticFieldRenderPlan
+    from datamodel_code_generator.model.pydantic_base import _FieldArguments, _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
 
 Constraints = _Constraints
@@ -374,17 +377,21 @@ class _PydanticDataclassField(DataModelFieldV2):
         return self._pins_aliases() and super()._alias_generator_renames(name)
 
     @override
-    def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
+    def _call_default_factory(self, args: _FieldArguments) -> Kwarg | None:
         """Use dataclass-safe factories for mutable schema defaults."""
-        data, default_factory = super()._get_field_data_and_default_factory()
-        if default_factory is not None or (self.required and not self.use_default_with_required):
-            return data, default_factory
+        if (factory := super()._call_default_factory(args)) is not None or (
+            self.required and not self.use_default_with_required
+        ):
+            return factory
         match self.default:
             case list() | dict() | set() as default:
-                default_factory = f"lambda: {represent_python_value(default)}" if default else type(default).__name__
+                return Kwarg(
+                    "default_factory",
+                    f"lambda: {represent_python_value(default)}" if default else type(default).__name__,
+                    _MUTABLE_DEFAULT_FACTORY,
+                )
             case _:
-                pass
-        return data, default_factory
+                return None
 
     @override
     def _written_assignment(self) -> PydanticDataclassWritten:
@@ -499,9 +506,9 @@ class _PydanticDataclassField(DataModelFieldV2):
         return self._rendered_field_values_from_plan(plan)
 
     @override
-    def _get_default_factory_for_optional_nested_model(self) -> str | None:
+    def _get_default_factory_for_optional_nested_model(self) -> _NestedModelFactory | None:
         """Get a factory for an optional nested Pydantic dataclass."""
-        return _nested_model_default_factory(self, DataClass)
+        return _nested_model_factory(self, DataClass)
 
     @property
     @override
