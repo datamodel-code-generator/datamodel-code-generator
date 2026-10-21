@@ -351,6 +351,7 @@ openapi/querystring_parameter_31.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof_order.yaml	yaml_fast_constructor/parity.txt
+openapi/read_only_write_only_allof_parent_inline_models.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof_required_only.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof_url_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof_url_ref_remote.yaml	yaml_fast_constructor/parity.txt

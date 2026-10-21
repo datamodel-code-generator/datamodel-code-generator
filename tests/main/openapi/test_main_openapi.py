@@ -12939,6 +12939,35 @@ def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: 
         )
 
 
+def test_main_openapi_read_only_write_only_allof_parent_inline_models(output_file: Path) -> None:
+    """Emit one set of an allOf parent's inline models when its child splits first."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_allof_parent_inline_models.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+        force_exec_validation=True,
+    )
+    for model_name in ("ParentRequest", "ParentResponse"):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"read_only_write_only_allof_parent_inline_models_{model_name}",
+            model_name=model_name,
+            valid_json='{"payload":{"value":{"code":1}}}',
+            invalid_json='{"payload":{"value":{"code":"x"}}}',
+            expected_error_type="int_parsing",
+        )
+
+
 def test_main_openapi_dynamic_ref(output_file: Path) -> None:
     """Test OpenAPI 3.1 $dynamicRef resolving to a component $dynamicAnchor."""
     run_main_and_assert(

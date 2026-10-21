@@ -1479,6 +1479,7 @@ openapi/read_only_write_only.yaml::components.schemas.User	payloads/native_numer
 openapi/read_only_write_only_allof.yaml::components.schemas.Credentials	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Timestamps	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_order.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_allof_parent_inline_models.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_required_only.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_url_ref_remote.yaml::components.schemas.BaseObject	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_anyof.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3123,6 +3124,7 @@ openapi/read_only_write_only.yaml::components.schemas.User	payloads/native_numer
 openapi/read_only_write_only_allof.yaml::components.schemas.Credentials	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Timestamps	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_order.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_allof_parent_inline_models.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_required_only.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof_url_ref_remote.yaml::components.schemas.BaseObject	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_anyof.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
