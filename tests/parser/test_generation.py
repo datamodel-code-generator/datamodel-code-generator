@@ -25,6 +25,8 @@ from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport
 from datamodel_code_generator.model.typed_dict import TypedDict
 from datamodel_code_generator.parser.generation import (
     GENERATION_STORE_MUTATION_METHODS,
+    NO_SITE_EFFECT,
+    SITE_EFFECTS,
     DataTypeFact,
     GenerationIndexBuilder,
     GenerationStore,
@@ -163,6 +165,14 @@ def test_generation_store_import_cache_contract_covers_mutation_surface() -> Non
     ) == GENERATION_STORE_MUTATION_METHODS
 
 
+def test_generation_store_site_effects_cover_mutation_surface() -> None:
+    """Every store mutation states what it does to the reference sites, once."""
+    assert (sorted(SITE_EFFECTS.keys() & NO_SITE_EFFECT), SITE_EFFECTS.keys() | NO_SITE_EFFECT) == (
+        [],
+        GENERATION_STORE_MUTATION_METHODS,
+    )
+
+
 def test_parser_layers_treat_output_template_metadata_as_opaque() -> None:
     """Parser facts must use model capabilities instead of backend template keys."""
     generation_path = Path(__file__).parents[2] / "src/datamodel_code_generator/parser/generation.py"
@@ -290,7 +300,7 @@ def test_generation_facts_remove_legacy_edge_buckets() -> None:
     assert not hasattr(facts, "field_edges")
     assert not hasattr(facts, "base_edges")
     assert not hasattr(facts, "all_edges")
-    assert [list(data_type_ids) for data_type_ids in facts.reverse_edges.values()] == [[0]]
+    assert [list(data_type_ids) for data_type_ids in facts.sites_by_target.values()] == [[0]]
 
 
 def test_generation_store_replace_data_type_ref_updates_children_and_index() -> None:
@@ -878,7 +888,8 @@ def test_generation_index_returns_empty_results_for_unknown_objects() -> None:
         "data_types_by_model_property": {
             model_id: list(data_type_ids) for model_id, data_type_ids in store.data_types_by_model.items()
         },
-        "reverse_edges_property": [list(data_type_ids) for data_type_ids in store.reverse_edges.values()],
+        "sites_by_target_property": [list(site_keys) for site_keys in store.sites_by_target.values()],
+        "sites_by_owner": list(store.facts.sites_by_owner.values()),
     } == snapshot(
         {
             "unknown_model_fact": None,
@@ -895,7 +906,8 @@ def test_generation_index_returns_empty_results_for_unknown_objects() -> None:
             "model_by_path_property": {"Model": 0},
             "model_by_ref_id_property": [0],
             "data_types_by_model_property": {0: [0, 1]},
-            "reverse_edges_property": [[0]],
+            "sites_by_target_property": [[0]],
+            "sites_by_owner": [(0,)],
         },
     )
 
