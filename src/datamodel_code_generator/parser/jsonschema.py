@@ -14253,8 +14253,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Draft-04 has no const keyword. A const equal to none of the values admits no value: the schema is read as
         written, and a warning says so once per schema location unless the intersection warning already reports it.
+        Without --read-const-beside-enum a const beside an enum excludes no value.
         """
-        if "const" not in obj.extras or not self.schema_features.const_support:
+        if not self.read_const_beside_enum or "const" not in obj.extras or not self.schema_features.const_support:
             return set()
         const = obj.extras["const"]
         excluded = {position for position, value in enumerate(obj.enum) if not _json_literal_values_equal(const, value)}

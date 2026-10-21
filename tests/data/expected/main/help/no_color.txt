@@ -200,6 +200,12 @@ Typing customization:
                         such as NonNegativeInt, and the length and number
                         constraints a const or enum Literal meets by its
                         values
+  --read-const-beside-enum
+                        Read a `const` beside an `enum` as JSON Schema does: a
+                        value whose schema names the enum is typed by the
+                        const that narrows it (`Literal[Enum.member]`, a
+                        Literal or None) instead of the enum class that lists
+                        the values the const excludes
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

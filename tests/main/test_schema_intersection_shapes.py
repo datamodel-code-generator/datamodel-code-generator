@@ -130,6 +130,7 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
         "--disable-timestamp",
         "--formatters",
         "builtin",
+        "--read-const-beside-enum",
         *options,
     ]
 
@@ -156,6 +157,7 @@ def test_schema_intersection_shape_output(
                 "--disable-timestamp",
                 "--formatters",
                 "builtin",
+                "--read-const-beside-enum",
                 *options,
             ],
         )

@@ -6338,6 +6338,26 @@ msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].warnings.txt
+[test_main_jsonschema_enum_const_without_option]
+collapsed-root-models-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[msgspec.Struct].py
+collapsed-root-models-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-pydantic_v2.BaseModel].py
+discriminator-tag-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_discriminator_tag.py
+discriminator-tag-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-pydantic_v2.BaseModel].py
+draft-04-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_draft_04[msgspec.Struct].py
+draft-04-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_draft_04[pydantic_v2.BaseModel].py
+forward-positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-msgspec.Struct].py
+forward-positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-pydantic_v2.BaseModel].py
+hidden-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-msgspec.Struct].py
+hidden-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-pydantic_v2.BaseModel].py
+integral-float-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-msgspec.Struct].py
+integral-float-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-pydantic_v2.BaseModel].py
+non-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[non-literal-pydantic_v2.BaseModel].py
+positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[positions-msgspec.Struct].py
+positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[positions-pydantic_v2.BaseModel].py
+type-list-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].py
+type-list-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_type_list[pydantic_v2.BaseModel].py
+unsatisfiable-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].py
+unsatisfiable-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[pydantic_v2.BaseModel].py
 [test_main_jsonschema_enum_deserialization_preset_opt_out]
 	main/jsonschema/enum_member_typed_defaults_preset_opt_out.py
 [test_main_jsonschema_enum_list_defaults]

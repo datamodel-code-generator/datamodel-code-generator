@@ -972,6 +972,10 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
     },
+    "read_const_beside_enum": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+    },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."

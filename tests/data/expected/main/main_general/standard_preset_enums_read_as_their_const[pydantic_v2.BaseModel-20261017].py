@@ -67,20 +67,18 @@ class Positions(BaseModel):
     property_single: Annotated[Literal['a'] | None, Field(alias='propertySingle')] = (
         None
     )
-    words: list[Literal[Word.b]] | None = None
-    counts: dict[str, Literal[Counts.integer_2]] | None = None
-    branch: Literal[Branch.a] | int | None = None
+    words: list[Word] | None = None
+    counts: dict[str, Counts] | None = None
+    branch: Branch | int | None = None
     ref_sibling: Annotated[Literal['on'] | None, Field(alias='refSibling')] = None
-    keys: dict[Literal['a'], int] | None = None
-    ref_keys: Annotated[
-        dict[Literal[Narrowed.bravo], int] | None, Field(alias='refKeys')
-    ] = None
-    definition: Literal[Narrowed.bravo] | None = None
+    keys: dict[Literal['a', 'b'], int] | None = None
+    ref_keys: Annotated[dict[Narrowed, int] | None, Field(alias='refKeys')] = None
+    definition: Narrowed | None = None
     definition_single: Annotated[
         Literal['a'] | None, Field(alias='definitionSingle')
     ] = None
     all_of_definition: Annotated[
-        Literal[AllOfNarrowed.b] | None, Field(alias='allOfDefinition')
+        AllOfNarrowed | None, Field(alias='allOfDefinition')
     ] = None
     beside_null: Annotated[Literal['b'] | None, Field(alias='besideNull')] = None
     const_null: Annotated[None, Field(alias='constNull')] = None

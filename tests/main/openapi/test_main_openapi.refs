@@ -1112,6 +1112,13 @@ single-value-enum-as-const	main/openapi/main_openapi/enum_const_positions[single
 [test_main_openapi_enum_const_unsatisfiable]
 	main/openapi/main_openapi/enum_const_unsatisfiable.py
 	main/openapi/main_openapi/enum_const_unsatisfiable.warnings.txt
+[test_main_openapi_enum_const_without_option]
+enum_const_nullable-msgspec.Struct	main/openapi/main_openapi/enum_const_without_option[enum_const_nullable-msgspec.Struct].py
+enum_const_nullable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_without_option[enum_const_nullable-pydantic_v2.BaseModel].py
+enum_const_positions-msgspec.Struct	main/openapi/main_openapi/enum_const_without_option[enum_const_positions-msgspec.Struct].py	= main/openapi/main_openapi/enum_const_positions[msgspec.Struct].py
+enum_const_positions-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_without_option[enum_const_positions-pydantic_v2.BaseModel].py	= main/openapi/main_openapi/enum_const_positions[pydantic_v2.BaseModel].py
+enum_const_unsatisfiable-msgspec.Struct	main/openapi/main_openapi/enum_const_without_option[enum_const_unsatisfiable-msgspec.Struct].py	= main/openapi/main_openapi/enum_const_unsatisfiable.py
+enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_without_option[enum_const_unsatisfiable-pydantic_v2.BaseModel].py	= main/openapi/main_openapi/enum_const_unsatisfiable.py
 [test_main_openapi_enum_literal_type_alias_property_ref]
 	main/openapi/enum_literal_type_alias_property_ref.py
 [test_main_openapi_enum_models_as_literal]

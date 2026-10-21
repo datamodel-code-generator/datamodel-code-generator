@@ -119,6 +119,7 @@ class BaseGenerateConfig(TypedDict):
     use_msgspec_nullable_enum_alias: NotRequired[bool]
     use_typed_nullable_map_values: NotRequired[bool]
     use_single_value_enum_as_const: NotRequired[bool]
+    read_const_beside_enum: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]
     use_subclass_enum: NotRequired[bool]
     use_specialized_enum: NotRequired[bool]

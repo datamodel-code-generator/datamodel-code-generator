@@ -402,6 +402,23 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
             "collapse_root_models_property_names_reference",
         )
     },
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--read-const-beside-enum",))
+        for name in (
+            "enum_const_collapsed_root_models",
+            "enum_const_discriminator_tag",
+            "enum_const_draft_04",
+            "enum_const_forward_positions",
+            "enum_const_hidden_by_field",
+            "enum_const_integral_float",
+            "enum_const_integral_float_literal",
+            "enum_const_non_literal",
+            "enum_const_positions",
+            "enum_const_titles",
+            "enum_const_type_list",
+            "read_as_const_marker_in_document",
+        )
+    },
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },

@@ -22067,7 +22067,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 37 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 51 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
@@ -22349,6 +22349,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### R {#r}
 
+- [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
@@ -37335,6 +37336,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--no-use-union-operator`](#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operato... |
 | [`--output-date-class`](#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](#type-overrides) | Replace schema model types with custom Python types via JSON... |
@@ -40100,6 +40102,173 @@ or 'datetime' for standard Python datetime objects.
 
     class InventoryItem(BaseModel):
         releaseDate: AwareDatetime = Field(..., examples=['2016-08-29T09:12:33.001Z'])
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--read-const-beside-enum` {#read-const-beside-enum}
+
+Read a `const` beside an `enum` as JSON Schema does.
+
+A `const` that admits some but not all values of the `enum` beside it narrows the schema to the admitted
+values, while the enum class keeps every value as written. With `--read-const-beside-enum`, a value whose schema
+names such an enum, a property, an item, a map value or key, a union branch or a `$ref` to a definition, is typed
+by the const: `Literal[<Enum>.<member>]` when the members of the enum equal their values (`IntEnum`, `StrEnum`,
+`--use-subclass-enum`), the const's own `Literal`, or `None` for a null const. A plain `Enum`, and any msgspec
+enum, keeps the enum type and warns once per schema location that the other values are accepted. A schema whose
+const is none of its enum values admits no value and is generated as written with a warning. Without the
+option, a `const` beside an `enum` is ignored.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input enum_const_positions.json --read-const-beside-enum # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-const-beside-enum` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Positions",
+      "type": "object",
+      "properties": {
+        "property": {"type": "string", "enum": ["a", "b"], "const": "a"},
+        "propertySingle": {"type": "string", "enum": ["a"], "const": "a"},
+        "words": {"type": "array", "items": {"type": "string", "enum": ["a", "b"], "const": "b"}},
+        "counts": {"type": "object", "additionalProperties": {"type": "integer", "enum": [1, 2, 3], "const": 2}},
+        "branch": {"anyOf": [{"type": "string", "enum": ["a", "b"], "const": "a"}, {"type": "integer"}]},
+        "refSibling": {"$ref": "#/$defs/Switch", "const": "on"},
+        "keys": {"type": "object", "propertyNames": {"enum": ["a", "b"], "const": "a"}, "additionalProperties": {"type": "integer"}},
+        "refKeys": {"type": "object", "propertyNames": {"$ref": "#/$defs/Narrowed"}, "additionalProperties": {"type": "integer"}},
+        "definition": {"$ref": "#/$defs/Narrowed"},
+        "definitionSingle": {"$ref": "#/$defs/Single"},
+        "allOfDefinition": {"$ref": "#/$defs/AllOfNarrowed"},
+        "besideNull": {"$ref": "#/$defs/BesideNull"},
+        "constNull": {"$ref": "#/$defs/ConstNull"}
+      },
+      "$defs": {
+        "Switch": {"type": "string", "enum": ["on", "off"]},
+        "Narrowed": {
+          "type": "string",
+          "enum": ["a", "b", "c"],
+          "const": "b",
+          "x-enum-varnames": ["ALPHA", "BRAVO", "CHARLIE"],
+          "x-enum-descriptions": ["First.", "Second.", "Third."]
+        },
+        "Single": {"type": "string", "enum": ["a"], "const": "a"},
+        "AllOfNarrowed": {"allOf": [{"type": "string", "enum": ["a", "b"], "const": "b"}]},
+        "BesideNull": {"type": "string", "enum": ["a", null, "b"], "const": "b", "x-enum-varnames": ["ALPHA", "BRAVO"]},
+        "ConstNull": {"type": "string", "enum": ["a", null, "b"], "const": null}
+      }
+    }
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  enum_const_positions.json
+    #   timestamp: 2019-07-26T00:00:00+00:00
+
+    from __future__ import annotations
+
+    from enum import Enum, IntEnum
+    from typing import Literal
+
+    from pydantic import BaseModel, Field, RootModel
+
+
+    class Property(Enum):
+        a = 'a'
+        b = 'b'
+
+
+    class PropertySingle(Enum):
+        a = 'a'
+
+
+    class Word(Enum):
+        a = 'a'
+        b = 'b'
+
+
+    class Counts(IntEnum):
+        integer_1 = 1
+        integer_2 = 2
+        integer_3 = 3
+
+
+    class Branch(Enum):
+        a = 'a'
+        b = 'b'
+
+
+    class RefSibling(Enum):
+        on = 'on'
+        off = 'off'
+
+
+    class Switch(Enum):
+        on = 'on'
+        off = 'off'
+
+
+    class Narrowed(Enum):
+        ALPHA = 'a'
+        BRAVO = 'b'
+        CHARLIE = 'c'
+
+
+    class Single(Enum):
+        a = 'a'
+
+
+    class AllOfNarrowed(Enum):
+        a = 'a'
+        b = 'b'
+
+
+    class BesideNullEnum(Enum):
+        ALPHA = 'a'
+        BRAVO = 'b'
+
+
+    class BesideNull(RootModel[Literal['b'] | None]):
+        root: Literal['b'] | None = None
+
+
+    class ConstNullEnum(Enum):
+        a = 'a'
+        b = 'b'
+
+
+    class ConstNull(RootModel[None]):
+        root: None = Field(None)
+
+
+    class Positions(BaseModel):
+        property: Literal['a'] | None = None
+        propertySingle: Literal['a'] | None = None
+        words: list[Word] | None = None
+        counts: dict[str, Literal[Counts.integer_2]] | None = None
+        branch: Branch | int | None = None
+        refSibling: Literal['on'] | None = None
+        keys: dict[Literal['a'], int] | None = None
+        refKeys: dict[Narrowed, int] | None = None
+        definition: Narrowed | None = None
+        definitionSingle: Single | None = None
+        allOfDefinition: AllOfNarrowed | None = None
+        besideNull: BesideNull | None = None
+        constNull: ConstNull | None = None
     ```
 
     <!-- fmt: on -->
@@ -60827,6 +60996,7 @@ datamodel-codegen [OPTIONS]
 | [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operator. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
@@ -61221,6 +61391,7 @@ All options sorted alphabetically:
 - [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) - Decide a field's alias by the alias generator its model appl...
 - [`--preset`](base-options.md#preset) - Apply an immutable built-in option preset.
 - [`--profile`](utility-options.md#profile) - Use a named profile from pyproject.toml
+- [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) - Generate separate request and response models for readOnly/w...
 - [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
@@ -63212,16 +63383,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 190 | Shared generation options. |
-| `GenerateConfig` | 205 | Public `generate()` configuration. |
-| `ParserConfig` | 155 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 157 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 164 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 165 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 158 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 158 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 157 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 158 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 191 | Shared generation options. |
+| `GenerateConfig` | 206 | Public `generate()` configuration. |
+| `ParserConfig` | 156 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 158 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 165 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 166 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 159 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 159 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 158 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 159 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

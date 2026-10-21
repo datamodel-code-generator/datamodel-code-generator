@@ -74,7 +74,7 @@ class Positions(Struct):
     counts: dict[str, Counts] | UnsetType = UNSET
     branch: Branch | int | UnsetType = UNSET
     ref_sibling: RefSibling | UnsetType = field(name='refSibling', default=UNSET)
-    keys: dict[Literal['a'], int] | UnsetType = UNSET
+    keys: dict[Literal['a', 'b'], int] | UnsetType = UNSET
     ref_keys: dict[Narrowed, int] | UnsetType = field(name='refKeys', default=UNSET)
     definition: Narrowed | UnsetType = UNSET
     definition_single: Literal['a'] | UnsetType = field(
@@ -84,4 +84,4 @@ class Positions(Struct):
         name='allOfDefinition', default=UNSET
     )
     beside_null: BesideNull | UnsetType = field(name='besideNull', default=UNSET)
-    const_null: None | UnsetType = field(name='constNull', default=UNSET)
+    const_null: ConstNull | UnsetType = field(name='constNull', default=UNSET)

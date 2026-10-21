@@ -599,6 +599,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--use-single-value-enum-as-const": CLIOptionMeta(
         name="--use-single-value-enum-as-const", category=OptionCategory.TYPING
     ),
+    "--read-const-beside-enum": CLIOptionMeta(name="--read-const-beside-enum", category=OptionCategory.TYPING),
     "--disable-future-imports": CLIOptionMeta(
         name="--disable-future-imports",
         category=OptionCategory.TYPING,

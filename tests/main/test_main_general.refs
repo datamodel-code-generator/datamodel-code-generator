@@ -757,7 +757,7 @@ typing.TypedDict-20261015-typed_dict_20261015	main/preset_enum_shapes/typed_dict
 typing.TypedDict-20261017-typed_dict_20261017	main/preset_enum_shapes/typed_dict_20261017.py
 [test_standard_preset_enums_read_as_their_const]
 msgspec.Struct-20261017	main/main_general/standard_preset_enums_read_as_their_const[msgspec.Struct-20261017].py
-msgspec.Struct-20261017	main/main_general/standard_preset_enums_read_as_their_const[msgspec.Struct-20261017].warnings.txt	= main/jsonschema/main_jsonschema/enum_const_positions[default-msgspec].warnings.txt
+msgspec.Struct-20261017	main/main_general/standard_preset_enums_read_as_their_const[msgspec.Struct-20261017].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 msgspec.Struct-20261019	main/main_general/standard_preset_enums_read_as_their_const[msgspec.Struct-20261019].py
 msgspec.Struct-20261019	main/main_general/standard_preset_enums_read_as_their_const[msgspec.Struct-20261019].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pydantic_v2.BaseModel-20261017	main/main_general/standard_preset_enums_read_as_their_const[pydantic_v2.BaseModel-20261017].py

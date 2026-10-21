@@ -39,6 +39,7 @@
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
+- `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
@@ -460,6 +461,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         such as NonNegativeInt, and the length and number
                         constraints a const or enum Literal meets by its
                         values
+  --read-const-beside-enum
+                        Read a `const` beside an `enum` as JSON Schema does: a
+                        value whose schema names the enum is typed by the
+                        const that narrows it (`Literal[Enum.member]`, a
+                        Literal or None) instead of the enum class that lists
+                        the values the const excludes
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

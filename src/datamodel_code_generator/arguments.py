@@ -830,6 +830,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--read-const-beside-enum",
+    help="Read a `const` beside an `enum` as JSON Schema does: a value whose schema names the enum is typed by the "
+    "const that narrows it (`Literal[Enum.member]`, a Literal or None) instead of the enum class that lists the "
+    "values the const excludes",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--field-constraints",
     help="Use field constraints and not con* annotations",
     action="store_true",
