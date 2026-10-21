@@ -66095,10 +66095,12 @@ the None it adds; msgspec's top-level None and the `Field()` default plan read t
 `DataModel._write_pre_render_nullability` (`legacy-l3-import-nullability`, which overrides and constructor ordering
 read) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
 `types.py:DataType.admits_none`, which computes the rendered nullability with
-`model/_decisions/nullability.py:rendered_nullability` without writing it. A field of a Pydantic `BaseModel` or `RootModel` renders
-from one frozen render plan (`model/_render_plan.py:FieldRenderPlan`): its annotation form, its `Field()` call with
+`model/_decisions/nullability.py:rendered_nullability` without writing it. A field of a Pydantic `BaseModel`, `RootModel` or dataclass, and a Pydantic field of a
+type alias, renders from one frozen render plan (`model/_render_plan.py:FieldRenderPlan`): its annotation form, its `Field()` call with
 each argument and the declared items it writes, its default, the imports the call needs and every declared item it does
-not write (`Omitted`, with its reason), each with a `Why`. `model/pydantic_base.py:DataModelField` builds it; the last
+not write (`Omitted`, with its reason), each with a `Why`. `model/pydantic_base.py:DataModelField` builds it (a
+Pydantic dataclass field adds the `Field(...)` of a forced assignment and the plain annotation of a call the dataclass
+must see, `model/pydantic_v2/dataclass.py`); the last
 render preparation pass freezes one per field in the parse's `RenderReady` (B2), and `field`, `annotated`, `type_hint`,
 `represented_default`, `has_default_factory_in_field`, the import collection and the dropped-constraints warning read
 the frozen plan, before B2 a plan built and not kept. The plan holds values and writes its text when it is read, so the

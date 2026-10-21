@@ -34,6 +34,8 @@ class TypeAliasBase(DataModel):
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DOCSTRING_INDENT: ClassVar[int] = 0
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+    """A field that renders from a plan (Pydantic's) writes the alias from its frozen plan; others build none."""
 
     @property
     @override

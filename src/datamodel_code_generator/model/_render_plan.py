@@ -4,9 +4,10 @@
 adapter ``model/base.py:DataModel._field_assignment_facts``; constructor ordering, keyword-only fixes, hidden-type
 checks and the signature warning read it instead of classifying the field themselves.
 
-``FieldRenderPlan`` is what a field of a Pydantic ``BaseModel`` or ``RootModel`` writes: the form of its annotation,
-its ``Field()`` call, its default, the imports the call needs and every item the field declares that it does not
-write, each with the ``Why`` that put it there. The backend builds it (``model/pydantic_base.py:DataModelField``). The
+``FieldRenderPlan`` is what a field of a Pydantic ``BaseModel``, ``RootModel`` or dataclass, or of a type alias, writes:
+the form of its annotation, its ``Field()`` call, its default, the imports the call needs and every item the field
+declares that it does not write, each with the ``Why`` that put it there. The backend builds it
+(``model/pydantic_base.py:DataModelField``, ``model/pydantic_v2/dataclass.py:_PydanticDataclassField``). The
 parser freezes one plan per field in the parse's ``RenderReady`` when render preparation ends (B2), and the field's
 ``field``, ``annotated``, ``type_hint``, ``represented_default`` and ``has_default_factory_in_field`` read the frozen
 plan from then on; before B2, and for a field that no parse froze, they read a plan the same builder makes without
@@ -258,6 +259,8 @@ class FieldRenderPlan:
     ``has_default_factory_in_field`` is the template condition of the same name: the call writes the default factory
     that the field's own facts give it (a Pydantic dataclass's factory for a mutable default does not count).
     ``symbol_imports`` are the imports the call needs; the type hint's imports come from its data type.
+    A Pydantic dataclass field under ``--use-annotated`` whose call the dataclass must see has a ``plain`` annotation
+    and writes ``call`` after it, its default moved into the call where the dataclass needs it.
     """
 
     annotation_form: AnnotationForm

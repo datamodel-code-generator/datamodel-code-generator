@@ -2154,10 +2154,10 @@ def test_pydantic_dataclass_render_computes_plan_once() -> None:
     plan_calls = 0
 
     class CountingField(PydanticDataclassField):
-        def _get_field_render_plan(self) -> Any:
+        def _build_render_plan(self) -> Any:
             nonlocal plan_calls
             plan_calls += 1
-            return super()._get_field_render_plan()
+            return super()._build_render_plan()
 
     field = CountingField(
         name="value",

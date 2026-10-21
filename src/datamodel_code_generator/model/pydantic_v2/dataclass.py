@@ -6,6 +6,7 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 from __future__ import annotations
 
 import keyword
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
@@ -18,7 +19,7 @@ from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
     participates_in_constructor,
 )
-from datamodel_code_generator.model._render_plan import Kwarg, RuleId, Why
+from datamodel_code_generator.model._render_plan import CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
@@ -62,6 +63,10 @@ from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
+_FORCED_ASSIGNMENT = Why(RuleId("D4.default.forced-required-assignment"))
+"""A required field that a dataclass base's defaults would follow writes ``Field(...)``, so it stays required."""
+_VISIBLE_METADATA = Why(RuleId("D11.pydantic-dataclass.visible-metadata"), option="--use-annotated")
+"""The dataclass must see the call's metadata: the call follows a plain annotation instead of going into it."""
 _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
 
 
@@ -103,6 +108,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.model._render_plan import FieldRenderPlan
     from datamodel_code_generator.model.pydantic_base import _FieldArguments, _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
 
@@ -121,6 +127,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(_pydantic_dataclass_field_participates_in_constructor)
     FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_construction_order_key)
     _ASSIGNMENT_ROW: ClassVar[AssignmentRow | None] = "pydantic-dataclass"
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     USES_DATACLASS_ARGUMENTS: ClassVar[bool] = True
     SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT: ClassVar[bool] = True
     REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE: ClassVar[bool] = True
@@ -400,24 +407,52 @@ class _PydanticDataclassField(DataModelFieldV2):
             text=bool(self.field), factory=bool(self._get_field_render_plan().default_factory)
         )
 
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Add the ``Field(...)`` of a forced assignment, and the plain annotation of a call the dataclass must see."""
+        plan = super()._build_render_plan()
+        if plan.annotation_form == "classvar":
+            return plan
+        if (call := plan.call) is None:
+            if not self._has_forced_field_assignment:
+                return plan
+            call = CallPlan(
+                Positional("required", _FORCED_ASSIGNMENT), None, (), default_keyword=False, why=_FORCED_ASSIGNMENT
+            )
+            plan = self._field_render_plan(
+                call,
+                plan.default,
+                has_default_factory_in_field=plan.has_default_factory_in_field,
+                omitted=plan.omitted,
+            )
+        if plan.annotation_form == "annotated" and self._requires_dataclass_field_assignment(
+            None if call.factory is None else call.factory.value
+        ):
+            return replace(plan, annotation_form="plain", why=_VISIBLE_METADATA)
+        return plan
+
+    def _writes_visible_metadata(self, plan: FieldRenderPlan) -> bool:
+        """Return whether ``plan`` writes the call after a plain annotation for the dataclass to see it."""
+        return plan.call is not None and plan.annotation_form == "plain" and self.use_annotated
+
     @property
     def requires_dataclass_field_assignment(self) -> bool:
         """Check whether Annotated metadata must also be visible to dataclasses."""
-        return self._requires_dataclass_field_assignment(self._get_field_render_plan())
+        return self._requires_dataclass_field_assignment(self._get_field_render_plan().default_factory)
 
-    def _requires_dataclass_field_assignment(self, plan: _PydanticFieldRenderPlan) -> bool:
-        """Check assignment policy using an already computed render plan."""
-        return self._alias_requires_assignment or self._metadata_requires_assignment(plan)
+    def _requires_dataclass_field_assignment(self, default_factory: object) -> bool:
+        """Return whether the dataclass must see the call that writes ``default_factory`` (None for no factory)."""
+        return self._alias_requires_assignment or self._metadata_requires_assignment(default_factory)
 
     @property
     def _alias_requires_assignment(self) -> bool:
         return self._ALIASES_REQUIRE_ASSIGNMENT and bool(self.validation_aliases or self.serialization_alias)
 
-    def _metadata_requires_assignment(self, plan: _PydanticFieldRenderPlan) -> bool:
+    def _metadata_requires_assignment(self, default_factory: object) -> bool:
         return bool(
             self._has_forced_field_assignment
             or not self._DATACLASS_ASSIGNMENT_KEYS.isdisjoint(self.extras)
-            or plan.default_factory
+            or default_factory
         )
 
     @property
@@ -428,7 +463,7 @@ class _PydanticDataclassField(DataModelFieldV2):
             and self.required
             and not self.use_default_with_required
             and self._alias_requires_assignment
-            and not self._metadata_requires_assignment(self._get_field_render_plan())
+            and not self._metadata_requires_assignment(self._get_field_render_plan().default_factory)
         )
 
     @property
@@ -453,39 +488,11 @@ class _PydanticDataclassField(DataModelFieldV2):
         default_argument = f"default={self.represented_default}" if self.use_default_kwarg else self.represented_default
         return self._render_field_call((default_argument, *plan.arguments))
 
-    @override
-    def _has_field_statement(self) -> bool:
-        """Include Field imports for forced assignments and mutable default factories."""
-        if self.is_class_var:
-            return False
-        if self._has_forced_field_assignment:
-            return True
-        if super()._has_field_statement():
-            return True
-        if self.required and not self.use_default_with_required:
-            return False
-        return isinstance(self.default, (list, dict, set))
-
-    @override
-    def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
-        """Include a forced required assignment in every rendered Field() view."""
-        plan = super()._get_field_render_plan()
-        if plan.rendered or not self._has_forced_field_assignment:
-            return plan
-        return self._get_single_argument_field_render_plan("...")
-
-    @property
-    def _requires_unannotated_dataclass_assignment(self) -> bool:
-        return self._requires_unannotated_dataclass_assignment_from_plan(self._get_field_render_plan())
-
-    def _requires_unannotated_dataclass_assignment_from_plan(self, plan: _PydanticFieldRenderPlan) -> bool:
-        return self.use_annotated and self._requires_dataclass_field_assignment(plan)
-
     @property
     @override
     def annotated(self) -> str | None:
         """Keep assignments visible to legacy dataclass templates."""
-        if self._requires_unannotated_dataclass_assignment:
+        if self._render_plan().annotation_form != "annotated":
             return None
         return super().annotated
 
@@ -493,17 +500,18 @@ class _PydanticDataclassField(DataModelFieldV2):
     @override
     def field(self) -> str | None:
         """Render dataclass-visible metadata on the assignment when required."""
-        if self._requires_unannotated_dataclass_assignment:
-            return self.dataclass_field
+        if self._writes_visible_metadata(plan := self._render_plan()):
+            return self._render_dataclass_field(self._plan_text(plan))
         return super().field
 
     @override
     def _rendered_field_values(self) -> tuple[str | None, str | None]:
         """Keep built-in rendering consistent with the public field properties."""
-        plan = self._get_field_render_plan()
-        if self._requires_unannotated_dataclass_assignment_from_plan(plan):
-            return self._render_dataclass_field(plan), None
-        return self._rendered_field_values_from_plan(plan)
+        plan = self._render_plan()
+        text = self._plan_text(plan)
+        if self._writes_visible_metadata(plan):
+            return self._render_dataclass_field(text), None
+        return self._rendered_field_values_from_plan(text)
 
     @override
     def _get_default_factory_for_optional_nested_model(self) -> _NestedModelFactory | None:
@@ -513,9 +521,17 @@ class _PydanticDataclassField(DataModelFieldV2):
     @property
     @override
     def imports(self) -> tuple[Import, ...]:
-        """Drop Annotated when dataclass metadata moves to the assignment."""
+        """Drop Annotated when dataclass metadata moves to the assignment.
+
+        Row ``legacy.pdc-annotated-strip``: the import goes whenever the dataclass must see the field's metadata, also
+        when the type hint itself writes ``Annotated`` (``NameError`` at import); the module import plan (RP15) keeps
+        the imports the rendered text uses and deletes the row.
+        """
         imports = super().imports
-        if not self._requires_unannotated_dataclass_assignment:
+        if not (
+            self.use_annotated
+            and self._requires_dataclass_field_assignment(self._get_field_render_plan().default_factory)
+        ):
             return imports
         return tuple(import_ for import_ in imports if import_ != IMPORT_ANNOTATED)
 

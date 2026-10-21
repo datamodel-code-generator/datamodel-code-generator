@@ -726,14 +726,6 @@ class DataModelField(DataModelFieldBase):
     def _render_field_call(arguments: tuple[str, ...]) -> str:
         return f"Field({', '.join(arguments)})"
 
-    def _get_single_argument_field_render_plan(self, argument: str) -> _PydanticFieldRenderPlan:
-        """Write a Field() call whose only argument is ``argument``."""
-        arguments = (argument,)
-        rendered = self._render_field_call(arguments)
-        return _PydanticFieldRenderPlan(
-            rendered=rendered, assignment=rendered, arguments=arguments, default_factory=None
-        )
-
     def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
         """Write all Field() views from the field's render plan."""
         return self._plan_text(self._render_plan())
