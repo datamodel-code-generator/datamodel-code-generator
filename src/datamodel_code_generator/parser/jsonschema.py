@@ -2467,6 +2467,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._raw_inherited_own_names_cache: dict[str, frozenset[str]] = {}
         self._request_response_fields: dict[str, tuple[DataModelFieldBase, ...]] = {}
         self._rw_model_field_facts_cache: dict[str, tuple[bool, bool, bool, bool]] = {}
+        self._rw_model_field_facts_in_progress: set[str] = set()
         self._rw_model_references_cache: dict[str, tuple[bool, tuple[str, ...]]] = {}
         self._rw_model_variant_requirement_cache: dict[tuple[str, str], bool] = {}
         self._rw_model_variant_references: dict[tuple[str, str], Reference] = {}
@@ -3797,6 +3798,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self.read_only_write_only_model_type is None:
             return None
         request_response = self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
+        if not self.dedupe_request_response_variants:
+            all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
+            if any(field.read_only or field.write_only for field in all_fields) or (
+                request_response and self._fields_reference_rw_model_variant(all_fields, "Request")
+            ):
+                return all_fields
+            return None
         all_fields: list[DataModelFieldBase] | None = None
         if (
             any(field.read_only or field.write_only for field in fields)
@@ -3845,14 +3853,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_ref_schema_rw_model_field_facts(
         self,
         resolved_ref: str,
-    ) -> tuple[bool, bool, bool, bool]:
+    ) -> tuple[bool, bool, bool, bool] | None:
         """Return the read/write facts of the effective fields of the raw schema at ``resolved_ref``.
 
         Properties are read in allOf C3 order with their flags joined per name, and required names without a
-        declaration count as unflagged fields; nothing is parsed.
+        declaration count as unflagged fields; nothing is parsed. Without --dedupe-request-response-variants the facts
+        of a temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
         """
         if (cached := self._rw_model_field_facts_cache.get(resolved_ref)) is not None:
             return cached
+        if not self.dedupe_request_response_variants:
+            return self._get_parsed_ref_schema_rw_model_field_facts(resolved_ref)
         flags: dict[str, tuple[bool, bool]] = {}
         reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
         for ref in reversed(self._linearize_inherited_schema_refs([reference])):
@@ -3866,6 +3877,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             any(not read_only for read_only, _ in flags.values()),
             any(not write_only for _, write_only in flags.values()),
         )
+        self._rw_model_field_facts_cache[resolved_ref] = result
+        return result
+
+    def _get_parsed_ref_schema_rw_model_field_facts(
+        self,
+        resolved_ref: str,
+    ) -> tuple[bool, bool, bool, bool] | None:
+        """Return the read/write facts of the fields a temporary parse of the schema at ``resolved_ref`` gives.
+
+        The facts of 0.86.0, kept without --dedupe-request-response-variants: the parse registers the inline models it
+        meets. A key whose parse is already in progress, reached again through the models that parse builds, has no
+        facts, so the parse never re-enters itself; ``None`` also for a key that names no loadable schema.
+        """
+        if resolved_ref in self._rw_model_field_facts_in_progress:
+            return None
+        self._rw_model_field_facts_in_progress.add(resolved_ref)
+        try:
+            reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
+            fields = self._get_raw_inherited_fields(reference, frozenset())
+        except (Error, OSError):
+            return None
+        finally:
+            self._rw_model_field_facts_in_progress.discard(resolved_ref)
+        result = self._get_rw_model_field_facts(fields)
         self._rw_model_field_facts_cache[resolved_ref] = result
         return result
 
@@ -3890,8 +3925,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether inheriting the schema at ``resolved_ref`` can bring read/write facts into a model."""
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._ref_schema_generates_variant(resolved_ref, "Request")
-        has_read_only, has_write_only, _, _ = self._get_ref_schema_rw_model_field_facts(resolved_ref)
-        return has_read_only or has_write_only
+        facts = self._get_ref_schema_rw_model_field_facts(resolved_ref)
+        return facts is not None and (facts[0] or facts[1])
 
     def _check_rw_model_split(self, reference: Reference, *, splits: bool) -> None:
         """Report a request/response split that differs from the schema graph's answer for the model's key.
@@ -3934,9 +3969,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return False
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._request_response_ref_schema_generates_variant(resolved_ref)
-        has_read_only, has_write_only, has_non_read_only, has_non_write_only = (
-            self._get_ref_schema_rw_model_field_facts(resolved_ref)
-        )
+        if (facts := self._get_ref_schema_rw_model_field_facts(resolved_ref)) is None:
+            return False
+        has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
         match suffix:
             case "Request":
                 result = has_read_only and has_non_read_only
@@ -3989,11 +4024,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_rw_model_variant_graph_node(self, resolved_ref: str) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys it references.
 
-        A special path has no raw schema of its own: its split is the one recorded when its model is parsed.
+        A special path has no raw schema of its own: its split is the one recorded when its model is parsed. Without
+        --dedupe-request-response-variants, the 0.86.0 node: the facts of a temporary parse of the key also split it,
+        and the models its parsed fields reference are edges too.
         """
-        if SPECIAL_PATH_MARKER in resolved_ref:
-            return False, ()
-        return self._get_ref_schema_rw_model_reference_facts(resolved_ref)
+        if self.dedupe_request_response_variants:
+            if SPECIAL_PATH_MARKER in resolved_ref:
+                return False, ()
+            return self._get_ref_schema_rw_model_reference_facts(resolved_ref)
+        facts = self._get_ref_schema_rw_model_field_facts(resolved_ref)
+        fields = self._raw_inherited_fields_cache.get(resolved_ref)
+        if fields is None:
+            fields = self._request_response_fields.get(resolved_ref, ())
+        nested_refs = {
+            reference.path: None
+            for field in fields
+            for data_type in field.data_type.all_data_types
+            if (reference := data_type.reference) is not None
+        }
+        has_inline_variant, raw_refs = self._get_ref_schema_rw_model_reference_facts(resolved_ref)
+        nested_refs.update(dict.fromkeys(raw_refs))
+        return (facts is not None and (facts[0] or facts[1])) or has_inline_variant, tuple(nested_refs)
 
     def _fields_reference_rw_model_variant(
         self,
@@ -4050,8 +4101,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys its references name.
 
-        The walk stops at the first flagged property: the references of a node that needs variants are never read. A
-        key that names no loadable schema has neither.
+        The walk stops at the first flagged property: the references of a node that needs variants are never read
+        (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
+        schema has neither.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4060,13 +4112,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         except (Error, OSError):
             return False, ()
 
+        has_inline_variant = False
         references: dict[str, None] = {}
         stack = [(root_schema, True)]
         while stack:
             schema, detect_inline_variant = stack.pop()
-            if detect_inline_variant and self._schema_has_rw_model_fields(schema, resolved_ref):
-                self._rw_model_references_cache[resolved_ref] = result = (True, ())
-                return result
+            if (
+                detect_inline_variant
+                and not has_inline_variant
+                and self._schema_has_rw_model_fields(schema, resolved_ref)
+            ):
+                if self.dedupe_request_response_variants:
+                    self._rw_model_references_cache[resolved_ref] = result = (True, ())
+                    return result
+                has_inline_variant = True
             for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
                 if not ref:
                     continue
@@ -4086,7 +4145,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     detect_inline_variant=detect_inline_variant,
                 )
             )
-        self._rw_model_references_cache[resolved_ref] = result = (False, tuple(references))
+        self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
 
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
@@ -4375,12 +4434,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_model_type_class: type[DataModel],
     ) -> None:
         """Generate Request and Response model variants."""
-        has_read_only, has_write_only, has_non_read_only, has_non_write_only = self._get_rw_model_field_facts(
-            all_fields
-        )
+        facts = self._get_rw_model_field_facts(all_fields)
+        has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
         variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = []
         match self.read_only_write_only_model_type:
             case ReadOnlyWriteOnlyModelType.RequestResponse:
+                if not self.dedupe_request_response_variants:
+                    self._rw_model_field_facts_cache[reference.path] = facts
                 self._rw_model_variant_requirement_cache[reference.path, "Request"] = True
                 self._rw_model_variant_requirement_cache[reference.path, "Response"] = True
                 self._request_response_fields[reference.path] = tuple(self._copy_unregistered_fields(all_fields))
@@ -11852,9 +11912,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
             and self._fields_reference_rw_model_variant(fields, "Request")
         )
-        self._check_rw_model_split(reference, splits=splits)
+        if self.dedupe_request_response_variants:
+            self._check_rw_model_split(reference, splits=splits)
         if splits:
             self._request_response_fields[reference.path] = tuple(self._copy_unregistered_fields(fields))
+            if not self.dedupe_request_response_variants:
+                self._rw_model_field_facts_cache[reference.path] = self._get_rw_model_field_facts(fields)
             variants: list[DataModel] = []
             for suffix in ("Request", "Response"):
                 variant_fields = [self._copy_model_field(field) for field in fields]

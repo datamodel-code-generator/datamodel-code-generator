@@ -213,7 +213,7 @@ OpenAPI-specific generation behavior.
 - `--openapi-paths-bodies-as-definitions`: Give the request and response bodies of the paths and webhooks scopes the model a schema definition of the same body gets: an object body with a type array such as [object, null], or with map keywords and no type, becomes a model instead of an inline type
 - `--validation` (deprecated): Deprecated: The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.
 - `--read-only-write-only-model-type`: Model generation for readOnly/writeOnly fields: 'request-response' = Request/Response models only (no base model), 'all' = Base + Request + Response models. Choices: `request-response`, `all`.
-- `--dedupe-request-response-variants`: Build an allOf parent's inline models once when Request/Response variants flatten its fields
+- `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each inline model once, without the unreferenced duplicate classes and shifted class numbers of 0.86.0
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)
 
 ## GraphQL-only Options

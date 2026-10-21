@@ -200,7 +200,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Response variants flatte... |
+| [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and build each inline mod... |
 | [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
 | [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) | Emit OpenAPI info.version as a generated constant. |
 | [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
@@ -346,7 +346,7 @@ All options sorted alphabetically:
 - [`--custom-template-dir`](template-customization.md#custom-template-dir) - Use custom Jinja2 templates for model generation.
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
-- [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) - Build an allOf parent's inline models once when Request/Resp...
+- [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) - Decide Request/Response variants from the schema graph and b...
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...

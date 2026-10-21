@@ -188,7 +188,7 @@ How do I convert enums to Literal types?
 - `--wrap-string-literal`: Wrap long string literals across multiple lines.
 
 ### OpenAPI-only Options
-- `--dedupe-request-response-variants`: Build an allOf parent's inline models once when Request/Response variant...
+- `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
@@ -990,8 +990,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
 
 [36;1mOpenAPI-only options[0m:
   --dedupe-request-response-variants
-                        Build an allOf parent's inline models once when
-                        Request/Response variants flatten its fields
+                        Decide Request/Response variants from the schema graph
+                        and build each inline model once, without the
+                        unreferenced duplicate classes and shifted class
+                        numbers of 0.86.0
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)

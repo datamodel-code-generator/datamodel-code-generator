@@ -6,7 +6,7 @@ This generated reference lists every OpenAPI-only CLI flag and its tested exampl
 
 | Option | Description |
 |--------|-------------|
-| [`--dedupe-request-response-variants`](#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Resp... |
+| [`--dedupe-request-response-variants`](#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and b... |
 | [`--include-path-parameters`](#include-path-parameters) | Include OpenAPI path parameters in generated parameter model... |
 | [`--openapi-include-info-version`](#openapi-include-info-version) | Emit OpenAPI info.version as a generated constant. |
 | [`--openapi-include-paths`](#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
@@ -37,14 +37,19 @@ Restrict generation to selected paths while preserving parameter and info-versio
 
 ## `--dedupe-request-response-variants` {#dedupe-request-response-variants}
 
-Build an allOf parent's inline models once when Request/Response variants flatten its fields.
+Decide Request/Response variants from the schema graph and build each inline model once.
 
-Under `--read-only-write-only-model-type` (`request-response` or `all`), a child that inherits from an allOf parent
-collects the parent's fields into its own Request and Response models. Without the flag that collection builds the
-inline models of the parent's properties a second time, so an unreferenced copy is written and the parent's own
-models take the next numbers (`Payload1` unused, `Payload2` referenced). With the flag the collection reuses the
-models the parent's own parse builds, so each inline model is written once (`Payload1` referenced). Both forms
-validate the same data.
+Under `--read-only-write-only-model-type` (`request-response` or `all`), the generator decides which models split into
+Request and Response variants. Without the flag it decides as 0.86.0 did, from a temporary parse of each referenced
+schema; that parse takes class names and can emit unreferenced copies, so other classes get higher numbers
+(`Child1Request` where `ChildRequest` is free), and a schema whose parse reaches itself again through the models it
+builds stops there. A child that inherits from an allOf parent also builds the inline models of the parent's
+properties a second time (`Payload1` unused, `Payload2` referenced). Some recursive schemas cannot be generated that
+way and the error names this flag.
+
+With the flag the decision reads the raw schemas only: an input without `readOnly` or `writeOnly` gives the models it
+gives without `--read-only-write-only-model-type`, and each inline model is written once (`Payload1` referenced).
+Both forms validate the same data.
 
 !!! tip "Usage"
 

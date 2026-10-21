@@ -25658,8 +25658,18 @@ def test_main_jsonschema_dynamic_ref_allof_base_class(output_file: Path) -> None
     )
 
 
-def test_main_jsonschema_dynamic_ref_allof_base_class_request_response(output_file: Path) -> None:
-    """Split request/response variants without reading the references of a schema that declares a flagged field."""
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_jsonschema_dynamic_ref_allof_base_class_request_response(
+    output_file: Path, dedupe_args: list[str]
+) -> None:
+    """Split request/response variants without reading the references of a schema that declares a flagged field.
+
+    With --dedupe-request-response-variants the schema graph decides; without it the facts of a temporary parse
+    decide, as in 0.86.0, and both give the same models here.
+    """
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
@@ -25668,6 +25678,7 @@ def test_main_jsonschema_dynamic_ref_allof_base_class_request_response(output_fi
             input_file_type="jsonschema",
             assert_func=assert_file_content,
             extra_args=[
+                *dedupe_args,
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
                 "--read-only-write-only-model-type",
@@ -25679,7 +25690,7 @@ def test_main_jsonschema_dynamic_ref_allof_base_class_request_response(output_fi
     )
 
 
-@pytest.mark.parametrize(
+READ_WRITE_WITHOUT_FLAGS_CASES = pytest.mark.parametrize(
     ("input_name", "extra_args"),
     [
         ("read_only_write_only_inline_cycle.json", []),
@@ -25691,11 +25702,43 @@ def test_main_jsonschema_dynamic_ref_allof_base_class_request_response(output_fi
         ),
     ],
 )
+
+
+@READ_WRITE_WITHOUT_FLAGS_CASES
 @pytest.mark.parametrize("read_write_mode", ["request-response", "all"])
 def test_main_read_only_write_only_without_flags(
     output_file: Path, input_name: str, extra_args: list[str], read_write_mode: str
 ) -> None:
-    """Generate the default models when no schema the input reaches declares readOnly or writeOnly."""
+    """Generate the default models when no schema the input reaches declares readOnly or writeOnly.
+
+    Under --dedupe-request-response-variants the schema graph decides, so no temporary parse names a model.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            *extra_args,
+            "--read-only-write-only-model-type",
+            read_write_mode,
+            "--dedupe-request-response-variants",
+        ],
+    )
+
+
+@READ_WRITE_WITHOUT_FLAGS_CASES
+@pytest.mark.parametrize("read_write_mode", ["request-response", "all"])
+def test_main_read_only_write_only_without_flags_default(
+    output_file: Path, input_name: str, extra_args: list[str], read_write_mode: str
+) -> None:
+    """Keep the 0.86.0 models of inputs without readOnly or writeOnly when the dedupe option is off.
+
+    The facts of a temporary parse decide and its inline models take names, as in 0.86.0. In the inline cycle the
+    parse of ``entity`` reaches ``entity`` again through the models it builds; that inner request has no facts, so the
+    parse stops there at every recursion limit.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
         output_path=output_file,
@@ -25705,14 +25748,19 @@ def test_main_read_only_write_only_without_flags(
     )
 
 
-def test_main_read_only_write_only_boolean_property(output_file: Path) -> None:
-    """Count a boolean property schema as an unflagged field of an allOf base."""
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_boolean_property(output_file: Path, dedupe_args: list[str]) -> None:
+    """Count a boolean property schema as an unflagged field of an allOf base, with and without the dedupe option."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_boolean_property.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         extra_args=[
+            *dedupe_args,
             "--disable-timestamp",
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25733,7 +25781,8 @@ def test_schema_graph_check_of_read_write_splits(
     """Report a model that does not split while the references to it read a request/response variant.
 
     A reference under patternProperties makes the schema need variants, but no field of its model holds it; the check
-    (`1`) stops at the first such model and `report:<path>` appends each one as an `rw-split` line.
+    (`1`) stops at the first such model and `report:<path>` appends each one as an `rw-split` line. The check runs
+    under --dedupe-request-response-variants, where the schema graph decides the splits.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
@@ -25746,6 +25795,7 @@ def test_schema_graph_check_of_read_write_splits(
             "pydantic_v2.BaseModel",
             "--read-only-write-only-model-type",
             "request-response",
+            "--dedupe-request-response-variants",
         ],
         expected_exit=Exit.ERROR,
         capsys=capsys,

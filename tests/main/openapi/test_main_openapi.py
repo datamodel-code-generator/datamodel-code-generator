@@ -11614,7 +11614,7 @@ def test_main_openapi_read_only_write_only_variant_graph(
     output_model_type: str,
     expected_name: str,
 ) -> None:
-    """Resolve request/response variants through every supported reference shape."""
+    """Resolve request/response variants through every supported reference shape from the schema graph."""
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
@@ -11624,6 +11624,7 @@ def test_main_openapi_read_only_write_only_variant_graph(
             assert_func=assert_file_content,
             expected_file=f"output_model_types/read_only_write_only_variant_graph_{expected_name}.py",
             extra_args=[
+                "--dedupe-request-response-variants",
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--formatters",
                 "builtin",
@@ -11842,6 +11843,46 @@ def test_main_openapi_read_only_write_only_variant_graph(
             valid_json="{}",
             invalid_json="[]",
             expected_error_type="dict_type",
+        )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        *(pytest.param(param.values[0], id=param.id, marks=param.marks) for param in BACKEND_GOLDEN_CASES),
+        pytest.param(DataModelType.PydanticV2Dataclass.value, id="pydantic-v2-dataclass"),
+    ],
+)
+def test_main_openapi_read_only_write_only_variant_graph_default(output_file: Path, output_model_type: str) -> None:
+    """Keep the 0.86.0 variant names when the dedupe option is off.
+
+    The temporary parse behind the 0.86.0 facts takes the name of the inline ``child`` model, so the variants of the
+    two inline leaves are numbered ``Child1`` and ``Child2``.
+    """
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "read_only_write_only_variant_graph.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            extra_args=[
+                *BACKEND_GOLDEN_TARGET_ARGS,
+                "--formatters",
+                "builtin",
+                "--output-model-type",
+                output_model_type,
+                "--read-only-write-only-model-type",
+                "request-response",
+                "--openapi-scopes",
+                "schemas",
+                "--class-name-prefix",
+                "Api",
+                "--class-name-suffix",
+                "Model",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
         )
 
 
@@ -12989,18 +13030,56 @@ def test_main_openapi_recursive_ref_discriminator_request_response(output_file: 
             "pydantic_v2.BaseModel",
             "--read-only-write-only-model-type",
             "request-response",
+            "--dedupe-request-response-variants",
         ],
     )
 
 
-def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: Path) -> None:
-    """Reference one model of a nullable enum from the request/response variants of the model holding it."""
+def test_main_openapi_recursive_ref_discriminator_request_response_default(
+    capsys: pytest.CaptureFixture[str], output_file: Path
+) -> None:
+    """Name --dedupe-request-response-variants when the 0.86.0 read/write facts leave classes that cannot be ordered.
+
+    Without the option, the temporary parse that decides the variants registers models that reference each other,
+    as in 0.86.0, which stopped on the same error; the option decides from the schema graph and generates the input.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            " --dedupe-request-response-variants decides the read/write variants from the schema graph and can"
+            " generate such schemas."
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: Path, dedupe_args: list[str]) -> None:
+    """Reference one model of a nullable enum from the request/response variants of the model holding it.
+
+    Without --dedupe-request-response-variants the temporary parse behind the 0.86.0 facts emits a second copy of the
+    enum (``T2``), which the variants reference, as in 0.86.0; both copies accept the same values.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "read_only_write_only_nullable_enum_reference.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
         extra_args=[
+            *dedupe_args,
             "--disable-timestamp",
             "--formatters",
             "builtin",
@@ -13022,16 +13101,46 @@ def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: 
         )
 
 
+def test_main_openapi_read_only_write_only_all_reentrant_additional_properties_default(output_file: Path) -> None:
+    """Keep the 0.86.0 extra-item type of an inline variant whose parse re-enters the schema that holds it.
+
+    Without --dedupe-request-response-variants the facts of ``Node`` come from a temporary parse, which builds the
+    variants of the inline ``child``; their ``additionalProperties`` reach ``Node`` again while its parse is in
+    progress. That inner request has no facts, so ``ChildRequest`` keeps ``Node`` as its extra-item type, as in 0.86.0.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_reentrant_additional_properties.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "all",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--dedupe-request-response-variants"],
-    option_description="""Build an allOf parent's inline models once when Request/Response variants flatten its fields.
+    option_description="""Decide Request/Response variants from the schema graph and build each inline model once.
 
-Under `--read-only-write-only-model-type` (`request-response` or `all`), a child that inherits from an allOf parent
-collects the parent's fields into its own Request and Response models. Without the flag that collection builds the
-inline models of the parent's properties a second time, so an unreferenced copy is written and the parent's own
-models take the next numbers (`Payload1` unused, `Payload2` referenced). With the flag the collection reuses the
-models the parent's own parse builds, so each inline model is written once (`Payload1` referenced). Both forms
-validate the same data.""",
+Under `--read-only-write-only-model-type` (`request-response` or `all`), the generator decides which models split into
+Request and Response variants. Without the flag it decides as 0.86.0 did, from a temporary parse of each referenced
+schema; that parse takes class names and can emit unreferenced copies, so other classes get higher numbers
+(`Child1Request` where `ChildRequest` is free), and a schema whose parse reaches itself again through the models it
+builds stops there. A child that inherits from an allOf parent also builds the inline models of the parent's
+properties a second time (`Payload1` unused, `Payload2` referenced). Some recursive schemas cannot be generated that
+way and the error names this flag.
+
+With the flag the decision reads the raw schemas only: an input without `readOnly` or `writeOnly` gives the models it
+gives without `--read-only-write-only-model-type`, and each inline model is written once (`Payload1` referenced).
+Both forms validate the same data.""",
     input_schema="openapi/read_only_write_only_allof_parent_inline_models.yaml",
     cli_args=[
         "--output-model-type",

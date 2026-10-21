@@ -48,7 +48,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--custom-formatters-kwargs": "Pass custom arguments to custom formatters via inline JSON or a JSON file path.",
     "--custom-template-dir": "Use custom Jinja2 templates for model generation.",
     "--dataclass-arguments": "Customize dataclass decorator arguments via JSON dictionary.",
-    "--dedupe-request-response-variants": "Build an allOf parent's inline models once when Request/Response variant...",
+    "--dedupe-request-response-variants": "Decide Request/Response variants from the schema graph and build each in...",
     "--default-values": "Override field default values via inline JSON or a JSON file path.",
     "--deserialize-default-values": "Deserialize selected direct scalar field defaults into their generated Python ...",
     "--diff-against": "Compare generated code from a baseline input with the current schema without writing files.",

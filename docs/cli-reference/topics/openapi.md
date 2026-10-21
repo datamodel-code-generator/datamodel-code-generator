@@ -46,6 +46,6 @@ readOnly/writeOnly model behavior.
 
 | Option | Description |
 |--------|-------------|
-| [`--dedupe-request-response-variants`](../openapi-only-options.md#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Response variants flatte... |
+| [`--dedupe-request-response-variants`](../openapi-only-options.md#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and build each inline mod... |
 | [`--read-only-write-only-model-type`](../openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--use-frozen-field`](../model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |

@@ -46,9 +46,10 @@ class CheckArea(Enum):
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did, and each
-    `$ref` edge gets one key and names the target the parser loads; under request-response read/write models, a model
-    whose key names its schema splits exactly when the key needs variants, and no other model splits after a reference
-    to it read that it does not; no reader writes a schema object the graph validated once and shares."""
+    `$ref` edge gets one key and names the target the parser loads; under request-response read/write models with
+    --dedupe-request-response-variants, a model whose key names its schema splits exactly when the key needs variants,
+    and no other model splits after a reference to it read that it does not; no reader writes a schema object the
+    graph validated once and shares."""
 
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations."""

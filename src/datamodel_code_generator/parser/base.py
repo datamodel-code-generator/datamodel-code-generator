@@ -1690,11 +1690,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     pydantic_v2_root_model_type: type[DataModel] | None = None,
     runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
     keyed: KeyedModels | None = None,
+    unresolved_hint: str = "",
 ) -> tuple[list[DataModel], SortedDataModels, list[ModelKey]]:
     """Sort data models by dependency order for correct forward references.
 
     Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
     holds the models of the outermost call, which the paths that models list themselves resolve against.
+    ``unresolved_hint`` ends the message of the error for models that cannot be ordered.
     """
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
@@ -1760,6 +1762,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
                     runtime_validation_references=runtime_validation_references,
                     keyed=universe,
+                    unresolved_hint=unresolved_hint,
                 )
             except RecursionError:  # pragma: no cover
                 pass
@@ -1860,7 +1863,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                 f"{frozenset(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
                 for item in unresolved_references
             )
-            msg = f"A Parser can not resolve classes: {unresolved_classes}."
+            msg = f"A Parser can not resolve classes: {unresolved_classes}.{unresolved_hint}"
             raise Exception(msg)  # noqa: TRY002
 
     return unresolved_references, sorted_data_models, require_update_action_models
@@ -9979,6 +9982,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
             runtime_validation_references=(
                 None if self.keep_model_order else _runtime_validation_reference_keys(self.results, same_module=True)
+            ),
+            unresolved_hint=(
+                " --dedupe-request-response-variants decides the read/write variants from the schema graph and can"
+                " generate such schemas."
+                if self.read_only_write_only_model_type is not None and not self.dedupe_request_response_variants
+                else ""
             ),
         )
         self._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())

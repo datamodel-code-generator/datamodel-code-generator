@@ -1476,7 +1476,8 @@ openapi_options.add_argument(
 )
 openapi_options.add_argument(
     "--dedupe-request-response-variants",
-    help="Build an allOf parent's inline models once when Request/Response variants flatten its fields",
+    help="Decide Request/Response variants from the schema graph and build each inline model once, without the "
+    "unreferenced duplicate classes and shifted class numbers of 0.86.0",
     action="store_true",
     default=None,
 )
