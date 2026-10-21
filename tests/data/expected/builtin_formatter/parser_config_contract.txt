@@ -88,6 +88,7 @@ reviewed-safe pin_aliases_with_alias_generator
 reviewed-safe read_const_beside_enum
 reviewed-safe read_nullable_beside_type_list
 reviewed-safe read_only_write_only_model_type
+reviewed-safe read_unevaluated_properties
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix
 reviewed-safe reuse_model

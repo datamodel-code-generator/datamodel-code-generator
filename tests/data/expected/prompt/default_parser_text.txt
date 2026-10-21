@@ -42,6 +42,7 @@
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
+- `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.

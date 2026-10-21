@@ -1,0 +1,14 @@
+{
+    "title": "Resource",
+    "type": "object",
+    "properties": {
+        "name": { "type": "string" }
+    },
+    "anyOf": [
+        { "properties": { "a": { "type": "integer" } } },
+        { "properties": { "b": { "type": "integer" } } }
+    ],
+    "unevaluatedProperties": {
+        "type": "string"
+    }
+}

@@ -588,6 +588,8 @@ def _is_schema_object_value(node: ast.expr, schema_names: set[str]) -> bool:
     match node:
         case ast.Call(func=ast.Attribute(attr="model_validate", value=factory)):
             return bool(set(_attribute_chain(factory)) & SCHEMA_OBJECT_FACTORIES)
+        case ast.Call(func=ast.Attribute(attr="_schema_object", value=ast.Name(id="self"))):
+            return True
         case ast.Call(func=ast.Attribute(attr=method, value=ast.Name(id=name))) if method in SCHEMA_OBJECT_COPIES:
             return name in schema_names
     return False

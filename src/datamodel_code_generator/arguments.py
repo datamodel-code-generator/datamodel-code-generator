@@ -955,6 +955,13 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--read-unevaluated-properties",
+    help="Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the "
+    "object in place, so it types the extra keys of a model and makes an object without properties a map",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-single-dict-for-object-maps",
     help="Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, "
     "as one dict whose keys are those of every key class and whose value is the union of their values, beside the "

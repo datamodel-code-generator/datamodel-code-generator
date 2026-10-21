@@ -10482,6 +10482,21 @@ def test_main_jsonschema_unevaluated_properties_true(output_file: Path) -> None:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--read-unevaluated-properties"],
+    option_description="""Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
+
+Where no applicator (`allOf`, `anyOf`, `oneOf`, `not`, `if`, `dependentSchemas`, `dependencies` or a reference)
+evaluates a property of the object in place, the keys `unevaluatedProperties` evaluates are exactly those that
+`additionalProperties` would, so its schema types the extra keys of a model (`__pydantic_extra__: Dict[str, str]`)
+and makes an object without properties a map (`RootModel[dict[str, int]]`). The schema object as written decides:
+the models built from its branches keep the extra keys untyped where its applicators evaluate properties. Without
+the option the extra keys are allowed untyped, as in 0.86.0.""",
+    input_schema="jsonschema/unevaluated_properties_schema.json",
+    cli_args=["--read-unevaluated-properties"],
+    golden_output="jsonschema/unevaluated_properties_schema.py",
+    comparison_output="jsonschema/main_jsonschema/unevaluated_properties_payloads[without_read-schema].py",
+)
 def test_main_jsonschema_unevaluated_properties_schema(output_file: Path) -> None:
     """Test unevaluatedProperties schema without an in-place applicator types the extra keys."""
     run_main_and_assert(
@@ -10490,6 +10505,7 @@ def test_main_jsonschema_unevaluated_properties_schema(output_file: Path) -> Non
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file="unevaluated_properties_schema.py",
+        extra_args=["--read-unevaluated-properties"],
         force_exec_validation=True,
     )
 
@@ -10501,6 +10517,7 @@ def test_main_jsonschema_unevaluated_properties_root_map(output_file: Path) -> N
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
+        extra_args=["--read-unevaluated-properties"],
         force_exec_validation=True,
     )
 
@@ -10512,7 +10529,92 @@ def test_main_jsonschema_unevaluated_properties_schema_with_applicator(output_fi
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
+        extra_args=["--read-unevaluated-properties"],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "model_name", "invalid_json", "error_type"),
+    [
+        pytest.param(
+            "unevaluated_properties_schema", "Resource", '{"name": "a", "count": 1}', "string_type", id="schema"
+        ),
+        pytest.param("unevaluated_properties_root_map", "Counts", '{"a": "x"}', "int_parsing", id="root_map"),
+        pytest.param(
+            "unevaluated_properties_schema_with_applicator",
+            "Resource",
+            '{"name": "a", "count": 1}',
+            "string_type",
+            id="schema_with_applicator",
+        ),
+        pytest.param(
+            "unevaluated_properties_not", "Resource", '{"name": "a", "count": 1}', "string_type", id="not_applicator"
+        ),
+    ],
+)
+@pytest.mark.parametrize("read", [False, True], ids=["without_read", "read"])
+def test_main_jsonschema_unevaluated_properties_payloads(
+    output_file: Path, name: str, model_name: str, invalid_json: str, error_type: str, *, read: bool
+) -> None:
+    """Reject an extra key the unevaluatedProperties schema rejects only under --read-unevaluated-properties.
+
+    Without the option the output is that of 0.86.0, whose models allow every extra key.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--read-unevaluated-properties"] if read else [],
+    )
+    if read:
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"{name}_read",
+            model_name=model_name,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+    else:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"{name}_without_read",
+            model_name=model_name,
+            valid_json=invalid_json,
+            invalid_json="[]",
+            expected_error_type="model_type",
+        )
+
+
+@pytest.mark.parametrize(
+    ("name", "valid_json"),
+    [
+        pytest.param("unevaluated_properties_any_of", '{"name": "n", "a": 1, "b": 2}', id="any_of"),
+        pytest.param("unevaluated_properties_if", '{"name": "n", "a": 1}', id="if"),
+    ],
+)
+@pytest.mark.parametrize("read", [False, True], ids=["without_read", "read"])
+def test_main_jsonschema_unevaluated_properties_kept_untyped(
+    output_file: Path, name: str, valid_json: str, *, read: bool
+) -> None:
+    """Accept the keys an applicator evaluates, also under --read-unevaluated-properties.
+
+    Which keys ``unevaluatedProperties`` sees depends on which branches of ``anyOf`` succeed and whether ``if``
+    succeeds, so the models keep the extra keys untyped (#5122).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--read-unevaluated-properties"] if read else [],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"{name}_{'read' if read else 'without_read'}",
+        model_name="Resource",
+        valid_json=valid_json,
+        invalid_json='{"name": 1}',
+        expected_error_type="string_type",
     )
 
 

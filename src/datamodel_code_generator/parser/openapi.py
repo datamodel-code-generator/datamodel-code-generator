@@ -1065,7 +1065,7 @@ class OpenAPIParser(JsonSchemaParser):
         ``location`` is the operation object in its document; the operation may be a copy that carries path-level
         parameters or the global security requirement.
         """
-        operation = Operation.model_validate(raw_operation)
+        operation = Operation.model_validate(raw_operation, context=self._schema_validation_context)
         path_name, method = path[-2:]
         if self.use_operation_id_as_name:
             if not operation.operationId:

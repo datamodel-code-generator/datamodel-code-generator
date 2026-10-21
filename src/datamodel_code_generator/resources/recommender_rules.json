@@ -1287,6 +1287,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Serializes subclasses by their runtime type; changes serialization."
     },
+    "read_unevaluated_properties": {
+      "not_recommended": "preset",
+      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+    },
     "use_single_dict_for_object_maps": {
       "not_recommended": "preset",
       "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."

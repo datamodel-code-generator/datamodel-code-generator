@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 7 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 3 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 11 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 12 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -55,6 +55,7 @@ Scalar, date/time, and custom type mapping.
 |--------|-------------|
 | [`--output-date-class`](../typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](../typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |

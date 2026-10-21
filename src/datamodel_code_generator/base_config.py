@@ -243,6 +243,7 @@ class BaseGenerateConfig(BaseModel):
     use_msgspec_nullable_enum_alias: bool = False
     use_typed_nullable_map_values: bool = False
     use_single_dict_for_object_maps: bool = False
+    read_unevaluated_properties: bool = False
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False

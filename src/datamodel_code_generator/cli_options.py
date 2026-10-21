@@ -644,6 +644,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         topic=OptionTopic.TYPING_CUSTOMIZATION,
         group=OptionGroup.TYPE_MAPPING,
     ),
+    "--read-unevaluated-properties": CLIOptionMeta(
+        name="--read-unevaluated-properties",
+        category=OptionCategory.TYPING,
+        topic=OptionTopic.TYPING_CUSTOMIZATION,
+        group=OptionGroup.TYPE_MAPPING,
+    ),
     "--use-single-dict-for-object-maps": CLIOptionMeta(
         name="--use-single-dict-for-object-maps",
         category=OptionCategory.TYPING,

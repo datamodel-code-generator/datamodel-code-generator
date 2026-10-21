@@ -4129,6 +4129,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias
         self.use_typed_nullable_map_values = config.use_typed_nullable_map_values
         self.use_single_dict_for_object_maps = config.use_single_dict_for_object_maps
+        self.read_unevaluated_properties = config.read_unevaluated_properties
         self.use_single_value_enum_as_const = config.use_single_value_enum_as_const
         self.read_const_beside_enum = config.read_const_beside_enum
         self.known_third_party = config.known_third_party

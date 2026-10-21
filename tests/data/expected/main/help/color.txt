@@ -226,6 +226,11 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
+  --read-unevaluated-properties
+                        Read a schema-valued unevaluatedProperties as
+                        additionalProperties where no applicator evaluates the
+                        object in place, so it types the extra keys of a model
+                        and makes an object without properties a map
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

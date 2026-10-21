@@ -7317,8 +7317,22 @@ use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_an
 	main/jsonschema/unevaluated_items_schema_array.py
 [test_main_jsonschema_unevaluated_properties]
 	main/jsonschema/unevaluated_properties.py
+[test_main_jsonschema_unevaluated_properties_kept_untyped]
+read-any_of	main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[read-any_of].py
+read-if	main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[read-if].py
+without_read-any_of	main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[without_read-any_of].py	= main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[read-any_of].py
+without_read-if	main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[without_read-if].py	= main/jsonschema/main_jsonschema/unevaluated_properties_kept_untyped[read-if].py
 [test_main_jsonschema_unevaluated_properties_multiple_types]
 	main/jsonschema/unevaluated_properties_multiple_types.py
+[test_main_jsonschema_unevaluated_properties_payloads]
+read-not_applicator	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[read-not_applicator].py
+read-root_map	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[read-root_map].py	= main/jsonschema/jsonschema_unevaluated_properties_root_map.py
+read-schema	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[read-schema].py	= main/jsonschema/unevaluated_properties_schema.py
+read-schema_with_applicator	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[read-schema_with_applicator].py	= main/jsonschema/jsonschema_unevaluated_properties_schema_with_applicator.py
+without_read-not_applicator	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[without_read-not_applicator].py
+without_read-root_map	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[without_read-root_map].py
+without_read-schema	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[without_read-schema].py
+without_read-schema_with_applicator	main/jsonschema/main_jsonschema/unevaluated_properties_payloads[without_read-schema_with_applicator].py
 [test_main_jsonschema_unevaluated_properties_root_map]
 	main/jsonschema/jsonschema_unevaluated_properties_root_map.py
 [test_main_jsonschema_unevaluated_properties_schema]

@@ -1,0 +1,11 @@
+{
+    "title": "Resource",
+    "type": "object",
+    "properties": {
+        "name": { "type": "string" }
+    },
+    "not": { "required": ["forbidden"] },
+    "unevaluatedProperties": {
+        "type": "string"
+    }
+}

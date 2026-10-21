@@ -138,6 +138,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-const-beside-enum": "Read a `const` beside an `enum` as JSON Schema does.",
     "--read-nullable-beside-type-list": "Write the null that `nullable: true` declares beside a `type` list into th...",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
+    "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",
     "--reuse-model": "Reuse identical model definitions instead of generating duplicates.",
