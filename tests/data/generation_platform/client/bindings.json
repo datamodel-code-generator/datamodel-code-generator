@@ -1425,7 +1425,8 @@
       "collapse_root_models_name_strategy": "child",
       "reuse_model": true,
       "collapse_reuse_models": true,
-      "read_only_write_only_model_type": "all"
+      "read_only_write_only_model_type": "all",
+      "intersect_allof_keywords": true
     }
   },
   "capture-split": {

@@ -268,6 +268,7 @@ class ParserConfig(BaseModel):
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False
+    intersect_allof_keywords: bool = False
     known_third_party: list[str] | None = None
     custom_formatters: list[str] | None = None
     custom_formatters_kwargs: dict[str, Any] | None = None

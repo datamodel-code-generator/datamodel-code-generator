@@ -837,6 +837,10 @@
       "not_recommended": "command",
       "reason": "Installs the Agent Skill and exits."
     },
+    "intersect_allof_keywords": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+    },
     "job": {
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."

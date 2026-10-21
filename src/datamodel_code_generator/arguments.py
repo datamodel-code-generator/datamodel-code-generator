@@ -847,6 +847,15 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--intersect-allof-keywords",
+    help="Combine the keywords of every part of an `allOf`, of a `$ref` with sibling keywords and of an inherited "
+    "property override, as JSON Schema validates them: the tightest bounds, the `enum` values every part admits, "
+    "the `type` every part admits, and the constraints of the root, item and map value positions of an `allOf`. "
+    "Without it, the keyword of the last part wins where the parts disagree",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--field-constraints",
     help="Use field constraints and not con* annotations",
     action="store_true",

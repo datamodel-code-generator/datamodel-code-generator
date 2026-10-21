@@ -100,6 +100,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--input-file-type": "Specify the input file type for code generation.",
     "--input-model": "Import a Python type or dict schema from a module or Python file.",
     "--input-model-ref-strategy": "Strategy for referenced types when using --input-model.",
+    "--intersect-allof-keywords": "Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...",
     "--keep-model-order": "Keep generated model order deterministic while respecting dependency constraints.",
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",
     "--locked": "Require an existing remote lock and validate each fetched resource against it (experimental).",

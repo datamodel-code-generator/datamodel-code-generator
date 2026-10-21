@@ -39,6 +39,7 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
                     "tree",
                     "--collapse-root-models",
                     "--disable-timestamp",
+                    "--intersect-allof-keywords",
                     *(["--openapi-scopes", "schemas", "api"] if include_api else []),
                 ],
                 force_exec_validation=True,
@@ -53,6 +54,7 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
             reuse_scope="tree",
             collapse_root_models=True,
             disable_timestamp=True,
+            intersect_allof_keywords=True,
             **({"openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api]} if include_api else {}),
         )
     valid_payload = {

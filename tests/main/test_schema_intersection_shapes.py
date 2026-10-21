@@ -98,6 +98,13 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "unsat_root_literals": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
 }
+WITHOUT_OPTION_EXCLUDED: frozenset[str] = frozenset({
+    "allof_patterns",
+    "allof_values",
+    "inherited_override_null_oas31",
+    "pattern_conjunction_edges",
+})
+"""The documents the run without the option leaves out: their patterns and null members are not behind it yet."""
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,
     DataModelType.PydanticV2Dataclass,
@@ -117,7 +124,13 @@ def _input_file_type(input_path: Path) -> str:
     return "openapi" if input_path.is_relative_to(OPEN_API_DATA_PATH) else "jsonschema"
 
 
-def _args(input_path: Path, output_path: Path, backend: DataModelType, options: tuple[str, ...]) -> list[str]:
+OPTION_ARGS: tuple[str, ...] = ("--read-const-beside-enum", "--filter-literal-values", "--intersect-allof-keywords")
+"""The options that make the stored output the intersection of the parts; without them it is the output of 0.86.0."""
+
+
+def _args(
+    input_path: Path, output_path: Path, backend: DataModelType, options: tuple[str, ...], *, with_options: bool = True
+) -> list[str]:
     return [
         "--input",
         str(input_path),
@@ -130,8 +143,7 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
         "--disable-timestamp",
         "--formatters",
         "builtin",
-        "--read-const-beside-enum",
-        "--filter-literal-values",
+        *(OPTION_ARGS if with_options else ()),
         *options,
     ]
 
@@ -144,7 +156,39 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
 def test_schema_intersection_shape_output(
     output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...]
 ) -> None:
-    """Pin the code each backend and option set writes for every intersection shape today."""
+    """Pin the code each backend and option set writes for every intersection shape with --intersect-allof-keywords."""
+    _assert_shape_output(output_file, stem, backend, options, with_options=True)
+
+
+@pytest.mark.parametrize(
+    ("stem", "backend", "options"),
+    [
+        (stem, backend, options)
+        for stem in OUTPUT_DOCUMENTS
+        if stem not in WITHOUT_OPTION_EXCLUDED
+        for backend, options in _runs(stem)
+    ],
+    ids=[
+        f"{stem}-{backend.value}-{_label(options)}"
+        for stem in OUTPUT_DOCUMENTS
+        if stem not in WITHOUT_OPTION_EXCLUDED
+        for backend, options in _runs(stem)
+    ],
+)
+def test_schema_intersection_shape_output_without_option(
+    output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...]
+) -> None:
+    """Write the output of 0.86.0 for every intersection shape without --intersect-allof-keywords.
+
+    The keyword of the last part wins where the parts disagree: the sibling of a ``$ref``, the overriding property and
+    the last member of an ``allOf``.
+    """
+    _assert_shape_output(output_file, stem, backend, options, with_options=False)
+
+
+def _assert_shape_output(
+    output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...], *, with_options: bool
+) -> None:
     input_path = OUTPUT_DOCUMENTS[stem]
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
@@ -158,8 +202,7 @@ def test_schema_intersection_shape_output(
                 "--disable-timestamp",
                 "--formatters",
                 "builtin",
-                "--read-const-beside-enum",
-                "--filter-literal-values",
+                *(OPTION_ARGS if with_options else ()),
                 *options,
             ],
         )
@@ -186,7 +229,22 @@ def _outcome(decode: Callable[[str], Any], rejected: type[Exception], instance: 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
 @pytest.mark.parametrize("stem", DOCUMENTS)
 def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
-    """Prove the payload lists with jsonschema, then record what each generated model accepts today."""
+    """Prove the payload lists with jsonschema, then record what each model generated with the option accepts."""
+    assert_output(_shape_payload_lines(tmp_path, stem, with_options=True))
+
+
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+@pytest.mark.parametrize("stem", [stem for stem in DOCUMENTS if stem not in WITHOUT_OPTION_EXCLUDED])
+def test_schema_intersection_shape_payloads_without_option(tmp_path: Path, stem: str) -> None:
+    """Record what each model generated without --intersect-allof-keywords accepts, as the models of 0.86.0 do.
+
+    The payloads the intersection rejects, such as an enum value outside the narrower enum or a number below the
+    larger minimum, are accepted without the option.
+    """
+    assert_output(_shape_payload_lines(tmp_path, stem, with_options=False))
+
+
+def _shape_payload_lines(tmp_path: Path, stem: str, *, with_options: bool) -> str:
     input_path = DOCUMENTS[stem]
     case = PAYLOADS[stem]
     if input_path.suffix == ".yaml":
@@ -212,7 +270,7 @@ def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
         output_path = tmp_path / f"run_{index}.py"
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            run_main_with_args(_args(input_path, output_path, backend, options))
+            run_main_with_args(_args(input_path, output_path, backend, options, with_options=with_options))
             try:
                 with _generated_model(output_path, f"schema_intersection_{stem}_{index}", case["model"]) as model:
                     decoder = _decoder(model, backend)
@@ -224,4 +282,4 @@ def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
             f"{backend.value} {' '.join(options) or 'default'} {name} {json.dumps(value)} {outcome}\n"
             for (name, value), outcome in zip(values, outcomes, strict=True)
         )
-    assert_output("".join(lines))
+    return "".join(lines)

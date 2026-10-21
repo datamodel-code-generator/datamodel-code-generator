@@ -420,6 +420,13 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         )
     },
     "jsonschema/enum_multiple_of_big_integer.json": dict.fromkeys(PayloadBackend, ("--filter-literal-values",)),
+    **{
+        case_id: dict.fromkeys(PayloadBackend, ("--intersect-allof-keywords",))
+        for case_id in (
+            "jsonschema/allof_mapping_every_part_null.json",
+            "openapi/schema_intersection/root_site_null_oas30.yaml::components.schemas.InlineArray",
+        )
+    },
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },

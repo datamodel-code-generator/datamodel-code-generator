@@ -555,6 +555,16 @@ field-constraints-none	main/openapi/allof_partial_unconstrained_schemas_field_co
 standard-all	main/openapi/allof_partial_unconstrained_schemas_standard.py	= main/openapi/allof_partial_unconstrained_schemas_standard~allof_partial_unconstrained_schemas[standard-all].py
 standard-constraints	main/openapi/allof_partial_unconstrained_schemas_standard.py	= main/openapi/allof_partial_unconstrained_schemas_standard~allof_partial_unconstrained_schemas[standard-all].py
 standard-none	main/openapi/allof_partial_unconstrained_schemas_standard.py
+[test_main_openapi_allof_partial_unconstrained_schemas_without_option]
+annotated-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[annotated-all].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
+annotated-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[annotated-constraints].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
+annotated-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[annotated-none].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
+field-constraints-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[field-constraints-all].py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints.py
+field-constraints-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[field-constraints-constraints].py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints.py
+field-constraints-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[field-constraints-none].py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints.py
+standard-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[standard-all].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
+standard-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[standard-constraints].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
+standard-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[standard-none].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
 [test_main_openapi_allof_property_bool_schema]
 	main/openapi/allof_property_bool_schema.py
 [test_main_openapi_allof_required_inherited_collision_msgspec]
@@ -611,6 +621,9 @@ request-response-none	main/openapi/allof_required_inherited_nested_inline_reques
 [test_main_openapi_allof_required_inherited_options]
 all	main/openapi/allof_required_inherited_options.py
 constraints	main/openapi/allof_required_inherited_options.py
+[test_main_openapi_allof_required_inherited_options_without_option]
+all	main/openapi/main_openapi/allof_required_inherited_options_without_option[all].py
+constraints	main/openapi/main_openapi/allof_required_inherited_options_without_option[constraints].py	= main/openapi/main_openapi/allof_required_inherited_options_without_option[all].py
 [test_main_openapi_allof_required_inherited_rw_c3]
 all	main/openapi/allof_required_inherited_rw_c3.py
 request-response	main/openapi/allof_required_inherited_rw_c3_request_response.py
@@ -622,6 +635,12 @@ msgspec	main/openapi/allof_scalar_roots/msgspec.py
 pydantic-v2	main/openapi/allof_scalar_roots/pydantic_v2.py
 pydantic-v2-dataclass	main/openapi/allof_scalar_roots/pydantic_v2_dataclass.py
 typed-dict	main/openapi/allof_scalar_roots/typed_dict.py
+[test_main_openapi_allof_scalar_roots_without_option]
+dataclasses.dataclass	main/openapi/main_openapi/allof_scalar_roots_without_option[dataclasses.dataclass].py
+msgspec.Struct	main/openapi/main_openapi/allof_scalar_roots_without_option[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/allof_scalar_roots_without_option[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/openapi/main_openapi/allof_scalar_roots_without_option[pydantic_v2.dataclass].py
+typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typing.TypedDict].py
 [test_main_openapi_allof_single_ref_inline]
 	main/openapi/openapi_allof_single_ref_inline.py
 [test_main_openapi_allof_with_anyof_ref]

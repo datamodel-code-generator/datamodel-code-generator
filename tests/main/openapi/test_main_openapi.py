@@ -4735,8 +4735,38 @@ def test_main_openapi_allof_scalar_roots(output_file: Path, output_model_type: s
             "--disable-timestamp",
             "--formatters",
             "builtin",
+            "--intersect-allof-keywords",
         ],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.PydanticV2BaseModel.value,
+        DataModelType.PydanticV2Dataclass.value,
+        DataModelType.DataclassesDataclass.value,
+        DataModelType.TypingTypedDict.value,
+        DataModelType.MsgspecStruct.value,
+    ],
+)
+def test_main_openapi_allof_scalar_roots_without_option(output_file: Path, output_model_type: str) -> None:
+    """Write the empty class of an allOf scalar root without --intersect-allof-keywords, as 0.86.0 does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_scalar_roots.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
     )
 
 
@@ -6946,6 +6976,7 @@ def test_main_openapi_allof_required_inherited_options(
             str(ALIASES_DATA_PATH / "allof_required_inherited_serialization_options.json"),
             "--default-values",
             str(DEFAULT_VALUES_DATA_PATH / "allof_required_inherited_options.json"),
+            "--intersect-allof-keywords",
             *([] if allof_merge_mode is None else ["--allof-merge-mode", allof_merge_mode]),
         ],
         force_exec_validation=True,
@@ -7084,6 +7115,36 @@ def test_main_openapi_allof_required_inherited_options(
         expected_error_type="bool_parsing",
         expected_attribute_path=("orderedValue",),
         expected_attribute_value=True,
+    )
+
+
+@pytest.mark.parametrize("allof_merge_mode", [pytest.param(None, id="constraints"), pytest.param("all", id="all")])
+def test_main_openapi_allof_required_inherited_options_without_option(
+    output_file: Path, allof_merge_mode: str | None
+) -> None:
+    """Write the output of 0.86.0 for inherited field options without --intersect-allof-keywords."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_required_inherited_options.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--use-default",
+            "--allof-class-hierarchy",
+            "always",
+            "--aliases",
+            str(ALIASES_DATA_PATH / "allof_required_inherited_options.json"),
+            "--serialization-aliases",
+            str(ALIASES_DATA_PATH / "allof_required_inherited_serialization_options.json"),
+            "--default-values",
+            str(DEFAULT_VALUES_DATA_PATH / "allof_required_inherited_options.json"),
+            *([] if allof_merge_mode is None else ["--allof-merge-mode", allof_merge_mode]),
+        ],
     )
 
 
@@ -7714,6 +7775,7 @@ def test_main_openapi_allof_partial_unconstrained_schemas(
             merge_mode,
             "--strict-nullable",
             "--use-tuple-for-fixed-items",
+            "--intersect-allof-keywords",
             *(["--field-constraints"] if field_constraints else []),
             *(["--use-annotated"] if use_annotated else []),
         ],
@@ -7857,6 +7919,44 @@ def test_main_openapi_allof_partial_unconstrained_schemas(
                 invalid_json=json.dumps({**valid_payload, field_name: invalid_value}),
                 expected_error_type=expected_error_type,
             )
+
+
+@pytest.mark.parametrize("merge_mode", ["constraints", "all", "none"])
+@pytest.mark.parametrize(
+    ("field_constraints", "use_annotated"),
+    [(False, False), (True, False), (True, True)],
+    ids=["standard", "field-constraints", "annotated"],
+)
+def test_main_openapi_allof_partial_unconstrained_schemas_without_option(
+    output_file: Path,
+    merge_mode: str,
+    *,
+    field_constraints: bool,
+    use_annotated: bool,
+) -> None:
+    """Write the output of 0.86.0 for partial allOf schemas without --intersect-allof-keywords.
+
+    The keyword of the last part wins, so the inherited constraints of a property stay out of its override.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_partial_unconstrained_schemas.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--allof-merge-mode",
+            merge_mode,
+            "--strict-nullable",
+            "--use-tuple-for-fixed-items",
+            *(["--field-constraints"] if field_constraints else []),
+            *(["--use-annotated"] if use_annotated else []),
+        ],
+    )
 
 
 @pytest.mark.parametrize(

@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 38 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 39 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 51 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
@@ -227,6 +227,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--input-model`](base-options.md#input-model)
 - [`--input-model-ref-strategy`](base-options.md#input-model-ref-strategy)
 - [`--install-skill`](utility-options.md#install-skill)
+- [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords)
 
 ### J {#j}
 

@@ -39,6 +39,7 @@ def test_generation_observation(backend: DataModelType, tmp_path: Path) -> None:
                 read_only_write_only_model_type="all",
                 collapse_root_models=True,
                 reuse_model=True,
+                intersect_allof_keywords=True,
             )
     finally:
         sys.setprofile(previous)

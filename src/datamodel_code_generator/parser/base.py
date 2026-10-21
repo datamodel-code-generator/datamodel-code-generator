@@ -3948,6 +3948,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._decimal_default_warning_count = 0
         self._decimal_default_warning_examples: list[str] | None = None
         self.checks_literal_values = config.filter_literal_values or config.omit_redundant_constraints
+        self.intersects_allof_keywords = config.intersect_allof_keywords
         self._data_model_field_common_kwargs_cache: dict[str, Any] = {
             "use_missing_sentinel": self.use_missing_sentinel,
             "target_python_version": self.target_python_version,

@@ -2081,6 +2081,7 @@ def test_input_model_inherited_overrides(model_name: str, entrypoint: str, tmp_p
         "--disable-timestamp",
         "--strict-nullable",
         "--generate-schema-validators",
+        *(["--intersect-allof-keywords"] if schema_path else []),
         "--formatters",
         *(formatter.value for formatter in formatters),
     ]
@@ -2117,6 +2118,7 @@ def test_input_model_inherited_overrides(model_name: str, entrypoint: str, tmp_p
                     disable_timestamp=True,
                     strict_nullable=True,
                     generate_schema_validators=True,
+                    intersect_allof_keywords=schema_path is not None,
                     formatters=formatters,
                     output=output,
                 ),
@@ -2143,6 +2145,21 @@ def test_input_model_inherited_overrides(model_name: str, entrypoint: str, tmp_p
                         observations[name] = result.model_dump(mode="json", by_alias=True)
             records.append(observations)
     assert_output(json.dumps(records, indent=2), INPUT_OVERRIDE_EXPECTED / f"{model_name}_runtime.txt")
+
+
+def test_input_model_caller_override_extension_without_option(tmp_path: Path) -> None:
+    """Keep the overriding bound of a raw schema without --intersect-allof-keywords, as 0.86.0 does."""
+    run_main_and_assert(
+        input_path=Path(__file__).parent / "data" / "jsonschema" / "input_model_caller_override_extension.json",
+        input_file_type="jsonschema",
+        output_path=tmp_path / "output.py",
+        extra_args=[
+            "--disable-timestamp",
+            "--strict-nullable",
+            "--generate-schema-validators",
+            *("--formatters", "builtin"),
+        ],
+    )
 
 
 @pytest.mark.parametrize("formatter", ["builtin", "external"])

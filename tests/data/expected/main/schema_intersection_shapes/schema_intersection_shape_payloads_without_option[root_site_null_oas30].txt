@@ -1,0 +1,96 @@
+pydantic_v2.BaseModel default ref_array ["a"] rejected
+pydantic_v2.BaseModel default ref_array null accepted
+pydantic_v2.BaseModel default ref_array [] rejected
+pydantic_v2.BaseModel default ref_array [1] rejected
+pydantic_v2.BaseModel default inline_array ["a"] rejected
+pydantic_v2.BaseModel default inline_array null accepted
+pydantic_v2.BaseModel default inline_array [] rejected
+pydantic_v2.BaseModel default inline_array [1] rejected
+pydantic_v2.dataclass default ref_array ["a"] rejected
+pydantic_v2.dataclass default ref_array null accepted
+pydantic_v2.dataclass default ref_array [] rejected
+pydantic_v2.dataclass default ref_array [1] rejected
+pydantic_v2.dataclass default inline_array ["a"] rejected
+pydantic_v2.dataclass default inline_array null accepted
+pydantic_v2.dataclass default inline_array [] rejected
+pydantic_v2.dataclass default inline_array [1] rejected
+msgspec.Struct default ref_array ["a"] rejected
+msgspec.Struct default ref_array null rejected
+msgspec.Struct default ref_array [] rejected
+msgspec.Struct default ref_array [1] rejected
+msgspec.Struct default inline_array ["a"] rejected
+msgspec.Struct default inline_array null rejected
+msgspec.Struct default inline_array [] rejected
+msgspec.Struct default inline_array [1] rejected
+pydantic_v2.BaseModel --field-constraints ref_array ["a"] rejected
+pydantic_v2.BaseModel --field-constraints ref_array null accepted
+pydantic_v2.BaseModel --field-constraints ref_array [] rejected
+pydantic_v2.BaseModel --field-constraints ref_array [1] rejected
+pydantic_v2.BaseModel --field-constraints inline_array ["a"] rejected
+pydantic_v2.BaseModel --field-constraints inline_array null accepted
+pydantic_v2.BaseModel --field-constraints inline_array [] rejected
+pydantic_v2.BaseModel --field-constraints inline_array [1] rejected
+pydantic_v2.BaseModel --use-annotated ref_array ["a"] rejected
+pydantic_v2.BaseModel --use-annotated ref_array null accepted
+pydantic_v2.BaseModel --use-annotated ref_array [] rejected
+pydantic_v2.BaseModel --use-annotated ref_array [1] rejected
+pydantic_v2.BaseModel --use-annotated inline_array ["a"] rejected
+pydantic_v2.BaseModel --use-annotated inline_array null accepted
+pydantic_v2.BaseModel --use-annotated inline_array [] rejected
+pydantic_v2.BaseModel --use-annotated inline_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_array ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_array null accepted
+pydantic_v2.BaseModel --collapse-root-models ref_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models inline_array ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models inline_array null accepted
+pydantic_v2.BaseModel --collapse-root-models inline_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models inline_array [1] rejected
+msgspec.Struct --collapse-root-models ref_array ["a"] rejected
+msgspec.Struct --collapse-root-models ref_array null rejected
+msgspec.Struct --collapse-root-models ref_array [] rejected
+msgspec.Struct --collapse-root-models ref_array [1] rejected
+msgspec.Struct --collapse-root-models inline_array ["a"] rejected
+msgspec.Struct --collapse-root-models inline_array null rejected
+msgspec.Struct --collapse-root-models inline_array [] rejected
+msgspec.Struct --collapse-root-models inline_array [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline_array [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array null rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_array [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array null rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_array [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline_array [1] rejected

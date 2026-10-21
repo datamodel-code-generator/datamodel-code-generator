@@ -68,6 +68,7 @@ reviewed-safe http_timeout
 reviewed-safe ignore_enum_constraints
 guarded import_overrides
 reviewed-safe infer_union_variant_names
+reviewed-safe intersect_allof_keywords
 reviewed-safe keep_model_order
 reviewed-safe keyword_only
 reviewed-safe known_third_party

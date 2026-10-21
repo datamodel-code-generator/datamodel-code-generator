@@ -8,6 +8,8 @@ no_param	main/input_model/model_with_callable_types.py
 optional	main/input_model/model_with_callable_types.py
 type_field	main/input_model/model_with_callable_types.py
 variadic	main/input_model/model_with_callable_types.py
+[test_input_model_caller_override_extension_without_option]
+	input_model/caller_override_extension_without_option.py
 [test_input_model_config_class]
 	main/input_model/config_class.py
 [test_input_model_config_string_coercion]

@@ -12,6 +12,7 @@
 | [`--filter-literal-values`](#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the... |
 | [`--ignore-enum-constraints`](#ignore-enum-constraints) | Ignore enum constraints and use base string type instead of ... |
 | [`--import-overrides`](#import-overrides) | Override modules for generated imports by symbol name. |
+| [`--intersect-allof-keywords`](#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` w... |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
 | [`--no-use-standard-collections`](#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for conta... |
@@ -772,8 +773,8 @@ other properties separate.
                 extra: str | None = None
 
 
-            class ConstraintWithItems(RootModel[StringDatatype]):
-                root: StringDatatype = Field(..., description='Constraint item has items.')
+            class ConstraintWithItems(BaseModel):
+                pass
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
@@ -792,10 +793,8 @@ other properties separate.
                 root: list[str]
 
 
-            class RefToArrayAllOf(RootModel[list[str]]):
-                root: list[str] = Field(
-                    ..., description='Ref to array - not a root model.', min_length=1
-                )
+            class RefToArrayAllOf(BaseModel):
+                pass
 
 
             class ObjectNoPropsDatatype(BaseModel):
@@ -945,8 +944,8 @@ other properties separate.
                 extra: str | None = None
 
 
-            class ConstraintWithItems(RootModel[StringDatatype]):
-                root: StringDatatype = Field(..., description='Constraint item has items.')
+            class ConstraintWithItems(BaseModel):
+                pass
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
@@ -965,10 +964,8 @@ other properties separate.
                 root: list[str]
 
 
-            class RefToArrayAllOf(RootModel[list[str]]):
-                root: list[str] = Field(
-                    ..., description='Ref to array - not a root model.', min_length=1
-                )
+            class RefToArrayAllOf(BaseModel):
+                pass
 
 
             class ObjectNoPropsDatatype(BaseModel):
@@ -1966,6 +1963,178 @@ across Python target versions.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--intersect-allof-keywords` {#intersect-allof-keywords}
+
+Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an override.
+
+JSON Schema applies the members of an `allOf`, a `$ref` and the keywords beside it, and a property that overrides
+an inherited one all at once, so a value must meet every part. Without the option the keyword of the last part
+wins where the parts disagree: the sibling of a `$ref`, the overriding property, the last member of an `allOf`.
+With `--intersect-allof-keywords`, the tightest bound of the parts is written (`maximum: 10` beside `maximum: 20`
+keeps `10`), an `enum` holds the values every part admits, a `type` the types every part admits, and `required` the
+names of every part. An `allOf` of value schemas at a root, an item or a map value is one constraint schema in the
+same way. Parts that no value meets together keep the earlier merge with a warning.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input inherited_overrides.json --intersect-allof-keywords # (1)!
+    ```
+
+    1. :material-arrow-left: `--intersect-allof-keywords` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "c": {
+          "$ref": "#/$defs/Child"
+        }
+      },
+      "$defs": {
+        "Base": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer",
+              "maximum": 10
+            },
+            "e": {
+              "type": "string",
+              "enum": [
+                "a",
+                "b"
+              ]
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "Child": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "maximum": 20
+                },
+                "e": {
+                  "enum": [
+                    "b",
+                    "c"
+                  ]
+                },
+                "y": {
+                  "maximum": 5
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  inherited_overrides.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, Field
+
+
+        class E(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class Base(BaseModel):
+            x: int | None = Field(None, le=10)
+            e: E | None = None
+            y: int | None = Field(None, ge=0)
+
+
+        class E1(Enum):
+            b = 'b'
+
+
+        class Child(Base):
+            x: int | None = Field(None, le=10)
+            e: E1 | None = None
+            y: int | None = Field(None, ge=0, le=5)
+
+
+        class Model(BaseModel):
+            c: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  inherited_overrides.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, Field
+
+
+        class E(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class Base(BaseModel):
+            x: int | None = Field(None, le=10)
+            e: E | None = None
+            y: int | None = Field(None, ge=0)
+
+
+        class E1(Enum):
+            b = 'b'
+            c = 'c'
+
+
+        class Child(Base):
+            x: int | None = Field(None, le=20)
+            e: E1 | None = None
+            y: int | None = Field(None, ge=0, le=5)
+
+
+        class Model(BaseModel):
+            c: Child | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -4716,8 +4885,7 @@ Schema and GraphQL inputs are not changed.
             b = 'b'
 
 
-        class Pick(Enum):
-            b = 'b'
+        Pick: TypeAlias = AB
 
 
         class Settings(Struct):

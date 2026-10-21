@@ -38,6 +38,7 @@ What other options should I use?
 - `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
 - `--ignore-enum-constraints`: Ignore enum constraints and use base string type instead of Enum classes.
 - `--import-overrides`: Override modules for generated imports by symbol name.
+- `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
@@ -469,6 +470,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Format: JSON object mapping symbols to module paths.
                         Example: '{"TypedDict": "my_project.typing_compat",
                         "NotRequired": "my_project.typing_compat"}'.
+  --intersect-allof-keywords
+                        Combine the keywords of every part of an `allOf`, of a
+                        `$ref` with sibling keywords and of an inherited
+                        property override, as JSON Schema validates them: the
+                        tightest bounds, the `enum` values every part admits,
+                        the `type` every part admits, and the constraints of
+                        the root, item and map value positions of an `allOf`.
+                        Without it, the keyword of the last part wins where
+                        the parts disagree
   --omit-redundant-constraints
                         Do not write a constraint again beside a type that
                         already enforces it: the bound of a zero-bound class

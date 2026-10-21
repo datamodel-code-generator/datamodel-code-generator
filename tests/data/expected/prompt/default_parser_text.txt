@@ -32,6 +32,7 @@
 - `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
 - `--ignore-enum-constraints`: Ignore enum constraints and use base string type instead of Enum classes.
 - `--import-overrides`: Override modules for generated imports by symbol name.
+- `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.

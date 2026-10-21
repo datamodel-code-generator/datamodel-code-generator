@@ -46,8 +46,7 @@ class AB(Enum):
     b = 'b'
 
 
-class Pick(Enum):
-    b = 'b'
+Pick: TypeAlias = AB
 
 
 class Settings(Struct):

@@ -12527,7 +12527,7 @@ def test_main_jsonschema_allof_mapping_every_part_null(output_file: Path) -> Non
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--intersect-allof-keywords"],
     )
 
 
@@ -12538,6 +12538,20 @@ def test_main_jsonschema_allof_mapping_ref_sibling_type(output_file: Path) -> No
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--intersect-allof-keywords"],
+    )
+
+
+@pytest.mark.parametrize("name", ["allof_mapping_every_part_null", "allof_mapping_ref_sibling_type"])
+def test_main_jsonschema_allof_mapping_without_option(output_file: Path, name: str) -> None:
+    """Write the output of 0.86.0 for an allOf map without --intersect-allof-keywords.
+
+    The allOf of maps is an empty model, as it is up to 0.86.0, and its types are not merged.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -30768,7 +30782,7 @@ def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:
         ("jsonschema/recursive_ref.json", "jsonschema", []),
         ("jsonschema/dynamic_ref_embedded_generic_specialization.json", "jsonschema", []),
         ("jsonschema/x_python_type_nested_unknown_type.json", "jsonschema", []),
-        ("openapi/discriminator_allof.yaml", "openapi", []),
+        ("openapi/discriminator_allof.yaml", "openapi", ["--intersect-allof-keywords"]),
         ("generation_platform/api_scope/items-object.json", "openapi", ["--openapi-scopes", "schemas", "paths", "api"]),
         ("asyncapi/user-events.yaml", "asyncapi", []),
         ("asyncapi/stable-surface.yaml", "asyncapi", []),
@@ -31580,7 +31594,7 @@ def test_numeric_allof_types(
     with warnings.catch_warnings(record=True) as captured:
         warnings.simplefilter("always", UserWarning)
         if entrypoint == "cli":
-            args = ["--disable-timestamp", "--allof-merge-mode", merge_mode.value]
+            args = ["--disable-timestamp", "--allof-merge-mode", merge_mode.value, "--intersect-allof-keywords"]
             if field_constraints:
                 args.append("--field-constraints")
             run_main_and_assert(
@@ -31598,6 +31612,7 @@ def test_numeric_allof_types(
                 output=output_file,
                 disable_timestamp=True,
                 allof_merge_mode=merge_mode,
+                intersect_allof_keywords=True,
                 field_constraints=field_constraints,
                 assert_input_unchanged=True,
                 expected_file=expected / filename,
@@ -31645,6 +31660,32 @@ def test_numeric_allof_types(
                     accepted = False
                 results.append({"payload": payload, "native": base_validator.is_valid(payload), "generated": accepted})
         assert_output(json.dumps(results, indent=2) + "\n", expected / f"{case}_base_runtime.txt")
+
+
+@pytest.mark.parametrize("case", ["outside_field", "outside_null", "outside_root"])
+@pytest.mark.parametrize("merge_mode", list(AllOfMergeMode))
+@pytest.mark.parametrize("field_constraints", [False, True])
+def test_numeric_allof_types_without_option(
+    output_file: Path, case: str, merge_mode: AllOfMergeMode, *, field_constraints: bool
+) -> None:
+    """Keep the type of an allOf whose parts have no type in common without --intersect-allof-keywords.
+
+    The output is that of 0.86.0, and no warning says that no value satisfies every part.
+    """
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "numeric_allof_types" / f"{case}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--disable-timestamp",
+                "--allof-merge-mode",
+                merge_mode.value,
+                *(["--field-constraints"] if field_constraints else []),
+            ],
+        )
+    assert_output(json.dumps([str(item.message) for item in captured], indent=2) + "\n", name="warnings")
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
@@ -32623,4 +32664,45 @@ def test_custom_pattern_annotation_context(tmp_path: Path, monkeypatch: pytest.M
     assert_output(
         json.dumps({"contexts": contexts, "values": records}, indent=2),
         UNKNOWN_PATTERN_EXPECTED / f"custom_{expected_case}_runtime.txt",
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--intersect-allof-keywords"],
+    option_description="""Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an override.
+
+JSON Schema applies the members of an `allOf`, a `$ref` and the keywords beside it, and a property that overrides
+an inherited one all at once, so a value must meet every part. Without the option the keyword of the last part
+wins where the parts disagree: the sibling of a `$ref`, the overriding property, the last member of an `allOf`.
+With `--intersect-allof-keywords`, the tightest bound of the parts is written (`maximum: 10` beside `maximum: 20`
+keeps `10`), an `enum` holds the values every part admits, a `type` the types every part admits, and `required` the
+names of every part. An `allOf` of value schemas at a root, an item or a map value is one constraint schema in the
+same way. Parts that no value meets together keep the earlier merge with a warning.""",
+    input_schema="jsonschema/schema_intersection/inherited_overrides.json",
+    cli_args=["--intersect-allof-keywords"],
+    golden_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output[inherited_overrides-pydantic_v2.BaseModel-field-constraints].py"
+    ),
+    comparison_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output_without_option[inherited_overrides-pydantic_v2.BaseModel-field-constraints].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--intersect-allof-keywords"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_intersect_allof_keywords(output_file: Path, extra_args: list[str]) -> None:
+    """Write the tightest bound and the shared enum values of an inherited override with the option.
+
+    Without --intersect-allof-keywords the overriding property wins, as in 0.86.0: ``maximum: 20`` and the enum
+    ``b``, ``c`` replace the ``maximum: 10`` and the enum ``a``, ``b`` of the parent.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_intersection" / "inherited_overrides.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--field-constraints"],
+        force_exec_validation=True,
     )
