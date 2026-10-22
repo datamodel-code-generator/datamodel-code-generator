@@ -6267,5 +6267,102 @@
         ]
       }
     }
+  },
+  "enum_ref_consts": {
+    "model": "Model",
+    "fields": {
+      "one": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "cst": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "own": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "lvl": {
+        "valid": [
+          2
+        ],
+        "invalid": [
+          1,
+          3,
+          4
+        ]
+      },
+      "same": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "none": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b",
+          "z"
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "named": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      }
+    }
   }
 }

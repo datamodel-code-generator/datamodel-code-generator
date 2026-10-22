@@ -71,6 +71,12 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--type-overrides", TYPE_OVERRIDES)),
         (DataModelType.PydanticV2BaseModel, ("--type-overrides", TYPE_OVERRIDES, SITE_MODELS)),
     ),
+    "enum_ref_consts": (
+        (DataModelType.PydanticV2BaseModel, (SITE_MODELS, "--use-single-value-enum-as-const")),
+        (DataModelType.MsgspecStruct, (SITE_MODELS, "--use-single-value-enum-as-const")),
+        (DataModelType.PydanticV2BaseModel, ("--preset", "standard-py310-20261019")),
+        (DataModelType.MsgspecStruct, ("--preset", "standard-py310-20261019")),
+    ),
     "allof_ref_item_constraints": (
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
         (DataModelType.PydanticV2Dataclass, ("--field-constraints",)),

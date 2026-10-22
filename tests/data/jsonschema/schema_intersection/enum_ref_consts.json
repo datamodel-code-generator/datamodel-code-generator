@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "one": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "cst": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "const": "b"
+        }
+      ]
+    },
+    "own": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        }
+      ],
+      "const": "b"
+    },
+    "lvl": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "const": 2
+        }
+      ]
+    },
+    "same": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/B"
+        },
+        {
+          "const": "b"
+        }
+      ]
+    },
+    "none": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "const": "z"
+        }
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "const": "b"
+          }
+        ]
+      }
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "const": "b"
+          }
+        ]
+      }
+    },
+    "named": {
+      "$ref": "#/$defs/P"
+    }
+  },
+  "$defs": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "B": {
+      "type": "string",
+      "enum": [
+        "b"
+      ]
+    },
+    "Level": {
+      "type": "integer",
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "P": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    }
+  }
+}

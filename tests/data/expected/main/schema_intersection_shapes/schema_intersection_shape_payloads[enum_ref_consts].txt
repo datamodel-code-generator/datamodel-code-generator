@@ -1,0 +1,432 @@
+pydantic_v2.BaseModel default one "b" accepted
+pydantic_v2.BaseModel default one "a" accepted
+pydantic_v2.BaseModel default one "c" rejected
+pydantic_v2.BaseModel default cst "b" accepted
+pydantic_v2.BaseModel default cst "a" accepted
+pydantic_v2.BaseModel default cst "c" rejected
+pydantic_v2.BaseModel default own "b" accepted
+pydantic_v2.BaseModel default own "a" rejected
+pydantic_v2.BaseModel default own "c" rejected
+pydantic_v2.BaseModel default lvl 2 accepted
+pydantic_v2.BaseModel default lvl 1 accepted
+pydantic_v2.BaseModel default lvl 3 accepted
+pydantic_v2.BaseModel default lvl 4 rejected
+pydantic_v2.BaseModel default same "b" accepted
+pydantic_v2.BaseModel default same "a" rejected
+pydantic_v2.BaseModel default none "a" accepted
+pydantic_v2.BaseModel default none "b" accepted
+pydantic_v2.BaseModel default none "z" rejected
+pydantic_v2.BaseModel default items ["b"] accepted
+pydantic_v2.BaseModel default items ["a"] accepted
+pydantic_v2.BaseModel default items ["c"] rejected
+pydantic_v2.BaseModel default map {"k": "b"} accepted
+pydantic_v2.BaseModel default map {"k": "a"} accepted
+pydantic_v2.BaseModel default map {"k": "c"} rejected
+pydantic_v2.BaseModel default named "b" accepted
+pydantic_v2.BaseModel default named "a" accepted
+pydantic_v2.BaseModel default named "c" rejected
+pydantic_v2.dataclass default one "b" accepted
+pydantic_v2.dataclass default one "a" accepted
+pydantic_v2.dataclass default one "c" rejected
+pydantic_v2.dataclass default cst "b" accepted
+pydantic_v2.dataclass default cst "a" accepted
+pydantic_v2.dataclass default cst "c" rejected
+pydantic_v2.dataclass default own "b" accepted
+pydantic_v2.dataclass default own "a" rejected
+pydantic_v2.dataclass default own "c" rejected
+pydantic_v2.dataclass default lvl 2 accepted
+pydantic_v2.dataclass default lvl 1 accepted
+pydantic_v2.dataclass default lvl 3 accepted
+pydantic_v2.dataclass default lvl 4 rejected
+pydantic_v2.dataclass default same "b" accepted
+pydantic_v2.dataclass default same "a" rejected
+pydantic_v2.dataclass default none "a" accepted
+pydantic_v2.dataclass default none "b" accepted
+pydantic_v2.dataclass default none "z" rejected
+pydantic_v2.dataclass default items ["b"] accepted
+pydantic_v2.dataclass default items ["a"] accepted
+pydantic_v2.dataclass default items ["c"] rejected
+pydantic_v2.dataclass default map {"k": "b"} accepted
+pydantic_v2.dataclass default map {"k": "a"} accepted
+pydantic_v2.dataclass default map {"k": "c"} rejected
+pydantic_v2.dataclass default named "b" accepted
+pydantic_v2.dataclass default named "a" accepted
+pydantic_v2.dataclass default named "c" rejected
+msgspec.Struct default one "b" accepted
+msgspec.Struct default one "a" accepted
+msgspec.Struct default one "c" rejected
+msgspec.Struct default cst "b" accepted
+msgspec.Struct default cst "a" accepted
+msgspec.Struct default cst "c" rejected
+msgspec.Struct default own "b" accepted
+msgspec.Struct default own "a" accepted
+msgspec.Struct default own "c" rejected
+msgspec.Struct default lvl 2 accepted
+msgspec.Struct default lvl 1 accepted
+msgspec.Struct default lvl 3 accepted
+msgspec.Struct default lvl 4 rejected
+msgspec.Struct default same "b" accepted
+msgspec.Struct default same "a" rejected
+msgspec.Struct default none "a" accepted
+msgspec.Struct default none "b" accepted
+msgspec.Struct default none "z" rejected
+msgspec.Struct default items ["b"] accepted
+msgspec.Struct default items ["a"] accepted
+msgspec.Struct default items ["c"] rejected
+msgspec.Struct default map {"k": "b"} accepted
+msgspec.Struct default map {"k": "a"} accepted
+msgspec.Struct default map {"k": "c"} rejected
+msgspec.Struct default named "b" accepted
+msgspec.Struct default named "a" accepted
+msgspec.Struct default named "c" rejected
+pydantic_v2.BaseModel --field-constraints one "b" accepted
+pydantic_v2.BaseModel --field-constraints one "a" accepted
+pydantic_v2.BaseModel --field-constraints one "c" rejected
+pydantic_v2.BaseModel --field-constraints cst "b" accepted
+pydantic_v2.BaseModel --field-constraints cst "a" accepted
+pydantic_v2.BaseModel --field-constraints cst "c" rejected
+pydantic_v2.BaseModel --field-constraints own "b" accepted
+pydantic_v2.BaseModel --field-constraints own "a" rejected
+pydantic_v2.BaseModel --field-constraints own "c" rejected
+pydantic_v2.BaseModel --field-constraints lvl 2 accepted
+pydantic_v2.BaseModel --field-constraints lvl 1 accepted
+pydantic_v2.BaseModel --field-constraints lvl 3 accepted
+pydantic_v2.BaseModel --field-constraints lvl 4 rejected
+pydantic_v2.BaseModel --field-constraints same "b" accepted
+pydantic_v2.BaseModel --field-constraints same "a" rejected
+pydantic_v2.BaseModel --field-constraints none "a" accepted
+pydantic_v2.BaseModel --field-constraints none "b" accepted
+pydantic_v2.BaseModel --field-constraints none "z" rejected
+pydantic_v2.BaseModel --field-constraints items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints named "b" accepted
+pydantic_v2.BaseModel --field-constraints named "a" accepted
+pydantic_v2.BaseModel --field-constraints named "c" rejected
+pydantic_v2.BaseModel --use-annotated one "b" accepted
+pydantic_v2.BaseModel --use-annotated one "a" accepted
+pydantic_v2.BaseModel --use-annotated one "c" rejected
+pydantic_v2.BaseModel --use-annotated cst "b" accepted
+pydantic_v2.BaseModel --use-annotated cst "a" accepted
+pydantic_v2.BaseModel --use-annotated cst "c" rejected
+pydantic_v2.BaseModel --use-annotated own "b" accepted
+pydantic_v2.BaseModel --use-annotated own "a" rejected
+pydantic_v2.BaseModel --use-annotated own "c" rejected
+pydantic_v2.BaseModel --use-annotated lvl 2 accepted
+pydantic_v2.BaseModel --use-annotated lvl 1 accepted
+pydantic_v2.BaseModel --use-annotated lvl 3 accepted
+pydantic_v2.BaseModel --use-annotated lvl 4 rejected
+pydantic_v2.BaseModel --use-annotated same "b" accepted
+pydantic_v2.BaseModel --use-annotated same "a" rejected
+pydantic_v2.BaseModel --use-annotated none "a" accepted
+pydantic_v2.BaseModel --use-annotated none "b" accepted
+pydantic_v2.BaseModel --use-annotated none "z" rejected
+pydantic_v2.BaseModel --use-annotated items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated named "b" accepted
+pydantic_v2.BaseModel --use-annotated named "a" accepted
+pydantic_v2.BaseModel --use-annotated named "c" rejected
+pydantic_v2.BaseModel --collapse-root-models one "b" accepted
+pydantic_v2.BaseModel --collapse-root-models one "a" accepted
+pydantic_v2.BaseModel --collapse-root-models one "c" rejected
+pydantic_v2.BaseModel --collapse-root-models cst "b" accepted
+pydantic_v2.BaseModel --collapse-root-models cst "a" accepted
+pydantic_v2.BaseModel --collapse-root-models cst "c" rejected
+pydantic_v2.BaseModel --collapse-root-models own "b" accepted
+pydantic_v2.BaseModel --collapse-root-models own "a" rejected
+pydantic_v2.BaseModel --collapse-root-models own "c" rejected
+pydantic_v2.BaseModel --collapse-root-models lvl 2 accepted
+pydantic_v2.BaseModel --collapse-root-models lvl 1 accepted
+pydantic_v2.BaseModel --collapse-root-models lvl 3 accepted
+pydantic_v2.BaseModel --collapse-root-models lvl 4 rejected
+pydantic_v2.BaseModel --collapse-root-models same "b" accepted
+pydantic_v2.BaseModel --collapse-root-models same "a" rejected
+pydantic_v2.BaseModel --collapse-root-models none "a" accepted
+pydantic_v2.BaseModel --collapse-root-models none "b" accepted
+pydantic_v2.BaseModel --collapse-root-models none "z" rejected
+pydantic_v2.BaseModel --collapse-root-models items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models named "a" accepted
+pydantic_v2.BaseModel --collapse-root-models named "c" rejected
+msgspec.Struct --collapse-root-models one "b" accepted
+msgspec.Struct --collapse-root-models one "a" accepted
+msgspec.Struct --collapse-root-models one "c" rejected
+msgspec.Struct --collapse-root-models cst "b" accepted
+msgspec.Struct --collapse-root-models cst "a" accepted
+msgspec.Struct --collapse-root-models cst "c" rejected
+msgspec.Struct --collapse-root-models own "b" accepted
+msgspec.Struct --collapse-root-models own "a" accepted
+msgspec.Struct --collapse-root-models own "c" rejected
+msgspec.Struct --collapse-root-models lvl 2 accepted
+msgspec.Struct --collapse-root-models lvl 1 accepted
+msgspec.Struct --collapse-root-models lvl 3 accepted
+msgspec.Struct --collapse-root-models lvl 4 rejected
+msgspec.Struct --collapse-root-models same "b" accepted
+msgspec.Struct --collapse-root-models same "a" rejected
+msgspec.Struct --collapse-root-models none "a" accepted
+msgspec.Struct --collapse-root-models none "b" accepted
+msgspec.Struct --collapse-root-models none "z" rejected
+msgspec.Struct --collapse-root-models items ["b"] accepted
+msgspec.Struct --collapse-root-models items ["a"] accepted
+msgspec.Struct --collapse-root-models items ["c"] rejected
+msgspec.Struct --collapse-root-models map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models named "b" accepted
+msgspec.Struct --collapse-root-models named "a" accepted
+msgspec.Struct --collapse-root-models named "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lvl 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lvl 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lvl 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lvl 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs same "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs same "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs none "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs none "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs none "z" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lvl 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lvl 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lvl 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lvl 4 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs same "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs same "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs none "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs none "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs none "z" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs one "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs one "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs one "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs cst "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs cst "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs cst "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs own "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs own "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs own "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs lvl 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs lvl 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs lvl 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs lvl 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs same "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs same "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs none "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs none "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs none "z" rejected
+msgspec.Struct --use-site-models-for-constrained-refs items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs map {"k": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs named "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs named "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lvl 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lvl 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lvl 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lvl 4 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs same "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs same "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs none "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs none "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs none "z" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs map {"k": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lvl 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lvl 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lvl 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lvl 4 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs same "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs same "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs none "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs none "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs none "z" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const same "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const same "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "z" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const one "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const cst "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const own "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const lvl 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const same "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const same "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const none "z" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 one "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 one "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 one "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 cst "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 cst "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 cst "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 own "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 own "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 own "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 2 accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 1 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 3 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 4 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 same "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 same "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 none "a" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 none "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 none "z" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 items ["b"] accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 items ["a"] rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 items ["c"] rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "b"} accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "a"} rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "c"} rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 named "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261019 named "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261019 named "c" rejected
+msgspec.Struct --preset standard-py310-20261019 one "b" accepted
+msgspec.Struct --preset standard-py310-20261019 one "a" rejected
+msgspec.Struct --preset standard-py310-20261019 one "c" rejected
+msgspec.Struct --preset standard-py310-20261019 cst "b" accepted
+msgspec.Struct --preset standard-py310-20261019 cst "a" rejected
+msgspec.Struct --preset standard-py310-20261019 cst "c" rejected
+msgspec.Struct --preset standard-py310-20261019 own "b" accepted
+msgspec.Struct --preset standard-py310-20261019 own "a" rejected
+msgspec.Struct --preset standard-py310-20261019 own "c" rejected
+msgspec.Struct --preset standard-py310-20261019 lvl 2 accepted
+msgspec.Struct --preset standard-py310-20261019 lvl 1 rejected
+msgspec.Struct --preset standard-py310-20261019 lvl 3 rejected
+msgspec.Struct --preset standard-py310-20261019 lvl 4 rejected
+msgspec.Struct --preset standard-py310-20261019 same "b" accepted
+msgspec.Struct --preset standard-py310-20261019 same "a" rejected
+msgspec.Struct --preset standard-py310-20261019 none "a" accepted
+msgspec.Struct --preset standard-py310-20261019 none "b" accepted
+msgspec.Struct --preset standard-py310-20261019 none "z" rejected
+msgspec.Struct --preset standard-py310-20261019 items ["b"] accepted
+msgspec.Struct --preset standard-py310-20261019 items ["a"] rejected
+msgspec.Struct --preset standard-py310-20261019 items ["c"] rejected
+msgspec.Struct --preset standard-py310-20261019 map {"k": "b"} accepted
+msgspec.Struct --preset standard-py310-20261019 map {"k": "a"} rejected
+msgspec.Struct --preset standard-py310-20261019 map {"k": "c"} rejected
+msgspec.Struct --preset standard-py310-20261019 named "b" accepted
+msgspec.Struct --preset standard-py310-20261019 named "a" rejected
+msgspec.Struct --preset standard-py310-20261019 named "c" rejected

@@ -904,6 +904,34 @@ def _derived_site(site: JsonSchemaObject, refs: Sequence[str]) -> JsonSchemaObje
     return site
 
 
+def _enum_narrowed_by_part_consts(
+    intersection: JsonSchemaObject, parts: Sequence[JsonSchemaObject]
+) -> JsonSchemaObject:
+    """Return the intersection of allOf value parts with its enum narrowed to the const of each part without an enum.
+
+    Such a const is a part of its own that a value must equal, as the one-value enum --use-single-value-enum-as-const
+    reads as that const is, so it narrows the enum the same way and the enum then stands for it. The intersection is
+    returned as it is without such a const, and where no enum value equals every such const (no value meets the parts).
+    """
+    if not intersection.enum or not (consts := [part.extras["const"] for part in parts if _is_enumless_const(part)]):
+        return intersection
+    excluded = {
+        position
+        for position, value in enumerate(intersection.enum)
+        if not all(_json_literal_values_equal(const, value) for const in consts)
+    }
+    if not excluded or len(excluded) == len(intersection.enum):
+        return intersection
+    return _enum_without_positions(intersection, excluded).model_copy(
+        update={"extras": {key: value for key, value in intersection.extras.items() if key != "const"}}
+    )
+
+
+def _is_enumless_const(part: JsonSchemaObject) -> bool:
+    """Return whether a value part holds a const and no enum."""
+    return "const" in part.extras and not part.enum
+
+
 def _enum_without_positions(obj: JsonSchemaObject, excluded: Collection[int]) -> JsonSchemaObject:
     """Return a copy of an enum schema without the values at the ``excluded`` positions, with their x-enum entries.
 
@@ -7553,7 +7581,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         satisfiable = self._satisfiable_all_of_value_parts(obj) is not None
         written = self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0])) if layered else {}
         target = self._intersect_typed_value_parts(target_parts, None)
-        intersection = self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf"))
+        intersection = _enum_narrowed_by_part_consts(
+            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")), parts
+        )
         target_dump = target.model_dump(exclude_unset=True, by_alias=True)
         target_keys = {keyword for keyword in target.__constraint_field_order__ if getattr(target, keyword) is not None}
         fails = bool(written) and not (self.collapse_root_models or self._layers_on_reference(target_keys, written))
@@ -10227,7 +10257,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         if not self.config.use_site_models_for_constrained_refs:
             return None
-        intersection = self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf"))
+        intersection = _enum_narrowed_by_part_consts(
+            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")), parts
+        )
         literals = intersection.enum
         if all(
             all(any(_json_literal_values_equal(value, other) for other in literals) for value in target.enum)
