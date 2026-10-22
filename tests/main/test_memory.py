@@ -13,7 +13,6 @@ import pytest
 
 from datamodel_code_generator import DataModelType
 from scripts.measure_generation_memory import main as measure_generation_memory
-from scripts.measure_generation_memory import normalize_peak_rss_bytes
 
 if TYPE_CHECKING:
     from _pytest.tmpdir import TempPathFactory
@@ -45,19 +44,6 @@ def _append_step_summary(report_line: str, summary_path: str | None) -> None:
         return
     with Path(summary_path).open("a", encoding="utf-8") as summary:
         summary.write(f"- {report_line}\n")
-
-
-@pytest.mark.allow_direct_assert
-@pytest.mark.parametrize(
-    ("ru_maxrss", "platform", "expected_bytes"),
-    [
-        pytest.param(123_456, "darwin", 123_456, id="macos-bytes"),
-        pytest.param(123_456, "linux", 123_456 * 1024, id="linux-kib"),
-    ],
-)
-def test_normalize_peak_rss_bytes(ru_maxrss: int, platform: str, expected_bytes: int) -> None:
-    """Normalize the platform-specific ru_maxrss units without a 1024x mismatch."""
-    assert normalize_peak_rss_bytes(ru_maxrss, platform) == expected_bytes
 
 
 @pytest.mark.allow_direct_assert

@@ -798,7 +798,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "marker-reason:tests/main/test_main_watch.py::test_watch_with_no_collected_dependencies_stops_cleanly",
         "marker-reason:tests/main/test_memory.py::test_append_step_summary",
         "marker-reason:tests/main/test_memory.py::test_measure_generation_memory",
-        "marker-reason:tests/main/test_memory.py::test_normalize_peak_rss_bytes",
         "marker-reason:tests/main/test_memory.py::test_perf_extreme_large_schema_peak_rss",
         "marker-reason:tests/main/test_parsed_source_cache_parity.py::test_generate_output_matches_with_and_without_parsed_source_cache",
         "marker-reason:tests/main/test_parsed_source_cache_parity.py::test_parsed_source_cache_scope_restore_order_and_idempotence",

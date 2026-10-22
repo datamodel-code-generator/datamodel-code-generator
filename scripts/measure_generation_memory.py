@@ -18,11 +18,18 @@ if TYPE_CHECKING:
 resource = None if sys.platform == "win32" else importlib.import_module("resource")
 
 
-def normalize_peak_rss_bytes(ru_maxrss: int, platform: str) -> int:
-    """Normalize ``resource.ru_maxrss`` to bytes on Linux and macOS."""
-    if platform == "darwin":
-        return ru_maxrss
-    return ru_maxrss * 1024
+def reset_peak_rss() -> None:
+    """Reset this process's resident-set high-water mark on Linux, where fork inherits the parent's."""
+    if sys.platform == "linux":
+        Path("/proc/self/clear_refs").write_text("5", encoding="ascii")
+
+
+def read_peak_rss_bytes() -> int:
+    """Return this process's peak resident memory in bytes."""
+    if sys.platform == "linux":
+        status = Path("/proc/self/status").read_text(encoding="ascii")
+        return int(next(line for line in status.splitlines() if line.startswith("VmHWM:")).split()[1]) * 1024
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -44,6 +51,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if resource is None:  # pragma: no cover
         parser.error("peak RSS measurement is supported only on Unix")
 
+    reset_peak_rss()
     started_at = time.perf_counter()
     generate(
         input_=args.input,
@@ -53,10 +61,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         formatters=[],
     )
     elapsed_seconds = time.perf_counter() - started_at
-    peak_rss_bytes = normalize_peak_rss_bytes(
-        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-        sys.platform,
-    )
+    peak_rss_bytes = read_peak_rss_bytes()
     print(
         json.dumps(
             {
