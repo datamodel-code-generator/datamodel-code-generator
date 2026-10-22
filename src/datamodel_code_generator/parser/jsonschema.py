@@ -3845,11 +3845,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_ref_schema_rw_model_field_facts(
         self,
         resolved_ref: str,
-    ) -> tuple[bool, bool, bool, bool] | None:
+    ) -> tuple[bool, bool, bool, bool]:
         """Return the read/write facts of the effective fields of the raw schema at ``resolved_ref``.
 
         Properties are read in allOf C3 order with their flags joined per name, and required names without a
-        declaration count as unflagged fields; nothing is parsed. ``None`` for a key that names no loadable schema.
+        declaration count as unflagged fields; nothing is parsed.
         """
         if (cached := self._rw_model_field_facts_cache.get(resolved_ref)) is not None:
             return cached
@@ -3890,8 +3890,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether inheriting the schema at ``resolved_ref`` can bring read/write facts into a model."""
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._ref_schema_generates_variant(resolved_ref, "Request")
-        facts = self._get_ref_schema_rw_model_field_facts(resolved_ref)
-        return facts is not None and (facts[0] or facts[1])
+        has_read_only, has_write_only, _, _ = self._get_ref_schema_rw_model_field_facts(resolved_ref)
+        return has_read_only or has_write_only
 
     def _check_rw_model_split(self, reference: Reference, *, splits: bool) -> None:
         """Report a request/response split that differs from the schema graph's answer for the model's key.
@@ -3934,9 +3934,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return False
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._request_response_ref_schema_generates_variant(resolved_ref)
-        if (facts := self._get_ref_schema_rw_model_field_facts(resolved_ref)) is None:
-            return False
-        has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
+        has_read_only, has_write_only, has_non_read_only, has_non_write_only = (
+            self._get_ref_schema_rw_model_field_facts(resolved_ref)
+        )
         match suffix:
             case "Request":
                 result = has_read_only and has_non_read_only
@@ -4592,26 +4592,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 Types.any,
             )
 
-        def _get_data_type(type_: str, format__: str) -> DataType:
-            types = self._get_type_with_mappings(type_, format__)
-            kwargs_to_pass: dict[str, JsonSchemaDataTypeKwargValue] = {
-                **_get_data_type_constraint_kwargs(obj, types),
-                **self._get_format_type_kwargs(type_, format__, types),
-            }
-            return self.data_type_manager.get_data_type(
-                types,
-                field_constraints=self.field_constraints and not localize_constraints,
-                **kwargs_to_pass,
-            )
-
+        field_constraints = self.field_constraints and not localize_constraints
         if isinstance(schema_type, list):
             return self._get_type_array_data_type(
-                schema_type, [_get_data_type(t, obj.format or "default") for t in schema_type if t != "null"]
+                schema_type,
+                [
+                    self._get_constrained_data_type(obj, type_, field_constraints=field_constraints)
+                    for type_ in schema_type
+                    if type_ != "null"
+                ],
             )
-        data_type = _get_data_type(schema_type, obj.format or "default")
+        data_type = self._get_constrained_data_type(obj, schema_type, field_constraints=field_constraints)
         if self._null_facts(obj, "scalar").admits_null:
             return build_union(self.data_type, [data_type], nullable=True)
         return data_type
+
+    def _get_constrained_data_type(self, obj: JsonSchemaObject, type_: str, *, field_constraints: bool) -> DataType:
+        """Map one type of ``obj`` and its format, with the constraints ``obj`` writes beside it.
+
+        Under ``field_constraints`` the field writes the constraints, so the type takes none of them.
+        """
+        format_ = obj.format or "default"
+        types = self._get_type_with_mappings(type_, format_)
+        kwargs: dict[str, JsonSchemaDataTypeKwargValue] = {
+            **_get_data_type_constraint_kwargs(obj, types),
+            **self._get_format_type_kwargs(type_, format_, types),
+        }
+        return self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs)
 
     def _get_type_array_data_type(self, types: list[str], data_types: list[DataType]) -> DataType:
         """Return the type of a type array from the types of its members other than null.
@@ -9864,7 +9871,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for target in enums
         ):
             return None
-        return self._all_of_site_schema(obj, parts, intersection.model_dump(exclude_unset=True, by_alias=True))
+        return _derived_site(
+            self._all_of_site_schema(obj, parts, intersection.model_dump(exclude_unset=True, by_alias=True)), refs
+        )
 
     def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
         """Return whether the enum merged from the members of ``enums``, in the class of the first, fails at import.
@@ -12912,7 +12921,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (type_list := _object_map_other_types(obj)) is not None:
             return build_union(
                 self.data_type,
-                [map_type, *self._iter_non_object_union_types(name, obj, type_list, path)],
+                [map_type, *self._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],
                 nullable=self._object_map_admits_null(obj),
             )
         return _with_null(map_type) if self._object_map_admits_null(obj) else map_type
@@ -13566,10 +13575,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return len(data_types) - count
 
     def _parse_typed_union_map(self, name: str, obj: JsonSchemaObject, path: list[str], type_: str) -> DataType | None:
-        """Return the map type of the object member of a type array under --use-typed-nullable-map-values, else None."""
+        """Return the map type of the object member of a type array under --use-typed-nullable-map-values, else None.
+
+        patternProperties or propertyNames make the member the object map of the object branch.
+        """
         if type_ != "object" or (typed_values := self._typed_nullable_map_value_schema(obj)) is None:
             return None
-        return self._parse_nullable_map(name, obj, get_special_path("object", path), typed_values)
+        object_path = get_special_path("object", path)
+        if obj.patternProperties or obj.propertyNames is not None:
+            return self._parse_object_map(
+                name, self._get_array_union_branch_schema(obj, "object"), path, object_path, typed_values=typed_values
+            )
+        return self._parse_nullable_map(name, obj, object_path, typed_values)
 
     def _should_localize_array_union_constraints(
         self,
@@ -14069,9 +14086,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return len({type_ for type_ in obj.type if type_ != "null"}) > 1
 
     def _iter_non_object_union_types(
-        self, name: str, obj: JsonSchemaObject, type_list: list[str], path: list[str]
+        self, name: str, obj: JsonSchemaObject, type_list: list[str], path: list[str], *, keep_constraints: bool = False
     ) -> Iterator[DataType]:
-        """Retain scalar sibling constraints while preserving the existing object-first union order."""
+        """Retain scalar sibling constraints while preserving the existing object-first union order.
+
+        Where they are not localized into the members, the members take them only with ``keep_constraints``, as
+        ``get_data_type`` gives them to the other types of a type array.
+        """
         localize_constraints = (
             self.field_constraints
             and self._output_model_context.supports_internal_annotated_constraints
@@ -14083,11 +14104,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         for type_ in type_list:
             if type_ not in {"object", "null"}:
-                yield (
-                    self._parse_array_union_constrained_branch(name, obj, path, type_)
-                    if localize_constraints
-                    else self._get_format_data_type(type_, obj.format or "default")
-                )
+                if localize_constraints:
+                    yield self._parse_array_union_constrained_branch(name, obj, path, type_)
+                elif keep_constraints:
+                    yield self._get_constrained_data_type(obj, type_, field_constraints=self.field_constraints)
+                else:
+                    yield self._get_format_data_type(type_, obj.format or "default")
 
     def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
         """Parse an object into its model; a type array with other types makes a root model of their union."""

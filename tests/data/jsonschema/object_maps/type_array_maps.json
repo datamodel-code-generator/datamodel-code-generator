@@ -137,6 +137,39 @@
         },
         "minProperties": 1
       }
+    },
+    "pArrayOrPatternCounts": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "pArrayOrNamedCounts": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
     }
   },
   "required": [

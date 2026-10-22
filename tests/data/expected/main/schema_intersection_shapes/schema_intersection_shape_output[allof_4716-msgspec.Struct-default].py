@@ -68,3 +68,4 @@ class Measurement(Struct):
     q_allof: Quantity | UnsetType = UNSET
     q_items: list[QItem] | UnsetType = UNSET
     q_map: dict[str, QMap] | UnsetType = UNSET
+    short_status: Status | UnsetType = UNSET

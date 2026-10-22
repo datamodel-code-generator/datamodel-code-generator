@@ -40,3 +40,5 @@ class Model(BaseModel):
     mArrayOrNamesCount: (
         dict[str, dict[constr(pattern=r'^a'), Any] | list[Any] | None] | None
     ) = None
+    pArrayOrPatternCounts: dict[str, Any] | list[str] | None = None
+    pArrayOrNamedCounts: dict[str, Any] | list[str] | None = None

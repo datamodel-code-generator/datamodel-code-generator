@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field, RootModel, conint, constr
 
@@ -69,11 +69,6 @@ class Score(RootModel[conint(le=100)]):
     root: conint(le=100)
 
 
-class Status(Enum):
-    open = 'open'
-    closed = 'closed'
-
-
 class Pair(RootModel[list[str]]):
     root: list[str] = Field(..., min_length=1)
 
@@ -87,7 +82,7 @@ class Measurement(BaseModel):
     limits: dict[str, Limits] | None = None
     point: Point | None = None
     label: Count | None = None
-    status: Status | None = None
+    status: Any | None = None
     pair: Pair | None = None
     single: Pair | None = None
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
@@ -96,3 +91,4 @@ class Measurement(BaseModel):
     q_allof: QAllof | None = None
     q_items: list[QItem] | None = None
     q_map: dict[str, QMap] | None = None
+    short_status: Any | None = None

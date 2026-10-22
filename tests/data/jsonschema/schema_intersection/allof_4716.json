@@ -212,6 +212,16 @@
         ],
         "maximum": 10
       }
+    },
+    "short_status": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Status"
+        }
+      ],
+      "enum": [
+        "open"
+      ]
     }
   }
 }

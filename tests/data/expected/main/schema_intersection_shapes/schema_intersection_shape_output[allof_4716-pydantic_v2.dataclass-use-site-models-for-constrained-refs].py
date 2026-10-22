@@ -42,6 +42,10 @@ QItem = TypeAliasType("QItem", Annotated[int, Field(ge=1, le=10)])
 QMap = TypeAliasType("QMap", Annotated[int, Field(ge=1, le=10)])
 
 
+class ShortStatus(Enum):
+    open = 'open'
+
+
 Count = TypeAliasType("Count", int)
 
 
@@ -89,3 +93,4 @@ class Measurement:
     q_allof: QAllof | None = None
     q_items: list[QItem] | None = None
     q_map: dict[str, QMap] | None = None
+    short_status: ShortStatus | None = None

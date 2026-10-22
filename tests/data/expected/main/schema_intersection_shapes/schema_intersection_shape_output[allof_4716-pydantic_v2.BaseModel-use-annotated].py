@@ -80,3 +80,4 @@ class Measurement(BaseModel):
     q_allof: Quantity | None = None
     q_items: list[QItem] | None = None
     q_map: dict[str, QMap] | None = None
+    short_status: Status | None = None

@@ -53,7 +53,12 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY, VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._null_markers import HELD_NULL_DROPPED_KEY, REFERENCE_NULL_KEY, TARGET_NULL_KEY
+from datamodel_code_generator._null_markers import (
+    HELD_NULL_DROPPED_KEY,
+    REFERENCE_NULL_KEY,
+    RENDER_PREPARATION_NULL_KEY,
+    TARGET_NULL_KEY,
+)
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
@@ -164,6 +169,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "swap_data_type",
     "update_model_reference",
     "use_assignment_for_forward_references",
+    "write_rendered_null",
 })
 
 SITE_EFFECTS: Mapping[str, ProvenanceHow] = MappingProxyType({
@@ -216,6 +222,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_extras",
     "update_model_reference",
     "use_assignment_for_forward_references",
+    "write_rendered_null",
 })
 """The store mutations that make no reference site: they only remove sites, or change what sites do not record, such
 as names, defaults and imports. With `SITE_EFFECTS`, they list every mutation of
@@ -1764,6 +1771,20 @@ class GenerationStore:  # noqa: PLR0904
     def clear_target_null(data_type: DataType) -> None:
         """Forget that the None of a type is its target's, after a null of another source joined it."""
         data_type.__dict__.pop(TARGET_NULL_KEY, None)
+
+    @staticmethod
+    def write_rendered_null(data_type: DataType) -> None:
+        """Write into ``is_optional`` the None that the hint of ``data_type`` renders, marked as render preparation's.
+
+        Render preparation writes rendered nullability once for every node of every model. A None that is not the
+        type's own comes from its nullable model (also marked as not the type's own) or from its union's members.
+        """
+        if (null := data_type._hint_null_source()) in {None, "own"}:  # noqa: SLF001
+            return
+        data_type.__dict__[RENDER_PREPARATION_NULL_KEY] = True
+        data_type.is_optional = True
+        if null == "reference":
+            data_type.__dict__[REFERENCE_NULL_KEY] = True
 
     @staticmethod
     def drop_held_null(data_type: DataType) -> None:

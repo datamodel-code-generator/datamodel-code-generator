@@ -30,3 +30,5 @@ class Model:
     mStringOrNames: dict[str, dict[str, int] | str | None] | None = None
     iArrayOrNamesCount: list[dict[str, Any] | list[Any] | None] | None = None
     mArrayOrNamesCount: dict[str, dict[str, Any] | list[Any] | None] | None = None
+    pArrayOrPatternCounts: dict[str, Any] | list[str] | None = None
+    pArrayOrNamedCounts: dict[str, Any] | list[str] | None = None

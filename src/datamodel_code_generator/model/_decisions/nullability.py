@@ -2,7 +2,7 @@
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters
 ``types.py:DataType.admits_none`` and ``model/base.py:DataModelFieldBase._field_null_source`` read the facts from the
-live objects; ``types.py:DataType._materialize_render_state`` writes it once at render preparation.
+live objects; ``parser/generation.py:GenerationStore.write_rendered_null`` writes it once at render preparation.
 """
 
 from __future__ import annotations

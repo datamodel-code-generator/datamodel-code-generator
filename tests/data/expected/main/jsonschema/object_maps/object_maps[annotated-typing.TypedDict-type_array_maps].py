@@ -30,3 +30,5 @@ class Model(TypedDict):
     mStringOrNames: NotRequired[dict[str, dict[str, int] | str | None]]
     iArrayOrNamesCount: NotRequired[list[dict[str, Any] | list[Any] | None]]
     mArrayOrNamesCount: NotRequired[dict[str, dict[str, Any] | list[Any] | None]]
+    pArrayOrPatternCounts: NotRequired[dict[str, Any] | list[str] | None]
+    pArrayOrNamedCounts: NotRequired[dict[str, Any] | list[str]]

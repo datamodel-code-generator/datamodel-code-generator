@@ -48,6 +48,10 @@ class QMap(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
 
 
+class ShortStatus(Enum):
+    open = 'open'
+
+
 class Count(RootModel[int]):
     root: int
 
@@ -99,3 +103,4 @@ class Measurement(BaseModel):
     q_allof: QAllof | None = None
     q_items: list[QItem] | None = None
     q_map: dict[str, QMap] | None = None
+    short_status: ShortStatus | None = None

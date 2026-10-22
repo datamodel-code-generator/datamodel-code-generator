@@ -1,0 +1,5 @@
+valid: accepted
+invalid pStringOrPatterns: rejected
+invalid rStringOrNames: accepted
+invalid pArrayOrPatternCounts: rejected
+invalid pArrayOrNamedCounts: accepted

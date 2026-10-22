@@ -42,6 +42,12 @@
       "k": [
         1
       ]
+    },
+    "pArrayOrPatternCounts": {
+      "xa": "s"
+    },
+    "pArrayOrNamedCounts": {
+      "abc": 1
     }
   },
   "invalid": [
@@ -53,6 +59,16 @@
     {
       "rStringOrNames": {
         "b": 1
+      }
+    },
+    {
+      "pArrayOrPatternCounts": {
+        "xa": 1
+      }
+    },
+    {
+      "pArrayOrNamedCounts": {
+        "abcd": 1
       }
     }
   ]

@@ -47,6 +47,8 @@ pydantic_v2.BaseModel default q_map {"k": 1} accepted
 pydantic_v2.BaseModel default q_map {"k": 10} accepted
 pydantic_v2.BaseModel default q_map {"k": 0} rejected
 pydantic_v2.BaseModel default q_map {"k": 11} accepted
+pydantic_v2.BaseModel default short_status "open" accepted
+pydantic_v2.BaseModel default short_status "closed" accepted
 pydantic_v2.dataclass default count 5 accepted
 pydantic_v2.dataclass default count 4 accepted
 pydantic_v2.dataclass default code "A" accepted
@@ -96,6 +98,8 @@ pydantic_v2.dataclass default q_map {"k": 1} accepted
 pydantic_v2.dataclass default q_map {"k": 10} accepted
 pydantic_v2.dataclass default q_map {"k": 0} rejected
 pydantic_v2.dataclass default q_map {"k": 11} accepted
+pydantic_v2.dataclass default short_status "open" accepted
+pydantic_v2.dataclass default short_status "closed" accepted
 msgspec.Struct default count 5 accepted
 msgspec.Struct default count 4 accepted
 msgspec.Struct default code "A" accepted
@@ -145,6 +149,8 @@ msgspec.Struct default q_map {"k": 1} accepted
 msgspec.Struct default q_map {"k": 10} accepted
 msgspec.Struct default q_map {"k": 0} rejected
 msgspec.Struct default q_map {"k": 11} rejected
+msgspec.Struct default short_status "open" accepted
+msgspec.Struct default short_status "closed" accepted
 pydantic_v2.BaseModel --field-constraints count 5 accepted
 pydantic_v2.BaseModel --field-constraints count 4 accepted
 pydantic_v2.BaseModel --field-constraints code "A" accepted
@@ -194,6 +200,8 @@ pydantic_v2.BaseModel --field-constraints q_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints q_map {"k": 10} accepted
 pydantic_v2.BaseModel --field-constraints q_map {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints q_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints short_status "open" accepted
+pydantic_v2.BaseModel --field-constraints short_status "closed" accepted
 pydantic_v2.BaseModel --use-annotated count 5 accepted
 pydantic_v2.BaseModel --use-annotated count 4 accepted
 pydantic_v2.BaseModel --use-annotated code "A" accepted
@@ -243,6 +251,8 @@ pydantic_v2.BaseModel --use-annotated q_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated q_map {"k": 10} accepted
 pydantic_v2.BaseModel --use-annotated q_map {"k": 0} rejected
 pydantic_v2.BaseModel --use-annotated q_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated short_status "open" accepted
+pydantic_v2.BaseModel --use-annotated short_status "closed" accepted
 pydantic_v2.BaseModel --collapse-root-models count 5 accepted
 pydantic_v2.BaseModel --collapse-root-models count 4 accepted
 pydantic_v2.BaseModel --collapse-root-models code "A" accepted
@@ -292,6 +302,8 @@ pydantic_v2.BaseModel --collapse-root-models q_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models q_map {"k": 10} accepted
 pydantic_v2.BaseModel --collapse-root-models q_map {"k": 0} rejected
 pydantic_v2.BaseModel --collapse-root-models q_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models short_status "open" accepted
+pydantic_v2.BaseModel --collapse-root-models short_status "closed" accepted
 msgspec.Struct --collapse-root-models count 5 accepted
 msgspec.Struct --collapse-root-models count 4 accepted
 msgspec.Struct --collapse-root-models code "A" accepted
@@ -341,6 +353,8 @@ msgspec.Struct --collapse-root-models q_map {"k": 1} accepted
 msgspec.Struct --collapse-root-models q_map {"k": 10} accepted
 msgspec.Struct --collapse-root-models q_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models q_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models short_status "open" accepted
+msgspec.Struct --collapse-root-models short_status "closed" accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs count 5 accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs count 4 rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs code "A" accepted
@@ -390,6 +404,8 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 1} acce
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 10} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 0} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs short_status "open" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs short_status "closed" rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs count 5 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs count 4 rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs code "A" accepted
@@ -439,6 +455,8 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 1} acce
 pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 10} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 0} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs short_status "open" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs short_status "closed" rejected
 msgspec.Struct --use-site-models-for-constrained-refs count 5 accepted
 msgspec.Struct --use-site-models-for-constrained-refs count 4 rejected
 msgspec.Struct --use-site-models-for-constrained-refs code "A" accepted
@@ -488,6 +506,8 @@ msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 1} accepted
 msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 10} accepted
 msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 0} rejected
 msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs short_status "open" accepted
+msgspec.Struct --use-site-models-for-constrained-refs short_status "closed" rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 5 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 4 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code "A" accepted
@@ -537,6 +557,8 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 10} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_status "open" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_status "closed" rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count 5 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count 4 rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code "A" accepted
@@ -586,101 +608,107 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 10} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 0} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_map {"k": 11} rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 5 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 4 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "A" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "ABCD" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "a" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags [] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a", "b", "c", "d"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a", "b", "c", "d", "e", "f"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} score 100 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} score 101 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} counts [5] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} counts [4] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} limits {"k": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} limits {"k": 11} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} point {"x": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} point {"x": "a"} rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} label 123 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} label "a" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "open" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "closed" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "other" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair ["a", "b", "c"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single ["a", "b"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair ["b"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair ["a", "b", "c"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"a": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"b": 9} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"a": 0} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"b": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ap {"k": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ap {"k": 0} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 1 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 10 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 0 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 11 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [1] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [10] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [0] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [11] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 0} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 11} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs count 5 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs count 4 rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "A" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "ABCD" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs code "a" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs score 100 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs score 101 rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs counts [5] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs counts [4] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs limits {"k": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs limits {"k": 11} rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs point {"x": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs point {"x": "a"} rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs label 123 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs label "a" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "open" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "closed" accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs status "other" rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single ["a"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs single ["a", "b"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair ["b"] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ref_pair [] rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"a": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"b": 9} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"a": 0} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs pp {"b": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ap {"k": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs ap {"k": 0} rejected
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 1 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 10 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 0 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_allof 11 accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [1] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [10] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [0] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_items [11] accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 1} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 10} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 0} accepted
-pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} --use-site-models-for-constrained-refs q_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs short_status "open" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs short_status "closed" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} count 5 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} count 4 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} code "A" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} code "ABCD" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} code "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} tags ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} tags [] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} score 100 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} score 101 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} counts [5] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} counts [4] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} limits {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} limits {"k": 11} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} point {"x": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} point {"x": "a"} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} label 123 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} label "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} status "closed" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} status "other" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pair ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} single ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} single [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} single ["a", "b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} ref_pair ["b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} ref_pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pp {"a": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pp {"b": 9} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pp {"a": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} pp {"b": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} ap {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} ap {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_allof 1 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_allof 10 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_allof 0 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_allof 11 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_items [1] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_items [10] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_items [0] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_items [11] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_map {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_map {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_map {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} q_map {"k": 11} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} short_status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} short_status "closed" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs count 5 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs count 4 rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs code "A" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs code "ABCD" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs code "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs tags ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs tags [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs score 100 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs score 101 rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs counts [5] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs counts [4] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs limits {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs limits {"k": 11} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs point {"x": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs point {"x": "a"} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs label 123 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs label "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs status "closed" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs status "other" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pair ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs single ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs single [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs single ["a", "b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs ref_pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pp {"a": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pp {"b": 9} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pp {"a": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs pp {"b": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs ap {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs ap {"k": 0} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_allof 1 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_allof 10 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_allof 0 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_allof 11 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_items [1] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_items [10] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_items [0] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_items [11] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_map {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs q_map {"k": 11} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs short_status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal", "Status": "typing.Any"} --use-site-models-for-constrained-refs short_status "closed" accepted

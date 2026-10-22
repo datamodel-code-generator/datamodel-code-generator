@@ -1,3 +1,5 @@
 valid: accepted
 invalid pStringOrPatterns: rejected (int_parsing)
 invalid rStringOrNames: rejected (string_pattern_mismatch)
+invalid pArrayOrPatternCounts: accepted
+invalid pArrayOrNamedCounts: accepted

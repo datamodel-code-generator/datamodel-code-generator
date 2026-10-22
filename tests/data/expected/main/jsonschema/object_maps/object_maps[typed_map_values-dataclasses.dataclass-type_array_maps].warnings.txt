@@ -1,0 +1,1 @@
+type_array_maps.json#/properties/pArrayOrPatternCounts: one dict type cannot express this object, since it gives the keys of its patterns and the other keys different value schemas; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.

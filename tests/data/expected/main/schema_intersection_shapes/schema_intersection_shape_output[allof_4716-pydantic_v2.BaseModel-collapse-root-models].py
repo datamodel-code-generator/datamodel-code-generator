@@ -43,3 +43,4 @@ class Measurement(BaseModel):
     q_allof: conint(ge=1) | None = None
     q_items: list[conint(ge=1)] | None = None
     q_map: dict[str, conint(ge=1)] | None = None
+    short_status: Status | None = None

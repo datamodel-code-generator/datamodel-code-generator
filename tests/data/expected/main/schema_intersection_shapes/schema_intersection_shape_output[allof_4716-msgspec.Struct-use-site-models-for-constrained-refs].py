@@ -17,6 +17,10 @@ Ap: TypeAlias = Annotated[int, Meta(ge=1)]
 QMap: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 
 
+class ShortStatus(Enum):
+    open = 'open'
+
+
 Count: TypeAlias = int
 
 
@@ -83,3 +87,4 @@ class Measurement(Struct):
     q_allof: QAllof | UnsetType = UNSET
     q_items: list[QItem] | UnsetType = UNSET
     q_map: dict[str, QMap] | UnsetType = UNSET
+    short_status: ShortStatus | UnsetType = UNSET

@@ -2070,6 +2070,14 @@
             "k": 11
           }
         ]
+      },
+      "short_status": {
+        "valid": [
+          "open"
+        ],
+        "invalid": [
+          "closed"
+        ]
       }
     }
   },

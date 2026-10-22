@@ -63,3 +63,5 @@ class Model(Struct):
     mArrayOrNamesCount: dict[str, MArrayOrNamesCountAdditionalProperty] | UnsetType = (
         UNSET
     )
+    pArrayOrPatternCounts: dict[str, Any] | list[str] | None | UnsetType = UNSET
+    pArrayOrNamedCounts: dict[str, Any] | list[str] | UnsetType = UNSET

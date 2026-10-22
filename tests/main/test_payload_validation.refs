@@ -507,7 +507,7 @@ jsonschema/numeric_constraint_precision/large.json	payloads/native_numeric_empty
 jsonschema/numeric_constraint_precision/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_has_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_maps/cross_document_other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
-jsonschema/object_maps/type_array_typed_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/object_maps/type_list_maps.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_max_properties_zero.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_property_count_additional_true.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/one_of_with_sub_schema_array_item.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1387,6 +1387,8 @@ openapi/msgspec_nullable_enum_31.yaml::components.schemas.Color	payloads/native_
 openapi/msgspec_nullable_enum_31.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum_inherited.yaml::components.schemas.Extra	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum_inherited.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_enum_inherited_overlap.yaml::components.schemas.Extra	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_enum_inherited_overlap.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_oneof_with_null.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_union_tag_clashes.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_union_tag_clashes.yaml::components.schemas.Circle	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2168,7 +2170,7 @@ jsonschema/numeric_constraint_precision/large.json	payloads/native_numeric_empty
 jsonschema/numeric_constraint_precision/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_has_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_maps/cross_document_other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
-jsonschema/object_maps/type_array_typed_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/object_maps/type_list_maps.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_max_properties_zero.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/object_property_count_additional_true.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/oneof_const_enum.yaml	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3042,6 +3044,8 @@ openapi/msgspec_nullable_enum_31.yaml::components.schemas.Color	payloads/native_
 openapi/msgspec_nullable_enum_31.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum_inherited.yaml::components.schemas.Extra	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum_inherited.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_enum_inherited_overlap.yaml::components.schemas.Extra	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_enum_inherited_overlap.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_oneof_with_null.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_union_tag_clashes.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_union_tag_clashes.yaml::components.schemas.Circle	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

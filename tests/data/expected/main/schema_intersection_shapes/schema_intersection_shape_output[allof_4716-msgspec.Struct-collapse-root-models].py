@@ -50,3 +50,4 @@ class Measurement(Struct):
     q_allof: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     q_items: list[QItem] | UnsetType = UNSET
     q_map: dict[str, QMap] | UnsetType = UNSET
+    short_status: Status | UnsetType = UNSET

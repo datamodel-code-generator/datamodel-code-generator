@@ -458,7 +458,6 @@ target_python_version = 1
 
 ["src/datamodel_code_generator/types.py"."DataType._materialize_render_state"]
 '__dict__[_REFERENCE_NULL_DATA_TYPE_KEY]' = 1
-'__dict__[_RENDER_PREPARATION_NULL_DATA_TYPE_KEY]' = 1
 import_ = 1
 is_optional = 2
 

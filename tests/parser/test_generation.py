@@ -84,6 +84,7 @@ IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
     "set_field_extras",
     "swap_data_type",
     "use_assignment_for_forward_references",
+    "write_rendered_null",
 })
 """Operations that run a model hook, swap a nested type or write a field or model value, and leave the import caches
 to their callers."""

@@ -96,3 +96,5 @@ class Model(BaseModel):
     mStringOrNames: dict[str, MStringOrNamesObject | str | None] | None = None
     iArrayOrNamesCount: list[IArrayOrNamesCountObject | list[Any] | None] | None = None
     mArrayOrNamesCount: dict[str, MArrayOrNamesCountAdditionalProperty] | None = None
+    pArrayOrPatternCounts: dict[str, Any] | list[str] | None = None
+    pArrayOrNamedCounts: dict[str, Any] | list[str] | None = None

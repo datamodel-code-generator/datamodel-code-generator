@@ -7333,7 +7333,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return models
         kept: list[DataModel] = []
         for model in models:
-            if model.class_name in overrides:
+            if model.class_name in overrides or self.__enum_site_override_import(model.reference) is not None:
                 self.generation_store.retire_model(model)
             else:
                 kept.append(model)
@@ -7379,6 +7379,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             not (model.IS_ROOT_MODEL or model.IS_ALIAS)
             or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
         ):
+            return None
+        return self._model_type_override_imports.get(target.name)
+
+    def __enum_site_override_import(self, reference: Reference) -> Import | None:
+        """Return the model-level override of the target an enum site model is built from, which replaces the model.
+
+        An enum cannot take the type that replaces its target as its root, so it gives way to that type as the target
+        does: the model is left out and its references take the type.
+        """
+        if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
             return None
         return self._model_type_override_imports.get(target.name)
 
@@ -7514,7 +7524,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _apply_override_to_data_type(self, data_type: DataType) -> bool:
         """Recursively apply model-level overrides to a DataType."""
         overridden = False
-        if data_type.reference and (override_import := self._model_type_override_imports.get(data_type.reference.name)):
+        if (reference := data_type.reference) and (
+            override_import := self._model_type_override_imports.get(reference.name)
+            or self.__enum_site_override_import(reference)
+        ):
             self.generation_store.override_type_import(data_type, override_import)
             data_type.alias = override_import.import_
             self.generation_store.detach_data_type_ref(data_type)
@@ -9190,7 +9203,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             runner.run_decision(decision, facts, writer)
         run.decisions = writer.outcome(model for _, models in modules for model in models)
 
-    def __finalize_rendered_nullability(self, state: _FinalizeState) -> None:  # noqa: PLR6301
+    def __finalize_rendered_nullability(self, state: _FinalizeState) -> None:
         """Write the None each type hint of every model renders, once per node, before imports and rendering read it.
 
         It runs after the module bodies: the members' hints read the union operator and the quotes that updating type
@@ -9202,7 +9215,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for data_type in field.data_type.all_data_types:
                     if id(data_type) not in seen:
                         seen.add(id(data_type))
-                        data_type._materialize_render_state("rendered-null")  # noqa: SLF001
+                        self.generation_store.write_rendered_null(data_type)
 
     def __collect_all_models(self, state: _FinalizeState) -> None:  # noqa: PLR6301
         """Take the models of every module, before unused models leave them."""

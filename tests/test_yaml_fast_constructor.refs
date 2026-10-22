@@ -293,6 +293,7 @@ openapi/msgspec_inline_const.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum_31.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum_inherited.yaml	yaml_fast_constructor/parity.txt
+openapi/msgspec_nullable_enum_inherited_overlap.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_oneof_with_null.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_union_tag_clashes.yaml	yaml_fast_constructor/parity.txt
 openapi/multiple_aliases_parameters.yaml	yaml_fast_constructor/parity.txt

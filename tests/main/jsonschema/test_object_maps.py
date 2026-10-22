@@ -40,7 +40,7 @@ OBJECT_MAP_INPUTS = (
     "pattern_maps",
     "nullable_maps",
     "type_array_maps",
-    "type_array_typed_values",
+    "type_list_maps",
     "pattern_counts",
     "pattern_additional",
     "declared_patterns",

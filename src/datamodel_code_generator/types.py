@@ -95,12 +95,10 @@ _REFERENCE_NULL_DATA_TYPE_KEY = _null_markers.REFERENCE_NULL_KEY
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _TARGET_NULL_DATA_TYPE_KEY = _null_markers.TARGET_NULL_KEY
 _HELD_NULL_DROPPED_DATA_TYPE_KEY = _null_markers.HELD_NULL_DROPPED_KEY
-_RENDER_PREPARATION_NULL_DATA_TYPE_KEY = "_has_render_preparation_null"
+_RENDER_PREPARATION_NULL_DATA_TYPE_KEY = _null_markers.RENDER_PREPARATION_NULL_KEY
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 _VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
-_RenderStateWrite: TypeAlias = Literal[
-    "rendered-null", "reference-null", "member-null", "null-moved-to-union", "empty-union"
-]
+_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
 class DefaultValueRecipe(Enum):
@@ -1220,8 +1218,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
         """Write what rendering decides about the type: the writer of its render-time state on shared nodes.
 
-        ``"rendered-null"`` writes the None that ``type_hint`` renders (``_hint_null_source``) and marks it as written
-        at render preparation, which writes rendered nullability once for every node of every model.
         ``"reference-null"`` writes the None of the nullable model the type names into ``is_optional`` when the
         rendered None comes from that model (``rendered_nullability``), marked as not the type's own.
         ``"member-null"`` writes the None that a union takes over from a member, ``"null-moved-to-union"`` takes the
@@ -1232,10 +1228,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         null: NullSource | None = None
         match write:
-            case "rendered-null":
-                if (null := self._hint_null_source()) in {None, "own"}:
-                    return
-                self.__dict__[_RENDER_PREPARATION_NULL_DATA_TYPE_KEY] = True
             case "reference-null":
                 if (
                     not (reference := self._reference_adds_null())

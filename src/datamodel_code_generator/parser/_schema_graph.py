@@ -597,19 +597,18 @@ def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
         case list() | tuple() | set() | frozenset():
             items = sorted(value, key=repr) if isinstance(value, (set, frozenset)) else value
             return type(value), tuple(_fingerprint(item, active) for item in items)
-        case _ if isinstance(attributes := getattr(value, "__dict__", None), dict):
-            kind = type(value)
-            return (
-                kind,
-                tuple(
-                    (name, _fingerprint(item, active))
-                    for name, item in attributes.items()
-                    if not isinstance(getattr(kind, name, None), cached_property)
-                ),
-                tuple(
-                    _fingerprint(getattr(value, name, None), active)
-                    for name in ("__pydantic_fields_set__", "__pydantic_extra__", "__pydantic_private__")
-                ),
-            )
-        case _:
-            return type(value), value
+    if not isinstance(attributes := getattr(value, "__dict__", None), dict):
+        return type(value), value
+    kind = type(value)
+    return (
+        kind,
+        tuple(
+            (name, _fingerprint(item, active))
+            for name, item in attributes.items()
+            if not isinstance(getattr(kind, name, None), cached_property)
+        ),
+        tuple(
+            _fingerprint(getattr(value, name, None), active)
+            for name in ("__pydantic_fields_set__", "__pydantic_extra__", "__pydantic_private__")
+        ),
+    )

@@ -50,3 +50,4 @@ class Measurement(TypedDict):
     q_allof: NotRequired[Quantity]
     q_items: NotRequired[list[Quantity]]
     q_map: NotRequired[dict[str, Quantity]]
+    short_status: NotRequired[Status]

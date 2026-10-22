@@ -12,6 +12,10 @@ class Tags1(RootModel[list[str]]):
     root: list[str] = Field(..., max_length=3, min_length=1)
 
 
+class ShortStatus(Enum):
+    open = 'open'
+
+
 class Code(RootModel[constr(pattern=r'^[A-Z]')]):
     root: constr(pattern=r'^[A-Z]')
 
@@ -55,3 +59,4 @@ class Measurement(BaseModel):
     q_allof: conint(ge=1, le=10) | None = None
     q_items: list[conint(ge=1, le=10)] | None = None
     q_map: dict[str, conint(ge=1, le=10)] | None = None
+    short_status: ShortStatus | None = None

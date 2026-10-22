@@ -47,6 +47,7 @@ OUTPUT_DOCUMENTS: dict[str, Path] = {
 """The documents whose output is pinned: the shapes, patterns that some engine does not read, and item constraints
 beside an allOf member written as a ``$ref`` with siblings, which keep their earlier form (no payloads)."""
 SITE_MODELS = "--use-site-models-for-constrained-refs"
+TYPE_OVERRIDES = json.dumps({"Quantity": "decimal.Decimal", "Status": "typing.Any"})
 RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
     (DataModelType.PydanticV2BaseModel, ()),
     (DataModelType.PydanticV2Dataclass, ()),
@@ -67,11 +68,8 @@ RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
 )
 EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "allof_4716": (
-        (DataModelType.PydanticV2BaseModel, ("--type-overrides", json.dumps({"Quantity": "decimal.Decimal"}))),
-        (
-            DataModelType.PydanticV2BaseModel,
-            ("--type-overrides", json.dumps({"Quantity": "decimal.Decimal"}), SITE_MODELS),
-        ),
+        (DataModelType.PydanticV2BaseModel, ("--type-overrides", TYPE_OVERRIDES)),
+        (DataModelType.PydanticV2BaseModel, ("--type-overrides", TYPE_OVERRIDES, SITE_MODELS)),
     ),
     "allof_ref_item_constraints": (
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
