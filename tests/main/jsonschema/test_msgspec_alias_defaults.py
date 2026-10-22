@@ -34,20 +34,18 @@ def test_msgspec_allof_object_ref_ignores_numeric_constraint(tmp_path: Path, out
     """A numeric keyword beside an object reference must not become a msgspec numeric Meta."""
     schema = tmp_path / "schema.json"
     schema.write_text(
-        json.dumps(
-            {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "title": "Model",
-                "type": "object",
-                "properties": {
-                    "points": {
-                        "type": "array",
-                        "items": {"allOf": [{"$ref": "#/$defs/Point"}], "minimum": 5},
-                    }
-                },
-                "$defs": {"Point": {"type": "object", "properties": {"x": {"type": "integer"}}}},
-            }
-        ),
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {"allOf": [{"$ref": "#/$defs/Point"}], "minimum": 5},
+                }
+            },
+            "$defs": {"Point": {"type": "object", "properties": {"x": {"type": "integer"}}}},
+        }),
         encoding="utf-8",
     )
     run_main_and_assert(
