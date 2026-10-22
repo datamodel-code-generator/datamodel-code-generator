@@ -26,7 +26,10 @@ def reset_peak_rss() -> bool:
     clear_refs = Path("/proc/self/clear_refs")
     if sys.platform != "linux" or not clear_refs.exists():
         return False
-    clear_refs.write_text("5", encoding="ascii")
+    try:
+        clear_refs.write_text("5", encoding="ascii")
+    except OSError:
+        return False
     return True
 
 
