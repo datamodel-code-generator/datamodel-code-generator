@@ -1453,11 +1453,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return bool(self.annotated)
 
     @property
-    def needs_meta_import(self) -> bool:  # pragma: no cover
-        """Check if this field requires the Meta import (msgspec only)."""
-        return False
-
-    @property
     def has_default_factory(self) -> bool:
         """Check if this field has a default_factory."""
         return "default_factory" in self.extras

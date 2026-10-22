@@ -1625,12 +1625,6 @@ class DataModelField(DataModelFieldBase):
         """
         return self._meta_call() is not None
 
-    @property
-    @override
-    def needs_meta_import(self) -> bool:
-        """Check if this field requires the Meta import."""
-        return self.use_annotated and self._get_meta_string() is not None
-
     def _get_default_as_struct_model(self) -> _StructConversion | None:
         """Convert default value to Struct model using msgspec convert."""
         if self._uses_empty_builtin_container_factory():

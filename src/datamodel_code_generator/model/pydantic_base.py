@@ -238,8 +238,6 @@ class DataModelField(DataModelFieldBase):
 
     def _may_have_field_statement(self) -> bool:
         """Return whether field metadata may require a Field() call."""
-        if self.is_class_var:
-            return False
         has_field_metadata = (
             self.extras
             or self.alias is not None

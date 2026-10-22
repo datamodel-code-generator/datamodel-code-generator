@@ -11898,6 +11898,10 @@ def test_main_jsonschema_anyof_const_enum_descriptions(output_file: Path) -> Non
             id="pydantic-v2-inline-description",
         ),
         pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic-v2-dataclass"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.dataclass", "--pin-aliases-with-alias-generator"],
+            id="pydantic-v2-dataclass-pinned-aliases",
+        ),
         pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"], id="pydantic-v2-reuse-model"),
         pytest.param(
             [
@@ -13299,6 +13303,21 @@ def test_main_jsonschema_object_impossible_property_count(output_file: Path) -> 
         model_name="ObjectImpossiblePropertyCount",
         invalid_json='{"a":1}',
         expected_error_type="too_long",
+    )
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["object_max_properties_zero", "object_property_count_additional_true", "object_impossible_property_count"],
+)
+def test_main_jsonschema_object_property_count_single_dict(output_file: Path, name: str) -> None:
+    """Type the values of a property count map without a value schema as Any with --use-single-dict-for-object-maps."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-single-dict-for-object-maps"],
+        force_exec_validation=True,
     )
 
 
@@ -14913,6 +14932,30 @@ def test_main_jsonschema_items_array_additional_items_false(
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--use-tuple-for-closed-arrays"], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", ["--use-tuple-for-closed-arrays"], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel-default"),
+    ],
+)
+def test_main_jsonschema_prefix_items_unsatisfiable_length(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep a list for an array whose equal ``minItems`` and ``maxItems`` reach a ``false`` position.
+
+    No array of that length is valid, so no tuple can hold its positions, with or without --use-tuple-for-closed-arrays.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_unsatisfiable_length.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+
+
 @freeze_time("2019-07-26")
 @pytest.mark.skipif(
     int(black.__version__.split(".")[0]) < 24,
@@ -14974,6 +15017,20 @@ def test_main_jsonschema_items_array_tuple_allof_keeps_legacy_list(output_file: 
         assert_func=assert_file_content,
         expected_file="items_array_tuple_allof.py",
         extra_args=["--use-tuple-for-fixed-items"],
+        force_exec_validation=True,
+    )
+
+
+@freeze_time("2019-07-26")
+def test_main_jsonschema_items_array_tuple_allof_single_part_intersection(output_file: Path) -> None:
+    """Keep an allOf of one value part as a list with --intersect-allof-keywords for the tuple-items option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "items_array_tuple_allof.json",
+        output_path=output_file,
+        input_file_type=None,
+        assert_func=assert_file_content,
+        expected_file="items_array_tuple_allof.py",
+        extra_args=["--use-tuple-for-fixed-items", "--intersect-allof-keywords"],
         force_exec_validation=True,
     )
 
@@ -20409,6 +20466,16 @@ def test_main_allof_root_model_constraints_none(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="allof_root_model_constraints.py",
         extra_args=["--allof-merge-mode", "none"],
+    )
+
+
+def test_main_allof_root_model_constraints_intersect(output_file: Path) -> None:
+    """Conjoin the patterns of allOf root models, and keep the one pattern of a single part, with the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_root_model_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--intersect-allof-keywords"],
     )
 
 
@@ -32617,6 +32684,26 @@ def test_invalid_pattern_does_not_change_generation(tmp_path: Path, formatter: s
             *(["builtin"] if formatter == "builtin" else ["black", "isort"]),
         ],
         expected_file=PATTERN_INTERSECTION_EXPECTED / "invalid_regex.py",
+        skip_code_validation=True,
+    )
+
+
+def test_invalid_pattern_with_single_dict_does_not_change_generation(tmp_path: Path) -> None:
+    """Treat an unsupported regex as matching no declared key under --use-single-dict-for-object-maps."""
+    source = JSON_SCHEMA_DATA_PATH / "pattern_intersections_invalid_regex.json"
+    run_main_and_assert(
+        input_path=source,
+        output_path=tmp_path / "output.py",
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--use-single-dict-for-object-maps",
+            "--formatters",
+            "builtin",
+        ],
         skip_code_validation=True,
     )
 

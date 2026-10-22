@@ -627,6 +627,9 @@ constraints	main/openapi/main_openapi/allof_required_inherited_options_without_o
 [test_main_openapi_allof_required_inherited_rw_c3]
 all	main/openapi/allof_required_inherited_rw_c3.py
 request-response	main/openapi/allof_required_inherited_rw_c3_request_response.py
+[test_main_openapi_allof_required_inherited_rw_c3_dedupe_variants]
+force-optional	main/openapi/main_openapi/allof_required_inherited_rw_c3_dedupe_variants[force-optional].py
+required	main/openapi/main_openapi/allof_required_inherited_rw_c3_dedupe_variants[required].py
 [test_main_openapi_allof_required_inherited_rw_cycle]
 	main/openapi/allof_required_inherited_rw_cycle.py
 [test_main_openapi_allof_scalar_roots]

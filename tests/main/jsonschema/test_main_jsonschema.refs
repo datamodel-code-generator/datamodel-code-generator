@@ -5341,6 +5341,8 @@ referenced-cli-external	payloads/inline_allof_validators/native.txt	= payloads/m
 [test_invalid_pattern_does_not_change_generation]
 builtin	main/jsonschema/pattern_intersections/invalid_regex.py
 external	main/jsonschema/pattern_intersections/invalid_regex.py
+[test_invalid_pattern_with_single_dict_does_not_change_generation]
+	main/jsonschema/main_jsonschema/invalid_pattern_with_single_dict_does_not_change_generation.py	= main/jsonschema/pattern_intersections/invalid_regex.py
 [test_json_pointer_decoding_api_and_cli]
 api-False	main/jsonschema/json_pointer_decoding.py
 api-False	main/jsonschema/json_pointer_decoding_api.py
@@ -5548,6 +5550,8 @@ to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_u
 	main/jsonschema/allof_list_any_inheritance.py
 [test_main_allof_mro]
 	main/jsonschema/allof_mro.py
+[test_main_allof_root_model_constraints_intersect]
+	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_intersect.py
 [test_main_allof_root_model_constraints_merge]
 	main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_merge_pydantic_v2]
@@ -6385,6 +6389,7 @@ legacy-option	main/jsonschema/enum_list_defaults.py
 pydantic-v2	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2].py
 pydantic-v2-custom-enum-template	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-custom-enum-template].py
 pydantic-v2-dataclass	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-dataclass].py
+pydantic-v2-dataclass-pinned-aliases	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-dataclass-pinned-aliases].py	= main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-dataclass].py
 pydantic-v2-inline-description	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-inline-description].py
 pydantic-v2-reuse-model	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-reuse-model].py	= main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2].py
 [test_main_jsonschema_enum_member_special_defaults]
@@ -6679,6 +6684,8 @@ pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/items_array_additi
 	main/jsonschema/items_array_tuple.py
 [test_main_jsonschema_items_array_tuple_allof_keeps_legacy_list]
 	main/jsonschema/items_array_tuple_allof.py
+[test_main_jsonschema_items_array_tuple_allof_single_part_intersection]
+	main/jsonschema/items_array_tuple_allof.py
 [test_main_jsonschema_items_array_with_false_schema]
 	main/jsonschema/items_array_with_false_schema.py
 [test_main_jsonschema_items_array_with_true_schema]
@@ -6809,6 +6816,10 @@ reuse-model	main/jsonschema/nullable_map_value_reuse.py
 	main/jsonschema/object_max_properties_zero.py
 [test_main_jsonschema_object_property_count_additional_true]
 	main/jsonschema/object_property_count_additional_true.py
+[test_main_jsonschema_object_property_count_single_dict]
+object_impossible_property_count	main/jsonschema/main_jsonschema/object_property_count_single_dict[object_impossible_property_count].py	= main/jsonschema/object_impossible_property_count.py
+object_max_properties_zero	main/jsonschema/main_jsonschema/object_property_count_single_dict[object_max_properties_zero].py	= main/jsonschema/object_max_properties_zero.py
+object_property_count_additional_true	main/jsonschema/main_jsonschema/object_property_count_single_dict[object_property_count_additional_true].py	= main/jsonschema/object_property_count_additional_true.py
 [test_main_jsonschema_object_with_only_additional_properties]
 	main/jsonschema/string_dict.py
 [test_main_jsonschema_oneof_const_enum]
@@ -6898,6 +6909,10 @@ schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[sche
 schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].py
 schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_jsonschema_prefix_items_unsatisfiable_length]
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel-default].py	= main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel].py
 [test_main_jsonschema_prefix_items_with_false_schema]
 	main/jsonschema/prefix_items_with_false_schema.py
 [test_main_jsonschema_prefix_items_with_true_schema]

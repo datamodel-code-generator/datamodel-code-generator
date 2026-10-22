@@ -7297,6 +7297,38 @@ def test_main_openapi_allof_required_inherited_rw_c3(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="required"), pytest.param(["--force-optional"], id="force-optional")],
+)
+def test_main_openapi_allof_required_inherited_rw_c3_dedupe_variants(output_file: Path, extra_args: list[str]) -> None:
+    """Read the read/write facts of a base from its properties and its required names, unless --force-optional.
+
+    With --dedupe-request-response-variants the schema graph decides which models split. Required names that the
+    base does not declare count as fields without read/write flags, and --force-optional makes every field optional.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_required_inherited_rw_c3.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--allof-class-hierarchy",
+            "always",
+            "--read-only-write-only-model-type",
+            "all",
+            "--dedupe-request-response-variants",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("merge_mode", ["constraints", "all", "none"])
 @pytest.mark.parametrize(
     ("read_write_mode", "force_optional", "expected_file"),
