@@ -21,6 +21,8 @@ PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
+[test_msgspec_allof_object_ref_ignores_numeric_constraint]
+	main/jsonschema/msgspec_alias_defaults/msgspec_allof_object_ref_ignores_numeric_constraint.py
 [test_msgspec_graphql_scalar_alias_defaults]
 False-api	main/graphql/msgspec_scalar_alias_defaults_False.py
 False-api	main/graphql/msgspec_scalar_alias_defaults_runtime.txt

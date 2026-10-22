@@ -28,6 +28,38 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+@pytest.mark.allow_direct_assert
+@pytest.mark.filterwarnings("ignore:msgspec.Meta does not take ge on Point:UserWarning")
+def test_msgspec_allof_object_ref_ignores_numeric_constraint(tmp_path: Path, output_file: Path) -> None:
+    """A numeric keyword beside an object reference must not become a msgspec numeric Meta."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(
+        json.dumps(
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Model",
+                "type": "object",
+                "properties": {
+                    "points": {
+                        "type": "array",
+                        "items": {"allOf": [{"$ref": "#/$defs/Point"}], "minimum": 5},
+                    }
+                },
+                "$defs": {"Point": {"type": "object", "properties": {"x": {"type": "integer"}}}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp"],
+    )
+    with _generated_model(output_file, "generated_msgspec_allof_object_ref", "Model") as model:
+        assert msgspec.json.decode(b'{"points":[{"x":1}]}', type=model).points[0].x == 1
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize("use_alias_type", [False, True])
 @pytest.mark.parametrize(

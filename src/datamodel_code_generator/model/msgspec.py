@@ -1192,6 +1192,12 @@ class DataModelField(DataModelFieldBase):
             )
         ) is not None:
             return keywords
+        if (
+            data_type.reference is not None
+            and isinstance(data_type.reference.source, Struct)
+            and data_type.type is None
+        ):
+            return frozenset()
         if len(data_type.data_types) == 1 and not (
             data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
         ):
