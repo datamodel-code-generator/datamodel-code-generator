@@ -12,7 +12,9 @@ write, each with the ``Why`` that put it there. The field's backend builds it (`
 member is a field of the output's backend). The parser freezes one plan per field in the parse's ``RenderReady`` when
 render preparation ends (B2), and the field's ``field``, ``annotated``, ``type_hint``, ``represented_default``,
 ``has_default_factory_in_field`` and imports read the frozen plan from then on; before B2, and for a field that no
-parse froze, they read a plan the same builder makes without keeping it. A plan holds values, not text: its text is
+parse froze, they read a plan the same builder makes without keeping it. A frozen plan keeps the contents of what it
+read from its field, and a field whose contents differ when its model renders, as a model's ``render`` may change them,
+renders from a plan rebuilt then. A plan holds values, not text: its text is
 written when it is read, so the names it holds (the model a default factory builds, an aliased pattern expression) are
 the final ones.
 
@@ -29,7 +31,8 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Protocol, TypeAlias, final
+from operator import eq, is_
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Protocol, TypeAlias, cast, final
 
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -57,11 +60,13 @@ __all__ = [
     "PlannedField",
     "Positional",
     "PositionalKind",
+    "RenderInputs",
     "RenderReady",
     "RuleId",
     "Why",
     "field_call_text",
     "frozen_render_plan",
+    "unchanged_render_inputs",
     "visible_nested_factories",
     "written_argument_names",
 ]
@@ -412,6 +417,44 @@ class FieldRenderPlan:
         return declared - accounted, accounted - declared
 
 
+RenderInputs: TypeAlias = tuple[Any, tuple[object, ...] | None, tuple[object, ...], tuple["RenderInputs", ...]]
+"""What a render plan read from a field when it was built: the mapping or the collection it read (the field's
+attributes, a dict, a list), its keys then (None for a collection), its values then, and the inputs of the values that
+hold more (a field's types and constraints, containers), which ``unchanged_render_inputs`` compares with them now."""
+
+
+_EQUAL_BY_VALUE: Final = frozenset({str, bool, int, float, bytes, type(None)})
+"""The immutable types whose values are the same when they are equal and of the same type."""
+
+
+def unchanged_render_inputs(inputs: RenderInputs) -> bool:
+    """Return whether what a plan read holds the same keys and values now, and the same inside values that hold more.
+
+    A value is the same object, or an equal immutable value of the same type (``_same_value``), such as a cache that
+    was computed again.
+    """
+    live, keys, values, nested = inputs
+    if len(live) != len(values):
+        return False
+    if keys is None:
+        same = all(map(is_, live, values)) or all(map(_same_value, live, values))
+    else:
+        current = live.values()
+        same = all(map(eq, live, keys)) and (all(map(is_, current, values)) or all(map(_same_value, current, values)))
+    return same and all(map(unchanged_render_inputs, nested))
+
+
+def _same_value(new: Any, old: Any) -> bool:
+    """Return whether ``new`` is ``old``, or equals it as an immutable value or a tuple of them of the same type."""
+    if new is old:
+        return True
+    if (kind := type(new)) is not type(old):
+        return False
+    if kind is tuple:
+        return len(new) == len(old) and all(map(_same_value, new, old))
+    return kind in _EQUAL_BY_VALUE and new == old
+
+
 class PlannedField(Protocol):
     """A field that renders from a render plan, as the parse reads it to freeze and check its plan."""
 
@@ -428,6 +471,9 @@ class PlannedField(Protocol):
     def _declared_render_items(self) -> frozenset[str]:
         """Return the items the field declares that its plan must write or omit."""
 
+    def _render_inputs(self) -> RenderInputs:
+        """Return what the field's plan reads from the field, as ``RenderInputs``."""
+
 
 @final
 @dataclass(frozen=True, slots=True)
@@ -442,40 +488,70 @@ class NestedFactoryMetadata:
     recursive: Mapping[ModelKey, frozenset[ModelKey]]
 
 
+class _FrozenPlan(NamedTuple):
+    """A field's frozen plan, the plan the import snapshot reads if different, and what the plan read from the field.
+
+    ``inputs`` are the field's ``_render_inputs`` when the plan was built.
+    """
+
+    field: object
+    plan: FieldRenderPlan
+    import_plan: FieldRenderPlan | None
+    inputs: RenderInputs
+
+
 @final
 class RenderReady:
     """The field render plans one parse froze at B2, and the nested-factory decision render preparation made.
 
     A plan is looked up by its field object. ``import_view`` returns, inside it, the second plan of a field that row
-    ``legacy.L-NF`` keeps.
+    ``legacy.L-NF`` keeps. Each plan keeps the contents of what it read from its field, and ``refreshed`` rebuilds it
+    when the field's model renders with them changed, as a model's ``render`` that changes its fields first does.
     """
 
     __slots__ = ("_deciding", "_import_view", "_plans", "_rebuilding", "nested_factories")
 
     def __init__(self) -> None:
         """Start a parse with no plan frozen."""
-        self._plans: dict[int, tuple[object, FieldRenderPlan, FieldRenderPlan | None]] = {}
+        self._plans: dict[int, _FrozenPlan] = {}
         self._import_view = False
         self._deciding = False
         self._rebuilding = False
         self.nested_factories: NestedFactoryMetadata | None = None
 
-    def freeze(self, field: object, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
+    def freeze(self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
         """Keep ``plan`` as the field's plan, and ``import_plan`` as the one the import snapshot reads, if different."""
-        self._plans[id(field)] = (field, plan, import_plan)
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, field._render_inputs())  # noqa: SLF001
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
-        """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it."""
-        if self._rebuilding or (entry := self._plans.get(id(field))) is None or entry[0] is not field:
+        """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
+
+        An entry holds its field, so no other object takes the field's ``id`` while the parse runs.
+        """
+        if self._rebuilding or (entry := self._plans.get(id(field))) is None:
             return None
-        if self._import_view and entry[2] is not None:
-            return entry[2]
-        return entry[1]
+        if self._import_view and entry.import_plan is not None:
+            return entry.import_plan
+        return entry.plan
 
     def frozen(self) -> Iterator[tuple[object, FieldRenderPlan]]:
         """Yield every field with the plan frozen for it."""
-        for field, plan, _ in self._plans.values():
-            yield field, plan
+        for entry in self._plans.values():
+            yield entry.field, entry.plan
+
+    def refreshed(self, field: PlannedField) -> FieldRenderPlan | None:
+        """Rebuild the plan frozen for ``field`` if what it read from the field changed since; return the rebuilt plan.
+
+        The plan is rebuilt from the field's facts as the frozen plans' check rebuilds it, and kept with what it read
+        now; the import snapshot's plan stays. Return None when the parse froze no plan for the field or the contents
+        it read are the same.
+        """
+        if (entry := self._plans.get(id(field))) is None or unchanged_render_inputs(entry.inputs):
+            return None
+        with self.rebuilding():
+            plan = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
+        self._plans[id(field)] = entry._replace(plan=plan, inputs=field._render_inputs())  # noqa: SLF001
+        return plan
 
     def deciding_nested_factories(self) -> NestedFactoryMetadata | None:
         """Return the nested-factory decision while ``nested_factories_decided`` runs, else None."""

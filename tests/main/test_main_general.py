@@ -3129,10 +3129,10 @@ def test_render_plan_of_a_declared_default_factory_of_none(monkeypatch: pytest.M
 def test_render_plan_whose_field_changes_after_render_preparation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
 ) -> None:
-    """A field that a pass after render preparation changes renders from the plan frozen before the change.
+    """A field that a pass after render preparation changes writes the change, as 0.86.0 does.
 
-    The check (`1`) raises when the modules are written; `report:<path>` appends a JSON line, and the output keeps the
-    frozen plan's ``Field()`` call with the check off (`0`) too.
+    The check (`1`) raises when the modules are written; `report:<path>` appends a JSON line, and the field's plan is
+    rebuilt when its model renders, with the check off (`0`) too.
     """
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
@@ -3203,6 +3203,65 @@ def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
     assert_output(output)
     if override != "none":
         validate_generated_code(output, "<generated>", do_exec=True)
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "check"),
+    [
+        ("pydantic_v2.BaseModel", "1"),
+        ("pydantic_v2.dataclass", "1"),
+        ("dataclasses.dataclass", "1"),
+        ("msgspec.Struct", "1"),
+        ("typing.TypedDict", "1"),
+        ("dataclasses.dataclass", "0"),
+    ],
+)
+def test_model_that_changes_its_fields_in_render(
+    monkeypatch: pytest.MonkeyPatch, output_model_type: str, check: str
+) -> None:
+    """A model whose ``render`` changes its fields before it renders them writes the changed fields, as 0.86.0 does.
+
+    After their plans froze, ``b`` gets another default, ``c`` becomes required, and ``d``'s extras, ``e``'s type and
+    ``f``'s default list change in place. The field's plan is rebuilt when the model renders, and accounted with the
+    render plan check on (`1`) as with it off (`0`). The fact finality check, which reports the change as a write during
+    rendering, is off.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, check)
+    types = get_data_model_types(DataModelType(output_model_type), PythonVersion.PY_311)
+
+    class ChangedInRender(types.data_model):
+        def render(self, *, class_name: str | None = None) -> str:
+            for field in self.fields:
+                if field.name == "b":
+                    field.default = "changed"
+                elif field.name == "c":
+                    field.required = True
+                elif field.name == "d":
+                    field.extras["description"] = "Changed in render."
+                elif field.name == "e":
+                    field.data_type.type = "float"
+                elif field.name == "f":
+                    field.default.append("z")
+            return super().render(class_name=class_name)
+
+    parser = JsonSchemaParser(
+        '{"title": "M", "type": "object", "required": ["a"], "properties": {"a": {"type": "integer"},'
+        ' "b": {"type": "array", "items": {"type": "string"}, "default": ["x"]}, "c": {"type": "integer"},'
+        ' "d": {"type": "string", "description": "Declared."}, "e": {"type": "integer"},'
+        ' "f": {"type": "array", "items": {"type": "string"}, "default": ["y"]}}}',
+        data_model_type=ChangedInRender,
+        data_model_root_type=types.root_model,
+        data_model_field_type=types.field_model,
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(parser.parse()))
 
 
 @freeze_time(TIMESTAMP)

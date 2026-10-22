@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+
+@dataclass
+class M:
+    a: int
+    b: Optional[List[str]] = 'changed'
+    c: int
+    d: Optional[str] = None
+    e: Optional[float] = None
+    f: Optional[List[str]] = field(default_factory=lambda: ['y', 'z'])

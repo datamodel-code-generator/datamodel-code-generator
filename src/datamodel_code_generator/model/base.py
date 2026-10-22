@@ -17,7 +17,7 @@ from functools import cached_property, lru_cache
 from itertools import accumulate, chain, takewhile
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
 from warnings import warn
 
 from pydantic import ConfigDict, Field
@@ -50,6 +50,7 @@ from datamodel_code_generator.model._decisions.assignment import (
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
 from datamodel_code_generator.model._render_plan import (
+    RENDER_READY,
     AssignmentFacts,
     FieldDefault,
     FieldRenderPlan,
@@ -80,6 +81,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
@@ -87,7 +89,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
-    from datamodel_code_generator.model._render_plan import NestedFactoryMetadata
+    from datamodel_code_generator.model._render_plan import NestedFactoryMetadata, PlannedField, RenderInputs
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -1379,6 +1381,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Build the render plan the parse freezes for this field at B2, or None when it renders without one."""
         return None
 
+    def _render_inputs(self) -> RenderInputs:
+        """Return what the field's render plan reads from the field, to compare when it renders (``RenderReady``)."""
+        return _render_inputs_of(self)
+
     def _render_plan(self) -> FieldRenderPlan:
         """Return the plan the parse froze for this field, or build one without keeping it."""
         if (plan := frozen_render_plan(self)) is not None:
@@ -1573,6 +1579,62 @@ def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
             for earlier in takewhile(lambda earlier: earlier is not field, parent.fields)
         )
     )
+
+
+_IMMUTABLE: Final = frozenset({str, bool, int, float, bytes, type(None)})
+_HOLDERS: Final = (_BaseModel, dict, list, tuple, set, frozenset)
+
+
+def _render_inputs_of(value: _BaseModel | dict[Any, Any] | Collection[Any]) -> RenderInputs:
+    """Return what a render plan reads from ``value``: its keys, its values and the inputs of the values that hold more.
+
+    A field, a type or constraints (``_BaseModel``) give their attributes, a dict its items, a list, a tuple or a set
+    its items. Those that hold more (``_holds_render_inputs``) give their own inputs, so a change inside them counts,
+    but not the back-references a model leaves out of its dumps (``_exclude_fields``).
+    """
+    if isinstance(value, _BaseModel):
+        attributes = vars(value)
+        excluded = value._exclude_fields  # noqa: SLF001
+        return (
+            attributes,
+            tuple(attributes),
+            tuple(attributes.values()),
+            tuple([
+                _render_inputs_of(item)
+                for name, item in attributes.items()
+                if type(item) not in _IMMUTABLE and name not in excluded and _holds_render_inputs(item)
+            ]),
+        )
+    if isinstance(value, dict):
+        items = tuple(value.values())
+        return value, tuple(value), items, _nested_render_inputs(items)
+    items = tuple(value)
+    return value, None, items, _nested_render_inputs(items)
+
+
+def _nested_render_inputs(items: tuple[Any, ...]) -> tuple[RenderInputs, ...]:
+    """Return the inputs of the items that hold more."""
+    return tuple([
+        _render_inputs_of(item) for item in items if type(item) not in _IMMUTABLE and _holds_render_inputs(item)
+    ])
+
+
+def _holds_render_inputs(value: object) -> bool:
+    """Return whether a render plan reads inside ``value``: a container, or a type or constraints, not a reference."""
+    return isinstance(value, _HOLDERS) and not isinstance(value, Reference)
+
+
+def _check_render_plan_accounting(
+    mode: CheckMode, model: DataModel, field: PlannedField, plan: FieldRenderPlan
+) -> None:
+    """Report a frozen or rebuilt plan that drops a declared item without a reason or writes an undeclared one."""
+    missing, extra = plan.unaccounted(field._declared_render_items())  # noqa: SLF001
+    if missing or extra:
+        mode.violation(
+            Error,
+            f"the render plan of {model.class_name}.{field.name} leaves {sorted(missing)} unaccounted and "
+            f"accounts for undeclared {sorted(extra)}",
+        )
 
 
 _PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
@@ -3359,10 +3421,25 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self.fields if rendered_fields is None else rendered_fields
 
     def _template_fields(self, *, use_custom_template: bool) -> Sequence[DataModelFieldBase | _RenderedDataModelField]:
-        """Return fields in the representation expected by the selected template."""
+        """Return fields in the representation expected by the selected template, their plans rebuilt if changed."""
+        self._refresh_field_render_plans()
         if use_custom_template:
             return self._custom_template_fields
         return self.rendered_fields
+
+    def _refresh_field_render_plans(self) -> None:
+        """Rebuild the frozen plan of each field whose contents changed since, as ``render`` may change them.
+
+        A rebuilt plan must account for every item its field declares, as a frozen one, under
+        ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
+        """
+        if (ready := RENDER_READY.get()) is None:
+            return
+        for field in cast("list[PlannedField]", self.fields):
+            if (plan := ready.refreshed(field)) is not None and (
+                mode := check_mode(CheckArea.RENDER_PLANS)
+            ) is not None:
+                _check_render_plan_accounting(mode, self, field, plan)
 
     def _template_description(self, *, use_custom_template: bool) -> str | None:
         """Return a description safe for the selected template convention."""

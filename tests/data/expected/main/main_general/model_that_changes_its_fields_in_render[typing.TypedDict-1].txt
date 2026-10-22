@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from typing import List, NotRequired, TypedDict
+
+
+class M(TypedDict):
+    a: int
+    b: NotRequired[List[str]]
+    c: int
+    d: NotRequired[str]
+    e: NotRequired[float]
+    f: NotRequired[List[str]]

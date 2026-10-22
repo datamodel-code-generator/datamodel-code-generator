@@ -144,6 +144,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _apply_literal_default,
+    _check_render_plan_accounting,
     _find_base_classes,
     _keyed_answer,
     _model_key_of_model,
@@ -1624,19 +1625,6 @@ class _FinalizeState:
             model for model in self.all_models if len(model.additional_properties_reference_classes)
         ]
         return bool(self.additional_properties_models)
-
-
-def _check_render_plan_accounting(
-    mode: CheckMode, model: DataModel, field: PlannedField, plan: FieldRenderPlan
-) -> None:
-    """Report a frozen plan that drops a declared item without a reason or writes an undeclared one."""
-    missing, extra = plan.unaccounted(field._declared_render_items())  # noqa: SLF001
-    if missing or extra:
-        mode.violation(
-            Error,
-            f"the render plan of {model.class_name}.{field.name} leaves {sorted(missing)} unaccounted and "
-            f"accounts for undeclared {sorted(extra)}",
-        )
 
 
 def _same_state(state: _FinalizeState) -> _FinalizeState:

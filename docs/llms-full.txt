@@ -66107,10 +66107,14 @@ forced assignment and the plain annotation of a call the dataclass must see, `mo
 `ReadOnly[`, `Required[` and `NotRequired[` qualifiers of the key); an enum member is a field of the output's backend,
 whose plan gives the member's imports. The last render preparation pass freezes one per field in the parse's
 `RenderReady` (B2), and `field`, `annotated`, `type_hint`, `represented_default`, `has_default_factory_in_field`, the
-import collection and the dropped-constraints warnings read the frozen plan, before B2 a plan built and not kept. The
-plan holds values and writes its text when it is read, so the names it holds are the final ones. Custom templates get
-the raw fields, which answer from the same plan. `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS` checks that each frozen
-plan writes or omits every item its field declares and that it renders as the plan rebuilt when the modules are
+import collection and the dropped-constraints warnings read the frozen plan, before B2 a plan built and not kept. Each
+frozen plan keeps what it read from its field (`DataModelFieldBase._render_inputs`: the field's attributes, and inside
+its types, constraints and containers), and when the model renders (`DataModel._template_fields`) the plan of a field
+where any of it changed, replaced or edited in place, is rebuilt (`RenderReady.refreshed`), so a model whose `render`
+changes its fields first writes the change, as a pass that changes a field after render preparation does. The plan holds
+values and writes its text when it is read, so the names it holds are the final ones. Custom templates get the raw
+fields, which answer from the same plan. `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS` checks that each frozen or
+rebuilt plan writes or omits every item its field declares and that it renders as the plan rebuilt when the modules are
 written. Row `legacy.L-NF`: the nested models' default factories are decided when render preparation ends, but the
 import snapshot reads each field as if the factory were written (a second plan, `RenderReady.import_view`), and the
 models that render without frozen plans (GraphQL unions, custom output models) read the decision only once

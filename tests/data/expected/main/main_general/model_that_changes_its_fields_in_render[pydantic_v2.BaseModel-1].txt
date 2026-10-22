@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class M(BaseModel):
+    a: int
+    b: Optional[List[str]] = 'changed'
+    c: int
+    d: Optional[str] = Field(None, description='Changed in render.')
+    e: Optional[float] = None
+    f: Optional[List[str]] = ['y', 'z']

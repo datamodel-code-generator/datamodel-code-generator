@@ -667,6 +667,13 @@ report	main/main_general/model_graph_check_reports_a_differing_reference_graph_a
 off	main/main_general/model_graph_check_reports_a_written_model_that_the_store_retired[off].txt
 report	main/main_general/model_graph_check_reports_a_written_model_that_the_store_retired[report].report.txt
 report	main/main_general/model_graph_check_reports_a_written_model_that_the_store_retired[report].txt	= main/main_general/model_graph_check_reports_a_written_model_that_the_store_retired[off].txt
+[test_model_that_changes_its_fields_in_render]
+dataclasses.dataclass-0	main/main_general/model_that_changes_its_fields_in_render[dataclasses.dataclass-0].txt
+dataclasses.dataclass-1	main/main_general/model_that_changes_its_fields_in_render[dataclasses.dataclass-1].txt	= main/main_general/model_that_changes_its_fields_in_render[dataclasses.dataclass-0].txt
+msgspec.Struct-1	main/main_general/model_that_changes_its_fields_in_render[msgspec.Struct-1].txt
+pydantic_v2.BaseModel-1	main/main_general/model_that_changes_its_fields_in_render[pydantic_v2.BaseModel-1].txt
+pydantic_v2.dataclass-1	main/main_general/model_that_changes_its_fields_in_render[pydantic_v2.dataclass-1].txt
+typing.TypedDict-1	main/main_general/model_that_changes_its_fields_in_render[typing.TypedDict-1].txt
 [test_module_imports_written_outside_the_import_ledger]
 off	main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 report	main/main_general/module_imports_written_outside_the_import_ledger[report].report.txt
@@ -732,9 +739,9 @@ True	main/main_general/render_plan_of_a_declared_default_factory_of_none[True].t
 report	main/main_general/render_plan_that_drops_a_declared_item[report].report.txt
 report	main/main_general/render_plan_that_drops_a_declared_item[report].txt
 [test_render_plan_whose_field_changes_after_render_preparation]
-off	main/main_general/render_plan_whose_field_changes_after_render_preparation[off].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
+off	main/main_general/render_plan_whose_field_changes_after_render_preparation[off].txt
 report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].report.txt
-report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
+report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].txt	= main/main_general/render_plan_whose_field_changes_after_render_preparation[off].txt
 [test_ruff_batch_formatting_directory]
 	main/jsonschema/all_exports_multi_file_ruff//*.py
 [test_ruff_check_and_format_combined]
