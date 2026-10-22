@@ -1144,13 +1144,24 @@ class DataModelField(DataModelFieldBase):
             return self._unset_union_data_type().type_hint
         return super().type_hint
 
+    def _hint_meta(self) -> tuple[bool, str | None]:
+        """Return whether the hint renders the field's own type, and the ``Meta()`` it annotates the type with.
+
+        An unset union, and an ``Annotated`` type of a required or nullable field, render a copy of the type.
+        """
+        meta = self._get_meta_string() if self.use_annotated else None
+        copied = (self._not_required and not self.nullable) or (meta is not None and (self.required or self.nullable))
+        return not copied, meta
+
+    @override
+    def _hint_renders_own_type(self) -> bool:
+        return self._hint_meta()[0]
+
     @override
     def _import_state_data_type(self) -> DataType | None:
         """Return the field's own data type, or None when ``imports`` collects from a copy of it."""
-        meta = self._get_meta_string() if self.use_annotated else None
-        if (self._not_required and not self.nullable) or (meta is not None and (self.required or self.nullable)):
-            return None
-        return self._import_state_target(needs_annotated=meta is not None, data_type=self.data_type)
+        own, meta = self._hint_meta()
+        return self._import_state_target(needs_annotated=meta is not None, data_type=self.data_type) if own else None
 
     @property
     @override

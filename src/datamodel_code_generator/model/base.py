@@ -962,6 +962,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             needs_annotated=self.use_annotated and self.needs_annotated_import, data_type=self.data_type
         )
 
+    def _hint_renders_own_type(self) -> bool:  # noqa: PLR6301
+        """Return whether the type hint renders the field's own data type rather than a copy of it."""
+        return True
+
     def _import_state_target(self, *, needs_annotated: bool, data_type: DataType) -> DataType | None:
         if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
             return None
@@ -2792,11 +2796,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _prepare_dedup_key(self) -> None:
         """Write what rendering the dedup key decides, so rendering it writes nothing.
 
-        A root model decides its sequence interface; rendering writes no nullability, so the key reads the None each
-        hint renders.
+        A root model decides its sequence interface, and every field whose hint renders its own type writes the None
+        that rendering the key wrote at L3 (``legacy-l3-import-nullability``): a type keeps the None of the nullable
+        model it names when duplicate deletion then points it at a model without one.
         """
         if self.IS_ROOT_MODEL:
             self.finalize_sequence_interface()
+        for field in self.fields:
+            if field._hint_renders_own_type():  # noqa: SLF001
+                field._write_pre_render_nullability(field.data_type)  # noqa: SLF001
 
     def _write_pre_render_nullability(self) -> None:
         """Write the nullability that collecting the model's imports wrote at L3 (``legacy-l3-import-nullability``).

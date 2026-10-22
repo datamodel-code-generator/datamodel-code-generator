@@ -251,3 +251,35 @@ def test_redundant_reference_null_object_maps(output_file: Path, output_model_ty
     )
     payloads = json.loads((DATA_PATH / "payloads" / "object_maps" / "nullable_object_maps.json").read_text())
     assert_output(_payload_lines(output_file, output_model_type, "Model", payloads), name="payloads")
+
+
+@pytest.mark.parametrize("option", [pytest.param((), id="default"), pytest.param((OPTION,), id="option")])
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        pytest.param(output_model_type, marks=[TYPED_DICT_SKIP] if output_model_type == "typing.TypedDict" else [])
+        for output_model_type in OUTPUT_MODEL_TYPES
+    ],
+)
+def test_reference_null_kept_after_duplicate_deletion(
+    output_file: Path, output_model_type: str, option: tuple[str, ...]
+) -> None:
+    """Keep the None of a nullable object model at a use whose model deletion points at a duplicate without one.
+
+    The branch that does not narrow the property accepts null as the schema does; the branch that narrows it to an
+    object rejects it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "nullable_object_narrowed_in_oneof.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, *option],
+    )
+    payloads: dict[str, Any] = {"valid": {"kind": "b", "item": None}, "invalid": [{"kind": "a"}, {"item": 1}]}
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_lines(output_file, output_model_type, "Model", payloads), name="payloads")

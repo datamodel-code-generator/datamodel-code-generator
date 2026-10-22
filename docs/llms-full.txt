@@ -66552,7 +66552,9 @@ the None it adds; msgspec's top-level None and the `Field()` default plan read t
 (`legacy-msgspec-top-level-null-as-written`, `legacy-strip-keeps-written-null-only`). Before it, only
 `parser/base.py:_flatten_union_members` (L5 finalize), which moves member nullability onto the union, and L3's
 `DataModel._write_pre_render_nullability` (`legacy-l3-import-nullability`, which overrides and constructor ordering
-read) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
+read; `DataModel._prepare_dedup_key` writes it for every field whose hint renders its own type before a dedup key
+renders, so such a type keeps the None of the nullable model it named when duplicate deletion points it at a model
+without one) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
 `types.py:DataType.admits_none`, which computes the rendered nullability with
 `model/_decisions/nullability.py:rendered_nullability` without writing it. A field of every built-in output model
 (Pydantic `BaseModel`, `RootModel` and dataclass, msgspec `Struct`, stdlib dataclass, `TypedDict`, enum, type alias)

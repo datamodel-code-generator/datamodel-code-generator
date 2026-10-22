@@ -1,0 +1,4 @@
+valid: accepted
+parsed: {'kind': 'b', 'item': None}
+invalid kind: rejected (dict_type)
+invalid item: rejected (literal_error)
