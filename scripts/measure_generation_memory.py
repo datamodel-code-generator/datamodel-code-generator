@@ -18,18 +18,25 @@ if TYPE_CHECKING:
 resource = None if sys.platform == "win32" else importlib.import_module("resource")
 
 
-def reset_peak_rss() -> None:
-    """Reset this process's resident-set high-water mark on Linux, where fork inherits the parent's."""
-    if sys.platform == "linux":
-        Path("/proc/self/clear_refs").write_text("5", encoding="ascii")
+def reset_peak_rss() -> bool:
+    """Reset this process's resident-set high-water mark where the kernel allows it (Linux with ``clear_refs``).
+
+    Return whether it was reset: a forked child otherwise inherits its parent's high-water mark on Linux.
+    """
+    clear_refs = Path("/proc/self/clear_refs")
+    if sys.platform != "linux" or not clear_refs.exists():
+        return False
+    clear_refs.write_text("5", encoding="ascii")
+    return True
 
 
-def read_peak_rss_bytes() -> int:
-    """Return this process's peak resident memory in bytes."""
-    if sys.platform == "linux":
+def read_peak_rss_bytes(*, reset: bool) -> int:
+    """Return this process's peak resident memory in bytes (``ru_maxrss`` is bytes on macOS, KiB elsewhere)."""
+    if reset:
         status = Path("/proc/self/status").read_text(encoding="ascii")
         return int(next(line for line in status.splitlines() if line.startswith("VmHWM:")).split()[1]) * 1024
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak if sys.platform == "darwin" else peak * 1024
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -51,7 +58,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if resource is None:  # pragma: no cover
         parser.error("peak RSS measurement is supported only on Unix")
 
-    reset_peak_rss()
+    reset = reset_peak_rss()
     started_at = time.perf_counter()
     generate(
         input_=args.input,
@@ -61,7 +68,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         formatters=[],
     )
     elapsed_seconds = time.perf_counter() - started_at
-    peak_rss_bytes = read_peak_rss_bytes()
+    peak_rss_bytes = read_peak_rss_bytes(reset=reset)
     print(
         json.dumps(
             {
