@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Extracted branch of a nullable field with a default
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        grade:
+          nullable: true
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: string
+              maxLength: 3
+          default: 2

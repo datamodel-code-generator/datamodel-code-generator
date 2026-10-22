@@ -10654,6 +10654,13 @@ def test_main_jsonschema_unevaluated_properties_schema_with_applicator(output_fi
         pytest.param(
             "unevaluated_properties_not", "Resource", '{"name": "a", "count": 1}', "string_type", id="not_applicator"
         ),
+        pytest.param(
+            "unevaluated_properties_not_properties",
+            "Resource",
+            '{"name": "a", "count": 1}',
+            "string_type",
+            id="not_with_properties",
+        ),
     ],
 )
 @pytest.mark.parametrize("read", [False, True], ids=["without_read", "read"])

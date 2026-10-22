@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: Unevaluated properties in referenced objects
+  version: "1"
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      parameters:
+        - $ref: "#/components/parameters/Filter"
+      requestBody:
+        $ref: "#/components/requestBodies/ResourceBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/ResourceResponse"
+components:
+  parameters:
+    Filter:
+      name: filter
+      in: query
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+        unevaluatedProperties:
+          type: string
+  requestBodies:
+    ResourceBody:
+      content:
+        application/json:
+          schema:
+            title: ResourceRequest
+            type: object
+            properties:
+              name:
+                type: string
+            unevaluatedProperties:
+              type: string
+  responses:
+    ResourceResponse:
+      description: The resource
+      content:
+        application/json:
+          schema:
+            title: ResourceReply
+            type: object
+            properties:
+              name:
+                type: string
+            unevaluatedProperties:
+              type: string

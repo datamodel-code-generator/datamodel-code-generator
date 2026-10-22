@@ -255,6 +255,7 @@ openapi/external_ref_with_transitive_local_ref/schemas/feedback.yaml	yaml_fast_c
 openapi/external_relative_ref/model_a/types.openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/external_relative_ref/model_b/module.openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/extracted_branch_default.yaml	yaml_fast_constructor/parity.txt
+openapi/extracted_branch_nullable_default.yaml	yaml_fast_constructor/parity.txt
 openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
@@ -463,6 +464,7 @@ openapi/typed_dict_extra_items_final_name/dotted.yaml	yaml_fast_constructor/pari
 openapi/typed_dict_extra_items_final_name/renamed.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/renamed_external.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/variant.yaml	yaml_fast_constructor/parity.txt
+openapi/unevaluated_properties_referenced_objects.yaml	yaml_fast_constructor/parity.txt
 openapi/union_default_object.yaml	yaml_fast_constructor/parity.txt
 openapi/unique_items_default_set.yaml	yaml_fast_constructor/parity.txt
 openapi/unquoted_null.yaml	yaml_fast_constructor/parity.txt

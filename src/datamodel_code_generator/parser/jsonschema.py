@@ -386,6 +386,7 @@ _INHERITED_CONTAINER_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], .
 _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY = "_inherited_materialized_type_shape"
 _MERGED_REF_TARGET_KEY = "_merged_ref_target"
 _COPIED_NULLABLE_KEY = "_copied_nullable"
+_DEFAULT_LEFT_OFF_KEY = "_default_left_off"
 _NULLABLE_TYPE_LIST_KEY = "_nullable_type_list"
 _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
     "object-model",
@@ -679,14 +680,21 @@ def _searches_any(pattern: str, names: Iterable[str]) -> bool:
 
 
 def _mark_copied_nullable(
-    branch: JsonSchemaObject, parent: dict[str, Any], written: JsonSchemaObject | None
+    branch: JsonSchemaObject,
+    parent: dict[str, Any],
+    written: JsonSchemaObject | None,
+    *,
+    default_left_off: bool = False,
 ) -> JsonSchemaObject:
     """Mark a branch of a combined schema whose ``nullable`` the merge copied from ``parent``.
 
     ``written`` is the branch schema as written; a ``nullable`` it writes itself is its own and stays unmarked.
+    ``default_left_off`` marks a branch whose parent default stays with the parent, so its root requires its value.
     """
     if "nullable" in parent and (written is None or "nullable" not in written.model_fields_set):
         branch.__dict__[_COPIED_NULLABLE_KEY] = True
+    if default_left_off:
+        branch.__dict__[_DEFAULT_LEFT_OFF_KEY] = True
     return branch
 
 
@@ -1677,13 +1685,14 @@ def _evaluates_no_property(schema: object) -> bool:
 def _applicator_evaluates_no_property(keyword: str, value: object) -> bool:
     """Return whether the in-place applicator ``keyword`` with its raw ``value`` evaluates no property.
 
-    Only ``allOf``, ``anyOf``, ``oneOf`` and ``not`` whose subschemas evaluate none qualify; any other applicator may.
+    ``not`` never evaluates a property: the annotations of a failed subschema do not count. Only ``allOf``,
+    ``anyOf`` and ``oneOf`` whose subschemas evaluate none qualify besides; any other applicator may.
     """
     match keyword:
         case "allOf" | "anyOf" | "oneOf":
             return isinstance(value, list) and all(_evaluates_no_property(item) for item in value)
         case "not":
-            return _evaluates_no_property(value)
+            return True
     return False
 
 
@@ -9636,6 +9645,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> dict[str, Any]:
         """Intersect allOf bounds and enums only in positive schema positions."""
         result = parent.copy()
+        conjoins_patterns = self.intersects_allof_keywords and intersect_bounds and not schema_map
         for key, value in child.items():
             if key not in result:
                 result[key] = value
@@ -9668,6 +9678,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     result[key] = _intersect_all_of_enum(previous, value)
                 else:
                     result[key] = previous + value
+            elif (
+                conjoins_patterns
+                and key == "pattern"
+                and isinstance(previous, str)
+                and isinstance(value, str)
+                and previous != value
+            ):
+                result[key] = self._conjoined_pattern((previous, value), "allOf")
             else:
                 result[key] = value
         if (
@@ -10262,6 +10280,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         target_attribute_name: str,
     ) -> list[DataType]:
         """Parse combined schema (anyOf, oneOf, allOf) into a list of data types."""
+        default_left_off = self.config.keep_field_defaults_off_branch_roots and obj.has_default
         base_object = obj.model_dump(
             exclude={
                 target_attribute_name,
@@ -10290,7 +10309,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 continue
             ref_index = index - dropped_before
             if target_attribute is True:
-                combined_schemas.append(_mark_copied_nullable(self._schema_object(base_object), base_object, None))
+                combined_schemas.append(
+                    _mark_copied_nullable(
+                        self._schema_object(base_object), base_object, None, default_left_off=default_left_off
+                    )
+                )
                 continue
             if target_attribute.ref:
                 if target_attribute.ref_type == JSONReference.LOCAL:
@@ -10325,6 +10348,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 ),
                                 base_object,
                                 merged_attr,
+                                default_left_off=default_left_off,
                             )
                         )
                 else:
@@ -10348,6 +10372,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         ),
                         base_object,
                         target_attribute,
+                        default_left_off=default_left_off,
                     )
                 )
 
@@ -11374,7 +11399,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not pattern.extras
                 and pattern.model_fields_set == {"type", "minimum"}
                 and pattern.minimum is not None
-                and (isinstance(pattern.minimum, int) or math.isfinite(pattern.minimum))
+                and (isinstance(pattern.minimum.value, int) or math.isfinite(pattern.minimum.value))
             )
         pattern_properties = cls._plain_pattern_object(pattern)
         if declared is True:
@@ -14580,7 +14605,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         selected_root_type = data_model_root_type or self.data_model_root_type
         is_type_alias = selected_root_type.IS_ALIAS
-        if (root_null := self._null_facts(obj, "root-type")).required is False:
+        root_null = self._null_facts(obj, "root-type")
+        if (
+            root_null.required is False
+            and obj.__dict__.get(_DEFAULT_LEFT_OFF_KEY)
+            and not self._null_mode.force_optional
+        ):
+            required = True
+            nullable = root_null.admits_null
+            has_default_override = obj.has_default
+            default_value = obj.default if obj.has_default else UNDEFINED
+        elif root_null.required is False:
             required = False
             nullable = root_null.admits_null
             has_default_override = True
