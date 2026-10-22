@@ -32,6 +32,8 @@ Controls which sections of the OpenAPI specification to generate models from.
 | `paths` | Generate models from path operation request bodies and responses |
 | `webhooks` | Generate models from webhook operation request bodies and responses |
 
+The `api` scope is available for OpenAPI input only; AsyncAPI input with `api` stops with an error that names the other scopes.
+
 ### Default behavior (schemas only)
 
 ```bash

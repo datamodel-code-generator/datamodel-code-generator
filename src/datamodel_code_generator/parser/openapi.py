@@ -288,6 +288,7 @@ class OpenAPIParser(JsonSchemaParser):
 
     _config_class_name: ClassVar[str] = "OpenAPIParserConfig"
     _supports_api_scope: ClassVar[bool] = False
+    _api_scope_error: ClassVar[str] = "OpenAPIScope.Api requires ApiOpenAPIParser"
     _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps | {"headers"}  # ruff: ignore[private-member-access]
 
     def __init__(
@@ -303,8 +304,7 @@ class OpenAPIParser(JsonSchemaParser):
         super().__init__(source=source, config=config, **options)
         self.open_api_scopes: list[OpenAPIScope] = self.config.openapi_scopes or [OpenAPIScope.Schemas]
         if OpenAPIScope.Api in self.open_api_scopes and not self._supports_api_scope:
-            msg = "OpenAPIScope.Api requires ApiOpenAPIParser"
-            raise Error(msg)
+            raise Error(self._api_scope_error)
         self.include_path_parameters: bool = self.config.include_path_parameters
         self.use_status_code_in_response_name: bool = self.config.use_status_code_in_response_name
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths

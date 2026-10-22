@@ -1024,6 +1024,14 @@ def test_malformed_input_error_messages(
             id="unsatisfiable-payload",
         ),
         pytest.param(
+            "schema_location_unsatisfiable_payload.yaml",
+            "asyncapi",
+            ["--openapi-scopes", "api"],
+            "The 'api' scope of --openapi-scopes is not available for AsyncAPI input; "
+            "use the other scopes: schemas, paths, tags, parameters, webhooks, requestbodies",
+            id="asyncapi-api-scope",
+        ),
+        pytest.param(
             "schema_location_unresolved_class/api.yaml",
             "openapi",
             ["--external-ref-mapping", "common.yaml=mypackage.shared.models"],
