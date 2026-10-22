@@ -1084,12 +1084,6 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
     return f"{module_name}{separator}{variant_name}" if module_name else variant_name
 
 
-def _strip_special_path_suffix(path: str) -> str:
-    """Return a joined path without the special path markers its last segment ends with."""
-    head, separator, last = path.rpartition("/")
-    return f"{head}{separator}{last.partition(SPECIAL_PATH_MARKER)[0]}"
-
-
 _ENUM_ENTRY_FIELDS = ("x_enum_varnames", "x_enum_names", "x_enum_descriptions")
 
 
@@ -2617,7 +2611,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._rw_model_variant_requirement_cache: dict[tuple[str, str], bool] = {}
         self._rw_model_variant_references: dict[tuple[str, str], Reference] = {}
         self._local_ref_path_cache: dict[Path, Path] = {}
-        self._tag_key_variant_paths: dict[str, tuple[str, str]] = {}
+        self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
         self.field_keys: set[str] = {
@@ -5819,13 +5813,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         variant_names: Sequence[str | None] | None,
         variant_keys: Mapping[int, str],
     ) -> list[DataType]:
-        """Parse the branches of a union, recording the key and name of each branch named after its key by its path."""
+        """Parse the branches of a union, recording the key and name of each branch named after its key by its node."""
         if variant_names:
             for index, key in variant_keys.items():
-                self._tag_key_variant_paths[self.model_resolver.join_path((*path, str(index)))] = (
-                    key,
-                    variant_names[index] or name,
-                )
+                self._tag_key_variants[combined_schemas[index].schema_location] = (key, variant_names[index] or name)
             return [
                 self.parse_item(
                     variant_names[index] or name,
@@ -12738,16 +12729,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _mark_location_conflict(reference)
         return data_type
 
-    def _get_tag_key_variant_key(self, path: list[str]) -> str | None:
-        """Return the key of the union branch modeled at `path` when its class name still comes from that key.
+    def _get_tag_key_variant_key(self, obj: JsonSchemaObject, path: list[str]) -> str | None:
+        """Return the key of the union branch `obj` modeled at `path` when its class name still comes from that key.
 
         A branch its title names (`--use-title-as-name`) or `--model-name-map` renames does not repeat the key.
         """
-        model_path = self.model_resolver.join_path(tuple(path))
-        if (variant := self._tag_key_variant_paths.get(_strip_special_path_suffix(model_path))) is None:
+        if (location := obj.schema_location) is None or (variant := self._tag_key_variants.get(location)) is None:
             return None
         key, variant_name = variant
-        return key if self.model_resolver.named_after(model_path, variant_name) else None
+        named_after_key = self.model_resolver.named_after(self.model_resolver.join_path(tuple(path)), variant_name)
+        return key if named_after_key else None
 
     def parse_object_fields(
         self,
@@ -12762,7 +12753,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase] = []
 
         exclude_field_names: set[str] = set()
-        variant_key = self._get_tag_key_variant_key(path) if self._tag_key_variant_paths else None
+        variant_key = self._get_tag_key_variant_key(obj, path) if self._tag_key_variants else None
         for original_field_name, field in properties.items():
             field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
                 original_field_name,
@@ -16484,12 +16475,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             schema_container_path == schema_path for schema_path, _ in self.schema_paths
         )
 
-    def _is_current_root_schema_path(self, path: list[str]) -> bool:
-        current_root = list(self.model_resolver.current_root)
-        current_root_path = current_root or ["#"]
-        return path == current_root_path or self.model_resolver.resolve_ref(path) == self.model_resolver.resolve_ref(
-            current_root or "#"
-        )
+    def _is_current_root_schema(self, obj: JsonSchemaObject) -> bool:
+        """Return whether a schema object is the root of the current document."""
+        return obj.schema_location == self._current_document_root()
 
     def _drop_ref_from_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         return self._schema_object(obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
@@ -16580,9 +16568,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.parse_object(name, obj, path)
 
     def _definition_root_self_reference_applies(self, site: _Site) -> bool:
-        return bool(
-            _merges_ref_siblings(site.obj) and site.obj.ref == "#" and self._is_current_root_schema_path(site.path)
-        )
+        return bool(_merges_ref_siblings(site.obj) and site.obj.ref == "#" and self._is_current_root_schema(site.obj))
 
     def _rewrite_definition_root_self_reference(self, site: _Site) -> _Site:
         return replace(site, obj=self._drop_ref_from_schema(site.obj))
@@ -16687,7 +16673,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj, path = written.obj, written.path
         steps: tuple[str, ...] = ()
         if obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only:
-            if obj.ref == "#" and self._is_current_root_schema_path(path):
+            if obj.ref == "#" and self._is_current_root_schema(obj):
                 steps = ("root-self-reference",)
             elif site.obj is not obj and site.scope is not None:
                 return ("ref-siblings", "merged-ref-in-own-scope")
