@@ -71,6 +71,7 @@ remove_unused_imports
 resolve_module_import_conflicts
 bind_module_field_names
 change_imported_model_name
+decide_config_items
 remap_import_overrides
 record_generated_class_names
 check_model_inheritance

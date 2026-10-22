@@ -9434,6 +9434,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._prepare_schema_runtime_validation_module_code(state.contexts)
         self._sync_schema_runtime_validation_module_imports(state.contexts, state.model_imports)
 
+    def __decide_config_items(self, state: _FinalizeState) -> None:  # noqa: PLR6301
+        """Let each model that the modules write decide its config items, once the validator helpers are planned."""
+        for model in _context_models(state.contexts):
+            model._decide_config_items()  # noqa: SLF001
+
     def __remap_import_overrides(self, state: _FinalizeState) -> None:
         """Route the shared and module imports through the modules ``--import-overrides`` names."""
         overrides = cast("Mapping[str, str]", self._import_overrides)
@@ -10620,6 +10625,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     decls.REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES,
                     lambda self, s: self.__replan_schema_validators_after_renames(s),
                     when=lambda self, s: self.generate_schema_validators and s.renamed_models,
+                    checked_models=_all_models,
+                ),
+                PassSpec(
+                    decls.DECIDE_CONFIG_ITEMS,
+                    lambda self, s: self.__decide_config_items(s),
                     checked_models=_all_models,
                 ),
                 PassSpec(

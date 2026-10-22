@@ -11,6 +11,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
+from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import TEMPLATE_DIR
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
@@ -32,6 +33,7 @@ _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY = "sequence_item_type"
 _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY = "sequence_slice_type"
 _STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
 _ROOT_MODEL_CONFIG_KEYS: frozenset[str] = frozenset({"regex_engine", "frozen"})
+_CONFIG_TEMPLATE_DATA_KEY = "config"
 
 
 def _root_model_config_items(config: Any) -> list[tuple[str, Any]]:
@@ -245,26 +247,40 @@ class RootModel(BaseModel):
             config_items.append(("extra", None))
         return _safe_config_dict_items(dict(config_items)) if config_items else []
 
-    def _sync_config_items(self) -> None:
-        """Decide the config items the template writes, and the ``ConfigDict`` import they need, when rendering.
+    @override
+    def _decide_config_items(self) -> None:
+        """Decide the config items the template writes from the config, the literal values and the neutral ``extra``.
 
-        The import changes after the module's import text is built: the named row
-        ``legacy.rootmodel-config-late-import`` of ``parser/_imports_plan.py``.
+        A parse asks once the validator helpers set the neutral ``extra``. Without a configured ``ConfigDict``, the
+        template reads the literal values and the neutral ``extra`` as its ``config``. The ``ConfigDict`` import is
+        already among the model's imports: each writer of an item's source in the parse adds it, and ``__init__``
+        drops it when no item remains.
         """
-        if not self.extra_template_data.get("config"):
-            if literal_values := getattr(self, "_literal_values", None):
-                self.extra_template_data["config"] = {"json_schema_extra": {"enum": literal_values}}
-            if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
-                self.extra_template_data["config"] = {**(self.extra_template_data.get("config") or {}), "extra": None}
-        if config_items := self._rendered_config_items():
-            self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items)
+        if not (config_items := self._rendered_config_items()):
+            self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
+            return
+        self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items)
+        if self.extra_template_data.get("config"):
+            return
+        config: dict[str, Any] = {}
+        if literal_values := getattr(self, "_literal_values", None):
+            config["json_schema_extra"] = {"enum": literal_values}
+        if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
+            config["extra"] = None
+        self._set_internal_template_data(_CONFIG_TEMPLATE_DATA_KEY, config)
+
+    def _decide_config_items_outside_a_parse(self) -> None:
+        """Decide the config items when the model renders outside a parse, with the ``ConfigDict`` import they need.
+
+        No pass decides them there, and the config may have changed after ``__init__``: without items it is dropped.
+        """
+        self._decide_config_items()
+        if _CONFIG_ITEMS_TEMPLATE_DATA_KEY in self._internal_template_data:
             if IMPORT_CONFIG_DICT not in self._additional_imports:
                 self._additional_imports.append(IMPORT_CONFIG_DICT)
-            self.clear_imports_cache()
-            return
-        self.extra_template_data.pop("config", None)
-        self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
-        self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
+        else:
+            self.extra_template_data.pop("config", None)
+            self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
         self.clear_imports_cache()
 
     @override
@@ -330,7 +346,8 @@ class RootModel(BaseModel):
         fields = self._template_fields(use_custom_template=use_custom_template)
         if fields:
             _ = fields[0].type_hint
-        self._sync_config_items()
+        if RENDER_READY.get() is None:
+            self._decide_config_items_outside_a_parse()
         extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
         rendered = self._render(
             class_name=class_name or self.class_name,

@@ -1054,6 +1054,25 @@ REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES = PassDecl(
     ),
     condition="generate_schema_validators and a model was renamed",
 )
+DECIDE_CONFIG_ITEMS = PassDecl(
+    "decide_config_items",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.PLAN,
+    reads=_facts(Fact.CONSTRAINTS, RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE),
+    writes=_facts(RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE),
+    after=(
+        After(
+            "name_final_classes_of_additional_properties", "both write backend config; config items are decided last"
+        ),
+        After("refresh_sequence_interface_after_renames", "both write backend config; config items are decided last"),
+        After(
+            "replan_schema_validators_after_renames",
+            "reads the neutral extra config that planning the validator helpers sets on root models",
+        ),
+    ),
+    summary="Decides the config items each model's class writes (model hook).",
+)
 REMAP_IMPORT_OVERRIDES = PassDecl(
     "remap_import_overrides",
     Phase.IMPORTS,

@@ -208,9 +208,6 @@ _lookaround_regex_engine_checked = 1
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
 '_additional_imports.append()' = 1
 
-["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._sync_config_items"]
-_additional_imports = "--input tests/data/openapi/not_real_string.json --input-file-type openapi --collapse-root-models"
-
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.add_literal_validation"]
 '_additional_imports.extend()' = 2
 _literal_values = 1

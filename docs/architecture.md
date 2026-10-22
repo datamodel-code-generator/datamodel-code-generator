@@ -509,9 +509,11 @@ rebuilt plan writes or omits every item its field declares and that it renders a
 written. Row `legacy.L-NF`: the nested models' default factories are decided when render preparation ends, but the
 import snapshot reads each field as if the factory were written (a second plan, `RenderReady.import_view`), and the
 models that render without frozen plans (GraphQL unions, custom output models) read the decision only once
-`_set_nested_model_default_factory_metadata` publishes it after the warnings. A RootModel decides its config items, and
-adds or drops its `ConfigDict` import, when it renders (`model/pydantic_v2/root_model.py:RootModel._sync_config_items`),
-after the module's import block is built: the named row `legacy.rootmodel-config-late-import` of the import ledger.
+`_set_nested_model_default_factory_metadata` publishes it after the warnings. A RootModel's config items (its regex
+engine and freezing, the literal values it validates and the neutral `extra` of the validator helpers) are decided by
+pass `decide_config_items` once the helpers are planned (`model/pydantic_v2/root_model.py:RootModel._decide_config_items`);
+the `ConfigDict` import comes with the writer of each item's source, so the module imports collect it. A RootModel
+rendered outside a parse decides them, and its `ConfigDict` import, when it renders.
 
 ### Pass Declarations
 
@@ -644,6 +646,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | IMPORTS | `name_final_classes_of_additional_properties` | global | transform | BACKEND_CONFIG | CLASS_NAMES | Renders backend settings that name the classes of additional properties (TypedDict extra_items) from their final names (model hook). Runs when: additional properties reference classes. |
 | IMPORTS | `refresh_sequence_interface_after_renames` | global | repair | BACKEND_CONFIG | CLASS_NAMES | Runs when: use_root_model_sequence_interface and a model was renamed. Removed by RP15b. After `name_final_classes_of_additional_properties`: both write backend config; the sequence interface is decided last. |
 | IMPORTS | `replan_schema_validators_after_renames` | global | repair | MODULE_CODE, MODULE_IMPORTS | CLASS_NAMES | Runs when: generate_schema_validators and a model was renamed. Removed by RP15b. After `change_imported_model_name`: plans the validator helpers again for the renamed models. After `bind_module_field_names`: binding reads the module imports before the helpers are planned again. |
+| IMPORTS | `decide_config_items` | global | plan | BACKEND_CONFIG, MODULE_CODE | BACKEND_CONFIG, CONSTRAINTS, MODULE_CODE | Decides the config items each model's class writes (model hook). After `name_final_classes_of_additional_properties`: both write backend config; config items are decided last. After `refresh_sequence_interface_after_renames`: both write backend config; config items are decided last. After `replan_schema_validators_after_renames`: reads the neutral extra config that planning the validator helpers sets on root models. |
 | IMPORTS | `remap_import_overrides` | global | transform | MODULE_IMPORTS | MODULE_IMPORTS | Runs when: import_overrides. After `replan_schema_validators_after_renames`: import overrides move the final imports. |
 | IMPORTS | `reject_unavailable_imports` | global | check | - | MODULE_IMPORTS | Runs when: a configured type is unavailable on the target Python. |
 | IMPORTS | `record_generated_class_names` | global | bookkeeping | - | CLASS_NAMES | Runs when: class names are collected. |

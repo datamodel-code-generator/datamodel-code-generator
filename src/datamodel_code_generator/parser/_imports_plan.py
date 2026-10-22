@@ -19,10 +19,6 @@ and are not module imports in this sense.
 
 Named legacy rows, imports decided where the ledger does not see them:
 
-* ``legacy.rootmodel-config-late-import``: ``model/pydantic_v2/root_model.py:RootModel._sync_config_items`` adds or
-  drops the ``ConfigDict`` import of a RootModel when the model renders, after its module's import text is built, so
-  the module imports hold the model's imports as ``Parser._finalize_modules`` collected them. It goes when the model
-  config is decided before rendering.
 * ``legacy.enum-member-import-bindings``: an Enum's ``imports`` keep the imports of its member declarations (pydantic's
   ``Field`` for described members), which the class never renders. The module binds their names, so class names
   (``Parser.__replace_duplicate_name_in_module``, ``Parser._flatten_invalid_modules``) and reuse keys

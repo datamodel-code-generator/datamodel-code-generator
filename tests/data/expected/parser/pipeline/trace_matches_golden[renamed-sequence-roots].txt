@@ -76,6 +76,7 @@ bind_module_field_names
 change_imported_model_name
 refresh_sequence_interface_after_renames
 replan_schema_validators_after_renames
+decide_config_items
 record_generated_class_names
 check_model_inheritance
 warn_about_dropped_constraints
