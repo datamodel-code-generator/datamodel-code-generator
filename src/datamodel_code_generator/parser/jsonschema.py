@@ -2311,6 +2311,19 @@ def _unanchored_resource_ref(raw: dict[str, Any], parts: Sequence[str]) -> str |
     return None
 
 
+@final
+@dataclass(frozen=True, slots=True)
+class _DynamicEdges:
+    """What the `$dynamicRef` analysis reads of a referenced schema (``JsonSchemaParser._dynamic_ref_edges``)."""
+
+    node: _TargetNode
+    """The schema graph node of the schema, or its key when the graph does not locate it."""
+    anchors: frozenset[str]
+    """The `$dynamicAnchor` names its `$dynamicRef` initially resolve to."""
+    targets: tuple[str, ...]
+    """The keys of the schemas its `$ref` and those `$dynamicAnchor` name."""
+
+
 class _DynamicSpecialization(NamedTuple):
     """A referenced schema to parse again with the $dynamicAnchor bindings of its dynamic scope."""
 
@@ -6125,9 +6138,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (resource := self._enclosing_unanchored_resource_ref()) is not None:
             return resource
         root_key = tuple(self.model_resolver.current_root)
-        return _nearest_recursive_anchor(
-            self._recursive_anchor_index.get(root_key, ()), self._anchor_ref_path(root_key, path)
+        current_ref = self._anchor_ref_path(root_key, path)
+        target = _nearest_recursive_anchor(self._recursive_anchor_index.get(root_key, ()), current_ref)
+        self._check_anchor_answer(
+            "$recursiveRef", current_ref, target, lambda _, anchors: _nearest_recursive_anchor(anchors, current_ref)
         )
+        return target
 
     def _resolve_dynamic_ref(self, item: JsonSchemaObject) -> str | None:
         """Return the first $dynamicAnchor of the name of a fragment $dynamicRef in the document being parsed, if any.
@@ -6137,7 +6153,53 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if not (ref := item.dynamicRef) or not ref.startswith("#"):
             return None
-        return self._dynamic_anchor_index.get(tuple(self.model_resolver.current_root), {}).get(ref[1:])
+        target = self._dynamic_anchor_index.get(tuple(self.model_resolver.current_root), {}).get(ref[1:])
+        self._check_anchor_answer("$dynamicRef", ref, target, lambda anchors, _: anchors.get(ref[1:]))
+        return target
+
+    def _check_anchor_answer(
+        self,
+        keyword: str,
+        ref: str,
+        answer: object,
+        full: Callable[[Mapping[str, str], tuple[str, ...]], object],
+        path_parts: list[str] | None = None,
+    ) -> None:
+        """Record an answer from the anchors L1 has registered that differs from the answer of the document's L0 table.
+
+        L1 registers the `$dynamicAnchor` and `$recursiveAnchor` of the document being parsed (or of the one at
+        ``path_parts``) as it parses: the root and the definitions of a document `_parse_file` parses, then each schema
+        parsed through `_parse_raw_or_validated_obj`, so an answer can depend on the parse order. ``full`` computes the
+        answer from every anchor the schema graph found in the document: its `$dynamicAnchor` names and its
+        `$recursiveAnchor` schemas, as local references. The difference is the listed ``anchor-answer`` class, recorded
+        and not reported: the parser keeps the registered answer.
+        """
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None:
+            return
+        if path_parts is None:
+            path_parts = list(self.model_resolver.current_root)
+        if (
+            tables := self._schema_resource_registry.anchor_tables.get(self._schema_resource_document(path_parts))
+        ) is None:
+            return
+        dynamic, recursive = tables
+        expected = full(
+            {name: f"#{location.partition('#')[2]}" for name, location in dynamic.items()},
+            tuple(f"#{location.partition('#')[2]}" for location in recursive),
+        )
+        if expected == answer:
+            return
+        name = redact_url(self.model_resolver.join_path(tuple(path_parts)).partition("#")[0])
+        mode.record(
+            f"{mode.area.value}: the {keyword} {ref!r} of {repr(name) if name else 'the input'} resolves to "
+            f"{answer!r} by the anchors registered so far and to {expected!r} by every anchor of the document",
+            kind="anchor-answer",
+            keyword=keyword,
+            ref=ref,
+            document=name,
+            answer=answer,
+            expected=expected,
+        )
 
     def _dynamic_scope_resource(self, document: str, pointer: str) -> str | None:
         """Return the root pointer of the schema resource enclosing a location in a registered document."""
@@ -6229,26 +6291,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _dynamic_anchors_used(self, resolved_ref: str) -> frozenset[str]:
         """Return the $dynamicAnchor names that $dynamicRef reachable from a referenced schema resolve to.
 
-        Results are memoized per strongly connected component of the reference graph, so each schema
-        is analyzed once however many references reach it.
+        Results are memoized per schema graph node and computed per strongly connected component of the reference
+        graph, so each schema is analyzed once however many references, under whichever key, reach it.
         """
-        if (cached := self._dynamic_anchor_usage.get(resolved_ref)) is not None:
+        start = self._dynamic_ref_edges(resolved_ref)
+        if (cached := self._dynamic_anchor_usage.get(start.node)) is not None:
             return cached
-        index = {resolved_ref: 0}
-        lowlink = {resolved_ref: 0}
-        position = {resolved_ref: 0}
-        stack = [resolved_ref]
-        work = [(resolved_ref, iter(self._dynamic_ref_edges(resolved_ref)[1]))]
+        index = {start.node: 0}
+        lowlink = {start.node: 0}
+        position = {start.node: 0}
+        stack = [start.node]
+        work = [(start.node, iter(start.targets))]
         while work:
-            node, successors = work[-1]
-            for successor in successors:
-                if successor in self._dynamic_anchor_usage:
+            node, targets = work[-1]
+            for target in targets:
+                if (successor := self._dynamic_ref_edges(target).node) in self._dynamic_anchor_usage:
                     continue
                 if successor not in index:
                     index[successor] = lowlink[successor] = len(index)
                     position[successor] = len(stack)
                     stack.append(successor)
-                    work.append((successor, iter(self._dynamic_ref_edges(successor)[1])))
+                    work.append((successor, iter(self._dynamic_ref_graph[successor].targets)))
                     break
                 lowlink[node] = min(lowlink[node], index[successor])
             else:
@@ -6262,23 +6325,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     members = set(component)
                     anchors: set[str] = set()
                     for member in component:
-                        local_anchors, targets = self._dynamic_ref_edges(member)
-                        anchors |= local_anchors
+                        edges = self._dynamic_ref_graph[member]
+                        anchors |= edges.anchors
                         anchors.update(
-                            *(self._dynamic_anchor_usage[target] for target in targets if target not in members)
+                            *(
+                                self._dynamic_anchor_usage[successor]
+                                for target in edges.targets
+                                if (successor := self._dynamic_ref_nodes[target]) not in members
+                            )
                         )
                     self._dynamic_anchor_usage.update(dict.fromkeys(component, frozenset(anchors)))
-        return self._dynamic_anchor_usage[resolved_ref]
+        return self._dynamic_anchor_usage[start.node]
 
-    def _dynamic_ref_edges(self, resolved_ref: str) -> tuple[frozenset[str], tuple[str, ...]]:
-        """Return the anchors a schema's $dynamicRef initially resolve to and the schemas it references."""
-        if (cached := self._dynamic_ref_graph.get(resolved_ref)) is not None:
-            return cached
-        anchors: set[str] = set()
-        targets: list[str] = []
+    def _dynamic_ref_edges(self, resolved_ref: str) -> _DynamicEdges:
+        """Return the node at a reference key, the anchors its $dynamicRef initially resolve to and what it references.
+
+        The schema is read from the prepared tree of its document; a key whose value the graph does not locate is its
+        own node, and the first key that reaches a node gives the node its analysis.
+        """
+        if (node := self._dynamic_ref_nodes.get(resolved_ref)) is not None:
+            return self._dynamic_ref_graph[node]
         file_part, _, fragment = resolved_ref.partition("#")
         document, raw = self._prepared_ref_document(file_part)
         schema = _get_model_by_path_or_missing(raw, split_json_pointer(raw, fragment)) if fragment else raw
+        located = cast("SchemaGraphBuilder", self._schema_graph).node(schema)
+        node = self._dynamic_ref_nodes[resolved_ref] = resolved_ref if located is None else located
+        anchors: set[str] = set()
+        targets: list[str] = []
         for pointer, subschema in self._iter_referencing_schemas(schema, fragment):
             match subschema:
                 case {"$ref": str() as ref}:
@@ -6289,8 +6362,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 ):
                     anchors.add(dynamic_ref[1:])
                     targets.append(self._location_ref(location))
-        self._dynamic_ref_graph[resolved_ref] = edges = (frozenset(anchors), tuple(targets))
-        return edges
+        return self._dynamic_ref_graph.setdefault(node, _DynamicEdges(node, frozenset(anchors), tuple(targets)))
 
     def _prepared_ref_document(self, file_part: str) -> tuple[str, dict[str, Any]]:
         """Return the document a resolved reference points into and its prepared schema, loading it once."""
@@ -6403,7 +6475,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if not (bindings := self._dynamic_target_bindings(resolved_ref)):
             return None
-        key = (resolved_ref, frozenset(bindings.items()))
+        key = (self._dynamic_ref_edges(resolved_ref).node, frozenset(bindings.items()))
         if (reference := self._dynamic_specializations.get(key)) is not None:
             return reference
         shared = self._add_ref(ref)
@@ -6737,10 +6809,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         parts = [*split_json_pointer(document, pointer), *map(str, path)]
         if (target := _unanchored_resource_ref(document, parts)) is None:
             anchors = self._document_recursive_anchors(document)
-            target = _nearest_recursive_anchor(anchors, _pointer_ref(parts))
-            if (target != "#" or "#" in anchors) and self._recursive_anchor_index.get(
-                tuple(self.model_resolver.current_root)
-            ):
+            current_ref = _pointer_ref(parts)
+            target = _nearest_recursive_anchor(anchors, current_ref)
+            self._check_anchor_answer(
+                "$recursiveRef",
+                current_ref,
+                target,
+                lambda _, declared: _nearest_recursive_anchor(declared, current_ref),
+                _ref_path_parts(file_part),
+            )
+            if (target != "#" or "#" in anchors) and self._declares_recursive_anchor():
                 return None
         return self._derived_ref(
             self._schema_location(self._resolve_inherited_child_ref(target, defining_ref)),
@@ -6749,6 +6827,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             target,
             RefOrigin.RECURSIVE_REF,
         )
+
+    def _declares_recursive_anchor(self) -> bool:
+        """Return whether the document being parsed has registered a `$recursiveAnchor` so far."""
+        anchored = bool(self._recursive_anchor_index.get(tuple(self.model_resolver.current_root)))
+        self._check_anchor_answer("$recursiveAnchor", "#", anchored, lambda _, anchors: bool(anchors))
+        return anchored
 
     def _document_recursive_anchors(self, raw: dict[str, Any]) -> list[str]:
         """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
@@ -15520,12 +15604,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dynamic_document: str | None = None
         self._dynamic_scope_path: tuple[str, ...] = ()
         self._dynamic_bindings: dict[str, str] = {}
-        self._dynamic_specializations: dict[tuple[str, frozenset[tuple[str, str]]], Reference] = {}
+        self._dynamic_specializations: dict[tuple[_TargetNode, frozenset[tuple[str, str]]], Reference] = {}
         self._dynamic_specialization_paths: set[tuple[str, ...]] = set()
         self._pending_dynamic_specializations: deque[_DynamicSpecialization] = deque()
         self._draining_dynamic_specializations = False
-        self._dynamic_anchor_usage: dict[str, frozenset[str]] = {}
-        self._dynamic_ref_graph: dict[str, tuple[frozenset[str], tuple[str, ...]]] = {}
+        self._dynamic_anchor_usage: dict[_TargetNode, frozenset[str]] = {}
+        self._dynamic_ref_graph: dict[_TargetNode, _DynamicEdges] = {}
+        self._dynamic_ref_nodes: dict[str, _TargetNode] = {}
 
     def _schema_resource_document(self, path_parts: list[str]) -> str:
         """Identify one physical schema document without changing its public reference names."""

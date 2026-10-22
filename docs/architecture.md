@@ -303,6 +303,16 @@ targets from one worklist (`_reserved_targets`: a `ReservedTarget` with the docu
 in the document's prepared tree), in key order, repeating while a round reserves more keys (`_parse_file`) or adds
 models (the others), and parse each target from the prepared tree; the schema graph check loads the source again and
 compares the value at each target (`kind="reserved-target"`).
+`walk_schema_resources` also keeps the anchor tables of each document: its `$dynamicAnchor` names (the first in walk
+order wins) and its `$recursiveAnchor: true` schemas (`ResourceRegistry.anchor_tables`). The `$dynamicRef` analysis
+(`_dynamic_anchors_used`, `_dynamic_ref_edges`) and the models specialized for a dynamic scope are keyed by the schema
+graph node a reference names, so references that spell one schema differently share its analysis and its specialized
+model. The fallbacks of the dynamic-scope rule still read the anchors L1 has registered so far (`_build_anchor_indexes`
+and `_parse_file`: the root, the definitions and each schema parsed through `_parse_raw_or_validated_obj`):
+`_resolve_dynamic_ref`, `_resolve_recursive_ref` and `_recursive_ref_target`. The schema graph check compares each of
+their answers with the one of the document's anchor tables and records a difference (`kind="anchor-answer"`): a
+`$recursiveAnchor` below `properties` is never registered, and an OpenAPI component's `$dynamicRef` parsed before the
+component that declares its anchor resolves through its edge instead.
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.

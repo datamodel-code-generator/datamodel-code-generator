@@ -243,6 +243,10 @@ class DocumentResources:
     """The identifiers, as written, of the resources each resource embeds, to their pointers; the first one wins."""
     dynamic_anchors: Mapping[str, Mapping[str, str]]
     """The `$dynamicAnchor` names of each resource to their locations; the first one wins."""
+    document_dynamic_anchors: Mapping[str, str]
+    """The `$dynamicAnchor` names of the whole document to their locations; the first one in walk order wins."""
+    recursive_anchors: tuple[str, ...]
+    """The location of each schema that declares `$recursiveAnchor: true`, in walk order."""
     implicit_resources: bool
     """Whether the document evaluates schemas as resources without an identifier, as OpenAPI component schemas."""
     embeds_resources: bool
@@ -276,6 +280,8 @@ def walk_schema_resources(  # noqa: PLR0913
     resources: set[str] = set()
     embedded: dict[str, dict[str, str]] = {}
     dynamic_anchors: dict[str, dict[str, str]] = {}
+    document_dynamic_anchors: dict[str, str] = {}
+    recursive_anchors: list[str] = []
     root_base = base
 
     def name(uri: str, location: str) -> None:
@@ -302,6 +308,9 @@ def walk_schema_resources(  # noqa: PLR0913
                 name(urljoin(base, f"#{anchor}"), location)
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
+                    document_dynamic_anchors.setdefault(anchor, location)
+        if schema.get("$recursiveAnchor") is True:
+            recursive_anchors.append(location)
         for path, child in children(schema):
             embeds |= visit(child, pointer + _pointer(path), base, id_field, resource)
         return embeds
@@ -318,6 +327,8 @@ def walk_schema_resources(  # noqa: PLR0913
         resources=frozenset(resources),
         embedded=MappingProxyType({key: MappingProxyType(value) for key, value in embedded.items()}),
         dynamic_anchors=MappingProxyType({key: MappingProxyType(value) for key, value in dynamic_anchors.items()}),
+        document_dynamic_anchors=MappingProxyType(document_dynamic_anchors),
+        recursive_anchors=tuple(recursive_anchors),
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
     )
@@ -334,6 +345,8 @@ class ResourceRegistry:
     resources: dict[str, set[str]] = field(default_factory=dict)
     dynamic_anchors: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
     embedded: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
+    anchor_tables: dict[str, tuple[Mapping[str, str], tuple[str, ...]]] = field(default_factory=dict)
+    """The `$dynamicAnchor` names of each whole document and its `$recursiveAnchor` schemas (``DocumentResources``)."""
     keys: dict[str, set[str]] = field(default_factory=dict)
     """The URIs each document registered, which a later registration of the document drops while they name it."""
 
@@ -345,6 +358,7 @@ class ResourceRegistry:
         for resource in self.resources.pop(document, ()):
             self.dynamic_anchors.pop((document, resource), None)
             self.embedded.pop((document, resource), None)
+        self.anchor_tables.pop(document, None)
 
     def register(self, resources: DocumentResources) -> None:
         """Register the resources of a document, as the walk over the document registered them before the graph."""
@@ -360,6 +374,7 @@ class ResourceRegistry:
             self.dynamic_anchors[document, resource] = dict(anchors)
         for resource, identifiers in resources.embedded.items():
             self.embedded[document, resource] = dict(identifiers)
+        self.anchor_tables[document] = resources.document_dynamic_anchors, resources.recursive_anchors
         self.keys[document] = set(resources.names)
 
     def location(self, absolute: str) -> str | None:
@@ -379,6 +394,7 @@ class ResourceRegistry:
             resources={key: set(value) for key, value in self.resources.items()},
             dynamic_anchors={key: dict(value) for key, value in self.dynamic_anchors.items()},
             embedded={key: dict(value) for key, value in self.embedded.items()},
+            anchor_tables=dict(self.anchor_tables),
             keys={key: set(value) for key, value in self.keys.items()},
         )
 

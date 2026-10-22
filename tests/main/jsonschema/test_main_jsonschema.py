@@ -31092,6 +31092,28 @@ def test_schema_graph_check_records_reserved_targets_of_a_rewritten_document(
     assert_output(report_path.read_text(encoding="utf-8"))
 
 
+def test_schema_graph_check_records_anchor_answers_that_differ_from_the_document(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The schema graph check records a `$recursiveRef` answer that differs from every anchor of its document.
+
+    The parser registers the `$recursiveAnchor` of a document's root and definitions, not the one of the embedded
+    `branch.json` resource below `properties`, so its `$recursiveRef` resolves to the root `Tree` while the nearest
+    `$recursiveAnchor` of the whole document is `branch`. `report:<path>` appends it as an `anchor-answer` line; the
+    check (`1`, as the test suite sets it) does not raise for it, and the output keeps the registered answer.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
+    generate(
+        JSON_SCHEMA_DATA_PATH / "recursive_ref_resources" / "tree.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=tmp_path / "model.py",
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(report_path.read_text(encoding="utf-8"))
+
+
 def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:
     """A referenced schema whose extension value holds itself is validated once and shared by its readers.
 

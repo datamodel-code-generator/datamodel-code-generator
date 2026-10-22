@@ -10986,6 +10986,27 @@ def test_schema_graph_check_of_a_reserved_target_that_differs_from_its_source(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+def test_schema_graph_check_records_a_dynamic_anchor_registered_after_its_reference(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A `$dynamicRef` parsed before the components that declare its anchor resolves through its edge.
+
+    `Holder` is parsed before `First` and `Second` register `$dynamicAnchor: T`, so `#T` resolves as a reference,
+    to the last component that declares the anchor; parsed after them it resolves to the first. The schema graph check
+    compares the answer with every anchor of the document and records it as an `anchor-answer` line.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
+    output = generate(
+        OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+        input_file_type=InputFileType.OpenAPI,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(output))
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:
     """Test OpenAPI generation with $ref to external webhook file containing relative schema refs."""
     run_main_and_assert(

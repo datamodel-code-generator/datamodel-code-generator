@@ -227,6 +227,7 @@ openapi/duplicate_model_simplify.yaml	yaml_fast_constructor/parity.txt
 openapi/duplicate_models.yaml	yaml_fast_constructor/parity.txt
 openapi/duplicate_models2.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref.yaml	yaml_fast_constructor/parity.txt
+openapi/dynamic_ref_anchor_parse_order.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_component_anchors/api.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_external_generic/api.yaml	yaml_fast_constructor/parity.txt
 openapi/empty_dict_default.yaml	yaml_fast_constructor/parity.txt
