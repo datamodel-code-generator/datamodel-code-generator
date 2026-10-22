@@ -6729,11 +6729,11 @@ too.
         from msgspec import UNSET, Struct, UnsetType
 
 
-        class Cat(Struct, tag_field='pet_kind', tag='cat'):
+        class Cat(Struct, tag_field='pet-kind', tag='cat'):
             name: str | UnsetType = UNSET
 
 
-        class Dog(Struct, tag_field='pet_kind', tag='dog'):
+        class Dog(Struct, tag_field='pet-kind', tag='dog'):
             bark: str | UnsetType = UNSET
 
 

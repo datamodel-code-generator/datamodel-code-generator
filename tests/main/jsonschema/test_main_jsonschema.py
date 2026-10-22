@@ -7666,6 +7666,22 @@ def test_main_jsonschema_enum_value_base_kinds_without_option(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [[], ["--keep-enum-member-values"]],
+    ids=["default", "keep-enum-member-values"],
+)
+def test_main_jsonschema_enum_byte_counts_overflow(extra_args: list[str], output_file: Path) -> None:
+    """Write a plain Enum for a ``format: byte`` enum with a count too large for a ``bytes``, which fails at import."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_byte_counts_overflow.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--use-subclass-enum", *extra_args],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--read-const-beside-enum"],
     option_description="""Read a `const` beside an `enum` as JSON Schema does.
@@ -15538,11 +15554,8 @@ property name the document carries (`pet-kind`). `--use-msgspec-tagged-unions` t
 too.""",
     input_schema="jsonschema/discriminator_msgspec_wire_name.json",
     cli_args=["--tag-msgspec-by-payload-name", "--output-model-type", "msgspec.Struct"],
-    golden_output="main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py",
-    comparison_output=(
-        "main/jsonschema/main_jsonschema/"
-        "main_msgspec_discriminator_wire_name[default]~main_msgspec_discriminator_wire_name[default].py"
-    ),
+    golden_output="main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[payload-name].py",
+    comparison_output="main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py",
 )
 @pytest.mark.parametrize(
     "extra_args",

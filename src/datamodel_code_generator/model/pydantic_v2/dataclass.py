@@ -390,15 +390,17 @@ class _PydanticDataclassField(DataModelFieldV2):
             self.required and not self.use_default_with_required
         ):
             return factory
+        kwarg = None
         match self.default:
             case list() | dict() | set() as default:
-                return Kwarg(
+                kwarg = Kwarg(
                     "default_factory",
                     f"lambda: {represent_python_value(default)}" if default else type(default).__name__,
                     _MUTABLE_DEFAULT_FACTORY,
                 )
             case _:
-                return None
+                pass
+        return kwarg
 
     @override
     def _written_assignment(self) -> PydanticDataclassWritten:

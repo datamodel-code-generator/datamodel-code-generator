@@ -197,16 +197,20 @@ def _decodable_legacy_kind(
 def _constructs(value_type: str, value: object) -> bool:
     """Return whether the value type constructs a member from the value, as an enum class subclassing it does.
 
-    ``bytes`` of an int allocates that many bytes, so a non-negative int counts as constructed without building it.
+    ``bytes`` of an int allocates that many bytes, so an int up to the size of a ``bytes`` counts as constructed
+    without building it; a negative one or one beyond that size raises at import.
     """
     if value_type == "bytes" and isinstance(value, int):
-        return value >= 0
+        return 0 <= value <= _MAX_BYTES_SIZE
     try:
         _CONSTRUCTORS[value_type](value)
     except (TypeError, ValueError, OverflowError):
         return False
     return True
 
+
+_MAX_BYTES_SIZE: Final = 2**63 - 1
+"""The largest size ``bytes`` accepts (``Py_ssize_t``); a larger count raises ``OverflowError``."""
 
 _VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}
 """The constructors of the value types a value base can subclass; ``bytes`` keeps no JSON value, so it has none."""

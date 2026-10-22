@@ -319,6 +319,33 @@ def test_root_model_renders_late_config_dict() -> None:
     assert _CONFIG_ITEMS_TEMPLATE_DATA_KEY in root_model._internal_template_data
 
 
+def test_root_model_renders_late_config_after_literal_validation() -> None:
+    """A config set after a render with literal validation replaces the config that render synthesized."""
+    root_model = RootModel(
+        fields=[
+            DataModelFieldBase(
+                name="a",
+                data_type=DataType(type="str"),
+                required=True,
+            )
+        ],
+        reference=Reference(name="TestRootModel", path="test_root_model"),
+    )
+    root_model.add_literal_validation(["a"])
+    assert "json_schema_extra" in root_model.render()
+
+    root_model.extra_template_data["config"] = {"regex_engine": '"python-re"'}
+    rendered = root_model.render()
+
+    assert 'regex_engine="python-re",' in rendered
+    assert root_model._builtin_template_data()["config"] == {"regex_engine": '"python-re"'}
+
+    del root_model.extra_template_data["config"]
+    root_model._literal_values = None
+    assert "model_config" not in root_model.render()
+    assert "config" not in root_model._builtin_template_data()
+
+
 def test_root_model_include_only_custom_dir_keeps_builtin_context_safe(tmp_path: Path) -> None:
     """A custom include directory does not make the built-in RootModel context raw."""
     root_model = RootModel(

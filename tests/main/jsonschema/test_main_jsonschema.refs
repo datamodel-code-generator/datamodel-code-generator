@@ -6255,6 +6255,9 @@ typed-dict	main/jsonschema/empty_field_name_typed_dict.py
 	main/jsonschema/empty_field_name_schema_validators.py
 [test_main_jsonschema_empty_items_array]
 	main/jsonschema/jsonschema_empty_items_array.py
+[test_main_jsonschema_enum_byte_counts_overflow]
+default	main/jsonschema/main_jsonschema/enum_byte_counts_overflow[default].py
+keep-enum-member-values	main/jsonschema/main_jsonschema/enum_byte_counts_overflow[keep-enum-member-values].py	= main/jsonschema/main_jsonschema/enum_byte_counts_overflow[default].py
 [test_main_jsonschema_enum_complex_values_literal]
 	main/jsonschema/enum_complex_values_literal.py
 [test_main_jsonschema_enum_const_collapsed_root_models]

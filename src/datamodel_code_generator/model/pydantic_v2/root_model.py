@@ -256,6 +256,7 @@ class RootModel(BaseModel):
         already among the model's imports: each writer of an item's source in the parse adds it, and ``__init__``
         drops it when no item remains.
         """
+        self._pop_internal_template_data(_CONFIG_TEMPLATE_DATA_KEY)
         if not (config_items := self._rendered_config_items()):
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
             return

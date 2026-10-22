@@ -881,14 +881,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Deprecated: --parent-scoped-naming is deprecated. Use
                         --naming-strategy parent-prefixed instead.
   --pin-aliases-with-alias-generator
-                        pydantic_v2.dataclass output only: for a --target-
+                        pydantic_v2.BaseModel and pydantic_v2.dataclass
+                        output: decide a field's alias by the alias generator
+                        its model applies, the one in its config or in the
+                        config it inherits. For a dataclass and a --target-
                         pydantic-version older than 2.8, whose alias
                         generators can differ from the generated aliases,
                         write the generated alias on every field of a
-                        dataclass whose config names an alias generator, and
-                        read the generator a dataclass inherits from its base.
-                        Without it a dataclass field keeps the alias it has
-                        without the generator, which the config then replaces.
+                        dataclass whose config names an alias generator.
+                        Without it a field keeps the alias it has without the
+                        generator, which the config then replaces.
   --reuse-model         Reuse models on the field when a module has the model
                         with the same content
   --reuse-scope {module,tree}

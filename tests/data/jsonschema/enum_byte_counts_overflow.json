@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnumByteCountsOverflow",
+  "type": "object",
+  "properties": {
+    "byte_counts": {"type": "string", "format": "byte", "enum": [1, 10000000000000000000]}
+  }
+}
