@@ -23,7 +23,7 @@ Named legacy row ``legacy.L-NF``: render preparation decides the default factori
 did when the decision came after the snapshot: the parse keeps a second plan for a field whose factory the decision
 drops or rewrites, which ``RenderReady.import_view`` returns. The models that render without frozen plans (GraphQL
 unions, custom output models) read the decision from the point ``Parser`` publishes it on the models. The fix
-(msgspec ``UNSET`` ``NameError``, the ``RecursionError`` under ``--strip-default-none``) deletes the second plan.
+(msgspec ``UNSET`` ``NameError``) deletes the second plan.
 """
 
 from __future__ import annotations

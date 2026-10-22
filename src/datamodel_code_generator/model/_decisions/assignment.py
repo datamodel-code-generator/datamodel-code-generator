@@ -13,10 +13,10 @@ the same rows.
 The facts are classified when a pass reads them, as the written assignment can change between passes (forced
 assignments, keyword-only fixes, type overrides). The written assignment is read as the field renders it at that
 point, nested-model default factories included, before L6 records the recursive paths that drop them
-(``_set_nested_model_default_factory_metadata``): reading the facts of a recursive nested model's fields under
-``--use-default-factory-for-optional-nested-models --strip-default-none`` recurses (``RecursionError``), and the
-import snapshot taken at the same point keeps ``field`` where msgspec then writes ``UNSET`` (``NameError``). Moving
-that metadata before the reads fixes both (row ``legacy-nested-factory-at-read``, kept in the adapter).
+(``_set_nested_model_default_factory_metadata``): a nested model whose required constructor fields are being looked
+up already leads back to the field's model and gives no factory there (``model/base.py:_nested_model_factory``), and
+the import snapshot taken at the same point keeps ``field`` where msgspec then writes ``UNSET`` (``NameError``).
+Moving that metadata before the reads fixes that (row ``legacy-nested-factory-at-read``, kept in the adapter).
 
 The rows named ``legacy-*`` (``AssignmentRule``) keep today's output where a row disagrees with what the template
 writes; the fix of each deletes its row.

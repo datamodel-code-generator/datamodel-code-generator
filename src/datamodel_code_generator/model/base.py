@@ -11,6 +11,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache
@@ -1464,6 +1465,21 @@ def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) 
         field.nullable = False
 
 
+_LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar(
+    "looking_up_required_fields", default=frozenset()
+)
+"""The models whose required constructor fields are being looked up; a field holding one leads back to it."""
+
+
+def _nested_model_required_fields(source: DataModel, key: ModelKey) -> bool:
+    """Look up whether ``source`` has required constructor fields, with ``source`` marked as being looked up."""
+    token = _LOOKING_UP_REQUIRED_FIELDS.set(_LOOKING_UP_REQUIRED_FIELDS.get() | {key})
+    try:
+        return _nested_model_has_required_constructor_fields(source)
+    finally:
+        _LOOKING_UP_REQUIRED_FIELDS.reset(token)
+
+
 def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     """Identify required constructor fields without executing opaque custom model code."""
     inherited = any(base.reference for base in source.base_classes)
@@ -1647,7 +1663,11 @@ def _nested_factory_decision(model: DataModel) -> tuple[tuple[int, int] | None, 
 
 
 def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> _NestedModelFactory | None:
-    """Return the factory of the nested model an optional field holds, or None when it cannot have one."""
+    """Return the factory of the nested model an optional field holds, or None when it cannot have one.
+
+    A nested model that leads back to the field's model, by the decided reference cycles or by its required
+    constructor fields being looked up already, has none: its factory would build the field's model again.
+    """
     for data_type in field.data_type.data_types or (field.data_type,):
         if data_type.is_dict:
             continue
@@ -1655,9 +1675,11 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
             parent_order, parent_cycle = (
                 (None, ()) if (parent := field.parent) is None else _nested_factory_decision(parent)
             )
-            if model_key_of(source.reference) in parent_cycle:
+            if (source_key := model_key_of(source.reference)) in parent_cycle or (
+                source_key in _LOOKING_UP_REQUIRED_FIELDS.get()
+            ):
                 return None
-            if _nested_model_has_required_constructor_fields(source):
+            if _nested_model_required_fields(source, source_key):
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
                 return _NestedModelFactory(data_type, source, builds_by_name=True)

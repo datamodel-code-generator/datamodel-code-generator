@@ -20340,6 +20340,44 @@ def test_main_defer_forward_nested_model_default_factories(
 
 
 @pytest.mark.parametrize(
+    "output_model",
+    [
+        DataModelType.PydanticV2BaseModel.value,
+        DataModelType.PydanticV2Dataclass.value,
+        DataModelType.DataclassesDataclass.value,
+    ],
+)
+def test_main_nested_model_cycle_factories_strip_default_none(output_model: str, output_file: Path) -> None:
+    """Write no default factory for a field whose nested model leads back to its model under --strip-default-none."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model_cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            "--use-default-factory-for-optional-nested-models",
+            "--strip-default-none",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"nested_model_cycle_{output_model.replace('.', '_')}",
+        model_name="Model",
+        valid_json=json.dumps({"a": {"b": {"a": None}}}),
+        invalid_json=json.dumps({"a": {"b": {}}}),
+        expected_error_type="missing",
+        expected_attribute_path=("a", "leaf", "x"),
+        expected_attribute_value=1,
+    )
+
+
+@pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [
         ("dataclasses.dataclass", "default_factory_nested_model_with_dict_dataclass.py"),
