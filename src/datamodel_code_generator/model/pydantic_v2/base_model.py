@@ -2038,7 +2038,6 @@ class BaseModel(BaseModelBase):
             for import_ in helper_validation_imports:
                 if import_ not in additional_imports:
                     additional_imports.append(import_)
-        model.clear_imports_cache()
 
     @classmethod
     def _neutralize_generic_extra_config_for_runtime_root_models(

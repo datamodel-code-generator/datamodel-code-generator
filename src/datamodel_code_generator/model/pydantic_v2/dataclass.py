@@ -334,7 +334,6 @@ class DataClass(_DataclassReuseMixin, DataModel):
         config["regex_engine"] = '"python-re"'
         self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
         self._additional_imports.append(IMPORT_CONFIG_DICT)
-        self.clear_imports_cache()
 
     @property
     @override

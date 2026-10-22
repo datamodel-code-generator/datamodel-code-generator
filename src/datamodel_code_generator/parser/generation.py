@@ -2659,7 +2659,7 @@ class GenerationStore:  # noqa: PLR0904
             current = parent
             if owner_field is None and hasattr(current, "invalidate_semantic_caches"):
                 owner_field = current
-        owner_model = current if hasattr(current, "clear_imports_cache") else None
+        owner_model = current if hasattr(current, "invalidate_render_caches") else None
         if owner_model is not None:
             return owner_field, owner_model
         if not self.models:
@@ -2716,8 +2716,6 @@ class GenerationStore:  # noqa: PLR0904
             return
         if invalidate_render_caches := getattr(model, "invalidate_render_caches", None):
             invalidate_render_caches()
-            return
-        model.clear_imports_cache()
 
     def __iter__(self) -> Iterator[DataModel]:
         return iter(self.models)

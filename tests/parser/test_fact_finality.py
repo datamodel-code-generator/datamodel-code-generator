@@ -463,7 +463,6 @@ def _default_base_field(_facts: Any, _writer: Any) -> None:
     base = next(model for model in MODELS if model.class_name == "Base")
     base.fields[0].required = False
     base.fields[0].default = "x"
-    base.clear_imports_cache()
 
 
 class BaseDefaultingParser(CapturingParser):

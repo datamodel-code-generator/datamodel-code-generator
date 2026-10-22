@@ -9,7 +9,6 @@ alias_shadowed_imports reads MODULE_IMPORTS before change_from_import writes it 
 replace_unique_list_to_set reads DEFAULTS before set_reference_default_value_to_field writes it (turns defaults into references after unique lists became sets)
 set_reference_default_value_to_field reads FIELD_TYPES before reuse_model writes it (compares models with their final defaults)
 extract_inherited_enum reads BASES, FIELD_SET before reuse_model writes it (compares models after inherited enums became models of their own)
-refresh_import_cache_retention reads MODELS_EXIST before reuse_model writes it (the imports cache retention is decided on the model classes the module has before reuse removes any)
 reuse_model reads CONSTRAINTS, DEFAULTS, DISCRIMINATOR_TAGS, FIELD_TYPES, METADATA, MODELS_EXIST, NULLABLE, REQUIRED before collapse_root_models writes it (inlines the root models that reuse keeps)
 record_decimal_alias_models reads FIELD_NAMES before change_field_name writes it (the Decimal check reads the field names as parsed)
 change_field_name reads FIELD_NAMES before restore_inherited_field_names_for_unique_aliases writes it (restores the inherited names that renaming changed)

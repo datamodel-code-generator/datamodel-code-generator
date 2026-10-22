@@ -25,7 +25,6 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
-    _MODEL_MODULE_PREFIX,
     _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
 )
@@ -122,48 +121,36 @@ def _ordinary_field_shadow_aliases(
 def _apply_structured_import_aliases(
     models: list[DataModel],
     aliased_imports: dict[_PythonTypeImportKey, Import],
-    *,
-    can_retain_cache: bool,
 ) -> None:
     """Rewrite every identity-carrying structured consumer of selected imports."""
     for model in models:
-        changed = False
         for field in model.fields:
-            changed = _alias_field_runtime_expressions(field, aliased_imports) or changed
+            _alias_field_runtime_expressions(field, aliased_imports)
             for data_type in field.data_type.all_data_types:
-                changed = _alias_data_type_structured_imports(data_type, aliased_imports) or changed
-        if _alias_additional_imports(model, aliased_imports):
-            changed = True
-        if changed:
-            _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
-
+                _alias_data_type_structured_imports(data_type, aliased_imports)
+        _alias_additional_imports(model, aliased_imports)
     for model in models:
-        if _alias_base_class_imports(model, aliased_imports):
-            _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
-    if not can_retain_cache:
-        _clear_model_imports_cache(models)
+        _alias_base_class_imports(model, aliased_imports)
 
 
 def _alias_field_runtime_expressions(
     field: DataModelFieldBase,
     aliased_imports: dict[_PythonTypeImportKey, Import],
-) -> bool:
+) -> None:
     """Rewrite a field only when its producer registered a runtime expression."""
     imports = field.runtime_expression_imports
     if not imports or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports:
-        return False
+        return
     field.default = rewrite_runtime_expressions(field.default, aliased_imports)
     field.extras = cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports))
     field._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
-    return True
 
 
 def _alias_data_type_structured_imports(
     data_type: DataType,
     aliased_imports: dict[_PythonTypeImportKey, Import],
-) -> bool:
+) -> None:
     """Apply aliases to type, annotation, and producer-registered kwargs expressions."""
-    changed = False
     if (
         data_type.import_
         and (aliased_import := aliased_imports.get((data_type.import_.from_, data_type.import_.import_))) is not None
@@ -171,22 +158,19 @@ def _alias_data_type_structured_imports(
     ):
         data_type.type = aliased_import.alias
         data_type.import_ = aliased_import
-        changed = True
     if data_type.python_type:
         alias_bound_python_type, render_python_type_expr = _python_type_import_alias_helpers()
         bound_type = alias_bound_python_type(data_type.python_type, aliased_imports)
         if bound_type is not data_type.python_type:
             data_type.python_type = bound_type
             data_type.type = render_python_type_expr(bound_type.expression)
-            changed = True
-    imports = data_type.runtime_expression_imports
-    if not imports:
-        return changed
-    if (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports:
-        return changed
+    if (
+        not (imports := data_type.runtime_expression_imports)
+        or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports
+    ):
+        return
     data_type.kwargs = cast("dict[str, Any]", rewrite_runtime_expressions(data_type.kwargs, aliased_imports))
     data_type._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
-    return True
 
 
 @cache
@@ -262,9 +246,8 @@ def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
 def _alias_base_class_imports(
     model: DataModel,
     aliased_imports: dict[tuple[str | None, str], Import],
-) -> bool:
+) -> None:
     """Apply aliased imports to a model's base classes."""
-    changed = False
     for base_class in model.base_classes:
         if not base_class.import_:
             continue
@@ -276,38 +259,19 @@ def _alias_base_class_imports(
             continue
         base_class.type = aliased_import.alias
         base_class.import_ = aliased_import
-        changed = True
-    return changed
 
 
 def _alias_additional_imports(
     model: DataModel,
     aliased_imports: dict[tuple[str | None, str], Import],
-) -> bool:
+) -> None:
     """Replace every additional import with the module's canonical identity binding."""
-    changed = False
     for index, import_ in enumerate(model._additional_imports):  # noqa: SLF001
         if (
             aliased_import := aliased_imports.get((import_.from_, import_.import_))
         ) is None or aliased_import is import_:
             continue
         model._additional_imports[index] = aliased_import  # noqa: SLF001
-        changed = True
-    return changed
-
-
-def _clear_model_imports_cache(models: Iterable[DataModel]) -> None:
-    """Clear per-model imports caches after import-affecting mutations."""
-    # Parser post-processing rewrites fields, data types, and aliases in bulk.
-    # Clear at the end of those rewrite steps so later imports are recomputed.
-    for model in models:
-        model.clear_imports_cache()
-
-
-def _clear_model_imports_cache_if_retained(model: DataModel, *, can_retain_cache: bool) -> None:
-    """Clear a changed built-in model without invoking external cache hooks."""
-    if can_retain_cache and type(model).__module__.startswith(_MODEL_MODULE_PREFIX):
-        model.clear_imports_cache()
 
 
 def relative(
@@ -753,8 +717,6 @@ def apply_inherited_field_default(
 def override_required_field(
     host: InheritedFieldHost,
     models: list[DataModel],
-    *,
-    can_retain_cache: bool = False,
 ) -> None:
     """Replace the placeholder fields that name an inherited property by copies of the inherited fields."""
     pending_models = (
@@ -777,7 +739,6 @@ def override_required_field(
 
     builder = host.generation_store.builder()
     builder.discard_derived_facts()
-    changed = False
     for model in chain((first_model,), pending_models):
         resolved_fields: list[DataModelFieldBase] = []
         reserved_names = {field.name for field in model.fields if field.name}
@@ -804,7 +765,6 @@ def override_required_field(
             _detach_deferred_inherited_field_parents(model_field)
             original_field = inherited_fields.get(model_field.original_name)
             if not original_field:
-                changed = True
                 continue
             if (
                 copied_original_field := host._copy_inherited_field(  # noqa: SLF001
@@ -850,12 +810,9 @@ def override_required_field(
             elif host.apply_default_values_for_required_fields and copied_original_field.has_default:
                 copied_original_field.use_default_with_required = True
             resolved_fields.append(copied_original_field)
-            changed = True
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
             _restore_inherited_field_names_for_unique_aliases(resolved_fields, inherited_fields)
         builder.set_fields(model, resolved_fields)
-    if changed and not can_retain_cache:
-        _clear_model_imports_cache(models)
 
 
 def get_constructor_ordering_conflicts(
@@ -901,7 +858,6 @@ def alias_shadowed_imports(
     models: list[DataModel],
     all_model_field_names: set[str],
     *,
-    can_retain_cache: bool,
     module_imports: Imports | None = None,
 ) -> None:
     """Alias the imports whose names a field name of the models hides."""
@@ -911,7 +867,7 @@ def alias_shadowed_imports(
     )
     if not (has_python_type or has_runtime_expressions):
         if ordinary_aliases:
-            _apply_structured_import_aliases(models, ordinary_aliases, can_retain_cache=can_retain_cache)
+            _apply_structured_import_aliases(models, ordinary_aliases)
         return
     host._has_bound_python_types = host._has_bound_python_types or has_python_type  # noqa: SLF001
     if has_runtime_expressions:
@@ -931,7 +887,7 @@ def alias_shadowed_imports(
     )
     if not aliased_imports:
         return
-    _apply_structured_import_aliases(models, aliased_imports, can_retain_cache=can_retain_cache)
+    _apply_structured_import_aliases(models, aliased_imports)
     if module_imports is not None:
         for aliased_import in aliased_imports.values():
             host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)  # noqa: SLF001

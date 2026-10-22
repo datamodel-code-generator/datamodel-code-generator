@@ -21,7 +21,6 @@ from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact
 
 __all__ = [
     "ASSIGN_FORWARD_REFERENCE_FIELDS",
-    "CLEAR_MODULE_IMPORTS_CACHE",
     "COLLECT_LIVE_MODELS",
     "FINALIZE_RENDERED_NULLABILITY",
     "FIX_CONSTRUCTOR_FIELD_ORDERING",
@@ -380,14 +379,6 @@ EXTRACT_INHERITED_ENUM = PassDecl(
     reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.MODEL_KIND, RenderFact.MODULE_IMPORTS),
     writes=_facts(Fact.MODEL_KIND, Fact.MODELS_EXIST),
 )
-REFRESH_IMPORT_CACHE_RETENTION = PassDecl(
-    "refresh_import_cache_retention",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.BOOKKEEPING,
-    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND),
-    summary="Keeps the imports cache of the module only while every model class of the module is built in.",
-)
 MARK_UNUSED_MODELS_START = PassDecl(
     "mark_unused_models_start",
     Phase.MODULES,
@@ -413,10 +404,6 @@ REUSE_MODEL = PassDecl(
     after=(
         After("set_reference_default_value_to_field", "compares models with their final defaults"),
         After("extract_inherited_enum", "compares models after inherited enums became models of their own"),
-        After(
-            "refresh_import_cache_retention",
-            "the imports cache retention is decided on the model classes the module has before reuse removes any",
-        ),
     ),
     summary="Replaces duplicates of the module by empty subclasses, or removes them and redirects their users.",
 )
@@ -770,13 +757,6 @@ WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS = PassDecl(
         RenderFact.KEYWORD_ONLY,
     ),
 )
-CLEAR_MODULE_IMPORTS_CACHE = PassDecl(
-    "clear_module_imports_cache",
-    Phase.RENDER_PREPARATION,
-    Scope.MODULE,
-    PassKind.BOOKKEEPING,
-    condition="the module cannot keep its imports cache",
-)
 FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
     "fix_tag_opt_out_field_ordering",
     Phase.RENDER_PREPARATION,
@@ -848,13 +828,6 @@ FINALIZE_STRUCTURED_IMPORTS = PassDecl(
     after=(After("prepare_type_alias_fields", "aliases imports after alias bodies dropped their con* imports"),),
     summary="Aliases imports that runtime default expressions shadow (Avro also aligns shared defaults).",
     target=Phase.IMPORTS,
-)
-CLEAR_DEFAULT_FACTORY_IMPORT_CACHES = PassDecl(
-    "clear_default_factory_import_caches",
-    Phase.RENDER_PREPARATION,
-    Scope.GLOBAL,
-    PassKind.BOOKKEEPING,
-    condition="use_default_factory_for_optional_nested_models",
 )
 FINALIZE_SEQUENCE_INTERFACE = PassDecl(
     "finalize_sequence_interface",

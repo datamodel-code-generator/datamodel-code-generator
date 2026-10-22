@@ -210,7 +210,7 @@ def test_data_type_runtime_expression_metadata_rewrites_kwargs_without_rescannin
     model = BaseModel(reference=Reference(path="model", name="Model"), fields=[field])
 
     aliases = resolve_python_type_import_aliases([data_type], [model], {"Decimal"})
-    _apply_structured_import_aliases([model], aliases, can_retain_cache=True)
+    _apply_structured_import_aliases([model], aliases)
     copied_data_type = deepcopy(data_type)
 
     assert aliases == {("decimal", "Decimal"): Import(from_="decimal", import_="Decimal", alias="Decimal_aliased")}
@@ -239,7 +239,6 @@ def test_apply_realiases_all_additional_imports_that_share_runtime_identity() ->
     _apply_structured_import_aliases(
         [model],
         {("decimal", "Decimal"): canonical},
-        can_retain_cache=True,
     )
 
     assert repr(field.default) == "Taken_aliased('0.1')"
@@ -276,7 +275,7 @@ def test_structured_alias_scan_and_apply_cover_each_runtime_consumer() -> None:
         ("decimal", "Decimal"): Import(from_="decimal", import_="Decimal", alias="Decimal_aliased"),
     }
 
-    _apply_structured_import_aliases([model], canonical, can_retain_cache=False)
+    _apply_structured_import_aliases([model], canonical)
 
     assert aliases == {("ordinary", "Taken"): canonical["ordinary", "Taken"]}
     assert has_python_type
@@ -298,7 +297,7 @@ def test_structured_aliasing_skips_registered_runtime_imports_without_a_collisio
         fields=[DataModelField(name="value", data_type=data_type)],
     )
 
-    _apply_structured_import_aliases([model], {}, can_retain_cache=True)
+    _apply_structured_import_aliases([model], {})
 
     assert data_type.kwargs["multiple_of"] is expression
 
@@ -312,8 +311,11 @@ def test_base_class_aliasing_skips_an_already_canonical_binding() -> None:
     model = BaseModel(reference=Reference(path="model", name="Model"), fields=[], base_classes=[reference])
     model.base_classes[0].import_ = original
 
-    assert _alias_base_class_imports(model, {("external", "Base"): canonical})
-    assert not _alias_base_class_imports(model, {("external", "Base"): canonical})
+    _alias_base_class_imports(model, {("external", "Base"): canonical})
+    first = model.base_classes[0].import_
+    _alias_base_class_imports(model, {("external", "Base"): canonical})
+
+    assert (first, model.base_classes[0].import_, model.base_classes[0].type) == (canonical, canonical, "Base_aliased")
 
 
 @pytest.mark.allow_direct_assert

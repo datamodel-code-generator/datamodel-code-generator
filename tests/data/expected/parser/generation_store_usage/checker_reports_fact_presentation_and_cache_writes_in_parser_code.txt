@@ -16,14 +16,11 @@
 20 write data_types[:]: use GenerationStore.drop_union_member_constraints() or replace_nested_data_type() or set_nested_data_types() or swap_data_type() instead of writing data_types[:]
 21 write class_name: use GenerationStore.rename_model() instead of writing class_name
 22 write use_generic_container: use_generic_container changes an option copied at construction outside GenerationStore operations
-23 write _field_imports_cache.clear(): _field_imports_cache.clear() caches state on a mutable DataModelFieldBase; keep derived values in a per-parse store memo
-24 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
-26 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that _facts.py ATTRIBUTE_FACTS does not classify
-27 write __dict__[...]: __dict__[...] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
-28 write __dict__[_IMPORTS_CACHE_KEY]: __dict__[_IMPORTS_CACHE_KEY] caches state on a mutable DataModel; keep derived values in a per-parse store memo
-29 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
-31 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
-33 write _field_imports_cache[...]: _field_imports_cache[...] caches state on a mutable DataModelFieldBase; keep derived values in a per-parse store memo
-35 write extras["description"]: use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras["description"]
-36 write reference.path: use GenerationStore API instead of assigning reference.path
-37 write required: use GenerationStore.require_field() instead of writing required
+23 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
+25 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that _facts.py ATTRIBUTE_FACTS does not classify
+26 write __dict__[...]: __dict__[...] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
+27 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
+29 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
+31 write extras["description"]: use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras["description"]
+32 write reference.path: use GenerationStore API instead of assigning reference.path
+33 write required: use GenerationStore.require_field() instead of writing required

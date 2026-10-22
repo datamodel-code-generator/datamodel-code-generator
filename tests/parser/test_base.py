@@ -142,7 +142,6 @@ def test_parser_aliases_plain_shadowed_imports_without_structured_consumers(pars
         parser_fixture,
         [model],
         {"date"},
-        can_retain_cache=True,
     )
 
     assert field.data_type.type == "date_aliased"

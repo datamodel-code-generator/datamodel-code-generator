@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Opt
 from warnings import warn
 
 from pydantic import ConfigDict, Field
-from typing_extensions import Self, final, override
+from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._checks import CheckArea, check_mode
@@ -594,8 +594,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         ]
         | None
     ] = None
-    _FIELD_IMPORTS_CACHE_MAX_SIZE: ClassVar[int] = 4096
-    _field_imports_cache: ClassVar[dict[tuple[Any, ...], tuple[Import, ...]]] = {}
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
@@ -916,35 +914,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         needs_annotated: bool,
         data_type: DataType | None = None,
     ) -> tuple[Import, ...]:
-        """Collect type-hint imports; needs_annotated is passed in so subclasses can precompute it."""
+        """Collect type-hint imports, reading rendered nullability without writing it.
+
+        ``needs_annotated`` is passed in so subclasses can precompute it.
+        """
         data_type = data_type or self.data_type
         if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
             return self._collect_field_imports_without_type_hint(data_type=data_type)
-
-        cache_key = self._field_imports_cache_key(needs_annotated=needs_annotated, data_type=data_type)
-        if (cached_imports := self._field_imports_cache.get(cache_key)) is not None:
-            return cached_imports
-        imports = self._collect_field_imports_uncached(needs_annotated=needs_annotated, data_type=data_type)
-        self._set_cached_field_imports(cache_key, imports)
-        return imports
-
-    def _collect_field_imports_without_type_hint(self, *, data_type: DataType) -> tuple[Import, ...]:
-        needs_optional = self._needs_optional_import_without_type_hint(data_type=data_type)
-        if self._can_skip_data_type_imports(data_type=data_type):
-            return (IMPORT_OPTIONAL,) if needs_optional else ()
-
-        imports = tuple(data_type.all_imports)
-        if needs_optional and IMPORT_OPTIONAL not in imports:
-            return chain_as_tuple(imports, (IMPORT_OPTIONAL,))
-        return imports
-
-    def _collect_field_imports_uncached(
-        self,
-        *,
-        needs_annotated: bool,
-        data_type: DataType,
-    ) -> tuple[Import, ...]:
-        """Collect field imports from the structure of the type, reading rendered nullability without writing it."""
         requirements = self._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)
         imports = tuple(data_type.all_imports)
         if requirements.any_ and IMPORT_ANY not in imports:
@@ -955,6 +931,16 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if not missing_imports:
             return filtered_imports
         return chain_as_tuple(filtered_imports, missing_imports)
+
+    def _collect_field_imports_without_type_hint(self, *, data_type: DataType) -> tuple[Import, ...]:
+        needs_optional = self._needs_optional_import_without_type_hint(data_type=data_type)
+        if self._can_skip_data_type_imports(data_type=data_type):
+            return (IMPORT_OPTIONAL,) if needs_optional else ()
+
+        imports = tuple(data_type.all_imports)
+        if needs_optional and IMPORT_OPTIONAL not in imports:
+            return chain_as_tuple(imports, (IMPORT_OPTIONAL,))
+        return imports
 
     def _import_state_data_type(self) -> DataType | None:
         """Return the data type ``imports`` collects from, or None when it collects without a type hint."""
@@ -998,26 +984,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             return None
         source = reference.source
         return (bool(getattr(source, "nullable", False)), bool(getattr(source, "is_alias", False)))
-
-    def _field_imports_cache_key(self, *, needs_annotated: bool, data_type: DataType) -> tuple[Any, ...]:
-        return (
-            self.__class__,
-            needs_annotated,
-            self.nullable,
-            self.required,
-            self.type_has_null,
-            self.has_default_factory,
-            self.fall_back_to_nullable,
-            self._use_union_operator,
-            bool(self.parent and self.parent.has_forward_reference),
-            self._data_type_import_key(data_type),
-        )
-
-    def _set_cached_field_imports(self, cache_key: tuple[Any, ...], imports: tuple[Import, ...]) -> None:
-        cache = self._field_imports_cache
-        if len(cache) >= self._FIELD_IMPORTS_CACHE_MAX_SIZE:
-            del cache[next(iter(cache))]
-        cache[cache_key] = imports
 
     def _can_collect_imports_without_type_hint(
         self,
@@ -1348,8 +1314,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             return
         if invalidate_render_caches := getattr(parent, "invalidate_render_caches", None):
             invalidate_render_caches()
-            return
-        parent.clear_imports_cache()
 
     def mark_as_keyword_only(self) -> None:
         """Exclude this field from positional constructor ordering."""
@@ -1701,13 +1665,7 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
             )
             if model_key_of(source.reference) in parent_cycle:
                 return None
-            if memoized(
-                MemoTable.NESTED_MODEL_REQUIRED_FIELDS,
-                model_key_of(source.reference),
-                source,
-                None,
-                lambda: _nested_model_has_required_constructor_fields(source),
-            ):
+            if _nested_model_has_required_constructor_fields(source):
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
                 return _NestedModelFactory(data_type, source, builds_by_name=True)
@@ -2383,7 +2341,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     # A static callable avoids allocating bound methods on dependency-index cache misses.
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[DataModel], bool] | None] = None
     _TYPED_EXTRA_DICT_KEY_CAPABILITY: ClassVar[Callable[[DataType], bool] | None] = None
-    _IMPORTS_CACHE_KEY: ClassVar[str] = "_cached_imports"
     has_forward_reference: bool = False
     discriminator_tag: tuple[Any, Any] | None = None
 
@@ -2916,7 +2873,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             message = f"{self.class_name} is deprecated."
             self.decorators = [*self.decorators, f"@deprecated({message!r})"]
         self._additional_imports.append(Import.from_full_path(backport_path("python.deprecated_decorator")))
-        self.clear_imports_cache()
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
@@ -3034,18 +2990,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @property
     def imports(self) -> tuple[Import, ...]:
-        """Get all imports required by this model and its fields."""
-        # DataModel is intentionally mutable during parser post-processing. Keep
-        # this cache coarse-grained: import-affecting mutations must clear it.
-        if self._IMPORTS_CACHE_KEY in self.__dict__:
-            return self.__dict__[self._IMPORTS_CACHE_KEY]
-
-        imports = chain_as_tuple(
+        """Get all imports required by this model and its fields, computed from them at each read."""
+        return chain_as_tuple(
             (i for f in self.fields for i in f.imports),
             self._additional_imports,
         )
-        self.__dict__[self._IMPORTS_CACHE_KEY] = imports
-        return imports
 
     def _unrendered_imports(self) -> tuple[Import, ...]:  # ruff: ignore[no-self-use]
         """Return the part of ``imports`` that the class statement does not render.
@@ -3137,14 +3086,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
                 changed = True
         return changed
 
+    @deprecated("DataModel.imports is computed at each read; there is no imports cache to clear.", category=None)
     def clear_imports_cache(self) -> None:
-        """Clear cached imports after import-affecting model, field, or data type mutations."""
-        self.__dict__.pop(self._IMPORTS_CACHE_KEY, None)
-        forget_model_memos(self, MemoTable.NESTED_MODEL_REQUIRED_FIELDS)
+        """Do nothing: ``imports`` keeps no cache. Kept so that subclasses that call or override it still work."""
 
     def invalidate_render_caches(self) -> None:
-        """Clear cached imports and render-derived model identity."""
-        self.clear_imports_cache()
+        """Clear the render-derived model identity."""
         forget_model_memos(self, MemoTable.DEDUP_KEYS)
 
     def refresh_field_config(self) -> None:

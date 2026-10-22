@@ -282,7 +282,6 @@ class RootModel(BaseModel):
         else:
             self.extra_template_data.pop("config", None)
             self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
-        self.clear_imports_cache()
 
     @override
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
@@ -306,7 +305,6 @@ class RootModel(BaseModel):
         }
         for key, value in sequence_template_data.items():
             self._set_internal_template_data(key, value)
-        self.clear_imports_cache()
 
     @override
     def finalize_sequence_interface(self) -> None:

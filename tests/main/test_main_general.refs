@@ -703,19 +703,9 @@ True	main/person.py
 [test_parser_instance_formatter_builder_with_empty_formatters]
 	main/parser_formatter_builder_override_with_empty_formatters.py
 	main/parser_formatter_builder_override_with_empty_formatters_calls.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-[test_parser_preserves_cross_module_external_import_cache_hook]
-	main/custom_import_cache_cross_module//*.py
-	main/custom_import_cache_cross_module_history.txt
-	main/custom_import_cache_cross_module_order.txt
-[test_parser_rechecks_external_enum_after_module_materialization]
-	main/custom_import_cache_inherited_enum//*.py
-	main/custom_import_cache_inherited_enum_history.txt
-	main/custom_import_cache_inherited_enum_order.txt
-[test_parser_retains_builtin_import_cache_and_invalidates_custom_cache]
+[test_parser_never_calls_the_deprecated_imports_cache_hook]
 	main/builtin_import_cache_retention.py
-	main/builtin_import_cache_retention.txt
 	main/builtin_import_cache_unique_items_unhashable.py
-	main/builtin_import_cache_unique_items_unhashable.txt
 	main/custom_import_cache_alias_invalidation.py
 	main/custom_import_cache_generic_base.py
 	main/custom_import_cache_invalidation.py
@@ -724,6 +714,14 @@ True	main/person.py
 	main/module_split_large_models_model499.py
 	main/process_single_module_large_models_calls.txt
 	main/process_single_module_single_call.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+[test_parser_preserves_cross_module_external_import_cache_hook]
+	main/custom_import_cache_cross_module//*.py
+	main/custom_import_cache_cross_module_history.txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
+	main/custom_import_cache_cross_module_order.txt
+[test_parser_rechecks_external_enum_after_module_materialization]
+	main/custom_import_cache_inherited_enum//*.py
+	main/custom_import_cache_inherited_enum_history.txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
+	main/custom_import_cache_inherited_enum_order.txt
 [test_parser_run_context_preserves_subclass_lifecycle_hooks]
 	main/parser_run_context_lifecycle.txt
 	main/person.py

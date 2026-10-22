@@ -42,9 +42,6 @@ class MemoTable(Enum):
     DEDUP_KEYS = "dedup keys"
     """The dedup keys of a model by its model key, one per class name it renders under and whether ``M`` stands in
     (``DataModel.get_dedup_key``)."""
-    NESTED_MODEL_REQUIRED_FIELDS = "nested model required fields"
-    """Whether a model has required constructor fields, which keeps a nested default factory from building it, by its
-    model key."""
     ENUM_MEMBER_INDEX = "enum member index"
     """The members of an enum by their exact value, by its model key."""
     COERCED_ENUM_MEMBER_INDEX = "coerced enum member index"

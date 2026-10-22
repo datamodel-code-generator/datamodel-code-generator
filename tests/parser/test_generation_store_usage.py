@@ -409,7 +409,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 65, "PRESENTATION": 57, "BOOKKEEPING": 18, "CACHE": 13})
+        Counter({"FACT": 65, "PRESENTATION": 57, "BOOKKEEPING": 18, "CACHE": 11})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -488,17 +488,13 @@ def write(field, data_type, model, name, broken: "not valid("):
     data_type.data_types[:] = []
     model.class_name = name
     data_type.use_generic_container = True
-    field._field_imports_cache.clear()
     field.__dict__["_forced_field_assignment"] = True
     field.__dict__[SCHEMA_OWNER_FRAMES_KEY] = "bookkeeping"
     field.__dict__["_unknown"] = 1
     field.__dict__[name] = 1
-    vars(field)[_IMPORTS_CACHE_KEY] = ()
     field.__dict__.update({})
     values = field.__dict__
     values.setdefault("_forced_field_assignment", True)
-    cache = field._field_imports_cache
-    cache[name] = ()
     if (extras := getattr(field, "extras", None)) is not None:
         extras["description"] = "text"
     model.reference.path = name
@@ -636,8 +632,6 @@ def in_place(field, model):
     values = field.__dict__
     values |= {}
     model.__dict__ |= {}
-    cache = field._field_imports_cache
-    cache |= {}
     extras = field.extras
     extras |= {}
     field.extras["kept"] = values
@@ -669,7 +663,7 @@ def chained(field, model):
     entry.update({})
     computed = values[field.name]
     computed |= {}
-    cache = getattr(field, "_field_imports_cache")
+    cache = getattr(field, "extras")
     cache = cache
     cache.clear()
     extras = extras["discriminator"]
@@ -744,8 +738,6 @@ class Field:
         self.nullable = False
         self.replace_data_type(None)
         self.fields.append(None)
-        self.__dict__[_IMPORTS_CACHE_KEY] = ()
-        self._field_imports_cache = {}
 
     @cached_property
     def path(self):

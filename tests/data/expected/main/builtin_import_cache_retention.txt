@@ -1,2 +1,0 @@
-TestObject:retained
-Test:invalidated

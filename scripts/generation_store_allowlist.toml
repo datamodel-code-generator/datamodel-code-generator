@@ -25,17 +25,11 @@
 ["src/datamodel_code_generator/model/base.py"."DataModel._uses_custom_root_template"]
 '@cached_property' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModel.clear_imports_cache"]
-'__dict__.pop(_IMPORTS_CACHE_KEY)' = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModel.create_reuse_model"]
 reused_reference = "--input tests/data/json/duplicate_models.json --input-file-type json --output-model-type pydantic_v2.BaseModel --reuse-model"
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.finalize_required_inherited_field"]
 'extras.pop("default_factory")' = 1
-
-["src/datamodel_code_generator/model/base.py"."DataModel.imports"]
-'__dict__[_IMPORTS_CACHE_KEY]' = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.path"]
 '@cached_property' = 1
@@ -54,9 +48,6 @@ _field_name_bindings = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._merge_untaken_constraints"]
 '__dict__[...]' = 1
-
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._set_cached_field_imports"]
-'_field_imports_cache[...]' = 2
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._set_runtime_expression_imports"]
 '__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_FIELD_KEY)' = 1
@@ -244,7 +235,7 @@ default = 1
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_generic_base_class"]
-_additional_imports = 2
+_additional_imports = 1
 file_path = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_field_name"]

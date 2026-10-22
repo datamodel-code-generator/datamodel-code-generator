@@ -611,9 +611,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         store_ops=("require_field",),
     ),
     AttributeFact(
-        "DataModelFieldBase", "_field_imports_cache", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CONTAINER
-    ),
-    AttributeFact(
         "DataModelFieldBase",
         "_UNTAKEN_CONSTRAINTS_KEY",
         FactKind.FACT,
@@ -933,7 +930,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B2,
         access=Access.DICT_KEY,
     ),
-    AttributeFact("DataModel", "_IMPORTS_CACHE_KEY", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY),
     AttributeFact(
         "DataModel",
         "_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY",

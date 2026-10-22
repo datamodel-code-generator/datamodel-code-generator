@@ -873,7 +873,6 @@ class AvroParser(JsonSchemaParser):
                         field.default = default
                         field._set_runtime_expression_imports(runtime_expression_imports(default))  # ruff: ignore[private-member-access]
                         field.invalidate_semantic_caches()
-                        model.clear_imports_cache()
             self._default_converters = None
         super()._finalize_structured_imports(contexts)
 

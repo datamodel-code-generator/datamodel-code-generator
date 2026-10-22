@@ -39,55 +39,6 @@ from datamodel_code_generator.types import DataType
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-IMPORT_CACHE_CLEARING_MUTATION_METHODS = frozenset({
-    "append_field",
-    "collapse_root_data_type",
-    "detach_data_type_ref",
-    "detach_model_data_type_refs",
-    "insert_field",
-    "move_model",
-    "redirect_model_reference_users",
-    "redirect_reference_users",
-    "remove_field",
-    "rename_model",
-    "replace_data_type_ref",
-    "replace_field_type",
-    "replace_nested_data_type",
-    "reset_base_classes",
-    "set_base_classes",
-    "set_fields",
-    "set_nested_data_types",
-    "update_model_reference",
-})
-IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
-    "defer_refresh",
-    "clear_target_null",
-    "discard_derived_facts",
-    "inline_shared",
-    "mark_target_null",
-    "note_changed_models",
-    "record_values_as_written",
-    "register_model",
-    "replace_model",
-    "retire_model",
-})
-IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
-    "add_model_import",
-    "apply_const",
-    "drop_field_discriminator",
-    "drop_held_null",
-    "drop_union_member_constraints",
-    "override_type_import",
-    "require_field",
-    "set_field_constraints",
-    "set_field_default",
-    "set_field_extra",
-    "set_field_extras",
-    "set_type_discriminator",
-    "swap_data_type",
-    "use_assignment_for_forward_references",
-    "write_rendered_null",
-})
 """Operations that run a model hook, swap a nested type or write a field or model value, and leave the import caches
 to their callers."""
 GENERATION_MODEL_LIST_MUTATION_METHODS = frozenset({
@@ -160,15 +111,6 @@ def _dict_key_reference_classes(
     if include_dict_keys:
         return store.index.reference_classes_for_model_including_dict_keys(model)
     return store.index.reference_classes_for_model(model)
-
-
-def test_generation_store_import_cache_contract_covers_mutation_surface() -> None:
-    """New store mutation APIs must be classified for import-cache safety."""
-    assert (
-        IMPORT_CACHE_CLEARING_MUTATION_METHODS
-        | IMPORT_CACHE_NEUTRAL_MUTATION_METHODS
-        | IMPORT_CACHE_CALLER_MUTATION_METHODS
-    ) == GENERATION_STORE_MUTATION_METHODS
 
 
 def test_generation_store_site_effects_cover_mutation_surface() -> None:
@@ -1106,35 +1048,24 @@ def test_generation_store_model_mutations_clear_cached_imports_contract() -> Non
     store.register_model(model)
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.update_model_reference(model, new_file_path=Path("renamed.py"))
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.rename_model(model, reference_name="RenamedAgain")
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.move_model(model, new_path="pkg.RenamedAgain", new_file_path=Path("pkg.py"))
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.set_base_classes(model, [BaseClassDataType(type="object")])
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.reset_base_classes(model)
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "path": model.path,
         "reference_name": model.reference.name,
         "file_path": model.file_path,
     } == snapshot({
-        "cache_key": False,
         "path": "pkg.RenamedAgain",
         "reference_name": "RenamedAgain",
         "file_path": Path("pkg.py"),
@@ -1150,33 +1081,24 @@ def test_generation_store_field_collection_mutations_clear_cached_imports_contra
     set_field = DataModelField(data_type=DataType(is_set=True))
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.append_field(model, list_field)
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert IMPORT_LIST in model.imports
 
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.insert_field(model, 0, set_field)
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert IMPORT_LIST in model.imports
     assert IMPORT_SET in model.imports
 
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.remove_field(model, list_field)
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert IMPORT_LIST not in model.imports
     assert IMPORT_SET in model.imports
 
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.set_fields(model, [DataModelField(data_type=DataType.from_import(IMPORT_DECIMAL))])
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "has_decimal": IMPORT_DECIMAL in model.imports,
         "has_set": IMPORT_SET in model.imports,
         "list_parent": list_field.parent is None,
         "set_parent": set_field.parent is None,
     } == snapshot({
-        "cache_key": False,
         "has_decimal": True,
         "has_set": False,
         "list_parent": True,
@@ -1195,26 +1117,19 @@ def test_generation_store_data_type_mutations_clear_cached_imports_contract() ->
     store.register_model(model)
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.replace_data_type_ref(data_type, new_reference)
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert data_type.reference is new_reference
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.detach_data_type_ref(data_type)
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert data_type.reference is None
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.replace_field_type(field, DataType(is_set=True))
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "has_set": IMPORT_SET in model.imports,
         "field_parent": field.data_type.parent is field,
     } == snapshot({
-        "cache_key": False,
         "has_set": True,
         "field_parent": True,
     })
@@ -1228,20 +1143,15 @@ def test_generation_store_nested_data_type_mutations_clear_cached_imports_contra
     store.register_model(model)
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.set_nested_data_types(list_type, [DataType.from_import(IMPORT_DECIMAL)])
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert IMPORT_DECIMAL in model.imports
 
     nested_type = list_type.data_types[0]
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.replace_nested_data_type(list_type, nested_type, DataType(type="str"))
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "has_decimal": IMPORT_DECIMAL in model.imports,
         "nested_types": [nested.type for nested in list_type.data_types],
     } == snapshot({
-        "cache_key": False,
         "has_decimal": False,
         "nested_types": ["str"],
     })
@@ -1549,19 +1459,14 @@ def test_generation_store_reference_detach_helpers_clear_cached_imports_contract
     store.register_model(model)
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.collapse_root_data_type(root_type, Reference(path="Inner", original_name="Inner", name="Inner"))
-    assert model._IMPORTS_CACHE_KEY not in model.__dict__
     assert root_type.reference is not None
 
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
     store.detach_model_data_type_refs(model)
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "root_reference": root_type.reference,
     } == snapshot({
-        "cache_key": False,
         "root_reference": None,
     })
 
@@ -1579,17 +1484,14 @@ def test_generation_store_reference_redirects_clear_each_owner_imports_cache_onc
     store = GenerationStore()
     store.register_model(model)
     assert model.imports is not None
-    assert model._IMPORTS_CACHE_KEY in model.__dict__
 
     store.redirect_reference_users(old_reference, new_reference)
 
     assert {
-        "cache_key": model._IMPORTS_CACHE_KEY in model.__dict__,
         "field_references": [field.data_type.reference.path for field in model.fields if field.data_type.reference],
         "old_children": old_reference.children,
         "new_children": len(new_reference.children),
     } == snapshot({
-        "cache_key": False,
         "field_references": ["New", "New"],
         "old_children": [],
         "new_children": 2,
@@ -1766,27 +1668,6 @@ def test_generation_store_redirects_unattached_reference_users() -> None:
     assert data_type.reference is new_reference
 
 
-def test_generation_store_render_cache_invalidation_supports_legacy_model_hook() -> None:
-    """External model implementations with only the legacy import hook remain compatible."""
-
-    class ImportsOnlyModel:
-        def __init__(self) -> None:
-            self.reference = Reference(path="Before", original_name="Before", name="Before")
-            self.class_name = "Before"
-            self.cache_cleared = False
-
-        def clear_imports_cache(self) -> None:
-            self.cache_cleared = True
-
-    model = ImportsOnlyModel()
-    store = GenerationStore()
-
-    store.rename_model(model, class_name="After")  # ty: ignore[invalid-argument-type]
-
-    assert model.class_name == "After"
-    assert model.cache_cleared
-
-
 def test_generation_store_model_reference_redirect_clears_only_affected_owner_imports_cache() -> None:
     """Scoped model reference redirects should invalidate only matching owner models."""
     target_model = _base_model("Target")
@@ -1804,8 +1685,6 @@ def test_generation_store_model_reference_redirect_clears_only_affected_owner_im
     store.register_model(other_model)
     assert owner_model.imports is not None
     assert other_model.imports is not None
-    assert owner_model._IMPORTS_CACHE_KEY in owner_model.__dict__
-    assert other_model._IMPORTS_CACHE_KEY in other_model.__dict__
 
     store.redirect_model_reference_users(
         target_model,
@@ -1814,8 +1693,6 @@ def test_generation_store_model_reference_redirect_clears_only_affected_owner_im
     )
 
     assert {
-        "owner_cache_key": owner_model._IMPORTS_CACHE_KEY in owner_model.__dict__,
-        "other_cache_key": other_model._IMPORTS_CACHE_KEY in other_model.__dict__,
         "owner_references": [
             field.data_type.reference.path for field in owner_model.fields if field.data_type.reference
         ],
@@ -1823,8 +1700,6 @@ def test_generation_store_model_reference_redirect_clears_only_affected_owner_im
             field.data_type.reference.path for field in other_model.fields if field.data_type.reference
         ],
     } == snapshot({
-        "owner_cache_key": False,
-        "other_cache_key": True,
         "owner_references": ["NewTarget", "NewTarget"],
         "other_references": ["Target"],
     })

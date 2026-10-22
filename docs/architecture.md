@@ -609,10 +609,9 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | MODULES | `replace_unique_list_to_set` | module | transform | CONTAINERS, DEFAULTS, FIELD_TYPES | CONSTRAINTS, DEFAULTS, FIELD_TYPES | After `override_required_field`: converts the defaults that inherited required fields bring. |
 | MODULES | `change_from_import` | module | transform | IMPORT_ALIASES, MODULE_IMPORTS, NULLABLE | CLASS_NAMES, FIELD_TYPES, MODULE_MEMBERSHIP | After `alias_shadowed_imports`: imports referenced models after shadowed imports took their aliases. |
 | MODULES | `extract_inherited_enum` | module | transform | MODELS_EXIST, MODEL_KIND | BASES, FIELD_SET, MODEL_KIND, MODULE_IMPORTS |  |
-| MODULES | `refresh_import_cache_retention` | module | bookkeeping | - | MODELS_EXIST, MODEL_KIND | Keeps the imports cache of the module only while every model class of the module is built in. |
 | MODULES | `mark_unused_models_start` | module | bookkeeping | - | - |  |
 | MODULES | `set_reference_default_value_to_field` | module | transform | DEFAULTS | DEFAULTS, FIELD_TYPES | After `replace_unique_list_to_set`: turns defaults into references after unique lists became sets. |
-| MODULES | `reuse_model` | module | transform | BASES, FIELD_SET, FIELD_TYPES, MODELS_EXIST, NULLABLE | every Fact, FIELD_ORDER, PLANS | Replaces duplicates of the module by empty subclasses, or removes them and redirects their users. After `set_reference_default_value_to_field`: compares models with their final defaults. After `extract_inherited_enum`: compares models after inherited enums became models of their own. After `refresh_import_cache_retention`: the imports cache retention is decided on the model classes the module has before reuse removes any. |
+| MODULES | `reuse_model` | module | transform | BASES, FIELD_SET, FIELD_TYPES, MODELS_EXIST, NULLABLE | every Fact, FIELD_ORDER, PLANS | Replaces duplicates of the module by empty subclasses, or removes them and redirects their users. After `set_reference_default_value_to_field`: compares models with their final defaults. After `extract_inherited_enum`: compares models after inherited enums became models of their own. |
 | MODULES | `collapse_root_models` | module | transform | CLASS_NAMES, CONSTRAINTS, DEFAULTS, DISCRIMINATOR_TAGS, FIELD_TYPES, METADATA, MODELS_EXIST, MODULE_IMPORTS, NULLABLE, REQUIRED | CONSTRAINTS, FIELD_TYPES, MODEL_KIND, PLANS | Inlines the root models the module references. Runs when: collapse_root_models. After `reuse_model`: inlines the root models that reuse keeps. |
 | MODULES | `set_default_enum_member` | module | transform | DEFAULTS | DEFAULTS, FIELD_TYPES | After `collapse_root_models`: writes enum members as defaults of the types collapse inlined. |
 | MODULES | `sort_models` | module | transform | MODEL_ORDER | BASES, FIELD_TYPES, MODEL_ORDER |  |
@@ -642,7 +641,6 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | RENDER_PREPARATION | `set_validate_default_on_fields` | module | transform | CONSTRAINTS, DEFAULTS, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, IMPORT_ALIASES | DEFAULTS, FIELD_TYPES, MODELS_EXIST |  |
 | RENDER_PREPARATION | `assign_forward_reference_fields` | module | transform | ASSIGNMENT_FORM, FIELD_ORDER | DEFAULTS, FIELD_ORDER, FIELD_TYPES, MODEL_ORDER | Runs when: use_annotated with deferred annotations. |
 | RENDER_PREPARATION | `warn_required_assignments_after_defaults` | module | check | STDERR | DEFAULTS, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED |  |
-| RENDER_PREPARATION | `clear_module_imports_cache` | module | bookkeeping | - | - | Runs when: the module cannot keep its imports cache. |
 | RENDER_PREPARATION | `fix_tag_opt_out_field_ordering` | global | repair | KEYWORD_ONLY | BASES, DEFAULTS, FIELD_SET, KEYWORD_ONLY, REQUIRED | Runs when: msgspec. Removed by G08. After `warn_required_assignments_after_defaults`: the pydantic warning and this msgspec repair never read or write the same models. |
 | RENDER_PREPARATION | `finalize_rendered_nullability` | global | transform | FIELD_TYPES, NULLABLE | FIELD_TYPES, NULLABLE, QUOTING | Writes the None each type hint renders, once, after the module bodies set union operators and quotes; rendering and import collection write none. Rendering the members' hints writes the import of the Any an empty union renders as. |
 | RENDER_PREPARATION | `collect_all_models` | global | bookkeeping | - | - |  |
@@ -650,7 +648,6 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | RENDER_PREPARATION | `finalize_type_alias_users` | global | transform | BACKEND_CONFIG | FIELD_TYPES, MODEL_KIND | Lets the backend configure the models that use type aliases (model hook). |
 | RENDER_PREPARATION | `mark_set_item_models_hashable` | global | transform | SET_ITEM_HASH | CONTAINERS, FIELD_TYPES |  |
 | RENDER_PREPARATION | `finalize_structured_imports` | global | transform | DEFAULT_EXPRESSION, IMPORT_ALIASES, MODULE_IMPORTS | CONSTRAINTS, DEFAULTS, FIELD_NAMES, MODULE_IMPORTS | Aliases imports that runtime default expressions shadow (Avro also aligns shared defaults). Moves to IMPORTS. After `prepare_type_alias_fields`: aliases imports after alias bodies dropped their con* imports. |
-| RENDER_PREPARATION | `clear_default_factory_import_caches` | global | bookkeeping | - | - | Runs when: use_default_factory_for_optional_nested_models. |
 | RENDER_PREPARATION | `finalize_sequence_interface` | global | transform | BACKEND_CONFIG | CLASS_NAMES, FIELD_TYPES, MODEL_KIND | Runs when: use_root_model_sequence_interface. After `finalize_type_alias_users`: both write backend config; the sequence interface is decided last. |
 | RENDER_PREPARATION | `decide_nested_model_default_factories` | global | plan | - | DEFAULTS, FIELD_TYPES, MODELS_EXIST, MODEL_ORDER | Decides, from the final model order and reference cycles, the default factories of optional nested models that the render plans read (row legacy.L-NF). Runs when: use_default_factory_for_optional_nested_models. |
 | RENDER_PREPARATION | `freeze_field_render_plans` | global | plan | - | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY | Freezes one render plan per field of the built-in output models, which rendering reads; B2 follows. |
@@ -696,7 +693,6 @@ Provisional reads, from the explicit edges:
 - `replace_unique_list_to_set` reads DEFAULTS before `set_reference_default_value_to_field` writes it: turns defaults into references after unique lists became sets.
 - `set_reference_default_value_to_field` reads FIELD_TYPES before `reuse_model` writes it: compares models with their final defaults.
 - `extract_inherited_enum` reads BASES, FIELD_SET before `reuse_model` writes it: compares models after inherited enums became models of their own.
-- `refresh_import_cache_retention` reads MODELS_EXIST before `reuse_model` writes it: the imports cache retention is decided on the model classes the module has before reuse removes any.
 - `reuse_model` reads CONSTRAINTS, DEFAULTS, DISCRIMINATOR_TAGS, FIELD_TYPES, METADATA, MODELS_EXIST, NULLABLE, REQUIRED before `collapse_root_models` writes it: inlines the root models that reuse keeps.
 - `record_decimal_alias_models` reads FIELD_NAMES before `change_field_name` writes it: the Decimal check reads the field names as parsed.
 - `change_field_name` reads FIELD_NAMES before `restore_inherited_field_names_for_unique_aliases` writes it: restores the inherited names that renaming changed.
@@ -899,13 +895,12 @@ comparison depends on that (GR5 turns the remaining `==` sites into `is`). Other
 path, class name or `id()`.
 
 The store owns the parse's memos (`_parse_memo.py:ParseMemo`), which `Parser.parse` makes current while it runs. The
-model layer keeps there what it derives from the mutable models instead of on them: the dedup keys of a model, whether
-a model has required constructor fields for nested default factories, the member indexes of an enum (by model key),
-whether a field's type names its model (by field key) and the members a union node joined when it rendered (by node
-key). A value is kept with the epoch its owner has in its table; the methods that cleared the caches these memos
-replace (`invalidate_render_caches`, `clear_imports_cache`, `invalidate_semantic_caches`) bump the epoch, so the memos
-return what those caches returned. Outside a parse values are computed at each read. The import caches
-(`DataModel.imports`, `DataModelFieldBase._field_imports_cache`) stay on the models until the import plans replace them.
+model layer keeps there what it derives from the mutable models instead of on them: the dedup keys of a model, the
+member indexes of an enum (by model key), whether a field's type names its model (by field key) and the members a union
+node joined when it rendered (by node key). A value is kept with the epoch its owner has in its table; the methods that
+cleared the caches these memos replace (`invalidate_render_caches`, `invalidate_semantic_caches`) bump the epoch, so the
+memos return what those caches returned. Outside a parse values are computed at each read. `DataModel.imports` and the
+imports of a field are computed at each read; they keep no cache (`DataModel.clear_imports_cache` is a deprecated no-op).
 `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` computes every returned value anew and fails on a difference, except for
 the dedup keys and self references whose stale values today's output keeps (`legacy-stale-dedup-keys`,
 `legacy-stale-self-reference`), which it records with a report file.
@@ -1016,7 +1011,7 @@ Current behaviour that a decision reading the index must allow for:
   to module imports (`ModuleContext.imports`, which go through the import ledger and its runtime check instead, see
   L6 above), or writes in model methods that the hook closure does not reach; the runtime guard sees the last kind, and
   the allowlist lists them with a witness.
-- Dedup keys (cached on the model, read through `ModelShapes.key`), model shapes and imports caches are separate caches, not store facts.
+- Dedup keys (cached on the model, read through `ModelShapes.key`) and model shapes are separate caches, not store facts.
 
 ### Placement Guide
 

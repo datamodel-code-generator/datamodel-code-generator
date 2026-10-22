@@ -26,7 +26,6 @@ override_required_field
 replace_unique_list_to_set
 change_from_import
 extract_inherited_enum
-refresh_import_cache_retention
 mark_unused_models_start
 set_reference_default_value_to_field
 reuse_model
