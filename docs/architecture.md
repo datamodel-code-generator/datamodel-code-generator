@@ -841,6 +841,12 @@ holds facts none of which is a `Fact` final at B1, is `render-read`, named after
 the graph objects they reach as views and their lists as tuples, and see only what a decision reads on them, not what
 the methods and properties of the classes read inside.
 
+The check also seals the graph at the freeze points: once the pipeline has passed B1, each guarded write to an object
+that a fingerprint holds (an attribute assignment of a fact or presentation row, or a mutation of a guarded list such as
+`fields`, `base_classes` or `data_types`) is judged when it is made, inside store operations as well, with the same
+`frozen` rule: the facts the running pass declares among the row's facts, or all of the row's facts outside every pass.
+A write that changes no value is not judged, and it covers presentation rows, which no fingerprint holds.
+
 ### Generation Store
 
 `GenerationStore` (`parser/generation.py`) owns `Parser.results` and indexes, per model, its reference and paths and,
@@ -854,6 +860,12 @@ to the sites (`SITE_EFFECTS`, `NO_SITE_EFFECT`): a new site takes the provenance
 (`redirected` with the model it named before and the site at its place, `collapsed` with the root model and its site,
 `overridden`, `copied`), the sites of the parsed models are `parsed`, and a site whose occurrence a refresh keeps keeps
 its provenance; renames touch no site, since sites store no names.
+
+Every mutation goes through the store's `GraphBuilder`, the capability that `GenerationStore.builder()` returns
+(`Parser._graph_builder` in the parser): one method per mutation of `GENERATION_STORE_MUTATION_METHODS`, each calling
+the store's operation of the same name, so that a store subclass that overrides an operation and the debug checks that
+wrap the operations on the store keep seeing every call. The operations on `GenerationStore` itself are deprecated for
+every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
 counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it

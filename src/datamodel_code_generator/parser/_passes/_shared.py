@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser.generation import GenerationStore
+    from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
@@ -601,7 +601,7 @@ def register_reference_import(  # noqa: PLR0913
 
 
 def redirect_collapsed_reuse_users(
-    store: GenerationStore,
+    builder: GraphBuilder,
     collapsed_models: dict[int, list[DataModel]],
     collapsed_users: dict[int, tuple[DataType, Reference]],
     duplicate: DataModel,
@@ -612,7 +612,7 @@ def redirect_collapsed_reuse_users(
     A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
     the tags of the kept model.
     """
-    users = store.redirect_reference_users(duplicate.reference, canonical.reference)
+    users = builder.redirect_reference_users(duplicate.reference, canonical.reference)
     for user in users:
         collapsed_users.setdefault(id(user), (user, duplicate.reference))
     collapsed_models.setdefault(id(canonical), []).append(duplicate)
@@ -734,8 +734,8 @@ def override_required_field(
     if (first_model := next(pending_models, None)) is None:
         return
 
-    store = host.generation_store
-    store.discard_derived_facts()
+    builder = host.generation_store.builder()
+    builder.discard_derived_facts()
     changed = False
     for model in chain((first_model,), pending_models):
         resolved_fields: list[DataModelFieldBase] = []
@@ -743,7 +743,7 @@ def override_required_field(
         inherited_fields = get_inherited_fields(_find_base_classes(model))
         pending_fields = model.fields
         pending_fields.reverse()
-        store.set_fields(model, [])
+        builder.set_fields(model, [])
         while pending_fields:
             model_field = pending_fields.pop()
             model_field.parent = None
@@ -812,7 +812,7 @@ def override_required_field(
             changed = True
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
             _restore_inherited_field_names_for_unique_aliases(resolved_fields, inherited_fields)
-        store.set_fields(model, resolved_fields)
+        builder.set_fields(model, resolved_fields)
     if changed and not can_retain_cache:
         _clear_model_imports_cache(models)
 

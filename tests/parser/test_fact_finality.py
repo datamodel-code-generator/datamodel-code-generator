@@ -18,6 +18,7 @@ from datamodel_code_generator import DataModelType, Error, PythonVersion
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.types import DataType
 from scripts import check_fact_finality, check_pass_pipeline
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
@@ -80,6 +81,45 @@ class RebasingParser(JsonSchemaParser):
         if self.generation_store.phase.name == "CROSS_MODULE":
             model.custom_base_class = "custom.Base"
         return super()._is_root_model(model)
+
+
+class SealedWriteParser(JsonSchemaParser):
+    """Changes every model through the store's builder once its modules are finalized: after B2, outside every pass.
+
+    Moving a model to its own path and forgetting a target null write nothing frozen; removing a field does.
+    """
+
+    def _finalize_modules(self, *args: Any) -> None:
+        super()._finalize_modules(*args)
+        builder = self.generation_store.builder()
+        for model in self.results:
+            builder.move_model(model, new_path=model.path)
+            builder.clear_target_null(model.fields[0].data_type)
+            builder.remove_field(model, model.fields[-1])
+
+
+class RewritingParser(JsonSchemaParser):
+    """Writes the lists of every model back through the store's builder once its modules are finalized."""
+
+    def _finalize_modules(self, *args: Any) -> None:
+        super()._finalize_modules(*args)
+        builder = self.generation_store.builder()
+        for model in self.results:
+            builder.set_fields(model, list(model.fields))
+            builder.set_base_classes(model, list(model.base_classes))
+
+
+class GrowingParser(JsonSchemaParser):
+    """Gives a field a new type with a new member list once the modules are finalized, then appends to that list."""
+
+    def _finalize_modules(self, *args: Any) -> None:
+        super()._finalize_modules(*args)
+        model = self.results[0]
+        new = DataType(data_types=[DataType(type="int")])
+        self.generation_store.builder().replace_field_type(model.fields[0], new)
+        store = self.generation_store
+        store.enter_phase(store.phase)
+        new.data_types.append(DataType(type="str"))
 
 
 def _reported(report: Path) -> str:
@@ -159,6 +199,47 @@ def test_fact_finality_reports_a_write_after_the_phase_the_table_names(
     RebasingParser(
         SCHEMA, formatters=[Formatter.BUILTIN], use_generic_base_class=True, allow_population_by_field_name=True
     ).parse()
+
+    assert_output(_reported(report))
+
+
+@pytest.mark.parametrize("flag", ["check", "report"])
+def test_fact_finality_reports_a_frozen_write_where_it_is_made(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """After a freeze point, a store operation that changes a frozen fact raises at the write (``1``) or is reported."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, {"check": "1", "report": f"report:{report}"}[flag])
+    parser = SealedWriteParser(SCHEMA, formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(
+            Error,
+            match=rf"^{CHECK_FACT_FINALITY_ENV}: <IMPORTS> frozen: DataModel\.fields \(FIELD_ORDER, FIELD_SET\) "
+            r"of Person during IMPORTS$",
+        ):
+            parser.parse()
+        return
+    assert_output(parser.parse(), name="output")
+    assert_output(_reported(report), name="violations")
+
+
+def test_fact_finality_does_not_judge_a_list_write_that_changes_no_item(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Writing back a list of the same items after a freeze point changes no value, so the check stays silent."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(RewritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
+
+
+def test_fact_finality_judges_a_write_to_a_list_created_after_arming_where_it_is_made(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A list of an object created after the parse was armed is guarded once a fingerprint holds the object."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+
+    GrowingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
     assert_output(_reported(report))
 

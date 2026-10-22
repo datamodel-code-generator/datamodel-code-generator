@@ -1120,7 +1120,7 @@ class OpenAPIParser(JsonSchemaParser):
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
             )
-            self.generation_store.register_model(model)
+            self._graph_builder.register_model(model)
             self._record_schema_location(reference, location)
             if not self._types_nullable_map_values:
                 self._parameter_models.append((model, tuple(self.model_resolver.current_root)))

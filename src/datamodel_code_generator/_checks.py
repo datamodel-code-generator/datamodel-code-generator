@@ -70,7 +70,8 @@ class CheckArea(Enum):
     references) that differ from the values computed anew."""
 
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
-    """Each pass changes only the facts it declares, on the models its scope allows, before they are final."""
+    """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
+    freeze point, a write to the graph of facts frozen there fails where it is made."""
 
     FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
     """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.

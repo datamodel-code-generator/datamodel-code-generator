@@ -223,11 +223,13 @@ canonical model selection compatible with existing releases. `ModelResolver`
 remains the only authority for names. Do not move name generation or parser
 dispatch into the generation index.
 
-Use `GenerationStore` for parser-side mutations that affect generation facts:
+Use the store's `GraphBuilder` (`generation_store.builder()`, `self._graph_builder` in
+parser code) for parser-side mutations that affect generation facts; the same
+methods on `GenerationStore` are deprecated:
 
-- Register parsed models with `generation_store.register_model(model)`.
-- Replace references with `generation_store.replace_data_type_ref(...)` or
-  `generation_store.detach_data_type_ref(...)`.
+- Register parsed models with `builder.register_model(model)`.
+- Replace references with `builder.replace_data_type_ref(...)` or
+  `builder.detach_data_type_ref(...)`.
 - Replace field or nested data types with `replace_field_type(...)`,
   `replace_nested_data_type(...)`, or `set_nested_data_types(...)`.
 - Replace fields or base classes with `set_fields(...)`,

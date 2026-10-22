@@ -42,6 +42,11 @@ facts the ordering pass declares as reads, with those fields now (``ordering-inp
 (an attribute, or a key of a dict attribute or of ``__dict__``, whose row holds facts none of which is a ``Fact`` final
 at B1) is ``render-read``.
 
+Once a freeze point has passed, the check also seals the graph: each guarded write to an object that a fingerprint
+holds, an assignment that changes the attribute or a mutation of a guarded list (``fields``, ``base_classes``,
+``data_types``, ...), is judged when it is made, inside store operations too, and is ``frozen`` by the rule above, with
+all of the row's facts for a write outside every pass. This covers presentation rows as well.
+
 A row is judged by the freeze points of the facts the pass declares: a pass that declares only ``IMPORT_ALIASES`` (final
 at render) can change ``DataType.type``, ``python_type``, ``kwargs`` or ``extras`` after B1 without a report, and one
 that declares only ``TYPE_ALIAS_BODY`` (final at B2) can change a type alias's ``data_type`` or ``data_types`` after B1,
@@ -436,6 +441,8 @@ field extras after B1 (RP14a's field render plan holds them).
 _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)
 _SWEEPING_KINDS: Final = frozenset({PassKind.TRANSFORM, PassKind.REPAIR})
 _PHASE_FREEZE_POINTS: Final = {FreezePoint.B1: Phase.RENDER_PREPARATION, FreezePoint.B2: Phase.IMPORTS}
+_SEALED_FROM: Final = min(_PHASE_FREEZE_POINTS.values(), key=lambda phase: phase.value)
+"""The first phase in which a freeze point has passed, from which guarded writes are judged when they are made."""
 _ITEM_ROW: Final = re.compile(r'(\w+)\["([^"]+)"\]')
 _MISSING: Final = Sentinel("_MISSING")
 _IDENTITY: Final = Sentinel("_IDENTITY")
@@ -645,8 +652,18 @@ class _OrderingRead:
 class _Finality:
     """The finality check of one armed parse."""
 
-    def __init__(self, mode: CheckMode, error: type[Exception], store: GenerationStore, *, sweep: bool) -> None:
+    def __init__(
+        self,
+        mode: CheckMode,
+        error: type[Exception],
+        store: GenerationStore,
+        guard_lists: Callable[[object], None],
+        *,
+        sweep: bool,
+    ) -> None:
         self.mode = mode
+        self._guard_lists = guard_lists
+        """Puts the plain lists of an object it holds into guarded lists."""
         self.sweep = sweep
         """Whether a global pass that transforms or repairs compares every model (``FACT_FINALITY_SWEEP``)."""
         self.error = error
@@ -662,6 +679,7 @@ class _Finality:
         """Models that guarded writes outside every pass reached, to compare when the next pass starts."""
         self.ordering_reads: list[_OrderingRead] = []
         self._classes: dict[type, _ClassRows] = {}
+        self._guarded_rows: dict[type, dict[str, tuple[AttributeFact, ...]]] = {}
         self._dict_keys = _dict_keys()
         self._reported: set[tuple[str, Rule, str]] = set()
         self._settle(store.models)
@@ -706,6 +724,7 @@ class _Finality:
         for object_id, entry in entries.items():
             self.owners.setdefault(object_id, {})[model_id] = model
             self.held[object_id] = entry.owner
+            self._guard_lists(entry.owner)
         return _ModelPrint(model, entries, tuple(referenced))
 
     def _settle(self, models: Iterable[DataModel], run: _PassRun | None = None, *, reach: bool = False) -> None:
@@ -915,6 +934,50 @@ class _Finality:
         read = tuple(bases)
         self.ordering_reads.append(_OrderingRead(pass_name, model, read, self._ordering_fields(read), stand_ins))
 
+    def judge_write(self, owner: object, name: str, value: Any = _MISSING) -> None:
+        """Report a guarded write of ``name`` of ``owner`` that comes after the facts it writes froze.
+
+        Only objects a fingerprint holds now are judged, and an assignment of ``value`` that ``name`` holds already
+        changes nothing, also a list holding the same items as the one it holds. The running pass writes the facts it
+        declares among the row's facts; a write outside every pass, any of them.
+        """
+        phase = self.store.phase
+        if (
+            phase.value < _SEALED_FROM.value
+            or (value is not _MISSING and _same_value(owner.__dict__.get(name, _MISSING), value))
+            or (held := self._held_entry(owner)) is None
+        ):
+            return
+        model, entry = held
+        run = self.run
+        for row in self._write_rows(type(owner)).get(name, ()):
+            facts = _row_facts(entry, row)
+            declared = facts if run is None else facts & run.decl.writes
+            if declared and all(_passed(_freeze_point(row, fact), phase) for fact in declared):
+                self._violation(f"<{phase.name}>" if run is None else run.decl.name, Rule.FROZEN, row, model, declared)
+
+    def _held_entry(self, owner: object) -> tuple[DataModel, _Entry] | None:
+        """Return a model whose fingerprint holds ``owner`` now, with the entry of ``owner``, or None."""
+        return next(
+            (
+                (model, entry)
+                for model in self.owners.get(id(owner), {}).values()
+                if (entry := self.prints[id(model)].entries.get(id(owner))) is not None
+            ),
+            None,
+        )
+
+    def _write_rows(self, cls: type) -> dict[str, tuple[AttributeFact, ...]]:
+        """Return the rows the guards watch on ``cls``, by attribute, from the rows of its package classes."""
+        if (rows := self._guarded_rows.get(cls)) is None:
+            names = {base.__name__ for base in cls.__mro__ if base.__module__.startswith(f"{_PACKAGE}.")}
+            found: dict[str, list[AttributeFact]] = {}
+            for row in ATTRIBUTE_FACTS:
+                if row.owner in names and row.kind in _GUARDED_KINDS and row.access in _GUARDED_ACCESS:
+                    found.setdefault(row.attribute, []).append(row)
+            rows = self._guarded_rows[cls] = {attribute: tuple(items) for attribute, items in found.items()}
+        return rows
+
     def read_render_fact(self, owner: object, row: AttributeFact) -> None:
         """Report that the running pass reads ``row`` of ``owner``, a render fact, through a view of ``FinalFacts``."""
         name = f"<{self.store.phase.name}>" if (run := self.run) is None else run.decl.name
@@ -935,6 +998,18 @@ class _Finality:
             if changed is not None:
                 row = changed[1]
                 self._violation(name, Rule.ORDERING_INPUT, row, read.model, row.facts, base=before.base.class_name)
+
+
+def _same_value(old: Any, new: Any) -> bool:
+    """Return whether assigning ``new`` over ``old`` changes nothing: the same object, or lists of the same items."""
+    if old is new:
+        return True
+    return (
+        isinstance(old, list)
+        and isinstance(new, list)
+        and len(old) == len(new)
+        and all(before is after for before, after in zip(old, new, strict=True))
+    )
 
 
 def _reads_render_fact(row: AttributeFact) -> bool:
@@ -1119,14 +1194,18 @@ class _ParseChecks:
             self._guard_lists(owner, lists)
         if (mode := self.finality_mode) is not None:
             finality = self.finality = _Finality(
-                mode, self.error, store, sweep=check_mode(CheckArea.FACT_FINALITY_SWEEP) is not None
+                mode,
+                self.error,
+                store,
+                self._guard_owner_lists,
+                sweep=check_mode(CheckArea.FACT_FINALITY_SWEEP) is not None,
             )
             enter_phase = store.enter_phase
-            note_changed_models = store.note_changed_models
+            note_changed_models = store.note_changed_models  # ty: ignore[deprecated]
 
             def note_checked_models(*models: object) -> None:
                 finality.mark(models)
-                note_changed_models(*models)
+                note_changed_models(*models)  # ty: ignore[deprecated]
 
             def enter_checked_phase(phase: Phase) -> None:
                 finality.leave_phase()
@@ -1161,6 +1240,10 @@ class _ParseChecks:
             )
         return guarded
 
+    def _guard_owner_lists(self, owner: object) -> None:
+        """Guard the plain lists of an object created after arming, when a fingerprint holds it."""
+        self._guard_lists(owner, {})
+
     def _guard_lists(self, owner: object, lists: dict[int, _GuardedList]) -> None:
         """Put the container attributes of ``owner`` that hold plain lists into guarded lists, keeping them shared."""
         values = owner.__dict__
@@ -1177,6 +1260,7 @@ class _ParseChecks:
             return value
         if (finality := self.finality) is not None:
             finality.touch(owner)
+            finality.judge_write(owner, name, value)
         if self.operations:
             if name in containers and type(value) is list:
                 return _GuardedList.of(value, owner, name)
@@ -1189,6 +1273,7 @@ class _ParseChecks:
         """Watch a mutation of a guarded list by the caller of its mutator."""
         if (finality := self.finality) is not None and (holder := guarded._holder()) is not None:  # noqa: SLF001
             finality.touch(holder)
+            finality.judge_write(holder, guarded._attribute)  # noqa: SLF001
         if (mode := self.writes) is not None and not self.operations:
             self.report_write(
                 mode,

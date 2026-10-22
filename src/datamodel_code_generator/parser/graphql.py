@@ -219,7 +219,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
     def parse_scalar(self, scalar_graphql_object: graphql.GraphQLScalarType) -> None:
         """Parse a GraphQL scalar type and add it to results."""
-        self.generation_store.register_model(
+        self._graph_builder.register_model(
             self.data_model_scalar_type(
                 reference=self.references[scalar_graphql_object.name],
                 fields=[],
@@ -265,7 +265,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             path=self.current_source_path,
             description=enum_object.description,
         )
-        self.generation_store.register_model(data_model_type)
+        self._graph_builder.register_model(data_model_type)
 
     def parse_enum_as_literal(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum values as a Literal type."""
@@ -286,7 +286,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             path=self.current_source_path,
             description=enum_object.description,
         )
-        self.generation_store.register_model(data_model_type)
+        self._graph_builder.register_model(data_model_type)
 
     def parse_enum_as_enum_class(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum values as an Enum class."""
@@ -335,7 +335,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             type_=Types.string if kind.subclasses_value_type else None,
             custom_template_dir=self.custom_template_dir,
         )
-        self.generation_store.register_model(enum)
+        self._graph_builder.register_model(enum)
 
     def parse_field(
         self,
@@ -375,7 +375,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
         obj = graphql.assert_named_type(obj)
         if obj.name in self.references:
-            self.generation_store.replace_data_type_ref(data_type, self.references[obj.name])
+            self._graph_builder.replace_data_type_ref(data_type, self.references[obj.name])
         else:
             # Operation roots are intentionally not emitted as models.
             any_data_type = self.data_type_manager.get_data_type(Types.any)
@@ -481,7 +481,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
         )
-        self.generation_store.register_model(data_model_type)
+        self._graph_builder.register_model(data_model_type)
 
     def parse_interface(self, interface_graphql_object: graphql.GraphQLInterfaceType) -> None:
         """Parse a GraphQL interface type and add it to results."""
@@ -516,7 +516,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             path=self.current_source_path,
             description=union_object.description,
         )
-        self.generation_store.register_model(data_model_type)
+        self._graph_builder.register_model(data_model_type)
 
     @override
     def parse_raw(self) -> None:
@@ -640,7 +640,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                     and (inherited.name not in fields or fields[inherited.name].alias == "__typename")
                 ):
                     field = _copy_data_model_field(inherited)
-                    self.generation_store.insert_field(source, -1, field)
+                    self._graph_builder.insert_field(source, -1, field)
                     fields[field.name] = field
             inherited_typename = next(
                 (

@@ -2963,7 +2963,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         view = self._literal_view(obj, written)
         data_type = self._literal_values_type(view.enum)
         if (values_as_written := view.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
-            self.generation_store.record_values_as_written(data_type, values_as_written)
+            self._graph_builder.record_values_as_written(data_type, values_as_written)
         return data_type
 
     def _create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
@@ -4409,7 +4409,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if (reference := nested_data_type.reference) and self._ref_schema_generates_variant(reference.path, suffix):
                 base_reference = self.model_resolver.add_ref(reference.path, resolved=True)
                 variant_ref = self._get_rw_model_variant_reference(base_reference, suffix)
-                self.generation_store.replace_data_type_ref(nested_data_type, variant_ref)
+                self._graph_builder.replace_data_type_ref(nested_data_type, variant_ref)
 
     def _update_field_refs_for_variant(
         self,
@@ -4579,7 +4579,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
         )
-        self.generation_store.register_model(model)
+        self._graph_builder.register_model(model)
 
     def _create_request_response_models(
         self,
@@ -5121,7 +5121,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference = self._add_ref(ref)
         data_type = self.data_type(reference=reference, is_optional=is_optional)
         if is_optional and self.omit_redundant_reference_null:
-            self.generation_store.mark_target_null(data_type)
+            self._graph_builder.mark_target_null(data_type)
         return data_type
 
     def set_additional_properties(self, path: str, obj: JsonSchemaObject) -> None:
@@ -11981,7 +11981,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if self.model_resolver.default_value_overrides:
                     field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = name
-                self.generation_store.replace_field_type(field, self.data_type())
+                self._graph_builder.replace_field_type(field, self.data_type())
         original_class_name = name
         name = self._apply_title_as_name(name, obj)  # pragma: no cover
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
@@ -12053,7 +12053,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
             )
-            self.generation_store.register_model(data_model_type)
+            self._graph_builder.register_model(data_model_type)
         else:
             self._unregister_temporary_field_references(fields)
 
@@ -12279,7 +12279,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             treat_dot_as_module=self.treat_dot_as_module,
         )
         self._apply_root_model_sequence_interface(data_model_root, fields)
-        self.generation_store.register_model(data_model_root)
+        self._graph_builder.register_model(data_model_root)
         return data_model_root
 
     def _register_root_model_as(  # noqa: PLR0913
@@ -12533,7 +12533,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         if nested.is_list or nested.is_sequence or nested.is_set or nested.is_tuple
                     )
                 array_type.data_types = [item_type]
-                self.generation_store.note_changed_models(array_owner)
+                self._graph_builder.note_changed_models(array_owner)
             if literal_values:
                 literal_validation(root_model, literal_values)
         return root_data_type
@@ -13265,7 +13265,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
             )
-            self.generation_store.register_model(data_model_type)
+            self._graph_builder.register_model(data_model_type)
             if merged_copy:
                 self._merged_copies.add(data_model_type)
         else:
@@ -15353,8 +15353,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 treat_dot_as_module=self.treat_dot_as_module,
             )
             if (values_as_written := obj.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
-                self.generation_store.record_values_as_written(enum, values_as_written)
-            self.generation_store.register_model(enum)
+                self._graph_builder.record_values_as_written(enum, values_as_written)
+            self._graph_builder.register_model(enum)
             return self.data_type(reference=reference_)
 
         name = self._apply_title_as_name(name, obj)

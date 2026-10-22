@@ -299,6 +299,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
+    from datamodel_code_generator.parser.generation import GraphBuilder
 
 
 # Preserve the existing parser.base export while sharing one canonical escape table.
@@ -2153,7 +2154,7 @@ def _apply_inherited_field_nullability(
     """Keep omission optionality separate from the schema's null intersection."""
     if not copied_field.required and current_type.is_optional:
         copied_field.data_type.is_optional = True
-        GenerationStore.clear_target_null(copied_field.data_type)
+        GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
 
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
@@ -2998,7 +2999,7 @@ def _tag_satisfies_pattern(value: DiscriminatorValue, pattern: str) -> bool:
 
 
 def _drop_discriminator_tag_patterns(
-    store: GenerationStore,
+    builder: GraphBuilder,
     tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
 ) -> None:
     """Write the tags of a union without patterns where an output model writes constraints as ``Field()`` arguments.
@@ -3018,7 +3019,7 @@ def _drop_discriminator_tag_patterns(
     ):
         return
     for field, (constraints, values, _), _ in patterned:
-        store.set_field_constraints(field, type(constraints).model_validate(values))
+        builder.set_field_constraints(field, type(constraints).model_validate(values))
         field.invalidate_semantic_caches()
 
 
@@ -3690,6 +3691,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
     _schema_graph: SchemaGraphBuilder | None = None
+
+    @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The capability through which the passes change the graph of the generation store."""
+        return self.generation_store.builder()
 
     @property
     def run_context(self) -> ParserRunContext:
@@ -4563,14 +4569,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if reuse_allowed and (
                     root_reference := self._get_duplicate_root_reference(model, root_data_type, models_set)
                 ):
-                    self.generation_store.redirect_reference_users(model.reference, root_reference)
+                    self._graph_builder.redirect_reference_users(model.reference, root_reference)
                     models_to_remove.add(model)
-                    self.generation_store.detach_model_data_type_refs(model)
+                    self._graph_builder.detach_model_data_type_refs(model)
                     continue
 
                 # Remove self from all DataModel children's base_classes
                 for child in model.reference.iter_data_model_children():
-                    self.generation_store.set_base_classes(
+                    self._graph_builder.set_base_classes(
                         child,
                         [
                             bc
@@ -4583,7 +4589,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         ],
                     )
                     if not child.base_classes:  # pragma: no cover
-                        self.generation_store.reset_base_classes(child)
+                        self._graph_builder.reset_base_classes(child)
 
             class_name = model.duplicate_class_name or model.class_name
             if (
@@ -4598,10 +4604,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_class_names[class_name] = model
         for model, duplicate_models in model_to_duplicate_models.items():
             for duplicate_model in duplicate_models:
-                self.generation_store.redirect_reference_users(duplicate_model.reference, model.reference)
+                self._graph_builder.redirect_reference_users(duplicate_model.reference, model.reference)
                 # Deduplicate base_classes in all DataModel children
                 for child in duplicate_model.reference.iter_data_model_children():
-                    self.generation_store.set_base_classes(
+                    self._graph_builder.set_base_classes(
                         child,
                         _distinct_bases(shapes.row, child.base_classes),
                     )
@@ -4641,14 +4647,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                 for canonical, duplicate in duplicates:
                     redirect_collapsed_reuse_users(
-                        self.generation_store,
+                        self._graph_builder,
                         self._collapsed_reuse_models,
                         self._collapsed_reuse_users,
                         duplicate,
                         canonical,
                     )
                     for child in duplicate.reference.iter_data_model_children():
-                        self.generation_store.set_base_classes(
+                        self._graph_builder.set_base_classes(
                             child,
                             _distinct_bases(shapes.row, child.base_classes),
                         )
@@ -4658,7 +4664,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if models_to_remove:
             models[:] = [m for m in models if m not in models_to_remove]
             for model in models_to_remove:
-                self.generation_store.retire_model(model)
+                self._graph_builder.retire_model(model)
 
     def _names_have_class_keyed_options(self, names: set[str]) -> bool:
         """Return whether an option keyed by class name, or by a class-scoped field, names one of ``names``.
@@ -4718,7 +4724,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 preserve_class_name=self._should_preserve_explicit_root_class_name(class_name),
             ).name
             if class_name != generated_name:
-                self.generation_store.rename_model(model, class_name=generated_name)
+                self._graph_builder.rename_model(model, class_name=generated_name)
                 renamed = True
             model_names[model.class_name] = model
 
@@ -4727,7 +4733,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             # check only first desired name
             if duplicate_name and duplicate_name not in model_names:
                 del model_names[model.class_name]
-                self.generation_store.rename_model(model, class_name=duplicate_name)
+                self._graph_builder.rename_model(model, class_name=duplicate_name)
                 model_names[duplicate_name] = model
                 renamed = True
 
@@ -5049,11 +5055,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         continue
                     narrowed[id(data_type)] = data_type
                     if owner is field:
-                        self.generation_store.replace_field_type(field, new_data_type)
+                        self._graph_builder.replace_field_type(field, new_data_type)
                     elif (parent := cast("DataType", owner)).dict_key is data_type:
-                        self.generation_store.replace_nested_data_type(parent, data_type, new_data_type)
+                        self._graph_builder.replace_nested_data_type(parent, data_type, new_data_type)
                     else:
-                        self.generation_store.set_nested_data_types(
+                        self._graph_builder.set_nested_data_types(
                             parent, [new_data_type if nested is data_type else nested for nested in parent.data_types]
                         )
                     self._import_ledger.append(
@@ -5061,7 +5067,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     )
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
         for data_type in narrowed.values():
-            self.generation_store.detach_data_type_ref(data_type)
+            self._graph_builder.detach_data_type_ref(data_type)
 
     def __carry_const_narrowings(self, source: DataType, copied: DataType) -> None:
         """Give each node of ``copied`` that collapse inlines the const narrowing of the ``source`` node it copies.
@@ -5116,11 +5122,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         or (root_type := self.__root_key_data_type(root_model)) is None
                     ):
                         continue
-                    self.generation_store.detach_data_type_ref(data_type)
+                    self._graph_builder.detach_data_type_ref(data_type)
                     if parent.dict_key is data_type:
-                        self.generation_store.replace_nested_data_type(parent, data_type, root_type)
+                        self._graph_builder.replace_nested_data_type(parent, data_type, root_type)
                     else:
-                        self.generation_store.set_nested_data_types(
+                        self._graph_builder.set_nested_data_types(
                             parent, [root_type if nested is data_type else nested for nested in parent.data_types]
                         )
                     producer = ImportProducer("type-dict-keys-by-root-types", model, field)
@@ -5139,7 +5145,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                     changed = True
             if changed:
-                self.generation_store.note_changed_models(model)
+                self._graph_builder.note_changed_models(model)
                 model.refresh_field_config()
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
@@ -5333,11 +5339,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
                 mapping = discriminator.get("mapping", {})
                 discriminator = {**discriminator, "propertyName": field_name}
-                self.generation_store.set_field_extra(field, "discriminator", discriminator)
+                self._graph_builder.set_field_extra(field, "discriminator", discriminator)
                 # Any type cannot be a discriminated union variant (Pydantic v2 rejects it)
                 has_any_variant = any(_is_any_variant(dt) for dt in field.data_type.data_types)
                 if has_any_variant:  # pragma: no cover
-                    self.generation_store.drop_field_discriminator(field)
+                    self._graph_builder.drop_field_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
                 if not _discriminator_variants_are_valid(
@@ -5347,7 +5353,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     original_name=property_name if field.SUPPORTS_DISCRIMINATOR else None,
                     enum_member_tags=self.use_enum_values_in_discriminator,
                 ):
-                    self.generation_store.drop_field_discriminator(field)
+                    self._graph_builder.drop_field_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
                 tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = [
@@ -5466,7 +5472,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                         for field_data_type in discriminator_field.data_type.all_data_types:
                             if field_data_type.reference:  # pragma: no cover
-                                self.generation_store.detach_data_type_ref(field_data_type)
+                                self._graph_builder.detach_data_type_ref(field_data_type)
 
                         new_discriminator_data_type = self._create_discriminator_data_type(
                             enum_source,
@@ -5474,7 +5480,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             discriminator_model,
                             imports,
                         )
-                        self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
+                        self._graph_builder.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         tag_fields.append((discriminator_field, discriminator_values))
                         self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
@@ -5513,7 +5519,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         )
                         # Handle multiple aliases (Pydantic v2 AliasChoices)
                         single_alias, validation_aliases = self._split_field_alias(alias)
-                        self.generation_store.append_field(
+                        self._graph_builder.append_field(
                             discriminator_model,
                             discriminator_field := self.data_model_field_type(
                                 name=field_name,
@@ -5542,7 +5548,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 discriminator_field,
                                 _get_mapped_discriminator_tag(discriminator_values, base_enum_source),
                             ))
-                _drop_discriminator_tag_patterns(self.generation_store, tag_fields)
+                _drop_discriminator_tag_patterns(self._graph_builder, tag_fields)
                 if not tags:
                     continue
                 tag_field = struct_tag_field(
@@ -5574,7 +5580,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for nested_data_type in data_type.data_types[:]:
                 set_data_type = self._create_set_from_list(nested_data_type)
                 if set_data_type:  # pragma: no cover
-                    self.generation_store.swap_data_type(nested_data_type, set_data_type, refresh="deferred")
+                    self._graph_builder.swap_data_type(nested_data_type, set_data_type, refresh="deferred")
             return data_type
         return None  # pragma: no cover
 
@@ -5597,11 +5603,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         except TypeError:
                             # Keep the unhashable default unchanged. Nested list types may
                             # already have been converted in place, so invalidate their imports.
-                            self.generation_store.note_changed_models(model)
+                            self._graph_builder.note_changed_models(model)
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                             continue
-                        self.generation_store.set_field_default(model_field, converted_default)
-                    self.generation_store.replace_field_type(model_field, set_data_type)
+                        self._graph_builder.set_field_default(model_field, converted_default)
+                    self._graph_builder.replace_field_type(model_field, set_data_type)
                     changed = True
         if changed and not can_retain_cache:
             _clear_model_imports_cache(models)
@@ -5656,7 +5662,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     and model_field.data_type.reference.source.default != UNDEFINED
                 ):
                     # pragma: no cover
-                    self.generation_store.set_field_default(model_field, model_field.data_type.reference.source.default)
+                    self._graph_builder.set_field_default(model_field, model_field.data_type.reference.source.default)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __require_update_action(
@@ -5711,19 +5717,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.__redirect_removed_reuse_users(model, cached_model)
                 duplicates.append(model)
             elif id(model.reference) in typed_map_values:
-                self.generation_store.redirect_model_reference_users(model, models, cached_model_reference)
+                self._graph_builder.redirect_model_reference_users(model, models, cached_model_reference)
                 duplicates.append(model)
             else:
                 inherited_model = model.create_reuse_model(cached_model_reference)
-                self.generation_store.redirect_model_reference_users(model, models, inherited_model.reference)
+                self._graph_builder.redirect_model_reference_users(model, models, inherited_model.reference)
                 if model_key_of(cached_model_reference) in require_update:
                     updated_models.append(inherited_model)
                 replace_model_in_list(models, model, inherited_model)
-                self.generation_store.replace_model(model, inherited_model)
+                self._graph_builder.replace_model(model, inherited_model)
 
         for duplicate in duplicates:
             models.remove(duplicate)
-            self.generation_store.retire_model(duplicate)
+            self._graph_builder.retire_model(duplicate)
         if updated_models:
             self.__require_update_action(updated_models, require_update_action_models)
 
@@ -5734,7 +5740,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         users = self._removed_reuse_users
         for user in redirect_collapsed_reuse_users(
-            self.generation_store, self._collapsed_reuse_models, self._collapsed_reuse_users, duplicate, canonical
+            self._graph_builder, self._collapsed_reuse_models, self._collapsed_reuse_users, duplicate, canonical
         ):
             users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
 
@@ -5775,9 +5781,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for duplicate in duplicates:
             duplicate_module, duplicate_model, _, canonical = duplicate
             if id(duplicate_model.reference) in typed_map_values and id(canonical.reference) not in typed_map_values:
-                self.generation_store.redirect_reference_users(duplicate_model.reference, canonical.reference)
+                self._graph_builder.redirect_reference_users(duplicate_model.reference, canonical.reference)
                 module_lists[duplicate_module].remove(duplicate_model)
-                self.generation_store.retire_model(duplicate_model)
+                self._graph_builder.retire_model(duplicate_model)
             else:
                 remaining.append(duplicate)
         return remaining
@@ -5818,7 +5824,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if canonical in canonical_models_seen:
                 continue
             canonical_models_seen.add(canonical)
-            self.generation_store.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))
+            self._graph_builder.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))
             canonical_to_shared_ref[canonical] = canonical.reference
             shared_models.append(canonical)
 
@@ -5843,17 +5849,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 if isinstance(duplicate_model, Enum) or not supports_inheritance or self.collapse_reuse_models:
                     redirect_collapsed_reuse_users(
-                        self.generation_store,
+                        self._graph_builder,
                         self._collapsed_reuse_models,
                         self._collapsed_reuse_users,
                         duplicate_model,
                         canonical_model,
                     )
                     models_to_remove[module].add(duplicate_model)
-                    self.generation_store.retire_model(duplicate_model)
+                    self._graph_builder.retire_model(duplicate_model)
                 else:
                     inherited_model = duplicate_model.create_reuse_model(shared_ref)
-                    self.generation_store.redirect_model_reference_users(
+                    self._graph_builder.redirect_model_reference_users(
                         duplicate_model,
                         reference_models if reference_models is not None else models,
                         inherited_model.reference,
@@ -5861,7 +5867,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if model_key_of(shared_ref) in require_update:
                         updated_models.append(inherited_model)
                     replace_model_in_list(models, duplicate_model, inherited_model)
-                    self.generation_store.replace_model(duplicate_model, inherited_model)
+                    self._graph_builder.replace_model(duplicate_model, inherited_model)
                 break
 
         for canonical in canonical_models_seen:
@@ -6004,6 +6010,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         generation_store = self.generation_store
         generation_index = generation_store.index
+        graph_builder = self._graph_builder
         circular_root_models = self._recursion_facts["circular_roots"]
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
@@ -6071,7 +6078,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         has_remaining_root_references = self.__has_remaining_root_references(
                             root_type_model.reference, data_type
                         )
-                        generation_store.collapse_root_data_type(data_type, inner_reference)
+                        graph_builder.collapse_root_data_type(data_type, inner_reference)
                         self.__carry_const_narrowings(root_type_field.data_type, data_type)
 
                         redirected_holders.append((
@@ -6097,7 +6104,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     copied_data_type = (
                         self._copy_model_type(root_type_field.data_type)
                         if source_module_name != target_module_name
-                        else generation_store.inline_shared(root_type_field.data_type, data_type)
+                        else graph_builder.inline_shared(root_type_field.data_type, data_type)
                     )
                     self.__carry_const_narrowings(root_type_field.data_type, copied_data_type)
                     has_remaining_root_references = self.__has_remaining_root_references(
@@ -6108,7 +6115,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if isinstance(field_ := data_type.parent, self.data_model_field_type):
                         # for field
                         # override empty field by root-type field
-                        generation_store.set_field_extras(model_field, {**root_type_field.extras, **model_field.extras})
+                        graph_builder.set_field_extras(model_field, {**root_type_field.extras, **model_field.extras})
                         if root_type_field.runtime_expression_imports:
                             model_field._set_runtime_expression_imports(  # noqa: SLF001
                                 (
@@ -6116,10 +6123,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                     *runtime_expression_imports(model_field.extras),
                                 )
                             )
-                        generation_store.apply_const(model_field, refresh="deferred")
+                        graph_builder.apply_const(model_field, refresh="deferred")
 
                         if self.field_constraints:
-                            generation_store.set_field_constraints(
+                            graph_builder.set_field_constraints(
                                 model_field,
                                 ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
                                 type_dependent=root_type_field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY),
@@ -6134,7 +6141,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     elif isinstance(parent_data_type := data_type.parent, DataType) and parent_data_type.is_list:
                         if self.field_constraints:
-                            generation_store.set_field_constraints(
+                            graph_builder.set_field_constraints(
                                 model_field,
                                 ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
                             )
@@ -6158,7 +6165,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                     mapping,
                                     enum_member_tags=self.use_enum_values_in_discriminator,
                                 ):
-                                    generation_store.set_type_discriminator(copied_data_type, field_name)
+                                    graph_builder.set_type_discriminator(copied_data_type, field_name)
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
                             copied_data_type,
@@ -6272,7 +6279,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         old_class_name, old_path = inner_model.class_name, inner_model.path
         inner_module_name = self.__emitting_module_name(inner_model, model_path_to_module_name)
-        self.generation_store.rename_model(
+        self._graph_builder.rename_model(
             inner_model,
             class_name=root_model.class_name,
             new_path=root_model.reference.path,
@@ -6449,7 +6456,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 default = enum_members or default
                 if default is model_field.default:
                     continue
-                self.generation_store.set_field_default(model_field, default)
+                self._graph_builder.set_field_default(model_field, default)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_validate_default_on_fields(
@@ -6541,7 +6548,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             except (InvalidOperation, TypeError, ValueError):
                 self.__record_decimal_default_warning(model, field)
                 return False
-        self.generation_store.set_field_default(
+        self._graph_builder.set_field_default(
             field, PythonRuntimeExpression.from_import_call(descriptor.constructor_import, repr(value), value=value)
         )
         field._set_runtime_expression_imports((descriptor.constructor_import,))  # noqa: SLF001
@@ -6903,7 +6910,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         resolver.exclude_names.add(cast("str", field_name))
                         new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
                         self.__record_renamed_type(source, _RenamedType(source.class_name, colliding_reference.path))
-                        self.generation_store.rename_model(source, class_name=new_class_name)
+                        self._graph_builder.rename_model(source, class_name=new_class_name)
                         all_class_names.add(new_class_name)
                     else:
                         resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
@@ -7023,7 +7030,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for name in _family_field_names(_model_family(user, derived_models))
         )
         self.__record_renamed_type(source, _RenamedType(source.class_name, reference.path))
-        self.generation_store.rename_model(source, class_name=resolver.add(["type"], source.class_name).name)
+        self._graph_builder.rename_model(source, class_name=resolver.add(["type"], source.class_name).name)
         class_names.add(source.class_name)
 
     def __family_hides_named_type(
@@ -7173,7 +7180,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 order_key = self.__get_local_constructor_order_key(model)
                 if self.__has_local_constructor_ordering_conflict(model, order_key):
                     model.clear_imports_cache()
-                    self.generation_store.set_fields(model, sorted(model.fields, key=order_key))
+                    self._graph_builder.set_fields(model, sorted(model.fields, key=order_key))
                 elif restored_inherited_state:  # pragma: no cover - marker requires a generated base
                     model.clear_imports_cache()
                 continue
@@ -7197,7 +7204,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if first_adjustment is None:
                 if restored_inherited_state:
                     model.clear_imports_cache()
-                    self.generation_store.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
+                    self._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
                 continue
 
             _apply_constructor_field_adjustments(
@@ -7206,7 +7213,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 field_adjustments,
             )
             model.clear_imports_cache()
-            self.generation_store.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
+            self._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
 
     def __get_local_constructor_order_key(  # noqa: PLR6301
         self,
@@ -7370,7 +7377,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         kept: list[DataModel] = []
         for model in models:
             if model.class_name in overrides or self.__enum_site_override_import(model.reference) is not None:
-                self.generation_store.retire_model(model)
+                self._graph_builder.retire_model(model)
             else:
                 kept.append(model)
         return kept
@@ -7444,7 +7451,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     self._base_stand_ins[id(base_class)] = reference
                     base_classes_overridden = True
                     for import_ in base_class.all_imports:
-                        self.generation_store.add_model_import(model, import_)
+                        self._graph_builder.add_model_import(model, import_)
             if base_classes_overridden:
                 model.clear_imports_cache()
 
@@ -7478,9 +7485,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ):
             field.record_overridden_constraints(field.data_type.type_hint, len(dropped))
         self._decide_overridden_constraints(field, path)
-        self.generation_store.replace_field_type(field, data_type)
-        self.generation_store.detach_data_type_ref(field.data_type)
-        self.generation_store.set_nested_data_types(field.data_type, [])
+        self._graph_builder.replace_field_type(field, data_type)
+        self._graph_builder.detach_data_type_ref(field.data_type)
+        self._graph_builder.set_nested_data_types(field.data_type, [])
 
     def _decide_overridden_constraints(self, field: DataModelFieldBase, path: str) -> None:
         """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
@@ -7524,7 +7531,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 path, target, number_values=True, target_model_version=minimum
             ),
         )
-        self.generation_store.set_field_constraints(
+        self._graph_builder.set_field_constraints(
             field, type(constraints).model_validate(values) if is_model else values
         )
 
@@ -7564,9 +7571,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             override_import := self._model_type_override_imports.get(reference.name)
             or self.__enum_site_override_import(reference)
         ):
-            self.generation_store.override_type_import(data_type, override_import)
+            self._graph_builder.override_type_import(data_type, override_import)
             data_type.alias = override_import.import_
-            self.generation_store.detach_data_type_ref(data_type)
+            self._graph_builder.detach_data_type_ref(data_type)
             overridden = True
         # Handle nested types (List[CustomType], Optional[CustomType], etc.)
         for nested in data_type.data_types:
@@ -7648,7 +7655,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         alias_cycles: Mapping[int, int],
         model_index: Mapping[str, int],
         index: int,
-        generation_store: GenerationStore,
+        graph_builder: GraphBuilder,
     ) -> None:
         """Quote each outermost container that forward-references the model's cycle, with its names unquoted.
 
@@ -7662,7 +7669,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             True in kinds for *_, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward)
         ):
             return
-        generation_store.replace_field_type(field, _copy_data_type(field.data_type))
+        graph_builder.replace_field_type(field, _copy_data_type(field.data_type))
         forward = {id(data_type) for data_type, _ in cls.__forward_references(field, model, model_index, index)}
         deferred = [
             (container, wrappers)
@@ -7698,7 +7705,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         use_deferred_annotations: bool = True,
         defers_recursive_containers: bool,
-        generation_store: GenerationStore,
+        graph_builder: GraphBuilder,
         can_retain_cache: bool,
         hidden_type_names: Callable[[DataModel], Collection[str | None]],
         quotes_forward_enum_member_literals: bool,
@@ -7778,7 +7785,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         alias_cycles=alias_cycles,
                         model_index=model_index,
                         index=i,
-                        generation_store=generation_store,
+                        graph_builder=graph_builder,
                     )
                 has_aliased_forward_ref = True
 
@@ -7826,7 +7833,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if model.class_name == IMPORT_LITERAL.import_ and self.__alias_reused_variant_literal(models, imports):
                 continue
 
-            self.generation_store.rename_model(  # pragma: no cover
+            self._graph_builder.rename_model(  # pragma: no cover
                 model,
                 reference_name=scoped_model_resolver.add(
                     path=get_special_path("imported_name", model.path.split("/")),
@@ -7944,7 +7951,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         base_class_model.file_path = first_root_file_path
         self._generic_base_model = base_class_model
         first_root_models.insert(0, base_class_model)
-        self.generation_store.register_model(base_class_model)
+        self._graph_builder.register_model(base_class_model)
 
         base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
 
@@ -7976,9 +7983,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if has_target_model_parent:
                     pass
                 elif parent_refs:  # pragma: no cover
-                    self.generation_store.set_base_classes(model, [base_class_dt, *model.base_classes])
+                    self._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])
                 else:
-                    self.generation_store.set_base_classes(model, [base_class_dt])
+                    self._graph_builder.set_base_classes(model, [base_class_dt])
             if not is_first_root and original_import:
                 self._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)
                 from_ = relative(current_module_name, first_root_module_name)[0]
@@ -8265,13 +8272,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         original_class_names = [model.class_name for model in all_scc_models]
         new_class_names = _merged_class_names(original_class_names)
 
-        with self.generation_store.defer_refresh():
+        with self._graph_builder.defer_refresh():
             for model, original_class_name, new_class_name in zip(
                 all_scc_models, original_class_names, new_class_names, strict=True
             ):
                 original_module = model_to_original_module[id(model)]
                 new_path = f"{internal_module_str}.{new_class_name}"
-                self.generation_store.rename_model(
+                self._graph_builder.rename_model(
                     model,
                     reference_name=new_class_name,
                     new_path=new_path,
@@ -8837,7 +8844,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
 
         for model, new_name in new_names.items():
-            self.generation_store.rename_model(model, reference_name=new_name, clear_duplicate_name=True)
+            self._graph_builder.rename_model(model, reference_name=new_name, clear_duplicate_name=True)
         resolver.refresh_reference_names()
         for model in models_to_clear:
             model.clear_imports_cache()
@@ -9050,7 +9057,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__extract_inherited_enum(state.model_list)
         for model, merged_enum in zip(models, state.model_list, strict=True):
             if merged_enum is not model:
-                self.generation_store.replace_model(model, merged_enum)
+                self._graph_builder.replace_model(model, merged_enum)
 
     def __remove_module_overridden_models(self, state: _ModuleState) -> None:
         """Keep the models a model-level type override replaces out of the module, and the list before it."""
@@ -9079,7 +9086,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
-            if self.generation_store.use_assignment_for_forward_references(model, positions, index, refresh="deferred"):
+            if self._graph_builder.use_assignment_for_forward_references(model, positions, index, refresh="deferred"):
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __unbind_hidden_type_fields(self, state: _PreparedModule) -> None:  # noqa: PLR6301
@@ -9097,7 +9104,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             defers_recursive_containers=pydantic_target_meets(
                 "pydantic.type_alias_module_namespace", self.target_pydantic_version
             ),
-            generation_store=self.generation_store,
+            graph_builder=self._graph_builder,
             can_retain_cache=state.can_retain_cache,
             hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
             quotes_forward_enum_member_literals=self._quotes_hidden_types,
@@ -9194,7 +9201,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         prepared_patterns: dict[str, PythonRuntimeExpression] = {}
         unused_model_ids = {id(model) for model in unused_models}
-        replace_field_type = self.generation_store.replace_field_type
+        replace_field_type = self._graph_builder.replace_field_type
         for ctx in contexts:
             for model in ctx.models:
                 if not isinstance(model, TypeAliasBase) or id(model) in unused_model_ids or not model.fields:
@@ -9242,7 +9249,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         unused = {id(model) for model in run.unused_models}
         modules = [(ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in run.contexts]
         facts = self.generation_store.seal_facts(modules, decision_views())
-        writer = _DecisionWriter(self.generation_store, viewed, _copy_data_type)
+        writer = _DecisionWriter(self._graph_builder, viewed, _copy_data_type)
         for decision in decision_order(decisions):
             runner.run_decision(decision, facts, writer)
         run.decisions = writer.outcome(model for _, models in modules for model in models)
@@ -9259,7 +9266,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for data_type in field.data_type.all_data_types:
                     if id(data_type) not in seen:
                         seen.add(id(data_type))
-                        self.generation_store.write_rendered_null(data_type)
+                        self._graph_builder.write_rendered_null(data_type)
 
     def __collect_all_models(self, state: _FinalizeState) -> None:  # noqa: PLR6301
         """Take the models of every module, before unused models leave them."""
@@ -9361,7 +9368,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     )
                     models.remove(unused_model)
                     if id(models) in written_lists:
-                        self.generation_store.retire_model(unused_model)
+                        self._graph_builder.retire_model(unused_model)
 
     def __unused_model_lists(self, state: _FinalizeState) -> Iterator[tuple[DataModel, ModulePath, list[DataModel]]]:
         """Yield each unused model with the module and the model list it leaves.
@@ -10109,7 +10116,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         sorted_model_ids = {id(model) for model in run.sorted_data_models.values()}
         for model in self.results:
             if id(model) not in sorted_model_ids:
-                self.generation_store.retire_model(model)
+                self._graph_builder.retire_model(model)
 
     def __record_source_reference_paths(self, run: _SettleRun) -> None:  # noqa: PLR6301
         """Record the reference path each model was parsed from, for the model metadata."""
@@ -10187,7 +10194,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Drop the constraints of union members, which tagged unions cannot carry."""
         for _, models in run.module_models:
             for field in (field for model in models for field in model.fields):
-                self.generation_store.drop_union_member_constraints(field, refresh="deferred")
+                self._graph_builder.drop_union_member_constraints(field, refresh="deferred")
 
     def __record_emitting_modules(self, run: _StructuredRun) -> None:
         """Record the module that writes each model, for ``--collapse-root-models-name-strategy``."""
@@ -10973,18 +10980,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if id(field) not in own_fields:
                 field = self._copy_model_field(field)
             if required and not field.required:
-                self.generation_store.require_field(
+                self._graph_builder.require_field(
                     field,
                     use_default_with_required=self.apply_default_values_for_required_fields and field.has_default,
                 )
             return field
 
         fields = model.flatten_base_layouts(adopt)
-        with self.generation_store.defer_refresh():
+        with self._graph_builder.defer_refresh():
             for base_class in model.base_classes:
-                self.generation_store.detach_data_type_ref(base_class)
-            self.generation_store.set_fields(model, fields)
-            self.generation_store.reset_base_classes(model)
+                self._graph_builder.detach_data_type_ref(base_class)
+            self._graph_builder.set_fields(model, fields)
+            self._graph_builder.reset_base_classes(model)
 
     def __find_possible_tag_names(
         self, models: list[DataModel], layout_models: list[DataModel]
