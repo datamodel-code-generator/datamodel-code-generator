@@ -5,6 +5,7 @@ parser/_facts.py: facts
 parser/_schema_graph.py: schema-graph
 parser/_intersection.py: parser-core
 parser/_null_facts.py: parser-core
+parser/_schema_dispatch.py: parser-core
 parser/_phases.py: parser
 config.py: config
 input_model.py: input-model

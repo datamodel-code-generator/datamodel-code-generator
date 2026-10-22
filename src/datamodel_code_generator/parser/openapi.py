@@ -30,6 +30,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Position, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import RefOrigin, keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
@@ -810,29 +811,101 @@ class OpenAPIParser(JsonSchemaParser):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> DataType:
-        """Parse a JSON schema object into a data type."""
-        obj = self._array_all_of_site_schema(obj)
-        if obj.is_array:
-            data_type = self.parse_array(name, obj, [*path, name])
-        elif obj.allOf:  # pragma: no cover
-            data_type = self.parse_all_of(name, obj, path)
-        elif obj.oneOf or obj.anyOf:  # pragma: no cover
-            data_type = self.parse_root_type(name, obj, path)
-            if isinstance(data_type, EmptyDataType) and obj.properties:
-                self.parse_object(name, obj, path)
-        elif obj.is_object:
-            data_type = self._parse_object_kind_schema(name, obj, path) or self.parse_object(name, obj, path)
-        elif is_inline_object_body(obj) and self.config.openapi_paths_bodies_as_definitions:
-            data_type = self._parse_object_kind_schema(name, obj, path) or self.parse_root_type(name, obj, path)
-        elif obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(obj):
-            data_type = self.parse_enum(name, self._definition_enum(obj), path)
-        elif obj.ref:  # pragma: no cover
-            data_type = self.get_ref_data_type(obj.ref)
-        else:
-            self.inline_object_bodies |= is_inline_object_body(obj)
-            data_type = self.get_data_type(obj)
-        self.parse_ref(obj, path)
+        """Parse a JSON schema object into a data type (``Position.OPENAPI_OPERATION``)."""
+        site = SchemaSite(name, self._array_all_of_site_schema(obj), path)
+        data_type = self._dispatch(
+            Position.OPENAPI_OPERATION, self._OPENAPI_OPERATION_TABLE, site, self._legacy_openapi_operation_path
+        )
+        self.parse_ref(site.obj, path)
         return data_type
+
+    def _parse_combined_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        obj, name, path = site.obj, site.name, site.path
+        data_type = self.parse_root_type(name, obj, path)
+        if isinstance(data_type, EmptyDataType) and obj.properties:
+            self.parse_object(name, obj, path)
+        return data_type
+
+    def _parse_unmodeled_operation_schema(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        self.inline_object_bodies |= is_inline_object_body(site.obj)
+        return self.get_data_type(site.obj)
+
+    def _operation_array_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
+        return site.obj.is_array
+
+    def _build_operation_array(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self.parse_array(site.name, site.obj, [*site.path, site.name])
+
+    def _operation_all_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
+        return bool(site.obj.allOf)
+
+    def _build_operation_all_of(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self.parse_all_of(site.name, site.obj, site.path)
+
+    def _operation_one_of_any_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
+        return bool(site.obj.oneOf or site.obj.anyOf)
+
+    def _operation_object_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
+        return site.obj.is_object
+
+    def _build_operation_object(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self._parse_object_kind_schema(site.name, site.obj, site.path) or self.parse_object(
+            site.name, site.obj, site.path
+        )
+
+    def _operation_inline_object_body_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
+        return is_inline_object_body(site.obj) and self.config.openapi_paths_bodies_as_definitions
+
+    def _build_operation_inline_object_body(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self._parse_object_kind_schema(site.name, site.obj, site.path) or self.parse_root_type(
+            site.name, site.obj, site.path
+        )
+
+    def _operation_enum_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
+        return bool(site.obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(site.obj))
+
+    def _build_operation_enum(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
+
+    def _operation_ref_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
+        return bool(site.obj.ref)
+
+    def _build_operation_ref(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        return self.get_ref_data_type(cast("str", site.obj.ref))
+
+    _OPENAPI_OPERATION_TABLE: ClassVar[DispatchTable[OpenAPIParser, JsonSchemaObject, DataType]] = DispatchTable(
+        (
+            Row("array", _operation_array_applies, _build_operation_array),
+            Row("all-of", _operation_all_of_applies, _build_operation_all_of),
+            Row("one-of-any-of", _operation_one_of_any_of_applies, _parse_combined_operation_schema),
+            Row("object", _operation_object_applies, _build_operation_object),
+            Row("inline-object-body", _operation_inline_object_body_applies, _build_operation_inline_object_body),
+            Row("enum", _operation_enum_applies, _build_operation_enum),
+            Row("ref", _operation_ref_applies, _build_operation_ref),
+        ),
+        Default("data-type", _parse_unmodeled_operation_schema),
+    )
+
+    def _legacy_openapi_operation_path(  # noqa: PLR0911
+        self, written: SchemaSite[JsonSchemaObject], _site: SchemaSite[JsonSchemaObject]
+    ) -> tuple[str, ...]:
+        """Return the row the dispatch the operation table replaced takes for a schema, for the schema graph check."""
+        obj = written.obj
+        if obj.is_array:
+            return ("array",)
+        if obj.allOf:
+            return ("all-of",)
+        if obj.oneOf or obj.anyOf:
+            return ("one-of-any-of",)
+        if obj.is_object:
+            return ("object",)
+        if is_inline_object_body(obj) and self.config.openapi_paths_bodies_as_definitions:
+            return ("inline-object-body",)
+        if obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(obj):
+            return ("enum",)
+        if obj.ref:
+            return ("ref",)
+        return ("data-type",)
 
     def parse_request_body(
         self,

@@ -916,6 +916,7 @@ openapi/additional_properties.yaml::components.schemas.Users	payloads/native_num
 openapi/additional_properties.yaml::components.schemas.broken	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/alias_description_property_names.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/alias_description_property_names.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/all_of_request_body.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.AllOfobj	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.Car	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1465,6 +1466,7 @@ openapi/oas_response_reference.yaml::components.schemas.Error	payloads/native_nu
 openapi/oas_response_reference.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/object_map_bodies.yaml::paths./key-names.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/one_literal_as_default_nullable.yaml::components.schemas.Shape	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/one_of_body_beside_properties.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Car	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Config	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2579,6 +2581,7 @@ openapi/additional_properties.yaml::components.schemas.Users	payloads/native_num
 openapi/additional_properties.yaml::components.schemas.broken	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/alias_description_property_names.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/alias_description_property_names.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/all_of_request_body.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.AllOfobj	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.Car	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3127,6 +3130,7 @@ openapi/oas_response_reference.yaml::components.schemas.Error	payloads/native_nu
 openapi/oas_response_reference.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/object_map_bodies.yaml::paths./key-names.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/one_literal_as_default_nullable.yaml::components.schemas.Shape	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/one_of_body_beside_properties.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Car	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Config	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oneof.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

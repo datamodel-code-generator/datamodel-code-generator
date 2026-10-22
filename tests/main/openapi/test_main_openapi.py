@@ -11039,6 +11039,33 @@ def test_schema_graph_check_records_a_dynamic_anchor_registered_after_its_refere
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+def test_main_openapi_all_of_request_body(output_file: Path) -> None:
+    """A request body of the paths scope that is an `allOf` is parsed as the model of its parts."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "all_of_request_body.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "paths"],
+    )
+
+
+class _NoOneOfMembersParser(OpenAPIParser):
+    """Returns no member types for a `oneOf`: a hook that drops every branch."""
+
+    def parse_one_of(self, _name: str, _obj: Any, _path: list[str]) -> list[Any]:
+        return []
+
+
+def test_main_openapi_one_of_body_without_member_types_beside_properties() -> None:
+    """A request body whose `oneOf` gives no member types is parsed as the object its properties describe."""
+    parser = _NoOneOfMembersParser(
+        OPEN_API_DATA_PATH / "one_of_body_beside_properties.yaml",
+        openapi_scopes=[OpenAPIScope.Paths],
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(parser.parse()))
+
+
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:
     """Test OpenAPI generation with $ref to external webhook file containing relative schema refs."""
     run_main_and_assert(
@@ -13128,6 +13155,18 @@ def test_main_openapi_x_property_names_false(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="x_property_names_false.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
+def test_main_openapi_query_parameter_without_name(output_file: Path) -> None:
+    """A query parameter without a name is left out of the parameter model."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "parameter_without_name.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="parameter_without_name.py",
+        extra_args=["--openapi-scopes", "paths", "parameters", "--disable-timestamp"],
     )
 
 

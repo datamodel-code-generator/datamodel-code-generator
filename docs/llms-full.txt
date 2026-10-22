@@ -65946,9 +65946,17 @@ OpenAPI parses its main document in `_parse_specification` (merging path-level p
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
 
-**L1.** `_parse_schema_obj` dispatches each schema object: a `$ref` with sibling keywords is merged with its target
-(`_merge_ref_with_schema`), then `parse_array`, `parse_all_of`, `parse_one_of` or `parse_any_of` (both through
-`parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. That merge, the inherited `$ref` property
+**L1.** Each place where the parser meets a schema object chooses its parse method from one table of
+`parser/_schema_dispatch.py` (`Position`): `DEFINITION` in `_parse_schema_obj` (definitions, roots, reserved targets,
+AsyncAPI payloads and the `api` scope), `FIELD` in `_parse_schema_item_shape` (fields, items and map values) and
+`OPENAPI_OPERATION` in `OpenAPIParser.parse_schema` (the bodies, responses and parameters of the legacy scopes). A table
+holds, in order, the steps that rewrite the site (a `$ref` with sibling keywords merged with its target,
+`_merge_ref_with_schema`) and the rows whose predicates choose `parse_array`, `parse_all_of`, `parse_one_of` or
+`parse_any_of` (both through `parse_combined_schema`), `parse_object`, `parse_enum`, `parse_root_type` and the other
+builders; the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by the definition table and
+`_parse_object_kind_schema`. Rows call the public hooks through the parser, so overriding subclasses keep working; a
+change of what a position parses is a row edit. The schema graph check also asks the dispatch each table replaced
+(`_legacy_*_path`) and reports a schema for which it takes other entries (`kind="dispatch"`). That merge, the inherited `$ref` property
 merge (`_resolve_inherited_parent_property`) and a property that overrides an inherited one
 (`_merge_properties_with_parent_constraints`, unless `--allof-merge-mode none`) stand for the intersection of their
 parts: the earlier merge (`_deep_merge`, `_merge_property_schemas`) stays wherever it enforces what the intersection
@@ -67317,7 +67325,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
 | `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written ([Model Processing Passes](architecture.md#model-processing-passes)) |
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
-| `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
+| `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0), and the table of each schema position takes the entries the dispatch it replaced takes (L1) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |

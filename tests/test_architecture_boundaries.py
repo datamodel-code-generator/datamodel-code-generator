@@ -91,6 +91,7 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "parser" / "_schema_graph.py",
         source_root / "parser" / "_intersection.py",
         source_root / "parser" / "_null_facts.py",
+        source_root / "parser" / "_schema_dispatch.py",
         source_root / "parser" / "_phases.py",
         source_root / "config.py",
         source_root / "input_model.py",

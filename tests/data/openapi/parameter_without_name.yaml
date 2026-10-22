@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info:
+  title: Parameter without a name
+  version: "1.0"
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK

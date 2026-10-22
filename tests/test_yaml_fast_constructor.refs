@@ -37,6 +37,7 @@ openapi/all_exports_multiple_collisions.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_no_child.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_prefix_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/all_exports_with_local_models.yaml	yaml_fast_constructor/parity.txt
+openapi/all_of_request_body.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_with_relative_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_with_relative_ref/schema/animal.yaml	yaml_fast_constructor/parity.txt
 openapi/all_of_with_relative_ref/schema/pet.yaml	yaml_fast_constructor/parity.txt
@@ -335,10 +336,12 @@ openapi/nullable_required_annotated.yaml	yaml_fast_constructor/parity.txt
 openapi/oas_response_reference.yaml	yaml_fast_constructor/parity.txt
 openapi/object_map_bodies.yaml	yaml_fast_constructor/parity.txt
 openapi/one_literal_as_default_nullable.yaml	yaml_fast_constructor/parity.txt
+openapi/one_of_body_beside_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/oneof.yaml	yaml_fast_constructor/parity.txt
 openapi/override_required_all_of.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_content.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_field_policy.yaml	yaml_fast_constructor/parity.txt
+openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/schemas/cat.yaml	yaml_fast_constructor/parity.txt

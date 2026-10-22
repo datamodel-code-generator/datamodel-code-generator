@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pet",
+  "type": "object",
+  "oneOf": [
+    {"required": ["name"]},
+    {"required": ["id"]}
+  ],
+  "properties": {
+    "name": {"type": "string"},
+    "id": {"type": "integer"}
+  }
+}

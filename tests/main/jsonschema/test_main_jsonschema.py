@@ -31143,6 +31143,61 @@ def test_schema_graph_check_of_a_reader_that_writes_a_shared_schema(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+class _NoOneOfMembersParser(JsonSchemaParser):
+    """Returns no member types for a `oneOf`: a hook that drops every branch."""
+
+    def parse_one_of(self, _name: str, _obj: Any, _path: list[str]) -> list[Any]:
+        return []
+
+
+def test_main_jsonschema_one_of_without_member_types_beside_properties() -> None:
+    """A definition whose `oneOf` gives no member types is parsed as the object its properties describe."""
+    parser = _NoOneOfMembersParser(
+        JSON_SCHEMA_DATA_PATH / "one_of_beside_properties.json", formatters=[Formatter.BUILTIN]
+    )
+    assert_output(str(parser.parse()))
+
+
+class _SecondEnumAnswerParser(JsonSchemaParser):
+    """Parses an enum as a literal the second time it is asked about one schema: a hook that answers twice."""
+
+    def should_parse_enum_as_literal(
+        self, obj: Any, property_name: str | None = None, property_obj: Any = None
+    ) -> bool:
+        if id(obj) in (asked := self.__dict__.setdefault("asked", set())):
+            return True
+        asked.add(id(obj))
+        return super().should_parse_enum_as_literal(obj, property_name, property_obj)
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_schema_graph_check_of_a_dispatch_that_takes_another_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A schema for which the dispatch the position table replaced takes another row is reported.
+
+    The table asks whether to parse the enum as a literal first and builds the enum class; the dispatch it replaced
+    asks again and takes the root model. The check (`1`, as the test suite sets it) raises, `report:<path>` appends
+    the schema as a JSON line, and with the check off (`0`) only the table asks.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = _SecondEnumAnswerParser(
+        JSON_SCHEMA_DATA_PATH / "enum_builtin_conflict_two.json", formatters=[Formatter.BUILTIN]
+    )
+    if flag == "check":
+        with pytest.raises(
+            Error,
+            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the definition table takes enum for the schema at "
+            "'enum_builtin_conflict_two.json#', but the dispatch it replaced takes root-type$",
+        ):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path) -> None:
     """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as loaded.
 

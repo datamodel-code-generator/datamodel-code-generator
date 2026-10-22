@@ -493,6 +493,8 @@ source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 	main/openapi/invalid_dotted_schema_name_default//*.py
 [test_main_no_strict_dotted_module_names_stdout]
 	main/openapi/invalid_dotted_schema_name_stdout_no_timestamp.py
+[test_main_openapi_all_of_request_body]
+	main/openapi/main_openapi/all_of_request_body.py
 [test_main_openapi_all_of_required]
 	main/openapi/allof_required.py
 [test_main_openapi_all_of_with_relative_ref]
@@ -1399,6 +1401,8 @@ untyped	main/openapi/nullable_map_untyped/parameter_layout//*.py
 	main/openapi/nullable_strict_nullable_use_union_operator.py	= main/openapi/nullable_strict_nullable.py
 [test_main_openapi_oas_response_reference]
 	main/openapi/oas_response_reference.py
+[test_main_openapi_one_of_body_without_member_types_beside_properties]
+	main/openapi/main_openapi/one_of_body_without_member_types_beside_properties.txt
 [test_main_openapi_override_required_all_of_field]
 	main/openapi/override_required_all_of.py
 [test_main_openapi_parameter_content]
@@ -1426,6 +1430,8 @@ pattern_with_lookaround_pydantic_v2_dataclass_field_constraints.py-args1	main/op
 	main/openapi/pydantic_dataclass_inheritance_field_ordering_py310.py
 [test_main_openapi_pydantic_v2_strip_default_none_field_metadata]
 	main/openapi/strip_default_none_pydantic_v2.py
+[test_main_openapi_query_parameter_without_name]
+	main/openapi/parameter_without_name.py
 [test_main_openapi_querystring_parameter_requires_32]
 	main/openapi/querystring_parameter_31.py
 [test_main_openapi_read_nullable_beside_type_list]

@@ -150,7 +150,12 @@ _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser.generation",
 })
 """The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
-_PARSER_CORE_FILENAMES: Final = frozenset({"_intersection.py", "_model_shapes.py", "_null_facts.py"})
+_PARSER_CORE_FILENAMES: Final = frozenset({
+    "_intersection.py",
+    "_model_shapes.py",
+    "_null_facts.py",
+    "_schema_dispatch.py",
+})
 """Pure parser modules: decisions over dumped schema dicts or frozen schema facts that the parser adapters call."""
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",

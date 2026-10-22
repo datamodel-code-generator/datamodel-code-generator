@@ -317,9 +317,17 @@ OpenAPI parses its main document in `_parse_specification` (merging path-level p
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
 
-**L1.** `_parse_schema_obj` dispatches each schema object: a `$ref` with sibling keywords is merged with its target
-(`_merge_ref_with_schema`), then `parse_array`, `parse_all_of`, `parse_one_of` or `parse_any_of` (both through
-`parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. That merge, the inherited `$ref` property
+**L1.** Each place where the parser meets a schema object chooses its parse method from one table of
+`parser/_schema_dispatch.py` (`Position`): `DEFINITION` in `_parse_schema_obj` (definitions, roots, reserved targets,
+AsyncAPI payloads and the `api` scope), `FIELD` in `_parse_schema_item_shape` (fields, items and map values) and
+`OPENAPI_OPERATION` in `OpenAPIParser.parse_schema` (the bodies, responses and parameters of the legacy scopes). A table
+holds, in order, the steps that rewrite the site (a `$ref` with sibling keywords merged with its target,
+`_merge_ref_with_schema`) and the rows whose predicates choose `parse_array`, `parse_all_of`, `parse_one_of` or
+`parse_any_of` (both through `parse_combined_schema`), `parse_object`, `parse_enum`, `parse_root_type` and the other
+builders; the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by the definition table and
+`_parse_object_kind_schema`. Rows call the public hooks through the parser, so overriding subclasses keep working; a
+change of what a position parses is a row edit. The schema graph check also asks the dispatch each table replaced
+(`_legacy_*_path`) and reports a schema for which it takes other entries (`kind="dispatch"`). That merge, the inherited `$ref` property
 merge (`_resolve_inherited_parent_property`) and a property that overrides an inherited one
 (`_merge_properties_with_parent_constraints`, unless `--allof-merge-mode none`) stand for the intersection of their
 parts: the earlier merge (`_deep_merge`, `_merge_property_schemas`) stays wherever it enforces what the intersection

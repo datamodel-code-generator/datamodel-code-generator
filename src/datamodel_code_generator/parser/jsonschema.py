@@ -168,6 +168,7 @@ from datamodel_code_generator.parser._null_facts import (
 from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
+from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Position, Row, SchemaSite, Step
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     ConvertedRefs,
@@ -497,6 +498,25 @@ def _located_model_schema(source: Any, handler: GetCoreSchemaHandler) -> CoreSch
     if inner["type"] != "function-wrap" or inner["function"]["function"] is not _take_input_location:
         model["schema"] = core_schema.no_info_wrap_validator_function(_take_input_location, inner)
     return schema
+
+
+_Site: TypeAlias = "SchemaSite[JsonSchemaObject]"
+_ResultT = TypeVar("_ResultT")
+
+
+def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
+    """Return whether a definition reads the sibling keywords of its `$ref` with the schema it names."""
+    return obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only
+
+
+def _then_parse_refs(build: Callable[[JsonSchemaParser, _Site], object]) -> Callable[[JsonSchemaParser, _Site], None]:
+    """Return the build of a definition row: ``build``, then the references of the site's schema."""
+
+    def build_definition(parser: JsonSchemaParser, site: _Site) -> None:
+        build(parser, site)
+        parser.parse_ref(site.obj, site.path)
+
+    return build_definition
 
 
 def _named_path(location: SchemaLocation | None, path: list[str]) -> list[str]:
@@ -13925,7 +13945,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             item = merged_item
         return self._parse_schema_item_shape(name, item, path, singular_name=singular_name, parent=parent)
 
-    def _parse_schema_item_shape(  # noqa: PLR0911, PLR0912
+    def _parse_schema_item_shape(
         self,
         name: str,
         item: JsonSchemaObject,
@@ -13934,7 +13954,260 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         singular_name: bool,
         parent: JsonSchemaObject | None,
     ) -> DataType:
-        """Parse a single JSON Schema item whose $ref sibling keywords are already merged."""
+        """Parse a single JSON Schema item whose $ref sibling keywords are already merged (``Position.FIELD``)."""
+        return self._dispatch(
+            Position.FIELD,
+            self._FIELD_TABLE,
+            SchemaSite(name, item, path, singular_name=singular_name, parent=parent),
+            self._legacy_field_path,
+        )
+
+    def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
+        """Return whether an inherited container shape materialized on the item keeps constraints of its own."""
+        return bool(
+            item.__dict__.get(_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY)
+            and (item.is_array or item.is_object or item.propertyNames is not None)
+            and self._has_effective_constraints(item)
+        )
+
+    def _types_item_by_root_model(self, site: _Site) -> bool:
+        """Return whether an item of a parent writes its constraints on a root model of its own."""
+        item, parent = site.obj, site.parent
+        return bool(
+            parent
+            and not item.enum
+            and not self._const_literal_enforces_constraints(item)
+            and (
+                self._has_materialized_container_constraints(item)
+                or (item.has_constraint and (parent.has_constraint or self.field_constraints))
+            )
+        )
+
+    def _parse_constrained_item(self, site: _Site) -> DataType:
+        root_type_path = get_special_path("array", site.path)
+        return self._parse_root_type_with_context(
+            self.model_resolver.add(
+                root_type_path,
+                site.name,
+                class_name=True,
+                singular_name=site.singular_name,
+            ).name,
+            site.obj,
+            root_type_path,
+            preserve_constraints=self._has_materialized_container_constraints(site.obj),
+        )
+
+    def _parse_ref_nullable_only_item(self, site: _Site) -> DataType:
+        item = site.obj
+        ref_data_type = self.get_ref_data_type(cast("str", item.ref))
+        if self._null_facts(item, "ref-nullable-only").admits_null:
+            return build_union(self.data_type, [ref_data_type], nullable=True)
+        return ref_data_type
+
+    def _parse_custom_type_item(self, site: _Site) -> DataType:
+        return self.data_type_manager.get_data_type_from_full_path(
+            self._get_emitted_python_type_path(
+                _validate_schema_python_import_path(cast("str", site.obj.custom_type_path), "customTypePath")
+            ),
+            is_custom_type=True,
+        )
+
+    def _parse_combined_item(
+        self,
+        site: _Site,
+        items: list[JsonSchemaObject | bool],
+        parse_combined: Callable[[str, JsonSchemaObject, list[str]], list[DataType]],
+        keyword: str,
+    ) -> DataType:
+        item, name, path = site.obj, site.name, site.path
+        if combined_const_enum := self._parse_combined_const_enum(
+            name,
+            item,
+            items,
+            get_special_path("enum", path),
+            singular_name=site.singular_name,
+        ):
+            return combined_const_enum
+        return build_union(self.data_type, parse_combined(name, item, get_special_path(keyword, path)))
+
+    def _parse_all_of_field_item(self, site: _Site) -> DataType:
+        item, name, path, singular_name = site.obj, site.name, site.path, site.singular_name
+        if self._contains_false_schema(item.allOf):
+            self._raise_unsatisfiable_schema(item, get_special_path("allOf", path), "allOf")
+        all_of_items = [sub_item for sub_item in item.allOf if isinstance(sub_item, JsonSchemaObject)]
+        if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
+            return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=site.parent)
+        if not self._schema_requires_model_type(item) and not self._allof_requires_model_type(item.allOf):
+            all_of_path = get_special_path("allOf", path)
+            all_of_path = [self.model_resolver.resolve_ref(all_of_path)]
+            root_model_name = self.model_resolver.add(
+                all_of_path, name, singular_name=singular_name, class_name=True
+            ).name
+            return self.parse_root_type(root_model_name, item, all_of_path)
+        if len(item.allOf) == 1 and not item.properties:
+            single_item = item.allOf[0]
+            if isinstance(single_item, JsonSchemaObject) and single_item.ref:
+                if (reference_site := self._reference_site_schema(item)) is None:
+                    return self.get_ref_data_type(single_item.ref)
+                all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
+                with self.model_resolver.yielding_new_references():
+                    site_type = self._parse_all_of_merged_root(
+                        self.model_resolver.add(all_of_path, name, singular_name=singular_name, class_name=True).name,
+                        reference_site.with_schema_location(item.schema_location),
+                        all_of_path,
+                    )
+                self._site_model_reference_ids.add(id(site_type.reference))
+                return site_type
+        all_of_path = get_special_path("allOf", path)
+        all_of_path = [self.model_resolver.resolve_ref(all_of_path)]
+        with (
+            self.model_resolver.yielding_new_references()
+            if self.config.use_site_models_for_constrained_refs
+            else nullcontext()
+        ):
+            site_name = self.model_resolver.add(all_of_path, name, singular_name=singular_name, class_name=True).name
+        return self.parse_all_of(site_name, item, all_of_path, ignore_duplicate_model=True)
+
+    def _parse_object_item(self, site: _Site) -> DataType:
+        item, name, path = site.obj, site.name, site.path
+        if item.properties:
+            return self._parse_object_model_item(name, item, path, singular_name=site.singular_name)
+        return self._parse_object_map(name, item, path, get_special_path("object", path))
+
+    def _parse_enum_item(self, site: _Site) -> DataType:
+        item, name = site.obj, site.name
+        if self._reads_enum_as_const(item):
+            return self._get_const_data_type(self._exact_const_enum_value(item)[0], item)
+        if self.should_parse_enum_as_literal(item, property_name=name):
+            return self._enum_value_type(item, self.parse_enum_as_literal(item))
+        return self.parse_enum(name, item, get_special_path("enum", site.path), singular_name=site.singular_name)
+
+    def _parse_typed_nullable_map_item(self, site: _Site) -> DataType:
+        item, name, path = site.obj, site.name, site.path
+        return self._parse_object_map(
+            name, item, path, get_special_path("object", path), typed_values=self._typed_nullable_map_value_schema(item)
+        )
+
+    def _field_dynamic_ref_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool((site.obj.recursiveRef or site.obj.dynamicRef) and not site.obj.ref)
+
+    def _build_field_dynamic_ref(self, site: _Site) -> DataType:
+        return self._get_dynamic_scope_data_type(site.obj, site.path)
+
+    def _field_ref_nullable_only_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.is_ref_with_nullable_only and site.obj.ref)
+
+    def _field_ref_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.ref)
+
+    def _build_field_ref(self, site: _Site) -> DataType:
+        return self.get_ref_data_type(cast("str", site.obj.ref))
+
+    def _field_custom_type_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.custom_type_path)
+
+    def _field_constrained_type_union_applies(self, site: _Site) -> bool:
+        return not self._has_shared_numeric_union_constraints(site.obj) and self._localizes_constrained_type_union(
+            site.obj
+        )
+
+    def _build_field_constrained_type_union(self, site: _Site) -> DataType:
+        return self._build_constrained_type_union(site.name, site.obj, site.path)
+
+    def _field_array_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return site.obj.is_array
+
+    def _build_field_array(self, site: _Site) -> DataType:
+        return self.parse_array_fields(site.name, site.obj, get_special_path("array", site.path)).data_type
+
+    def _field_discriminated_union_item_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(
+            site.obj.discriminator and site.parent and site.parent.is_array and (site.obj.oneOf or site.obj.anyOf)
+        )
+
+    def _build_field_discriminated_union_item(self, site: _Site) -> DataType:
+        return self.parse_root_type(site.name, site.obj, site.path)
+
+    def _field_schema_validator_object_applies(self, site: _Site) -> bool:
+        return bool(self.generate_schema_validators and self._should_parse_object_with_schema_validators(site.obj))
+
+    def _build_field_schema_validator_object(self, site: _Site) -> DataType:
+        return self._parse_object_model_item(site.name, site.obj, site.path, singular_name=site.singular_name)
+
+    def _field_any_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.anyOf)
+
+    def _build_field_any_of(self, site: _Site) -> DataType:
+        return self._parse_combined_item(site, site.obj.anyOf, self.parse_any_of, "anyOf")
+
+    def _field_one_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.oneOf)
+
+    def _build_field_one_of(self, site: _Site) -> DataType:
+        return self._parse_combined_item(site, site.obj.oneOf, self.parse_one_of, "oneOf")
+
+    def _field_all_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.allOf)
+
+    def _field_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.is_object or site.obj.patternProperties or site.obj.propertyNames is not None)
+
+    def _field_enum_applies(self, site: _Site) -> bool:
+        return bool(site.obj.enum and not self.ignore_enum_constraints)
+
+    def _field_shared_numeric_constraints_applies(self, site: _Site) -> bool:
+        return self._has_shared_numeric_union_constraints(site.obj)
+
+    def _build_field_shared_numeric_constraints(self, site: _Site) -> DataType:
+        return self._get_data_type(site.obj, localize_constraints=False)
+
+    def _field_typed_nullable_map_applies(self, site: _Site) -> bool:
+        return self._typed_nullable_map_value_schema(site.obj) is not None
+
+    def _build_field_data_type(self, site: _Site) -> DataType:
+        return self.get_data_type(site.obj)
+
+    _FIELD_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, DataType]] = DispatchTable(
+        (
+            Row("constrained-item", _types_item_by_root_model, _parse_constrained_item),
+            Row("dynamic-ref", _field_dynamic_ref_applies, _build_field_dynamic_ref),
+            Row("ref-nullable-only", _field_ref_nullable_only_applies, _parse_ref_nullable_only_item),
+            Row("ref", _field_ref_applies, _build_field_ref),
+            Row("custom-type", _field_custom_type_applies, _parse_custom_type_item),
+            Row(
+                "constrained-type-union",
+                _field_constrained_type_union_applies,
+                _build_field_constrained_type_union,
+            ),
+            Row("array", _field_array_applies, _build_field_array),
+            Row(
+                "discriminated-union-item",
+                _field_discriminated_union_item_applies,
+                _build_field_discriminated_union_item,
+            ),
+            Row(
+                "schema-validator-object",
+                _field_schema_validator_object_applies,
+                _build_field_schema_validator_object,
+            ),
+            Row("any-of", _field_any_of_applies, _build_field_any_of),
+            Row("one-of", _field_one_of_applies, _build_field_one_of),
+            Row("all-of", _field_all_of_applies, _parse_all_of_field_item),
+            Row("object", _field_object_applies, _parse_object_item),
+            Row("enum", _field_enum_applies, _parse_enum_item),
+            Row(
+                "shared-numeric-constraints",
+                _field_shared_numeric_constraints_applies,
+                _build_field_shared_numeric_constraints,
+            ),
+            Row("typed-nullable-map", _field_typed_nullable_map_applies, _parse_typed_nullable_map_item),
+        ),
+        Default("data-type", _build_field_data_type),
+    )
+
+    def _legacy_field_path(self, written: _Site, _site: _Site) -> tuple[str, ...]:  # noqa: PLR0911, PLR0912
+        """Return the entries the dispatch the field table replaced takes for an item, for the schema graph check."""
+        item, parent = written.obj, written.parent
         if parent and not item.enum and not self._const_literal_enforces_constraints(item):
             has_materialized_container_constraints = bool(
                 item.__dict__.get(_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY)
@@ -13944,123 +14217,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if has_materialized_container_constraints or (
                 item.has_constraint and (parent.has_constraint or self.field_constraints)
             ):
-                root_type_path = get_special_path("array", path)
-                return self._parse_root_type_with_context(
-                    self.model_resolver.add(
-                        root_type_path,
-                        name,
-                        class_name=True,
-                        singular_name=singular_name,
-                    ).name,
-                    item,
-                    root_type_path,
-                    preserve_constraints=has_materialized_container_constraints,
-                )
+                return ("constrained-item",)
         if (item.recursiveRef or item.dynamicRef) and not item.ref:
-            return self._get_dynamic_scope_data_type(item, path)
+            return ("dynamic-ref",)
         if item.is_ref_with_nullable_only and item.ref:
-            ref_data_type = self.get_ref_data_type(item.ref)
-            if self._null_facts(item, "ref-nullable-only").admits_null:
-                return build_union(self.data_type, [ref_data_type], nullable=True)
-            return ref_data_type
-        if item.has_ref_with_schema_keywords:
-            item = self._merge_ref_with_schema(item)
+            return ("ref-nullable-only",)
         if item.ref:
-            return self.get_ref_data_type(item.ref)
-        if item.custom_type_path:  # pragma: no cover
-            return self.data_type_manager.get_data_type_from_full_path(
-                self._get_emitted_python_type_path(
-                    _validate_schema_python_import_path(item.custom_type_path, "customTypePath")
-                ),
-                is_custom_type=True,
-            )
+            return ("ref",)
+        if item.custom_type_path:
+            return ("custom-type",)
         shared_numeric_constraints = self._has_shared_numeric_union_constraints(item)
-        if (
-            not shared_numeric_constraints
-            and (union_type := self._parse_constrained_type_union(name, item, path)) is not None
-        ):
-            return union_type
+        if not shared_numeric_constraints and self._localizes_constrained_type_union(item):
+            return ("constrained-type-union",)
         if item.is_array:
-            return self.parse_array_fields(name, item, get_special_path("array", path)).data_type
+            return ("array",)
         if item.discriminator and parent and parent.is_array and (item.oneOf or item.anyOf):
-            return self.parse_root_type(name, item, path)
+            return ("discriminated-union-item",)
         if self.generate_schema_validators and self._should_parse_object_with_schema_validators(item):
-            return self._parse_object_model_item(name, item, path, singular_name=singular_name)
+            return ("schema-validator-object",)
         if item.anyOf:
-            if combined_const_enum := self._parse_combined_const_enum(
-                name,
-                item,
-                item.anyOf,
-                get_special_path("enum", path),
-                singular_name=singular_name,
-            ):
-                return combined_const_enum
-            return build_union(self.data_type, self.parse_any_of(name, item, get_special_path("anyOf", path)))
+            return ("any-of",)
         if item.oneOf:
-            if combined_const_enum := self._parse_combined_const_enum(
-                name,
-                item,
-                item.oneOf,
-                get_special_path("enum", path),
-                singular_name=singular_name,
-            ):
-                return combined_const_enum
-            return build_union(self.data_type, self.parse_one_of(name, item, get_special_path("oneOf", path)))
+            return ("one-of",)
         if item.allOf:
-            if self._contains_false_schema(item.allOf):
-                self._raise_unsatisfiable_schema(item, get_special_path("allOf", path), "allOf")
-            all_of_items = [sub_item for sub_item in item.allOf if isinstance(sub_item, JsonSchemaObject)]
-            if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
-                return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=parent)
-            if not self._schema_requires_model_type(item) and not self._allof_requires_model_type(item.allOf):
-                all_of_path = get_special_path("allOf", path)
-                all_of_path = [self.model_resolver.resolve_ref(all_of_path)]
-                root_model_name = self.model_resolver.add(
-                    all_of_path, name, singular_name=singular_name, class_name=True
-                ).name
-                return self.parse_root_type(root_model_name, item, all_of_path)
-            if len(item.allOf) == 1 and not item.properties:
-                single_item = item.allOf[0]
-                if isinstance(single_item, JsonSchemaObject) and single_item.ref:
-                    if (site := self._reference_site_schema(item)) is None:
-                        return self.get_ref_data_type(single_item.ref)
-                    all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
-                    with self.model_resolver.yielding_new_references():
-                        site_type = self._parse_all_of_merged_root(
-                            self.model_resolver.add(
-                                all_of_path, name, singular_name=singular_name, class_name=True
-                            ).name,
-                            site.with_schema_location(item.schema_location),
-                            all_of_path,
-                        )
-                    self._site_model_reference_ids.add(id(site_type.reference))
-                    return site_type
-            all_of_path = get_special_path("allOf", path)
-            all_of_path = [self.model_resolver.resolve_ref(all_of_path)]
-            with (
-                self.model_resolver.yielding_new_references()
-                if self.config.use_site_models_for_constrained_refs
-                else nullcontext()
-            ):
-                site_name = self.model_resolver.add(
-                    all_of_path, name, singular_name=singular_name, class_name=True
-                ).name
-            return self.parse_all_of(site_name, item, all_of_path, ignore_duplicate_model=True)
+            return ("all-of",)
         if item.is_object or item.patternProperties or item.propertyNames is not None:
-            if item.properties:
-                return self._parse_object_model_item(name, item, path, singular_name=singular_name)
-            return self._parse_object_map(name, item, path, get_special_path("object", path))
+            return ("object",)
         if item.enum and not self.ignore_enum_constraints:
-            if self._reads_enum_as_const(item):
-                return self._get_const_data_type(self._exact_const_enum_value(item)[0], item)
-            if self.should_parse_enum_as_literal(item, property_name=name):
-                return self._enum_value_type(item, self.parse_enum_as_literal(item))
-            return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)
+            return ("enum",)
         if shared_numeric_constraints:
-            return self._get_data_type(item, localize_constraints=False)
-        if (typed_values := self._typed_nullable_map_value_schema(item)) is not None:
-            return self._parse_object_map(name, item, path, get_special_path("object", path), typed_values=typed_values)
-        return self.get_data_type(item)
+            return ("shared-numeric-constraints",)
+        if self._typed_nullable_map_value_schema(item) is not None:
+            return ("typed-nullable-map",)
+        return ("data-type",)
 
     def _parse_object_model_item(
         self, name: str, item: JsonSchemaObject, path: list[str], *, singular_name: bool
@@ -14108,26 +14297,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _parse_constrained_type_union(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType | None:
         """Localize union branches that need annotated aliases instead of constrained scalar types."""
+        if not self._localizes_constrained_type_union(obj):
+            return None
+        return self._build_constrained_type_union(name, obj, path)
+
+    def _localizes_constrained_type_union(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the branches of a type list need annotated aliases instead of constrained scalar types."""
         if (
             not isinstance(obj.type, list)
             or not self._should_skip_root_field_constraints_for_multiple_types(obj)
             or obj.is_array
             or obj.properties
         ):
-            return None
+            return False
         if obj.anyOf or obj.oneOf or obj.allOf or obj.enum or obj.extras.get("x-python-type"):
-            return None
+            return False
         if not self._output_model_context.supports_internal_annotated_constraints or not (
             self._get_inherited_constraint_fields(obj) or obj.propertyNames is not None
         ):
-            return None
+            return False
         if self._output_model_context.writes_constrained_types:
-            if "array" not in obj.type and "object" not in obj.type:
-                return None
-        elif not self._output_model_context.supports_annotated_constraints:
-            return None
+            return "array" in obj.type or "object" in obj.type
+        return self._output_model_context.supports_annotated_constraints
+
+    def _build_constrained_type_union(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
+        """Build the union of a type list whose branches take annotated aliases."""
         data_types = []
-        for type_ in obj.type:
+        for type_ in cast("list[str]", obj.type):
             if type_ == "null":
                 continue
             if type_ == "object" and (obj.propertyNames is not None or obj.patternProperties):
@@ -14751,17 +14947,42 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return obj.has_multiple_types and (bool(obj.properties) or self.use_single_dict_for_object_maps)
 
+    def _parse_root_type_site(self, site: _Site) -> DataType:
+        """Parse the schema of a site into a root model."""
+        return self.parse_root_type(site.name, site.obj, site.path)
+
+    def _object_kind_object_model_applies(self, site: _Site) -> bool:
+        return bool(site.obj.properties or self._should_parse_object_with_schema_validators(site.obj))
+
+    def _build_object_kind_object_model(self, site: _Site) -> DataType:
+        return self._parse_object_model(site.name, site.obj, site.path)
+
+    def _object_kind_object_map_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(
+            site.obj.patternProperties or (site.obj.propertyNames is not None and site.obj.propertyNames is not False)
+        )
+
+    def _object_kind_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return site.obj.type == "object"
+
+    def _build_object_kind_object(self, site: _Site) -> DataType:
+        return self.parse_object(site.name, site.obj, site.path)
+
+    def _object_kind_closed_property_names_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return site.obj.propertyNames is False
+
+    _OBJECT_KIND_ROWS: ClassVar[tuple[Row[JsonSchemaParser, JsonSchemaObject, DataType], ...]] = (
+        Row("object-model", _object_kind_object_model_applies, _build_object_kind_object_model),
+        Row("object-map", _object_kind_object_map_applies, _parse_root_type_site),
+        Row("object", _object_kind_object_applies, _build_object_kind_object),
+        Row("closed-property-names", _object_kind_closed_property_names_applies, _parse_root_type_site),
+    )
+    """The rows of an object-kind schema, as a definition is parsed."""
+
     def _parse_object_kind_schema(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType | None:
         """Parse an object-kind schema into its model as a definition is parsed; ``None`` for other schemas."""
-        if obj.properties or self._should_parse_object_with_schema_validators(obj):
-            return self._parse_object_model(name, obj, path)
-        if obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
-            return self.parse_root_type(name, obj, path)
-        if obj.type == "object":
-            return self.parse_object(name, obj, path)
-        if obj.propertyNames is False:
-            return self.parse_root_type(name, obj, path)
-        return None
+        site = SchemaSite(name, obj, path)
+        return next((row.build(self, site) for row in self._OBJECT_KIND_ROWS if row.applies(self, site)), None)
 
     def _parse_multiple_types_with_properties(
         self,
@@ -16283,6 +16504,35 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _drop_ref_from_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         return self._schema_object(obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
 
+    def _dispatch(
+        self,
+        position: Position,
+        table: DispatchTable[Self, JsonSchemaObject, _ResultT],
+        site: _Site,
+        legacy_path: Callable[[_Site, _Site], tuple[str, ...]],
+    ) -> _ResultT:
+        """Build a site with the row the table of its position chooses.
+
+        The schema graph check also asks the dispatch the table replaced (``legacy_path``, given the site as written
+        and as the table's steps rewrote it) and reports a site for which it takes other entries.
+        """
+        choice = table.choose(self, site)
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None and (
+            legacy := legacy_path(site, choice.site)
+        ) != choice.path:
+            location = redact_path(_named_path(site.obj.schema_location, site.path))
+            mode.violation(
+                Error,
+                f"the {position.value} table takes {' > '.join(choice.path)} for the schema at {location!r}, "
+                f"but the dispatch it replaced takes {' > '.join(legacy)}",
+                kind="dispatch",
+                position=position.value,
+                location=location,
+                table=list(choice.path),
+                legacy=list(legacy),
+            )
+        return choice.build(self, choice.site)
+
     def parse_obj(
         self,
         name: str,
@@ -16300,63 +16550,190 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._dynamic_scope_context(path, {}):
             self._parse_schema_obj(name, obj, path)
 
-    def _parse_schema_obj(  # noqa: PLR0912
+    def _parse_schema_obj(
         self,
         name: str,
         obj: JsonSchemaObject,
         path: list[str],
     ) -> None:
-        """Dispatch a JsonSchemaObject to the parse method for its schema shape."""
-        obj = self._array_all_of_site_schema(obj)
+        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``Position.DEFINITION``)."""
+        self._dispatch(
+            Position.DEFINITION,
+            self._DEFINITION_TABLE,
+            SchemaSite(name, self._array_all_of_site_schema(obj), path),
+            self._legacy_definition_path,
+        )
+
+    def _merge_definition_ref(self, site: _Site) -> _Site:
+        """Merge the `$ref` of a definition with its sibling keywords, in the dynamic scope the merged schema names."""
+        if (merged := self._merge_ref_with_schema(site.obj)) is site.obj:
+            return site
+        return replace(site, obj=merged, scope=self._subschema_scope(merged))
+
+    def _parse_definition_in_scope(self, site: _Site) -> None:
+        with cast("AbstractContextManager[None]", site.scope):
+            self._parse_schema_obj(site.name, site.obj, site.path)
+
+    def _parse_combined_definition(self, site: _Site) -> None:
+        obj, name, path = site.obj, site.name, site.path
+        combined_items = obj.oneOf or obj.anyOf
+        const_enum_data = self._extract_const_enum_from_combined(combined_items, obj)
+        if const_enum_data is not None:
+            synthetic_obj = self._create_synthetic_enum_obj(obj, *const_enum_data)
+            if not self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
+                self.parse_enum(name, synthetic_obj, path)
+            else:
+                self.parse_root_type(name, synthetic_obj, path)
+            return
+        data_type = self.parse_root_type(name, obj, path)
+        if isinstance(data_type, EmptyDataType) and obj.properties:
+            self.parse_object(name, obj, path)
+
+    def _definition_root_self_reference_applies(self, site: _Site) -> bool:
+        return bool(
+            _merges_ref_siblings(site.obj) and site.obj.ref == "#" and self._is_current_root_schema_path(site.path)
+        )
+
+    def _rewrite_definition_root_self_reference(self, site: _Site) -> _Site:
+        return replace(site, obj=self._drop_ref_from_schema(site.obj))
+
+    def _definition_ref_siblings_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return _merges_ref_siblings(site.obj)
+
+    def _definition_merged_ref_in_own_scope_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return site.scope is not None
+
+    def _definition_ref_of_definition_entry_applies(self, site: _Site) -> bool:
+        return bool(
+            _merges_ref_siblings(site.obj)
+            and site.obj.ref
+            and (
+                self._is_named_schema_definition_path(site.path)
+                or tuple(site.path) in self._dynamic_specialization_paths
+            )
+        )
+
+    def _definition_ref_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(_merges_ref_siblings(site.obj) and site.obj.ref)
+
+    def _build_definition_ref(self, site: _Site) -> None:
+        return self.parse_ref(site.obj, site.path)
+
+    def _definition_array_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return site.obj.is_array
+
+    def _build_definition_array(self, site: _Site) -> object:
+        return self.parse_array(site.name, site.obj, site.path)
+
+    def _definition_all_of_beside_one_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.allOf and (site.obj.oneOf or site.obj.anyOf))
+
+    def _definition_all_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.allOf)
+
+    def _build_definition_all_of(self, site: _Site) -> object:
+        return self.parse_all_of(site.name, site.obj, site.path)
+
+    def _definition_schema_validator_object_applies(self, site: _Site) -> bool:
+        return bool(self.generate_schema_validators and self._should_parse_object_with_schema_validators(site.obj))
+
+    def _build_definition_schema_validator_object(self, site: _Site) -> object:
+        return self._parse_object_model(site.name, site.obj, site.path)
+
+    def _definition_one_of_any_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
+        return bool(site.obj.oneOf or site.obj.anyOf)
+
+    def _definition_enum_applies(self, site: _Site) -> bool:
+        return bool(
+            site.obj.enum
+            and not self.ignore_enum_constraints
+            and not self._reads_enum_as_const(site.obj)
+            and not self.should_parse_enum_as_literal(site.obj, property_name=site.name)
+        )
+
+    def _build_definition_enum(self, site: _Site) -> object:
+        return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
+
+    _DEFINITION_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, None]] = DispatchTable(
+        (
+            Step(
+                "root-self-reference",
+                _definition_root_self_reference_applies,
+                _rewrite_definition_root_self_reference,
+            ),
+            Step("ref-siblings", _definition_ref_siblings_applies, _merge_definition_ref),
+            Row("merged-ref-in-own-scope", _definition_merged_ref_in_own_scope_applies, _parse_definition_in_scope),
+            Row(
+                "ref-of-definition-entry",
+                _definition_ref_of_definition_entry_applies,
+                _then_parse_refs(_parse_root_type_site),
+            ),
+            Row("ref", _definition_ref_applies, _build_definition_ref),
+            Row("array", _definition_array_applies, _then_parse_refs(_build_definition_array)),
+            Row(
+                "all-of-beside-one-of",
+                _definition_all_of_beside_one_of_applies,
+                _then_parse_refs(_parse_root_type_site),
+            ),
+            Row("all-of", _definition_all_of_applies, _then_parse_refs(_build_definition_all_of)),
+            Row(
+                "schema-validator-object",
+                _definition_schema_validator_object_applies,
+                _then_parse_refs(_build_definition_schema_validator_object),
+            ),
+            Row("one-of-any-of", _definition_one_of_any_of_applies, _then_parse_refs(_parse_combined_definition)),
+            *(Row(row.name, row.applies, _then_parse_refs(row.build)) for row in _OBJECT_KIND_ROWS),
+            Row("enum", _definition_enum_applies, _then_parse_refs(_build_definition_enum)),
+        ),
+        Default("root-type", _then_parse_refs(_parse_root_type_site)),
+    )
+
+    def _legacy_definition_path(self, written: _Site, site: _Site) -> tuple[str, ...]:  # noqa: PLR0911, PLR0912
+        """Return the entries the dispatch the definition table replaced takes for a schema, for the schema graph check.
+
+        ``site`` is the schema as the table's steps rewrote it: a `$ref` merged with its sibling keywords, or a
+        reference to the current root without its `$ref`.
+        """
+        obj, path = written.obj, written.path
+        steps: tuple[str, ...] = ()
         if obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only:
             if obj.ref == "#" and self._is_current_root_schema_path(path):
-                obj = self._drop_ref_from_schema(obj)
-            elif (merged := self._merge_ref_with_schema(obj)) is not obj and (
-                scope := self._subschema_scope(merged)
-            ) is not None:
-                with scope:
-                    self._parse_schema_obj(name, merged, path)
-                return
+                steps = ("root-self-reference",)
+            elif site.obj is not obj and site.scope is not None:
+                return ("ref-siblings", "merged-ref-in-own-scope")
             else:
-                obj = merged
+                steps = ("ref-siblings",)
+            obj = site.obj
             if obj.ref:
                 if self._is_named_schema_definition_path(path) or tuple(path) in self._dynamic_specialization_paths:
-                    self.parse_root_type(name, obj, path)
-                self.parse_ref(obj, path)
-                return
-
+                    return (*steps, "ref-of-definition-entry")
+                return (*steps, "ref")
         if obj.is_array:
-            self.parse_array(name, obj, path)
-        elif obj.allOf and (obj.oneOf or obj.anyOf):
-            self.parse_root_type(name, obj, path)
-        elif obj.allOf:
-            self.parse_all_of(name, obj, path)
-        elif self.generate_schema_validators and self._should_parse_object_with_schema_validators(obj):
-            self._parse_object_model(name, obj, path)
-        elif obj.oneOf or obj.anyOf:
-            combined_items = obj.oneOf or obj.anyOf
-            const_enum_data = self._extract_const_enum_from_combined(combined_items, obj)
-            if const_enum_data is not None:
-                synthetic_obj = self._create_synthetic_enum_obj(obj, *const_enum_data)
-                if not self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
-                    self.parse_enum(name, synthetic_obj, path)
-                else:
-                    self.parse_root_type(name, synthetic_obj, path)
-            else:
-                data_type = self.parse_root_type(name, obj, path)
-                if isinstance(data_type, EmptyDataType) and obj.properties:
-                    self.parse_object(name, obj, path)  # pragma: no cover
-        elif self._parse_object_kind_schema(name, obj, path) is None:
-            if (
-                obj.enum
-                and not self.ignore_enum_constraints
-                and not self._reads_enum_as_const(obj)
-                and not self.should_parse_enum_as_literal(obj, property_name=name)
-            ):
-                self.parse_enum(name, self._definition_enum(obj), path)
-            else:
-                self.parse_root_type(name, obj, path)
-        self.parse_ref(obj, path)
+            return (*steps, "array")
+        if obj.allOf and (obj.oneOf or obj.anyOf):
+            return (*steps, "all-of-beside-one-of")
+        if obj.allOf:
+            return (*steps, "all-of")
+        if self.generate_schema_validators and self._should_parse_object_with_schema_validators(obj):
+            return (*steps, "schema-validator-object")
+        if obj.oneOf or obj.anyOf:
+            return (*steps, "one-of-any-of")
+        if obj.properties or self._should_parse_object_with_schema_validators(obj):
+            return (*steps, "object-model")
+        if obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
+            return (*steps, "object-map")
+        if obj.type == "object":
+            return (*steps, "object")
+        if obj.propertyNames is False:
+            return (*steps, "closed-property-names")
+        if (
+            obj.enum
+            and not self.ignore_enum_constraints
+            and not self._reads_enum_as_const(obj)
+            and not self.should_parse_enum_as_literal(obj, property_name=written.name)
+        ):
+            return (*steps, "enum")
+        return (*steps, "root-type")
 
     def _get_context_source_path_parts(self) -> Iterator[tuple[Source, list[str]]]:
         """Get source and path parts for each input file with context managers."""
