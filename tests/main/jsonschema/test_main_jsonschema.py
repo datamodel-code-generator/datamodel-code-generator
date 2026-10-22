@@ -12,6 +12,7 @@ import operator
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import warnings
@@ -25813,6 +25814,64 @@ def test_main_ref_sibling_nesting_too_deep(
         expected_stderr_contains="Schema nesting is too deep to generate",
         output_should_not_exist=True,
     )
+
+
+@pytest.mark.parametrize(("nesting", "depth", "limit"), [("object", 45, 290), ("combined", 10, 270)])
+def test_main_nesting_within_recursion_limit(
+    tmp_path: Path, output_file: Path, nesting: str, depth: int, limit: int
+) -> None:
+    """Generate nesting that 0.86.0 generated under a small recursion limit, with little headroom left.
+
+    A fresh process sets the limit itself, so the frames pytest and the platform already use do not count. The
+    schema stays under 100 levels of nested JSON, which pydantic-core accepts on every platform; the limit is
+    below the frames of the parse before 0.86.0 and a little above those of the current one.
+
+    Each level nests an object in a property; under ``combined`` the property is an anyOf with null of an array of
+    maps whose values are an allOf of the object. A parse that spends more stack frames per level fails here.
+    """
+    schema: dict[str, Any] = {"type": "object", "properties": {"v": {"type": "integer"}}}
+    for level in reversed(range(depth)):
+        if nesting == "combined":
+            schema = {
+                "anyOf": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {"allOf": [schema], "description": f"level {level}"},
+                        },
+                    },
+                    {"type": "null"},
+                ]
+            }
+        schema = {"type": "object", "properties": {"v": {"type": "integer"}, "next": schema}}
+    (input_path := tmp_path / "nested.json").write_text(json.dumps(schema), encoding="utf-8")
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                f"import sys; sys.setrecursionlimit({limit}); from datamodel_code_generator.__main__ import main; "
+                "sys.exit(main(sys.argv[1:]))"
+            ),
+            "--input",
+            str(input_path),
+            "--input-file-type",
+            "jsonschema",
+            "--output",
+            str(output_file),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        check=True,
+        capture_output=True,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[3] / "src")},
+        text=True,
+        timeout=120,
+    )
+    assert_file_content(output_file)
 
 
 def test_main_read_only_write_only_flag_diamonds(tmp_path: Path, output_file: Path) -> None:

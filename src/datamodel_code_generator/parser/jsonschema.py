@@ -168,7 +168,15 @@ from datamodel_code_generator.parser._null_facts import (
 from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
-from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Position, Row, SchemaSite, Step
+from datamodel_code_generator.parser._schema_dispatch import (
+    Choice,
+    Default,
+    DispatchTable,
+    Position,
+    Row,
+    SchemaSite,
+    Step,
+)
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     ConvertedRefs,
@@ -13268,25 +13276,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         type is written, and a value that admits anything makes the whole value ``Any``. The patterns are joined
         into one key pattern, intersected with ``property_names``. A ``false`` pattern admits no key. A map whose
         additionalProperties types the keys that match no pattern (``_other_keys_schema``) is not built here.
-        Without ``--use-single-dict-for-object-maps`` the map is the union of one dict per value type
-        (``_parse_pattern_properties_union``).
+        Without ``--use-single-dict-for-object-maps`` the map is a union of dicts, one per value type, whose keys match
+        its patterns; an output that cannot decode a union of several dicts, such as msgspec, gets the one dict.
         """
-        if not self.use_single_dict_for_object_maps:
-            return self._parse_pattern_properties_union(name, pattern_properties, path, property_names)
-        return self._parse_pattern_map(name, pattern_properties, path, property_names, None)
-
-    def _parse_pattern_properties_union(
-        self,
-        name: str,
-        pattern_properties: dict[str, JsonSchemaObject | bool],
-        path: list[str],
-        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-    ) -> DataType:
-        """Parse patternProperties into a union of dicts, one per value type, whose keys match its patterns.
-
-        An output that cannot decode a union of several dicts, such as msgspec, gets the one dict of
-        ``--use-single-dict-for-object-maps`` instead.
-        """
+        if self.use_single_dict_for_object_maps:
+            return self._parse_pattern_map(name, pattern_properties, path, property_names, None)
         pattern_value_pairs: list[tuple[str, DataType]] = []
         for i, (pattern, schema) in enumerate(pattern_properties.items()):
             if schema is False:
@@ -13454,7 +13448,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged_property_names = self._merge_ref_with_schema(merged_property_names)
         return self._parse_property_name_key_schema(merged_property_names)
 
-    def _parse_object_map(
+    def _parse_object_map(  # noqa: PLR0911
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -13470,11 +13464,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         values only under ``--use-typed-nullable-map-values``, whose value schema callers pass as ``typed_values``.
         The dict itself admits the null of a type array of object and null, or of ``nullable`` under
         ``--strict-nullable``, so its property counts stay on it; other types of the type array join it in a union.
-        The members of the dict are parsed under ``object_path``, the other types under ``path``. Without
-        ``--use-single-dict-for-object-maps`` the map is built as 0.86.0 built it (``_parse_object_map_union``).
+        The members of the dict are parsed under ``object_path``, the other types under ``path``.
+
+        Without ``--use-single-dict-for-object-maps`` the map is built as 0.86.0 built it: patternProperties give a
+        union of dicts, one per value type (``parse_pattern_properties``), else propertyNames and additionalProperties
+        one dict; the null and the other types of its type array are left to the field. The values typed under
+        ``--use-typed-nullable-map-values`` make one dict, optional where its type array lists null, and the union
+        with the other types of its type array.
         """
         if not self.use_single_dict_for_object_maps:
-            return self._parse_object_map_union(name, obj, path, object_path, typed_values)
+            if pattern_properties := obj.patternProperties:
+                return self.parse_pattern_properties(
+                    name, pattern_properties, object_path, property_names=obj.propertyNames
+                )
+            if obj.propertyNames is not None:
+                return self.parse_property_names(
+                    name, obj.propertyNames, obj.additionalProperties, object_path, parent_obj=obj
+                )
+            if typed_values is not None:
+                map_type = self._parse_nullable_map(name, obj, object_path, typed_values)
+                if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
+                    return union
+                return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
+            if isinstance(obj.additionalProperties, JsonSchemaObject):
+                return self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
+            return self.data_type_manager.get_data_type(Types.object)
         if pattern_properties := obj.patternProperties:
             self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = (
@@ -13507,38 +13521,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             [map_type, *self._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],
             nullable=self._object_map_admits_null(obj),
         )
-
-    def _parse_object_map_union(
-        self,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-        object_path: list[str],
-        typed_values: JsonSchemaObject | None,
-    ) -> DataType:
-        """Build an object map as 0.86.0 did, without ``--use-single-dict-for-object-maps``.
-
-        patternProperties give a union of dicts, one per value type (``parse_pattern_properties``), else propertyNames
-        and additionalProperties one dict; the null and the other types of its type array are left to the field.
-        The values typed under ``--use-typed-nullable-map-values`` make one dict, optional where its type array lists
-        null, and the union with the other types of its type array.
-        """
-        if pattern_properties := obj.patternProperties:
-            return self.parse_pattern_properties(
-                name, pattern_properties, object_path, property_names=obj.propertyNames
-            )
-        if obj.propertyNames is not None:
-            return self.parse_property_names(
-                name, obj.propertyNames, obj.additionalProperties, object_path, parent_obj=obj
-            )
-        if typed_values is not None:
-            map_type = self._parse_nullable_map(name, obj, object_path, typed_values)
-            if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
-                return union
-            return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
-        if isinstance(obj.additionalProperties, JsonSchemaObject):
-            return self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
-        return self.data_type_manager.get_data_type(Types.object)
 
     def _object_map_admits_null(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object map admits null: its type array lists object and null, or it is nullable.
@@ -13888,60 +13870,36 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         singular_name: bool = False,  # noqa: FBT001, FBT002
         parent: JsonSchemaObject | None = None,
     ) -> DataType:
-        """Parse a single JSON Schema item into a data type, within the schema resource it declares."""
-        if (scope := self._subschema_scope(item)) is None:
-            return self._parse_schema_item(name, item, path, singular_name=singular_name, parent=parent)
-        with scope:
-            return self._parse_schema_item(name, item, path, singular_name=singular_name, parent=parent)
+        """Parse a single JSON Schema item into a data type, within the schema resource it declares.
 
-    def _parse_schema_item(
-        self,
-        name: str,
-        item: JsonSchemaObject,
-        path: list[str],
-        *,
-        singular_name: bool,
-        parent: JsonSchemaObject | None,
-    ) -> DataType:
-        """Resolve the name of a JSON Schema item and merge its $ref sibling keywords before parsing its shape."""
-        item = self._array_all_of_site_schema(item)
-        python_type_override = self._get_python_type_override(item)
-        if python_type_override:
-            return python_type_override
-        if self.use_title_as_name and item.title:
-            name = sanitize_module_name(item.title, treat_dot_as_module=self.treat_dot_as_module)
-            singular_name = False
-        if self._should_create_type_alias_for_title(item, name):
-            return self.parse_root_type(name, item, path)
-        if (
-            item.has_ref_with_schema_keywords
-            and not item.is_ref_with_nullable_only
-            and (merged_item := self._merge_ref_with_schema(item)) is not item
-        ):
-            if (scope := self._subschema_scope(merged_item)) is not None:
-                with scope:
-                    return self._parse_schema_item_shape(
-                        name, merged_item, path, singular_name=singular_name, parent=parent
-                    )
-            item = merged_item
-        return self._parse_schema_item_shape(name, item, path, singular_name=singular_name, parent=parent)
-
-    def _parse_schema_item_shape(
-        self,
-        name: str,
-        item: JsonSchemaObject,
-        path: list[str],
-        *,
-        singular_name: bool,
-        parent: JsonSchemaObject | None,
-    ) -> DataType:
-        """Parse a single JSON Schema item whose $ref sibling keywords are already merged (``Position.FIELD``)."""
-        return self._dispatch(
-            Position.FIELD,
-            self._FIELD_TABLE,
-            SchemaSite(name, item, path, singular_name=singular_name, parent=parent),
-            self._legacy_field_path,
-        )
+        The name and the $ref sibling keywords are resolved here and the row of the field table (``Position.FIELD``)
+        is built in this frame, so a nested schema costs no more frames than the parse methods it reaches.
+        """
+        with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
+            item = self._array_all_of_site_schema(item)
+            python_type_override = self._get_python_type_override(item)
+            if python_type_override:
+                return python_type_override
+            if self.use_title_as_name and item.title:
+                name = sanitize_module_name(item.title, treat_dot_as_module=self.treat_dot_as_module)
+                singular_name = False
+            if self._should_create_type_alias_for_title(item, name):
+                return self.parse_root_type(name, item, path)
+            merged_scope = None
+            if (
+                item.has_ref_with_schema_keywords
+                and not item.is_ref_with_nullable_only
+                and (merged_item := self._merge_ref_with_schema(item)) is not item
+            ):
+                item, merged_scope = merged_item, self._subschema_scope(merged_item)
+            with nullcontext() if merged_scope is None else merged_scope:
+                choice = self._choose(
+                    Position.FIELD,
+                    self._FIELD_TABLE,
+                    SchemaSite(name, item, path, singular_name=singular_name, parent=parent),
+                    self._legacy_field_path,
+                )
+                return choice.build(self, choice.site)
 
     def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
         """Return whether an inherited container shape materialized on the item keeps constraints of its own."""
@@ -13993,23 +13951,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             is_custom_type=True,
         )
 
-    def _parse_combined_item(
-        self,
-        site: _Site,
-        items: list[JsonSchemaObject | bool],
-        parse_combined: Callable[[str, JsonSchemaObject, list[str]], list[DataType]],
-        keyword: str,
-    ) -> DataType:
-        item, name, path = site.obj, site.name, site.path
-        if combined_const_enum := self._parse_combined_const_enum(
-            name,
-            item,
+    def _parse_combined_item_const_enum(self, site: _Site, items: list[JsonSchemaObject | bool]) -> DataType | None:
+        return self._parse_combined_const_enum(
+            site.name,
+            site.obj,
             items,
-            get_special_path("enum", path),
+            get_special_path("enum", site.path),
             singular_name=site.singular_name,
-        ):
-            return combined_const_enum
-        return build_union(self.data_type, parse_combined(name, item, get_special_path(keyword, path)))
+        )
 
     def _parse_all_of_field_item(self, site: _Site) -> DataType:
         item, name, path, singular_name = site.obj, site.name, site.path, site.singular_name
@@ -14051,9 +14000,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _parse_object_item(self, site: _Site) -> DataType:
         item, name, path = site.obj, site.name, site.path
-        if item.properties:
-            return self._parse_object_model_item(name, item, path, singular_name=site.singular_name)
-        return self._parse_object_map(name, item, path, get_special_path("object", path))
+        if not item.properties:
+            return self._parse_object_map(name, item, path, get_special_path("object", path))
+        return self._join_object_type_array(
+            site, self.parse_object(name, item, get_special_path("object", path), singular_name=site.singular_name)
+        )
 
     def _parse_enum_item(self, site: _Site) -> DataType:
         item, name = site.obj, site.name
@@ -14113,19 +14064,28 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return bool(self.generate_schema_validators and self._should_parse_object_with_schema_validators(site.obj))
 
     def _build_field_schema_validator_object(self, site: _Site) -> DataType:
-        return self._parse_object_model_item(site.name, site.obj, site.path, singular_name=site.singular_name)
+        return self._join_object_type_array(
+            site,
+            self.parse_object(
+                site.name, site.obj, get_special_path("object", site.path), singular_name=site.singular_name
+            ),
+        )
 
     def _field_any_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.anyOf)
 
     def _build_field_any_of(self, site: _Site) -> DataType:
-        return self._parse_combined_item(site, site.obj.anyOf, self.parse_any_of, "anyOf")
+        if combined_const_enum := self._parse_combined_item_const_enum(site, site.obj.anyOf):
+            return combined_const_enum
+        return build_union(self.data_type, self.parse_any_of(site.name, site.obj, get_special_path("anyOf", site.path)))
 
     def _field_one_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.oneOf)
 
     def _build_field_one_of(self, site: _Site) -> DataType:
-        return self._parse_combined_item(site, site.obj.oneOf, self.parse_one_of, "oneOf")
+        if combined_const_enum := self._parse_combined_item_const_enum(site, site.obj.oneOf):
+            return combined_const_enum
+        return build_union(self.data_type, self.parse_one_of(site.name, site.obj, get_special_path("oneOf", site.path)))
 
     def _field_all_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.allOf)
@@ -14232,15 +14192,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return ("typed-nullable-map",)
         return ("data-type",)
 
-    def _parse_object_model_item(
-        self, name: str, item: JsonSchemaObject, path: list[str], *, singular_name: bool
-    ) -> DataType:
-        """Parse an object into its model, joined in a union with the other types of its type array."""
-        model_type = self.parse_object(name, item, get_special_path("object", path), singular_name=singular_name)
+    def _join_object_type_array(self, site: _Site, model_type: DataType) -> DataType:
+        """Join the model of an object in a union with the other types of its type array."""
+        item = site.obj
         if not (self._joins_other_types(item) and isinstance(item.type, list)):
             return model_type
         return build_union(
-            self.data_type, [model_type, *self._iter_non_object_union_types(name, item, item.type, path)]
+            self.data_type, [model_type, *self._iter_non_object_union_types(site.name, item, item.type, site.path)]
         )
 
     def parse_list_item(
@@ -16482,14 +16440,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _drop_ref_from_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         return self._schema_object(obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
 
-    def _dispatch(
+    def _choose(
         self,
         position: Position,
         table: DispatchTable[Self, JsonSchemaObject, _ResultT],
         site: _Site,
         legacy_path: Callable[[_Site, _Site], tuple[str, ...]],
-    ) -> _ResultT:
-        """Build a site with the row the table of its position chooses.
+    ) -> Choice[Self, JsonSchemaObject, _ResultT]:
+        """Return the row the table of a site's position chooses; the caller builds it, so nested schemas add no frame.
 
         The schema graph check also asks the dispatch the table replaced (``legacy_path``, given the site as written
         and as the table's steps rewrote it) and reports a site for which it takes other entries.
@@ -16509,7 +16467,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 table=list(choice.path),
                 legacy=list(legacy),
             )
-        return choice.build(self, choice.site)
+        return choice
 
     def parse_obj(
         self,
@@ -16535,12 +16493,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
     ) -> None:
         """Dispatch a JsonSchemaObject to the parse method for its schema shape (``Position.DEFINITION``)."""
-        self._dispatch(
+        choice = self._choose(
             Position.DEFINITION,
             self._DEFINITION_TABLE,
             SchemaSite(name, self._array_all_of_site_schema(obj), path),
             self._legacy_definition_path,
         )
+        choice.build(self, choice.site)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:
         """Merge the `$ref` of a definition with its sibling keywords, in the dynamic scope the merged schema names."""

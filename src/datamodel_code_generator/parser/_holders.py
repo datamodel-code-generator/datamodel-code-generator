@@ -27,7 +27,7 @@ ParentMismatch: TypeAlias = Literal["recorded field", "dropped field", "data typ
 data type."""
 
 KNOWN_PARENT_MISMATCHES: Final[Mapping[ParentMismatch, str]] = MappingProxyType({
-    "dropped field": "JsonSchemaParser._parse_schema_item_shape returns the data type of the field that "
+    "dropped field": "JsonSchemaParser._build_field_array returns the data type of the field that "
     "parse_array_fields builds for an array item and drops the field, which stays the parent of that data type",
 })
 """The mismatches the ``MODEL_GRAPH`` check leaves alone, with the code that makes them; entries are only removed."""

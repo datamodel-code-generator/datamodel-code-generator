@@ -813,9 +813,10 @@ class OpenAPIParser(JsonSchemaParser):
     ) -> DataType:
         """Parse a JSON schema object into a data type (``Position.OPENAPI_OPERATION``)."""
         site = SchemaSite(name, self._array_all_of_site_schema(obj), path)
-        data_type = self._dispatch(
+        choice = self._choose(
             Position.OPENAPI_OPERATION, self._OPENAPI_OPERATION_TABLE, site, self._legacy_openapi_operation_path
         )
+        data_type = choice.build(self, choice.site)
         self.parse_ref(site.obj, path)
         return data_type
 

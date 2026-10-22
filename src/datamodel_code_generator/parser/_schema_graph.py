@@ -537,19 +537,21 @@ class SchemaGraphBuilder:
                 return value
             active.add(value_id)
             if isinstance(value, list):
-                items = [visit(item, (*tokens, str(index)), reading.objects) for index, item in enumerate(value)]
+                items: list[Any] = []
+                for index, item in enumerate(value):
+                    items.append(visit(item, (*tokens, str(index)), reading.objects))
                 active.discard(value_id)
                 if not any(map(is_not, items, value)):
                     return value
                 copied = copy(value)
                 copied[:] = items
                 return copied
-            changed = {
-                key: updated
-                for key, child in value.items()
-                if (child_kind := reading.child(entries, key)) is not None
-                and (updated := visit(child, (*tokens, str(key)), child_kind)) is not child
-            }
+            changed: dict[str, Any] = {}
+            for key, child in value.items():
+                if (child_kind := reading.child(entries, key)) is not None and (
+                    updated := visit(child, (*tokens, str(key)), child_kind)
+                ) is not child:
+                    changed[key] = updated
             if entries in {reading.objects, reading.root}:
                 source = SchemaLocation(root.document, tokens)
                 for keyword in REF_KEYWORDS:

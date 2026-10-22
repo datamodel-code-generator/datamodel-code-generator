@@ -54,7 +54,7 @@ NullSite: TypeAlias = Literal[
 * ``object-model``: the ``nullable`` of an object model (``JsonSchemaParser._object_nullable``).
 * ``root-model``: the ``nullable`` of a root model (``JsonSchemaParser._create_registered_root_model``).
 * ``ref-target``: the null a referenced schema gives every reference to it (``JsonSchemaParser.get_ref_data_type``).
-* ``ref-nullable-only``: a ``$ref`` beside only ``nullable: true`` (``JsonSchemaParser._parse_schema_item_shape``).
+* ``ref-nullable-only``: a ``$ref`` beside only ``nullable: true`` (``JsonSchemaParser._parse_ref_nullable_only_item``).
 * ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._parse_constrained_type_union``,
   ``JsonSchemaParser.parse_array_fields``).
 * ``object-map``: the dict of an object map (``JsonSchemaParser._object_map_admits_null``).
