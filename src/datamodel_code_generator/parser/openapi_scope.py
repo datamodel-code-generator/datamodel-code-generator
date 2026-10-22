@@ -515,13 +515,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 resolved = self._ref_path(parent)
                 if resolved in self._discriminator_schemas or resolved.partition("#")[0] != document[:-1]:
                     self._discriminator_subtypes[resolved].append(
-                        self._derived_ref(
-                            self.model_resolver.resolve_ref(child),
-                            self._raw_location(schema),
-                            "allOf",
-                            child,
-                            RefOrigin.DISCRIMINATOR_SUBTYPE,
-                        )
+                        self._schema_key(schema, child, "allOf", RefOrigin.DISCRIMINATOR_SUBTYPE)
                     )
 
     def _acquire_schema(

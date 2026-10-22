@@ -11,7 +11,9 @@ string as written that also carries its ``RefEdge``; ``SchemaGraphBuilder.edge_k
 resolves to in its own document, and ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document
 validates to, which every reader of that object shares. ``SchemaGraphBuilder.node`` names a JSON object of a loaded
 document as the node walks visit once (``SchemaNodeId``), and a ``ReservedTarget`` the node a reference a document
-reserves names in it.
+reserves names in it. ``SchemaGraphBuilder.mount_root`` gives a document a root of the graph's own, under which
+``SchemaGraphBuilder.mount_in`` mounts the schemas the parser converts from values of the document, so the document
+itself is never written.
 """
 
 from __future__ import annotations
@@ -103,6 +105,8 @@ class RefOrigin(Enum):
     """A value of a discriminator `mapping`, as a reference: a schema name becomes one under `#/components/schemas`."""
     DISCRIMINATOR_SUBTYPE = "discriminator subtype"
     """A component schema whose `allOf` names a schema with a discriminator, as a subtype of that schema."""
+    DISCRIMINATOR_SCHEMA = "discriminator schema"
+    """A schema that declares a discriminator, as the reference that names it from its own document, which keys it."""
     TYPE_DEFINITION = "x-python-type definition"
     """A name of an `x-python-type` expression, as the `$defs` entry of the current document that may import it."""
     RECURSIVE_REF = "$recursiveRef with a fixed target"
@@ -421,6 +425,8 @@ class SchemaGraphBuilder:
     __slots__ = (
         "_documents",
         "_edge_keys",
+        "_mount_containers",
+        "_mount_roots",
         "_mounted",
         "_ref_sites",
         "_schema_reads",
@@ -435,6 +441,8 @@ class SchemaGraphBuilder:
         self.registry = ResourceRegistry()
         self._documents: list[object] = []
         self._mounted: set[int] = set()
+        self._mount_roots: set[int] = set()
+        self._mount_containers: dict[int, Any] = {}
         self._edge_keys: dict[RefEdge, RefKey] = {}
         self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
@@ -621,6 +629,30 @@ class SchemaGraphBuilder:
         mounted = self.index_document(converted, location)
         self._mounted.add(id(mounted))
         return mounted
+
+    def mount_root(self, document: dict[str, Any]) -> dict[str, Any]:
+        """Return the root that ``mount_in`` mounts converted schemas under for a loaded document.
+
+        It is a copy of the document's root, located as that root, which the graph owns; a converted schema and a root
+        the graph already owns are their own.
+        """
+        if id(document) in self._mounted or id(document) in self._mount_roots:
+            return document
+        root = copy(document)
+        self.locations[id(root)] = self.locations[id(document)]
+        self._documents.append(root)
+        self._mount_roots.add(id(root))
+        return root
+
+    def mount_in(self, root: dict[str, Any], container: str, key: str, converted: dict[str, Any]) -> None:
+        """Mount a converted schema at ``key`` of ``container`` under a root from ``mount_root``.
+
+        The first mount copies the container the document holds, or starts an empty one, so the document is not
+        written; a container that is not a JSON object cannot hold the schema.
+        """
+        if (mounts := self._mount_containers.get(id(root))) is None:
+            mounts = self._mount_containers[id(root)] = root[container] = copy(root.get(container, {}))
+        mounts[key] = converted
 
 
 def same_values(left: object, right: object) -> bool:

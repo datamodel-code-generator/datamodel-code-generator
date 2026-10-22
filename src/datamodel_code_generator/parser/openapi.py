@@ -1321,23 +1321,35 @@ class OpenAPIParser(JsonSchemaParser):
 
         for schema_name, refs in potential_subtypes.items():
             for ref_in_allof in refs:
-                resolved_ref = (
-                    f"{document}{ref_in_allof[1:]}" if ref_in_allof.startswith("#") else self._ref_path(ref_in_allof)
-                )
+                resolved_ref = self._ref_path(ref_in_allof)
                 # External parents may be registered after this child document is read.
                 if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:
-                    local_ref = f"#/components/schemas/{schema_name}"
                     self._discriminator_subtypes[resolved_ref].append(
-                        self._derived_ref(
-                            self.model_resolver.resolve_ref(local_ref),
-                            self._raw_location(schemas[schema_name]),
+                        self._schema_key(
+                            schemas[schema_name],
+                            f"#/components/schemas/{schema_name}",
                             "allOf",
-                            local_ref,
                             RefOrigin.DISCRIMINATOR_SUBTYPE,
                         )
                     )
 
     def _register_discriminator_schema(self, ref: str, schema: dict[str, Any]) -> None:
+        """Register the discriminator of a schema of a loaded document under its key, if no oneOf or anyOf lists types.
+
+        ``ref`` names the schema from its own document.
+        """
         discriminator = schema.get("discriminator")
         if discriminator and not schema.get("oneOf") and not schema.get("anyOf"):
-            self._discriminator_schemas[self.model_resolver.resolve_ref(ref)] = discriminator
+            self._discriminator_schemas[
+                self._schema_key(schema, ref, "discriminator", RefOrigin.DISCRIMINATOR_SCHEMA)
+            ] = discriminator
+
+    def _schema_key(self, schema: object, ref: str, keyword: str, origin: RefOrigin) -> str:
+        """Return the key of a schema of a loaded document, with the edge of ``ref``, which names it from its document.
+
+        The edge's source is the schema, so the key is the one ``ref`` resolves to in the schema's own document (its
+        location, root `$id` and `$self`), the key the references to the schema get; a value the schema graph does
+        not locate resolves ``ref`` in the current context.
+        """
+        derived = self._derived_ref(ref, self._raw_location(schema), keyword, ref, origin)
+        return keep_resolved_ref(derived, self._ref_path(derived))

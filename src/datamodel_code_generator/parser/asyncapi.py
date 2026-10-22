@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from pydantic import Field, StrictStr, ValidationError
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._url_redaction import redact_path
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._types import AsyncAPIParserConfigDict
     from datamodel_code_generator.config import AsyncAPIParserConfig
+    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
 
@@ -289,6 +290,11 @@ class AsyncAPIParser(OpenAPIParser):
                 continue
             self._register_discriminator_schema(f"#/components/schemas/{schema_name}", schema)
 
+    @override
+    def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
+        """Return a loaded document as a located tree whose root the schema graph owns, for converted payloads."""
+        return cast("SchemaGraphBuilder", self._schema_graph).mount_root(super()._index_document(raw, path_parts))
+
     def _current_asyncapi_context(self) -> AsyncAPIContext:
         return AsyncAPIContext(
             raw_obj=self.raw_obj,
@@ -361,7 +367,10 @@ class AsyncAPIParser(OpenAPIParser):
         include_root_schema: bool = False,
         location: SchemaLocation | None = None,
     ) -> list[AsyncAPISchema]:
-        """Mount a converted payload schema in the document's internal container, located where the payload is."""
+        """Mount a converted payload schema in the internal container of its document, located where the payload is.
+
+        The container is under the root the schema graph owns for the document, so the document is not written.
+        """
         context = self._current_asyncapi_context()
         converted_schema_key = "_".join(_escape_context_path_part(part) for part in path) or name
         ref_prefix = f"#/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}/components/schemas"
@@ -370,7 +379,9 @@ class AsyncAPIParser(OpenAPIParser):
         converted_schema = self._mount_converted_schema(
             converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
         )
-        context.raw_obj.setdefault(INTERNAL_SCHEMA_CONTAINER, {})[converted_schema_key] = converted_schema
+        cast("SchemaGraphBuilder", self._schema_graph).mount_in(
+            context.raw_obj, INTERNAL_SCHEMA_CONTAINER, converted_schema_key, converted_schema
+        )
         root_path = [*context.root_parts, f"#/{INTERNAL_SCHEMA_CONTAINER}", converted_schema_key]
         schemas = [self._schema(name, converted_schema, root_path, context)] if include_root_schema else []
         schemas.extend(
