@@ -32,7 +32,9 @@ class CheckArea(Enum):
     """Every model parsed from a JSON document has a schema location at the end of L1."""
     MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
     """The imports of every module, and those all modules share, equal the replay of their import ledger when the
-    module's import text is written."""
+    module's import text is written; the module writes for each model it names what its import plan, made from the
+    final names, writes, and its imports bind every model of another module the plan imports. With a report file, it
+    also records how many model names of each module it compared."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
     """Collapse stops before it would build a data type cycle; the store never meets a copied Reference; every model

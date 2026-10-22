@@ -17,6 +17,12 @@ their entries when it writes the import text, so a write that bypasses the ledge
 package ``__init__`` modules and the imports of forwarder modules are built and written at once by one function each
 and are not module imports in this sense.
 
+The names a module's ``ModelResolver`` gives its imports are asked for through the ledger too (``add_name``,
+``release_names``), which keeps them as the module's ``NameLog``. After the last rename the parser plans, from the final
+names (``NameTable``), the models each module names (``ModuleImportPlan``): its own by their class names, those of
+other modules through imports whose names ``allocate_bindings`` gives. Nothing is written from the plan yet; the check
+compares it with the module's imports and with what the module writes for each model.
+
 Named legacy rows, imports decided where the ledger does not see them:
 
 * ``legacy.enum-member-import-bindings``: an Enum's ``imports`` keep the imports of its member declarations (pydantic's
@@ -25,6 +31,9 @@ Named legacy rows, imports decided where the ledger does not see them:
   (``DataModel._render_dedup_key``, ``Parser._stdout_model_fingerprint``) stay as in 0.86.0, and ``rendered`` leaves
   them out of the import block. It goes when an option lets the module bind only what it writes (G09's naming
   rules, #4802).
+* ``legacy.alias-order`` (``allocate_bindings``): a module's import names are unique among the names taken when each
+  was asked for, in the order L5 and the L6 repairs asked, so the plan allocates them again from the ``NameLog``.
+  Unifying the alias schemes changes names (an option candidate).
 """
 
 from __future__ import annotations
@@ -37,26 +46,43 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from typing_extensions import final
 
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.imports import Import, Imports
+from datamodel_code_generator.reference import ModelResolver
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Generator, Iterable, Iterator, Mapping
+    from collections.abc import Collection, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
 
+    from datamodel_code_generator._format_types import PythonVersion
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.reference import Reference
 
 __all__ = [
     "Added",
     "Aliased",
+    "BindingRequest",
+    "FinalName",
     "FutureExtracted",
     "ImportOperation",
     "ImportPass",
     "ImportProducer",
     "LedgerEntry",
     "ModuleImportLedger",
+    "ModuleImportPlan",
+    "NameEvent",
+    "NameLog",
+    "NameRequested",
+    "NameTable",
+    "NamesReleased",
     "Pruned",
     "ReferenceDropped",
+    "ReferenceImport",
+    "ReferenceUse",
     "Remapped",
     "Removed",
+    "allocate_bindings",
     "replay",
 ]
 
@@ -335,14 +361,174 @@ def _copy(imports: Imports) -> Imports:
 
 
 @final
+@dataclass(frozen=True, slots=True)
+class NameRequested:
+    """``ModelResolver.add`` on the resolver of a module: the path, the name asked for and whether as a class name."""
+
+    path: tuple[str, ...]
+    original_name: str
+    class_name: bool = False
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class NamesReleased:
+    """``ModelResolver.delete_names`` on the resolver of a module."""
+
+    names: frozenset[str]
+
+
+NameEvent: TypeAlias = NameRequested | NamesReleased
+"""One change to the names the resolver of a module holds."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class NameLog:
+    """The names the resolver of a module started with and every change to them, in the order made."""
+
+    taken: frozenset[str]
+    events: tuple[NameEvent, ...]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class BindingRequest:
+    """The import of a model of another module: the resolver path of the import and the name it asks for."""
+
+    path: tuple[str, ...]
+    name: str
+
+
+def allocate_bindings(
+    requests: Iterable[BindingRequest], log: NameLog, *, target_python_version: PythonVersion
+) -> dict[BindingRequest, str]:
+    """Return the name each request binds: the name the resolver of its module holds for the request's path.
+
+    Row ``legacy.alias-order``: a name is unique among the names taken when it was asked for, so the names are
+    allocated again in the order the log records, against the names it records: the module's field names, its class
+    names as of L5, the imports that L5 and the repairs asked for (also those dropped later) and the names a repair
+    released. A request that the log never asked for under its path gets no name: no pass imported it.
+    """
+    resolver = ModelResolver(exclude_names=set(log.taken), target_python_version=target_python_version)
+    for event in log.events:
+        if isinstance(event, NamesReleased):
+            resolver.delete_names(event.names)
+        else:
+            resolver.add(event.path, event.original_name, class_name=event.class_name)
+    return {
+        request: reference.name
+        for request in requests
+        if (reference := resolver.references.get(ModelResolver.join_path(request.path))) is not None
+        and request.name in {reference.original_name, reference.name}
+    }
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class FinalName:
+    """The class name of a model and the module that writes it, dotted and as a path, read after the last rename."""
+
+    class_name: str
+    module: str
+    module_path: tuple[str, ...]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class NameTable:
+    """The final name of every model the modules write, by model key."""
+
+    names: Mapping[ModelKey, FinalName]
+
+    def class_name(self, target: ModelKey, reference: Reference) -> str:
+        """Return the name a module writes for the model ``target`` that ``reference`` names.
+
+        Row ``legacy-keyless-reference-by-path``: a reference whose own key names no written model (one built outside
+        the resolver, or the Reference of a duplicate that reuse replaced) names the model at its path, or the
+        subclass that replaced it, but is written by its own name.
+        """
+        return self.names[target].class_name if model_key_of(reference) == target else reference.short_name
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class ReferenceImport:
+    """A model of another module that a module imports, with the import that binds it."""
+
+    target: ModelKey
+    module: str
+    """The module of the model (dotted)."""
+    import_: Import
+    """The import line, its alias being the name the import binds."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class ReferenceUse:
+    """One place where a module writes the name of a model: what the plan writes there and what was written."""
+
+    target: ModelKey
+    holder: str
+    """The class name of the model that writes it."""
+    planned: str | None
+    """The class name in the model's own module, else the expression of its import; None when no import binds it.
+
+    A reference that names no written model is planned as its own name."""
+    written: str
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class ModuleImportPlan:
+    """The models one module names, planned from the final names: imports of other modules' models and what is written.
+
+    The imports the module needs for other names (``symbols``), its ``__future__`` imports and the aliases that field
+    names force over its bindings (``_bind_module_field_names``, pass ``field-name-bindings``) are not planned yet;
+    the plan does not write anything: with ``DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`` it is compared with the
+    module's imports without those aliases and with what the module writes when the import text is written.
+    """
+
+    module: tuple[str, ...]
+    references: tuple[ReferenceImport, ...]
+    uses: tuple[ReferenceUse, ...]
+
+    def differences(self, imports: Imports) -> tuple[str, ...]:
+        """Describe each use written differently, each planned import ``imports`` lacks and each it has extra."""
+        planned = {_storage_key(reference.import_) for reference in self.references}
+        return (
+            *(
+                f"{use.holder} writes {use.written} where the plan "
+                + (f"writes {use.planned}" if use.planned is not None else "binds no name")
+                for use in self.uses
+                if use.planned != use.written
+            ),
+            *(
+                f"no import of {reference.import_.import_} from {reference.import_.from_} binds "
+                f"{reference.import_.binding_name}"
+                for reference in self.references
+                if not imports.counter.get(key := _storage_key(reference.import_))
+                or imports.get_effective_name(*key) != reference.import_.binding_name
+            ),
+            *(
+                f"the plan lacks the import of {import_.import_} from {import_.from_}"
+                for import_ in imports.reference_paths.values()
+                if (key := _storage_key(import_)) not in planned and imports.counter.get(key)
+            ),
+        )
+
+
+@final
 class ModuleImportLedger:
     """The writes to every module's imports and to the shared imports, kept per ``Imports`` in the order made."""
 
-    __slots__ = ("_accounts",)
+    __slots__ = ("_accounts", "_names", "_plans")
 
     def __init__(self) -> None:
         """Start without entries."""
         self._accounts: dict[int, tuple[Imports, list[LedgerEntry]]] = {}
+        self._names: dict[int, tuple[Imports, list[NameEvent]]] = {}
+        self._plans: dict[int, tuple[Imports, ModuleImportPlan]] = {}
 
     def _write(self, imports: Imports, operation: ImportOperation, producer: ImportProducer) -> None:
         operation.apply_to(imports)
@@ -422,3 +608,44 @@ class ModuleImportLedger:
     def differences(self, imports: Imports) -> tuple[str, ...]:
         """Name the parts of the imports that differ from the replay of their entries."""
         return _differences(imports, replay(self.entries(imports), use_exact=imports.use_exact))
+
+    def add_name(
+        self,
+        imports: Imports,
+        resolver: ModelResolver,
+        path: Sequence[str],
+        original_name: str,
+        *,
+        class_name: bool = False,
+    ) -> Reference:
+        """Ask the resolver of the module that ``imports`` belongs to for a name (``ModelResolver.add``)."""
+        self._name_events_of(imports).append(NameRequested(tuple(path), original_name, class_name))
+        return resolver.add(path, original_name, class_name=class_name)
+
+    def release_names(self, imports: Imports, resolver: ModelResolver, names: AbstractSet[str]) -> None:
+        """Release names in the resolver of the module that ``imports`` belongs to (``ModelResolver.delete_names``)."""
+        self._name_events_of(imports).append(NamesReleased(frozenset(names)))
+        resolver.delete_names(names)
+
+    def _name_events_of(self, imports: Imports) -> list[NameEvent]:
+        if (log := self._names.get(id(imports))) is None:
+            log = self._names[id(imports)] = (imports, [])
+        return log[1]
+
+    def name_log(self, imports: Imports, taken: Collection[str]) -> NameLog:
+        """Return the names the module's resolver started with, ``taken``, and the changes made through the ledger."""
+        return NameLog(frozenset(taken), tuple(self._name_events_of(imports)))
+
+    def record_plan(self, imports: Imports, plan: ModuleImportPlan) -> None:
+        """Keep the import plan of the module that ``imports`` belongs to, for the check."""
+        self._plans[id(imports)] = imports, plan
+
+    def replay_without(self, imports: Imports, pass_: ImportPass) -> Imports:
+        """Return the imports that the entries written to ``imports`` write, without those of the pass."""
+        return replay(
+            (entry for entry in self._entries_of(imports) if entry.producer.pass_ != pass_), use_exact=imports.use_exact
+        )
+
+    def plan_of(self, imports: Imports) -> ModuleImportPlan:
+        """Return the recorded import plan of the module that ``imports`` belongs to."""
+        return self._plans[id(imports)][1]

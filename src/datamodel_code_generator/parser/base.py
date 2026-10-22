@@ -197,7 +197,17 @@ from datamodel_code_generator.parser._graph_ids import (
     unchecked,
 )
 from datamodel_code_generator.parser._held_null import OMIT_HELD_NULL
-from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
+from datamodel_code_generator.parser._imports_plan import (
+    BindingRequest,
+    FinalName,
+    ImportProducer,
+    ModuleImportLedger,
+    ModuleImportPlan,
+    NameTable,
+    ReferenceImport,
+    ReferenceUse,
+    allocate_bindings,
+)
 from datamodel_code_generator.parser._model_shapes import (
     COLLAPSE_REUSE,
     REUSE_MODEL,
@@ -218,6 +228,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_KEY,
 )
 from datamodel_code_generator.parser._passes._shared import (
+    ReferenceImportTarget,
     _clear_model_imports_cache,
     _clear_model_imports_cache_if_retained,
     _InheritedTypeModifiers,
@@ -232,6 +243,7 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     override_required_field,
     redirect_collapsed_reuse_users,
+    reference_import_target,
     register_reference_import,
     register_runtime_expression,
     relative,
@@ -3432,6 +3444,42 @@ def _get_single_discriminator_default(
     return member
 
 
+def _written_key_of(keyed: KeyedModels, reused: Mapping[ModelKey, ModelKey], reference: Reference) -> ModelKey:
+    """Return the key of the model among ``keyed`` that ``reference`` names: by its key, else by its path.
+
+    A duplicate that reuse replaced by an empty subclass keeps its Reference in the types that named it; the reference
+    names the subclass, which reuses it (``reused``: the key of each reused reference to the key of its subclass).
+    """
+    if (key := model_key_of(reference)) not in keyed.models and reused.get(key) in keyed.models:
+        return reused[key]
+    return keyed.key_of(reference)
+
+
+def _written_model_names(model: DataModel) -> Iterator[tuple[Reference, str, bool]]:
+    """Yield each model name a model writes: the reference, what the model writes for it, and whether as a base class.
+
+    A type that names a model writes its import's expression (unquoted) or the class name; an enum member literal
+    writes the class name of its enum.
+    """
+    for data_type in model.all_data_types:
+        if (reference := data_type.reference) is not None:
+            yield (
+                reference,
+                (data_type.alias or reference.short_name).strip('"'),
+                isinstance(data_type, BaseClassDataType),
+            )
+        literal_reference = data_type._enum_member_literal_reference  # ruff: ignore[private-member-access]
+        if literal_reference is not None and not data_type.alias:
+            yield from ((literal_reference, enum_class, False) for enum_class, _ in data_type.enum_member_literals)
+
+
+def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
+    """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
+    from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
+    name = base_module[-1].replace(".py", "")
+    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
+
+
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
     """Return the module name scope planning gives a model, or the model's own module name."""
     module_name = _module_name_of(model_path_to_module_name, model.reference)
@@ -3481,7 +3529,7 @@ def _register_data_type_import(  # ruff: ignore[too-many-arguments]
     if not (from_ and import_):
         return
 
-    alias = scoped_model_resolver.add(full_path, import_)
+    alias = ledger.add_name(imports, scoped_model_resolver, full_path, import_)
     data_type.alias = alias.name if reference.short_name == import_ else f"{alias.name}.{reference.short_name}"
     ledger.append(
         imports,
@@ -4759,7 +4807,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         ledger = self._import_ledger
         for model in models:
-            scoped_model_resolver.add([model.path], model.class_name)
+            ledger.add_name(imports, scoped_model_resolver, [model.path], model.class_name)
         for model in models:
             producer = ImportProducer("change-from-import", model)
             before_import = model.imports
@@ -4946,10 +4994,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
             for _, _, model, import_ in stale_users:
                 self._import_ledger.remove(ctx.imports, import_, ImportProducer("import-renamed-types", model))
-            ctx.scoped_model_resolver.delete_names(
+            self._import_ledger.release_names(
+                ctx.imports,
+                ctx.scoped_model_resolver,
                 {import_.binding_name for *_, import_ in stale_users}.union(
                     self.__names_left_by_replaced_roots(ctx.models, keyed_members)
-                )
+                ),
             )
             for data_type, reference, model, _ in stale_users:
                 self.__set_reference_expression(
@@ -6313,12 +6363,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         root_imports = [root_import for *_, root_import in redirected_holders if root_import is not None]
         self._import_ledger.remove(imports, root_imports, _COLLAPSE_ROOT_MODELS)
-        scoped_model_resolver.delete_names(
+        self._import_ledger.release_names(
+            imports,
+            scoped_model_resolver,
             {root_import.binding_name for root_import in root_imports}.difference(_iter_import_bindings(imports)).union(
                 self.__names_left_by_replaced_roots(
                     models, keyed_models(self.__module_members(models), "module members")
                 )
-            )
+            ),
         )
         for holder, data_type, _ in redirected_holders:
             reference = cast("Reference", data_type.reference)
@@ -7835,10 +7887,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             self._graph_builder.rename_model(  # pragma: no cover
                 model,
-                reference_name=scoped_model_resolver.add(
-                    path=get_special_path("imported_name", model.path.split("/")),
-                    original_name=model.reference.name,
-                    unique=True,
+                reference_name=self._import_ledger.add_name(
+                    imports,
+                    scoped_model_resolver,
+                    get_special_path("imported_name", model.path.split("/")),
+                    model.reference.name,
                     class_name=True,
                 ).name,
             )
@@ -7957,9 +8010,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         original_base_class = self.data_model_type.BASE_CLASS
         original_import = Import.from_full_path(original_base_class) if original_base_class else None
-        first_root_module_name = ".".join(first_root_module[:-1]) if first_root_module else ""
         for module, models, target_models, imports in modules_with_targets:
-            current_module_name = ".".join(module[:-1]) if module else ""
             is_first_root = module == first_root_module
             can_retain_cache = _can_retain_model_imports_cache(
                 models,
@@ -7988,14 +8039,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     self._graph_builder.set_base_classes(model, [base_class_dt])
             if not is_first_root and original_import:
                 self._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)
-                from_ = relative(current_module_name, first_root_module_name)[0]
-                from_ = (
-                    f"{from_}{first_root_module[-1].replace('.py', '')}"
-                    if from_.endswith(".")
-                    else f"{from_}.{first_root_module[-1].replace('.py', '')}"
-                )
                 self._import_ledger.append(
-                    imports, Import(from_=from_, import_=base_class_ref.name), _GENERIC_BASE_CLASS
+                    imports,
+                    Import(from_=_generic_base_class_module(module, first_root_module), import_=base_class_ref.name),
+                    _GENERIC_BASE_CLASS,
                 )
 
     @classmethod
@@ -9879,10 +9926,127 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             tuple(redact_reference(model_identities[model]) for model, _ in models),
         )
 
+    def __plan_module_imports(self, run: _FinishRun) -> None:
+        """Compute the import plan of every module from the final names, for ``_check_module_imports`` to compare.
+
+        It runs after the last rename (``__change_imported_model_name``), under the ``MODULE_IMPORTS`` check only. A
+        model's final module is the module that writes it.
+        """
+        if check_mode(CheckArea.MODULE_IMPORTS) is None:
+            return
+        emitted = unchecked(keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan"))
+        names = NameTable({
+            model_key_of(model.reference): FinalName(
+                model.reference.short_name, _module_name_from_module_path(ctx.module_key), ctx.module
+            )
+            for ctx in run.contexts
+            for model in ctx.models
+        })
+        reused = {
+            model_key_of(model.reused_reference): key
+            for key, model in emitted.models.items()
+            if model.reused_reference is not None
+        }
+        for ctx in run.contexts:
+            self._import_ledger.record_plan(
+                ctx.imports,
+                self.__module_import_plan(
+                    ctx,
+                    names=names,
+                    emitted=emitted,
+                    reused=reused,
+                    module_names=run.model_path_to_module_name,
+                    internal_modules=run.internal_modules,
+                ),
+            )
+
+    def __module_import_plan(  # ruff: ignore[too-many-arguments]
+        self,
+        ctx: ModuleContext,
+        *,
+        names: NameTable,
+        emitted: KeyedModels,
+        reused: Mapping[ModelKey, ModelKey],
+        module_names: Mapping[str, str],
+        internal_modules: set[ModulePath],
+    ) -> ModuleImportPlan:
+        """Plan the models a module names: its own by their final class names, the others through their imports.
+
+        A reference names a model of the module first, then one of any module (``_written_key_of``); one that names
+        no written model is written by its own name, without an import, as today. The generated base class is
+        imported by its class name from the module that writes it, as ``__apply_generic_base_class`` imports it; any
+        other model of another module through the name ``allocate_bindings`` gives its import. An import of a name
+        that ``--import-overrides`` lists comes from the module it names.
+        """
+        members = unchecked(keyed_models(ctx.models, "module import plan"))
+        overrides = self._import_overrides or {}
+        generic_base = None if self._generic_base_model is None else model_key_of(self._generic_base_model.reference)
+        uses: list[ReferenceUse] = []
+        pending: list[tuple[ModelKey, str, str, str, ReferenceImportTarget, str]] = []
+        references: dict[tuple[str | None, str], ReferenceImport] = {}
+
+        def add_reference(target: ModelKey, import_: Import) -> None:
+            if (module := overrides.get(import_.import_)) is not None:
+                import_ = dataclasses.replace(import_, from_=module)
+            references.setdefault(
+                (import_.from_, import_.import_), ReferenceImport(target, names.names[target].module, import_)
+            )
+
+        for model in ctx.models:
+            module_name = _get_model_module_name(model, module_names)
+            for reference, written, base_class in _written_model_names(model):
+                if (target := _written_key_of(members, reused, reference)) in members.models:
+                    uses.append(ReferenceUse(target, model.class_name, names.class_name(target, reference), written))
+                elif (final := names.names.get(target := _written_key_of(emitted, reused, reference))) is None:
+                    uses.append(ReferenceUse(target, model.class_name, reference.short_name, written))
+                elif target == generic_base:
+                    uses.append(ReferenceUse(target, model.class_name, final.class_name, written))
+                    add_reference(
+                        target,
+                        Import(
+                            from_=_generic_base_class_module(ctx.module, final.module_path), import_=final.class_name
+                        ),
+                    )
+                else:
+                    name = names.class_name(target, reference)
+                    import_target = reference_import_target(
+                        name,
+                        module_name,
+                        f"{final.module}.{name}" if final.module else name,
+                        use_exact=ctx.imports.use_exact,
+                        init=ctx.is_init,
+                        internal_modules=internal_modules,
+                        base_class=base_class,
+                        treat_dot_as_module=self.treat_dot_as_module,
+                    )
+                    pending.append((target, model.class_name, name, written, import_target, reference.path))
+        bindings = allocate_bindings(
+            (BindingRequest(t.full_path, t.import_) for *_, t, _ in pending),
+            self._import_ledger.name_log(ctx.imports, ctx.scoped_model_resolver.exclude_names),
+            target_python_version=self.target_python_version,
+        )
+        for target, holder, name, written, import_target, reference_path in pending:
+            if (binding := bindings.get(BindingRequest(import_target.full_path, import_target.import_))) is None:
+                uses.append(ReferenceUse(target, holder, None, written))
+                continue
+            add_reference(
+                target,
+                Import(
+                    from_=import_target.written_from,
+                    import_=import_target.import_,
+                    alias=binding,
+                    reference_path=reference_path,
+                ),
+            )
+            uses.append(ReferenceUse(target, holder, import_target.expression(name, binding) or name, written))
+        return ModuleImportPlan(ctx.module_key, tuple(references.values()), tuple(uses))
+
     def _check_module_imports(self, mode: CheckMode, ctx: ModuleContext) -> None:
         """Report the shared imports and the module's imports where they differ from the replay of their ledger.
 
-        Such a difference is a write that did not go through ``parser/_imports_plan.py:ModuleImportLedger``.
+        Such a difference is a write that did not go through ``parser/_imports_plan.py:ModuleImportLedger``. The
+        module's import plan (``__plan_module_imports``) must also hold what the module writes for each model it
+        names and every import of another module's model; a report file also gets how many it compared.
         """
         for label, imports in (("shared imports", self.imports), (f"imports of {'/'.join(ctx.module)}", ctx.imports)):
             if differences := self._import_ledger.differences(imports):
@@ -9892,6 +10056,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     imports=label,
                     parts=list(differences),
                 )
+        module, plan = "/".join(ctx.module), self._import_ledger.plan_of(ctx.imports)
+        if differences := plan.differences(self._import_ledger.replay_without(ctx.imports, "field-name-bindings")):
+            mode.violation(
+                Error,
+                f"the models {module} names differ from its import plan: {'; '.join(differences)}",
+                imports=module,
+                parts=list(differences),
+            )
+        mode.record(
+            f"{CheckArea.MODULE_IMPORTS.value}: compared {len(plan.uses)} model names of {module} with its import "
+            f"plan, which imports {len(plan.references)}",
+            kind="import-plan",
+            imports=module,
+            uses=len(plan.uses),
+            references=len(plan.references),
+        )
 
     def _check_schema_locations(self, mode: CheckMode) -> None:
         """Report the models parsed from a JSON document without a schema location (the copy step lost it).
@@ -10272,6 +10452,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def __render(self, run: _FinishRun) -> None:
         """Render every module into the output of ``parse()``."""
         self.__check_frozen_render_plans()
+        self.__plan_module_imports(run)
         run.output = self.__render_modules(
             run.module_results,
             contexts=run.contexts,

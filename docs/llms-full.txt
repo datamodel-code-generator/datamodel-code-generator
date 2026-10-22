@@ -66106,7 +66106,12 @@ the imports of its member declarations (pydantic's `Field` for described members
 for class names and reuse keys as in 0.86.0, while the import block leaves them out. The output model's `resolve_module_import_conflicts` gets the live
 `Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
 compares each module's imports with the replay of their entries when the import text is written, so a write that
-bypasses the ledger fails the check, which the test suite turns on.
+bypasses the ledger fails the check, which the test suite turns on. The names the module's `ModelResolver` gives its
+imports are asked for through the ledger too (`NameLog`). After the last rename, `Parser.__plan_module_imports` plans
+the models each module names from the final names (`NameTable`): `ModuleImportPlan` holds the imports of other modules'
+models, named by `allocate_bindings` in the order the module asked for them (row `legacy.alias-order`), and what the
+module writes for each model. Nothing is written from the plan yet; under the same check, the module must write what
+the plan writes and its imports must bind every planned import.
 
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
@@ -67337,7 +67342,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
-| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written ([Model Processing Passes](architecture.md#model-processing-passes)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan ([Model Processing Passes](architecture.md#model-processing-passes)) |
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0), and the table of each schema position takes the entries the dispatch it replaced takes (L1) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |

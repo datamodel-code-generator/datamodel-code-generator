@@ -13,7 +13,7 @@ from functools import cache
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, final
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator.imports import Import
@@ -38,7 +38,7 @@ from datamodel_code_generator.reference import ModelType
 from datamodel_code_generator.types import DataType, DefaultValueRecipe
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Collection, Iterable, Iterator, Mapping
 
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
@@ -529,22 +529,39 @@ def replace_model_in_list(
     models[idx] = replacement
 
 
-def register_reference_import(  # noqa: PLR0913
-    reference: Reference,
+@final
+@dataclass(frozen=True, slots=True)
+class ReferenceImportTarget:
+    """How a module imports a model of another module: the resolver path of the import and its module and name.
+
+    ``from_`` is the module as the expression rule reads it, ``written_from`` the module the import line writes (a
+    package ``__init__`` reaches a model outside its package one level up).
+    """
+
+    full_path: tuple[str, str]
+    from_: str
+    import_: str
+    written_from: str
+
+    def expression(self, name: str, binding: str) -> str | None:
+        """Return what the module writes for the model ``name`` under the binding, or None for the class name."""
+        if not (self.from_ and self.import_) or binding == name:
+            return None
+        return binding if name == self.import_ else f"{binding}.{name}"
+
+
+def reference_import_target(  # ruff: ignore[too-many-arguments]
+    name: str,
     current_module_name: str,
     target_full_name: str,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
     *,
+    use_exact: bool,
     init: bool,
-    internal_modules: set[tuple[str, ...]],
-    base_class: bool = False,
-    producer: ImportProducer,
+    internal_modules: Collection[tuple[str, ...]],
+    base_class: bool,
     treat_dot_as_module: bool | None,
-    import_ledger: ModuleImportLedger,
-) -> str | None:
-    """Import a reference from another module and return its expression when it is not the class name."""
-    name = reference.short_name
+) -> ReferenceImportTarget:
+    """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``."""
     if base_class:
         left, right = relative(current_module_name, target_full_name)
         from_ = (
@@ -556,7 +573,7 @@ def register_reference_import(  # noqa: PLR0913
         full_path = from_, import_
     else:
         from_, import_ = full_path = relative(current_module_name, target_full_name)
-        if imports.use_exact:
+        if use_exact:
             from_, import_ = full_path = _resolve_exact_import(
                 current_module_name,
                 target_full_name,
@@ -576,28 +593,52 @@ def register_reference_import(  # noqa: PLR0913
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
 
-        if from_ and not imports.use_exact and (ref_module in internal_modules or is_module_class_collision):
+        if from_ and not use_exact and (ref_module in internal_modules or is_module_class_collision):
             from_ = f"{from_}{import_}" if from_.endswith(".") else f"{from_}.{import_}"
             import_ = name
             full_path = from_, import_
+    written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
+    return ReferenceImportTarget(full_path, from_, import_, written_from)
 
-    alias = scoped_model_resolver.add(full_path, import_).name
-    expression = None
-    if from_ and import_ and alias != name:
-        expression = alias if name == import_ else f"{alias}.{name}"
-    if init and not target_full_name.startswith(current_module_name + "."):
-        from_ = "." + from_
+
+def register_reference_import(  # noqa: PLR0913
+    reference: Reference,
+    current_module_name: str,
+    target_full_name: str,
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    *,
+    init: bool,
+    internal_modules: set[tuple[str, ...]],
+    base_class: bool = False,
+    producer: ImportProducer,
+    treat_dot_as_module: bool | None,
+    import_ledger: ModuleImportLedger,
+) -> str | None:
+    """Import a reference from another module and return its expression when it is not the class name."""
+    name = reference.short_name
+    target = reference_import_target(
+        name,
+        current_module_name,
+        target_full_name,
+        use_exact=imports.use_exact,
+        init=init,
+        internal_modules=internal_modules,
+        base_class=base_class,
+        treat_dot_as_module=treat_dot_as_module,
+    )
+    alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
     import_ledger.append(
         imports,
         Import(
-            from_=from_,
-            import_=import_,
+            from_=target.written_from,
+            import_=target.import_,
             alias=alias,
             reference_path=reference.path,
         ),
         producer,
     )
-    return expression
+    return target.expression(name, alias)
 
 
 def redirect_collapsed_reuse_users(

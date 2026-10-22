@@ -1,1 +1,2 @@
 {"area": "MODULE_IMPORTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS: imports of __init__.py differ from the replay of their ledger in counter", "imports": "imports of __init__.py", "parts": ["counter"]}
+{"area": "MODULE_IMPORTS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS: compared 0 model names of __init__.py with its import plan, which imports 0", "kind": "import-plan", "imports": "__init__.py", "uses": 0, "references": 0}

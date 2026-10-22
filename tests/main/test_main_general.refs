@@ -678,6 +678,8 @@ msgspec.Struct-1	main/main_general/model_that_changes_its_fields_in_render[msgsp
 pydantic_v2.BaseModel-1	main/main_general/model_that_changes_its_fields_in_render[pydantic_v2.BaseModel-1].txt
 pydantic_v2.dataclass-1	main/main_general/model_that_changes_its_fields_in_render[pydantic_v2.dataclass-1].txt
 typing.TypedDict-1	main/main_general/model_that_changes_its_fields_in_render[typing.TypedDict-1].txt
+[test_models_named_outside_the_import_plan]
+	main/main_general/models_named_outside_the_import_plan.report.txt
 [test_module_imports_written_outside_the_import_ledger]
 off	main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 report	main/main_general/module_imports_written_outside_the_import_ledger[report].report.txt

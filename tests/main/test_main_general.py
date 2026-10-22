@@ -3073,6 +3073,48 @@ def test_module_imports_written_outside_the_import_ledger(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+def test_models_named_outside_the_import_plan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A custom ``_process_single_module`` that changes a module after its imports were made departs from its plan.
+
+    In ``required.py``, whose ``Model`` imports the other module's ``Model`` as its base class, one field is typed by
+    that model (no import binds the module the field form names), one by a reference to a model no module writes
+    (written by its own name, as the plan writes it), and the base class is written under another name, so the
+    import of its binding is dropped as unused. An import of the model that the second field names is added to the
+    module, which the plan does not hold. With `report:<path>`, the check appends the differences and how many model
+    names of each module it compared.
+    """
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    class LateRetypingParser(JsonSchemaParser):
+        def _process_single_module(self, *args: Any, **kwargs: Any) -> Any:
+            context = super()._process_single_module(*args, **kwargs)
+            if context.module == ("required.py",):
+                model = context.models[0]
+                imported = next(other for other in self.results if other is not model and other.class_name == "Model")
+                typed_by_import, typed_by_nothing = model.fields
+                self.generation_store.replace_field_type(typed_by_import, DataType(reference=imported.reference))
+                self.generation_store.replace_field_type(
+                    typed_by_nothing, DataType(reference=Reference(path="#/Nowhere", name="Nowhere"))
+                )
+                model.base_classes[0].alias = "Renamed"
+                ledger = self._import_ledger
+                ledger.append(
+                    context.imports,
+                    Import(from_=".referenced", import_="Nowhere", reference_path="#/Nowhere"),
+                    ledger.entries(context.imports)[0].producer,
+                )
+            return context
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, f"report:{report_path}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    LateRetypingParser(JSON_SCHEMA_DATA_PATH / "require_referenced_field", formatters=[Formatter.BUILTIN]).parse()
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_render_plan_that_drops_a_declared_item(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str) -> None:
     """A field whose ``Field()`` arguments lose a declared item without a reason fails its render plan's accounting.
