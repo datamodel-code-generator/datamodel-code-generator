@@ -101,6 +101,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--input-model": "Import a Python type or dict schema from a module or Python file.",
     "--input-model-ref-strategy": "Strategy for referenced types when using --input-model.",
     "--intersect-allof-keywords": "Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...",
+    "--keep-enum-member-values": "Give an enum class a value base only when it keeps every member value.",
     "--keep-field-defaults-off-branch-roots": "Leave a property's default off the root models extracted from its `a...",
     "--keep-model-order": "Keep generated model order deterministic while respecting dependency constraints.",
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",

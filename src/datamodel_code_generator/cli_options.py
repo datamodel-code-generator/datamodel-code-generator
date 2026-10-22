@@ -650,6 +650,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         topic=OptionTopic.TYPING_CUSTOMIZATION,
         group=OptionGroup.TYPE_MAPPING,
     ),
+    "--keep-enum-member-values": CLIOptionMeta(name="--keep-enum-member-values", category=OptionCategory.TYPING),
     "--read-unevaluated-properties": CLIOptionMeta(
         name="--read-unevaluated-properties",
         category=OptionCategory.TYPING,

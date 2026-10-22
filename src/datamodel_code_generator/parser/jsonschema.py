@@ -96,8 +96,8 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,
+    holds_member_value,
     is_literal_kind,
-    keeps_member_value,
     literal_value_kind,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type
@@ -10076,18 +10076,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
         """Return whether the enum merged from the members of ``enums``, in the class of the first, fails at import.
 
-        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not keep, as on
+        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not hold, as on
         ``None``; an output that writes the first enum as a ``Literal`` or as its const merges no enum class.
         """
         first = enums[0]
         if self.should_parse_enum_as_literal(first) or self._reads_enum_as_const(first):
             return False
-        enum_class = self._get_enum_model_class(
-            self._get_enum_type(first), [value for value in first.enum if value is not None]
-        )[0]
+        enum_class = self._get_enum_model_class(self._get_enum_type(first), first.enum)[0]
         value_type = "int" if issubclass(enum_class, IntEnum) else "str" if issubclass(enum_class, StrEnum) else None
+        keep = self.config.keep_enum_member_values
         return value_type is not None and not all(
-            value is not None and keeps_member_value(value_type, value) for target in enums for value in target.enum
+            value is not None and holds_member_value(value_type, value, keep_member_values=keep)
+            for target in enums
+            for value in target.enum
         )
 
     def _array_all_of_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
@@ -14787,6 +14788,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             use_subclass_enum=self.use_subclass_enum,
             has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
             decodes_mixed_values=self._output_model_context.decodes_mixed_enum_values,
+            keep_member_values=self.config.keep_enum_member_values,
         )
         return _enum_class(kind), type_ if kind.subclasses_value_type else None
 
@@ -14799,13 +14801,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Such a class needs one ``type`` other than ``string``, which rejects null unless ``nullable`` allows it, so the
         enum drops the null it lists and is not nullable, except that an enum of only null stays that None. The class
-        is the one of the members other than null, which a value base must keep. The ``use_subclass_enum`` check is a
+        is the one of the members other than null, which a value base must hold. The ``use_subclass_enum`` check is a
         no-op for the built-in ``_get_enum_model_class``; it stays for parser subclasses that return its old second
         value.
         """
-        enum_cls, type_ = self._get_enum_model_class(
-            self._get_enum_type(obj), [value for value in obj.enum if value is not None]
-        )
+        enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), obj.enum)
         return enum_cls is not Enum or (self.use_subclass_enum and type_ in SUBCLASS_BASE_CLASSES)
 
     def _extra_template_data_for_reference(self, reference: Reference) -> defaultdict[str, dict[str, Any]] | None:

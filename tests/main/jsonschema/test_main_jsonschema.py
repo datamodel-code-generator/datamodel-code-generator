@@ -7588,7 +7588,7 @@ def test_main_jsonschema_specialized_enums_disabled(output_file: Path) -> None:
     )
 
 
-@pytest.mark.parametrize(
+ENUM_VALUE_BASE_KINDS_CASES = pytest.mark.parametrize(
     ("output_model", "extra_args"),
     [
         pytest.param(output_model, extra_args, id=f"{args_id}-{model_id}")
@@ -7608,14 +7608,54 @@ def test_main_jsonschema_specialized_enums_disabled(output_file: Path) -> None:
         if (args_id, model_id) != ("preset", "dataclasses")
     ],
 )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-enum-member-values"],
+    option_description="""Give an enum class a value base only when it keeps every member value.
+
+`--use-specialized-enum` (`IntEnum`, `StrEnum`) and `--use-subclass-enum` (`(T, Enum)`) give an enum class the value
+type of its schema type as a base. Without this option the base follows the schema type alone, as in 0.86.0, so a
+member the base changes is written with the changed value: const branches `[1, 2.5]` make an `IntEnum` whose `2.5`
+becomes `2` (rejecting the schema-valid `2.5` and accepting `2`), and `['a', 1]` under `--use-subclass-enum` a
+`(str, Enum)` holding `'1'`. With the option such an enum is a plain `Enum` that keeps the values as written; members
+the base keeps, as `1.0` in an `IntEnum` or `1` in a `(float, Enum)`, keep the base. msgspec keeps the 0.86.0 class
+where it could not decode the plain `Enum`. A base that cannot hold a member at all, so that the class failed at
+import (`'a'` in an `IntEnum`, a `format: byte` enum), gives a plain `Enum` either way.""",
+    input_schema="jsonschema/enum_value_base_kinds.json",
+    cli_args=["--keep-enum-member-values"],
+    golden_output="main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py",
+    comparison_output="main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].py",
+)
+@ENUM_VALUE_BASE_KINDS_CASES
 def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: list[str], output_file: Path) -> None:
     """Give an enum class a value base (IntEnum, StrEnum, ``(T, Enum)``) only when it keeps every member value.
 
-    Up to 0.86.0 the base came from the schema type alone: const branches ``[1, 'a']`` or ``[1, 2.5]`` were an
-    IntEnum (``'a'`` failed at import, ``2.5`` became ``2``), ``['a', 1]`` under --use-subclass-enum a ``(str, Enum)``
-    holding ``'1'``, and a ``format: byte`` enum a ``(bytes, Enum)`` that failed at import. Members that the base
-    keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it. msgspec keeps the 0.86.0 IntEnum or
-    ``(T, Enum)`` where it could not decode the plain Enum, until msgspec Enums are decided as a whole.
+    This needs --keep-enum-member-values. Up to 0.86.0 the base came from the schema type alone: const branches
+    ``[1, 'a']`` or ``[1, 2.5]`` were an IntEnum (``'a'`` failed at import, ``2.5`` became ``2``), ``['a', 1]`` under
+    --use-subclass-enum a ``(str, Enum)`` holding ``'1'``, and a ``format: byte`` enum a ``(bytes, Enum)`` that failed
+    at import. Members that the base keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it. msgspec
+    keeps the 0.86.0 IntEnum or ``(T, Enum)`` where it could not decode the plain Enum, until msgspec Enums are decided
+    as a whole.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args, "--keep-enum-member-values"],
+        force_exec_validation=True,
+    )
+
+
+@ENUM_VALUE_BASE_KINDS_CASES
+def test_main_jsonschema_enum_value_base_kinds_without_option(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep the 0.86.0 value base of an enum class without --keep-enum-member-values.
+
+    ``[1, 2.5]`` stays an IntEnum (``2.5`` written as ``2``) and ``['a', 1]`` under --use-subclass-enum a
+    ``(str, Enum)``, as in 0.86.0; only a base that cannot construct a member, so that the class failed at import
+    (``'a'`` in an IntEnum, ``format: byte`` strings in a ``(bytes, Enum)``), gives a plain Enum.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",

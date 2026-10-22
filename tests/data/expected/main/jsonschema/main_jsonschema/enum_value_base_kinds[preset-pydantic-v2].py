@@ -41,6 +41,11 @@ class Base64(Enum):
     yg__ = 'Yg=='
 
 
+class ByteCounts(Enum):
+    field_1 = 1
+    field_2 = 2
+
+
 class EnumValueBaseKinds(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -52,3 +57,4 @@ class EnumValueBaseKinds(BaseModel):
     numbers: Numbers | None = None
     integral_floats: IntegralFloats | None = None
     base64: Base64 | None = None
+    byte_counts: ByteCounts | None = None

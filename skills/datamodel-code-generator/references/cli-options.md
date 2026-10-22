@@ -58,6 +58,7 @@ Type annotation, import, and primitive type behavior.
 - `--use-single-dict-for-object-maps`: Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, as one dict whose keys are those of every key class and whose value is the union of their values, beside the null and the other types of its type array
 - `--use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
 - `--no-use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
+- `--keep-enum-member-values`: Write an enum as a plain Enum where the value base of --use-specialized-enum or --use-subclass-enum would change a member value, such as 2.5 in an IntEnum; without it the base follows the schema type, as in 0.86.0
 - `--use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled
 - `--no-use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled
 - `--use-unique-items-as-set`: define field type as `set` when the field attribute has `uniqueItems`

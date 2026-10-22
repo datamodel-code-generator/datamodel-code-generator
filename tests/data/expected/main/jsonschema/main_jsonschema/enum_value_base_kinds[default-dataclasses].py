@@ -43,6 +43,11 @@ class Base64(Enum):
     Yg__ = 'Yg=='
 
 
+class ByteCounts(Enum):
+    field_1 = 1
+    field_2 = 2
+
+
 @dataclass
 class EnumValueBaseKinds:
     str_then_int: StrThenInt | None = None
@@ -52,3 +57,4 @@ class EnumValueBaseKinds:
     numbers: Numbers | None = None
     integral_floats: IntegralFloats | None = None
     base64: Base64 | None = None
+    byte_counts: ByteCounts | None = None

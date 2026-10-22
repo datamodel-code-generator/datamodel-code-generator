@@ -6414,6 +6414,24 @@ subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subcl
 subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-dataclasses].py
 subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-msgspec].py
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-pydantic-v2].py
+[test_main_jsonschema_enum_value_base_kinds_without_option]
+default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-dataclasses].py
+default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].py
+preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].py
+preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-pydantic-v2].py
+py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-dataclasses].py
+py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].py
+py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-dataclasses].py
+py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-msgspec].py
+py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-pydantic-v2].py
+subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-dataclasses].py
+subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-msgspec].py
+subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-pydantic-v2].py
+subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-dataclasses].py
+subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-msgspec].py
+subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-pydantic-v2].py
 [test_main_jsonschema_external_discriminator]
 msgspec.Struct-discriminator_with_external_reference_msgspec.py	main/jsonschema/discriminator_with_external_reference_msgspec.py
 pydantic_v2.BaseModel-discriminator_with_external_reference.py	main/jsonschema/discriminator_with_external_reference.py

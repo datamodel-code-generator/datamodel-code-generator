@@ -325,6 +325,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             use_specialized_enum=self.use_specialized_enum,
             use_subclass_enum=self.use_subclass_enum,
             has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
+            keep_member_values=self.config.keep_enum_member_values,
         )
         enum = _enum_class(kind)(
             reference=self.references[enum_object.name],

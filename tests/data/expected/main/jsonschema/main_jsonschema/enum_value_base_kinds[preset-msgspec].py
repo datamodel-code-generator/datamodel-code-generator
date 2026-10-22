@@ -41,6 +41,11 @@ class Base64(Enum):
     yg__ = 'Yg=='
 
 
+class ByteCounts(Enum):
+    field_1 = 1
+    field_2 = 2
+
+
 class EnumValueBaseKinds(Struct):
     str_then_int: StrThenInt | UnsetType = UNSET
     int_then_str: IntThenStr | UnsetType = UNSET
@@ -49,3 +54,4 @@ class EnumValueBaseKinds(Struct):
     numbers: Numbers | UnsetType = UNSET
     integral_floats: IntegralFloats | UnsetType = UNSET
     base64: Base64 | UnsetType = UNSET
+    byte_counts: ByteCounts | UnsetType = UNSET

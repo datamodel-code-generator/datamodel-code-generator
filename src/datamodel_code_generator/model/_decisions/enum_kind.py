@@ -31,6 +31,7 @@ __all__ = [
     "LiteralValueKind",
     "decide_enum_kind",
     "enum_as_literal",
+    "holds_member_value",
     "is_literal_kind",
     "is_tag_kind",
     "keeps_member_value",
@@ -51,6 +52,7 @@ EnumKindRule: TypeAlias = Literal[
     "int-enum",
     "str-enum",
     "subclass-value-type",
+    "legacy-value-base-changing-a-member",
     "legacy-msgspec-decodable-value-base",
     "legacy-inherited-first-base-class",
     "legacy-inherited-specialized-without-member-check",
@@ -60,7 +62,8 @@ EnumKindRule: TypeAlias = Literal[
 * ``enum``: a plain ``Enum``: no value base is asked for, or the schema type has no value type.
 * ``enum-value-base-changes-a-member``: a plain ``Enum``, since the value base asked for would change or refuse a
   member value (``T(v) != v``, NaN equal to itself; ``bytes`` keeps no JSON value), as ``1.5`` or ``'x'`` beside an
-  integer type would.
+  integer type would. Without ``--keep-enum-member-values`` only a base that refuses a member (``T(v)`` fails, so the
+  class fails at import) gives this row.
 * ``int-enum``: an ``IntEnum`` for an integer type whose members ``int`` keeps (ints, bools and integral floats). A
   bool counts as its int, as Python's ``==`` has it, so const branches ``[1, true]`` stay an ``IntEnum`` (``True``
   an alias of ``1``), as in 0.86.0.
@@ -68,10 +71,15 @@ EnumKindRule: TypeAlias = Literal[
   ``IntEnum``, it subclasses its value type already, so ``--use-subclass-enum`` adds no value type base.
 * ``subclass-value-type``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses the value type of the
   schema type (``class A(str, Enum)``), which keeps every member.
-* ``legacy-msgspec-decodable-value-base``: for an output that decodes only Enums whose values are all str or all
-  int (msgspec), the 0.86.0 ``IntEnum`` or ``(T, Enum)`` where the plain ``Enum`` of the row above would hold values
-  of other kinds and so fail every decode, and where ``T`` (``int`` or ``str``) constructs every member, so the class
-  imports and decodes, though with the changed members. It stays until msgspec Enums are decided as a whole (G16).
+* ``legacy-value-base-changing-a-member``: without ``--keep-enum-member-values``, the 0.86.0 ``IntEnum`` or
+  ``(T, Enum)`` of the schema type where it changes a member value it constructs, as ``2.5`` written as ``2`` in an
+  ``IntEnum`` or ``1`` as ``'1'`` in a ``(str, Enum)``. A ``StrEnum`` still needs every value a str, ``None``
+  included, as in 0.86.0.
+* ``legacy-msgspec-decodable-value-base``: with ``--keep-enum-member-values``, for an output that decodes only Enums
+  whose values are all str or all int (msgspec), the 0.86.0 ``IntEnum`` or ``(T, Enum)`` where the plain ``Enum`` of
+  ``enum-value-base-changes-a-member`` would hold values of other kinds and so fail every decode, and where ``T``
+  (``int`` or ``str``) constructs every member, so the class imports and decodes, though with the changed members. It
+  stays until msgspec Enums are decided as a whole (G16).
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
@@ -105,6 +113,8 @@ _MEMBER_CHANGING_ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule=
 _INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="int-enum")
 _STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=False, rule="str-enum")
 _SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="subclass-value-type")
+_CHANGING_INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="legacy-value-base-changing-a-member")
+_CHANGING_SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="legacy-value-base-changing-a-member")
 _MSGSPEC_INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="legacy-msgspec-decodable-value-base")
 _MSGSPEC_SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="legacy-msgspec-decodable-value-base")
 _INHERITED = EnumKind(base=None, subclasses_value_type=False, rule="legacy-inherited-first-base-class")
@@ -124,6 +134,7 @@ def decide_enum_kind(  # noqa: PLR0913
     has_strenum: bool = False,
     first_specialized: bool = False,
     decodes_mixed_values: bool = True,
+    keep_member_values: bool = False,
 ) -> EnumKind:
     """Return the class an enum is written as (``EnumKindRule`` names the rows).
 
@@ -131,24 +142,38 @@ def decide_enum_kind(  # noqa: PLR0913
     ``float``, ``bytes`` or ``str``, or None for any other type), its member ``values``, the options and whether the
     target Python has ``StrEnum``. A merged enum reads only ``first_specialized``, which tells that the first enum it
     extends is an ``IntEnum`` or a ``StrEnum``. An ``IntEnum`` or ``StrEnum`` subclasses its value type already, so
-    only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``. Any value base is taken only when it
-    keeps every member value (``keeps_member_value``). ``decodes_mixed_values`` tells that the output decodes an Enum
-    whose values are not all str or all int.
+    only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``. A ``None`` among the ``values`` is no
+    member of a class with a value base. With ``keep_member_values`` (``--keep-enum-member-values``) a value base is
+    taken only when it keeps every member value (``keeps_member_value``), and ``decodes_mixed_values`` tells that the
+    output decodes an Enum whose values are not all str or all int; without it the base follows the schema type, as
+    in 0.86.0, unless it refuses a member (``holds_member_value``).
     """
     if origin == "merged":
         return _INHERITED_SPECIALIZED if first_specialized else _INHERITED
-    specialized = use_specialized_enum and (value_type == "int" or (value_type == "str" and has_strenum))
+    specialized = use_specialized_enum and (
+        value_type == "int"
+        or (
+            value_type == "str"
+            and has_strenum
+            and (keep_member_values or all(isinstance(value, str) for value in values))
+        )
+    )
     if value_type is None or not (specialized or use_subclass_enum):
         return _ENUM
-    if not all(keeps_member_value(value_type, value) for value in values):
-        if not decodes_mixed_values and (
-            legacy := _decodable_legacy_kind(value_type, values, int_enum=specialized, subclass=use_subclass_enum)
+    members = [value for value in values if value is not None]
+    if not all(holds_member_value(value_type, value, keep_member_values=keep_member_values) for value in members):
+        if (
+            keep_member_values
+            and not decodes_mixed_values
+            and (
+                legacy := _decodable_legacy_kind(value_type, members, int_enum=specialized, subclass=use_subclass_enum)
+            )
         ):
             return legacy
         return _MEMBER_CHANGING_ENUM
-    if specialized:
-        return _INT_ENUM if value_type == "int" else _STR_ENUM
-    return _SUBCLASS_ENUM
+    if not all(keeps_member_value(value_type, value) for value in members):
+        return _CHANGING_INT_ENUM if specialized else _CHANGING_SUBCLASS_ENUM
+    return (_INT_ENUM if value_type == "int" else _STR_ENUM) if specialized else _SUBCLASS_ENUM
 
 
 def _decodable_legacy_kind(
@@ -162,17 +187,22 @@ def _decodable_legacy_kind(
     """
     if {literal_value_kind(value) for value in values} in ({"str"}, {"int"}) or value_type not in {"int", "str"}:
         return None
-    if not all(_constructs(_VALUE_TYPES[value_type], value) for value in values):
+    if not all(_constructs(value_type, value) for value in values):
         return None
     if int_enum and value_type == "int":
         return _MSGSPEC_INT_ENUM
     return _MSGSPEC_SUBCLASS_ENUM if subclass else None
 
 
-def _constructs(construct: Callable[[Any], object], value: object) -> bool:
-    """Return whether the value type constructs a member from the value, as an enum class subclassing it does."""
+def _constructs(value_type: str, value: object) -> bool:
+    """Return whether the value type constructs a member from the value, as an enum class subclassing it does.
+
+    ``bytes`` of an int allocates that many bytes, so a non-negative int counts as constructed without building it.
+    """
+    if value_type == "bytes" and isinstance(value, int):
+        return value >= 0
     try:
-        construct(value)
+        _CONSTRUCTORS[value_type](value)
     except (TypeError, ValueError, OverflowError):
         return False
     return True
@@ -180,6 +210,20 @@ def _constructs(construct: Callable[[Any], object], value: object) -> bool:
 
 _VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}
 """The constructors of the value types a value base can subclass; ``bytes`` keeps no JSON value, so it has none."""
+
+_CONSTRUCTORS: Final[Mapping[str, Callable[[Any], object]]] = {**_VALUE_TYPES, "bytes": bytes}
+"""The constructors of every value type a value base can subclass, ``bytes`` included."""
+
+
+def holds_member_value(value_type: str, value: object, /, *, keep_member_values: bool) -> bool:
+    """Return whether a class subclassing the value type can hold the member value.
+
+    With ``keep_member_values`` (``--keep-enum-member-values``) it must keep the value as written
+    (``keeps_member_value``); without it, as in 0.86.0, it only must construct a member from it, so the class imports.
+    """
+    if keep_member_values:
+        return keeps_member_value(value_type, value)
+    return _constructs(value_type, value)
 
 
 def keeps_member_value(value_type: str, value: object, /) -> bool:

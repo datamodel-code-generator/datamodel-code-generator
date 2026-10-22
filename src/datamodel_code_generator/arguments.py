@@ -988,6 +988,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--keep-enum-member-values",
+    help="Write an enum as a plain Enum where the value base of --use-specialized-enum or --use-subclass-enum "
+    "would change a member value, such as 2.5 in an IntEnum; without it the base follows the schema type, as in "
+    "0.86.0",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-union-operator",
     help="Use | operator for Union type (PEP 604). Default: enabled",
     action=BooleanOptionalAction,

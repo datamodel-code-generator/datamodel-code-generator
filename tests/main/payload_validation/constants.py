@@ -421,6 +421,10 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     },
     "jsonschema/enum_multiple_of_big_integer.json": dict.fromkeys(PayloadBackend, ("--filter-literal-values",)),
     **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--keep-enum-member-values",))
+        for name in ("enum_value_base_kinds", "msgspec_enum_value_base_kept")
+    },
+    **{
         case_id: dict.fromkeys(PayloadBackend, ("--intersect-allof-keywords",))
         for case_id in (
             "jsonschema/allof_mapping_every_part_null.json",

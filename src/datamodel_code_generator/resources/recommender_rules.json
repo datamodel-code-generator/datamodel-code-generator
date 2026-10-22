@@ -845,6 +845,10 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."
     },
+    "keep_enum_member_values": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+    },
     "keep_field_defaults_off_branch_roots": {
       "not_recommended": "preset",
       "reason": "Set by the 20261022 presets; the recommendation starts from a preset."

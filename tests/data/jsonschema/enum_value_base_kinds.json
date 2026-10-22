@@ -9,6 +9,7 @@
     "int_then_bool": {"oneOf": [{"const": 1}, {"const": true}]},
     "numbers": {"type": "number", "enum": [1, 2.5]},
     "integral_floats": {"type": "integer", "enum": [1.0, 2.0]},
-    "base64": {"type": "string", "format": "byte", "enum": ["YQ==", "Yg=="]}
+    "base64": {"type": "string", "format": "byte", "enum": ["YQ==", "Yg=="]},
+    "byte_counts": {"type": "string", "format": "byte", "enum": [1, 2]}
   }
 }
