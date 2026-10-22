@@ -485,13 +485,15 @@ class NestedFactoryMetadata:
 class _FrozenPlan(NamedTuple):
     """A field's frozen plan, the plan the import snapshot reads if different, and what the plan read from the field.
 
-    ``inputs`` are the field's ``_render_inputs`` when the plan was built.
+    ``inputs`` are the field's ``_render_inputs`` when the plan was built. ``type_expr`` is the expression of the
+    field's type hint then (``types.py:type_expr_of``), kept under ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
     """
 
     field: object
     plan: FieldRenderPlan
     import_plan: FieldRenderPlan | None
     inputs: RenderInputs
+    type_expr: object = None
 
 
 @final
@@ -513,9 +515,15 @@ class RenderReady:
         self._rebuilding = False
         self.nested_factories: NestedFactoryMetadata | None = None
 
-    def freeze(self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
-        """Keep ``plan`` as the field's plan, and ``import_plan`` as the one the import snapshot reads, if different."""
-        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, field._render_inputs())  # noqa: SLF001
+    def freeze(
+        self,
+        field: PlannedField,
+        plan: FieldRenderPlan,
+        import_plan: FieldRenderPlan | None = None,
+        type_expr: object = None,
+    ) -> None:
+        """Keep the field's plan, the plan the import snapshot reads if different, and the expression of its hint."""
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, field._render_inputs(), type_expr)  # noqa: SLF001
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
         """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
@@ -528,10 +536,10 @@ class RenderReady:
             return entry.import_plan
         return entry.plan
 
-    def frozen(self) -> Iterator[tuple[object, FieldRenderPlan]]:
-        """Yield every field with the plan frozen for it."""
+    def frozen(self) -> Iterator[tuple[object, FieldRenderPlan, object]]:
+        """Yield every field with the plan frozen for it and the expression of its type hint, if kept."""
         for entry in self._plans.values():
-            yield entry.field, entry.plan
+            yield entry.field, entry.plan, entry.type_expr
 
     def refreshed(self, field: PlannedField) -> FieldRenderPlan | None:
         """Rebuild the plan frozen for ``field`` if what it read from the field changed since; return the rebuilt plan.

@@ -840,9 +840,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Get the type hint string for this field, including nullability."""
         return self._type_hint_from_data_type(self.data_type)
 
-    def _type_hint_from_data_type(self, data_type: DataType) -> str:
-        """Get the type hint string for a field data type, including nullability."""
-        type_hint = data_type.type_hint
+    def _type_hint_from_data_type(self, data_type: DataType, *, base: bool = False) -> str:
+        """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability."""
+        type_hint = data_type.base_type_hint if base else data_type.type_hint
 
         if not type_hint:
             return NONE
@@ -882,14 +882,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         This returns the type without kwargs (e.g., 'str' instead of 'constr(pattern=...)').
         Used in RootModel generics when regex_engine config is needed for lookaround patterns.
         """
-        base_hint = self.data_type.base_type_hint
-
-        if not base_hint:  # pragma: no cover
-            return NONE
-
-        if self._field_null_source(self.data_type) is not None:  # pragma: no cover
-            return get_optional_type(base_hint, self._use_union_operator)
-        return base_hint
+        return self._type_hint_from_data_type(self.data_type, base=True)
 
     @property
     def imports(self) -> tuple[Import, ...]:

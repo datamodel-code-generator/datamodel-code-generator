@@ -581,12 +581,6 @@ def test_datatype_type_hint_without_container_flag_returns_inner_type() -> None:
     data_type = DataType(data_types=[DataType(type="str")])
 
     assert data_type.type_hint == "str"
-    wrapped_type_hint = data_type._wrap_container_type_hint(
-        "str",
-        ("list",),
-        use_base_type_hint=False,
-    )
-    assert wrapped_type_hint == "str"
     data_type._materialize_render_state("reference-null")
     assert data_type.is_optional is False
 

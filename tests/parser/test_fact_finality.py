@@ -23,6 +23,7 @@ from scripts import check_fact_finality, check_pass_pipeline
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_FACT_FINALITY_SWEEP_ENV,
+    CHECK_RENDER_PLANS_ENV,
     CHECK_STORE_WRITES_ENV,
     assert_output,
 )
@@ -143,6 +144,7 @@ def _finality_only(monkeypatch: pytest.MonkeyPatch, value: str, *, sweep: bool =
     monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, value)
     monkeypatch.setenv(CHECK_FACT_FINALITY_SWEEP_ENV, "1" if sweep else "0")
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, "0")
+    monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, "0")
 
 
 @pytest.mark.parametrize("flag", ["check", "report", "off"])

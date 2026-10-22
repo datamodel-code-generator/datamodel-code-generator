@@ -124,8 +124,6 @@ reference bookkeeping and render entry points. A hook that a store operation run
 
 RENDER_STATE_WRITERS = frozenset({
     "_materialize_render_state",
-    "_render_ordered_union_type_hint",
-    "_render_union_type_hint",
     "_strip_null",
     "_write_pre_render_nullability",
 })
@@ -151,6 +149,7 @@ RENDER_ENTRY_POINTS = {
     "prepare_module_code": "plans schema-validator module code at IMPORTS into a cache, which the cache rules report",
     "render": "renders a model's text; render-time writes move into the field render plans (RP14a)",
     "render_module_code": "renders a module's code at L7; render-time writes move into the field render plans (RP14a)",
+    "render_type_expr": "renders a type expression frozen at B2 under the render plan check at L7, as `type_hint` does",
 }
 """Render-time entry points that parser passes call; they are not hooks, and the hook closure stops at them."""
 

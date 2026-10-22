@@ -70,7 +70,7 @@ from datamodel_code_generator._internal_utils import (
 )
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._naming_hint import collecting_class_names
-from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
+from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable, rendering_memo
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._reference_graph import (
@@ -291,6 +291,8 @@ from datamodel_code_generator.types import (
     DefaultValueRecipe,
     Types,
     build_union,
+    render_type_expr,
+    type_expr_of,
     union_members,
 )
 from datamodel_code_generator.util import camel_to_snake, record_watch_dependency
@@ -310,6 +312,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.generation import GraphBuilder
+    from datamodel_code_generator.types import TypeExpr
 
 
 # Preserve the existing parser.base export while sharing one canonical escape table.
@@ -9232,17 +9235,28 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         if field._render_plan_text(decided) != import_text:  # noqa: SLF001
                             import_plan = plan
                     plan = decided
-                ready.freeze(field, plan, import_plan)
+                ready.freeze(field, plan, import_plan, None if mode is None else type_expr_of(model_field.data_type))
                 if mode is not None:
                     _check_render_plan_accounting(mode, model, field, plan)
 
     def __check_frozen_render_plans(self) -> None:  # noqa: PLR6301
-        """Report a frozen render plan that renders other text than its field's plan rebuilt now."""
+        """Report a frozen render plan, or the type expression frozen with it, that renders other text than now.
+
+        The plan is compared with its field's plan rebuilt now, the type expression with the field's type hint now,
+        both rendered with a memo of their own, so the check leaves the parse's memo as it was.
+        """
         if (mode := check_mode(CheckArea.RENDER_PLANS)) is None:
             return
         ready = cast("RenderReady", RENDER_READY.get())
-        for frozen_field, plan in ready.frozen():
+        for frozen_field, plan, type_expr in ready.frozen():
             field = cast("PlannedField", frozen_field)
+            with rendering_memo():
+                hint = cast("DataModelFieldBase", frozen_field).data_type.type_hint
+                frozen_hint = render_type_expr(cast("TypeExpr", type_expr))
+            if frozen_hint != hint:
+                mode.violation(
+                    Error, f"the type expression frozen for field {field.name} renders {frozen_hint}, now {hint}"
+                )
             with ready.rebuilding():
                 rebuilt = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
                 rebuilt_text = field._render_plan_text(rebuilt)  # noqa: SLF001

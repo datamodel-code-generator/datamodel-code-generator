@@ -64,7 +64,8 @@ class CheckArea(Enum):
 
     RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
     """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
-    modules are written, as the plan the field's facts give then."""
+    modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
+    with it renders as the type hint then."""
 
     RENDER_MEMOS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
     """Every value a per-parse memo returns equals the value computed anew where it is read. With a report file, it

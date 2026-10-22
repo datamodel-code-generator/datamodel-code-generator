@@ -816,6 +816,10 @@ pydantic_v2.BaseModel-20261019	main/main_general/standard_preset_enums_read_as_t
 [test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff]
 	main/main_general/type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff/	= main/openapi/no_use_type_checking_imports//*.py
 	main/openapi/no_use_type_checking_imports//*.py
+[test_type_expression_whose_field_changes_after_render_preparation]
+off	main/main_general/type_expression_whose_field_changes_after_render_preparation[off].txt
+report	main/main_general/type_expression_whose_field_changes_after_render_preparation[report].report.txt
+report	main/main_general/type_expression_whose_field_changes_after_render_preparation[report].txt	= main/main_general/type_expression_whose_field_changes_after_render_preparation[off].txt
 [test_type_overrides_external_lib]
 	main/type_overrides_external_lib.py
 [test_type_overrides_for_target]

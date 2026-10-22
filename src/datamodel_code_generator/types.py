@@ -23,12 +23,15 @@ from typing import (
     Annotated,
     Any,
     ClassVar,
+    Final,
     Literal,
     Optional,
     Protocol,
     TypeAlias,
     TypeVar,
     Union,
+    cast,
+    final,
     runtime_checkable,
 )
 
@@ -1010,147 +1013,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
     )
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
 
-    def _render_nested_type_hint(
-        self,
-        *,
-        use_base_type_hint: bool,
-        wrap_discriminator: bool,
-    ) -> tuple[str, bool]:
-        """Return the hint of the nested types and whether a union takes the None of its members."""
-        member_null = False
-        if self.is_tuple:
-            tuple_type = STANDARD_TUPLE if self.use_standard_collections else TUPLE
-            if self.tuple_item_count == 0:
-                type_ = f"{tuple_type}[()]"
-            elif self.tuple_item_count is not None:
-                item_type = ANY
-                if self.data_types:
-                    item = self.data_types[0]
-                    item_type = (item.base_type_hint if use_base_type_hint else item.type_hint) or ANY
-                type_ = f"{tuple_type}[{', '.join(repeat(item_type, self.tuple_item_count))}]"
-            else:
-                inner_types = [
-                    (item.base_type_hint if use_base_type_hint else item.type_hint) or ANY for item in self.data_types
-                ]
-                type_ = f"{tuple_type}[{', '.join(inner_types)}]" if inner_types else f"{tuple_type}[()]"
-        elif self.is_union:
-            type_, member_null = self._render_union_type_hint(
-                use_base_type_hint=use_base_type_hint,
-                wrap_discriminator=wrap_discriminator,
-            )
-        elif len(self.data_types) == 1:
-            data_type = self.data_types[0]
-            type_ = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
-        elif self.enum_member_literals:
-            parts = [f"{enum_class}.{member}" for enum_class, member in self.enum_member_literals]
-            type_ = f"{self._literal_name}[{', '.join(parts)}]"
-        elif self.literals:
-            type_ = f"{self._literal_name}[{', '.join(repr(literal) for literal in self.literals)}]"
-        elif self.reference:
-            type_ = self.reference.short_name
-            type_ = self._get_wrapped_reference_type_hint(type_)
-        else:
-            # TODO support strict Any
-            type_ = ""
-
-        return type_, member_null
-
-    def _render_union_type_hint(
-        self,
-        *,
-        use_base_type_hint: bool,
-        wrap_discriminator: bool,
-    ) -> tuple[str, bool]:
-        """Return the hint of the union and whether it takes the None of its members, which it writes no more."""
-        if self.preserve_union_member_order:
-            return self._render_ordered_union_type_hint(
-                use_base_type_hint=use_base_type_hint,
-                wrap_discriminator=wrap_discriminator,
-            ), False
-
-        merged = self._merge_union_member_type_hints(use_base_type_hint=use_base_type_hint)
-        data_types = merged.kept
-        if not data_types:
-            type_ = ANY
-            self._materialize_render_state("empty-union")
-        elif len(data_types) == 1:
-            type_ = data_types[0]
-        else:
-            type_ = self._join_union_member_type_hints(data_types)
-
-        if wrap_discriminator and (discriminator := self.discriminator):
-            type_ = self._wrap_discriminator_type_hint(type_, discriminator)
-        return type_, merged.takes_null
-
-    def _merge_union_member_type_hints(self, *, use_base_type_hint: bool) -> MergedMembers[str]:
-        """Merge the rendered hints of the union members, taking the None out of each hint that strips it."""
-        union = _union_core()
-        return union.merge_members(
-            union.WrittenMember(
-                data_type_type,
-                kept := NONE
-                if (null := data_type_type == NONE)
-                else _remove_none_from_union(data_type_type, use_union_operator=self.use_union_operator),
-                null=null,
-                strips_null=kept != data_type_type,
-            )
-            for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint)
-            if data_type_type
-        )
-
-    def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> list[str]:
-        """Return the hints of union members, spreading a member union that renders as a plain union.
-
-        A member's rendering keeps the hints it joins in the parse's memo, or outside a parse in the rendering's own.
-        """
-        if (memo := PARSE_MEMO.get()) is not None:
-            return self._spread_union_member_type_hints(memo, use_base_type_hint=use_base_type_hint)
-        with rendering_memo() as memo:
-            return self._spread_union_member_type_hints(memo, use_base_type_hint=use_base_type_hint)
-
-    def _spread_union_member_type_hints(self, memo: ParseMemo, *, use_base_type_hint: bool) -> list[str]:
-        hints: list[str] = []
-        for data_type in self.data_types:
-            joins = memo.joins
-            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
-            if members := memo.union_members(NodeKey(id(data_type)), data_type, data_type_type, joins):
-                hints.extend(members)
-            else:
-                hints.append(data_type_type)
-        return hints
-
-    def _join_union_member_type_hints(self, data_types: tuple[str, ...]) -> str:
-        """Join union member hints, keeping them in the current memo so that an enclosing union can spread this one."""
-        type_ = _union_core().join_union(data_types, union_operator=self.use_union_operator)
-        if (memo := PARSE_MEMO.get()) is not None:
-            memo.keep_union_members(NodeKey(id(self)), self, type_, data_types)
-        return type_
-
-    def _render_ordered_union_type_hint(
-        self,
-        *,
-        use_base_type_hint: bool,
-        wrap_discriminator: bool,
-    ) -> str:
-        union = _union_core()
-        data_types = union.merge_members(
-            union.WrittenMember(data_type_type, data_type_type)
-            for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint)
-            if data_type_type
-        ).kept
-        match len(data_types):
-            case 0:
-                type_ = ANY
-                self._materialize_render_state("empty-union")
-            case 1:
-                type_ = data_types[0]
-            case _:
-                type_ = self._join_union_member_type_hints(data_types)
-
-        if wrap_discriminator and (discriminator := self.discriminator):
-            type_ = self._wrap_discriminator_type_hint(type_, discriminator)
-        return type_
-
     @property
     def names_nullable_model(self) -> bool:
         """Return whether the type names a model that admits null and is not a type alias."""
@@ -1223,7 +1085,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
             keeps_member_order=self.preserve_union_member_order,
             member_count=len(self.data_types),
         ):
-            yield self._merge_union_member_type_hints(use_base_type_hint=False).takes_null
+            yield _merge_union_members(
+                self, tuple(type_expr_of(member, base=False) for member in self.data_types)
+            ).takes_null
 
     def _gives_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
@@ -1277,116 +1141,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return ``is_optional`` without the None that render preparation wrote (rows MS and SK read it)."""
         return self.is_optional and _RENDER_PREPARATION_NULL_DATA_TYPE_KEY not in self.__dict__
 
-    def _wrap_dict_type_hint(
-        self,
-        type_: str,
-        dict_: str,
-        *,
-        use_base_type_hint: bool,
-    ) -> str:
-        if self.dict_key or type_:
-            key = (
-                (self.dict_key.base_type_hint if use_base_type_hint else self.dict_key.type_hint)
-                if self.dict_key
-                else STR
-            )
-            return f"{dict_}[{key}, {type_ or ANY}]"
-        return dict_
-
-    def _wrap_frozen_set_type_hint(self, type_: str, _use_base_type_hint: bool) -> str:  # noqa: FBT001
-        set_ = STANDARD_FROZEN_SET if self.use_standard_collections else FROZEN_SET
-        return f"{set_}[{type_}]" if type_ else set_
-
-    def _wrap_set_type_hint(self, type_: str, _use_base_type_hint: bool) -> str:  # noqa: FBT001
-        if self.use_generic_container:
-            set_ = STANDARD_FROZEN_SET if self.use_standard_collections else FROZEN_SET
-        elif self.use_standard_collections:
-            set_ = STANDARD_SET
-        else:
-            set_ = SET
-        return f"{set_}[{type_}]" if type_ else set_
-
-    @staticmethod
-    def _wrap_sequence_type_hint(type_: str, _use_base_type_hint: bool) -> str:  # noqa: FBT001
-        return f"{SEQUENCE}[{type_}]" if type_ else SEQUENCE
-
-    def _wrap_list_type_hint(self, type_: str, _use_base_type_hint: bool) -> str:  # noqa: FBT001
-        if self.use_generic_container:
-            list_ = SEQUENCE
-        elif self.use_standard_collections:
-            list_ = STANDARD_LIST
-        else:
-            list_ = LIST
-        return f"{list_}[{type_}]" if type_ else list_
-
-    def _wrap_mapping_type_hint(self, type_: str, use_base_type_hint: bool) -> str:  # noqa: FBT001
-        return self._wrap_dict_type_hint(type_, MAPPING, use_base_type_hint=use_base_type_hint)
-
-    def _wrap_builtin_dict_type_hint(self, type_: str, use_base_type_hint: bool) -> str:  # noqa: FBT001
-        if self.use_generic_container:
-            dict_ = MAPPING
-        elif self.use_standard_collections:
-            dict_ = STANDARD_DICT
-        else:
-            dict_ = DICT
-        return self._wrap_dict_type_hint(type_, dict_, use_base_type_hint=use_base_type_hint)
-
-    def _container_type_hint_renderer(
-        self,
-        container: str,
-    ) -> Callable[[str, bool], str] | None:
-        renderer: Callable[[str, bool], str] | None = None
-        match container:
-            case "frozen_set" if self.is_frozen_set:
-                renderer = self._wrap_frozen_set_type_hint
-            case "set" if self.is_set:
-                renderer = self._wrap_set_type_hint
-            case "sequence" if self.is_sequence:
-                renderer = self._wrap_sequence_type_hint
-            case "list" if self.is_list:
-                renderer = self._wrap_list_type_hint
-            case "mapping" if self.is_mapping:
-                renderer = self._wrap_mapping_type_hint
-            case "dict" if self.is_dict:
-                renderer = self._wrap_builtin_dict_type_hint
-        return renderer
-
-    def _wrap_container_type_hint(
-        self,
-        type_: str,
-        container_order: tuple[str, ...],
-        *,
-        use_base_type_hint: bool,
-    ) -> str:
-        for container in container_order:
-            if renderer := self._container_type_hint_renderer(container):
-                return renderer(type_, use_base_type_hint)
-
-        return type_
-
     @property
     def type_hint(self) -> str:
         """Generate the Python type hint string for this DataType."""
-        type_: str | None = self.alias or self.type
-        member_null = False
-        if not type_:
-            type_, member_null = self._render_nested_type_hint(use_base_type_hint=False, wrap_discriminator=True)
-        has_collection_container = self.is_frozen_set or self.is_set or self.is_sequence
-        has_mapping_container = self.is_list or self.is_mapping or self.is_dict
-        if has_collection_container or has_mapping_container:
-            type_ = self._wrap_container_type_hint(
-                type_,
-                self._TYPE_HINT_CONTAINER_ORDER,
-                use_base_type_hint=False,
-            )
-        if self.__dict__.get(_FORWARD_REFERENCE_DATA_TYPE_KEY):
-            type_ = repr(type_) if '"' in type_ or "\\" in type_ else f'"{type_}"'
-        if (self.is_optional or member_null or self._reference_adds_null()) and type_ != ANY:
-            return get_optional_type(type_, self.use_union_operator)
-        if self.is_func and self.kwargs:
-            kwargs: str = ", ".join(f"{k}={represent_python_value(v)}" for k, v in self.kwargs.items())
-            return f"{type_}({kwargs})"
-        return type_
+        return render_type_expr(_build_type_expr(self, base=False))
 
     @property
     def is_union(self) -> bool:
@@ -1411,34 +1169,266 @@ class DataType(_BaseModel):  # noqa: PLR0904
         The defaults preserve historical direct DataType and external subclass
         behavior. Output-specific subclasses own the policy ClassVars.
         """
-        if self.is_func and self.kwargs:
-            type_: str | None = self.alias or self.type
-            if type_:  # pragma: no branch
-                base_type = self._CONSTRAINED_TYPE_TO_BASE.get(type_)
-                if base_type is None:
-                    # Preserve the rendered call when the backend policy does not simplify it.
-                    return self.type_hint
-                if self.is_optional and base_type != ANY:  # pragma: no cover
-                    return get_optional_type(base_type, self.use_union_operator)
-                return base_type
-
-        type_: str | None = self.alias or self.type
-        member_null = False
-        if not type_:
-            type_, member_null = self._render_nested_type_hint(use_base_type_hint=True, wrap_discriminator=False)
-        if self.is_list or self.is_set or self.is_dict:
-            type_ = self._wrap_container_type_hint(
-                type_,
-                self._BASE_TYPE_HINT_CONTAINER_ORDER,
-                use_base_type_hint=True,
-            )
-
-        if (self.is_optional or member_null or self._reference_adds_null()) and type_ != ANY:
-            return get_optional_type(type_, self.use_union_operator)
-        return type_
+        return render_type_expr(_build_type_expr(self, base=True))
 
 
 DataTypeT = TypeVar("DataTypeT", bound=DataType)
+
+
+TypeForm: TypeAlias = Literal["written", "base", "single", "union", "tuple", "literal"]
+"""What a data type writes when it has no text of its own (an alias or a type name) when it is rendered.
+
+``written`` writes nothing besides that text; ``base`` writes the base of a constrained call (``base_type_hint``, its
+own text left out); ``single`` its one nested type or the model it names; ``union`` the union of its nested types;
+``tuple`` a tuple of them; ``literal`` a ``Literal`` of its values or of its enum members.
+"""
+
+_MAPPING_CONTAINERS: Final = frozenset({"mapping", "dict"})
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class TypeLeaf:
+    """A type written as text: ``code``, or the hint of ``node``, whose class writes its own (a backend's override)."""
+
+    code: str = ""
+    node: DataType | None = None
+    base: bool = False
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class RefLeaf:
+    """The model ``node`` names, written by the name the model has when the expression is rendered."""
+
+    node: DataType
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class TypeApply:
+    """What one data type writes: its ``form`` over ``args``, inside its container, quoted, with its None or its call.
+
+    The container is the first of the data type's container order that it is in, written as ``container``; a mapping
+    writes ``key`` (``str`` when None) before its value type. A ``base`` expression is that of ``base_type_hint``: it
+    writes no discriminator, no forward-reference quotes and no call. The data type's text of its own, its names, its
+    None and its quotes are read when the expression is rendered, so an expression built before the last rename and
+    the last quote writes the final ones.
+    """
+
+    node: DataType
+    form: TypeForm
+    args: tuple[TypeExpr, ...] = ()
+    container: str | None = None
+    mapping: bool = False
+    key: TypeExpr | None = None
+    base: bool = False
+
+
+TypeExpr: TypeAlias = TypeLeaf | RefLeaf | TypeApply
+"""A type expression: the structure of a data type tree, with the nodes whose hooks and names write it."""
+
+
+def _container_name(data_type: DataType, container: str) -> str | None:
+    """Return the name the data type's container ``container`` is written as, or None when it is not in one."""
+    standard = data_type.use_standard_collections
+    frozen_set = STANDARD_FROZEN_SET if standard else FROZEN_SET
+    name: str | None = None
+    match container:
+        case "frozen_set" if data_type.is_frozen_set:
+            name = frozen_set
+        case "set" if data_type.is_set:
+            name = frozen_set if data_type.use_generic_container else STANDARD_SET if standard else SET
+        case "sequence" if data_type.is_sequence:
+            name = SEQUENCE
+        case "list" if data_type.is_list:
+            name = SEQUENCE if data_type.use_generic_container else STANDARD_LIST if standard else LIST
+        case "mapping" if data_type.is_mapping:
+            name = MAPPING
+        case "dict" if data_type.is_dict:
+            name = MAPPING if data_type.use_generic_container else STANDARD_DICT if standard else DICT
+    return name
+
+
+def type_expr_of(data_type: DataType, *, base: bool = False) -> TypeExpr:
+    """Return the expression of the data type's type hint, or with ``base`` that of its ``base_type_hint``.
+
+    A data type whose class writes its own hint is a leaf written by that hint, as are such data types inside it.
+    """
+    data_type_class = type(data_type)
+    if (
+        data_type_class.base_type_hint is not DataType.base_type_hint
+        if base
+        else data_type_class.type_hint is not DataType.type_hint
+    ):
+        return TypeLeaf(node=data_type, base=base)
+    return _build_type_expr(data_type, base=base)
+
+
+def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
+    """Return the expression ``DataType.type_hint``, or with ``base`` ``DataType.base_type_hint``, writes.
+
+    The base hint writes a constrained call as the base type the backend's ``_CONSTRAINED_TYPE_TO_BASE`` gives it, or
+    as the type hint when it gives none.
+    """
+    if base and data_type.is_func and data_type.kwargs and (written := data_type.alias or data_type.type):
+        if (base_type := data_type._CONSTRAINED_TYPE_TO_BASE.get(written)) is None:  # noqa: SLF001
+            return type_expr_of(data_type, base=False)
+        return TypeApply(data_type, "base", (TypeLeaf(base_type),), base=True)
+    form: TypeForm = "written"
+    args: tuple[TypeExpr, ...] = ()
+    if not (data_type.alias or data_type.type):
+        members = data_type.data_types
+        if data_type.is_tuple:
+            count = data_type.tuple_item_count
+            form = "tuple"
+            items = members if count is None else members[:1]
+            args = () if count == 0 else tuple(type_expr_of(item, base=base) for item in items)
+        elif len(members) > 1:
+            form, args = "union", tuple(type_expr_of(member, base=base) for member in members)
+        elif members:
+            form, args = "single", (type_expr_of(members[0], base=base),)
+        elif data_type.enum_member_literals or data_type.literals:
+            form = "literal"
+        elif data_type.reference:
+            form, args = "single", (RefLeaf(data_type),)
+    order = data_type._BASE_TYPE_HINT_CONTAINER_ORDER if base else data_type._TYPE_HINT_CONTAINER_ORDER  # noqa: SLF001
+    for container in order:
+        if (name := _container_name(data_type, container)) is not None:
+            mapping = container in _MAPPING_CONTAINERS
+            key = type_expr_of(data_type.dict_key, base=base) if mapping and data_type.dict_key else None
+            return TypeApply(data_type, form, args, name, mapping, key, base)
+    return TypeApply(data_type, form, args, base=base)
+
+
+def render_type_expr(expr: TypeExpr, /) -> str:
+    """Write a type expression, through the rendering hooks of the data types that it holds."""
+    if isinstance(expr, TypeApply):
+        return _render_apply(expr)
+    if isinstance(expr, RefLeaf):
+        node = expr.node
+        return node._get_wrapped_reference_type_hint(cast("Reference", node.reference).short_name)  # noqa: SLF001
+    if (node := expr.node) is None:
+        return expr.code
+    return node.base_type_hint if expr.base else node.type_hint
+
+
+def _render_apply(expr: TypeApply) -> str:
+    """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call."""
+    node = expr.node
+    text = node.alias or node.type
+    member_null = False
+    if expr.form == "base":
+        text = render_type_expr(expr.args[0])
+    elif not text:
+        text, member_null = _render_form(expr)
+    if (container := expr.container) is not None:
+        if expr.mapping:
+            key = STR if expr.key is None else render_type_expr(expr.key)
+            text = f"{container}[{key}, {text or ANY}]" if expr.key is not None or text else container
+        else:
+            text = f"{container}[{text}]" if text else container
+    if not expr.base and node._is_forward_reference:  # noqa: SLF001
+        text = repr(text) if '"' in text or "\\" in text else f'"{text}"'
+    if (
+        node.is_optional or member_null or (expr.form != "base" and node._reference_adds_null())  # noqa: SLF001
+    ) and text != ANY:
+        return get_optional_type(text, node.use_union_operator)
+    if not expr.base and node.is_func and node.kwargs:
+        return f"{text}({', '.join(f'{k}={represent_python_value(v)}' for k, v in node.kwargs.items())})"
+    return text
+
+
+def _render_form(expr: TypeApply) -> tuple[str, bool]:
+    """Write the form of a data type without text of its own, and whether a union takes the None of its members."""
+    node = expr.node
+    text = ""
+    member_null = False
+    match expr.form:
+        case "tuple":
+            tuple_type = STANDARD_TUPLE if node.use_standard_collections else TUPLE
+            if (count := node.tuple_item_count) is not None:
+                item = (render_type_expr(expr.args[0]) or ANY) if expr.args else ANY
+                text = f"{tuple_type}[{', '.join(repeat(item, count)) or '()'}]"
+            else:
+                text = f"{tuple_type}[{', '.join(render_type_expr(item) or ANY for item in expr.args) or '()'}]"
+        case "union":
+            text, member_null = _render_union(node, expr.args, discriminated=not expr.base)
+        case "single":
+            text = render_type_expr(expr.args[0])
+        case "literal":
+            parts = (
+                [f"{enum_class}.{member}" for enum_class, member in node.enum_member_literals]
+                if node.enum_member_literals
+                else [repr(literal) for literal in node.literals]
+            )
+            text = f"{node._literal_name}[{', '.join(parts)}]"  # noqa: SLF001
+    return text, member_null
+
+
+def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminated: bool) -> tuple[str, bool]:
+    """Write a union of member hints, each once, and whether it takes the None of its members, which it writes no more.
+
+    A union that keeps its member order compares the hints as written and takes no None from them.
+    """
+    if node.preserve_union_member_order:
+        union = _union_core()
+        merged = union.merge_members(union.WrittenMember(hint, hint) for hint in _union_member_hints(members) if hint)
+    else:
+        merged = _merge_union_members(node, members)
+    if not (kept := merged.kept):
+        text = ANY
+        node._materialize_render_state("empty-union")  # noqa: SLF001
+    elif len(kept) == 1:
+        text = kept[0]
+    else:
+        text = _union_core().join_union(kept, union_operator=node.use_union_operator)
+        if (memo := PARSE_MEMO.get()) is not None:
+            memo.keep_union_members(NodeKey(id(node)), node, text, kept)
+    if discriminated and (discriminator := node.discriminator):
+        text = node._wrap_discriminator_type_hint(text, discriminator)  # noqa: SLF001
+    return text, merged.takes_null
+
+
+def _merge_union_members(node: DataType, members: tuple[TypeExpr, ...]) -> MergedMembers[str]:
+    """Merge the hints of the union members, taking the None out of each hint that strips it."""
+    union = _union_core()
+    return union.merge_members(
+        union.WrittenMember(
+            hint,
+            kept := NONE
+            if (null := hint == NONE)
+            else _remove_none_from_union(hint, use_union_operator=node.use_union_operator),
+            null=null,
+            strips_null=kept != hint,
+        )
+        for hint in _union_member_hints(members)
+        if hint
+    )
+
+
+def _union_member_hints(members: tuple[TypeExpr, ...]) -> list[str]:
+    """Return the hints of union members, spreading a member union that renders as a plain union.
+
+    A member's rendering keeps the hints it joins in the parse's memo, or outside a parse in the rendering's own.
+    """
+    if (memo := PARSE_MEMO.get()) is not None:
+        return _spread_union_member_hints(memo, members)
+    with rendering_memo() as memo:
+        return _spread_union_member_hints(memo, members)
+
+
+def _spread_union_member_hints(memo: ParseMemo, members: tuple[TypeExpr, ...]) -> list[str]:
+    hints: list[str] = []
+    for member in members:
+        joins = memo.joins
+        hint = render_type_expr(member)
+        node = cast("DataType", member.node)
+        if spread := memo.union_members(NodeKey(id(node)), node, hint, joins):
+            hints.extend(spread)
+        else:
+            hints.append(hint)
+    return hints
 
 
 class EmptyDataType(DataType):
