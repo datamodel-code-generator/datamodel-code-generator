@@ -1367,6 +1367,10 @@
       "not_recommended": "style",
       "reason": "Import style for typing-only imports."
     },
+    "use_typed_map_values_beside_other_types": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+    },
     "use_typed_nullable_map_values": {
       "not_recommended": "style",
       "reason": "Types the values of nullable maps; a typing choice."

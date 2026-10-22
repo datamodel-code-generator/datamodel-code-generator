@@ -4415,6 +4415,53 @@ def test_main_jsonschema_nullable_map_value_reuse_tree(output_dir: Path) -> None
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-typed-map-values-beside-other-types"],
+    option_description="""Type the map values of type arrays that list object beside other types.
+
+With `--use-typed-nullable-map-values`, a schema whose type array lists `object` beside other types, such as
+`type: [object, string]` or `type: [object, string, "null"]`, and that declares its values with
+`additionalProperties` gets typed values too, such as `dict[str, int] | str`, with a model for object values.
+Without this option those maps keep `dict[str, Any]`, as in 0.86.0, while the maps whose type array lists `object`
+alone or with `null` are typed by `--use-typed-nullable-map-values` either way. The option changes nothing without
+`--use-typed-nullable-map-values`.""",
+    input_schema="jsonschema/typed_map_values_beside_other_types.json",
+    cli_args=[
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--use-typed-nullable-map-values",
+        "--use-typed-map-values-beside-other-types",
+    ],
+    golden_output="jsonschema/main_jsonschema/typed_map_values_beside_other_types.py",
+    comparison_output="jsonschema/main_jsonschema/typed_map_values_without_other_types.py",
+)
+def test_main_jsonschema_typed_map_values_beside_other_types(output_file: Path) -> None:
+    """Type the map values of a type array that lists object beside other types, such as [object, string]."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-typed-nullable-map-values",
+            "--use-typed-map-values-beside-other-types",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_typed_map_values_without_other_types(output_file: Path) -> None:
+    """Keep dict[str, Any] beside other types of a type array under --use-typed-nullable-map-values, as in 0.86.0."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-typed-nullable-map-values"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_root_model_with_additional_properties(output_file: Path) -> None:
     """Test root model with additional properties."""
     run_main_and_assert(

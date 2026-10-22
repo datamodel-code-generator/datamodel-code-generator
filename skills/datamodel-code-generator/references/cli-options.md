@@ -52,7 +52,8 @@ Type annotation, import, and primitive type behavior.
 - `--use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--no-use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--use-object-type`: Use object instead of Any for unspecified JSON Schema object and array values
-- `--use-typed-nullable-map-values`: Type the values of nullable maps, schemas whose type array lists object, alone or with null or other types, such as [object, null], [object] or [object, string], with additionalProperties, as their schema says, with a model for object values. Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.
+- `--use-typed-nullable-map-values`: Type the values of nullable maps, schemas whose type array lists object alone or with null, such as [object, null] or [object], with additionalProperties, as their schema says, with a model for object values. Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.
+- `--use-typed-map-values-beside-other-types`: With --use-typed-nullable-map-values, also type the map values of type arrays that list object beside other types, such as [object, string], as dict[str, int] | str instead of dict[str, Any] | str
 - `--read-unevaluated-properties`: Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place, so it types the extra keys of a model and makes an object without properties a map
 - `--use-single-dict-for-object-maps`: Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, as one dict whose keys are those of every key class and whose value is the union of their values, beside the null and the other types of its type array
 - `--use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+

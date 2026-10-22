@@ -7309,6 +7309,10 @@ use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_an
 	main/jsonschema/type_mappings_to_integer.py
 [test_main_jsonschema_type_mappings_with_type_prefix]
 	main/jsonschema/type_mappings.py
+[test_main_jsonschema_typed_map_values_beside_other_types]
+	main/jsonschema/main_jsonschema/typed_map_values_beside_other_types.py
+[test_main_jsonschema_typed_map_values_without_other_types]
+	main/jsonschema/main_jsonschema/typed_map_values_without_other_types.py
 [test_main_jsonschema_unevaluated_items_false_array]
 	main/jsonschema/unevaluated_items_false_array.py
 [test_main_jsonschema_unevaluated_items_false_prefix]

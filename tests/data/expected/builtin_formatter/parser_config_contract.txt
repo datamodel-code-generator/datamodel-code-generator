@@ -156,6 +156,7 @@ reviewed-safe use_tuple_for_fixed_items
 reviewed-safe use_tuple_for_fixed_length_arrays
 reviewed-safe use_type_alias
 reviewed-safe use_type_checking_imports
+reviewed-safe use_typed_map_values_beside_other_types
 reviewed-safe use_typed_nullable_map_values
 reviewed-safe use_union_operator
 reviewed-safe use_unique_items_as_set

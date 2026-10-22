@@ -60,16 +60,20 @@ OUTPUT_MODEL_TYPES = (
     "msgspec.Struct",
 )
 SINGLE_DICT = "--use-single-dict-for-object-maps"
+TYPED_NULLABLE_MAP_VALUES = "--use-typed-nullable-map-values"
+TYPED_MAP_VALUES = (TYPED_NULLABLE_MAP_VALUES, "--use-typed-map-values-beside-other-types")
 OPTION_SETS = {
     "default": (SINGLE_DICT,),
-    "typed_map_values": (SINGLE_DICT, "--use-typed-nullable-map-values"),
+    "typed_map_values": (SINGLE_DICT, *TYPED_MAP_VALUES),
     "field_constraints": (SINGLE_DICT, "--field-constraints"),
     "annotated": (SINGLE_DICT, "--use-annotated"),
-    "typed_map_values_field_constraints": (SINGLE_DICT, "--use-typed-nullable-map-values", "--field-constraints"),
-    "typed_map_values_annotated": (SINGLE_DICT, "--use-typed-nullable-map-values", "--use-annotated"),
+    "typed_map_values_field_constraints": (SINGLE_DICT, *TYPED_MAP_VALUES, "--field-constraints"),
+    "typed_map_values_annotated": (SINGLE_DICT, *TYPED_MAP_VALUES, "--use-annotated"),
     "omit_redundant_reference_null": (SINGLE_DICT, "--omit-redundant-reference-null"),
     "without_single_dict": (),
-    "without_single_dict_typed_map_values": ("--use-typed-nullable-map-values",),
+    "without_single_dict_typed_map_values": TYPED_MAP_VALUES,
+    "typed_nullable_map_values": (SINGLE_DICT, TYPED_NULLABLE_MAP_VALUES),
+    "without_single_dict_typed_nullable_map_values": (TYPED_NULLABLE_MAP_VALUES,),
 }
 
 
@@ -98,8 +102,9 @@ def test_object_maps(
 
     Without --use-single-dict-for-object-maps the maps are those of 0.86.0: a union of dicts, one per value type of
     the patterns, with the null and the other types of a type array left to the field, while the values typed under
-    --use-typed-nullable-map-values keep the other types of their type array. msgspec, which cannot decode a union of
-    several dicts, gets the one dict of the option there.
+    --use-typed-nullable-map-values keep the other types of their type array. Those values are typed beside other
+    types, such as in [object, string], only with --use-typed-map-values-beside-other-types; without it they stay Any,
+    as in 0.86.0. msgspec, which cannot decode a union of several dicts, gets the one dict of the option there.
     """
     input_path = OBJECT_MAPS / f"{name}.json"
     run_main_and_assert(

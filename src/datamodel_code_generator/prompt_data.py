@@ -227,6 +227,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-type-alias": "Use TypeAlias instead of root models for type definitions (experimental).",
     "--use-type-alias-type": "Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).",
     "--use-type-checking-imports": "Allow Ruff to move typing-only imports into TYPE_CHECKING blocks.",
+    "--use-typed-map-values-beside-other-types": "Type the map values of type arrays that list object beside other ...",
     "--use-typed-nullable-map-values": "Type the values of nullable maps as their schemas say instead of Any.",
     "--use-union-operator": "Use | operator for Union types (PEP 604).",
     "--use-unique-items-as-set": "Generate set types for arrays with uniqueItems constraint.",

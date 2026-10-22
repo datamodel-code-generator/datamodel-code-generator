@@ -1492,12 +1492,13 @@ def _is_object_only_type(type_: str | list[str] | None) -> bool:
     return False
 
 
-def _nullable_map_value_schema(obj: JsonSchemaObject) -> JsonSchemaObject | None:
-    """Return the additionalProperties schema of a type array that lists object."""
+def _nullable_map_value_schema(obj: JsonSchemaObject, *, beside_other_types: bool) -> JsonSchemaObject | None:
+    """Return the additionalProperties schema of a type array that lists object, beside other types only if asked."""
     return (
         obj.additionalProperties
         if isinstance(obj.type, list)
         and "object" in obj.type
+        and (beside_other_types or not obj.has_multiple_types)
         and isinstance(obj.additionalProperties, JsonSchemaObject)
         and "const" not in obj.extras
         else None
@@ -12832,7 +12833,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _typed_nullable_map_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the value schema of a nullable map when this run types the values of nullable maps."""
-        return _nullable_map_value_schema(obj) if self._types_nullable_map_values else None
+        return (
+            _nullable_map_value_schema(obj, beside_other_types=self.use_typed_map_values_beside_other_types)
+            if self._types_nullable_map_values
+            else None
+        )
 
     def _parse_nullable_map(
         self, name: str, obj: JsonSchemaObject, path: list[str], additional_properties: JsonSchemaObject
@@ -14031,7 +14036,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return len(data_types) - count
 
     def _parse_typed_union_map(self, name: str, obj: JsonSchemaObject, path: list[str], type_: str) -> DataType | None:
-        """Return the map type of the object member of a type array under --use-typed-nullable-map-values, else None.
+        """Return the map type of the object member of a type array whose map values this run types, else None.
 
         patternProperties or propertyNames make the member the object map of the object branch.
         """
