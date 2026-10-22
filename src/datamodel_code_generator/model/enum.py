@@ -6,15 +6,17 @@ Provides Enum, StrEnum, and specialized enum classes for code generation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import cached_property, lru_cache
+from functools import lru_cache
 from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from typing_extensions import Sentinel, assert_never, override
 
+from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._parse_memo import MemoTable, memoized
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
-from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType
+from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, forget_model_memos
 from datamodel_code_generator.python_literal import _semantic_value_text
 from datamodel_code_generator.types import DataType, Types
 
@@ -202,9 +204,12 @@ class Enum(DataModel):
         """Create a Member instance for the given field."""
         return Member(self, field)
 
-    @cached_property
+    @property
     def _member_index(self) -> dict[tuple[object, Any], DataModelFieldBase]:
-        """Build the exact-value index only when member lookup is used."""
+        """Build the exact-value index only when member lookup is used; the parse's memo keeps it."""
+        return memoized(MemoTable.ENUM_MEMBER_INDEX, model_key_of(self.reference), self, None, self._index_members)
+
+    def _index_members(self) -> dict[tuple[object, Any], DataModelFieldBase]:
         exact: dict[tuple[object, Any], DataModelFieldBase] = {}
         for field in self.fields:
             if field.default is None:
@@ -214,9 +219,14 @@ class Enum(DataModel):
                 exact.setdefault(key, field)
         return exact
 
-    @cached_property
+    @property
     def _coerced_member_index(self) -> dict[str, DataModelFieldBase]:
-        """Build the string-coercing index only for discriminator-style lookup."""
+        """Build the string-coercing index only for discriminator-style lookup; the parse's memo keeps it."""
+        return memoized(
+            MemoTable.COERCED_ENUM_MEMBER_INDEX, model_key_of(self.reference), self, None, self._index_coerced_members
+        )
+
+    def _index_coerced_members(self) -> dict[str, DataModelFieldBase]:
         coerced: dict[str, DataModelFieldBase] = {}
         for field in self.fields:
             if field.default is None:
@@ -250,8 +260,7 @@ class Enum(DataModel):
     def invalidate_render_caches(self) -> None:
         """Clear rendering state and the member index after field mutations."""
         super().invalidate_render_caches()
-        self.__dict__.pop("_member_index", None)
-        self.__dict__.pop("_coerced_member_index", None)
+        forget_model_memos(self, MemoTable.ENUM_MEMBER_INDEX, MemoTable.COERCED_ENUM_MEMBER_INDEX)
 
     @property
     @override

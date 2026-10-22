@@ -10,7 +10,8 @@ nullability that rendering the types of its fields decides. The candidate key of
 The users disagree today on whether union tags count, which root models they compare and how they tell apart the
 bases of a merged model's children. The rows named ``legacy-*`` (:data:`SAME_NAME`, :data:`COLLAPSE_REUSE`,
 :data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace
-them. Every user but collapse-reuse compares the keys a model cached in an earlier pass (:data:`STALE_DEDUP_KEYS`).
+them. Every user but collapse-reuse compares the keys the parse's memo kept for a model in an earlier pass
+(:data:`STALE_DEDUP_KEYS`).
 """
 
 from __future__ import annotations
@@ -54,15 +55,16 @@ RootModels: TypeAlias = Literal["redirected", "skipped", "compared", "skipped-wh
 * ``skipped-when-collapsed``: root models are compared unless ``--collapse-root-models`` inlines them.
 """
 KeySlot: TypeAlias = "tuple[str | None, bool]"
-"""Where a model caches a dedup key: the class name it renders under, or None and whether ``M`` stands in for it."""
+"""Where the parse's memo keeps a dedup key of a model: the class name it renders under, or None and whether ``M``
+stands in for it."""
 KeyCache: TypeAlias = Literal["legacy-stale-dedup-keys", "rendered"]
-"""Whether a user compares the dedup keys a model cached in an earlier pass or renders them anew."""
+"""Whether a user compares the dedup keys the parse's memo kept for a model in an earlier pass or renders them anew."""
 STALE_DEDUP_KEYS: KeyCache = "legacy-stale-dedup-keys"
-"""Compare the dedup key a model cached in an earlier pass, which only render-cache invalidation drops.
+"""Compare the dedup key the parse's memo kept for a model in an earlier pass, which only invalidation drops.
 
-A model caches its key the first time a user compares it, and a later pass compares that key again unless a mutation
-through the generation store invalidated the model's render caches. Rendering anew is not proven to change nothing;
-keys over model facts (G06, G07) replace the cache.
+The memo keeps a model's key the first time a user compares it, and a later pass compares that key again unless a
+mutation through the generation store invalidated the model's render caches. Rendering anew is not proven to change
+nothing; keys over model facts (G06, G07) replace the memo. The ``RENDER_MEMOS`` check records the keys that differ.
 """
 BaseDedup: TypeAlias = Literal["by-type-hint", "by-reference"]
 """How a user that removes merged models tells apart the bases of their children: by module and type hint, or by
@@ -198,11 +200,11 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         raise NotImplementedError
 
     def dedup_key(self, model: ModelT, slot: KeySlot) -> Key:
-        """Return the dedup key the model cached in a slot, rendering and caching it when the slot is empty."""
+        """Return the dedup key the memo keeps for the model in a slot, rendering and keeping it for an empty slot."""
         raise NotImplementedError
 
     def forget_dedup_keys(self, model: ModelT) -> None:
-        """Drop the dedup keys the model cached."""
+        """Drop the dedup keys the memo keeps for the model."""
         raise NotImplementedError
 
     def mask_pattern(self, text: str) -> re.Pattern[str]:
@@ -245,7 +247,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
     def key(self, model: ModelT) -> Key:
         """Return the rendered model with the tags of its discriminated unions when the row compares them.
 
-        The model renders under its own class name or as ``M``, as the row says, and the key is cached on the model
+        The model renders under its own class name or as ``M``, as the row says, and the parse's memo keeps the key
         (:data:`STALE_DEDUP_KEYS`).
         """
         slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)

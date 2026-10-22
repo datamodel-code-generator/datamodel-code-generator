@@ -1281,16 +1281,18 @@ def test_data_model_parent_and_reference_path_changes_invalidate_field_semantics
     assert not field.self_reference()
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_field_deep_copy_drops_transient_semantic_caches() -> None:
     """Copied fields must recompute transient renderer and self-reference state."""
-    field = PydanticV2DataModelField(name="value", data_type=DataType(type="str"))
-    field.__dict__["_computed_default_factory"] = "list"
-    field.__dict__["_self_reference_cache"] = True
+    node_reference = Reference(path="Node", original_name="Node", name="Node")
+    field = PydanticV2DataModelField(name="value", data_type=DataType(reference=node_reference))
+    BaseModel(fields=[field], reference=node_reference)
+    assert field.self_reference()
 
     copied = field.copy_deep()
+    BaseModel(fields=[copied], reference=Reference(path="Other", original_name="Other", name="Other"))
 
-    assert "_computed_default_factory" not in copied.__dict__
-    assert "_self_reference_cache" not in copied.__dict__
+    assert not copied.self_reference()
 
 
 def test_field_semantic_cache_invalidation_supports_legacy_parent_hook() -> None:

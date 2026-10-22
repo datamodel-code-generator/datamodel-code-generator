@@ -52,13 +52,14 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY, VALUES_AS_WRITTEN_KEY
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._null_markers import (
     HELD_NULL_DROPPED_KEY,
     REFERENCE_NULL_KEY,
     RENDER_PREPARATION_NULL_KEY,
     TARGET_NULL_KEY,
 )
+from datamodel_code_generator._parse_memo import ParseMemo
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
@@ -66,10 +67,8 @@ from datamodel_code_generator.parser._graph_ids import identity_of
 from datamodel_code_generator.parser._holders import (
     KNOWN_PARENT_MISMATCHES,
     ChildList,
-    FieldKey,
     HolderEdge,
     InlinedReplacement,
-    NodeKey,
     ParentMismatch,
     node_in_cycle,
     parent_is_holder,
@@ -1391,6 +1390,8 @@ class GenerationStore:  # noqa: PLR0904
         self._site_effects = _SiteEffects()
         self._carried_sites: Iterable[RefSite] = ()
         self._inlined_owners: dict[NodeKey, list[DataType]] = {}
+        self._memo = ParseMemo()
+        """The memos of the parse, which ``Parser.parse`` makes current while it runs."""
         self.phase = Phase.PARSE
         """The phase of the pipeline that runs now, which the parser pipeline sets as it enters it."""
 
@@ -1431,6 +1432,7 @@ class GenerationStore:  # noqa: PLR0904
         self._site_effects.clear()
         self._carried_sites = ()
         self._inlined_owners.clear()
+        self._memo = ParseMemo()
         self._dirty = True
 
     @property

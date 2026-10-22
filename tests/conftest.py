@@ -85,6 +85,7 @@ CHECK_SCHEMA_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
 CHECK_MODULE_IMPORTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
 CHECK_GENERATED_CODE_REQUIREMENTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
 CHECK_RENDER_PLANS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
+CHECK_RENDER_MEMOS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
 CHECK_FACT_FINALITY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
 CHECK_AREA_ENVS = (
     CHECK_SCHEMA_LOCATIONS_ENV,
@@ -93,6 +94,7 @@ CHECK_AREA_ENVS = (
     CHECK_MODULE_IMPORTS_ENV,
     CHECK_GENERATED_CODE_REQUIREMENTS_ENV,
     CHECK_RENDER_PLANS_ENV,
+    CHECK_RENDER_MEMOS_ENV,
     CHECK_FACT_FINALITY_ENV,
 )
 """The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`) set to `1`."""
@@ -2599,6 +2601,17 @@ def _isolate_builtin_formatter_config(
         encoding="utf-8",
     )
     monkeypatch.chdir(settings_path)
+
+
+@pytest.fixture
+def parse_memo() -> Generator[None, None, None]:
+    """Make a per-parse memo current, as `Parser.parse` does, so that model and field memos are kept and forgotten."""
+    from datamodel_code_generator.parser.base import PARSE_MEMO
+    from datamodel_code_generator.parser.generation import ParseMemo
+
+    token = PARSE_MEMO.set(ParseMemo())
+    yield
+    PARSE_MEMO.reset(token)
 
 
 @pytest.fixture(scope="session")

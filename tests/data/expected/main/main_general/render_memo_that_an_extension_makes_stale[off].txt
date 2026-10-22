@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+from typing import Optional, Union
+
+from pydantic import BaseModel
+
+
+class M(BaseModel):
+    v: Optional[Union[int, str, bool]] = None

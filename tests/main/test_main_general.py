@@ -65,6 +65,7 @@ from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_MODEL_GRAPH_ENV,
     CHECK_MODULE_IMPORTS_ENV,
+    CHECK_RENDER_MEMOS_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
     HttpxGetMockFactory,
@@ -3152,6 +3153,111 @@ def test_render_plan_whose_field_changes_after_render_preparation(
     assert_output(str(parser.parse()))
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_render_memo_that_an_extension_makes_stale(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str) -> None:
+    """A union that an extension gives a name behind the store still spreads the members it joined before, as 0.86.0.
+
+    The check (`1`) raises where the enclosing union reads them; `report:<path>` appends a JSON line at each read, and
+    the union reads as with the check off (`0`).
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class LateUnionAlias(JsonSchemaParser):
+        def _check_model_inheritance(self, contexts: Any) -> None:
+            super()._check_model_inheritance(contexts)
+            inner = contexts[0].models[0].fields[0].data_type.data_types[1]
+            vars(inner)["alias"] = inner.type_hint
+
+    schema = (
+        '{"title": "M", "type": "object", "properties": {"v": {"anyOf": [{"type": "integer"},'
+        ' {"anyOf": [{"type": "string"}, {"type": "boolean"}]}]}}}'
+    )
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = LateUnionAlias(schema, formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(
+            Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the union members joined to Union.str, bool. that"
+        ):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_enum_member_index_that_an_extension_makes_stale(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A module processed after an extension changes an enum member's value finds the member by the old one, as 0.86.0.
+
+    The extension writes behind the store. The check (`1`) raises at the lookup; `report:<path>` appends a JSON line,
+    and the output keeps the member, as with the check off (`0`).
+    """
+    from datamodel_code_generator.model.enum import Enum
+
+    class LateMemberValue(OpenAPIParser):
+        def _process_single_module(self, module_: Any, models: Any, *args: Any) -> Any:
+            context = super()._process_single_module(module_, models, *args)
+            if module_ == ("two",):
+                kind = next(model for model in self.results if isinstance(model, Enum))
+                vars(kind.fields[0])["default"] = "'c'"
+            return context
+
+    schema = """
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    shared.Kind: {type: string, enum: [a, b]}
+    one.A: {type: object, properties: {k: {$ref: "#/components/schemas/shared.Kind", default: a}}}
+    two.B: {type: object, properties: {k: {$ref: "#/components/schemas/shared.Kind", default: a}}}
+"""
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = LateMemberValue(schema, formatters=[Formatter.BUILTIN], set_default_enum_member=True)
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the enum member index of Kind that the memo"):
+            parser.parse()
+        return
+    output = parser.parse()
+    assert_output("".join(f"# {'/'.join(path)}\n{result.body}" for path, result in sorted(output.items())))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.parametrize(
+    ("input_name", "options"),
+    [
+        pytest.param(
+            "collapse_root_models_name_strategy/two_holders.yaml",
+            {
+                "collapse_root_models": True,
+                "collapse_root_models_name_strategy": CollapseRootModelsNameStrategy.Parent,
+            },
+            id="self-reference",
+        ),
+        pytest.param(
+            "dot_notation_collapse_reuse_models.yaml",
+            {"reuse_model": True, "collapse_reuse_models": True},
+            id="dedup-keys",
+        ),
+    ],
+)
+def test_render_memos_record_the_stale_values_legacy_rows_keep(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, input_name: str, options: dict[str, Any]
+) -> None:
+    """A report file records the stale self references and dedup keys that today's output keeps; they never raise."""
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, f"report:{report_path}")
+    OpenAPIParser(OPEN_API_DATA_PATH / input_name, formatters=[Formatter.BUILTIN], **options).parse()
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
 _FIELD_TYPE_SCHEMA = (

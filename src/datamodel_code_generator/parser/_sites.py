@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, NewType, TypeAlias, final
 
-from datamodel_code_generator.parser._holders import FieldKey, NodeKey
+from datamodel_code_generator._model_keys import FieldKey, NodeKey
 
 if TYPE_CHECKING:
     from collections.abc import Callable

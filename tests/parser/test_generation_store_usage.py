@@ -409,7 +409,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 65, "PRESENTATION": 57, "BOOKKEEPING": 18, "CACHE": 19})
+        Counter({"FACT": 65, "PRESENTATION": 57, "BOOKKEEPING": 18, "CACHE": 13})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -419,7 +419,6 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "DataModel",
         "DataModelFieldBase",
         "DataType",
-        "Enum",
         "ModuleContext",
         "Parser",
         "Reference",
@@ -489,7 +488,7 @@ def write(field, data_type, model, name, broken: "not valid("):
     data_type.data_types[:] = []
     model.class_name = name
     data_type.use_generic_container = True
-    model._dedup_key_cache.clear()
+    field._field_imports_cache.clear()
     field.__dict__["_forced_field_assignment"] = True
     field.__dict__[SCHEMA_OWNER_FRAMES_KEY] = "bookkeeping"
     field.__dict__["_unknown"] = 1
@@ -498,7 +497,7 @@ def write(field, data_type, model, name, broken: "not valid("):
     field.__dict__.update({})
     values = field.__dict__
     values.setdefault("_forced_field_assignment", True)
-    cache = model._dedup_key_cache
+    cache = field._field_imports_cache
     cache[name] = ()
     if (extras := getattr(field, "extras", None)) is not None:
         extras["description"] = "text"
@@ -637,7 +636,7 @@ def in_place(field, model):
     values = field.__dict__
     values |= {}
     model.__dict__ |= {}
-    cache = model._dedup_key_cache
+    cache = field._field_imports_cache
     cache |= {}
     extras = field.extras
     extras |= {}
@@ -670,7 +669,7 @@ def chained(field, model):
     entry.update({})
     computed = values[field.name]
     computed |= {}
-    cache = getattr(model, "_dedup_key_cache")
+    cache = getattr(field, "_field_imports_cache")
     cache = cache
     cache.clear()
     extras = extras["discriminator"]
@@ -745,8 +744,8 @@ class Field:
         self.nullable = False
         self.replace_data_type(None)
         self.fields.append(None)
-        self.__dict__["_self_reference_cache"] = True
-        self._dedup_key_cache = {}
+        self.__dict__[_IMPORTS_CACHE_KEY] = ()
+        self._field_imports_cache = {}
 
     @cached_property
     def path(self):

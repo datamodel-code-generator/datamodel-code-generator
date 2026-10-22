@@ -1247,6 +1247,7 @@ def test_generation_store_nested_data_type_mutations_clear_cached_imports_contra
     })
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_atomic_replace_invalidates_shared_base_owner_cache() -> None:
     """Atomic replacement keeps cache invalidation for a shared field/base DataType."""
 
@@ -1263,8 +1264,7 @@ def test_generation_store_atomic_replace_invalidates_shared_base_owner_cache() -
     store.register_model(field_owner)
     store.register_model(base_owner)
 
-    base_owner.get_dedup_key()
-    assert base_owner._dedup_key_cache
+    original_key = base_owner.get_dedup_key()
 
     replacement = DataType(type="int")
     with store._replace_data_type_and_detach_data_type_ref(
@@ -1280,13 +1280,13 @@ def test_generation_store_atomic_replace_invalidates_shared_base_owner_cache() -
         "old_parent": shared_data_type.parent,
         "old_reference": shared_data_type.reference,
         "old_children": old_reference.children,
-        "base_cache": base_owner._dedup_key_cache,
+        "base_key_changed": base_owner.get_dedup_key() != original_key,
     } == snapshot({
         "field_replaced": True,
         "old_parent": None,
         "old_reference": None,
         "old_children": [],
-        "base_cache": {},
+        "base_key_changed": True,
     })
 
 
@@ -1607,6 +1607,7 @@ def test_generation_store_reference_redirects_clear_each_owner_imports_cache_onc
     ],
 )
 @pytest.mark.parametrize("starts_self_referencing", [False, True])
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_type_mutations_invalidate_semantic_and_render_caches(
     mutation: str,
     *,
@@ -1634,7 +1635,7 @@ def test_generation_store_type_mutations_invalidate_semantic_and_render_caches(
     store.register_model(model)
 
     assert field.self_reference() is starts_self_referencing
-    assert model.get_dedup_key()
+    original_key = model.get_dedup_key()
 
     match mutation:
         case "replace_field_type":
@@ -1649,7 +1650,7 @@ def test_generation_store_type_mutations_invalidate_semantic_and_render_caches(
             pytest.fail(f"Unsupported mutation: {mutation}")
 
     assert field.self_reference() is not starts_self_referencing
-    assert model._dedup_key_cache == {}
+    assert model.get_dedup_key() != original_key
 
 
 @pytest.mark.parametrize(
@@ -1660,6 +1661,7 @@ def test_generation_store_type_mutations_invalidate_semantic_and_render_caches(
         pytest.param("set_fields", id="set"),
     ],
 )
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_field_ownership_mutations_invalidate_self_reference_cache(mutation: str) -> None:
     """Moving a cached field to another model must refresh its parent semantics."""
     original_model = _base_model("Original")
@@ -1687,6 +1689,7 @@ def test_generation_store_field_ownership_mutations_invalidate_self_reference_ca
     assert not field.self_reference()
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_field_removal_invalidates_self_reference_cache() -> None:
     """Detaching a cached field must clear parent-dependent semantics."""
     model = _base_model("Model")
@@ -1704,6 +1707,7 @@ def test_generation_store_field_removal_invalidates_self_reference_cache() -> No
     assert not field.self_reference()
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_self_reference_invalidation_updates_pydantic_constraints() -> None:
     """Pydantic constraints must follow the current, not cached, self-reference state."""
     model_reference = Reference(path="Node", original_name="Node", name="Node")
@@ -1826,6 +1830,7 @@ def test_generation_store_model_reference_redirect_clears_only_affected_owner_im
     })
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_reference_redirect_invalidates_base_class_owner_render_cache() -> None:
     """Unscoped redirects must invalidate models that own parentless base class types."""
     target_model = _base_model("Target")
@@ -1843,10 +1848,10 @@ def test_generation_store_reference_redirect_invalidates_base_class_owner_render
     store.redirect_reference_users(target_model.reference, new_reference)
 
     assert owner_model.base_classes[0].reference is new_reference
-    assert owner_model._dedup_key_cache == {}
     assert owner_model.get_dedup_key() != original_key
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_model_reference_redirect_resolves_base_class_owner() -> None:
     """Scoped redirects must resolve base class ownership from generation facts."""
     target_model = _base_model("Target")
@@ -1865,17 +1870,18 @@ def test_generation_store_model_reference_redirect_resolves_base_class_owner() -
     store.register_model(target_model)
     store.register_model(owner_model)
     store.register_model(other_model)
-    assert owner_model.get_dedup_key()
-    assert other_model.get_dedup_key()
+    owner_key = owner_model.get_dedup_key()
+    other_key = other_model.get_dedup_key()
 
     store.redirect_model_reference_users(target_model, [owner_model], new_reference)
 
     assert owner_model.base_classes[0].reference is new_reference
-    assert owner_model._dedup_key_cache == {}
+    assert owner_model.get_dedup_key() != owner_key
     assert other_model.base_classes[0].reference is target_model.reference
-    assert other_model._dedup_key_cache
+    assert other_model.get_dedup_key() == other_key
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_model_reference_redirect_invalidates_shared_base_class_owners() -> None:
     """A shared base class occurrence must invalidate every owning model."""
     target_model = _base_model("Target")
@@ -1892,16 +1898,13 @@ def test_generation_store_model_reference_redirect_invalidates_shared_base_class
     store.set_base_classes(first_model, [shared_base_class])
     store.set_base_classes(second_model, [shared_base_class])
     store.set_base_classes(third_model, [shared_base_class])
-    assert first_model.get_dedup_key()
-    assert second_model.get_dedup_key()
-    assert third_model.get_dedup_key()
+    models = [first_model, second_model, third_model]
+    original_keys = [model.get_dedup_key() for model in models]
 
     store.redirect_model_reference_users(target_model, [first_model], new_reference)
 
     assert shared_base_class.reference is new_reference
-    assert first_model._dedup_key_cache == {}
-    assert second_model._dedup_key_cache == {}
-    assert third_model._dedup_key_cache == {}
+    assert [model.get_dedup_key() != key for model, key in zip(models, original_keys, strict=True)] == [True] * 3
 
 
 def test_generation_store_indexes_each_shared_base_class_owner_once() -> None:
@@ -2019,6 +2022,7 @@ def test_generation_store_refresh_moves_one_owner_of_a_shared_base_class() -> No
     assert owners == snapshot([["First", "Second", "Third"], ["First", "Third"], "Third", ["Second", "Third"]])
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_generation_store_detach_model_refs_resolves_deferred_base_class_owner() -> None:
     """Deferred mutations must resolve live base class ownership before facts exist."""
     target_model = _base_model("Target")
@@ -2030,12 +2034,12 @@ def test_generation_store_detach_model_refs_resolves_deferred_base_class_owner()
     store = GenerationStore()
     store.register_model(target_model)
     store.register_model(owner_model)
-    assert owner_model.get_dedup_key()
+    original_key = owner_model.get_dedup_key()
 
     store.detach_model_data_type_refs(owner_model)
 
     assert owner_model.base_classes[0].reference is None
-    assert owner_model._dedup_key_cache == {}
+    assert owner_model.get_dedup_key() != original_key
 
 
 def test_generation_store_redirects_model_reference_users_by_owner() -> None:

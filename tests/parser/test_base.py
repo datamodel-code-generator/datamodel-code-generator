@@ -1541,6 +1541,7 @@ def test_find_member_with_mixed_enum() -> None:
     assert enum.find_member("'value_a'") is None
 
 
+@pytest.mark.usefixtures("parse_memo")
 def test_find_member_indexes_preserve_json_semantics_and_invalidate() -> None:
     """Cache member lookup without changing order, coercion, or mutable-field behavior."""
     from datamodel_code_generator.model.enum import NULL_ENUM_MEMBER_VALUE, Enum, EnumMemberValue
@@ -1561,11 +1562,7 @@ def test_find_member_indexes_preserve_json_semantics_and_invalidate() -> None:
     ]
     enum = Enum(fields=fields, reference=Reference(path="mixed", name="Mixed"))
 
-    assert "_member_index" not in enum.__dict__
-    assert "_coerced_member_index" not in enum.__dict__
     assert enum.find_member(True).field.name == "BOOL"  # ty: ignore[union-attr]
-    assert "_member_index" in enum.__dict__
-    assert "_coerced_member_index" not in enum.__dict__
     null_member = enum.find_member(None)
     assert null_member.field.name == "NULL"  # ty: ignore[union-attr]
     assert null_member.value is None  # ty: ignore[union-attr]
@@ -1578,21 +1575,16 @@ def test_find_member_indexes_preserve_json_semantics_and_invalidate() -> None:
     assert enum.find_member("1", coerce_strings=True).field.name == "INT"  # ty: ignore[union-attr]
     assert enum.find_member([1]).field.name == "LIST"  # ty: ignore[union-attr]
     assert enum.find_member([2]) is None
-    assert "_coerced_member_index" in enum.__dict__
 
     fields[1].default = EnumMemberValue("updated_null")
     fields[1].invalidate_semantic_caches()
 
-    assert "_member_index" not in enum.__dict__
-    assert "_coerced_member_index" not in enum.__dict__
     assert enum.find_member(None) is None
     assert enum.find_member("updated_null").field.name == "NULL"  # ty: ignore[union-attr]
 
     fields[4].default = EnumMemberValue("updated")
     fields[4].invalidate_semantic_caches()
 
-    assert "_member_index" not in enum.__dict__
-    assert "_coerced_member_index" not in enum.__dict__
     assert enum.find_member("1") is None
     assert enum.find_member("updated").field.name == "STR"  # ty: ignore[union-attr]
 

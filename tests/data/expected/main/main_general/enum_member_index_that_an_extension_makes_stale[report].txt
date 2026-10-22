@@ -1,0 +1,34 @@
+# __init__.py
+# one.py
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+from . import shared
+
+
+class A(BaseModel):
+    k: Optional[shared.Kind] = shared.Kind.a
+# shared.py
+from __future__ import annotations
+
+from enum import Enum
+
+
+class Kind(Enum):
+    a = 'c'
+    b = 'b'
+# two.py
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+from . import shared
+
+
+class B(BaseModel):
+    k: Optional[shared.Kind] = shared.Kind.a

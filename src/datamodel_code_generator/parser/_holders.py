@@ -13,18 +13,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, final
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
-    from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey
     from datamodel_code_generator.types import DataType
 
-NodeKey = NewType("NodeKey", int)
-"""The ``id`` of a data type node that the store records."""
-FieldKey = NewType("FieldKey", int)
-"""The ``id`` of a field that holds a recorded node."""
 HolderRole: TypeAlias = Literal["field", "nested", "dict_key", "base"]
 ParentMismatch: TypeAlias = Literal["recorded field", "dropped field", "data type"]
 """What the ``parent`` of a node is when it does not hold the node: a field of a recorded model, another field, or a

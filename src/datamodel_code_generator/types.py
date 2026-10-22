@@ -58,6 +58,8 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._model_keys import NodeKey
+from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
@@ -90,7 +92,6 @@ OPTIONAL_PREFIX = f"{OPTIONAL}["
 _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
-_RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = _null_markers.REFERENCE_NULL_KEY
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _TARGET_NULL_DATA_TYPE_KEY = _null_markers.TARGET_NULL_KEY
@@ -178,6 +179,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from types import ModuleType
 
+    from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._requirements import PydanticConstruct
@@ -1096,19 +1098,32 @@ class DataType(_BaseModel):  # noqa: PLR0904
             if data_type_type
         )
 
-    def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> Iterator[str]:
-        """Yield the hints of union members, spreading a member union that renders as a plain union."""
+    def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> list[str]:
+        """Return the hints of union members, spreading a member union that renders as a plain union.
+
+        A member's rendering keeps the hints it joins in the parse's memo, or outside a parse in the rendering's own.
+        """
+        if (memo := PARSE_MEMO.get()) is not None:
+            return self._spread_union_member_type_hints(memo, use_base_type_hint=use_base_type_hint)
+        with rendering_memo() as memo:
+            return self._spread_union_member_type_hints(memo, use_base_type_hint=use_base_type_hint)
+
+    def _spread_union_member_type_hints(self, memo: ParseMemo, *, use_base_type_hint: bool) -> list[str]:
+        hints: list[str] = []
         for data_type in self.data_types:
+            joins = memo.joins
             data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
-            if (rendered := data_type.__dict__.get(_RENDERED_UNION_MEMBERS_KEY)) and rendered[0] == data_type_type:
-                yield from rendered[1]
+            if members := memo.union_members(NodeKey(id(data_type)), data_type, data_type_type, joins):
+                hints.extend(members)
             else:
-                yield data_type_type
+                hints.append(data_type_type)
+        return hints
 
     def _join_union_member_type_hints(self, data_types: tuple[str, ...]) -> str:
-        """Join union member hints, remembering them so that an enclosing union can spread this one."""
+        """Join union member hints, keeping them in the current memo so that an enclosing union can spread this one."""
         type_ = _union_core().join_union(data_types, union_operator=self.use_union_operator)
-        self.__dict__[_RENDERED_UNION_MEMBERS_KEY] = (type_, data_types)
+        if (memo := PARSE_MEMO.get()) is not None:
+            memo.keep_union_members(NodeKey(id(self)), self, type_, data_types)
         return type_
 
     def _render_ordered_union_type_hint(

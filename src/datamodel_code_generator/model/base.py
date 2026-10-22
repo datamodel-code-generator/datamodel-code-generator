@@ -28,7 +28,8 @@ from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
+from datamodel_code_generator._parse_memo import MemoTable, forget, memoized
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
@@ -112,7 +113,6 @@ _ORIGINAL_TEMPLATE_LOADER_MARKER = "__datamodel_code_generator_original_template
 _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
 _PATH_PARTNER_KEY = "_path_partner_model_key"
-_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY = "_nested_model_required_constructor_fields"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
 _MEMBER_UNTAKEN_CONSTRAINTS_KEY = "_member_untaken_constraints"
@@ -596,10 +596,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     ] = None
     _FIELD_IMPORTS_CACHE_MAX_SIZE: ClassVar[int] = 4096
     _field_imports_cache: ClassVar[dict[tuple[Any, ...], tuple[Import, ...]]] = {}
-    _SEMANTIC_CACHE_KEYS: ClassVar[tuple[str, ...]] = (
-        "_computed_default_factory",
-        "_self_reference_cache",
-    )
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
@@ -789,22 +785,22 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def self_reference(self) -> bool:
         """Check if field references its parent model.
 
-        Result is cached until a GenerationStore-managed semantic mutation.
-        Uses __dict__ for caching to avoid Pydantic-managed field assignment.
+        The parse's memo keeps the result until a GenerationStore-managed semantic mutation.
         """
-        if "_self_reference_cache" in self.__dict__:
-            return self.__dict__["_self_reference_cache"]
         if self.parent is None or not self.parent.reference:  # pragma: no cover
-            self.__dict__["_self_reference_cache"] = False
             return False
         parent = self.parent
-        result = any(
-            _reference_names_model(d.reference, parent, "self reference")
-            for d in self.data_type.all_data_types
-            if d.reference
+        return memoized(
+            MemoTable.SELF_REFERENCE,
+            FieldKey(id(self)),
+            self,
+            None,
+            lambda: any(
+                _reference_names_model(d.reference, parent, "self reference")
+                for d in self.data_type.all_data_types
+                if d.reference
+            ),
         )
-        self.__dict__["_self_reference_cache"] = result
-        return result
 
     @property
     def _can_apply_constraints(self) -> bool:
@@ -1477,9 +1473,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
         """Clear field caches derived from mutable type and parent semantics."""
-        field_values = self.__dict__
-        for key in self._SEMANTIC_CACHE_KEYS:
-            field_values.pop(key, None)
+        forget(MemoTable.SELF_REFERENCE, FieldKey(id(self)), self)
         if not invalidate_parent:
             return
         self._invalidate_parent_render_caches()
@@ -1703,10 +1697,13 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
             )
             if model_key_of(source.reference) in parent_cycle:
                 return None
-            if (required_fields := source.__dict__.get(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)) is None:
-                required_fields = _nested_model_has_required_constructor_fields(source)
-                source.__dict__[_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY] = required_fields
-            if required_fields:
+            if memoized(
+                MemoTable.NESTED_MODEL_REQUIRED_FIELDS,
+                model_key_of(source.reference),
+                source,
+                None,
+                lambda: _nested_model_has_required_constructor_fields(source),
+            ):
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
                 return _NestedModelFactory(data_type, source, builds_by_name=True)
@@ -2742,7 +2739,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.default: Any = default
         self._nullable: bool = nullable
         self._treat_dot_as_module: bool | None = treat_dot_as_module
-        self._dedup_key_cache: dict[tuple[str | None, bool], tuple[Any, ...]] = {}
 
     def _validate_fields(self, fields: list[DataModelFieldBase]) -> list[DataModelFieldBase]:
         names: set[str] = set()
@@ -2775,19 +2771,23 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def get_dedup_key(self, class_name: str | None = None, *, use_default: bool = True) -> tuple[Any, ...]:
         """Generate hashable key for model deduplication.
 
-        Results are cached per (class_name, use_default) combination since
-        the key computation involves expensive render() and imports calls.
+        The parse's memo keeps the key per (class_name, use_default) combination, since the key computation involves
+        expensive render() and imports calls.
         """
-        cache_key = (class_name, use_default)
-        cached = self._dedup_key_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
         render_class_name = class_name if class_name is not None or not use_default else "M"
-        self._prepare_dedup_key()
-        result = self._render_dedup_key(render_class_name)
-        self._dedup_key_cache[cache_key] = result
-        return result
+
+        def compute() -> tuple[Any, ...]:
+            self._prepare_dedup_key()
+            return self._render_dedup_key(render_class_name)
+
+        return memoized(
+            MemoTable.DEDUP_KEYS,
+            model_key_of(self.reference),
+            self,
+            (class_name, use_default),
+            compute,
+            lambda: self._render_dedup_key(render_class_name),
+        )
 
     def _prepare_dedup_key(self) -> None:
         """Write what rendering the dedup key decides, so rendering it writes nothing.
@@ -3132,13 +3132,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def clear_imports_cache(self) -> None:
         """Clear cached imports after import-affecting model, field, or data type mutations."""
         self.__dict__.pop(self._IMPORTS_CACHE_KEY, None)
-        self.__dict__.pop(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY, None)
+        forget_model_memos(self, MemoTable.NESTED_MODEL_REQUIRED_FIELDS)
 
     def invalidate_render_caches(self) -> None:
         """Clear cached imports and render-derived model identity."""
         self.clear_imports_cache()
-        if dedup_key_cache := getattr(self, "_dedup_key_cache", None):
-            dedup_key_cache.clear()
+        forget_model_memos(self, MemoTable.DEDUP_KEYS)
 
     def refresh_field_config(self) -> None:
         """Update config derived from field types once the parser has finished replacing them."""
@@ -3581,6 +3580,13 @@ def _share_path_identity(root_model: DataModel, inner_model: DataModel) -> None:
     """
     root_model.__dict__[_PATH_PARTNER_KEY] = model_key_of(inner_model.reference)
     inner_model.__dict__[_PATH_PARTNER_KEY] = model_key_of(root_model.reference)
+
+
+def forget_model_memos(model: DataModel, *tables: MemoTable) -> None:
+    """Drop what the current parse's memo keeps for the model in ``tables``; a model still being built keeps nothing."""
+    if (reference := vars(model).get("reference")) is not None:
+        for table in tables:
+            forget(table, model_key_of(reference), model)
 
 
 def _reference_names_model(reference: Reference, model: DataModel, site: str) -> bool:

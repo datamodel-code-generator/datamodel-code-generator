@@ -13,9 +13,6 @@
 ["src/datamodel_code_generator/model/base.py"."ConstraintsBase.has_constraints"]
 '@cached_property' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModel.__init__"]
-_dedup_key_cache = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModel._append_internal_template_data"]
 '_internal_template_data.setdefault(...)' = 1
 
@@ -30,7 +27,6 @@ _dedup_key_cache = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.clear_imports_cache"]
 '__dict__.pop(_IMPORTS_CACHE_KEY)' = 1
-'__dict__.pop(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)' = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.create_reuse_model"]
 reused_reference = "--input tests/data/json/duplicate_models.json --input-file-type json --output-model-type pydantic_v2.BaseModel --reuse-model"
@@ -38,14 +34,8 @@ reused_reference = "--input tests/data/json/duplicate_models.json --input-file-t
 ["src/datamodel_code_generator/model/base.py"."DataModel.finalize_required_inherited_field"]
 'extras.pop("default_factory")' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModel.get_dedup_key"]
-'_dedup_key_cache[...]' = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModel.imports"]
 '__dict__[_IMPORTS_CACHE_KEY]' = 1
-
-["src/datamodel_code_generator/model/base.py"."DataModel.invalidate_render_caches"]
-'_dedup_key_cache.clear()' = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.path"]
 '@cached_property' = 1
@@ -75,9 +65,6 @@ _field_name_bindings = 1
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.force_field_assignment"]
 '__dict__["_forced_field_assignment"]' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.invalidate_semantic_caches"]
-'__dict__.pop(...)' = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.mark_as_keyword_only"]
 'extras["kw_only"]' = 1
 
@@ -90,9 +77,6 @@ _field_name_bindings = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.record_untaken_constraints"]
 '__dict__[_UNTAKEN_CONSTRAINTS_KEY]' = 1
-
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.self_reference"]
-'__dict__["_self_reference_cache"]' = 2
 
 ["src/datamodel_code_generator/model/base.py"."TemplateBase.template"]
 '@cached_property' = 1
@@ -113,9 +97,6 @@ default = 1
 nullable = 1
 required = 1
 
-["src/datamodel_code_generator/model/base.py"."_nested_model_factory"]
-'__dict__[_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY]' = 1
-
 ["src/datamodel_code_generator/model/base.py"."_set_nested_model_default_factory_order"]
 '__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY]' = 1
 '__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY]' = 1
@@ -125,16 +106,6 @@ required = 1
 
 ["src/datamodel_code_generator/model/dataclass.py"."DataClass.unbind_fields"]
 '__dict__[_UNBOUND_FIELD_KEY]' = 1
-
-["src/datamodel_code_generator/model/enum.py"."Enum._coerced_member_index"]
-'@cached_property' = 1
-
-["src/datamodel_code_generator/model/enum.py"."Enum._member_index"]
-'@cached_property' = 1
-
-["src/datamodel_code_generator/model/enum.py"."Enum.invalidate_render_caches"]
-'__dict__.pop("_coerced_member_index")' = 1
-'__dict__.pop("_member_index")' = 1
 
 ["src/datamodel_code_generator/model/msgspec.py"."DataModelField._copy_data_type"]
 data_types = 1
@@ -322,12 +293,6 @@ alias = 1
 import_ = 1
 kwargs = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser._flatten_invalid_modules"]
-'_dedup_key_cache.clear()' = 1
-
-["src/datamodel_code_generator/parser/base.py"."_ModelShapeSource.forget_dedup_keys"]
-'_dedup_key_cache.clear()' = 1
-
 ["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
 is_optional = 1
 nullable = 2
@@ -446,9 +411,6 @@ target_python_version = 1
 
 ["src/datamodel_code_generator/types.py"."DataType.__deepcopy__"]
 '__dict__[...]' = 1
-
-["src/datamodel_code_generator/types.py"."DataType._join_union_member_type_hints"]
-'__dict__[_RENDERED_UNION_MEMBERS_KEY]' = 1
 
 ["src/datamodel_code_generator/types.py"."DataType._materialize_render_state"]
 '__dict__[_REFERENCE_NULL_DATA_TYPE_KEY]' = 1

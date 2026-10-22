@@ -374,6 +374,10 @@ str	main/main_general/dataclass_field_type_imports_follow_its_field[str].txt	= m
 	main/default_target_python_version.txt
 [test_direct_input_dict]
 	main/direct_input_dict.py
+[test_enum_member_index_that_an_extension_makes_stale]
+off	main/main_general/enum_member_index_that_an_extension_makes_stale[off].txt	= main/main_general/enum_member_index_that_an_extension_makes_stale[report].txt
+report	main/main_general/enum_member_index_that_an_extension_makes_stale[report].report.txt
+report	main/main_general/enum_member_index_that_an_extension_makes_stale[report].txt
 [test_format_code_fallback_on_error]
 	main/format_code_fallback_on_error.py
 [test_format_code_fallback_on_error_init_exports]
@@ -732,6 +736,13 @@ True	main/person.py
 [test_pyproject_msgspec_derives_constraints_from_final_config]
 batch	main/jsonschema/msgspec_array_length_constraints_use_annotated.py
 single	main/jsonschema/msgspec_array_length_constraints_use_annotated.py
+[test_render_memo_that_an_extension_makes_stale]
+off	main/main_general/render_memo_that_an_extension_makes_stale[off].txt
+report	main/main_general/render_memo_that_an_extension_makes_stale[report].report.txt
+report	main/main_general/render_memo_that_an_extension_makes_stale[report].txt	= main/main_general/render_memo_that_an_extension_makes_stale[off].txt
+[test_render_memos_record_the_stale_values_legacy_rows_keep]
+dedup-keys	main/main_general/render_memos_record_the_stale_values_legacy_rows_keep[dedup-keys].report.txt
+self-reference	main/main_general/render_memos_record_the_stale_values_legacy_rows_keep[self-reference].report.txt
 [test_render_plan_of_a_declared_default_factory_of_none]
 False	main/main_general/render_plan_of_a_declared_default_factory_of_none[False].txt
 True	main/main_general/render_plan_of_a_declared_default_factory_of_none[True].txt	= main/main_general/render_plan_of_a_declared_default_factory_of_none[False].txt

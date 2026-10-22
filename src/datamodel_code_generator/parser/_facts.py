@@ -393,9 +393,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         access=Access.DICT_KEY,
     ),
     AttributeFact(
-        "DataType", "_RENDERED_UNION_MEMBERS_KEY", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
         "DataType",
         "_REFERENCE_NULL_DATA_TYPE_KEY",
         FactKind.PRESENTATION,
@@ -717,9 +714,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         access=Access.DICT_KEY,
     ),
     AttributeFact(
-        "DataModelFieldBase", "_self_reference_cache", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
         "DataModelFieldBase",
         "_DEFERRED_INHERITED_FIELD_KEY",
         FactKind.BOOKKEEPING,
@@ -892,7 +886,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataModel", "_nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_custom_template_dir", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "_dedup_key_cache", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CONTAINER),
     AttributeFact(
         "DataModel",
         "_field_name_bindings",
@@ -919,15 +912,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
-        access=Access.DICT_KEY,
-    ),
-    AttributeFact(
-        "DataModel",
-        "_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY",
-        FactKind.CACHE,
-        (),
-        Phase.RENDER,
         None,
         access=Access.DICT_KEY,
     ),
@@ -967,10 +951,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "TemplateBase", "template_file_path", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
     ),
     AttributeFact("TemplateBase", "template", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY),
-    AttributeFact("Enum", "_member_index", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY),
-    AttributeFact(
-        "Enum", "_coerced_member_index", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
-    ),
     AttributeFact("DataClass", "_lookaround_regex_engine_checked", FactKind.CACHE, (), Phase.RENDER, None),
     AttributeFact(
         "RootModel",

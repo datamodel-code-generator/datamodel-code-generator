@@ -70,6 +70,7 @@ from datamodel_code_generator._internal_utils import (
 )
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._naming_hint import collecting_class_names
+from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._reference_graph import (
@@ -156,6 +157,7 @@ from datamodel_code_generator.model.base import (
     _share_path_identity,
     c3_merge,
     direct_base_models,
+    forget_model_memos,
     get_inherited_fields,
     get_resolve_reference_action_capabilities,
     linearize_data_models,
@@ -2538,13 +2540,13 @@ class _ModelShapeSource:
         return rendered, imports, tuple(written)
 
     def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:  # noqa: PLR6301
-        """Return the dedup key the model cached in a slot, rendering and caching it when the slot is empty."""
+        """Return the dedup key the memo keeps for the model in a slot, rendering and keeping it for an empty slot."""
         class_name, use_default = slot
         return model.get_dedup_key(class_name, use_default=use_default)
 
     def forget_dedup_keys(self, model: DataModel) -> None:  # noqa: PLR6301
-        """Drop the dedup keys the model cached."""
-        model._dedup_key_cache.clear()  # noqa: SLF001
+        """Drop the dedup keys the parse's memo keeps for the model."""
+        forget_model_memos(model, MemoTable.DEDUP_KEYS)
 
     def mask_pattern(self, text: str) -> re.Pattern[str]:
         """Return the pattern that finds string literals, field declarations and names as the target names them."""
@@ -8839,7 +8841,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         resolver.refresh_reference_names()
         for model in models_to_clear:
             model.clear_imports_cache()
-            model._dedup_key_cache.clear()  # noqa: SLF001
+            forget_model_memos(model, MemoTable.DEDUP_KEYS)
         return True
 
     def _apply_forced_invalid_dotted_stdout_repair(
@@ -9222,9 +9224,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
         render_ready = RENDER_READY.set(RenderReady()) if RENDER_READY.get() is None else None
+        memo = PARSE_MEMO.set(self.generation_store._memo) if PARSE_MEMO.get() is None else None  # noqa: SLF001
         try:
             self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
         finally:
+            if memo is not None:
+                PARSE_MEMO.reset(memo)
             if render_ready is not None:
                 RENDER_READY.reset(render_ready)
         if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
@@ -9984,12 +9989,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         token = SCHEMA_GRAPH.set(self._schema_graph)
         render_ready = RENDER_READY.set(RenderReady())
+        memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
         caller = anchor_parse_caller()
         try:
             with read_check_flags(), parse_checks(self, Error):
                 self.__runner().run_steps(Parser.__PIPELINE, self, run)
         finally:
             release_parse_caller(caller)
+            PARSE_MEMO.reset(memo)
             RENDER_READY.reset(render_ready)
             SCHEMA_GRAPH.reset(token)
         return run.output

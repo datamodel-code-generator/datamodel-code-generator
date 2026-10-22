@@ -445,14 +445,8 @@ def unchanged_render_inputs(inputs: RenderInputs) -> bool:
 
 
 def _same_value(new: Any, old: Any) -> bool:
-    """Return whether ``new`` is ``old``, or equals it as an immutable value or a tuple of them of the same type."""
-    if new is old:
-        return True
-    if (kind := type(new)) is not type(old):
-        return False
-    if kind is tuple:
-        return len(new) == len(old) and all(map(_same_value, new, old))
-    return kind in _EQUAL_BY_VALUE and new == old
+    """Return whether ``new`` is ``old``, or equals it as an immutable value of the same type."""
+    return new is old or (type(new) is type(old) and type(new) in _EQUAL_BY_VALUE and new == old)
 
 
 class PlannedField(Protocol):
