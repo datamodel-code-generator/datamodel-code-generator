@@ -7547,6 +7547,61 @@ def test_main_openapi_allof_required_inherited_external(
         )
 
 
+def test_main_openapi_allof_boolean_member(output_file: Path) -> None:
+    """Read a true member of allOf as no constraint, in local and external component schemas."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_boolean_member" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_boolean_member_owner",
+        model_name="Owner",
+        valid_json=json.dumps({"pet": {"kind": "Cat", "meow": True}}),
+        invalid_json=json.dumps({"pet": {"kind": "Cat", "meow": "x"}}),
+        expected_error_type="bool_parsing",
+        expected_attribute_path=("pet", "meow"),
+        expected_attribute_value=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_boolean_member_tag",
+        model_name="Tag",
+        valid_json=json.dumps({"name": "a"}),
+        invalid_json=json.dumps({}),
+        expected_error_type="missing",
+        expected_attribute_path=("name",),
+        expected_attribute_value="a",
+    )
+
+
+def test_main_openapi_allof_boolean_false_member_errors(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject a component schema whose allOf has a false member, which no value satisfies."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_boolean_false_member.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="allOf contains a boolean false schema that makes the schema unsatisfiable",
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize(
     "schema_name",
     [

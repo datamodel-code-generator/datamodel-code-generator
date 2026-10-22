@@ -1315,7 +1315,7 @@ class OpenAPIParser(JsonSchemaParser):
 
             all_of = schema.get("allOf")
             if all_of:
-                refs = [item.get("$ref") for item in all_of if item.get("$ref")]
+                refs = [ref for item in all_of if isinstance(item, dict) and (ref := item.get("$ref"))]
                 if refs:
                     potential_subtypes[schema_name] = refs
 

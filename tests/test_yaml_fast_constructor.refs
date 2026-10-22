@@ -43,6 +43,9 @@ openapi/all_of_with_relative_ref/schema/animal.yaml	yaml_fast_constructor/parity
 openapi/all_of_with_relative_ref/schema/pet.yaml	yaml_fast_constructor/parity.txt
 openapi/allof.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_array_ref_override.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_boolean_false_member.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_boolean_member/external.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_boolean_member/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_enum_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_inheritance_modular_mro_conflict.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_inherited_constraint_composition_isolation.yaml	yaml_fast_constructor/parity.txt

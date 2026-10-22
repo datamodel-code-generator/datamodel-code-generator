@@ -501,6 +501,8 @@ source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 	main/openapi/all_of_with_relative_ref.py
 [test_main_openapi_allof_array_ref_no_duplicate_model]
 	main/openapi/allof_array_ref_override.py
+[test_main_openapi_allof_boolean_member]
+	main/openapi/openapi_allof_boolean_member.py
 [test_main_openapi_allof_inherited_constraint_composition_isolation]
 	main/openapi/allof_inherited_constraint_composition_isolation.py
 [test_main_openapi_allof_merge_mode_all]

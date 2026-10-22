@@ -1,0 +1,11 @@
+openapi: "3.1.0"
+info:
+  title: Boolean false schema in allOf
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Never:
+      allOf:
+        - false
+        - type: object

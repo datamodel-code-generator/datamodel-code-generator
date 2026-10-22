@@ -1,0 +1,16 @@
+openapi: "3.1.0"
+info:
+  title: External boolean schemas in allOf
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Tag:
+      allOf:
+        - true
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string

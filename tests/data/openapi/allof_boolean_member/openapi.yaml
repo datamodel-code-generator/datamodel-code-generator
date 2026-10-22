@@ -1,0 +1,41 @@
+openapi: "3.1.0"
+info:
+  title: Boolean schemas in allOf
+  version: "1.0"
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "external.yaml#/components/schemas/Tag"
+components:
+  schemas:
+    Pet:
+      type: object
+      discriminator:
+        propertyName: kind
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+    Cat:
+      allOf:
+        - true
+        - $ref: "#/components/schemas/Pet"
+        - type: object
+          properties:
+            meow:
+              type: boolean
+    Anything:
+      allOf:
+        - true
+    Owner:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/Pet"
