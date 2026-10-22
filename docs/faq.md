@@ -668,7 +668,7 @@ class Holder(RootModel[dict[str, str]]):
 | Release | 0.87.0 |
 | Issue | [#5113](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5113) |
 
-**Affects:** objects without `properties` whose keys are constrained by `patternProperties` or `propertyNames`. The key pattern joins every pattern, the value is the union of the value types, keys outside the patterns are typed by `additionalProperties`, and under `--generate-schema-validators` every key of a pattern map is counted. A warning names the cases one dict cannot express exactly.
+**Affects:** objects without `properties` whose keys are constrained by `patternProperties` or `propertyNames`. The key pattern joins every pattern, the value is the union of the value types, and keys outside the patterns are typed by `additionalProperties`. A warning names the cases one dict cannot express exactly. The stricter pattern-map checks of `--generate-schema-validators` are under `--check-pattern-maps-strictly`.
 
 Schema: `patternProperties` with `^i-` (string) and `^n-` (integer).
 
@@ -684,6 +684,34 @@ With the option:
 
 ```python
 class Model(RootModel[dict[constr(pattern=r'^i-|^n-'), str | int]]):
+```
+
+### `--check-pattern-maps-strictly`
+
+| | |
+|---|---|
+| Option | `--check-pattern-maps-strictly` |
+| Preset | `20261019` |
+| Class | opt-in |
+| Release | 0.87.0 |
+| Issue | [#5152](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5152) |
+
+**Affects:** `patternProperties` checked by `--generate-schema-validators`; the option does nothing without it. A declared property is also checked against every matching pattern whose schema its own does not imply (`x-id` beside `^x-` with `maxLength: 3` rejects `"abcd"`), the dict root model of an object without `properties` counts every key a pattern admits and takes its keys from `propertyNames`, and the model of an object without `properties` keeps the other types of its `type` array.
+
+Schema: `labels` is `{"type": "object", "patternProperties": {"^l-": {"type": "integer"}}, "additionalProperties": false, "minProperties": 1}`.
+
+Without the option (same as 0.86.0; every non-empty object is rejected):
+
+```python
+class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+```
+
+With the option:
+
+```python
+class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+    root: dict[str, Any] = Field(..., min_length=1)
 ```
 
 ### `--read-unevaluated-properties`

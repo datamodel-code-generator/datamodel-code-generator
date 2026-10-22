@@ -678,6 +678,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--generate-schema-validators": CLIOptionMeta(
         name="--generate-schema-validators", category=OptionCategory.TEMPLATE
     ),
+    "--check-pattern-maps-strictly": CLIOptionMeta(
+        name="--check-pattern-maps-strictly", category=OptionCategory.TEMPLATE
+    ),
     "--schema-validator-type": CLIOptionMeta(name="--schema-validator-type", category=OptionCategory.TEMPLATE),
     "--schema-validator-base-class-name": CLIOptionMeta(
         name="--schema-validator-base-class-name", category=OptionCategory.TEMPLATE

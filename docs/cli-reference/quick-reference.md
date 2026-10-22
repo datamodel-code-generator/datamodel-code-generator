@@ -179,6 +179,7 @@ datamodel-codegen [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | [`--additional-imports`](template-customization.md#additional-imports) | Add custom imports to generated output files. |
+| [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly) | Check every key of the pattern maps that `--generate-schema-validators` validate... |
 | [`--class-decorators`](template-customization.md#class-decorators) | Add custom decorators to generated model classes. |
 | [`--custom-file-header`](template-customization.md#custom-file-header) | Add custom header text to the generated file. |
 | [`--custom-file-header-mode`](template-customization.md#custom-file-header-mode) | Choose how a custom file header combines with generated provenance. |
@@ -330,6 +331,7 @@ All options sorted alphabetically:
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) - Capitalize enum member names to UPPER_CASE format.
 - [`--check`](general-options.md#check) - Verify generated code matches existing output without modify...
+- [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly) - Check every key of the pattern maps that `--generate-schema-...
 - [`--class-decorators`](template-customization.md#class-decorators) - Add custom decorators to generated model classes.
 - [`--class-name`](model-customization.md#class-name) - Override the auto-generated class name with a custom name.
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.

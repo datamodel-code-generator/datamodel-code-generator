@@ -740,6 +740,15 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Stricter pattern-map checks",
+        config=PresetConfig(check_pattern_maps_strictly=True),
+        description=(
+            "Under --generate-schema-validators, count every key that a pattern admits, check declared keys "
+            "against the patterns that match them, and keep the propertyNames keys and the other types of a type "
+            "array of an object without properties."
+        ),
+    ),
+    PresetOptionGroup(
         title="Typed map values beside other types",
         config=PresetConfig(use_typed_map_values_beside_other_types=True),
         description=(

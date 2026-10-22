@@ -184,6 +184,7 @@ class BaseGenerateConfig(TypedDict):
     custom_template_dir: NotRequired[str | None]
     schema_validator_type: NotRequired[SchemaValidatorType | None]
     generate_schema_validators: NotRequired[bool]
+    check_pattern_maps_strictly: NotRequired[bool]
     schema_validator_base_class_name: NotRequired[str | None]
     validation: NotRequired[bool]
     field_constraints: NotRequired[bool]

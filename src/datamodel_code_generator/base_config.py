@@ -199,6 +199,7 @@ class BaseGenerateConfig(BaseModel):
     custom_template_dir: Path | None = None
     schema_validator_type: SchemaValidatorType | None = None
     generate_schema_validators: bool = False
+    check_pattern_maps_strictly: bool = False
     schema_validator_base_class_name: str | None = None
     validation: bool = False
     field_constraints: bool = False

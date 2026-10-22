@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "headers": {
+      "type": "object",
+      "properties": {
+        "x-id": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x-": {
+          "type": "string",
+          "maxLength": 3
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "patternProperties": {
+        "^l-": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
+  }
+}

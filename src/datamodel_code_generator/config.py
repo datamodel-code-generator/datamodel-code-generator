@@ -160,6 +160,7 @@ class ParserConfig(BaseModel):
     extra_template_data: ExtraTemplateDataType | None = None
     validators: Mapping[str, ModelValidators] | None = None
     generate_schema_validators: bool = False
+    check_pattern_maps_strictly: bool = False
     schema_validator_base_class_name: str | None = None
     target_python_version: PythonVersion = PythonVersionMin
     dump_resolve_reference_action: DumpResolveReferenceAction | None = None

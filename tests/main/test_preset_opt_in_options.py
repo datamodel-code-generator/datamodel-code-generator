@@ -23,6 +23,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
     "--keep-field-defaults-off-branch-roots",
     "--use-tuple-for-closed-arrays",
     "--use-single-dict-for-object-maps",
+    "--check-pattern-maps-strictly",
     "--use-typed-map-values-beside-other-types",
     "--keep-enum-member-values",
     "--read-unevaluated-properties",
@@ -81,6 +82,12 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
             "jsonschema",
             ["--output-model-type", "pydantic_v2.BaseModel"],
             id="use-single-dict-for-object-maps",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "object_maps" / "strict_pattern_maps.json",
+            "jsonschema",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--generate-schema-validators"],
+            id="check-pattern-maps-strictly",
         ),
         pytest.param(
             JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",

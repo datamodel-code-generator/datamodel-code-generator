@@ -4203,6 +4203,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4245,7 +4246,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4268,6 +4269,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4296,6 +4298,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4339,7 +4342,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4363,6 +4366,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4391,6 +4395,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4434,7 +4439,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4458,6 +4463,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4486,6 +4492,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4529,7 +4536,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4553,6 +4560,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4581,6 +4589,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4624,7 +4633,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4648,6 +4657,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4676,6 +4686,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-root-models = true
     dedupe-request-response-variants = true
     deserialize-default-values = ["decimal", "enum"]
@@ -4719,7 +4730,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4743,6 +4754,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4771,6 +4783,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -4825,7 +4838,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4848,6 +4861,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4879,6 +4893,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -4934,7 +4949,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4958,6 +4973,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -4989,6 +5005,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -5044,7 +5061,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5068,6 +5085,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -5099,6 +5117,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -5154,7 +5173,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5178,6 +5197,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -5209,6 +5229,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -5264,7 +5285,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5288,6 +5309,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -5319,6 +5341,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     ```toml
     [tool.datamodel-codegen]
     allow-population-by-field-name = true
+    check-pattern-maps-strictly = true
     collapse-reuse-models = true
     collapse-root-models = true
     dedupe-request-response-variants = true
@@ -5374,7 +5397,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-paths-bodies-as-definitions --order-constructor-fields-by-final-names --order-constructor-fields-by-written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5398,6 +5421,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Field defaults kept off branch roots | `--keep-field-defaults-off-branch-roots` | Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf. |
 | Tuples for closed arrays | `--use-tuple-for-closed-arrays` | Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type. |
 | One dict for object maps | `--use-single-dict-for-object-maps` | Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class. |
+| Stricter pattern-map checks | `--check-pattern-maps-strictly` | Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties. |
 | Typed map values beside other types | `--use-typed-map-values-beside-other-types` | Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string]. |
 | Enum member values kept | `--keep-enum-member-values` | Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members. |
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
@@ -22464,7 +22488,7 @@ This documentation is auto-generated from test cases.
 | 🔧 [Typing Customization](typing-customization.md) | 44 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
-| 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
+| 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
@@ -22580,6 +22604,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members)
 - [`--check`](general-options.md#check)
+- [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly)
 - [`--class-decorators`](template-customization.md#class-decorators)
 - [`--class-name`](model-customization.md#class-name)
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
@@ -42967,11 +42992,11 @@ With `--use-single-dict-for-object-maps` it is one dict whose key pattern joins 
 the union of their value types, so an object that mixes the keys of several patterns is accepted; a dict that
 cannot express the object exactly (keys outside the patterns, different value schemas) is named by a warning.
 The null and the other types of a `type` array, such as `[object, string, null]`, join the dict in a union, and its
-property counts stay on the dict. With `--generate-schema-validators`, the dict root of a validated map also takes
-its keys from `propertyNames` and counts the keys its patterns admit, the model of an object without `properties`
-joins the other types of its `type` array, and a pattern checks every declared key whose schema it adds an assertion
-to. Without the option the map is written as in 0.86.0: a union of dicts, one per value type of the patterns, the
-other types of a `type` array left out; msgspec, which cannot decode a union of several dicts, gets the one dict.
+property counts stay on the dict; the dict root model of an object without `properties`, such as a nullable
+`additionalProperties` map, takes the same null. The stricter pattern-map checks of `--generate-schema-validators`
+are under `--check-pattern-maps-strictly`. Without the option the map is written as in 0.86.0: a union of dicts, one
+per value type of the patterns, the other types of a `type` array left out; msgspec, which cannot decode a union of
+several dicts, gets the one dict.
 
 !!! tip "Usage"
 
@@ -45794,6 +45819,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/template-cus
 | Option | Description |
 |--------|-------------|
 | [`--additional-imports`](#additional-imports) | Add custom imports to generated output files. |
+| [`--check-pattern-maps-strictly`](#check-pattern-maps-strictly) | Check every key of the pattern maps that `--generate-schema-... |
 | [`--class-decorators`](#class-decorators) | Add custom decorators to generated model classes. |
 | [`--custom-file-header`](#custom-file-header) | Add custom header text to the generated file. |
 | [`--custom-file-header-mode`](#custom-file-header-mode) | Choose how a custom file header combines with generated prov... |
@@ -45927,6 +45953,314 @@ is useful when using custom types defined in external modules (e.g.,
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--check-pattern-maps-strictly` {#check-pattern-maps-strictly}
+
+Check every key of the pattern maps that `--generate-schema-validators` validates.
+
+Without the option the schema validators check a pattern map as in 0.86.0: a declared property skips the
+`patternProperties` that match its name unless a simple witness shows the pattern rejects one of its values, and the
+dict root of an object without `properties` counts its keys as if the patterns admitted none (`max_length=0` beside
+`additionalProperties: false`, so every non-empty object is rejected). With `--check-pattern-maps-strictly`, a
+declared property is also checked against every matching pattern whose schema its own does not imply, the dict root
+counts every key a pattern admits and takes its keys from `propertyNames`, and the model of an object without
+`properties` keeps the other types of its `type` array. The option has no effect without
+`--generate-schema-validators`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input strict_pattern_maps.json --generate-schema-validators --check-pattern-maps-strictly # (1)!
+    ```
+
+    1. :material-arrow-left: `--check-pattern-maps-strictly` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "headers": {
+          "type": "object",
+          "properties": {
+            "x-id": {
+              "type": "string"
+            }
+          },
+          "patternProperties": {
+            "^x-": {
+              "type": "string",
+              "maxLength": 3
+            }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "patternProperties": {
+            "^l-": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  strict_pattern_maps.json
+
+        from __future__ import annotations
+
+        import re
+        from collections.abc import Mapping as _Mapping
+        from typing import Any, ClassVar
+
+        from pydantic import (
+            BaseModel,
+            ConfigDict,
+            Field,
+            RootModel,
+            TypeAdapter,
+            constr,
+            model_validator,
+        )
+
+
+        class _JsonSchemaRuntimeValidationBase(BaseModel):
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = ()
+
+            @model_validator(mode='before')
+            @classmethod
+            def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+                data = cls._validate_json_schema_pattern_properties(data)
+                return data
+
+            @classmethod
+            def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
+                if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+                    return data
+                values = data
+                for rule in cls.__json_schema_pattern_properties__:
+                    pattern_adapters = None
+                    additional_adapter = None
+                    for key, value in data.items():
+                        declared = key in rule['declared_properties']
+                        if any(
+                            re.search(pattern, key) for pattern in rule['rejected_patterns']
+                        ):
+                            raise ValueError(
+                                f'Property {key!r} is not allowed by patternProperties'
+                            )
+                        matched = False
+                        for index, (pattern, value_type) in enumerate(
+                            rule['pattern_properties'],
+                        ):
+                            if not re.search(pattern, key):
+                                continue
+                            matched = True
+                            if pattern_adapters is None:
+                                pattern_adapters = {}
+                            if (adapter := pattern_adapters.get(index)) is None:
+                                adapter = TypeAdapter(value_type)
+                                pattern_adapters[index] = adapter
+                            validated = adapter.validate_python(value)
+                        if declared:
+                            continue
+                        if matched:
+                            if values is data:
+                                values = dict(data)
+                            values[key] = validated
+                            continue
+                        if rule['additional_property_type'] is not None:
+                            if additional_adapter is None:
+                                additional_adapter = TypeAdapter(
+                                    rule['additional_property_type'],
+                                )
+                            if values is data:
+                                values = dict(data)
+                            values[key] = additional_adapter.validate_python(value)
+                            continue
+                        if not rule['allow_unmatched']:
+                            raise ValueError(f'Unexpected property {key!r}')
+                return values
+
+
+        class Headers(_JsonSchemaRuntimeValidationBase):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+                {
+                    'declared_properties': ('x-id',),
+                    'rejected_patterns': (),
+                    'pattern_properties': (('^x-', constr(max_length=3)),),
+                    'additional_property_type': None,
+                    'allow_unmatched': True,
+                },
+            )
+
+            x_id: str | None = Field(None, alias='x-id')
+
+
+        class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+                {
+                    'declared_properties': (),
+                    'rejected_patterns': (),
+                    'pattern_properties': (('^l-', int),),
+                    'additional_property_type': None,
+                    'allow_unmatched': False,
+                },
+            )
+
+            root: dict[str, Any] = Field(..., min_length=1)
+
+
+        class Model(BaseModel):
+            headers: Headers | None = None
+            labels: Labels | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  strict_pattern_maps.json
+
+        from __future__ import annotations
+
+        import re
+        from collections.abc import Mapping as _Mapping
+        from typing import Any, ClassVar
+
+        from pydantic import (
+            BaseModel,
+            ConfigDict,
+            Field,
+            RootModel,
+            TypeAdapter,
+            constr,
+            model_validator,
+        )
+
+
+        class _JsonSchemaRuntimeValidationBase(BaseModel):
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = ()
+
+            @model_validator(mode='before')
+            @classmethod
+            def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+                data = cls._validate_json_schema_pattern_properties(data)
+                return data
+
+            @classmethod
+            def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
+                if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+                    return data
+                values = data
+                for rule in cls.__json_schema_pattern_properties__:
+                    pattern_adapters = None
+                    additional_adapter = None
+                    for key, value in data.items():
+                        if key in rule['declared_properties']:
+                            continue
+                        if any(
+                            re.search(pattern, key) for pattern in rule['rejected_patterns']
+                        ):
+                            raise ValueError(
+                                f'Property {key!r} is not allowed by patternProperties'
+                            )
+                        matched = False
+                        for index, (pattern, value_type) in enumerate(
+                            rule['pattern_properties'],
+                        ):
+                            if not re.search(pattern, key):
+                                continue
+                            matched = True
+                            if pattern_adapters is None:
+                                pattern_adapters = {}
+                            if (adapter := pattern_adapters.get(index)) is None:
+                                adapter = TypeAdapter(value_type)
+                                pattern_adapters[index] = adapter
+                            value = adapter.validate_python(value)
+                        if matched:
+                            if values is data:
+                                values = dict(data)
+                            values[key] = value
+                            continue
+                        if rule['additional_property_type'] is not None:
+                            if additional_adapter is None:
+                                additional_adapter = TypeAdapter(
+                                    rule['additional_property_type'],
+                                )
+                            if values is data:
+                                values = dict(data)
+                            values[key] = additional_adapter.validate_python(value)
+                            continue
+                        if not rule['allow_unmatched']:
+                            raise ValueError(f'Unexpected property {key!r}')
+                return values
+
+
+        class Headers(_JsonSchemaRuntimeValidationBase):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+                {
+                    'declared_properties': ('x-id',),
+                    'rejected_patterns': (),
+                    'pattern_properties': (('^x-', constr(max_length=3)),),
+                    'additional_property_type': None,
+                    'allow_unmatched': True,
+                },
+            )
+
+            x_id: str | None = Field(None, alias='x-id')
+
+
+        class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+            __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+                {
+                    'declared_properties': (),
+                    'rejected_patterns': (),
+                    'pattern_properties': (('^l-', int),),
+                    'additional_property_type': None,
+                    'allow_unmatched': False,
+                },
+            )
+
+            root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+
+
+        class Model(BaseModel):
+            headers: Headers | None = None
+            labels: Labels | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -62960,6 +63294,7 @@ datamodel-codegen [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | [`--additional-imports`](template-customization.md#additional-imports) | Add custom imports to generated output files. |
+| [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly) | Check every key of the pattern maps that `--generate-schema-validators` validate... |
 | [`--class-decorators`](template-customization.md#class-decorators) | Add custom decorators to generated model classes. |
 | [`--custom-file-header`](template-customization.md#custom-file-header) | Add custom header text to the generated file. |
 | [`--custom-file-header-mode`](template-customization.md#custom-file-header-mode) | Choose how a custom file header combines with generated provenance. |
@@ -63111,6 +63446,7 @@ All options sorted alphabetically:
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) - Capitalize enum member names to UPPER_CASE format.
 - [`--check`](general-options.md#check) - Verify generated code matches existing output without modify...
+- [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly) - Check every key of the pattern maps that `--generate-schema-...
 - [`--class-decorators`](template-customization.md#class-decorators) - Add custom decorators to generated model classes.
 - [`--class-name`](model-customization.md#class-name) - Override the auto-generated class name with a custom name.
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.
@@ -65337,7 +65673,7 @@ class Holder(RootModel[dict[str, str]]):
 | Release | 0.87.0 |
 | Issue | [#5113](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5113) |
 
-**Affects:** objects without `properties` whose keys are constrained by `patternProperties` or `propertyNames`. The key pattern joins every pattern, the value is the union of the value types, keys outside the patterns are typed by `additionalProperties`, and under `--generate-schema-validators` every key of a pattern map is counted. A warning names the cases one dict cannot express exactly.
+**Affects:** objects without `properties` whose keys are constrained by `patternProperties` or `propertyNames`. The key pattern joins every pattern, the value is the union of the value types, and keys outside the patterns are typed by `additionalProperties`. A warning names the cases one dict cannot express exactly. The stricter pattern-map checks of `--generate-schema-validators` are under `--check-pattern-maps-strictly`.
 
 Schema: `patternProperties` with `^i-` (string) and `^n-` (integer).
 
@@ -65353,6 +65689,34 @@ With the option:
 
 ```python
 class Model(RootModel[dict[constr(pattern=r'^i-|^n-'), str | int]]):
+```
+
+### `--check-pattern-maps-strictly`
+
+| | |
+|---|---|
+| Option | `--check-pattern-maps-strictly` |
+| Preset | `20261019` |
+| Class | opt-in |
+| Release | 0.87.0 |
+| Issue | [#5152](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5152) |
+
+**Affects:** `patternProperties` checked by `--generate-schema-validators`; the option does nothing without it. A declared property is also checked against every matching pattern whose schema its own does not imply (`x-id` beside `^x-` with `maxLength: 3` rejects `"abcd"`), the dict root model of an object without `properties` counts every key a pattern admits and takes its keys from `propertyNames`, and the model of an object without `properties` keeps the other types of its `type` array.
+
+Schema: `labels` is `{"type": "object", "patternProperties": {"^l-": {"type": "integer"}}, "additionalProperties": false, "minProperties": 1}`.
+
+Without the option (same as 0.86.0; every non-empty object is rejected):
+
+```python
+class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+```
+
+With the option:
+
+```python
+class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+    root: dict[str, Any] = Field(..., min_length=1)
 ```
 
 ### `--read-unevaluated-properties`
@@ -65791,16 +66155,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 200 | Shared generation options. |
-| `GenerateConfig` | 215 | Public `generate()` configuration. |
-| `ParserConfig` | 165 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 167 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 174 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 175 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 168 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 168 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 167 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 168 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 201 | Shared generation options. |
+| `GenerateConfig` | 216 | Public `generate()` configuration. |
+| `ParserConfig` | 166 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 168 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 175 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 176 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 169 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 169 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 168 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 169 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -66769,11 +67133,12 @@ right one.
   validated pattern maps): `parse_object` built the root field of a dict root model from a copy of the object
   without `patternProperties`, so `_get_property_count_constraints` saw a closed object without patterns
   (`max_length=0`: every non-empty object rejected), and typed its keys `str` although `propertyNames` constrains
-  them. Under `--use-single-dict-for-object-maps` the field reads every keyword that counts keys from the object
-  itself and takes the builder's key and null rules; without it the 0.86.0 field is kept
-  (`_get_released_additional_properties_root_field`), and so are the object models of the validators, which leave the
-  other types of a type array out, and the 0.86.0 proof of a pattern that checks a declared key
-  (`_pattern_rejects_declared_value`).
+  them. Under `--check-pattern-maps-strictly` the field of a validated pattern map reads every keyword that counts
+  keys from the object itself and takes its keys from `propertyNames`, the object models of the validators join the
+  other types of a type array, and a pattern checks every declared key whose schema does not imply its own
+  (`_pattern_checks_declared_key`); without it the 0.86.0 field, the object models without the other types and the
+  0.86.0 proof of a pattern that checks a declared key (`_pattern_rejects_declared_value`) are kept. The builder's
+  key and null rules reach the field under `--use-single-dict-for-object-maps`.
 - **[#4835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4835)** (keys outside the
   patterns): `parse_pattern_properties` took no `additionalProperties`, so an open pattern map typed only the keys of
   its patterns and rejected every other key, although the schema types them by `additionalProperties`. The builder

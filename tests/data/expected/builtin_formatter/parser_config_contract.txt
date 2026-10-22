@@ -16,6 +16,7 @@ guarded base_class_map
 reviewed-safe base_path
 reviewed-safe builtin_format_line_length
 reviewed-safe capitalise_enum_members
+reviewed-safe check_pattern_maps_strictly
 guarded class_decorators
 reviewed-safe class_name
 reviewed-safe class_name_affix_scope

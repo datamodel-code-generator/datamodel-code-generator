@@ -1416,6 +1416,14 @@ template_options.add_argument(
     default=None,
 )
 template_options.add_argument(
+    "--check-pattern-maps-strictly",
+    help="Under --generate-schema-validators, count every key that a pattern of patternProperties admits, check "
+    "declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a "
+    "type array of an object without properties",
+    action="store_true",
+    default=None,
+)
+template_options.add_argument(
     "--schema-validator-type",
     help="Select the schema-derived runtime validator backend. "
     "'pydantic-v2' generates Pydantic v2 model validators (experimental).",

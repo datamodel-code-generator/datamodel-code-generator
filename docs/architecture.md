@@ -162,16 +162,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 200 | Shared generation options. |
-| `GenerateConfig` | 215 | Public `generate()` configuration. |
-| `ParserConfig` | 165 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 167 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 174 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 175 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 168 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 168 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 167 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 168 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 201 | Shared generation options. |
+| `GenerateConfig` | 216 | Public `generate()` configuration. |
+| `ParserConfig` | 166 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 168 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 175 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 176 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 169 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 169 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 168 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 169 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1140,11 +1140,12 @@ right one.
   validated pattern maps): `parse_object` built the root field of a dict root model from a copy of the object
   without `patternProperties`, so `_get_property_count_constraints` saw a closed object without patterns
   (`max_length=0`: every non-empty object rejected), and typed its keys `str` although `propertyNames` constrains
-  them. Under `--use-single-dict-for-object-maps` the field reads every keyword that counts keys from the object
-  itself and takes the builder's key and null rules; without it the 0.86.0 field is kept
-  (`_get_released_additional_properties_root_field`), and so are the object models of the validators, which leave the
-  other types of a type array out, and the 0.86.0 proof of a pattern that checks a declared key
-  (`_pattern_rejects_declared_value`).
+  them. Under `--check-pattern-maps-strictly` the field of a validated pattern map reads every keyword that counts
+  keys from the object itself and takes its keys from `propertyNames`, the object models of the validators join the
+  other types of a type array, and a pattern checks every declared key whose schema does not imply its own
+  (`_pattern_checks_declared_key`); without it the 0.86.0 field, the object models without the other types and the
+  0.86.0 proof of a pattern that checks a declared key (`_pattern_rejects_declared_value`) are kept. The builder's
+  key and null rules reach the field under `--use-single-dict-for-object-maps`.
 - **[#4835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4835)** (keys outside the
   patterns): `parse_pattern_properties` took no `additionalProperties`, so an open pattern map typed only the keys of
   its patterns and rejected every other key, although the schema types them by `additionalProperties`. The builder

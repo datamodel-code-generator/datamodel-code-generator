@@ -1,0 +1,33 @@
+{
+  "valid": {
+    "headers": {
+      "x-id": "abc",
+      "x-a": "b"
+    }
+  },
+  "invalid": [
+    {
+      "headers": {
+        "x-id": "abcd"
+      }
+    },
+    {
+      "headers": {
+        "x-a": "abcd"
+      }
+    },
+    {
+      "labels": {}
+    },
+    {
+      "labels": {
+        "other": 1
+      }
+    },
+    {
+      "labels": {
+        "l-a": "one"
+      }
+    }
+  ]
+}

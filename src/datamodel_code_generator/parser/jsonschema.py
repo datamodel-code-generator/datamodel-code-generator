@@ -11472,7 +11472,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> Literal["declared", "models"] | None:
         """Prove the same bounded intersection after root annotation eligibility.
 
-        With ``declared_witness``, the check of 0.86.0 without ``--use-single-dict-for-object-maps``, a pattern that
+        With ``declared_witness``, the check of 0.86.0 without ``--check-pattern-maps-strictly``, a pattern that
         matches a declared key and rejects a value of its simple declared schema gives ``declared``.
         """
         if (
@@ -11651,7 +11651,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             any((self.config.base_class, self.config.base_class_map, self.config.custom_template_dir))
             or self.config.extra_template_data is not None
         )
-        declared_witness = not self.use_single_dict_for_object_maps
+        declared_witness = not self.check_pattern_maps_strictly
         intersection = (
             None
             if helpers_kept
@@ -13067,24 +13067,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataModelFieldBase:
         """Build the dict root field of an object without declared fields, without leaking value constraints.
 
-        propertyNames types the keys and additionalProperties the values. Where the patternProperties validator
-        checks the map, the values are ``Any`` and the keys are read from propertyNames as a pattern map reads them.
-        The object map builder's rule gives the dict its null. The field reads the keywords that count the keys of the
-        object, patternProperties included, so a key that a pattern admits counts. Without
-        ``--use-single-dict-for-object-maps`` the field is that of 0.86.0
-        (``_get_released_additional_properties_root_field``).
+        additionalProperties types the values. Where the patternProperties validator checks the map, the values are
+        ``Any``; under ``--check-pattern-maps-strictly`` its keys are read from propertyNames as a pattern map reads
+        them and the field reads the keywords that count the keys of the object, patternProperties included, so a key
+        that a pattern admits counts. Elsewhere the keys are ``str``: an object with propertyNames and without
+        properties reaches this field only where the validator checks its patterns. The object map builder's null
+        reaches the dict under ``--use-single-dict-for-object-maps``. Without the options the keys are ``str``, the
+        counts leave the patterns out and the dict has no null, as in 0.86.0.
         """
-        if not self.use_single_dict_for_object_maps:
-            return self._get_released_additional_properties_root_field(name, obj, path)
         value_type = self.data_type_manager.get_data_type(Types.any)
+        key_type = None
+        counts: dict[str, Any] = {
+            "minProperties": obj.minProperties,
+            "maxProperties": obj.maxProperties,
+            "propertyNames": obj.propertyNames,
+            "additionalProperties": obj.additionalProperties,
+        }
         if self._has_pattern_properties_validator(obj):
-            key_type = self._pattern_map_key_type(obj.propertyNames, None)
+            if self.check_pattern_maps_strictly:
+                key_type = self._pattern_map_key_type(obj.propertyNames, None)
+                counts["patternProperties"] = obj.patternProperties
         else:
-            key_type = (
-                None
-                if obj.propertyNames is None
-                else self._parse_property_names_key_type(name, obj.propertyNames, path)
-            )
             match obj.additionalProperties:
                 case JsonSchemaObject() as additional_properties:
                     value_type = self._parse_additional_properties_value(
@@ -13094,60 +13097,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         additional_properties=additional_properties,
                     )
         map_type = self.data_type(data_types=[value_type], is_dict=True, dict_key=key_type)
-        additional_props_field = self._schema_object({
-            "minProperties": obj.minProperties,
-            "maxProperties": obj.maxProperties,
-            "propertyNames": obj.propertyNames,
-            "additionalProperties": obj.additionalProperties,
-            "patternProperties": obj.patternProperties,
-        })
-
         return self.get_object_field(
             field_name=None,
-            field=additional_props_field,
+            field=self._schema_object(counts),
             required=True,
             original_field_name=None,
-            field_type=_with_null(map_type) if self._object_map_admits_null(obj) else map_type,
-            alias=None,
-        )
-
-    def _get_released_additional_properties_root_field(
-        self,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-    ) -> DataModelFieldBase:
-        """Build the dict root field of 0.86.0: ``str`` keys, and counts read without patternProperties."""
-        additional_props_type = None
-        if not self._has_pattern_properties_validator(obj):
-            match obj.additionalProperties:
-                case JsonSchemaObject() as additional_properties:
-                    additional_props_type = self._parse_additional_properties_value(
-                        name,
-                        [*path, "additionalProperties"],
-                        obj,
-                        additional_properties=additional_properties,
-                    )
-
-        additional_props_field = self._schema_object({
-            "minProperties": obj.minProperties,
-            "maxProperties": obj.maxProperties,
-            "propertyNames": obj.propertyNames,
-            "additionalProperties": obj.additionalProperties,
-        })
-
-        return self.get_object_field(
-            field_name=None,
-            field=additional_props_field,
-            required=True,
-            original_field_name=None,
-            field_type=self.data_type(
-                data_types=[
-                    additional_props_type
-                    if additional_props_type is not None
-                    else self.data_type_manager.get_data_type(Types.any)
-                ],
-                is_dict=True,
+            field_type=(
+                _with_null(map_type)
+                if self.use_single_dict_for_object_maps and self._object_map_admits_null(obj)
+                else map_type
             ),
             alias=None,
         )
@@ -14943,9 +14901,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the model of an object joins the other types of its type array in a union.
 
         An object without properties, built as a model for its schema validators, joins them only under
-        ``--use-single-dict-for-object-maps``, as an object map does.
+        ``--check-pattern-maps-strictly``, as an object map does.
         """
-        return obj.has_multiple_types and (bool(obj.properties) or self.use_single_dict_for_object_maps)
+        return obj.has_multiple_types and (bool(obj.properties) or self.check_pattern_maps_strictly)
 
     def _parse_root_type_site(self, site: _Site) -> DataType:
         """Parse the schema of a site into a root model."""

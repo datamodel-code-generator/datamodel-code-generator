@@ -60,6 +60,7 @@ OUTPUT_MODEL_TYPES = (
     "msgspec.Struct",
 )
 SINGLE_DICT = "--use-single-dict-for-object-maps"
+STRICT_PATTERN_MAPS = "--check-pattern-maps-strictly"
 TYPED_NULLABLE_MAP_VALUES = "--use-typed-nullable-map-values"
 TYPED_MAP_VALUES = (TYPED_NULLABLE_MAP_VALUES, "--use-typed-map-values-beside-other-types")
 OPTION_SETS = {
@@ -224,7 +225,7 @@ RELEASED_VALIDATED_PATTERN_MAPS = (
 def test_pattern_maps_schema_validators_without_single_dict(output_file: Path, name: str) -> None:
     """Check declared keys against the patterns as 0.86.0 did when schema validators check the pattern maps.
 
-    Their tests pin the output of --use-single-dict-for-object-maps; without it, a pattern checks a declared key only
+    Their tests pin the output of --check-pattern-maps-strictly; without it, a pattern checks a declared key only
     where it rejects a value of a simple declared schema: a ``false`` pattern, an integer minimum, or required keys.
     """
     run_main_and_assert(
@@ -278,13 +279,15 @@ def _nullable_object_map_verdicts(output_file: Path, output_model_type: str, *ex
 def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.WarningsRecorder, name: str) -> None:
     """Build the same maps where schema validators check the objects that one dict type cannot express.
 
-    The dict of a validated map counts every key its patterns admit and keeps the keys of propertyNames.
+    Under --check-pattern-maps-strictly, the dict of a validated map counts every key its patterns admit and keeps the
+    keys of propertyNames, an object model of a type array keeps its other types, and a pattern checks every declared
+    key whose schema does not imply the pattern's.
     """
     run_main_and_assert(
         input_path=OBJECT_MAPS / f"{name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", STRICT_PATTERN_MAPS, SINGLE_DICT],
     )
     assert_output(
         "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
@@ -298,7 +301,7 @@ def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.Warnin
 def test_object_maps_schema_validators_without_single_dict(
     output_file: Path, recwarn: pytest.WarningsRecorder, name: str
 ) -> None:
-    """Without --use-single-dict-for-object-maps, schema validators build the maps of 0.86.0.
+    """Without --check-pattern-maps-strictly and --use-single-dict-for-object-maps, validators build 0.86.0 maps.
 
     The dict root of a validated map has ``str`` keys and counts its keys without its patterns, an object model of a
     type array leaves its other types out, and a pattern checks a declared key only where it rejects a value of a
@@ -337,6 +340,7 @@ def test_object_maps_schema_validators_target_pydantic_version(
             "--formatters",
             "builtin",
             "--generate-schema-validators",
+            STRICT_PATTERN_MAPS,
             SINGLE_DICT,
             "--target-pydantic-version",
             "2",
@@ -358,7 +362,7 @@ def test_object_maps_schema_validators_cross_document(output_file: Path) -> None
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", STRICT_PATTERN_MAPS, SINGLE_DICT],
     )
     payloads = json.loads((PAYLOADS / "cross_document.json").read_text())
     other = json.loads((OBJECT_MAPS / "cross_document_other.json").read_text())
@@ -380,9 +384,52 @@ def test_object_maps_schema_validators_false_property(output_file: Path) -> None
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", STRICT_PATTERN_MAPS, SINGLE_DICT],
     )
     payloads = json.loads((PAYLOADS / "false_property.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.cli_doc(
+    options=["--check-pattern-maps-strictly"],
+    option_description="""Check every key of the pattern maps that `--generate-schema-validators` validates.
+
+Without the option the schema validators check a pattern map as in 0.86.0: a declared property skips the
+`patternProperties` that match its name unless a simple witness shows the pattern rejects one of its values, and the
+dict root of an object without `properties` counts its keys as if the patterns admitted none (`max_length=0` beside
+`additionalProperties: false`, so every non-empty object is rejected). With `--check-pattern-maps-strictly`, a
+declared property is also checked against every matching pattern whose schema its own does not imply, the dict root
+counts every key a pattern admits and takes its keys from `propertyNames`, and the model of an object without
+`properties` keeps the other types of its `type` array. The option has no effect without
+`--generate-schema-validators`.""",
+    input_schema="jsonschema/object_maps/strict_pattern_maps.json",
+    cli_args=["--generate-schema-validators", "--check-pattern-maps-strictly"],
+    golden_output="main/jsonschema/object_maps/check_pattern_maps_strictly[with-option].py",
+    comparison_output="main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([STRICT_PATTERN_MAPS], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_check_pattern_maps_strictly(output_file: Path, extra_args: list[str]) -> None:
+    """Check a declared key against its pattern and count the keys of a closed pattern map with the option.
+
+    Without --check-pattern-maps-strictly the validators are those of 0.86.0: ``x-id`` skips the ``maxLength`` of the
+    ``^x-`` pattern, and the closed ``labels`` map rejects every non-empty object.
+    """
+    input_path = OBJECT_MAPS / "strict_pattern_maps.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp", "--generate-schema-validators", *extra_args],
+    )
+    payloads = json.loads((PAYLOADS / "strict_pattern_maps.json").read_text())
     validator = Draft202012Validator(json.loads(input_path.read_text()))
     validator.validate(payloads["valid"])
     for change in payloads["invalid"]:

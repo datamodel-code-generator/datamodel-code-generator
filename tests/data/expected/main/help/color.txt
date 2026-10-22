@@ -721,6 +721,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         only): {'field': ['alt1', 'alt2']} uses AliasChoices
                         for validation. Example: {'User.name': 'user_name',
                         'id': 'id_'} generates `id_: ... = Field(alias='id')`.
+  --check-pattern-maps-strictly
+                        Under --generate-schema-validators, count every key
+                        that a pattern of patternProperties admits, check
+                        declared keys against the patterns that match them,
+                        and keep the propertyNames keys and the other types of
+                        a type array of an object without properties
   --custom-file-header CUSTOM_FILE_HEADER
                         Custom file header
   --custom-file-header-mode {replace,prepend}

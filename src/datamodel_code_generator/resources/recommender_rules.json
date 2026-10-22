@@ -485,6 +485,10 @@
       "not_recommended": "command",
       "reason": "Compares generated output with files on disk."
     },
+    "check_pattern_maps_strictly": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+    },
     "class_decorators": {
       "not_recommended": "style",
       "reason": "The project's own class decorators."

@@ -23,6 +23,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--base-class-map": "Specify different base classes for specific models via JSON mapping.",
     "--capitalize-enum-members": "Capitalize enum member names to UPPER_CASE format.",
     "--check": "Verify generated code matches existing output without modifying files.",
+    "--check-pattern-maps-strictly": "Check every key of the pattern maps that `--generate-schema-validators` valid...",
     "--class-decorators": "Add custom decorators to generated model classes.",
     "--class-name": "Override the auto-generated class name with a custom name.",
     "--class-name-affix-scope": "Control which classes receive the prefix/suffix.",

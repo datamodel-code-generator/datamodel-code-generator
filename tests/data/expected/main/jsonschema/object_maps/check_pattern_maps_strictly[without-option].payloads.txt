@@ -1,0 +1,6 @@
+valid: accepted
+invalid headers: accepted
+invalid headers: rejected (string_too_long)
+invalid labels: rejected (too_short)
+invalid labels: rejected (value_error)
+invalid labels: rejected (int_parsing)

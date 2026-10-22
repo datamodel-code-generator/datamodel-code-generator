@@ -12,7 +12,7 @@ This documentation is auto-generated from test cases.
 | 🔧 [Typing Customization](typing-customization.md) | 44 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
-| 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
+| 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
@@ -128,6 +128,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members)
 - [`--check`](general-options.md#check)
+- [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly)
 - [`--class-decorators`](template-customization.md#class-decorators)
 - [`--class-name`](model-customization.md#class-name)
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)

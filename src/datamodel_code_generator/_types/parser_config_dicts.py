@@ -63,6 +63,7 @@ class ParserConfigDict(TypedDict):
     extra_template_data: NotRequired[defaultdict[str, dict[str, Any]] | None]
     validators: NotRequired[Mapping[str, ModelValidators] | None]
     generate_schema_validators: NotRequired[bool]
+    check_pattern_maps_strictly: NotRequired[bool]
     schema_validator_base_class_name: NotRequired[str | None]
     target_python_version: NotRequired[PythonVersion]
     dump_resolve_reference_action: NotRequired[Callable[[Iterable[str]], str] | None]

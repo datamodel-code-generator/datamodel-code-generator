@@ -4088,6 +4088,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.validators = config.validators
         self.generate_schema_validators: bool = config.generate_schema_validators
+        self.check_pattern_maps_strictly: bool = config.check_pattern_maps_strictly
         self._set_typed_extra_annotation_mode(use_deferred_annotations=True)
 
         self.data_model_type.configure_required_fields(
