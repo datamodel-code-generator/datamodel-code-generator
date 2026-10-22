@@ -983,7 +983,7 @@
     },
     "pin_aliases_with_alias_generator": {
       "not_recommended": "preset",
-      "reason": "pydantic_v2.dataclass output only: set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "pydantic_v2.BaseModel and pydantic_v2.dataclass output: set by the 20261019 presets; the recommendation starts from a preset."
     },
     "preset": {
       "not_recommended": "preset",

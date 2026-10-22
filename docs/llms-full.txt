@@ -65834,7 +65834,7 @@ class Spelling(Struct):
 
 **Affects:** a `type` list that holds an object and another type, with `nullable: true` beside it (OpenAPI 3.0), under `--strict-nullable` or `--use-missing-sentinel`. The root model admits `None`, as it does when the list holds `"null"`.
 
-Schema: `U: {type: [object, str], nullable: true, properties: {x: {type: integer}}}`, with `--use-missing-sentinel`.
+Schema: `U: {type: [object, string], nullable: true, properties: {x: {type: integer}}}`, with `--use-missing-sentinel`.
 
 Without the option (same as 0.86.0):
 
@@ -65886,7 +65886,7 @@ class Weight(RootModel[float]):
 | Preset | `20261019` |
 | Class | opt-in |
 | Release | 0.87.0 |
-| Issue | [#5081](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5081) |
+| Issue | [#5120](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5120), [#5081](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5081) |
 
 **Affects:** a field, array item, map value or union member that refers to a model whose own type already admits `None` (a `RootModel` whose root admits `None`, or a `type: "null"` model). `| None` is written at the use only when the target's class cannot hold null. A null item is then parsed to `Name(root=None)` instead of `None`. Type aliases, enums with a `None` member and plain object models are unchanged.
 
@@ -65962,6 +65962,63 @@ With the option:
 class Level(Enum):
     integer_1 = 1
     integer_2_5 = 2.5
+```
+
+### `--omit-redundant-constraints`
+
+| | |
+|---|---|
+| Option | `--omit-redundant-constraints` |
+| Preset | `20261019` |
+| Class | opt-in |
+| Release | 0.87.0 |
+| Issue | [#4525](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4525), [#4875](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4875) |
+
+**Affects:** a constraint written again beside a type that already enforces it: the bound of a zero-bound class such as `NonNegativeInt` (also needs `--use-non-positive-negative-number-constrained-types`, which no preset sets), and the length and number constraints a `const` or `enum` `Literal` meets by its values. It implies `--filter-literal-values`.
+
+Schema: `{"title": "Model", "type": "object", "properties": {"count": {"type": ["integer", "null"], "minimum": 0}, "code": {"type": "string", "const": "abc", "minLength": 1}}}`. Command: `--use-annotated --use-non-positive-negative-number-constrained-types`.
+
+Without the option (same as 0.86.0):
+
+```python
+class Model(BaseModel):
+    count: Annotated[NonNegativeInt | None, Field(ge=0)] = None
+    code: Annotated[Literal["abc"] | None, Field(min_length=1)] = None
+```
+
+With the option:
+
+```python
+class Model(BaseModel):
+    count: NonNegativeInt | None = None
+    code: Literal["abc"] | None = None
+```
+
+### `--openapi-paths-bodies-as-definitions`
+
+| | |
+|---|---|
+| Option | `--openapi-paths-bodies-as-definitions` |
+| Preset | `20261019` |
+| Class | opt-in |
+| Release | 0.87.0 |
+| Issue | [#5155](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5155) |
+
+**Affects:** request and response bodies in the `paths` and `webhooks` scopes (they need `--openapi-scopes paths` / `webhooks`, which no preset sets). The body gets the model a schema definition of the same body gets: an object body with a `type` array such as `[object, null]`, or with map keywords and no `type`, becomes a model instead of an inline type. This is separate from the crash fix for object bodies in the legacy `paths` scope (#5024).
+
+Schema (abridged): the `POST /pets` request body is `{"type": ["object", "null"], "additionalProperties": {...}}`. Command: `--input-file-type openapi --openapi-scopes paths --output-model-type pydantic_v2.BaseModel`.
+
+Without the option (same as 0.86.0), the body is typed inline and a document whose only bodies are such schemas fails:
+
+```
+Models not found in the input data; request or response bodies of the paths or webhooks scope are typed inline, and --openapi-paths-bodies-as-definitions gives them the models their schema definitions get
+```
+
+With the option:
+
+```python
+class PetsPostRequest(RootModel[dict[str, Any] | None]):
+    root: dict[str, Any] | None
 ```
 
 ### Crash and import fixes in the default output
