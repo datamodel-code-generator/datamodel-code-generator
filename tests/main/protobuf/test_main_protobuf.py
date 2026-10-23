@@ -55,10 +55,15 @@ def test_main_protobuf_complex_proto3(output_file: Path) -> None:
 @pytest.mark.parametrize(("output_model_type", "expected_name"), BACKEND_GOLDEN_CASES)
 def test_main_protobuf_output_model_types(
     output_file: Path,
+    recwarn: pytest.WarningsRecorder,
     output_model_type: str,
     expected_name: str,
 ) -> None:
-    """Generate representative Protocol Buffers models across supported output backends."""
+    """Generate representative Protocol Buffers models across supported output backends.
+
+    msgspec takes no int bound beyond the 64-bit range, so its uint64 and fixed64 fields go without their upper bound
+    and decode.
+    """
     run_main_and_assert(
         input_path=PROTOBUF_DATA_PATH / "complex_proto3.proto",
         output_path=output_file,
@@ -76,6 +81,13 @@ def test_main_protobuf_output_model_types(
         importable_module_name=f"generated_protobuf_{expected_name}",
         importable_module_attribute="ExampleShopV1Order",
     )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+        ),
+        name="warnings",
+    )
     if output_model_type not in {
         DataModelType.PydanticV2BaseModel.value,
         DataModelType.MsgspecStruct.value,
@@ -87,6 +99,10 @@ def test_main_protobuf_output_model_types(
                 pass
             case value:  # pragma: no cover
                 pytest.fail(f"Expected enum member default, got {value!r}")
+        if output_model_type == DataModelType.MsgspecStruct.value:
+            msgspec.json.decode(
+                b'{"uint64_value": 18446744073709551615, "fixed64_value": 18446744073709551615}', type=model
+            )
 
 
 def test_main_protobuf_infer_input_file_type(output_file: Path) -> None:

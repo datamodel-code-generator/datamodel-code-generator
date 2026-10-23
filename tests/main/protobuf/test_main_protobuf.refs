@@ -26,9 +26,13 @@
 [test_main_protobuf_infer_input_file_type]
 	main/protobuf/proto3_optional.py
 [test_main_protobuf_output_model_types]
+dataclass	main/protobuf/main_protobuf/output_model_types[dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 dataclass	main/protobuf/output_model_types/complex_proto3_dataclasses_dataclass.py
+msgspec	main/protobuf/main_protobuf/output_model_types[msgspec].warnings.txt
 msgspec	main/protobuf/output_model_types/complex_proto3_msgspec_Struct.py
+pydantic-v2	main/protobuf/main_protobuf/output_model_types[pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pydantic-v2	main/protobuf/output_model_types/complex_proto3_pydantic_v2_BaseModel.py
+typed-dict	main/protobuf/main_protobuf/output_model_types[typed-dict].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 typed-dict	main/protobuf/output_model_types/complex_proto3_typing_TypedDict.py
 [test_main_protobuf_proto2_schema_version]
 	main/protobuf/proto2.py

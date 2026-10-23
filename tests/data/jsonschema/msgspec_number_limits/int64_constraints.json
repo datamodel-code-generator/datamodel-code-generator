@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "both": {
+      "type": "integer",
+      "minimum": -1e+19,
+      "maximum": 9223372036854776000
+    },
+    "upper": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709551615
+    },
+    "edges": {
+      "type": "integer",
+      "minimum": -9223372036854775808,
+      "maximum": 9223372036854775807
+    },
+    "above": {
+      "type": "integer",
+      "exclusiveMinimum": 9223372036854775807
+    },
+    "above_edge": {
+      "type": "integer",
+      "exclusiveMinimum": 9223372036854775806
+    },
+    "below": {
+      "type": "integer",
+      "exclusiveMaximum": -1e+19
+    },
+    "below_edge": {
+      "type": "integer",
+      "exclusiveMaximum": 9223372036854775807
+    },
+    "divisor": {
+      "type": "integer",
+      "multipleOf": 9223372036854775808
+    },
+    "nullable": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 9223372036854776000
+    },
+    "pattern": {
+      "type": "integer",
+      "maximum": 9223372036854776000,
+      "pattern": "^1"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": -1e+19
+      }
+    },
+    "member": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "maximum": 9223372036854776000
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "alias": {
+      "$ref": "#/$defs/Big"
+    },
+    "site": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Count"
+        }
+      ],
+      "maximum": 9223372036854776000
+    },
+    "number": {
+      "type": "number",
+      "maximum": 9223372036854776000
+    }
+  },
+  "$defs": {
+    "Big": {
+      "type": "integer",
+      "minimum": -1,
+      "maximum": 9223372036854776000
+    },
+    "Count": {
+      "type": "integer"
+    }
+  }
+}

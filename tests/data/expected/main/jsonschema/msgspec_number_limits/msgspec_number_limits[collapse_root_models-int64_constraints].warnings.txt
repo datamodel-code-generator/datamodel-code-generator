@@ -1,0 +1,10 @@
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not ge=-10000000000000000000; Item is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Member is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not ge=-10000000000000000000, le=9223372036854776000; Model.both is generated without these constraints.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=18446744073709551615; Model.upper is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not gt=9223372036854775807; Model.above is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not lt=-10000000000000000000; Model.below is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not multiple_of=9223372036854776000; Model.divisor is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Model.nullable is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Model.pattern is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Model.alias is generated without this constraint.

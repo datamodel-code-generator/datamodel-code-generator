@@ -1,0 +1,19 @@
+valid: accepted
+valid: accepted
+invalid {"both": -10000000000000000001}: accepted
+invalid {"upper": -1}: rejected
+invalid {"upper": 18446744073709551616}: accepted
+invalid {"edges": 9223372036854775808}: rejected
+invalid {"above": 9223372036854775807}: accepted
+invalid {"above_edge": 9223372036854775806}: rejected
+invalid {"below": -10000000000000000000}: accepted
+invalid {"below_edge": 9223372036854775807}: rejected
+invalid {"divisor": 1}: accepted
+invalid {"nullable": 9223372036854776001}: accepted
+invalid {"pattern": 9223372036854776001}: accepted
+invalid {"items": [-10000000000000000001]}: accepted
+invalid {"member": 9223372036854776001}: accepted
+invalid {"alias": -2}: rejected
+invalid {"alias": 9223372036854776001}: accepted
+invalid {"site": 9223372036854776001}: accepted
+invalid {"number": 1e+19}: rejected

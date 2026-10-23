@@ -55,11 +55,11 @@ class ExampleShopV1Order(Struct):
     int32_value: int | UnsetType = 0
     int64_value: int | UnsetType = 0
     uint32_value: Annotated[int, Meta(ge=0, le=4294967295)] | UnsetType = 0
-    uint64_value: Annotated[int, Meta(ge=0, le=18446744073709551615)] | UnsetType = 0
+    uint64_value: Annotated[int, Meta(ge=0)] | UnsetType = 0
     sint32_value: int | UnsetType = 0
     sint64_value: int | UnsetType = 0
     fixed32_value: Annotated[int, Meta(ge=0, le=4294967295)] | UnsetType = 0
-    fixed64_value: Annotated[int, Meta(ge=0, le=18446744073709551615)] | UnsetType = 0
+    fixed64_value: Annotated[int, Meta(ge=0)] | UnsetType = 0
     sfixed32_value: int | UnsetType = 0
     sfixed64_value: int | UnsetType = 0
     active: bool | UnsetType = False

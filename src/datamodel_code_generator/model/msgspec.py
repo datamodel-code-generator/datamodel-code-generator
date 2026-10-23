@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from fractions import Fraction
 from functools import wraps
 from math import ceil, floor, isfinite
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, ClassVar, Final, NamedTuple, Optional, TypeVar, cast
 
 from typing_extensions import Sentinel, final, override
 
@@ -181,6 +182,16 @@ _UNTAKEN = RuleId("D2.untaken-by-type")
 _LITERAL_DECIDED = RuleId("D2.msgspec.literal-decided")
 """The values of the field's ``Literal`` decide the constraint (``_applicability.literal_check``)."""
 _INEXACT = RuleId("D2.msgspec.inexact-float-divisor")
+_INT64_LIMIT = RuleId("D2.msgspec.int64-limit")
+"""msgspec takes the number constraints of an int only within the 64-bit range (``_INT_META_LIMITS``)."""
+_INT_META_LIMITS: Final = MappingProxyType({
+    "ge": (-(2**63), 2**63 - 1),
+    "le": (-(2**63), 2**63 - 1),
+    "gt": (-(2**63), 2**63 - 2),
+    "lt": (-(2**63) + 1, 2**63 - 1),
+    "multiple_of": (-(2**63), 2**63 - 1),
+})
+"""The values msgspec.Meta takes on an int: 64-bit ones, a ``gt`` or ``lt`` whose ``ge`` or ``le`` is one too."""
 _NONE_VALUE = Why(RuleId("D11.msgspec.none-unset"))
 _NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use-annotated")
 
@@ -211,6 +222,15 @@ class _StructConversion:
         else:
             type_text = name
         return f"lambda: {self.method}({represent_python_value(self.default)},  type={type_text})"
+
+
+def _beyond_int_limits(keyword: str, value: object) -> bool:
+    """Return whether msgspec.Meta refuses a number constraint of an int: one beyond the 64-bit range."""
+    return (
+        isinstance(value, int)
+        and (limits := _INT_META_LIMITS.get(keyword)) is not None
+        and not limits[0] <= value <= limits[1]
+    )
 
 
 def _meta_call_text(call: CallPlan) -> str:
@@ -1190,22 +1210,38 @@ class DataModelField(DataModelFieldBase):
         """Return whether to fall back to nullable type instead of UnsetType."""
         return not self._not_required
 
-    def _meta_keywords(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> frozenset[str]:
+    def _meta_keywords(self, data_type: DataType) -> frozenset[str]:
         """Return the constraint keywords msgspec.Meta takes on a type.
 
         Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
         a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all. A
-        referenced type alias takes what its type takes, none when that type writes None; any other referenced model,
-        such as an enum or a Struct, takes none. A chain of aliases that comes back to an alias of its own, and an
-        alias without a field, such as a GraphQL scalar, are unclassified.
+        referenced type alias takes what its type takes (``_meta_type``); any other referenced model, such as an enum
+        or a Struct, takes none.
         """
-        if (
-            keywords := _applicability.shape_meta_keywords(
-                mapping=data_type.is_dict or data_type.is_mapping,
-                unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
-            )
-        ) is not None:
+        if (target := self._meta_type(data_type)) is None:
+            return _applicability.NO_KEYWORDS
+        if (keywords := self._shape_meta_keywords(target)) is not None:
             return keywords
+        return _applicability.meta_keywords(
+            DataTypeManager.constraint_keywords(target, self.target_version_key(target))
+        )
+
+    def _shape_meta_keywords(self, data_type: DataType) -> frozenset[str] | None:
+        """Return the keywords a mapping, a fixed tuple or a union takes, or None for a type of another shape."""
+        return _applicability.shape_meta_keywords(
+            mapping=data_type.is_dict or data_type.is_mapping,
+            unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
+        )
+
+    def _meta_type(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> DataType | None:
+        """Return the type msgspec checks the ``Meta`` of a type on, or None where that type takes no constraint.
+
+        A referenced type alias stands for its type, and takes none when that type writes None; any other referenced
+        model takes none. A chain of aliases that comes back to an alias of its own, and an alias without a field,
+        such as a GraphQL scalar, stand for themselves, as unclassified types.
+        """
+        if self._shape_meta_keywords(data_type) is not None:
+            return data_type
         if (
             (reference := data_type.reference) is not None
             and (source := reference.source) is not None
@@ -1218,15 +1254,13 @@ class DataModelField(DataModelFieldBase):
                 alias_field.type_has_null is True,
                 self._data_type_has_top_level_none(alias_field.data_type),
             )):
-                return _applicability.NO_KEYWORDS
-            return self._meta_keywords(alias_field.data_type, seen | {id(source)})
+                return None
+            return self._meta_type(alias_field.data_type, seen | {id(source)})
         if len(data_type.data_types) == 1 and not (
             data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
         ):
-            return self._meta_keywords(data_type.data_types[0], seen)
-        return _applicability.meta_keywords(
-            DataTypeManager.constraint_keywords(data_type, self.target_version_key(data_type))
-        )
+            return self._meta_type(data_type.data_types[0], seen)
+        return data_type
 
     def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
         """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it leaves out."""
@@ -1291,12 +1325,18 @@ class DataModelField(DataModelFieldBase):
     def _normalized_meta_constraints(self, declared: dict[str, Any], omitted: list[Omitted]) -> dict[str, Kwarg]:
         """Return the constraints ``Meta(...)`` writes, normalized for the field's numeric type, merging collisions.
 
-        A constraint ``Meta`` has no argument for, a non-finite bound and an integer ``multiple_of`` of one go to
-        ``omitted``.
+        A constraint ``Meta`` has no argument for, a non-finite bound, an integer ``multiple_of`` of one and, on an
+        int, a number beyond the 64-bit range go to ``omitted``; that last one warns.
         """
         has_integer_constraints = any(key in self._COMPARE_EXPRESSIONS for key in declared)
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int")
+        annotates_int = (
+            has_integer_constraints
+            and self.use_annotated
+            and (target := self._meta_type(self._annotated_base_data_type())) is not None
+            and target.type == "int"
+        )
         values: dict[str, Any] = {}
         sources: dict[str, tuple[str, ...]] = {}
         for k, v in declared.items():
@@ -1313,6 +1353,11 @@ class DataModelField(DataModelFieldBase):
                     omitted.append(Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k)))
                 else:
                     omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
+                continue
+            if annotates_int and _beyond_int_limits(*normalized):
+                omitted.append(
+                    Omitted(item, normalized[1], "backend-cannot-express", Why(_INT64_LIMIT, normalized[0]), warns=True)
+                )
                 continue
             merge_normalized_constraint(values, normalized[0], normalized[1])
             sources[normalized[0]] = (*sources.get(normalized[0], ()), item)
@@ -1563,10 +1608,16 @@ class DataModelField(DataModelFieldBase):
         reasons: list[str] = []
         untaken = frozenset(cast("str", o.why.keyword) for o in omitted if o.reason == "untaken-by-type" and o.warns)
         inexact = next((o for o in omitted if o.reason == "inexact-float-divisor" and o.warns), None)
+        beyond = {cast("str", o.why.keyword): o.value for o in omitted if o.why.rule == _INT64_LIMIT}
         if untaken:
             reasons.append(
                 f"msgspec.Meta does not take {', '.join(sorted(untaken))} on "
                 f"{self._annotated_base_data_type().type_hint}"
+            )
+        if beyond:
+            reasons.append(
+                "msgspec.Meta takes the number constraints of an int only within the 64-bit range, not "
+                + ", ".join(f"{name}={represent_python_value(value)}" for name, value in sorted(beyond.items()))
             )
         if inexact is not None:
             reasons.append(
@@ -1591,7 +1642,8 @@ class DataModelField(DataModelFieldBase):
         if not reasons:
             return None
         return self._generated_without_constraints(
-            "; ".join(reasons), len(untaken | union_keywords | integer_keywords) + (inexact is not None)
+            "; ".join(reasons),
+            len(untaken | frozenset(beyond) | union_keywords | integer_keywords) + (inexact is not None),
         )
 
     def _get_meta_string(self) -> str | None:

@@ -127,6 +127,9 @@ leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named wit
 msgspec checks `multipleOf` on a `float` by its floating-point remainder, so `msgspec.Struct` writes it on a `float`
 only for a divisor a float represents exactly, such as `2`, `0.5` or `1.5`; a divisor such as `0.01`, whose multiples
 msgspec would reject, is left out with the same warning.
+msgspec takes the number keywords of an `int` only within the 64-bit range, so a bound beyond it, such as the
+`maximum` of `18446744073709551615` a `uint64` field has, is left out with the same warning; the field then takes the
+integers beyond that bound too, since msgspec decodes integers of any size.
 msgspec checks all members of a union that it decodes as one Python type against the constraints of each of them, so
 in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
 branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
