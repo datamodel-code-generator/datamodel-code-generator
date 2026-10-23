@@ -232,7 +232,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _module_name_from_module_path,
     _register_data_type_import,
     _ReuseOptimizationContext,
-    _runtime_validation_reference_keys,
     _unique_items_tuple,
     _unwrap_type_alias,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
@@ -3828,7 +3827,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         graph_builder = self._graph_builder
         circular_root_models = self._recursion_facts["circular_roots"]
         rule_named_roots = (
-            frozenset().union(*_runtime_validation_reference_keys(self.results, same_module=False).values())
+            frozenset(
+                model_key_of(reference)
+                for holder in self.results
+                if (rules := holder.schema_runtime_validation or holder._unwritable_runtime_rules)  # noqa: SLF001
+                for rule_data_type in rules.data_types
+                for nested in rule_data_type.all_data_types
+                if (reference := nested.reference) is not None
+            )
             if self.generate_schema_validators
             else frozenset()
         )
@@ -7185,6 +7191,52 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             circular_roots=recursion_facts["circular_roots"],
         )
 
+    def __write_rule_aliases_as_classes(self, run: _ModulesRun) -> None:
+        """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
+
+        An alias has no class body for the rules. Whether collapse inlines an alias into all its holders is final only
+        once every module is processed, so each alias still written takes its class here, under its model key.
+        """
+        unused = {id(model) for model in run.unused_models}
+        if not (
+            aliases := [
+                model
+                for model in _context_models(run.contexts)
+                if id(model) not in unused and model._unwritable_runtime_rules  # noqa: SLF001
+            ]
+        ):
+            return
+        root_model_type = cast(
+            "Callable[[], type[DataModel]]", self.data_model_type.SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL
+        )()
+        replacements = {
+            id(model): self._create_data_model(
+                model_type=root_model_type,
+                reference=model.reference,
+                fields=model.fields,
+                decorators=model.decorators,
+                custom_base_class=model.custom_base_class,
+                custom_template_dir=self.custom_template_dir,
+                extra_template_data=self.extra_template_data,
+                path=model.file_path,
+                description=model.description,
+                nullable=model.nullable,
+                keyword_only=self.keyword_only,
+                treat_dot_as_module=self.treat_dot_as_module,
+                dataclass_arguments=self.dataclass_arguments,
+            )
+            for model in aliases
+        }
+        for model_list in chain(
+            (ctx.models for ctx in run.contexts),
+            (models for _, models in run.module_models),
+            (prepared.model_list for prepared in self._prepared_modules),
+            (prepared.model_list_before_override_removal for prepared in self._prepared_modules),
+        ):
+            model_list[:] = [replacements.get(id(model), model) for model in model_list]
+        for model in aliases:
+            self._graph_builder.replace_model(model, replacements[id(model)])
+
     def __record_generated_class_names(self, run: _FinishRun) -> None:
         """Record the class name of every generated model."""
         self.generated_class_names = tuple(
@@ -7697,6 +7749,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     lambda self, run: self.__process_each_module(run),
                     __MODULE_BODY,
                     per_module=True,
+                ),
+                PassSpec(
+                    decls.WRITE_RULE_ALIASES_AS_CLASSES,
+                    lambda self, run: self.__write_rule_aliases_as_classes(run),
+                    when=lambda self, _: (
+                        self.generate_schema_validators
+                        and self.data_model_type.SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL is not None
+                    ),
                 ),
             ),
         ),

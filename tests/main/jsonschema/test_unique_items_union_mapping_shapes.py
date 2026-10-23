@@ -5,12 +5,15 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+import pytest
+
 from datamodel_code_generator import DataModelType, Formatter, InputFileType, generate
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     assert_generated_model_json_invalid,
     assert_generated_model_json_validation,
     run_generate_and_assert,
+    run_main_and_assert,
 )
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
@@ -151,6 +154,52 @@ def test_main_jsonschema_unique_items_union_ref_mapping_root(output_file: Path) 
         expected_error_type="value_error",
         expected_attribute_path=("root",),
         expected_attribute_value={"x": [1, 2]},
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "module_name"),
+    [
+        pytest.param(
+            ["--use-type-alias-type", "--field-constraints"],
+            "unique_items_union_ref_mapping_root_type_alias_type",
+            id="type-alias-type",
+        ),
+        pytest.param(
+            ["--use-type-alias", "--collapse-root-models"],
+            "unique_items_union_ref_mapping_root_collapsed_alias",
+            id="collapse-root-models",
+        ),
+    ],
+)
+def test_main_jsonschema_unique_items_union_ref_mapping_root_type_alias(
+    output_file: Path, extra_args: list[str], module_name: str
+) -> None:
+    """Write the referenced mapping that a type alias option would alias as a RootModel, unless collapse inlines it.
+
+    The alias holds the mapping's uniqueItems rule, which only a class can run; inlined, it leaves the rule to the root.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_union_ref_mapping_root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=module_name,
+        model_name="UniqueItemsUnionRefMappingRoot",
+        valid_json='{"x":[1,2]}',
+        invalid_json='{"x":[1,1]}',
+        expected_error_type="value_error",
     )
 
 

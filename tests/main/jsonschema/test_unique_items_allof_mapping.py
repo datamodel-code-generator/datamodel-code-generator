@@ -11,6 +11,7 @@ from tests.main.conftest import (
     assert_generated_model_json_invalid,
     assert_generated_model_json_validation,
     run_generate_and_assert,
+    run_main_and_assert,
 )
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
@@ -46,6 +47,39 @@ def test_main_jsonschema_unique_items_allof_mapping(output_file: Path) -> None:
     assert_generated_model_json_invalid(
         output_file,
         module_name="unique_items_allof_mapping",
+        model_name="AllOfMapping",
+        invalid_json='{"extraValues":[1,1]}',
+        expected_error_type="value_error",
+    )
+
+
+def test_main_jsonschema_unique_items_allof_mapping_type_alias(output_file: Path) -> None:
+    """Write the validated base mapping as the RootModel it is without --use-type-alias, which a child cannot extend."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_allof_mapping.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--use-type-alias",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_allof_mapping_type_alias",
+        model_name="AllOfMapping",
+        valid_json='{"patternValues":[1,2],"extraValues":[1,2]}',
+        invalid_json='{"patternValues":[1,1]}',
+        expected_error_type="value_error",
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="unique_items_allof_mapping_type_alias",
         model_name="AllOfMapping",
         invalid_json='{"extraValues":[1,1]}',
         expected_error_type="value_error",

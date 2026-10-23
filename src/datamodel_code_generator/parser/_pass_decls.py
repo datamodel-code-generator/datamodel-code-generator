@@ -607,6 +607,25 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
     ),
 )
 
+WRITE_RULE_ALIASES_AS_CLASSES = PassDecl(
+    "write_rule_aliases_as_classes",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND),
+    writes=_facts(Fact.MODEL_KIND),
+    summary=(
+        "After every module is processed: writes each type alias that holds schema validator rules and that "
+        "`collapse_root_models` left written as the RootModel class, under its model key."
+    ),
+    condition="--generate-schema-validators",
+    after=(
+        After(
+            "type_dict_keys_by_root_types",
+            "the aliases written as classes are object maps, which no dict key names",
+        ),
+    ),
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,

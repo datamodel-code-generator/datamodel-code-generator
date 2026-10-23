@@ -2917,6 +2917,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         key = tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
         if written := self._written_values_by_position():
             key = (*key, to_hashable(written))
+        if (rules := self._unwritable_runtime_rules) is not None:
+            key = (*key, ("schema-runtime-validation", rules._written_form()))  # noqa: SLF001
         return (*key, ("target-null", target_null)) if (target_null := self._target_null_positions()) else key
 
     def _target_null_positions(self) -> tuple[int, ...]:
@@ -3367,6 +3369,19 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self._internal_template_data.get("schema_runtime_validation")
 
     @property
+    def _unwritable_runtime_rules(self) -> _runtime_validation.SchemaRuntimeValidation | None:
+        """Return the parser's schema validator rules in the template data of a model whose class cannot write them."""
+        if self.SUPPORTS_SCHEMA_RUNTIME_VALIDATION or not (
+            rules := self.extra_template_data.get("schema_runtime_validation")
+        ):
+            return None
+        from datamodel_code_generator.model.runtime_validation import (  # noqa: PLC0415
+            _is_internal_schema_runtime_validation,
+        )
+
+        return rules if _is_internal_schema_runtime_validation(rules) else None
+
+    @property
     def schema_runtime_validation_references(self) -> tuple[Reference, ...]:
         """Return the other models that runtime rules name, which the class body evaluates when it runs."""
         if not (runtime_validation := self.schema_runtime_validation):
@@ -3443,8 +3458,17 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self._internal_template_data.pop(key, None)
 
     def _builtin_template_data(self) -> dict[str, Any]:
-        """Return the restricted context used by project-owned templates."""
-        return _safe_extra_template_data(self.extra_template_data, self._internal_template_data)
+        """Return the restricted context used by project-owned templates.
+
+        A model whose class cannot write the parser's schema validator rules leaves them out; the parser writes such a
+        model as a class that can before it renders for the output.
+        """
+        if self._unwritable_runtime_rules is None:
+            return _safe_extra_template_data(self.extra_template_data, self._internal_template_data)
+        return _safe_extra_template_data(
+            {key: value for key, value in self.extra_template_data.items() if key != "schema_runtime_validation"},
+            self._internal_template_data,
+        )
 
     def _custom_template_data(self) -> dict[str, Any]:
         """Return the legacy unrestricted custom-template context."""

@@ -5,6 +5,13 @@ with-option	main/jsonschema/object_maps/check_pattern_maps_strictly[with-option]
 with-option	main/jsonschema/object_maps/check_pattern_maps_strictly[with-option].py
 without-option	main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].payloads.txt
 without-option	main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].py
+[test_check_pattern_maps_strictly_type_alias]
+collapse-root-models	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[collapse-root-models].payloads.txt	= main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].payloads.txt
+collapse-root-models	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[collapse-root-models].py	= main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].py
+with-option	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[with-option].payloads.txt	= main/jsonschema/object_maps/check_pattern_maps_strictly[with-option].payloads.txt
+with-option	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[with-option].py	= main/jsonschema/object_maps/check_pattern_maps_strictly[with-option].py
+without-option	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[without-option].payloads.txt	= main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].payloads.txt
+without-option	main/jsonschema/object_maps/check_pattern_maps_strictly_type_alias[without-option].py	= main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].py
 [test_nullable_object_maps]
 dataclasses.dataclass	main/jsonschema/object_maps/nullable_object_maps[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/jsonschema/object_maps/nullable_object_maps[dataclasses.dataclass].py

@@ -66744,6 +66744,10 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `type_dict_keys_by_root_types` (`parser/_passes/modules.py`) | dict keys that name a RootModel whose instances cannot be dict keys (`DataModel._keys_take_root_type`: not frozen, no validators, methods or custom root template), its root type and `Field()` constraints (any module) | types the key by the root type, the constraints written into a string type; follows root models inside that type, not union members of a key; refreshes the backend config |
 | finalize | `apply_base_class_type_overrides` (`parser/_passes/modules.py`) | model-level `--type-overrides` | base classes; edits base-class nodes in place and keeps the generated model each replaced base stood for, which constructor ordering reads |
 
+Once every module is processed, `__write_rule_aliases_as_classes` (`--generate-schema-validators`) writes each type
+alias that holds schema validator rules and that collapse left written as the RootModel class, under its model key:
+an alias has no class body for the rules, and whether collapse inlines it into all its holders is final only then.
+
 **L6**, after the module loop:
 
 | Pass (`parser/base.py`) | Changes |
@@ -66950,6 +66954,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | MODULES | `fix_constructor_field_ordering_early` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Orders constructor fields while the modules are processed, before every field has its final name. Runs when: without --order-constructor-fields-by-final-names. |
 | MODULES | `snapshot_module_unused_models` | module | bookkeeping | - | - |  |
 | MODULES | `apply_base_class_type_overrides` | module | transform | BASES, MODULE_IMPORTS, TYPE_OVERRIDES | TYPE_OVERRIDES | After `type_dict_keys_by_root_types`: both add module imports; base overrides come after field types are final. |
+| MODULES | `write_rule_aliases_as_classes` | global | transform | MODEL_KIND | MODELS_EXIST, MODEL_KIND | After every module is processed: writes each type alias that holds schema validator rules and that `collapse_root_models` left written as the RootModel class, under its model key. Runs when: --generate-schema-validators. After `type_dict_keys_by_root_types`: the aliases written as classes are object maps, which no dict key names. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | DISCRIMINATOR_TAGS, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag. Runs when: msgspec. |
 | CROSS_MODULE | `warn_enums_admitting_other_values` | global | check | STDERR | DISCRIMINATOR_TAGS, FIELD_TYPES |  |
 | CROSS_MODULE | `import_removed_reuse_canonicals` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | Removed by RP15b. |
@@ -67024,6 +67029,7 @@ Provisional reads, from the explicit edges:
 - `apply_discriminator_type` reads FIELD_TYPES before `type_const_narrowed_values` writes it: narrows the types that tags wrote.
 - `refresh_field_config` reads FIELD_ALIASES before `rename_fields_hiding_types` writes it: the field config is refreshed with the aliases before renaming.
 - `remove_overridden_models` reads TYPE_OVERRIDES before `apply_field_type_overrides` writes it: overrides apply to the models kept after model-level overrides (#4958).
+- `type_dict_keys_by_root_types` reads MODEL_KIND before `write_rule_aliases_as_classes` writes it: the aliases written as classes are object maps, which no dict key names.
 - `import_removed_reuse_canonicals` reads MODULE_IMPORTS before `import_renamed_types` writes it: imports renamed types next to the canonicals of removed reuse duplicates.
 - `import_renamed_types` reads MODULE_IMPORTS before `import_enum_member_literal_classes` writes it: imports literal classes next to the renamed types.
 - `warn_enums_admitting_other_values` reads FIELD_TYPES before `import_enum_member_literal_classes` writes it: the warning reads the enum types before literal classes replace them.

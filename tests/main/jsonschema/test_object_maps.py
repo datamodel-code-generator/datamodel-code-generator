@@ -498,6 +498,36 @@ def test_check_pattern_maps_strictly(output_file: Path, extra_args: list[str]) -
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([STRICT_PATTERN_MAPS], id="with-option"),
+        pytest.param([], id="without-option"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+    ],
+)
+def test_check_pattern_maps_strictly_type_alias(output_file: Path, extra_args: list[str]) -> None:
+    """Write a validated map that --use-type-alias would write as an alias as the RootModel it is without the option.
+
+    An alias has no class body that could hold the validator rules of the closed ``labels`` map.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "strict_pattern_maps.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--use-type-alias",
+            *extra_args,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "strict_pattern_maps.json").read_text())
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 def test_object_maps_released_pattern_properties_hook(tmp_path: Path) -> None:
     """Call a ``parse_pattern_properties`` override written for 0.86.0 with the arguments of that release.
 

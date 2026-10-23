@@ -204,6 +204,27 @@ class SchemaRuntimeValidation:
         """Return all generated data types referenced by runtime rules."""
         return tuple(data_type for rule in self.pattern_properties for data_type in rule.data_types)
 
+    def _written_form(self) -> tuple[object, ...]:
+        """Return what the rules write, hashable, so that two holders of rules compare by the rules they write."""
+        return (
+            tuple(
+                (
+                    type(rule).__name__,
+                    rule.declared_properties,
+                    rule.rejected_patterns,
+                    tuple((pattern, data_type.type_hint) for pattern, data_type in rule.pattern_properties),
+                    None if rule.additional_property_type is None else rule.additional_property_type.type_hint,
+                    rule.allow_unmatched,
+                )
+                for rule in self.pattern_properties
+            ),
+            repr(self.required_groups),
+            repr(self.conditional_required),
+            repr(self.property_count),
+            repr(self.unique_items),
+            self.replace_unique_items,
+        )
+
     def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:
         """Return a copy that holds ``pattern_properties``, so another holder of this value keeps its rules."""
         replaced = copy(self)

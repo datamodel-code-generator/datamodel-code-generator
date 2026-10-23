@@ -2,3 +2,5 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_main_jsonschema_unique_items_allof_mapping]
 	main/jsonschema/unique_items_allof_mapping.py
+[test_main_jsonschema_unique_items_allof_mapping_type_alias]
+	main/jsonschema/unique_items_allof_mapping/main_jsonschema_unique_items_allof_mapping_type_alias.py
