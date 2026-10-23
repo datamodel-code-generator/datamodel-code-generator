@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Patterned": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    },
+    "Mixed": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^y-": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Flagged"
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Patterned"
+        }
+      ],
+      "properties": {
+        "c": {
+          "type": "string"
+        }
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "object",
+          "patternProperties": {
+            "^z-": {
+              "$ref": "#/$defs/Flagged"
+            }
+          }
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "patterned": {
+      "$ref": "#/$defs/Patterned"
+    },
+    "mixed": {
+      "$ref": "#/$defs/Mixed"
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    },
+    "holder": {
+      "$ref": "#/$defs/Holder"
+    }
+  }
+}

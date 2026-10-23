@@ -4034,15 +4034,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _rw_model_writes_variant_beside_fields(self, reference_path: str) -> bool:
         """Return whether a type the model at a key writes beside its fields names a model with variants.
 
-        Under request-response, the type of additional properties that TypedDict writes as extra_items names models as
-        the fields do.
+        Under request-response, the types its schema validator rules name and the type of additional properties that
+        TypedDict writes as extra_items name models as the fields do.
         """
         if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
             return False
-        source = self._output_model_context.additional_properties_type_source(
-            self.extra_template_data.get(reference_path, {})
-        )
-        return source is not None and self._data_types_reference_rw_model_variant([cast("DataType", source)], "Request")
+        template_data = self.extra_template_data.get(reference_path, {})
+        data_types: list[DataType] = []
+        if _is_internal_schema_runtime_validation(rules := template_data.get("schema_runtime_validation")):
+            data_types.extend(rules.data_types)
+        if (source := self._output_model_context.additional_properties_type_source(template_data)) is not None:
+            data_types.append(cast("DataType", source))
+        return self._data_types_reference_rw_model_variant(data_types, "Request")
 
     def _should_generate_base_model(self, *, generates_separate_models: bool = False) -> bool:
         """Determine if Base model should be generated."""
@@ -4304,13 +4307,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Yield type-contributing children, whether their inline models are generated and whether they are merged.
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map``, and those of additionalProperties only where ``types_extras``.
+        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, and those of
+        additionalProperties only where ``types_extras``.
         """
-        mapping = schema.patternProperties if types_map and not self.generate_schema_validators else schema.properties
-        if mapping:
-            yield from (
-                (item, detect_inline_variant, False) for item in mapping.values() if isinstance(item, JsonSchemaObject)
-            )
+        mappings = (
+            (schema.properties, schema.patternProperties)
+            if self.generate_schema_validators
+            else (schema.patternProperties if types_map else schema.properties,)
+        )
+        yield from (
+            (item, detect_inline_variant, False)
+            for mapping in mappings
+            if mapping
+            for item in mapping.values()
+            if isinstance(item, JsonSchemaObject)
+        )
         match schema.items:
             case JsonSchemaObject() as item:
                 yield item, detect_inline_variant, False

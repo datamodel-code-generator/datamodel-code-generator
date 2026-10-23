@@ -27055,6 +27055,54 @@ def test_main_read_only_write_only_additional_properties_beside_properties(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_pattern_properties_validators(output_file: Path, dedupe_args: list[str]) -> None:
+    """Split the models whose schema validator rules name a readOnly model, and retarget the rules to its variants.
+
+    The patternProperties rules of ``Patterned``, of ``Child`` that inherits them, of the inline object in ``Holder``
+    and the additionalProperties type of the rule of ``Mixed`` name the readOnly model, so each model splits and its
+    request and response rules name the matching variant.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_pattern_properties_validators.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "patterned": {"x-a": {"name": "n"}},
+        "mixed": {"a": "kept", "y-1": 1, "other": {"name": "n"}},
+        "child": {"c": "kept", "x-b": {"name": "n"}},
+        "holder": {"p": {"z-a": {"name": "n"}}},
+    }
+    invalid = {"child": {"x-b": {"name": 1}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rw_pattern_properties_validators",
+        model_name="ModelRequest",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
