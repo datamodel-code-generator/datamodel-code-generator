@@ -27290,6 +27290,58 @@ def test_main_read_only_write_only_allof_root_map_dedupe(output_file: Path, outp
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize("order", ["early", "late"])
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_allof_root_map_order(
+    output_file: Path, order: str, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Give the variants of a model whose allOf names a root map no field, wherever the model sits in the document.
+
+    ``Wrapped`` inherits nothing from the root model ``Patterned``, whose root field types its value and is no
+    property, so its variants hold no field and accept ``{}``, whether ``Wrapped`` comes before ``Patterned`` or after
+    it. msgspec decodes the payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / f"read_only_write_only_allof_root_map_{order}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid_payloads = [{}, {"wrapped": {}}, {"wrapped": {"x-a": {"name": "n"}}}]
+    invalid = {"wrapped": 1}
+    validator = Draft202012Validator({**json.loads(input_path.read_text(encoding="utf-8")), "$ref": "#/$defs/Holder"})
+    for valid in valid_payloads:
+        validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, f"rw_allof_root_map_{order}", "HolderRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for valid in valid_payloads:
+            validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize(
     "dedupe_args",
     [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Wrapped": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Patterned"
+        }
+      ]
+    },
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Patterned": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "wrapped": {
+          "$ref": "#/$defs/Wrapped"
+        }
+      }
+    }
+  }
+}
