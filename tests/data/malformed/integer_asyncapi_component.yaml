@@ -1,0 +1,13 @@
+asyncapi: 3.0.0
+info:
+  title: Integer component name
+  version: '1.0'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    1:
+      type: string

@@ -407,20 +407,23 @@ class OpenAPIParser(JsonSchemaParser):
         """Return the context in which an input specification names itself by its OpenAPI 3.2 `$self`."""
         return self.openapi_self_context(raw) if document in self._specification_documents else nullcontext()
 
-    def _component_name(self, components: object, key: object, path: list[str]) -> str:
-        """Return ``key``, which names a component of ``components`` at ``path``; a key that is no string is an error.
+    def _key_error(self, key: object, kind: str, path: list[str]) -> SchemaParseError:  # noqa: PLR6301
+        """Return the error at ``path`` for ``key``, which names a ``kind`` and is no string.
 
         A YAML key such as ``1`` loads as a number.
         """
+        return SchemaParseError(f"{kind} {key!r} is not a string", path=path)
+
+    def _key_name(self, holder: object, key: object, path: list[str], kind: str) -> str:
+        """Return ``key``, which names a ``kind`` in ``holder`` at ``path``; a key that is no string is an error."""
         if isinstance(key, str):
             return key
-        msg = f"component name {key!r} is not a string"
-        raise SchemaParseError(msg, path=_named_path(self._member_location(components, str(key)), [*path, str(key)]))
+        raise self._key_error(key, kind, _named_path(self._member_location(holder, str(key)), [*path, str(key)]))
 
     def _named_components(self, components: dict[Any, YamlValue], path: list[str]) -> dict[str, YamlValue]:
-        """Return ``components`` once each of its keys names a component (``_component_name``)."""
+        """Return ``components`` once each of its keys names a component (``_key_name``)."""
         for key in components:
-            self._component_name(components, key, path)
+            self._key_name(components, key, path, "component name")
         return components
 
     def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
@@ -471,8 +474,8 @@ class OpenAPIParser(JsonSchemaParser):
                     media_schema = self._get_raw_media_schema(media_obj)
                     if media_schema is None:
                         continue
-                    name = self._component_name(
-                        request_bodies, body_name, [*path_parts, "#/components", "requestBodies"]
+                    name = self._key_name(
+                        request_bodies, body_name, [*path_parts, "#/components", "requestBodies"], "component name"
                     )
                     media_path = [
                         *path_parts,
@@ -826,7 +829,9 @@ class OpenAPIParser(JsonSchemaParser):
     ) -> None:
         """Process path or webhook items with operations."""
         scope_path = [*base_path, f"#/{scope_name}"]
+        kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
+            self._key_name(items, item_name, scope_path, kind)
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue
             item_ref = methods_.get("$ref")

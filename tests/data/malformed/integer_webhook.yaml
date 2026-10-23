@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Integer webhook name
+  version: '1.0'
+paths: {}
+webhooks:
+  1:
+    post:
+      responses:
+        '200':
+          description: OK

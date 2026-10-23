@@ -1054,6 +1054,81 @@ def test_malformed_input_error_messages(
             id="integer-callback-name-api",
         ),
         pytest.param(
+            "integer_path.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'integer_path.yaml#/paths/1': path 1 is not a string",
+            id="integer-path",
+        ),
+        pytest.param(
+            "integer_path.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_path.yaml#/paths/1': path 1 is not a string",
+            id="integer-path-api",
+        ),
+        pytest.param(
+            "integer_webhook.yaml",
+            "openapi",
+            ["--openapi-scopes", "webhooks"],
+            "Error at schema path 'integer_webhook.yaml#/webhooks/1': webhook name 1 is not a string",
+            id="integer-webhook-name",
+        ),
+        pytest.param(
+            "integer_webhook.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_webhook.yaml#/webhooks/1': webhook name 1 is not a string",
+            id="integer-webhook-name-api",
+        ),
+        pytest.param(
+            "integer_callback_name.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_callback_name.yaml#/paths/~1pets/post/callbacks/1': "
+            "callback name 1 is not a string",
+            id="integer-operation-callback-name-api",
+        ),
+        pytest.param(
+            "integer_callback_expression.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_callback_expression.yaml#/paths/~1pets/post/callbacks/onEvent/1': "
+            "callback expression 1 is not a string",
+            id="integer-callback-expression-api",
+        ),
+        pytest.param(
+            "integer_additional_operation.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_additional_operation.yaml#/paths/~1pets/additionalOperations/1': "
+            "method 1 is not a string",
+            id="integer-additional-operation-api",
+        ),
+        pytest.param(
+            "integer_asyncapi_component.yaml",
+            "asyncapi",
+            [],
+            "Error at schema path 'integer_asyncapi_component.yaml#/components/schemas/1': name 1 is not a string",
+            id="integer-asyncapi-component-name",
+        ),
+        pytest.param(
+            "integer_asyncapi_channel.yaml",
+            "asyncapi",
+            [],
+            "Error at schema path 'integer_asyncapi_channel.yaml#/channels/1/messages/petAdded/payload': "
+            "name 1 is not a string",
+            id="integer-asyncapi-channel-name",
+        ),
+        pytest.param(
+            "integer_asyncapi_schema_format.yaml",
+            "asyncapi",
+            [],
+            "AsyncAPI message schemaFormat must be a string at "
+            "integer_asyncapi_schema_format.yaml/#/channels/1/messages/petAdded",
+            id="integer-asyncapi-channel-name-beside-invalid-schema-format",
+        ),
+        pytest.param(
             "schema_location_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "api"],

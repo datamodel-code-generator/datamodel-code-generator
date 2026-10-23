@@ -22,6 +22,7 @@ from datamodel_code_generator.enums import AsyncAPIVersion
 from datamodel_code_generator.parser._schema_graph import RefOrigin
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
+    _named_path,
     get_model_by_path,
     unescape_json_pointer_segment,
 )
@@ -145,7 +146,8 @@ def _iter_trait_items(traits: Any, path: list[str]) -> Iterator[tuple[dict[str, 
 
 
 def _path_to_string(path: list[str]) -> str:
-    return redact_path(path)
+    """Return ``path`` as a message names it; a key on it may be no string, such as a YAML key ``1``."""
+    return redact_path(map(str, path))
 
 
 def _make_model_name(*parts: object) -> str:
@@ -411,8 +413,12 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> list[AsyncAPISchema]:
         """Return the schemas of a payload, header, parameter or binding value located at ``location``.
 
-        A schema in another format is converted to JSON Schema, which is mounted at the value's location.
+        A schema in another format is converted to JSON Schema, which is mounted at the value's location. A key on
+        ``path`` that is no string, such as a YAML key ``1``, is an error.
         """
+        for part in path:
+            if not isinstance(part, str):
+                raise self._key_error(part, "name", _named_path(location, list(map(str, path))))
         schema_format = inherited_schema_format
         if multi_format_schema := _parse_multi_format_schema_object(raw_schema, path):
             schema_format = multi_format_schema.schema_format or schema_format
@@ -926,7 +932,7 @@ class AsyncAPIParser(OpenAPIParser):
                     schema_name,
                     raw_schema,
                     [*path_parts, "#/components", "schemas", schema_name],
-                    location=self._member_location(component_schemas, schema_name),
+                    location=self._member_location(component_schemas, str(schema_name)),
                 )
             )
 

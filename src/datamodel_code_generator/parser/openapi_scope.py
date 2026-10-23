@@ -738,7 +738,9 @@ class ApiOpenAPIParser(OpenAPIParser):
             else []
         )
         for item_name, value in items.items():
-            if scope == "paths" and (item_name == "parameters" or item_name.startswith("x-")):
+            if scope == "paths" and (
+                self._key_name(items, item_name, base_path, "path") == "parameters" or item_name.startswith("x-")
+            ):
                 continue
             if scope == "paths" and not self._matches_path_pattern(item_name):
                 continue
@@ -769,6 +771,8 @@ class ApiOpenAPIParser(OpenAPIParser):
                 for operation_tokens, value in self._api_operations(target):
                     path = [*target.path, *operation_tokens]
                     operation = _mapping(value, path)
+                    if not self.use_operation_id_as_name:
+                        self._validate_operation_name_keys(prefix, operation_tokens, use_site)
                     self._walk_api_operation(
                         operation,
                         path,
@@ -779,6 +783,18 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._completed_api_objects.add(target.declaration)
         finally:
             self._active_api_objects.remove(target.declaration)
+
+    def _validate_operation_name_keys(
+        self, prefix: str, operation_tokens: tuple[str, ...], use_site: SchemaLocation
+    ) -> None:
+        """Require the keys an operation's model name is built from to be strings: the item's prefix and the method.
+
+        Only a webhook name, the prefix of the path item at ``use_site``, can be another value by then.
+        """
+        if not isinstance(prefix, str):
+            raise self._key_error(prefix, "webhook name", [str(use_site)])
+        if not isinstance(method := operation_tokens[-1], str):
+            raise self._key_error(method, "method", [str(use_site.child(*operation_tokens[:-1], str(method)))])
 
     def _api_operations(self, target: _ApiObject) -> Generator[tuple[tuple[str, ...], YamlValue], None, None]:
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""
@@ -894,8 +910,13 @@ class ApiOpenAPIParser(OpenAPIParser):
                     self._resolve_api_object(response, response_path),
                     header_name=name + "Response" + str(status).capitalize(),
                 )
-            for callback_name, value in _mapping(operation.get("callbacks", {}), [*path, "callbacks"]).items():
-                callback_path = [*path, "callbacks", callback_name]
+            callbacks_path = [*path, "callbacks"]
+            callbacks = _mapping(operation.get("callbacks", {}), callbacks_path)
+            for callback_name, value in callbacks.items():
+                callback_path = [
+                    *callbacks_path,
+                    self._key_name(callbacks, callback_name, callbacks_path, "callback name"),
+                ]
                 self._walk_callback(
                     _mapping(value, callback_path),
                     callback_path,
@@ -922,7 +943,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             with self._api_object_context(target):
                 ordinal = 0
                 for expression, value in target.value.items():
-                    if expression.startswith("x-"):
+                    if self._key_name(target.value, expression, target.path, "callback expression").startswith("x-"):
                         continue
                     ordinal += 1
                     expression_path = [*target.path, expression]
