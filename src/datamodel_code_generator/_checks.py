@@ -47,13 +47,13 @@ class CheckArea(Enum):
     emitted models differs."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
-    """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did, and each
-    `$ref` edge gets one key and names the target the parser loads; under request-response read/write models with
-    --dedupe-request-response-variants, a model whose key names its schema splits exactly when the key needs variants,
-    and no other model splits after a reference to it read that it does not; no reader writes a schema object the
-    graph validated once and shares; each reserved target has the same value in the prepared tree it is parsed from
-    as in a fresh load of its source. With a report file, it also records the `$dynamicRef` and `$recursiveRef` answers
-    from the anchors L1 has registered that differ from the answers of the document's anchor tables."""
+    """Each `$ref` edge of the schema graph gets one key and names the target the parser loads; under request-response
+    read/write models with --dedupe-request-response-variants, a model whose key names its schema splits exactly when
+    the key needs variants, and no other model splits after a reference to it read that it does not; no reader writes a
+    schema object the graph validated once and shares; each reserved target has the same value in the prepared tree it
+    is parsed from as in a fresh load of its source. With a report file, it also records the `$dynamicRef` and
+    `$recursiveRef` answers from the anchors L1 has registered that differ from the answers of the document's anchor
+    tables."""
 
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations."""

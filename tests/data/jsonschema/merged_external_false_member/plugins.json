@@ -1,0 +1,1 @@
+{"definitions":{"Num":{"type":"integer"},"Never":false},"properties":{"f":{"oneOf":[{"$ref":"#/definitions/Num"},{"$ref":"#/definitions/Never"}]},"g":{"anyOf":[{"type":"string"},{"$ref":"#/definitions/Never"}]}}}

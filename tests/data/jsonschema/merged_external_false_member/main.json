@@ -1,0 +1,1 @@
+{"title":"Main","type":"object","definitions":{"p":{"properties":{"l":{"type":"string"}}},"q":{"properties":{"l":{"type":"string","description":"q"}}}},"properties":{"rules":{"type":"object","allOf":[{"$ref":"#/definitions/p"},{"$ref":"#/definitions/q"},{"$ref":"plugins.json"}]}}}

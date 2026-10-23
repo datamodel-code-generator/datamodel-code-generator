@@ -390,18 +390,6 @@ class ResourceRegistry:
             return f"{root}{fragment}" if fragment else root
         return None
 
-    def copy(self) -> ResourceRegistry:
-        """Return a copy whose dicts and sets can change without changing this registry."""
-        return ResourceRegistry(
-            locations=dict(self.locations),
-            root_bases=dict(self.root_bases),
-            resources={key: set(value) for key, value in self.resources.items()},
-            dynamic_anchors={key: dict(value) for key, value in self.dynamic_anchors.items()},
-            embedded={key: dict(value) for key, value in self.embedded.items()},
-            anchor_tables=dict(self.anchor_tables),
-            keys={key: set(value) for key, value in self.keys.items()},
-        )
-
 
 class SchemaGraphView(Protocol):
     """What L1 reads of the schema graph."""

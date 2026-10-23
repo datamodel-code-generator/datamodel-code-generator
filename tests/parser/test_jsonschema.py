@@ -3993,11 +3993,6 @@ def test_inherited_parent_property_cache_is_context_scoped() -> None:
         "#/$defs/Parent",
         frozenset({"#/$defs/Target"}),
     )
-    resolved_context = parser._resolve_inherited_parent_property(
-        pure_ref,
-        "#/$defs/Parent",
-        refs_resolved=True,
-    )
     relative_ref = JsonSchemaObject.model_validate({
         "$ref": "./types.json#/$defs/Target",
     })
@@ -4017,9 +4012,8 @@ def test_inherited_parent_property_cache_is_context_scoped() -> None:
 
     assert repeated is first
     assert recursive is not first
-    assert resolved_context is not first
     assert first_relative is not second_relative
-    assert len(parser._inherited_parent_property_cache) == 5
+    assert len(parser._inherited_parent_property_cache) == 4
     assert all(
         cached_source is pure_ref or cached_source is relative_ref
         for cached_source, _ in parser._inherited_parent_property_cache.values()
@@ -4047,11 +4041,6 @@ def test_inherited_parent_property_cache_bypasses_mutable_sibling_refs() -> None
         sibling_ref,
         "#/$defs/Parent",
     )
-    resolved_sibling = parser._resolve_inherited_parent_property(
-        sibling_ref,
-        "#/$defs/Parent",
-        refs_resolved=True,
-    )
     inline_schema = JsonSchemaObject.model_validate({"type": "string"})
     inline = parser._resolve_inherited_parent_property(
         inline_schema,
@@ -4061,7 +4050,7 @@ def test_inherited_parent_property_cache_bypasses_mutable_sibling_refs() -> None
         inline_schema,
         "#/$defs/Parent",
     )
-    inline_cache_key = (id(inline_schema), "#/$defs/Parent", frozenset(), False)
+    inline_cache_key = (id(inline_schema), "#/$defs/Parent", frozenset())
     inline_schema.ref = "#/$defs/Target"
     mutated_inline = parser._resolve_inherited_parent_property(
         inline_schema,
@@ -4070,8 +4059,6 @@ def test_inherited_parent_property_cache_bypasses_mutable_sibling_refs() -> None
 
     assert sibling is not first
     assert sibling[0].minLength == 2
-    assert resolved_sibling[0].minLength == 2
-    assert resolved_sibling[3]
     assert repeated_inline is inline
     assert mutated_inline is not inline
     assert parser._inherited_parent_property_cache[inline_cache_key][0] is inline_schema
@@ -4381,7 +4368,6 @@ def test_inherited_type_shape_branch_matrix() -> None:
         {"allOf": [{"type": "string"}]},
         {"minLength": 1},
         "#/$defs/Parent",
-        parent_refs_resolved=True,
     ) == {
         "type": "string",
         "minLength": 1,
@@ -4390,7 +4376,6 @@ def test_inherited_type_shape_branch_matrix() -> None:
         {"enum": ["value"]},
         {"minLength": 1},
         "#/$defs/Parent",
-        parent_refs_resolved=True,
     ) == {
         "type": "string",
         "minLength": 1,
@@ -4399,7 +4384,6 @@ def test_inherited_type_shape_branch_matrix() -> None:
         {"type": ["null"]},
         {"nullable": False},
         "#/$defs/Parent",
-        parent_refs_resolved=True,
     ) == {
         "type": ["null"],
         "nullable": False,
@@ -4415,7 +4399,6 @@ def test_inherited_type_shape_branch_matrix() -> None:
             inherited_union,
             {},
             "#/$defs/Parent",
-            parent_refs_resolved=True,
         )
         == inherited_union
     )
@@ -4748,7 +4731,7 @@ def test_partial_inherited_nested_nullable_ref_type_compatibility(
         parser._is_partial_inherited_nested_value(
             child,
             JsonSchemaObject.model_validate({"$ref": parent_ref}),
-            context=("#/$defs/Owner", frozenset(), False),
+            context=("#/$defs/Owner", frozenset()),
         )
         is expected
     )

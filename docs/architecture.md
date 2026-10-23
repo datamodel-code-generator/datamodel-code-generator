@@ -265,14 +265,12 @@ examples, extensions, OAuth scopes, discriminator mappings or unknown keywords; 
 indexed (`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-output)).
 Referenced documents go through the same steps when `resolve_ref` loads them: documents enter the graph in the order
 L1 asks for them, and the graph never loads one by itself. With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH=1`, which
-`tests/conftest.py` sets for the test suite, each registration is compared with the registry that the walk the graph
-replaced (`_register_schema_resources`) leaves for the same document, and each edge with its resolution at the sites:
-the key `get_ref_data_type` and `resolve_ref` would compute in their own context equals the edge's key, unless that
+`tests/conftest.py` sets for the test suite, each edge is compared with its resolution at the sites: the key `get_ref_data_type` and `resolve_ref` would compute in their own context equals the edge's key, unless that
 context raises or names no value of a loaded document (a reference resolved outside its own document, recorded as
 `fixed-context`), and the object `_load_ref_schema_object`, `get_ref_model`, `_resolve_asyncapi_ref` and the `api`
 scope load is the registered target the edge names, except a pointer the parser splits at another `/` and references
 of documents that resolve references against themselves (`_resolve_lenient_resource_ref`). Every reference whose target is static carries an
-edge: a rewrite of a reference to name its target (rebased, canonicalized, lenient or normalized) keeps it
+edge: a rewrite of a reference to name its target (canonicalized, lenient or normalized) keeps it
 (`keep_resolved_ref`); an object a reference names is read as a schema once (`SchemaGraphBuilder.read_as_schema`), so a
 `$ref` the walk read as data or names there (a nested definitions container) gets one too; schemas converted from
 another format are mounted with edges to the locations their targets are mounted at (an AsyncAPI payload converted from
@@ -289,7 +287,10 @@ resolved once, at its first consumption, in the document that holds it (`_home_c
 and, for an OpenAPI input document or under the `api` scope, its `$self`; a schema the parser keeps in a document of its
 own, an Avro schema of an AsyncAPI document, names that document as its edges' `home`) through the external mapping, the embedded
 resource, the normalized spelling and `ModelResolver.resolve_ref`; a new model is named after that spelling
-(`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set.
+(`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set. A schema copied
+into another (a merged `$ref` target, an inherited property) keeps its references as written: a site that asks whether
+a reference is a fragment of the document parsed now reads its edge (`_is_local_ref`), and only a merged `$recursiveRef`
+with a fixed target is rewritten, to a `$ref` (`_pin_recursive_refs`).
 OpenAPI and AsyncAPI register a schema that declares a discriminator, and a component schema whose `allOf` names one,
 under the key of the reference that names the schema from its own document (`_schema_key`), the key the references to
 it get, whatever document is being parsed when the discriminators are collected.

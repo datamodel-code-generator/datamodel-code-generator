@@ -6721,6 +6721,8 @@ conditional	main/jsonschema/merged_copy_duplicates_conditional.py
 recursive	main/jsonschema/merged_copy_duplicates.py
 [test_main_jsonschema_merged_copy_field_names]
 	main/jsonschema/merged_copy_field_names.py
+[test_main_jsonschema_merged_external_false_member]
+	main/jsonschema/merged_external_false_member//*.py
 [test_main_jsonschema_merged_external_refs]
 eslintrc	main/jsonschema/main_jsonschema/merged_external_refs[eslintrc].py
 grunt-task	main/jsonschema/main_jsonschema/merged_external_refs[grunt-task].py
@@ -12579,10 +12581,6 @@ openapi-header-map	main/jsonschema/main_jsonschema/schema_graph_check_counts_ref
 recursive-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref].txt
 recursive-ref-merged	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref-merged].txt
 x-python-type	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[x-python-type].txt
-[test_schema_graph_check_of_a_parser_that_changes_the_registry_walk]
-off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].report.txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
 [test_schema_graph_check_of_a_reader_that_writes_a_shared_schema]
 off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[off].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[report].report.txt

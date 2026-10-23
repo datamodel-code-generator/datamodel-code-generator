@@ -26710,6 +26710,20 @@ def test_main_jsonschema_merged_external_refs(
     )
 
 
+def test_main_jsonschema_merged_external_false_member(output_dir: Path) -> None:
+    """Drop a `false` member of an `anyOf` or `oneOf` of a schema merged from another document, as unmerged."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "merged_external_false_member",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "merged_external_false_member",
+        extra_args=["--disable-timestamp", "--output-model-type", "pydantic_v2.BaseModel"],
+        runtime_validation_module="main",
+        runtime_validation_model_name="Main",
+        runtime_validation_data={"rules": {"f": 1, "g": "x"}},
+    )
+
+
 @pytest.mark.parametrize(
     ("input_path", "model_name", "valid_json", "invalid_json", "expected_error_type"),
     [
@@ -31126,43 +31140,6 @@ def test_repeated_schema_documents(tmp_path: Path, formatter: str) -> None:
                 json.dumps(model.model_validate({"value": "ok"}).model_dump(mode="json")),
                 RESOURCES_EXPECTED / "duplicate_document_runtime.txt",
             )
-
-
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_schema_graph_check_of_a_parser_that_changes_the_registry_walk(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
-) -> None:
-    """A custom parser whose registry walk registers more than the schema graph finds is reported, not followed.
-
-    The schema graph fills the resource registry, so the override changes only the walk the check compares it with:
-    the check (`1`, as the test suite sets it) raises, `report:<path>` appends the document as a JSON line, and with
-    the check off (`0`) the parser generates what the graph registers.
-    """
-
-    class ExtraAnchorParser(JsonSchemaParser):
-        def _register_schema_resources(
-            self, registry: Any, schema: Any, document: str, pointer: str, base: str, keys: set[str], **options: Any
-        ) -> bool:
-            if not pointer:
-                registry.locations[f"{base}#extra"] = f"{document}#"
-            return super()._register_schema_resources(registry, schema, document, pointer, base, keys, **options)
-
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
-    parser = ExtraAnchorParser(
-        JSON_SCHEMA_DATA_PATH / "nested_resources" / "anchors" / "root.json", formatters=[Formatter.BUILTIN]
-    )
-    if flag == "check":
-        with pytest.raises(
-            Error,
-            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the schema graph registers the schema resources of 'root.json' "
-            "otherwise than the registry walk it replaced: locations$",
-        ):
-            parser.parse()
-        return
-    assert_output(str(parser.parse()))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
 class _LaterKeyParser(JsonSchemaParser):
