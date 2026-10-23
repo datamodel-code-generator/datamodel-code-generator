@@ -4006,9 +4006,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> bool:
         """Return whether a model with these effective fields splits into read/write variants.
 
-        Under request-response a model also splits where the effective fields of an allOf ancestor split it: the
-        variants replace the ancestor's model, so nothing can inherit from it, even where the model's own declarations
-        take the flags of the inherited fields away.
+        Under request-response a model also splits where the effective fields of an allOf ancestor split it, or where
+        the references to one of its allOf bases read variants, as those of a root model do: the variants replace the
+        base's model, so nothing can inherit from it, even where the model's own declarations take the flags of the
+        inherited fields away.
         """
         if self._rw_model_fields_split(all_fields):
             return True
@@ -4019,7 +4020,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._get_raw_inherited_fields(self.model_resolver.add_ref(resolved_ref, resolved=True), frozenset())
             )
             for resolved_ref in self._linearize_inherited_schema_refs(base_classes or [])
-        )
+        ) or any(self._ref_schema_generates_variant(base.path, "Request") for base in base_classes or ())
 
     def _should_generate_base_model(self, *, generates_separate_models: bool = False) -> bool:
         """Determine if Base model should be generated."""
@@ -4311,7 +4312,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
         schema has neither. patternProperties and propertyNames type the values and keys of an object map, propertyNames
         only where no patternProperties give the keys; a schema with properties or allOf, and each inline allOf member
-        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing.
+        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing. A $ref
+        outside allOf with map keywords beside it is read with them as the one schema its model is built from
+        (``_merged_ref_model_schema``).
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4339,10 +4342,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
                     references.setdefault(nested_ref, None)
-            types_map = not (merged or schema.properties or schema.allOf)
+            model_schema = schema if merged else self._merged_ref_model_schema(schema, resolved_ref)
+            types_map = not (merged or model_schema.properties or model_schema.allOf)
             property_name_refs, property_name_schemas = (
                 self._get_rw_property_name_sources(property_names=schema.propertyNames, defining_ref=resolved_ref)
-                if types_map and not schema.patternProperties
+                if types_map and not model_schema.patternProperties
                 else ((), ())
             )
             for ref in property_name_refs:
@@ -4358,6 +4362,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
+
+    def _merged_ref_model_schema(self, schema: JsonSchemaObject, defining_ref: str) -> JsonSchemaObject:
+        """Return the schema whose keywords decide what the map keywords of ``schema`` type.
+
+        The model of a $ref with sibling keywords is built from the $ref merged with them, so where patternProperties or
+        propertyNames sit beside a $ref outside allOf, that merged schema decides; any other schema decides for itself.
+        """
+        if not ((schema.patternProperties or schema.propertyNames is not None) and _merges_ref_siblings(schema)):
+            return schema
+        with self._inherited_ref_context(defining_ref):
+            return self._merge_ref_with_schema(schema)
 
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""

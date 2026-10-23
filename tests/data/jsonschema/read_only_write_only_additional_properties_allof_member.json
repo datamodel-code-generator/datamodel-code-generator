@@ -1,0 +1,55 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Extended": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Flagged"
+          }
+        }
+      ]
+    },
+    "Other": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Flagged"
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "extended": {
+      "$ref": "#/$defs/Extended"
+    },
+    "other": {
+      "$ref": "#/$defs/Other"
+    }
+  }
+}
