@@ -1,0 +1,56 @@
+openapi: 3.1.0
+info:
+  title: References to components written as a constrained $ref to a recursive schema
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tree'
+    Tree:
+      $ref: '#/components/schemas/Node'
+      description: A tree.
+      minProperties: 1
+    Grove:
+      $ref: '#/components/schemas/Tree'
+      maxProperties: 3
+    Forest:
+      $ref: '#/components/schemas/Node'
+      minProperties: 2
+    Holder:
+      type: object
+      properties:
+        tree:
+          $ref: '#/components/schemas/Tree'
+        trees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tree'
+        grove:
+          $ref: '#/components/schemas/Grove'
+        either:
+          anyOf:
+            - $ref: '#/components/schemas/Tree'
+            - type: string
+        byName:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Tree'
+        shrub:
+          $ref: 'shrubs.yaml#/components/schemas/Shrub'
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/Tree'
+        - type: object
+          properties:
+            name:
+              type: string
+    Index:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Tree'

@@ -2579,6 +2579,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._external_ref_mapping[abs_path] = python_package
         self.reserved_refs: defaultdict[tuple[str, ...], set[str]] = defaultdict(set)
         self._loads_only_used_references = False
+        self._definitions_without_model: dict[str, Reference] = {}
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
@@ -16281,7 +16282,45 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return bool(_merges_ref_siblings(site.obj) and site.obj.ref)
 
     def _build_definition_ref(self, site: _Site) -> None:
+        self._definitions_without_model[self.model_resolver.join_path(tuple(site.path))] = self.resolve_ref(
+            cast("str", site.obj.ref)
+        )
         return self.parse_ref(site.obj, site.path)
+
+    def _type_references_to_definitions_without_model(self) -> None:
+        """Redirect the users of a definition parsed as its ``$ref`` alone to the reference that ``$ref`` names.
+
+        Such a definition is a ``$ref`` with sibling keywords that cannot merge into its circular target, and outside
+        a definitions container it gets no model. Once every schema is parsed, a reference to it is typed by its
+        target (through such definitions in turn), as such a ``$ref`` is at a field; a definition that got a model
+        elsewhere keeps its users.
+        """
+        if not self._definitions_without_model:
+            return
+        modelled = {model.reference.path for model in self.results}
+        references = self.model_resolver.references
+        for key, named in self._definitions_without_model.items():
+            if key in modelled or (reference := references.get(key)) is None:
+                continue
+            target, seen = named, {key}
+            while (
+                target.path not in modelled
+                and target.path not in seen
+                and (next_target := self._definitions_without_model.get(target.path))
+            ):
+                seen.add(target.path)
+                target = next_target
+            self._graph_builder.redirect_reference_users(reference, target)
+            for model in self.results:
+                if key in (classes := model.additional_properties_reference_classes):
+                    self._output_model_context.store_additional_properties_reference_classes(
+                        model.extra_template_data, {target.path if path == key else path for path in classes}
+                    )
+
+    def _end_schema_parsing(self) -> None:
+        """Settle the references to definitions without a model, then run the late parser extension hook."""
+        self._type_references_to_definitions_without_model()
+        self._generate_forced_base_models()
 
     def _definition_array_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return site.obj.is_array
@@ -16461,7 +16500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
 
             self._resolve_unparsed_json_pointer()
-            self._generate_forced_base_models()
+            self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()
             self._reset_local_source_cache()
@@ -16482,7 +16521,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._parse_file(self.raw_obj, obj_name, path_parts, preserve_root_class_name=preserve_root_class_name)
 
             self._resolve_unparsed_json_pointer()
-            self._generate_forced_base_models()
+            self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()
             self._reset_local_source_cache()

@@ -1059,6 +1059,6 @@ class AsyncAPIParser(OpenAPIParser):
                             self._parse_raw_at(schema.name, raw_schema, schema.path, schema.location)
 
             self._resolve_asyncapi_unparsed_json_pointer(context_sources)
-            self._generate_forced_base_models()
+            self._end_schema_parsing()
         finally:
             self._reset_local_source_cache()

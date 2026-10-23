@@ -1525,6 +1525,10 @@ typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= 
 	main/openapi/ref_nullable_strict_nullable.py
 [test_main_openapi_reference_same_hierarchy_directory]
 	main/openapi/reference_same_hierarchy_directory.py
+[test_main_openapi_reference_to_component_without_model]
+msgspec.Struct	main/openapi/main_openapi/reference_to_component_without_model[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py
+typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model[typing.TypedDict].py
 [test_main_openapi_reference_to_object_properties]
 	main/openapi/reference_to_object_properties.py
 [test_main_openapi_reference_to_object_properties_collapse_root_models]

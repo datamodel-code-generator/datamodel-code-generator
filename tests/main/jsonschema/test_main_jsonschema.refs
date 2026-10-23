@@ -7059,6 +7059,8 @@ tree	main/jsonschema/recursive_ref_resources_tree.py
 	main/jsonschema/ref_type_has_null.py
 [test_main_jsonschema_ref_with_additional_keywords]
 	main/jsonschema/ref_with_additional_keywords//*.py
+[test_main_jsonschema_reference_to_schema_without_model]
+	main/jsonschema/main_jsonschema/reference_to_schema_without_model.py
 [test_main_jsonschema_remote_relative_ref_without_fragment]
 	main/jsonschema/remote_relative_ref_nested.py
 [test_main_jsonschema_remove_special_prefix_preserves_underscore_alias]

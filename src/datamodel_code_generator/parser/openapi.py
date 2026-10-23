@@ -1211,7 +1211,7 @@ class OpenAPIParser(JsonSchemaParser):
             self._resolve_unparsed_json_pointer()
             if self._parameter_models:
                 self._load_references_of_parameter_models()
-            self._generate_forced_base_models()
+            self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()
             self._reset_local_source_cache()

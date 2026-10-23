@@ -1031,6 +1031,7 @@ These fixes apply without any option: the old result could not be generated or i
 - A `$ref` to an `$anchor` inside a `oneOf` branch resolves instead of failing with `Unresolved $id reference` ([#5056](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5056), fixed by [#5092](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5092)).
 - A `ValidationError` for an `allOf` child and parent that both declare a property named like a schema keyword is fixed ([#5069](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5069)).
 - Long `$ref` alias chains no longer depend on the Python recursion limit; schemas nested too deeply stop with a clear error ([#5076](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5076)).
+- A reference to a schema written as a `$ref` to a recursive schema with constraint siblings, which gets no model of its own (an OpenAPI component, a property), is typed by that `$ref`'s target instead of failing with "A Parser can not resolve classes" ([#5162](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5162)).
 
 ## 📖 See Also
 

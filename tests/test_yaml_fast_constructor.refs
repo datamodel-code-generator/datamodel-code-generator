@@ -395,6 +395,8 @@ openapi/redundant_reference_null_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_edges/operation_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_merge_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_nullable.yaml	yaml_fast_constructor/parity.txt
+openapi/ref_siblings_recursive_target/schema.yaml	yaml_fast_constructor/parity.txt
+openapi/ref_siblings_recursive_target/shrubs.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_same_hierarchy_directory/common/cat.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_same_hierarchy_directory/public/entities.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_to_object_properties.yaml	yaml_fast_constructor/parity.txt

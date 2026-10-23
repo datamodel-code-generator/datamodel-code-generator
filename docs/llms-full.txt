@@ -66042,6 +66042,7 @@ These fixes apply without any option: the old result could not be generated or i
 - A `$ref` to an `$anchor` inside a `oneOf` branch resolves instead of failing with `Unresolved $id reference` ([#5056](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5056), fixed by [#5092](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5092)).
 - A `ValidationError` for an `allOf` child and parent that both declare a property named like a schema keyword is fixed ([#5069](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5069)).
 - Long `$ref` alias chains no longer depend on the Python recursion limit; schemas nested too deeply stop with a clear error ([#5076](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5076)).
+- A reference to a schema written as a `$ref` to a recursive schema with constraint siblings, which gets no model of its own (an OpenAPI component, a property), is typed by that `$ref`'s target instead of failing with "A Parser can not resolve classes" ([#5162](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5162)).
 
 ## 📖 See Also
 
@@ -66390,7 +66391,7 @@ builders; the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by 
 `_parse_object_kind_schema`. Rows call the public hooks through the parser, so overriding subclasses keep working; a
 change of what a position parses is a row edit. `DispatchTable.choose` returns the chosen row and the position's method
 builds it in its own frame, so a nested schema costs no more stack frames per level than the parse methods it reaches
-(`test_main_nesting_within_recursion_limit` fails when it does). That merge, the inherited `$ref` property
+(`test_main_nesting_within_recursion_limit` fails when it does). A definition written as a `$ref` whose sibling keywords cannot merge into its circular target gets no model outside a definitions container (the `ref` row); once every schema is parsed (`_end_schema_parsing`), the users of its reference move to the reference that `$ref` names (`_type_references_to_definitions_without_model`), so a reference to it is typed by its target, as such a `$ref` is at a field. That merge, the inherited `$ref` property
 merge (`_resolve_inherited_parent_property`) and a property that overrides an inherited one
 (`_merge_properties_with_parent_constraints`, unless `--allof-merge-mode none`) stand for the intersection of their
 parts: the earlier merge (`_deep_merge`, `_merge_property_schemas`) stays wherever it enforces what the intersection

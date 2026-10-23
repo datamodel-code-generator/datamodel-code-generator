@@ -14648,3 +14648,38 @@ def test_main_openapi_read_nullable_beside_type_list(output_file: Path, extra_ar
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    "output_model",
+    [DataModelType.PydanticV2BaseModel.value, DataModelType.TypingTypedDict.value, DataModelType.MsgspecStruct.value],
+)
+def test_main_openapi_reference_to_component_without_model(output_model: str, output_file: Path) -> None:
+    """Type a reference to a component that gets no model by the component's target.
+
+    A component written as a ``$ref`` to a recursive schema with constraint siblings gets no model of its own; up to
+    0.86.0 a reference to it failed with "A Parser can not resolve classes". The reference is now typed by the target,
+    as such a ``$ref`` is at a field, through such components in turn; a component nothing references still gets no
+    model, and one in another document keeps its model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_siblings_recursive_target" / "schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if output_model == DataModelType.PydanticV2BaseModel.value:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="reference_to_component_without_model",
+            model_name="Holder",
+            valid_json=json.dumps({
+                "tree": {"children": [{"children": []}]},
+                "grove": {},
+                "byName": {"a": {"children": []}},
+                "shrub": {"twigs": [{}]},
+            }),
+            invalid_json=json.dumps({"tree": {"children": [1]}}),
+            expected_error_type="model_type",
+        )

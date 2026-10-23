@@ -876,7 +876,7 @@ class ProtobufParser(JsonSchemaParser):
         self.raw_obj = raw_obj
         self._parse_file(raw_obj, "Model", [])
         self._resolve_unparsed_json_pointer()
-        self._generate_forced_base_models()
+        self._end_schema_parsing()
 
 
 __all__ = ["ProtobufParser", "convert_protobuf_schema_data"]

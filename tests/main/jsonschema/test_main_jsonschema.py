@@ -33335,3 +33335,27 @@ def test_main_jsonschema_intersect_allof_keywords(output_file: Path, extra_args:
         extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--field-constraints"],
         force_exec_validation=True,
     )
+
+
+def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) -> None:
+    """Type a reference to a schema that gets no model by that schema's target.
+
+    A property written as a ``$ref`` to a recursive schema with constraint siblings gets no model of its own; up to
+    0.86.0 a reference to that property failed with "A Parser can not resolve classes". The reference is now typed by
+    the target, as the property is.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_recursive_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="reference_to_schema_without_model",
+        model_name="Holder",
+        valid_json=json.dumps({"tree": {"children": [{}]}, "copy": {"children": []}}),
+        invalid_json=json.dumps({"copy": {"children": [1]}}),
+        expected_error_type="model_type",
+    )
