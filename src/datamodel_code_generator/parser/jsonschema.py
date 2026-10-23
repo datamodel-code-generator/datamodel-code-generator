@@ -4247,34 +4247,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema: JsonSchemaObject,
         *,
         detect_inline_variant: bool,
-    ) -> Iterator[tuple[JsonSchemaObject, bool]]:
-        """Yield type-contributing children and whether their inline models are generated."""
-        mappings = (
-            (schema.properties,) if self.generate_schema_validators else (schema.properties, schema.patternProperties)
-        )
-        for mapping in mappings:
-            if mapping:
-                yield from (
-                    (item, detect_inline_variant) for item in mapping.values() if isinstance(item, JsonSchemaObject)
-                )
+        types_map: bool,
+    ) -> Iterator[tuple[JsonSchemaObject, bool, bool]]:
+        """Yield type-contributing children, whether their inline models are generated and whether they are merged.
+
+        The inline allOf members merge into the model of the schema; the values of patternProperties are children only
+        where ``types_map``.
+        """
+        mapping = schema.patternProperties if types_map and not self.generate_schema_validators else schema.properties
+        if mapping:
+            yield from (
+                (item, detect_inline_variant, False) for item in mapping.values() if isinstance(item, JsonSchemaObject)
+            )
         match schema.items:
             case JsonSchemaObject() as item:
-                yield item, detect_inline_variant
+                yield item, detect_inline_variant, False
             case list() as items:
-                yield from ((item, detect_inline_variant) for item in items if isinstance(item, JsonSchemaObject))
+                yield from (
+                    (item, detect_inline_variant, False) for item in items if isinstance(item, JsonSchemaObject)
+                )
         for item in (
             schema.additionalItems,
             schema.additionalProperties,
         ):
             if isinstance(item, JsonSchemaObject):
-                yield item, detect_inline_variant
+                yield item, detect_inline_variant, False
         yield from (
-            (item, detect_inline_variant)
-            for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf, schema.allOf)
+            (item, detect_inline_variant, False)
+            for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf)
             if isinstance(item, JsonSchemaObject)
         )
+        yield from ((item, detect_inline_variant, True) for item in schema.allOf if isinstance(item, JsonSchemaObject))
         if self.generate_schema_validators:
-            yield from ((item, detect_inline_variant) for item in self._iter_conditional_branches(schema))
+            yield from ((item, detect_inline_variant, False) for item in self._iter_conditional_branches(schema))
 
     def _get_ref_schema_rw_model_reference_facts(
         self,
@@ -4284,7 +4289,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The walk stops at the first flagged property: the references of a node that needs variants are never read
         (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
-        schema has neither.
+        schema has neither. patternProperties and propertyNames type the values and keys of an object map, propertyNames
+        only where no patternProperties give the keys; a schema with properties or allOf, and each inline allOf member
+        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4295,9 +4302,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         has_inline_variant = False
         references: dict[str, None] = {}
-        stack = [(root_schema, True)]
+        stack = [(root_schema, True, False)]
         while stack:
-            schema, detect_inline_variant = stack.pop()
+            schema, detect_inline_variant, merged = stack.pop()
             if (
                 detect_inline_variant
                 and not has_inline_variant
@@ -4312,18 +4319,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
                     references.setdefault(nested_ref, None)
-            property_name_refs, property_name_schemas = self._get_rw_property_name_sources(
-                property_names=schema.propertyNames,
-                defining_ref=resolved_ref,
+            types_map = not (merged or schema.properties or schema.allOf)
+            property_name_refs, property_name_schemas = (
+                self._get_rw_property_name_sources(property_names=schema.propertyNames, defining_ref=resolved_ref)
+                if types_map and not schema.patternProperties
+                else ((), ())
             )
             for ref in property_name_refs:
                 if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
                     references.setdefault(nested_ref, None)
-            stack.extend((item, True) for item in property_name_schemas)
+            stack.extend((item, True, False) for item in property_name_schemas)
             stack.extend(
                 self._iter_rw_model_schema_children(
                     schema,
                     detect_inline_variant=detect_inline_variant,
+                    types_map=types_map,
                 )
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))

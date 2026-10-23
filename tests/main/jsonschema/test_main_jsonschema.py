@@ -26647,6 +26647,71 @@ def test_main_read_only_write_only_boolean_property(output_file: Path, dedupe_ar
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "valid", "invalid"),
+    [
+        pytest.param(
+            "read_only_write_only_pattern_properties_base.json",
+            {"child": {"a": "kept", "c": 1}},
+            {"child": {"a": 1}},
+            id="pattern_properties",
+        ),
+        pytest.param(
+            "read_only_write_only_property_names_base.json",
+            {"child": {}},
+            {"child": {"a": 1}},
+            id="property_names",
+        ),
+        pytest.param(
+            "read_only_write_only_map_keywords_beside_allof.json",
+            {"merged": {"b": "kept"}, "extended": {}, "keyed": {}},
+            {"merged": {"b": 1}},
+            id="allof",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_map_keywords_of_models(
+    output_file: Path, input_name: str, valid: dict[str, Any], invalid: dict[str, Any], dedupe_args: list[str]
+) -> None:
+    """Keep one model for an object whose patternProperties or propertyNames alone reach a readOnly model.
+
+    Beside properties or allOf, and in an inline allOf member, the object is a model whose fields hold its properties
+    alone, and propertyNames give no keys where patternProperties do; those keywords type nothing, so the object and
+    the models inheriting from it or referencing it keep one class while the readOnly model splits.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / input_name
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"rw_map_keywords_{input_path.stem}",
+        model_name="Model",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
@@ -26657,14 +26722,15 @@ def test_schema_graph_check_of_read_write_splits(
 ) -> None:
     """Report a model that does not split while the references to it read a request/response variant.
 
-    A reference under patternProperties makes the schema need variants, but no field of its model holds it; the check
-    (`1`) stops at the first such model and `report:<path>` appends each one as an `rw-split` line. The check runs
-    under --dedupe-request-response-variants, where the schema graph decides the splits.
+    A reference under the patternProperties beside a $ref makes the schema need variants, but the model of the object
+    the $ref names holds no field for it; the check (`1`) stops at the first such model and `report:<path>` appends
+    each one as an `rw-split` line. The check runs under --dedupe-request-response-variants, where the schema graph
+    decides the splits.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_pattern_properties_base.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_pattern_properties_ref_sibling.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[

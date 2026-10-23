@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^x-": {
+              "$ref": "#/$defs/Flagged"
+            }
+          }
+        }
+      ]
+    },
+    "Extended": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "propertyNames": {
+        "$ref": "#/$defs/Flagged"
+      }
+    },
+    "Keyed": {
+      "type": "object",
+      "patternProperties": {
+        "^y-": {
+          "type": "string"
+        }
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Flagged"
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "merged": {
+      "$ref": "#/$defs/Merged"
+    },
+    "extended": {
+      "$ref": "#/$defs/Extended"
+    },
+    "keyed": {
+      "$ref": "#/$defs/Keyed"
+    }
+  }
+}
