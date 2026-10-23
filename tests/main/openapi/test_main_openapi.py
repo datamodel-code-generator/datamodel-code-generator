@@ -14693,7 +14693,8 @@ def test_main_openapi_reference_to_component_without_model_mapped(output_model: 
     """Type a reference to a component that gets no model by the import of its target in a mapped document.
 
     The component is a ``$ref`` with constraint siblings to a schema of a document that ``--external-ref-mapping``
-    maps to a package; a reference to it is typed by the import, as such a ``$ref`` is at a field.
+    maps to a package; a reference to it is typed by the import, as such a ``$ref`` is at a field, also as a dict key
+    (``propertyNames``) and in TypedDict ``extra_items``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "ref_siblings_recursive_target" / "mapped.yaml",

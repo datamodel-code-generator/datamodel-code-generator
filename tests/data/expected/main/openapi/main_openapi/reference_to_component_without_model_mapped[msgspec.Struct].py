@@ -16,3 +16,14 @@ class Holder(Struct):
 
 
 Index: TypeAlias = dict[str, Twig]
+
+
+Keyed: TypeAlias = dict[Twig, int]
+
+
+class Extra(Struct):
+    name: str | UnsetType = UNSET
+
+
+class Mixed(Struct):
+    name: str | UnsetType = UNSET

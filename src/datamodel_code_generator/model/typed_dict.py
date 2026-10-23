@@ -195,7 +195,10 @@ class TypedDict(DataModel):
 
     @override
     def _name_final_classes(self) -> None:
-        """Render ``extra_items`` again from the data type it was built from, as field types render."""
+        """Render ``extra_items`` again from the data type it was built from, as field types render.
+
+        It is a string while it names generated classes, which may be declared later.
+        """
         typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})
         additional_props_type = self.extra_template_data.get("additionalPropertiesType")
         if (
@@ -204,7 +207,9 @@ class TypedDict(DataModel):
             or (source := additional_props_type.source) is None
         ):
             return
-        self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": repr(source.type_hint)})
+        type_hint = source.type_hint
+        extra_items = repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
+        self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
 
     @property
     def _has_pep728_kwargs(self) -> bool:

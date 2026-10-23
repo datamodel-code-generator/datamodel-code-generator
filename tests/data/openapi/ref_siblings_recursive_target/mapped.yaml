@@ -25,3 +25,25 @@ components:
       type: object
       additionalProperties:
         $ref: '#/components/schemas/Shrub'
+    Keyed:
+      type: object
+      propertyNames:
+        $ref: '#/components/schemas/Shrub'
+      additionalProperties:
+        type: integer
+    Extra:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        $ref: '#/components/schemas/Shrub'
+    Mixed:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        anyOf:
+          - $ref: '#/components/schemas/Shrub'
+          - $ref: '#/components/schemas/Holder'

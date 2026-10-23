@@ -396,6 +396,7 @@ def apply_generic_base_class(  # noqa: PLR0912, PLR0914
     parser: CrossModuleHost,
     processed_models: Sequence[ModuleContextFields],
 ) -> None:
+    """Add the configured generic base class to the first root module and make top-level target models inherit it."""
     if not parser.use_generic_base_class or not parser.generic_base_class_config:
         return
 

@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias, TypedDict
+from typing import TypeAlias
 
 from shared.models import Twig
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 
 
 class Holder(TypedDict):
@@ -16,3 +16,14 @@ class Holder(TypedDict):
 
 
 Index: TypeAlias = dict[str, Twig]
+
+
+Keyed: TypeAlias = dict[Twig, int]
+
+
+class Extra(TypedDict, extra_items=Twig):
+    name: NotRequired[str]
+
+
+class Mixed(TypedDict, extra_items='Twig | Holder'):
+    name: NotRequired[str]

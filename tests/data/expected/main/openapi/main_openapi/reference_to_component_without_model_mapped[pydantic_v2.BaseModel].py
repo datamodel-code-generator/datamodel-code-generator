@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from typing import Dict
+
+from pydantic import BaseModel, ConfigDict, RootModel
 from shared.models import Twig
 
 
@@ -15,3 +17,27 @@ class Holder(BaseModel):
 
 class Index(RootModel[dict[str, Twig]]):
     root: dict[str, Twig]
+
+
+class Keyed(RootModel[dict[Twig, int]]):
+    root: dict[Twig, int]
+
+
+class Extra(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Twig],
+    }
+    name: str | None = None
+
+
+class Mixed(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Twig | Holder],
+    }
+    name: str | None = None

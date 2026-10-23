@@ -332,7 +332,7 @@ holds, in order, the steps that rewrite the site (a `$ref` with sibling keywords
 `parse_any_of` (both through `parse_combined_schema`), `parse_object`, `parse_enum`, `parse_root_type` and the other
 builders; the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by the definition table and
 `_parse_object_kind_schema`. Rows call the public hooks through the parser, so overriding subclasses keep working; a
-change of what a position parses is a row edit. `DispatchTable.choose` returns the chosen row and the position's method
+change of what a position parses is a row edit. `DispatchTable.choose` returns the chosen row as a `Choice` and the position's method
 builds it in its own frame, so a nested schema costs no more stack frames per level than the parse methods it reaches
 (`test_main_nesting_within_recursion_limit` fails when it does). A definition written as a `$ref` whose sibling keywords cannot merge into its circular target gets no model outside a definitions container (the `ref` row; `--openapi-ref-components-as-definitions` counts the components of an OpenAPI specification as one, `OpenAPIParser._definition_entry_prefixes`); once every schema is parsed (`_end_schema_parsing`), the users of its reference move to the reference that `$ref` names (`_type_references_to_definitions_without_model`), so a reference to it is typed by its target, as such a `$ref` is at a field. That merge, the inherited `$ref` property
 merge (`_resolve_inherited_parent_property`) and a property that overrides an inherited one

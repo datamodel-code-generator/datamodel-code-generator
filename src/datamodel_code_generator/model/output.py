@@ -6,7 +6,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._target_unicode import host_identifiers
-from datamodel_code_generator.model.base import ALL_MODEL
+from datamodel_code_generator.model.base import _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY, ALL_MODEL
 from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import AliasGenerator, TargetPydanticVersion
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.python_literal import _TypeHintSource
     from datamodel_code_generator.types import DataTypeManager
     from datamodel_code_generator.validators import ModelValidators
 
@@ -246,6 +247,11 @@ class OutputModelContext:
     def has_additional_properties_type(self, extra_template_data: dict[str, Any]) -> bool:
         """Return whether output metadata contains a typed additional-properties entry."""
         return self._data_model_type.has_additional_properties_type(extra_template_data)
+
+    @staticmethod
+    def additional_properties_type_source(extra_template_data: dict[str, Any]) -> _TypeHintSource | None:
+        """Return the data type a typed additional-properties entry was rendered from, while it names classes."""
+        return getattr(extra_template_data.get(_ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY), "source", None)
 
     def store_additional_properties_type(  # noqa: PLR0913
         self,

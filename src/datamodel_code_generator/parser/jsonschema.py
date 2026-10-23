@@ -16297,12 +16297,43 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.parse_ref(site.obj, site.path)
 
     def _type_users_by_import(self, reference: Reference, import_: Import) -> None:
-        """Type each user of ``reference`` in a field or a type by ``import_``, as a mapped ``$ref`` there is."""
+        """Type each user of ``reference`` in a field, a type or a dict key by ``import_``, as a mapped ``$ref`` is."""
         for fact in self.generation_store.index.data_type_facts_for_reference(reference):
-            if fact.role in {"field", "nested"}:
-                self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
-                self._graph_builder.detach_data_type_ref(fact.data_type)
+            if fact.role == "base":
+                continue
+            self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
+            self._graph_builder.detach_data_type_ref(fact.data_type)
+            if fact.role == "dict_key":
+                self._graph_builder.replace_nested_data_type(
+                    cast("DataType", fact.data_type.parent), fact.data_type, self.data_type.from_import(import_)
+                )
+            else:
                 self._graph_builder.swap_data_type(fact.data_type, self.data_type.from_import(import_))
+
+    def _type_additional_properties_by_import(
+        self, model: DataModel, reference: Reference, import_: Import, reference_classes: set[str]
+    ) -> None:
+        """Type the users of ``reference`` in the model's typed additional properties by ``import_``.
+
+        The other classes they reference stay ``reference_classes``; ``extra_items`` is written again.
+        """
+        source = cast(
+            "DataType", self._output_model_context.additional_properties_type_source(model.extra_template_data)
+        )
+        for data_type in [data_type for data_type in source.all_data_types if data_type.reference is reference]:
+            self._graph_builder.detach_data_type_ref(data_type)
+            if data_type is source:
+                source = self.data_type.from_import(import_)
+            else:
+                self._graph_builder.swap_data_type(data_type, self.data_type.from_import(import_))
+        self._output_model_context.store_additional_properties_type(
+            model.extra_template_data,
+            _make_referencing_type_expression(source),
+            reference_classes,
+            imports=tuple(source.all_imports),
+            target_python_version=self.target_python_version,
+        )
+        model._name_final_classes()  # noqa: SLF001
 
     def _type_references_to_definitions_without_model(self) -> None:
         """Redirect the users of a definition parsed as its ``$ref`` alone to the reference that ``$ref`` names.
@@ -16327,16 +16358,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 seen.add(target.path)
                 target = next_target
-            replacement: tuple[str, ...] = (target.path,)
             if (import_ := self._mapped_definition_imports.get(target.path)) is not None:
                 self._type_users_by_import(reference, import_)
-                replacement = ()
-            self._graph_builder.redirect_reference_users(reference, target)
             for model in self.results:
-                if key in (classes := model.additional_properties_reference_classes):
+                if key not in (classes := model.additional_properties_reference_classes):
+                    continue
+                other_classes = {path for path in classes if path != key}
+                if import_ is None:
                     self._output_model_context.store_additional_properties_reference_classes(
-                        model.extra_template_data, {*(path for path in classes if path != key), *replacement}
+                        model.extra_template_data, {*other_classes, target.path}
                     )
+                else:
+                    self._type_additional_properties_by_import(model, reference, import_, other_classes)
+            self._graph_builder.redirect_reference_users(reference, target)
 
     def _end_schema_parsing(self) -> None:
         """Settle the references to definitions without a model, then run the late parser extension hook."""
