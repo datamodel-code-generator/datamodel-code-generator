@@ -140,6 +140,17 @@ def _admits_integers_of(constraints: tuple[tuple[str, Any], ...], other: tuple[t
     )
 
 
+def _is_non_finite(value: float) -> bool:
+    """Return whether a number has no finite float: an infinity, NaN, or an int beyond the float range.
+
+    msgspec.Meta takes finite numbers only: an int beyond the float range fails when the module is imported.
+    """
+    try:
+        return not isfinite(value)
+    except OverflowError:
+        return True
+
+
 def _is_exact_float_divisor(value: Any) -> bool:
     """Return whether a float represents a divisor exactly as a dyadic rational, so msgspec checks multiples exactly.
 
@@ -978,11 +989,11 @@ class DataModelField(DataModelFieldBase):
     ) -> tuple[str, Any] | None:
         """Return a constraint normalized for the field's numeric type.
 
-        Non-finite bounds are dropped because msgspec Meta only accepts finite values.
+        Non-finite bounds are dropped because msgspec Meta only accepts finite values (``_is_non_finite``).
         """
         if value is None or constraint not in self._COMPARE_EXPRESSIONS:
             return constraint, value
-        if isinstance(value, float) and not isfinite(value):
+        if _is_non_finite(value):
             return None
         if is_float_type:
             return constraint, float(value)
@@ -1349,7 +1360,7 @@ class DataModelField(DataModelFieldBase):
                     k, v, is_float_type=is_float_type, is_int_type=is_int_type
                 )
             ) is None:
-                if isinstance(v, float) and not isfinite(v):
+                if _is_non_finite(v):
                     omitted.append(Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k)))
                 else:
                     omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))

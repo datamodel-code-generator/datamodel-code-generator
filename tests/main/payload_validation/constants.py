@@ -87,6 +87,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "30-level chain with two references per level: hypothesis-jsonschema time roughly doubles per level "
         "(10 examples take 47 s at depth 10); test_main_dataclass_nested_mapping_default_chain covers its generation"
     ),
+    "jsonschema/msgspec_number_limits/float_range_bounds.json": (
+        "number bounds beyond the float range make Pydantic generation and hypothesis-jsonschema raise "
+        "OverflowError; test_msgspec_number_limits validates its msgspec payloads"
+    ),
     "jsonschema/non_dict_files/list_only.json": "input is JSON data, not a JSON Schema document",
     "jsonschema/non_dict_files/list_only.yaml": "input is YAML data, not a JSON Schema document",
     "jsonschema/non_dict_files/whitespace_only.yaml": "empty YAML fixture",
