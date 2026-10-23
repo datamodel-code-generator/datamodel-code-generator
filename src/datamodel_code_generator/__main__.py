@@ -2389,11 +2389,22 @@ def _run_watched_jobs(
     return result
 
 
+def _error_with_traceback() -> Exit:
+    """Print the traceback of the exception being handled, which ends a run with the error exit."""
+    import traceback  # noqa: PLC0415
+
+    print(traceback.format_exc(), file=sys.stderr)  # noqa: T201
+    return Exit.ERROR
+
+
 def _publish_or_error(
     staged_plans: Sequence[_StagedJobPlan],
     remote_locks: _RemoteLockTransaction | None = None,
 ) -> Exit | None:
-    """Publish staged batch output, reporting an unrecoverable filesystem failure."""
+    """Publish staged batch output, reporting an unrecoverable filesystem failure.
+
+    A warning turned into an error ends the run with its traceback, as in a generation.
+    """
     try:
         _validate_staged_job_plans(staged_plans)
         if remote_locks is None:
@@ -2409,6 +2420,8 @@ def _publish_or_error(
     except (Error, OSError) as exc:
         print(f"Error: could not publish batch output: {exc}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
+    except Warning:
+        return _error_with_traceback()
     return None
 
 
@@ -3324,10 +3337,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if isinstance(e, RemoteLockError):
             print(str(e), file=sys.stderr)  # noqa: T201
             return cleanup_and_return(Exit.ERROR)
-        import traceback  # noqa: PLC0415
-
-        print(traceback.format_exc(), file=sys.stderr)  # noqa: T201
-        return cleanup_and_return(Exit.ERROR)
+        return cleanup_and_return(_error_with_traceback())
 
     if config.output is not None and generate_output is not None:
         if config.output.is_dir():
@@ -3342,7 +3352,10 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
-        _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
+        try:
+            _copy_generated_output(generate_output, config.output, is_directory_output=is_directory_output)
+        except Warning:
+            return cleanup_and_return(_error_with_traceback())
 
     if generate_output is None and (result is not None or namespace.output_format == "json"):
         if (

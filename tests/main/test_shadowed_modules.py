@@ -6,6 +6,7 @@ import errno
 import os
 import re
 import shutil
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -13,7 +14,7 @@ import pytest
 from datamodel_code_generator import InputFileType, chdir
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
-from tests.conftest import assert_directory_content, create_assert_file_content
+from tests.conftest import assert_directory_content, assert_output, create_assert_file_content
 from tests.main.conftest import (
     DATA_PATH,
     EXPECTED_MAIN_PATH,
@@ -108,6 +109,38 @@ def test_shadowed_module_warns_in_batch_jobs(output_dir: Path, tmp_path: Path) -
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
     assert_directory_content(output_dir, EXPECTED_PATH / "stale_package")
     assert_file_content(tmp_path / "model.py", "single.py")
+
+
+@pytest.mark.parametrize("publication", ["direct", "json", "update-lock", "batch", "batch-json"])
+def test_shadowed_module_warning_as_error_fails_the_run(
+    publication: str, output_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A shadowed-module warning turned into an error fails the run with its traceback and publishes nothing.
+
+    Batch jobs and a run that publishes with a lock fail like a run that writes directly (#4751).
+    """
+    _run("package", output_dir)
+    if publication.startswith("batch"):
+        for name in ("module.json", "single.json"):
+            shutil.copyfile(INPUT_PATH / name, tmp_path / name)
+        shutil.copyfile(DATA_PATH / "config" / "pyproject_shadowed_modules.toml", tmp_path / "pyproject.toml")
+        args = ["--all-jobs", *(["--output-format", "json"] if publication == "batch-json" else [])]
+    else:
+        args = ["--input", str(INPUT_PATH / "module.json"), "--input-file-type", "openapi", "--output", "model"]
+        args += ["--disable-timestamp", *_publication_args(publication, tmp_path)]
+    capsys.readouterr()
+    with chdir(tmp_path), warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        run_main_with_args([*args, "--formatters", "builtin"], expected_exit=Exit.ERROR)
+    captured = capsys.readouterr()
+    assert_output(
+        "\n".join((
+            f"stdout {captured.out!r}",
+            captured.err.strip().splitlines()[-1].replace(tmp_path.as_posix(), "<root>"),
+            *sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.py")),
+        ))
+        + "\n"
+    )
 
 
 @pytest.mark.parametrize("update_lock", [False, True])

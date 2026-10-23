@@ -38,6 +38,17 @@ single-pets.py	main/shadowed_modules/input_diff_does_not_warn[single-pets.py]/	=
 [test_package_beside_stale_module_does_not_warn]
 	main/shadowed_modules/package_beside_stale_module_does_not_warn/
 	main/shadowed_modules/stale_module//*.py
+[test_shadowed_module_warning_as_error_fails_the_run]
+batch	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch].txt
+batch	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
+batch-json	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch-json].txt	= main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch].txt
+batch-json	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch-json]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
+direct	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[direct].txt	= main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch].txt
+direct	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[direct]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
+json	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[json].txt	= main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch].txt
+json	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[json]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
+update-lock	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[update-lock].txt	= main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[batch].txt
+update-lock	main/shadowed_modules/shadowed_module_warning_as_error_fails_the_run[update-lock]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
 [test_shadowed_module_warns]
 direct	main/shadowed_modules/shadowed_module_warns[direct]/	= main/shadowed_modules/check_lists_stale_package_without_warning/
 direct	main/shadowed_modules/stale_package//*.py
