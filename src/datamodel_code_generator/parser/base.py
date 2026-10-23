@@ -7642,6 +7642,53 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 forward_references.append((data_type, name))
         return forward_references
 
+    @staticmethod
+    def __quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], index: int) -> None:
+        """Write each schema validator rule type that names a model declared at or after the model as one string.
+
+        The class body evaluates its rules when it runs, before the model and the later models of its module are bound;
+        the validator helper resolves the string in the module when it validates. The rules get quoted copies, so
+        another holder of the rules or their types keeps them.
+        """
+        if not (runtime_validation := model.schema_runtime_validation) or not runtime_validation.pattern_properties:
+            return
+
+        def quoted(data_type: DataType) -> DataType:
+            if not any(
+                (reference := nested.reference) is not None
+                and isinstance(source := reference.source, DataModel)
+                and source.module_path == model.module_path
+                and model_index.get(reference.short_name, -1) >= index
+                for nested in data_type.all_data_types
+            ):
+                return data_type
+            forward = type(data_type)(data_types=[_copy_data_type(data_type)])
+            forward._set_forward_reference(True)  # noqa: FBT003, SLF001
+            return forward
+
+        rules = [
+            dataclasses.replace(
+                rule,
+                pattern_properties=tuple(
+                    (pattern, quoted(data_type)) for pattern, data_type in rule.pattern_properties
+                ),
+                additional_property_type=(
+                    None if (additional := rule.additional_property_type) is None else quoted(additional)
+                ),
+            )
+            for rule in runtime_validation.pattern_properties
+        ]
+        if all(
+            new_type is old_type
+            for rule, old_rule in zip(rules, runtime_validation.pattern_properties, strict=True)
+            for new_type, old_type in zip(rule.data_types, old_rule.data_types, strict=True)
+        ):
+            return
+        model._set_internal_template_data(  # noqa: SLF001
+            "schema_runtime_validation",
+            runtime_validation._replace_pattern_properties(rules),  # noqa: SLF001
+        )
+
     @classmethod
     def __deferrable_alias_cycles(cls, models: Sequence[DataModel], model_index: Mapping[str, int]) -> dict[int, int]:
         """Find the container cycles among aliases that quoted containers resolve for mypy and pyright alike.
@@ -7755,6 +7802,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
 
         for i, model in enumerate(models):
+            cls.__quote_forward_rule_types(model, model_index, i)
             is_type_alias_or_root = isinstance(model, TypeAliasBase) or _is_pydantic_v2_root_model(
                 model,
                 pydantic_v2_root_model_type,

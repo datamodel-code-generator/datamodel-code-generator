@@ -1,0 +1,5 @@
+valid: accepted
+invalid a: rejected (model_type)
+invalid b: rejected (model_type)
+invalid c: rejected (int_parsing)
+invalid d: rejected (model_type)

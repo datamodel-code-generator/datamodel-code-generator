@@ -439,7 +439,7 @@ Render preparation, module by module in module order, for the models each module
 | --- | --- | --- |
 | `__fix_constructor_field_ordering` | required and default state, inherited fields (a base a model-level override replaced as the generated model it stood for), rendered nullability (`types.py:DataType.admits_none`), field types after overrides | field order, constructor adjustments |
 | `unbind_fields` (model) | hidden type names | field binding |
-| `__update_type_aliases` | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain |
+| `__update_type_aliases` | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain; schema validator rules get quoted copies of the types that name the model or a later one |
 | `__set_validate_default_on_fields` | live models, defaults | deserialized defaults, default validation |
 | `__assign_forward_reference_fields` | `--use-annotated` with deferred annotations | assignment form, may reorder fields |
 | `__warn_required_assignments_after_defaults` | field order | warnings |

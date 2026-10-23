@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
@@ -202,6 +203,12 @@ class SchemaRuntimeValidation:
     def data_types(self) -> tuple[DataType, ...]:
         """Return all generated data types referenced by runtime rules."""
         return tuple(data_type for rule in self.pattern_properties for data_type in rule.data_types)
+
+    def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:
+        """Return a copy that holds ``pattern_properties``, so another holder of this value keeps its rules."""
+        replaced = copy(self)
+        replaced.pattern_properties = pattern_properties
+        return replaced
 
 
 class _InternalSchemaRuntimeValidation(SchemaRuntimeValidation):

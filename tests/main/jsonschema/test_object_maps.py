@@ -395,6 +395,29 @@ def test_object_maps_schema_validators_false_property(output_file: Path) -> None
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize("name", ["recursive_pattern", "recursive_cycle", "recursive_additional", "recursive_compound"])
+def test_object_maps_schema_validators_recursive_values(output_file: Path, name: str) -> None:
+    """Name a map value type that is the model itself or a later model of its cycle as a string in the class body.
+
+    The class body evaluates its validator rules before those models are bound, so the module imports only when the
+    helper resolves the names as it validates.
+    """
+    input_path = OBJECT_MAPS / f"{name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+    )
+    payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 @pytest.mark.cli_doc(
     options=["--check-pattern-maps-strictly"],
     option_description="""Check every key of the pattern maps that `--generate-schema-validators` validates.

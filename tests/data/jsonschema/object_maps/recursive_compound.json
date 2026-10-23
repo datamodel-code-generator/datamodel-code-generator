@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "p": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^a": {
+      "anyOf": [
+        {
+          "$ref": "#"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "^b": {
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "^c": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "$ref": "#"
+        }
+      ]
+    },
+    "^d": {
+      "$ref": "#/definitions/Earlier"
+    }
+  },
+  "definitions": {
+    "Earlier": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#"
+        }
+      }
+    }
+  }
+}
