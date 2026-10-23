@@ -52,7 +52,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Iterator
     from contextlib import AbstractContextManager
     from urllib.parse import ParseResult
 
@@ -230,6 +230,43 @@ class ComponentsObject(BaseModel):
     examples: dict[str, Union[ReferenceObject, ExampleObject]] = Field(default_factory=dict)  # noqa: UP007
     requestBodies: dict[str, Union[ReferenceObject, RequestBodyObject]] = Field(default_factory=dict)  # noqa: N815, UP007
     headers: dict[str, Union[ReferenceObject, HeaderObject]] = Field(default_factory=dict)  # noqa: UP007
+
+
+_HELD_OBJECTS: dict[type[BaseModel], tuple[tuple[str, type[BaseModel], bool], ...]] = {
+    Operation: (
+        ("parameters", ParameterObject, True),
+        ("requestBody", RequestBodyObject, False),
+        ("responses", ResponseObject, True),
+    ),
+    ParameterObject: (("schema", JsonSchemaObject, False), ("content", MediaObject, True)),
+    RequestBodyObject: (("content", MediaObject, True),),
+    ResponseObject: (("headers", ParameterObject, True), ("content", MediaObject, True)),
+    MediaObject: (("schema", JsonSchemaObject, False), ("itemSchema", JsonSchemaObject, False)),
+}
+"""The fields of OpenAPI object models that hold schemas or such objects: name, model, and whether it holds many."""
+
+
+def _held_schemas(
+    raw: object, kind: type[BaseModel], tokens: tuple[str, ...] = ()
+) -> Iterator[tuple[dict[str, YamlValue], str, tuple[str, ...]]]:
+    """Yield the holder, key and tokens below ``raw`` of each schema that ``raw``, an OpenAPI ``kind``, holds.
+
+    A reference object holds none.
+    """
+    if not isinstance(raw, dict) or "$ref" in raw:
+        return
+    for field, member, many in _HELD_OBJECTS.get(kind, ()):
+        if field not in raw:
+            continue
+        value, at = raw[field], (*tokens, field)
+        if member is JsonSchemaObject:
+            yield raw, field, at
+        elif not many:
+            yield from _held_schemas(value, member, at)
+        else:
+            entries = value.items() if isinstance(value, dict) else enumerate(value) if isinstance(value, list) else ()
+            for key, entry in entries:
+                yield from _held_schemas(entry, member, (*at, str(key)))
 
 
 def is_inline_object_body(obj: JsonSchemaObject) -> bool:
@@ -666,8 +703,24 @@ class OpenAPIParser(JsonSchemaParser):
     def _validated_target(self, raw: object, object_type: type[BaseModelT]) -> BaseModelT:
         """Return the ``object_type`` a value of a loaded document validates to, validated once and shared."""
         return self._shared_object(
-            raw, object_type, partial(object_type.model_validate, raw, context=self._schema_validation_context)
+            raw, object_type, partial(self._validated_object, raw, object_type, [], self._raw_location(raw))
         )
+
+    def _validated_object(
+        self, raw: object, object_type: type[BaseModelT], path: list[str], location: SchemaLocation | None
+    ) -> BaseModelT:
+        """Validate ``raw``, an OpenAPI object at ``location`` (``path`` when unknown), as ``object_type``.
+
+        One that does not validate is an error at the first schema in it that is no schema object, with the message of
+        such a schema in ``components/schemas``, or else at the object itself.
+        """
+        try:
+            return object_type.model_validate(raw, context=self._schema_validation_context)
+        except ValidationError as error:
+            for holder, key, tokens in _held_schemas(raw, object_type):
+                self._validate_member(holder[key], [*path, *tokens], self._member_location(holder, key))
+            message = f"{type(error).__name__}: {error}"
+            raise SchemaParseError(message, _named_path(location, path), error) from error
 
     def _parse_schema_or_ref(
         self,
@@ -1151,7 +1204,7 @@ class OpenAPIParser(JsonSchemaParser):
         ``location`` is the operation object in its document; the operation may be a copy that carries path-level
         parameters or the global security requirement.
         """
-        operation = Operation.model_validate(raw_operation, context=self._schema_validation_context)
+        operation = self._validated_object(raw_operation, Operation, path, location)
         path_name, method = path[-2:]
         if self.use_operation_id_as_name:
             if not operation.operationId:

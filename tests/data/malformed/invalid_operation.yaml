@@ -1,0 +1,9 @@
+openapi: 3.0.3
+info:
+  title: Invalid operation
+  version: '1.0'
+paths:
+  /pets:
+    post:
+      requestBody: 5
+      responses: 5

@@ -1062,6 +1062,40 @@ def test_malformed_input_error_messages(
             id="request-body-api",
         ),
         pytest.param(
+            "schema_location_request_body.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "paths", "parameters"],
+            "Error at schema path 'schema_location_request_body.yaml"
+            "#/paths/~1pets~1{id}/post/requestBody/content/application~1json/schema': ValidationError: "
+            "1 validation error for JsonSchemaObject",
+            id="request-body-paths",
+        ),
+        pytest.param(
+            "schema_location_request_body_ref.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'schema_location_request_body_ref.yaml"
+            "#/components/requestBodies/Pet/content/application~1json/schema': ValidationError: "
+            "1 validation error for JsonSchemaObject",
+            id="referenced-request-body-paths",
+        ),
+        pytest.param(
+            "schema_location_response_after_reference.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'schema_location_response_after_reference.yaml"
+            "#/paths/~1pets/get/responses/200/content/application~1json/schema': ValidationError: "
+            "1 validation error for JsonSchemaObject",
+            id="response-after-reference-paths",
+        ),
+        pytest.param(
+            "invalid_operation.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'invalid_operation.yaml#/paths/~1pets/post': ValidationError: ",
+            id="invalid-operation-paths",
+        ),
+        pytest.param(
             "schema_location_unsatisfiable_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "paths"],
