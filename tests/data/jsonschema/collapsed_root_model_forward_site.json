@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "nested": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AliasA"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "$defs": {
+    "AliasA": {
+      "$ref": "#/$defs/AliasB"
+    },
+    "AliasB": {
+      "$ref": "#/$defs/AliasA"
+    }
+  }
+}

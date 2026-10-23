@@ -16649,6 +16649,52 @@ def test_main_jsonschema_collapsed_recursive_union_quoted_names(
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct"]
+)
+def test_main_jsonschema_collapsed_root_model_forward_site(output_file: Path, output_model_type: str) -> None:
+    """Keep a quoted name out of ``|`` where a collapsed root model quotes the one model its field names.
+
+    ``Nested`` collapses into ``Document.nested`` and quotes ``Nested2``, which follows it; 0.86.0 wrote
+    ``"Nested2" | None`` (``"Nested2" | UnsetType`` for msgspec), which fails wherever the annotations are evaluated.
+    The ``$ref`` cycle under ``nested`` gives a validator no answer, so the schema checks the payloads without it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "collapsed_root_model_forward_site.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    valid, invalid = {"name": "a"}, ({"name": 1}, {})
+    schema_validator = Draft202012Validator(json.loads(input_path.read_text()))
+    schema_validator.validate(valid)
+    for payload in invalid:
+        with pytest.raises(SchemaValidationError):
+            schema_validator.validate(payload)
+    with _generated_model(output_file, "collapsed_root_model_forward_site", "Document") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "msgspec.Struct":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for payload in (valid, {**valid, "nested": {}}):
+            validate(json.dumps(payload))
+        for payload in invalid:
+            with pytest.raises(error_type):
+                validate(json.dumps(payload))
+
+
 def test_main_jsonschema_collapsed_container_quoted_name(output_file: Path) -> None:
     """Write a collapsed root model's container with the ``typing`` generic where it holds a quoted name.
 

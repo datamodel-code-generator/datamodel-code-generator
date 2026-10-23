@@ -4953,11 +4953,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Keep a quoted name out of ``|`` and, with ``use_typing_generics``, out of builtin generics.
 
         Every union above the name through its parent stops using ``|``. A string cannot be an operand of ``|``, so
-        every union that joins the name, itself or through the unions it spreads, stops using it too where it holds
-        the name through a type sharing the parent's children, as the sites of a collapsed root model do
-        (``inlined_holders``). A container ends the walk: it takes the name inside its brackets. With
-        ``use_typing_generics``, every type above the name through its parent and every type holding the name itself
-        writes the ``typing`` generic, as a builtin generic before Python 3.11 does not resolve a string it holds.
+        every union that joins the name, itself or through the unions it spreads, and every type whose hint is the
+        name, as it joins its ``None``, stop using it too where they hold the name through a type sharing the parent's
+        children, as the sites of a collapsed root model do (``inlined_holders``). A container ends the walk: it takes
+        the name inside its brackets. With ``use_typing_generics``, every type above the name through its parent and
+        every type holding the name itself writes the ``typing`` generic, as a builtin generic before Python 3.11 does
+        not resolve a string it holds.
         """
         graph_builder.drop_union_operator(data_type)
         parent = data_type.parent
@@ -4967,20 +4968,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if use_typing_generics:
                 graph_builder.use_typing_generics(parent)
             parent = parent.parent
-        pending = [data_type]
+        pending = [(data_type, True)]
         seen: set[int] = set()
         while pending:
-            node = pending.pop()
+            node, writes_name = pending.pop()
             for holder in (node.parent, *inlined_holders(node)):
                 if not isinstance(holder, DataType) or id(holder) in seen or holder.alias or holder.type:
                     continue
                 seen.add(id(holder))
-                if holder.is_union and not holder.is_tuple:
+                joins_members = holder.is_union and not holder.is_tuple
+                wraps_members = _wraps_member_hints(holder)
+                if joins_members or (writes_name and not wraps_members):
                     graph_builder.drop_union_operator(holder)
                 if use_typing_generics and node is data_type:
                     graph_builder.use_typing_generics(holder)
-                if not _wraps_member_hints(holder):
-                    pending.append(holder)
+                if not wraps_members:
+                    pending.append((holder, writes_name and not joins_members))
 
     @staticmethod
     def __forward_references(
