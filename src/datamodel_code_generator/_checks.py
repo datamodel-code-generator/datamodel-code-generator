@@ -69,8 +69,8 @@ class CheckArea(Enum):
 
     RENDER_MEMOS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
     """Every value a per-parse memo returns equals the value computed anew where it is read. With a report file, it
-    also records the values of the tables with a legacy row (``_parse_memo.LEGACY_ROWS``: stale dedup keys and self
-    references) that differ from the values computed anew."""
+    also records the values of the tables with a legacy row (``_parse_memo.LEGACY_ROWS``: stale dedup keys, self
+    references and nested models' required fields before nullability) that differ from the values computed anew."""
 
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a

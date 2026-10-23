@@ -11,6 +11,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
+from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, replace
@@ -77,7 +78,7 @@ from datamodel_code_generator.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Hashable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Generator, Hashable, Iterable, Iterator, Mapping, Sequence
 
     from jinja2 import Environment, Template
 
@@ -1381,7 +1382,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         )
 
     def _has_default_for_nested_model_factory(self) -> bool:
-        """Return whether the emitted constructor supplies this field's default."""
+        """Return whether the emitted constructor supplies this field's default.
+
+        Row ``legacy-nested-factory-order-before-nullability`` counts a Pydantic dataclass field's default as its
+        construction key gives it.
+        """
+        if _COUNTS_CONSTRUCTION_DEFAULTS.get() and self._FIELD_ASSIGNMENT_ROW == "pydantic-dataclass":
+            return (
+                not self.is_class_var
+                and not (self.required and not self.use_default_with_required)
+                and _classify_field_assignment(self, "pydantic-dataclass").construction_assigned
+            )
         return self._get_constructor_default_info()[0]
 
     @property
@@ -1662,13 +1673,121 @@ def _nested_factory_decision(model: DataModel) -> tuple[tuple[int, int] | None, 
     )
 
 
+_ORDERS_BEFORE_NULLABILITY: Final[ContextVar[bool]] = ContextVar("orders_before_nullability", default=False)
+"""Whether the nested factories read row ``legacy-nested-factory-order-before-nullability``: in constructor ordering,
+and in the row's own required check."""
+_COUNTS_CONSTRUCTION_DEFAULTS: Final[ContextVar[bool]] = ContextVar("counts_construction_defaults", default=False)
+"""Whether a field's default counts as its construction key gives it, as that row's required check counts it."""
+_ORDERS_CONSTRUCTOR_FIELDS: Final[ContextVar[bool]] = ContextVar("orders_constructor_fields", default=False)
+"""Whether constructor ordering runs, which leaves out under ``--order-constructor-fields-by-written-defaults`` the
+nested factories render preparation has not decided yet."""
+
+
+@contextmanager
+def ordering_constructor_fields(*, before_nullability: bool = False) -> Generator[None, None, None]:
+    """Let the nested factories answer constructor ordering while the block runs.
+
+    Under ``--order-constructor-fields-by-written-defaults`` a field holds no nested factory until render preparation
+    decides them, and the ordering after that decision orders by the decided ones. ``before_nullability`` reads row
+    ``legacy-nested-factory-order-before-nullability`` otherwise.
+    """
+    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(True)
+    token = _ORDERS_BEFORE_NULLABILITY.set(before_nullability)
+    try:
+        yield
+    finally:
+        _ORDERS_BEFORE_NULLABILITY.reset(token)
+        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
+
+
+def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool) -> bool:
+    """Return ``compute()``, a required check, with defaults counted by the construction key or the written assignment.
+
+    A required check is no constructor ordering: the nested factories it reads are those it would answer anywhere.
+    """
+    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(False)
+    orders = _ORDERS_BEFORE_NULLABILITY.set(counts)
+    token = _COUNTS_CONSTRUCTION_DEFAULTS.set(counts)
+    try:
+        return compute()
+    finally:
+        _COUNTS_CONSTRUCTION_DEFAULTS.reset(token)
+        _ORDERS_BEFORE_NULLABILITY.reset(orders)
+        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
+
+
+def _keeps_order_before_nullability(field: DataModelFieldBase) -> bool:
+    """Return whether the field's nested factory comes under row ``legacy-nested-factory-order-before-nullability``."""
+    return (
+        field._FIELD_ASSIGNMENT_ROW == "pydantic-dataclass"  # noqa: SLF001
+        and field.strip_default_none
+        and not field.order_constructor_fields_by_written_defaults
+    )
+
+
+def _nested_model_has_required_fields(field: DataModelFieldBase, source: DataModel, source_key: ModelKey) -> bool:
+    """Return whether ``source`` has required constructor fields, which keeps the field from building it by factory.
+
+    Under row ``legacy-nested-factory-order-before-nullability`` the answer kept from the first read, with defaults
+    counted by the construction key, is the one constructor ordering reads.
+    """
+    if _keeps_order_before_nullability(field):
+        before_nullability = _required_before_nullability(source, source_key)
+        if _ORDERS_BEFORE_NULLABILITY.get():
+            return before_nullability
+    return _counting_construction_defaults(lambda: _nested_model_required_fields(source, source_key), counts=False)
+
+
+def _required_before_nullability(source: DataModel, source_key: ModelKey) -> bool:
+    """Return whether ``source`` had required constructor fields when row ``legacy-nested-factory-...`` first read it.
+
+    The row is ``legacy-nested-factory-order-before-nullability``; defaults count as the construction key gives them.
+    """
+    return memoized(
+        MemoTable.NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY,
+        source_key,
+        source,
+        None,
+        lambda: _counting_construction_defaults(lambda: _nested_model_required_fields(source, source_key), counts=True),
+    )
+
+
+def remember_nested_factory_order_before_nullability(model: DataModel) -> None:
+    """Read row ``legacy-nested-factory-order-before-nullability`` for the nested models the model's fields build.
+
+    0.86.0 read it where collecting a module's imports wrote each model's nullability, model by model, so a nested
+    model later in the module answered with the nullability its fields were parsed with.
+    """
+    for field in model.fields:
+        if not (_keeps_order_before_nullability(field) and field._takes_nested_model_factory()):  # noqa: SLF001
+            continue
+        for source in [
+            data_type.reference.source
+            for data_type in field.data_type.data_types or (field.data_type,)
+            if data_type.reference and isinstance(data_type.reference.source, DataModel)
+        ]:
+            _required_before_nullability(source, model_key_of(source.reference))
+
+
+def _defers_nested_factory(field: DataModelFieldBase) -> bool:
+    """Return whether constructor ordering runs before render preparation decides the field's nested factory.
+
+    Under ``--order-constructor-fields-by-written-defaults`` the field then holds none.
+    """
+    return (
+        field.order_constructor_fields_by_written_defaults
+        and _ORDERS_CONSTRUCTOR_FIELDS.get()
+        and visible_nested_factories() is None
+    )
+
+
 def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> _NestedModelFactory | None:
     """Return the factory of the nested model an optional field holds, or None when it cannot have one.
 
     A nested model that leads back to the field's model, by the decided reference cycles or by its required
     constructor fields being looked up already, has none: its factory would build the field's model again.
     """
-    for data_type in field.data_type.data_types or (field.data_type,):
+    for data_type in () if _defers_nested_factory(field) else field.data_type.data_types or (field.data_type,):
         if data_type.is_dict:
             continue
         if data_type.reference and isinstance(source := data_type.reference.source, model_cls):
@@ -1679,7 +1798,7 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
                 source_key in _LOOKING_UP_REQUIRED_FIELDS.get()
             ):
                 return None
-            if _nested_model_required_fields(source, source_key):
+            if _nested_model_has_required_fields(field, source, source_key):
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
                 return _NestedModelFactory(data_type, source, builds_by_name=True)
@@ -2380,7 +2499,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @classmethod
     def order_fields_for_construction(cls, fields: Iterable[DataModelFieldBase]) -> list[DataModelFieldBase]:
         """Return the fields sorted by ``FIELD_CONSTRUCTION_ORDER_KEY``, or as given when the model has no such key."""
-        return list(fields) if (key := cls.FIELD_CONSTRUCTION_ORDER_KEY) is None else sorted(fields, key=key)
+        with ordering_constructor_fields():
+            return list(fields) if (key := cls.FIELD_CONSTRUCTION_ORDER_KEY) is None else sorted(fields, key=key)
 
     def apply_discriminator_tag(
         self,
@@ -3106,7 +3226,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def invalidate_render_caches(self) -> None:
         """Clear the render-derived model identity."""
-        forget_model_memos(self, MemoTable.DEDUP_KEYS)
+        forget_model_memos(self, MemoTable.DEDUP_KEYS, MemoTable.NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY)
 
     def refresh_field_config(self) -> None:
         """Update config derived from field types once the parser has finished replacing them."""

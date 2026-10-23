@@ -1,0 +1,13 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {"a": {"$ref": "#/$defs/A"}, "d": {"$ref": "#/$defs/D"}},
+  "$defs": {
+    "A": {"type": "object", "properties": {"b": {"$ref": "#/$defs/B"}, "leaf": {"$ref": "#/$defs/Leaf"}}},
+    "B": {"type": "object", "properties": {"c": {"anyOf": [{"$ref": "#/$defs/C"}, {"type": "null"}]}}},
+    "C": {"type": "object", "properties": {"a": {"$ref": "#/$defs/A"}, "n": {"type": "string"}}},
+    "D": {"type": "object", "properties": {"e": {"$ref": "#/$defs/E"}, "leaf": {"$ref": "#/$defs/Leaf"}}},
+    "E": {"type": "object", "properties": {"d": {"type": "array", "items": {"$ref": "#/$defs/D"}, "default": []}}},
+    "Leaf": {"type": "object", "properties": {"x": {"type": "integer"}}}
+  }
+}

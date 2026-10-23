@@ -851,6 +851,30 @@ DECIDE_NESTED_MODEL_DEFAULT_FACTORIES = PassDecl(
         " that the render plans read (row legacy.L-NF)."
     ),
 )
+ORDER_CONSTRUCTOR_FIELDS_BY_DECIDED_NESTED_FACTORIES = PassDecl(
+    "order_constructor_fields_by_decided_nested_factories",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_TYPES,
+        Fact.REQUIRED,
+        Fact.NULLABLE,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.BACKEND_CONFIG,
+    ),
+    writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
+    condition="use_default_factory_for_optional_nested_models and order_constructor_fields_by_written_defaults",
+    summary=(
+        "Orders constructor fields again by the decided nested factories, which the orderings before leave out"
+        " under --order-constructor-fields-by-written-defaults."
+    ),
+)
 FREEZE_FIELD_RENDER_PLANS = PassDecl(
     "freeze_field_render_plans",
     Phase.RENDER_PREPARATION,

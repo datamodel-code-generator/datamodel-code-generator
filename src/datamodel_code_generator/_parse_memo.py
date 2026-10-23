@@ -42,6 +42,10 @@ class MemoTable(Enum):
     DEDUP_KEYS = "dedup keys"
     """The dedup keys of a model by its model key, one per class name it renders under and whether ``M`` stands in
     (``DataModel.get_dedup_key``)."""
+    NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY = "nested model required fields before nullability"
+    """``NESTED_MODEL_REQUIRED_FIELDS`` as constructor ordering reads it by default for a Pydantic dataclass under
+    ``--strip-default-none``: a field's default counts as the construction key gives it, kept from the first read
+    (row ``legacy-nested-factory-order-before-nullability``)."""
     ENUM_MEMBER_INDEX = "enum member index"
     """The members of an enum by their exact value, by its model key."""
     COERCED_ENUM_MEMBER_INDEX = "coerced enum member index"
@@ -57,6 +61,7 @@ class MemoTable(Enum):
 LEGACY_ROWS: Final[Mapping[MemoTable, str]] = MappingProxyType({
     MemoTable.DEDUP_KEYS: "legacy-stale-dedup-keys",
     MemoTable.SELF_REFERENCE: "legacy-stale-self-reference",
+    MemoTable.NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY: "legacy-nested-factory-order-before-nullability",
 })
 """The tables whose stale values today's output keeps, with the row that names that.
 
@@ -65,6 +70,12 @@ LEGACY_ROWS: Final[Mapping[MemoTable, str]] = MappingProxyType({
 * ``legacy-stale-self-reference``: under ``--collapse-root-models-name-strategy parent``, the root field of a wrapper
   whose name the inner model takes keeps whether its type named the wrapper before the rename, and whether its
   constraints apply reads that.
+* ``legacy-nested-factory-order-before-nullability`` (``model/base.py:_nested_model_factory``): without
+  ``--order-constructor-fields-by-written-defaults``, the constructor ordering of a Pydantic dataclass under
+  ``--use-default-factory-for-optional-nested-models --strip-default-none`` builds a nested model by factory only when
+  the model had no required constructor field at the first read, a stripped ``None`` default counting as no default
+  unless the field's type was optional then, before reference unions become nullable. The order is 0.86.0's; the
+  option orders by the factories render preparation decides instead.
 """
 
 

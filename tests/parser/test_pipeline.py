@@ -67,6 +67,11 @@ COVERAGE_RUNS = (
         "--input tests/data/jsonschema/serialized_decimal_default_collision.json --input-file-type jsonschema "
         "--deserialize-default-values decimal"
     ),
+    (
+        "--input tests/data/jsonschema/default_factory_nested_model_reference_cycle.json --input-file-type jsonschema "
+        "--output-model-type pydantic_v2.dataclass --use-default-factory-for-optional-nested-models "
+        "--strip-default-none --order-constructor-fields-by-written-defaults"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

@@ -161,6 +161,8 @@ from datamodel_code_generator.model.base import (
     get_inherited_fields,
     get_resolve_reference_action_capabilities,
     linearize_data_models,
+    ordering_constructor_fields,
+    remember_nested_factory_order_before_nullability,
     sort_data_models_for_mro,
 )
 from datamodel_code_generator.model.enum import (
@@ -4733,6 +4735,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         models = self._typed_map_values_last(models)
         for model in models:
             model._write_pre_render_nullability()  # noqa: SLF001
+            remember_nested_factory_order_before_nullability(model)
         scoped_model_resolver = ModelResolver(
             exclude_names={i.alias or i.import_ for m in models for i in m.imports},
             duplicate_name_suffix="Model",
@@ -7141,8 +7144,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Fix constructor field ordering after inherited defaults are resolved.
 
         ``early`` runs it where the modules are processed, before the overrides replace the bases and before every
-        field has its final name, the form of ``--order-constructor-fields-by-final-names`` off.
+        field has its final name, the form of ``--order-constructor-fields-by-final-names`` off. The nested factories
+        read row ``legacy-nested-factory-order-before-nullability``.
         """
+        with ordering_constructor_fields(before_nullability=True):
+            self.__fix_constructor_field_ordering_of(models, early=early)
+
+    def __order_constructor_fields_by_decided_nested_factories(self, state: _FinalizeState) -> None:
+        """Order constructor fields again by the nested factories render preparation decided.
+
+        Under ``--order-constructor-fields-by-written-defaults`` the orderings before the decision leave the nested
+        factories out, so a factory that a reference cycle drops moves no field.
+        """
+        with cast("RenderReady", RENDER_READY.get()).nested_factories_decided():
+            self.__fix_constructor_field_ordering(state.all_models)
+
+    def __fix_constructor_field_ordering_of(self, models: list[DataModel], *, early: bool) -> None:
+        """Fix the constructor field ordering of ``models`` (``__fix_constructor_field_ordering``)."""
         for model in models:
             restored_inherited_state = False
             for field in model.fields:
@@ -10591,6 +10609,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     decls.DECIDE_NESTED_MODEL_DEFAULT_FACTORIES,
                     lambda self, s: self.__decide_nested_model_default_factories(s),
                     when=lambda self, _: self.use_default_factory_for_optional_nested_models,
+                ),
+                PassSpec(
+                    decls.ORDER_CONSTRUCTOR_FIELDS_BY_DECIDED_NESTED_FACTORIES,
+                    lambda self, s: self.__order_constructor_fields_by_decided_nested_factories(s),
+                    when=lambda self, _: (
+                        self.use_default_factory_for_optional_nested_models
+                        and self.order_constructor_fields_by_written_defaults
+                    ),
+                    checked_models=_all_models,
                 ),
                 PassSpec(decls.FREEZE_FIELD_RENDER_PLANS, lambda self, s: self.__freeze_field_render_plans(s)),
             ),

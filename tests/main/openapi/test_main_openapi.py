@@ -3690,8 +3690,10 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
     options=["--order-constructor-fields-by-written-defaults"],
     option_description="""Order the fields of msgspec.Struct models by the defaults they write.
 
-The `--order-constructor-fields-by-written-defaults` flag only changes `msgspec.Struct` output under
-`--strip-default-none`; other output model types and runs without `--strip-default-none` ignore it.
+The `--order-constructor-fields-by-written-defaults` flag changes `msgspec.Struct` output under
+`--strip-default-none`, and under `--use-default-factory-for-optional-nested-models --strip-default-none` the order of
+dataclass and Pydantic dataclass fields beside nested models whose default factory a reference cycle drops; other
+runs ignore it.
 
 A Struct writes a default for every optional field: `UNSET`, or `None` when the type admits None, even where
 `--strip-default-none` strips the field's `None` default. Without the flag such a field keeps its schema place among

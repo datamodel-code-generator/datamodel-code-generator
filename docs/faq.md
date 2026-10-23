@@ -795,7 +795,7 @@ class ParentRequest(BaseModel):
 | Release | 0.87.0 |
 | Issue | [#5116](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5116) |
 
-**Affects:** `msgspec.Struct` output under `--strip-default-none`. Every optional field goes after the required fields in schema order, which changes the order of the positional constructor arguments. Without the option a struct is reordered only where a required field would otherwise follow a default. Other output model types, and runs without `--strip-default-none`, ignore the option.
+**Affects:** `msgspec.Struct` output under `--strip-default-none`. Every optional field goes after the required fields in schema order, which changes the order of the positional constructor arguments. Without the option a struct is reordered only where a required field would otherwise follow a default. Under `--use-default-factory-for-optional-nested-models` the option also orders dataclass and Pydantic dataclass fields by the nested-model default factories they write, so a factory that a reference cycle drops moves no field, which it could without the option, as in 0.86.0. Other output model types, and runs without `--strip-default-none`, ignore the option.
 
 Command: `--output-model-type msgspec.Struct --strip-default-none`. Schema: optional `d` (string, default `"x"`), `t` (`[string, null]`) and `q` (string).
 

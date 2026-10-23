@@ -20277,6 +20277,56 @@ def test_main_use_default_factory_for_optional_nested_models(
 
 
 @pytest.mark.parametrize(
+    ("extra_args", "d_repr"),
+    [
+        pytest.param([], "D(leaf=Leaf(x=1), e=None)", id="schema-place"),
+        pytest.param(
+            ["--order-constructor-fields-by-written-defaults"], "D(e=None, leaf=Leaf(x=1))", id="written-defaults"
+        ),
+    ],
+)
+def test_main_nested_model_default_factory_order_in_reference_cycles(
+    extra_args: list[str], d_repr: str, output_file: Path
+) -> None:
+    """Order Pydantic dataclass fields around nested models in reference cycles, whose factories are dropped.
+
+    ``B`` is in a reference cycle with ``A``, its stripped ``None`` default kept only for a type that admits None:
+    ``A`` keeps the schema order, as in 0.86.0. ``E`` is in a cycle with ``D`` and has no required field: without
+    --order-constructor-fields-by-written-defaults ``D`` puts ``e`` after ``leaf``, as in 0.86.0, though the cycle
+    drops the factory; with the option the order follows the factories the class bodies write.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model_reference_cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-default-factory-for-optional-nested-models",
+            "--strip-default-none",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    for model_name, valid_json, expected_repr in (
+        ("A", '{"b": null, "leaf": {"x": 1}}', "A(b=None, leaf=Leaf(x=1))"),
+        ("D", '{"e": null, "leaf": {"x": 1}}', d_repr),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"reference_cycle_order_{len(extra_args)}_{model_name}",
+            model_name=model_name,
+            valid_json=valid_json,
+            invalid_json='{"leaf": {"x": 1}}',
+            expected_error_type="missing",
+            expected_repr=expected_repr,
+        )
+
+
+@pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [
         ("dataclasses.dataclass", "default_factory_forward_nested_models_dataclass.py"),
