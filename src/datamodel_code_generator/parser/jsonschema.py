@@ -16459,7 +16459,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         Such a definition is a ``$ref`` with sibling keywords that cannot merge into its circular target, and outside
         a definitions container it gets no model. Once every schema is parsed, a reference to it is typed by its
         target (through such definitions in turn), as such a ``$ref`` is at a field, or by the import of a target
-        that an external ref mapping names; a definition that got a model elsewhere keeps its users.
+        that an external ref mapping names; a definition that got a model elsewhere keeps its users. A used one whose
+        chain of such definitions loops back without reaching a model or an import has nothing to type it by, which
+        is an error.
         """
         if not self._definitions_without_model:
             return
@@ -16468,16 +16470,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for key, named in self._definitions_without_model.items():
             if key in modelled or (reference := references.get(key)) is None:
                 continue
-            target, seen = named, {key}
+            target, seen = named, {key: None}
             while (
                 target.path not in modelled
                 and target.path not in seen
                 and (next_target := self._definitions_without_model.get(target.path))
             ):
-                seen.add(target.path)
+                seen[target.path] = None
                 target = next_target
             if (import_ := self._mapped_definition_imports.get(target.path)) is not None:
                 self._type_users_by_import(reference, import_)
+            elif target.path in seen and self.generation_store.index.has_data_type_references(reference):
+                cycle = " -> ".join(redact_reference(path) for path in (*seen, target.path))
+                msg = f"its $ref chain loops back without reaching a schema to type it by: {cycle}"
+                raise SchemaParseError(msg, path=[key])
             for model in self.results:
                 if key not in (classes := model.additional_properties_reference_classes):
                     continue

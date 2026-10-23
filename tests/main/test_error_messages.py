@@ -1188,6 +1188,15 @@ def test_malformed_input_error_messages(
             id="integer-asyncapi-channel-name-beside-invalid-schema-format",
         ),
         pytest.param(
+            "ref_sibling_cycle.yaml",
+            "openapi",
+            [],
+            "Error at schema path 'ref_sibling_cycle.yaml#/components/schemas/A': its $ref chain loops back without "
+            "reaching a schema to type it by: ref_sibling_cycle.yaml#/components/schemas/A -> "
+            "ref_sibling_cycle.yaml#/components/schemas/B -> ref_sibling_cycle.yaml#/components/schemas/A",
+            id="ref-sibling-cycle",
+        ),
+        pytest.param(
             "schema_location_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "api"],
