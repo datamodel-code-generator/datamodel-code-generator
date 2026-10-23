@@ -1309,11 +1309,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         self._invalidate_parent_render_caches()
 
     def _invalidate_parent_render_caches(self) -> None:
-        """Clear parent render caches through current or legacy model hooks."""
+        """Clear the parent model's render caches."""
         if (parent := self.parent) is None:
             return
-        if invalidate_render_caches := getattr(parent, "invalidate_render_caches", None):
-            invalidate_render_caches()
+        parent.invalidate_render_caches()
 
     def mark_as_keyword_only(self) -> None:
         """Exclude this field from positional constructor ordering."""

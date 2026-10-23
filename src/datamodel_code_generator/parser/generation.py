@@ -2714,8 +2714,7 @@ class GenerationStore:  # noqa: PLR0904
     def _invalidate_render_caches_for_model(model: DataModel | None) -> None:
         if model is None:
             return
-        if invalidate_render_caches := getattr(model, "invalidate_render_caches", None):
-            invalidate_render_caches()
+        model.invalidate_render_caches()
 
     def __iter__(self) -> Iterator[DataModel]:
         return iter(self.models)

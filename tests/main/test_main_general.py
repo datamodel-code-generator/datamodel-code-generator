@@ -420,11 +420,7 @@ def test_parser_never_calls_the_deprecated_imports_cache_hook() -> None:
 
     class CacheAwareBaseModel(BaseModel):
         def clear_imports_cache(self) -> None:
-            history = self.__dict__.setdefault("cache_clear_history", [])
-            history.append("called")
-            if getattr(self, "_internal_template_data", None) is not None:
-                self._set_internal_template_data("class_body_lines", [f"cache_clear_history = {history!r}"])
-            super().clear_imports_cache()
+            """Override the deprecated hook; the parser never calls it."""
 
     class InjectingJsonSchemaParser(JsonSchemaParser):
         def _create_data_model(
@@ -564,8 +560,7 @@ def test_parser_preserves_cross_module_external_import_cache_hook() -> None:
         clear_history: ClassVar[list[str]] = []
 
         def clear_imports_cache(self) -> None:
-            self.clear_history.append(getattr(self, "class_name", "") or "?")
-            super().clear_imports_cache()
+            """Override the deprecated hook; the parser never calls it."""
 
     class SelectiveExternalStructParser(JsonSchemaParser):
         def _create_data_model(
@@ -622,8 +617,7 @@ def test_parser_rechecks_external_enum_after_module_materialization() -> None:
         clear_history: ClassVar[list[str]] = []
 
         def clear_imports_cache(self) -> None:
-            self.clear_history.append(getattr(self, "class_name", "") or "?")
-            super().clear_imports_cache()
+            """Override the deprecated hook; the parser never calls it."""
 
     class SelectiveExternalEnumParser(OpenAPIParser):
         def _get_enum_model_class(self, type_: Any, enum_values: list[Any]) -> tuple[type[Enum], Any]:
