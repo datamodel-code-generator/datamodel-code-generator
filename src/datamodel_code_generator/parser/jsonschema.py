@@ -248,6 +248,7 @@ from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
+    from typing import TypeGuard
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
     from pydantic_core import CoreSchema
@@ -4317,6 +4318,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _iter_rw_model_schema_children(
         self,
         schema: JsonSchemaObject,
+        defining_ref: str,
         *,
         detect_inline_variant: bool,
         types_map: bool,
@@ -4326,8 +4328,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
         where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, and those of
-        additionalProperties only where ``types_extras``.
+        additionalProperties only where ``types_extras``. A child typed by a customTypePath names no model
+        (``_site_writes_custom_type``), except additionalProperties that TypedDict writes as extra_items
+        (``_writes_extra_items_type``).
         """
+
+        def site(item: object) -> TypeGuard[JsonSchemaObject]:
+            return isinstance(item, JsonSchemaObject) and not self._site_writes_custom_type(item, defining_ref)
+
         mappings = (
             (schema.properties, schema.patternProperties)
             if self.generate_schema_validators
@@ -4338,25 +4346,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for mapping in mappings
             if mapping
             for item in mapping.values()
-            if isinstance(item, JsonSchemaObject)
+            if site(item)
         )
         match schema.items:
-            case JsonSchemaObject() as item:
+            case JsonSchemaObject() as item if site(item):
                 yield item, detect_inline_variant, False
             case list() as items:
-                yield from (
-                    (item, detect_inline_variant, False) for item in items if isinstance(item, JsonSchemaObject)
-                )
-        for item in (
-            schema.additionalItems,
-            schema.additionalProperties if types_extras else None,
+                yield from ((item, detect_inline_variant, False) for item in items if site(item))
+        if site(schema.additionalItems):
+            yield schema.additionalItems, detect_inline_variant, False
+        if (
+            types_extras
+            and isinstance(extras := schema.additionalProperties, JsonSchemaObject)
+            and (self._writes_extra_items_type or site(extras))
         ):
-            if isinstance(item, JsonSchemaObject):
-                yield item, detect_inline_variant, False
+            yield extras, detect_inline_variant, False
         yield from (
             (item, detect_inline_variant, False)
             for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf)
-            if isinstance(item, JsonSchemaObject)
+            if site(item)
         )
         yield from ((item, detect_inline_variant, True) for item in schema.allOf if isinstance(item, JsonSchemaObject))
         if self.generate_schema_validators:
@@ -4369,7 +4377,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         pydantic v2 BaseModel writes it as its typed extra field (or its patternProperties rule), TypedDict as
         extra_items under --use-closed-typed-dict; the other models accept extra keys of any type.
         """
-        return self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None or (
+        return self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None or self._writes_extra_items_type
+
+    @cached_property
+    def _writes_extra_items_type(self) -> bool:
+        """Whether TypedDict writes the type of additional properties as extra_items, under --use-closed-typed-dict.
+
+        That type is read from the keywords of additionalProperties without their customTypePath
+        (``_build_lightweight_type``), so the models they name are named there.
+        """
+        return (
             self.use_closed_typed_dict and self._output_model_context.requires_additional_properties_reference_classes
         )
 
@@ -4437,6 +4454,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 (item, detect, builds_map if merged else None)
                 for item, detect, merged in self._iter_rw_model_schema_children(
                     schema,
+                    resolved_ref,
                     detect_inline_variant=detect_inline_variant,
                     types_map=types_map,
                     types_extras=types_extras,
@@ -4444,6 +4462,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
+
+    def _site_writes_custom_type(self, schema: JsonSchemaObject, defining_ref: str) -> bool:
+        """Return whether ``parse_item`` types a site of ``schema`` by its customTypePath, which names no model.
+
+        A $ref beside it is read merged with the schema it names, and the customTypePath types the site where the
+        merged schema keeps no reference (``_FIELD_TABLE``).
+        """
+        if schema.custom_type_path and _merges_ref_siblings(schema):
+            with self._inherited_ref_context(defining_ref):
+                schema = self._merge_ref_with_schema(schema)
+        return bool(schema.custom_type_path and not (schema.ref or schema.recursiveRef or schema.dynamicRef))
 
     def _merged_ref_model_schemas(
         self, schema: JsonSchemaObject, defining_ref: str

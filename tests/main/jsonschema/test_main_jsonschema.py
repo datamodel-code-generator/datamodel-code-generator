@@ -27338,6 +27338,68 @@ def test_main_read_only_write_only_pattern_properties_validators(output_file: Pa
     )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_custom_type_path(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for models whose sites reach a readOnly model only through a customTypePath.
+
+    The properties, items, additionalItems, anyOf and oneOf members and additionalProperties of ``Holder`` and
+    ``Extras`` are typed by their customTypePath, beside a $ref or inline, so they name no model and keep one class
+    while ``Item`` splits. TypedDict writes the additionalProperties of ``Extras`` as extra_items too, read from their
+    $ref, so ``Extras`` splits there. msgspec decodes the payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_path.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "holder": {
+            "ref": {"any": 1},
+            "inline": {"id": "kept"},
+            "list": [{"a": 1}],
+            "names": ["n"],
+            "pair": [{"b": 1}, "s", {"c": 1}],
+            "labels": ["l", 1],
+            "union": 1,
+            "choice": True,
+            "count": 1,
+        },
+        "extras": {"k": {"d": 1}},
+        "counts": {"k": 1},
+        "item": {"name": "n"},
+    }
+    invalid = {"holder": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_custom_type_path", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
@@ -27348,15 +27410,15 @@ def test_schema_graph_check_of_read_write_splits(
 ) -> None:
     """Report a model that does not split while the references to it read a request/response variant.
 
-    The reference of a property whose customTypePath gives its type makes the schema need variants, but the model
-    types the property with the custom type; the check (`1`) stops at the first such model and `report:<path>` appends
-    each one as an `rw-split` line. The check runs under --dedupe-request-response-variants, where the schema graph
-    decides the splits.
+    The readOnly property of an inline object whose x-python-type gives its type makes the schema need variants, but
+    the model types the property with that Python type; the check (`1`) stops at the first such model and
+    `report:<path>` appends each one as an `rw-split` line. The check runs under --dedupe-request-response-variants,
+    where the schema graph decides the splits.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_path.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_python_type_override.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[

@@ -1,49 +1,46 @@
 {
-  "$defs": {
-    "Flagged": {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Item": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "readOnly": true
-        },
-        "name": {
-          "type": "string"
-        }
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
       }
     },
-    "Extended": {
+    "Holder": {
       "type": "object",
       "properties": {
-        "a": {
-          "type": "string"
+        "ref": {"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"},
+        "inline": {
+          "type": "object",
+          "customTypePath": "builtins.dict",
+          "properties": {"id": {"type": "string", "readOnly": true}}
         },
-        "flagged": {
-          "$ref": "#/$defs/Flagged",
-          "customTypePath": "builtins.dict"
-        }
+        "list": {"type": "array", "items": {"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}},
+        "names": {"type": "array", "items": {"type": "string"}},
+        "pair": {
+          "type": "array",
+          "items": [{"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}, {"type": "string"}],
+          "additionalItems": {"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}
+        },
+        "labels": {"type": "array", "items": [{"type": "string"}], "additionalItems": {"type": "integer"}},
+        "union": {"anyOf": [{"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}, {"type": "integer"}]},
+        "choice": {"oneOf": [{"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}, {"type": "boolean"}]},
+        "count": {"type": "integer"}
       }
     },
-    "Other": {
+    "Extras": {
       "type": "object",
-      "properties": {
-        "b": {
-          "type": "string"
-        },
-        "flagged": {
-          "$ref": "#/$defs/Flagged",
-          "customTypePath": "builtins.dict"
-        }
-      }
-    }
+      "additionalProperties": {"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}
+    },
+    "Counts": {"type": "object", "additionalProperties": {"type": "integer"}}
   },
   "type": "object",
   "properties": {
-    "extended": {
-      "$ref": "#/$defs/Extended"
-    },
-    "other": {
-      "$ref": "#/$defs/Other"
-    }
+    "holder": {"$ref": "#/definitions/Holder"},
+    "extras": {"$ref": "#/definitions/Extras"},
+    "counts": {"$ref": "#/definitions/Counts"},
+    "item": {"$ref": "#/definitions/Item"}
   }
 }

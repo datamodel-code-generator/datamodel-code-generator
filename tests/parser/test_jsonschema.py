@@ -5303,7 +5303,7 @@ def test_request_response_schema_graph_helper_edges(tmp_path: Path) -> None:
     })
     children = list(
         parser._iter_rw_model_schema_children(
-            tuple_schema, detect_inline_variant=True, types_map=True, types_extras=True
+            tuple_schema, "#", detect_inline_variant=True, types_map=True, types_extras=True
         )
     )
 
