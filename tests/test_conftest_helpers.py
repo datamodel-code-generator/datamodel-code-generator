@@ -58,6 +58,18 @@ def test_infer_expected_file(function_name: str, expected_file: str) -> None:
     assert _infer_expected_file(function_name) == expected_file
 
 
+@pytest.mark.parametrize(
+    ("stem", "limit", "expected"),
+    [
+        ("short", 40, "short.part1.py"),
+        ("a" * 40, 30, "aaaaaaaaaaaa~a5655941.part1.py"),
+    ],
+)
+def test_split_name(stem: str, limit: int, expected: str) -> None:
+    """Split names over the limit replace the end of the stem by a digest and fit the limit."""
+    assert units.split_name(stem, ".part1", ".py", limit) == expected
+
+
 def test_assert_exact_directory_content_reports_diff(tmp_path: Path) -> None:
     """Test exact directory comparison reports the mismatched file path."""
     output_dir = tmp_path / "output"

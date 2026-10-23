@@ -122,6 +122,8 @@ _CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
 _DRIVE = re.compile(r"[A-Za-z]:")
 _BAD_PARTS = frozenset({"", ".", ".."})
 _MAX_NAME = 120
+_MAX_PATH = 200
+"""The longest stored path from the repository root; a Windows checkout fails beyond MAX_PATH."""
 
 
 KEEP = object()
@@ -717,6 +719,15 @@ def payload_problem(payload: object, rootpath: Path, index: RefsIndex) -> str | 
     return None if "missing" in payload else _payload_value_problem(payload)
 
 
+def split_name(stem: str, mark: str, suffix: str, limit: int) -> str:
+    """Return ``<stem><mark><suffix>``; a name over the limit replaces the end of the stem by a digest."""
+    name = f"{stem}{mark}{suffix}"
+    if len(name) <= limit:
+        return name
+    keep = max(limit - len(suffix) - len(mark) - 9, 0)
+    return f"{stem[:keep]}~{hashlib.sha1(stem.encode()).hexdigest()[:8]}{mark}{suffix}"
+
+
 def derived_name(name: str) -> str:
     """Return a file-name-safe form of a test item name, shortened with a digest when it is long."""
     safe = _WINDOWS_INVALID.sub("_", name).rstrip(". ") or "_"
@@ -959,8 +970,9 @@ class _Resolution:
         base = outer if outer is not None else target
         suffix = "" if tree or outer is not None else base.suffix
         stem = base.name.removesuffix(suffix) if suffix else base.name
+        limit = _MAX_PATH - len(Path(os.path.relpath(base.parent, self.expected_root.parents[2])).as_posix()) - 1
         for number in range(1, 1000):
-            candidate = base.parent / f"{stem}{mark}{'' if number == 1 else f'-{number}'}{suffix}"
+            candidate = base.parent / split_name(stem, f"{mark}{'' if number == 1 else f'-{number}'}", suffix, limit)
             path = candidate / target.relative_to(outer) if outer is not None else candidate
             if self.free(candidate, tree=tree or outer is not None) and self.free(path, tree=tree):
                 return path
