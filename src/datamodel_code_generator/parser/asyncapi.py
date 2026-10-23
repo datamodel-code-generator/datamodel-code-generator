@@ -241,8 +241,8 @@ class AsyncAPIParser(OpenAPIParser):
     _config_class_name: ClassVar[str] = "AsyncAPIParserConfig"
     _input_file_type: ClassVar[InputFileType] = InputFileType.AsyncAPI
     _api_scope_error: ClassVar[str] = (
-        "The 'api' scope of --openapi-scopes is not available for AsyncAPI input; "
-        "use the other scopes: schemas, paths, tags, parameters, webhooks, requestbodies"
+        "The 'api' scope of --openapi-scopes is not available for AsyncAPI input, "
+        "which generates models from every location that holds a schema"
     )
     _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps  # ruff: ignore[private-member-access]
 

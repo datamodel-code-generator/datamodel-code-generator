@@ -345,6 +345,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "swap_data_type",
             "update_model_reference",
             "use_assignment_for_forward_references",
+            "use_typing_generics",
             "write_rendered_null",
         ],
     )

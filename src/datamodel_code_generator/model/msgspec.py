@@ -1196,8 +1196,8 @@ class DataModelField(DataModelFieldBase):
         Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
         a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all. A
         referenced type alias takes what its type takes, none when that type writes None; any other referenced model,
-        such as an enum or a Struct, takes none. A chain of aliases that comes back to an alias of its own is
-        unclassified.
+        such as an enum or a Struct, takes none. A chain of aliases that comes back to an alias of its own, and an
+        alias without a field, such as a GraphQL scalar, are unclassified.
         """
         if (
             keywords := _applicability.shape_meta_keywords(
@@ -1210,6 +1210,7 @@ class DataModelField(DataModelFieldBase):
             (reference := data_type.reference) is not None
             and (source := reference.source) is not None
             and id(source) not in seen
+            and (source.fields or not isinstance(source, TypeAliasBase))
         ):
             alias_field = source.fields[0] if isinstance(source, TypeAliasBase) else None
             if alias_field is None or any((

@@ -686,6 +686,8 @@ report	main/main_general/module_imports_written_outside_the_import_ledger[report
 report	main/main_general/module_imports_written_outside_the_import_ledger[report].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 [test_module_split_mode_single]
 	main/jsonschema/module_split_single//*.py
+[test_msgspec_constraints_on_a_graphql_scalar]
+	main/main_general/msgspec_constraints_on_a_graphql_scalar.txt
 [test_no_use_type_checking_imports]
 	main/main_general/no_use_type_checking_imports/	= main/openapi/no_use_type_checking_imports//*.py
 	main/openapi/no_use_type_checking_imports//*.py

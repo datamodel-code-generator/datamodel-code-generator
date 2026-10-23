@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: A recursive schema of a mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      properties:
+        twigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'

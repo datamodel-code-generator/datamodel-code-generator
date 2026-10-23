@@ -6125,6 +6125,8 @@ parent	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_reused
 	main/jsonschema/jsonschema_collapse_root_models_transitive_reference_cycle.py
 [test_main_jsonschema_collapse_root_models_with_optional]
 	main/jsonschema/jsonschema_collapse_root_models_with_optional.py
+[test_main_jsonschema_collapsed_container_quoted_name]
+	main/jsonschema/main_jsonschema/collapsed_container_quoted_name.py
 [test_main_jsonschema_collapsed_external_references]
 	main/jsonschema/external_other_ref2.py
 	main/jsonschema/external_ref0.py
@@ -6726,7 +6728,7 @@ recursive	main/jsonschema/merged_copy_duplicates.py
 [test_main_jsonschema_merged_copy_field_names]
 	main/jsonschema/merged_copy_field_names.py
 [test_main_jsonschema_merged_external_false_member]
-	main/jsonschema/merged_external_false_member//*.py
+	main/jsonschema/main_jsonschema/merged_external_false_member/
 [test_main_jsonschema_merged_external_refs]
 eslintrc	main/jsonschema/main_jsonschema/merged_external_refs[eslintrc].py
 grunt-task	main/jsonschema/main_jsonschema/merged_external_refs[grunt-task].py

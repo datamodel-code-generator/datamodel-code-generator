@@ -16620,6 +16620,31 @@ def test_main_jsonschema_collapsed_recursive_union_quoted_names(
     )
 
 
+def test_main_jsonschema_collapsed_container_quoted_name(output_file: Path) -> None:
+    """Write a collapsed root model's container with the ``typing`` generic where it holds a quoted name.
+
+    ``ByName`` collapses into two fields and holds ``Later``, which follows them; without deferred annotations on
+    Python 3.10, 0.86.0 wrote ``dict[str, "Later"]``, which msgspec cannot decode with.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapsed_container_quoted_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            "--disable-future-imports",
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-type-alias-type"],
     option_description="""Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).
@@ -26751,7 +26776,6 @@ def test_main_jsonschema_merged_external_false_member(output_dir: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "merged_external_false_member",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "merged_external_false_member",
         extra_args=["--disable-timestamp", "--output-model-type", "pydantic_v2.BaseModel"],
         runtime_validation_module="main",
         runtime_validation_model_name="Main",

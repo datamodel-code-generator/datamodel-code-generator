@@ -7587,7 +7587,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Every union above the name through its parent stops using ``|``. A string cannot be an operand of ``|``, so
         every union that joins the name, itself or through the unions it spreads, stops using it too where it holds
         the name through a type sharing the parent's children, as the sites of a collapsed root model do
-        (``inlined_holders``). A container ends the walk: it takes the name inside its brackets.
+        (``inlined_holders``). A container ends the walk: it takes the name inside its brackets. With
+        ``use_typing_generics``, every type above the name through its parent and every type holding the name itself
+        writes the ``typing`` generic, as a builtin generic before Python 3.11 does not resolve a string it holds.
         """
         graph_builder.drop_union_operator(data_type)
         parent = data_type.parent
@@ -7595,7 +7597,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if parent.is_union:
                 graph_builder.drop_union_operator(parent)
             if use_typing_generics:
-                parent.use_standard_collections = False
+                graph_builder.use_typing_generics(parent)
             parent = parent.parent
         pending = [data_type]
         seen: set[int] = set()
@@ -7607,6 +7609,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 seen.add(id(holder))
                 if holder.is_union and not holder.is_tuple:
                     graph_builder.drop_union_operator(holder)
+                if use_typing_generics and node is data_type:
+                    graph_builder.use_typing_generics(holder)
                 if not _wraps_member_hints(holder):
                     pending.append(holder)
 

@@ -3139,6 +3139,28 @@ def test_render_plan_of_a_declared_default_factory_of_none(monkeypatch: pytest.M
     assert_output(str(parser.parse()))
 
 
+def test_msgspec_constraints_on_a_graphql_scalar() -> None:
+    """A field typed by a GraphQL scalar, an alias without a field, keeps its constraints in msgspec ``Meta``."""
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.graphql import GraphQLParser
+
+    types = get_data_model_types(DataModelType.MsgspecStruct, PythonVersion.PY_310)
+    parser = GraphQLParser(
+        "scalar Long\ntype Thing { long: Long, longs: [Long!]! }\n",
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type=types.field_model,
+        data_type_manager_type=types.data_type_manager,
+        data_model_scalar_type=types.scalar_model,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        default_field_extras={"min_length": 1},
+        field_constraints=True,
+        use_annotated=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(parser.parse()))
+
+
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
 def test_render_plan_whose_field_changes_after_render_preparation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str

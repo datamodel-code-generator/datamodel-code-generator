@@ -316,6 +316,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.QUOTING,),
         Phase.MODULES,
         FreezePoint.RENDER,
+        store_ops=("use_typing_generics",),
     ),
     AttributeFact("DataType", "use_generic_container", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(

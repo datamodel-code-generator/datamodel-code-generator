@@ -174,6 +174,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "swap_data_type",
     "update_model_reference",
     "use_assignment_for_forward_references",
+    "use_typing_generics",
     "write_rendered_null",
 })
 
@@ -230,6 +231,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_type_discriminator",
     "update_model_reference",
     "use_assignment_for_forward_references",
+    "use_typing_generics",
     "write_rendered_null",
 })
 """The store mutations that make no reference site: they only remove sites, or change what sites do not record, such
@@ -2246,6 +2248,12 @@ class GenerationStore:  # noqa: PLR0904
         data_type.use_union_operator = False
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().use_typing_generics() instead.", category=None)
+    def use_typing_generics(data_type: DataType) -> None:
+        """Write the containers of a data type with the ``typing`` generics, which every holder of the type sees."""
+        data_type.use_standard_collections = False
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().override_type_import() instead.", category=None)
     def override_type_import(data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
@@ -2836,6 +2844,10 @@ class GraphBuilder:
     def drop_union_operator(self, data_type: DataType) -> None:
         """Join the members of a data type with ``Union`` instead of ``|``, which every holder of the type sees."""
         self._store.drop_union_operator(data_type)  # ty: ignore[deprecated]
+
+    def use_typing_generics(self, data_type: DataType) -> None:
+        """Write the containers of a data type with the ``typing`` generics, which every holder of the type sees."""
+        self._store.use_typing_generics(data_type)  # ty: ignore[deprecated]
 
     def override_type_import(self, data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""

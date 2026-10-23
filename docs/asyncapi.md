@@ -70,7 +70,7 @@ Use `--schema-version auto` to detect the version from the `asyncapi` field, or 
 
 ## Model Generation Scope
 
-`--openapi-scopes` also applies to AsyncAPI input, except for the `api` scope, which is available for OpenAPI input only; AsyncAPI input with `api` stops with an error that names the other scopes.
+`--openapi-scopes` does not select what AsyncAPI input generates: the parser generates models from every location listed below. The `api` scope is available for OpenAPI input only, and AsyncAPI input with `api` stops with an error.
 
 datamodel-code-generator generates data models from schema-bearing fields. It does not generate clients, servers, protocol adapters, or runtime message validators.
 

@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: A base class written as a constrained $ref to a schema of a mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Shrub:
+      $ref: 'shrubs.yaml#/components/schemas/Twig'
+      minProperties: 1
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/Shrub'
+        - type: object
+          properties:
+            name:
+              type: string

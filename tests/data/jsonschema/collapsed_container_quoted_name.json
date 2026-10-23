@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "byName": {"$ref": "#/$defs/ByName"},
+    "otherByName": {"$ref": "#/$defs/ByName"},
+    "items": {"$ref": "#/$defs/Items"}
+  },
+  "$defs": {
+    "ByName": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Later"}},
+    "Items": {"type": "array", "items": {"$ref": "#/$defs/Later"}},
+    "Later": {"type": "object", "properties": {"document": {"$ref": "#"}}}
+  }
+}

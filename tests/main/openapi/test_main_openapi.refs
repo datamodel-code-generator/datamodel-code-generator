@@ -1532,6 +1532,10 @@ without-option	main/openapi/main_openapi/ref_components_as_definitions[without-o
 msgspec.Struct	main/openapi/main_openapi/reference_to_component_without_model[msgspec.Struct].py
 pydantic_v2.BaseModel	main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py
 typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model[typing.TypedDict].py
+[test_main_openapi_reference_to_component_without_model_mapped]
+msgspec.Struct	main/openapi/main_openapi/reference_to_component_without_model_mapped[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/reference_to_component_without_model_mapped[pydantic_v2.BaseModel].py
+typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model_mapped[typing.TypedDict].py
 [test_main_openapi_reference_to_object_properties]
 	main/openapi/reference_to_object_properties.py
 [test_main_openapi_reference_to_object_properties_collapse_root_models]

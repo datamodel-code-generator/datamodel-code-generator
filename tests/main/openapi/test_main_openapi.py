@@ -14685,6 +14685,32 @@ def test_main_openapi_reference_to_component_without_model(output_model: str, ou
         )
 
 
+@pytest.mark.parametrize(
+    "output_model",
+    [DataModelType.PydanticV2BaseModel.value, DataModelType.TypingTypedDict.value, DataModelType.MsgspecStruct.value],
+)
+def test_main_openapi_reference_to_component_without_model_mapped(output_model: str, output_file: Path) -> None:
+    """Type a reference to a component that gets no model by the import of its target in a mapped document.
+
+    The component is a ``$ref`` with constraint siblings to a schema of a document that ``--external-ref-mapping``
+    maps to a package; a reference to it is typed by the import, as such a ``$ref`` is at a field.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_siblings_recursive_target" / "mapped.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            "--external-ref-mapping",
+            "shrubs.yaml=shared.models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--openapi-ref-components-as-definitions"],
     option_description="""Give a `$ref` component with sibling keywords to a recursive schema its own model.

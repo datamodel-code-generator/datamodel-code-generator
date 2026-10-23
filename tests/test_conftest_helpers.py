@@ -1565,6 +1565,44 @@ def test_ledger_file_inside_shared_tree(ledger: LedgerProject) -> None:
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
 
 
+@pytest.mark.parametrize("depth", [90, 150])
+def test_ledger_long_split_names_fit_the_path_limit(ledger: LedgerProject, depth: int) -> None:
+    """A split of a file deep inside a stored tree gets a name that keeps its stored path within the path limit.
+
+    The name budget counts the path below the tree: a digest replaces the end of the tree's name (90), or the name and
+    the split mark when the mark alone does not fit (150).
+    """
+    below = ("d" * depth, "x.txt")
+    function, tree, stem = "f" * 60, "g" * 60, "t" * 40
+    ledger.write(
+        "test_m.py",
+        f"""
+        from pathlib import Path
+
+        from tests.conftest import assert_generated_modules_output, assert_output
+
+        EXPECTED = Path(__file__).parent / "data" / "expected"
+        X = "x\\n"
+
+
+        def test_{tree}():
+            assert_generated_modules_output({{{below!r}: "x\\n"}}, EXPECTED / {stem!r}, pattern="*")
+
+
+        def test_{function}():
+            assert_output(X, EXPECTED.joinpath({stem!r}, *{below!r}))
+        """,
+    )
+    ledger.run(f"suite/test_m.py::test_{tree}").assert_outcomes(passed=1)
+    ledger.run(f"suite/test_m.py::test_{function}").assert_outcomes(passed=1)
+    source = (ledger.suite / "test_m.py").read_text(encoding="utf-8")
+    ledger.write("test_m.py", source.replace('X = "x\\n"', 'X = "x2\\n"'))
+    ledger.run(f"suite/test_m.py::test_{function}", "--inline-snapshot=fix").assert_outcomes(passed=1)
+    split = next(name for name in ledger.files() if not name.startswith(f"{stem}/"))
+    assert len(f"suite/data/expected/{split}") <= 200
+    assert split.endswith("/".join(below))
+
+
 def test_ledger_tree_pattern_and_taken_names(ledger: LedgerProject) -> None:
     """A whole tree sharing a pattern tree splits when it gains other files; taken names get a number."""
     ledger.write(

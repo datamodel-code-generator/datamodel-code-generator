@@ -2580,6 +2580,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.reserved_refs: defaultdict[tuple[str, ...], set[str]] = defaultdict(set)
         self._loads_only_used_references = False
         self._definitions_without_model: dict[str, Reference] = {}
+        self._mapped_definition_imports: dict[str, Import] = {}
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
@@ -4922,10 +4923,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         to normal ref resolution.
         """
         mapped = self._resolve_external_ref_mapping(ref)
-        if mapped is None:
+        if mapped is None or (import_ := self._external_ref_mapping_import(*mapped)) is None:
             return None
-        python_package, fragment = mapped
+        self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
+        return self.data_type.from_import(import_)
 
+    def _external_ref_mapping_import(self, python_package: str, fragment: str) -> Import | None:
+        """Return the import of the class a mapped fragment names, or None when the fragment names no schema."""
         # Extract and normalize class name from fragment to match generated model naming.
         raw_name = unescape_json_pointer_segment(fragment.rstrip("/").rsplit("/", maxsplit=1)[-1])
         if not raw_name:
@@ -4933,10 +4937,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         class_name = self.model_resolver.get_class_name(raw_name, unique=False).name
 
         # Construct import — same pattern as x-python-import
-        full_path = f"{python_package}.{class_name}"
-        import_ = Import.from_full_path(full_path)
-        self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
-        return self.data_type.from_import(import_)
+        return Import.from_full_path(f"{python_package}.{class_name}")
 
     def _get_x_python_import_path(self, x_python_import: dict[str, Any]) -> str | None:
         module = x_python_import.get("module")
@@ -16286,18 +16287,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return bool(_merges_ref_siblings(site.obj) and site.obj.ref)
 
     def _build_definition_ref(self, site: _Site) -> None:
-        self._definitions_without_model[self.model_resolver.join_path(tuple(site.path))] = self.resolve_ref(
-            cast("str", site.obj.ref)
-        )
+        ref = cast("str", site.obj.ref)
+        target = self.resolve_ref(ref)
+        self._definitions_without_model[self.model_resolver.join_path(tuple(site.path))] = target
+        if (mapped := self._resolve_external_ref_mapping(ref)) is not None and (
+            import_ := self._external_ref_mapping_import(*mapped)
+        ) is not None:
+            self._mapped_definition_imports[target.path] = import_
         return self.parse_ref(site.obj, site.path)
+
+    def _type_users_by_import(self, reference: Reference, import_: Import) -> None:
+        """Type each user of ``reference`` in a field or a type by ``import_``, as a mapped ``$ref`` there is."""
+        for fact in self.generation_store.index.data_type_facts_for_reference(reference):
+            if fact.role in {"field", "nested"}:
+                self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
+                self._graph_builder.detach_data_type_ref(fact.data_type)
+                self._graph_builder.swap_data_type(fact.data_type, self.data_type.from_import(import_))
 
     def _type_references_to_definitions_without_model(self) -> None:
         """Redirect the users of a definition parsed as its ``$ref`` alone to the reference that ``$ref`` names.
 
         Such a definition is a ``$ref`` with sibling keywords that cannot merge into its circular target, and outside
         a definitions container it gets no model. Once every schema is parsed, a reference to it is typed by its
-        target (through such definitions in turn), as such a ``$ref`` is at a field; a definition that got a model
-        elsewhere keeps its users.
+        target (through such definitions in turn), as such a ``$ref`` is at a field, or by the import of a target
+        that an external ref mapping names; a definition that got a model elsewhere keeps its users.
         """
         if not self._definitions_without_model:
             return
@@ -16314,11 +16327,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 seen.add(target.path)
                 target = next_target
+            replacement: tuple[str, ...] = (target.path,)
+            if (import_ := self._mapped_definition_imports.get(target.path)) is not None:
+                self._type_users_by_import(reference, import_)
+                replacement = ()
             self._graph_builder.redirect_reference_users(reference, target)
             for model in self.results:
                 if key in (classes := model.additional_properties_reference_classes):
                     self._output_model_context.store_additional_properties_reference_classes(
-                        model.extra_template_data, {target.path if path == key else path for path in classes}
+                        model.extra_template_data, {*(path for path in classes if path != key), *replacement}
                     )
 
     def _end_schema_parsing(self) -> None:

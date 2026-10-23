@@ -1027,8 +1027,8 @@ def test_malformed_input_error_messages(
             "schema_location_unsatisfiable_payload.yaml",
             "asyncapi",
             ["--openapi-scopes", "api"],
-            "The 'api' scope of --openapi-scopes is not available for AsyncAPI input; "
-            "use the other scopes: schemas, paths, tags, parameters, webhooks, requestbodies",
+            "The 'api' scope of --openapi-scopes is not available for AsyncAPI input, "
+            "which generates models from every location that holds a schema",
             id="asyncapi-api-scope",
         ),
         pytest.param(
@@ -1041,6 +1041,15 @@ def test_malformed_input_error_messages(
             "[class: api.yaml#/components/schemas/UserResponse "
             "references: frozenset({'api.yaml#/components/schemas/UserResponse/properties/wrapper'})].",
             id="unresolved-class",
+        ),
+        pytest.param(
+            "schema_location_unresolved_mapped_base/api.yaml",
+            "openapi",
+            ["--external-ref-mapping", "shrubs.yaml=shared.models"],
+            "A Parser can not resolve classes: "
+            "[class: api.yaml#/components/schemas/Branch "
+            "references: frozenset({'shrubs.yaml#/components/schemas/Twig'})].",
+            id="unresolved-mapped-base",
         ),
     ],
 )

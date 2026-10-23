@@ -249,9 +249,6 @@ alias = 1
 alias = 1
 use_union_operator = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__disable_union_operator_for_forward_ref"]
-use_standard_collections = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__import_enum_member_literal_classes"]
 enum_member_literals = 1
 
