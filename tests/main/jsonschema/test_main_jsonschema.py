@@ -26992,7 +26992,7 @@ def test_main_read_only_write_only_all_keeps_redeclared_inherited_flag(output_fi
             "read_only_write_only_pattern_properties_allof_map.json",
             ["--dedupe-request-response-variants"],
             "ModelRequest",
-            {"keyed": {"k-a": {"name": "n"}}},
+            {"wrapped": {"x-a": {"name": "n"}}, "keyed": {"k-a": {"name": "n"}}},
             {"keyed": {"k-a": {"name": 1}}},
             id="allof_map-dedupe",
         ),
@@ -27237,6 +27237,49 @@ def test_main_read_only_write_only_untyped_map_keywords(
     with pytest.raises(SchemaValidationError):
         validator.validate(invalid)
     with _generated_model(output_file, "rw_untyped_map_keywords", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_read_only_write_only_allof_root_map_dedupe(output_file: Path, output_model_type: str) -> None:
+    """Give the variants of a model whose allOf names a root map the fields the model holds without the option.
+
+    Under --dedupe-request-response-variants ``Wrapped`` inherits nothing from the root model ``Patterned``, whose root
+    field types its value and is no property, so its variants hold no field. msgspec decodes the payloads of the
+    TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_pattern_properties_allof_map.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--dedupe-request-response-variants",
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"wrapped": {"x-a": {"name": "n"}}, "keyed": {"k-a": {"name": "n"}}}
+    invalid = {"wrapped": 1}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_allof_root_map_dedupe", "ModelRequest") as model:
         validate = partial(msgspec.json.decode, type=model)
         error_type: type[Exception] = msgspec.ValidationError
         if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:

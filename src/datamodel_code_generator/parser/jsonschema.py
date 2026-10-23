@@ -3972,11 +3972,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase],
         base_classes: list[Reference] | None,
     ) -> list[DataModelFieldBase]:
-        """Collect parent → child fields, with each child declaration overriding its parent."""
+        """Collect parent → child fields, with each child declaration overriding its parent.
+
+        The merge leaves out the root field of a root-model base, which types the base's value and is no property;
+        without --dedupe-request-response-variants a model without declarations keeps it, as 0.86.0 did.
+        """
         inherited_fields = self._collect_inherited_fields_for_request_response(base_classes or [])
         if not inherited_fields:
             return fields
-        if not fields:
+        if not fields and not self.dedupe_request_response_variants:
             return inherited_fields
         return self._merge_inherited_field_overrides(inherited_fields, fields)
 
