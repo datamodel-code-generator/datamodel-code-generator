@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Annotated, Any
 
 from pydantic import AwareDatetime, Field
@@ -30,6 +31,11 @@ Big = TypeAliasType("Big", Annotated[int, Field(ge=3)])
 @dataclass
 class Point:
     x: int | None = None
+
+
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
 
 
 @dataclass
@@ -64,4 +70,6 @@ class Model:
     nested_map: dict[str, Quantity] | None = None
     point_items: list[Point] | None = None
     point_map: dict[str, Point] | None = None
+    letter_items: list[Letter] | None = None
+    letter_map: dict[str, Letter] | None = None
     false_items: list[FalseItem] | None = Field(None, min_length=1)

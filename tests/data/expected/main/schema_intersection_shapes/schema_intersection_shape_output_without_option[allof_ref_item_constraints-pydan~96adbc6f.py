@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
@@ -18,6 +19,11 @@ class Big(RootModel[int]):
 
 class Point(BaseModel):
     x: int | None = None
+
+
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
 
 
 class DisjointItem(RootModel[int]):
@@ -92,6 +98,14 @@ class PointMap(RootModel[Point]):
     root: Point = Field(..., ge=5)
 
 
+class LetterItem(RootModel[Letter]):
+    root: Letter = Field(..., max_length=3)
+
+
+class LetterMap(RootModel[Letter]):
+    root: Letter = Field(..., max_length=3)
+
+
 class Model(BaseModel):
     disjoint_items: list[DisjointItem] | None = None
     disjoint_map: dict[str, DisjointMap] | None = None
@@ -113,4 +127,6 @@ class Model(BaseModel):
     nested_map: dict[str, Any] | None = None
     point_items: list[PointItem] | None = None
     point_map: dict[str, PointMap] | None = None
+    letter_items: list[LetterItem] | None = None
+    letter_map: dict[str, LetterMap] | None = None
     false_items: list[Any] | None = Field(None, min_length=1)

@@ -64,6 +64,12 @@ pydantic_v2.BaseModel default point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel default point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel default point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel default point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel default letter_items ["a"] accepted
+pydantic_v2.BaseModel default letter_items ["bb"] accepted
+pydantic_v2.BaseModel default letter_items ["c"] rejected
+pydantic_v2.BaseModel default letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel default letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel default letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel default false_items [1] accepted
 pydantic_v2.dataclass default disjoint_items [1] accepted
 pydantic_v2.dataclass default disjoint_items [10] accepted
@@ -131,74 +137,86 @@ pydantic_v2.dataclass default point_items [{"x": 1}] accepted
 pydantic_v2.dataclass default point_items [{"x": "a"}] rejected
 pydantic_v2.dataclass default point_map {"k": {"x": 1}} accepted
 pydantic_v2.dataclass default point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass default letter_items ["a"] accepted
+pydantic_v2.dataclass default letter_items ["bb"] accepted
+pydantic_v2.dataclass default letter_items ["c"] rejected
+pydantic_v2.dataclass default letter_map {"k": "a"} accepted
+pydantic_v2.dataclass default letter_map {"k": "bb"} accepted
+pydantic_v2.dataclass default letter_map {"k": "c"} rejected
 pydantic_v2.dataclass default false_items [1] accepted
-msgspec.Struct default disjoint_items [1] import error
-msgspec.Struct default disjoint_items [10] import error
-msgspec.Struct default disjoint_items [0] import error
-msgspec.Struct default disjoint_items [11] import error
-msgspec.Struct default disjoint_map {"k": 1} import error
-msgspec.Struct default disjoint_map {"k": 10} import error
-msgspec.Struct default disjoint_map {"k": 0} import error
-msgspec.Struct default disjoint_map {"k": 11} import error
-msgspec.Struct default overlap_items [5] import error
-msgspec.Struct default overlap_items [6] import error
-msgspec.Struct default overlap_items [4] import error
-msgspec.Struct default overlap_map {"k": 5} import error
-msgspec.Struct default overlap_map {"k": 6} import error
-msgspec.Struct default overlap_map {"k": 4} import error
-msgspec.Struct default redundant_items [1] import error
-msgspec.Struct default redundant_items [2] import error
-msgspec.Struct default redundant_items [0] import error
-msgspec.Struct default redundant_map {"k": 1} import error
-msgspec.Struct default redundant_map {"k": 2} import error
-msgspec.Struct default redundant_map {"k": 0} import error
-msgspec.Struct default looser_items [1] import error
-msgspec.Struct default looser_items [2] import error
-msgspec.Struct default looser_items [0] import error
-msgspec.Struct default looser_map {"k": 1} import error
-msgspec.Struct default looser_map {"k": 2} import error
-msgspec.Struct default looser_map {"k": 0} import error
-msgspec.Struct default member_items [2] import error
-msgspec.Struct default member_items [9] import error
-msgspec.Struct default member_items [1] import error
-msgspec.Struct default member_items [10] import error
-msgspec.Struct default member_map {"k": 2} import error
-msgspec.Struct default member_map {"k": 9} import error
-msgspec.Struct default member_map {"k": 1} import error
-msgspec.Struct default member_map {"k": 10} import error
-msgspec.Struct default two_items [4] import error
-msgspec.Struct default two_items [5] import error
-msgspec.Struct default two_items [3] import error
-msgspec.Struct default two_items [6] import error
-msgspec.Struct default two_map {"k": 4} import error
-msgspec.Struct default two_map {"k": 5} import error
-msgspec.Struct default two_map {"k": 3} import error
-msgspec.Struct default two_map {"k": 6} import error
-msgspec.Struct default stamp_items ["2020-01-01T00:00:00Z"] import error
-msgspec.Struct default stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
-msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00Z"} import error
-msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
-msgspec.Struct default enum_items [1] import error
-msgspec.Struct default enum_items [2] import error
-msgspec.Struct default enum_items [3] import error
-msgspec.Struct default enum_items [20] import error
-msgspec.Struct default enum_map {"k": 1} import error
-msgspec.Struct default enum_map {"k": 2} import error
-msgspec.Struct default enum_map {"k": 3} import error
-msgspec.Struct default enum_map {"k": 20} import error
-msgspec.Struct default nested_items [2] import error
-msgspec.Struct default nested_items [9] import error
-msgspec.Struct default nested_items [1] import error
-msgspec.Struct default nested_items [10] import error
-msgspec.Struct default nested_map {"k": 2} import error
-msgspec.Struct default nested_map {"k": 9} import error
-msgspec.Struct default nested_map {"k": 1} import error
-msgspec.Struct default nested_map {"k": 10} import error
-msgspec.Struct default point_items [{"x": 1}] import error
-msgspec.Struct default point_items [{"x": "a"}] import error
-msgspec.Struct default point_map {"k": {"x": 1}} import error
-msgspec.Struct default point_map {"k": {"x": "a"}} import error
-msgspec.Struct default false_items [1] import error
+msgspec.Struct default disjoint_items [1] accepted
+msgspec.Struct default disjoint_items [10] accepted
+msgspec.Struct default disjoint_items [0] rejected
+msgspec.Struct default disjoint_items [11] rejected
+msgspec.Struct default disjoint_map {"k": 1} accepted
+msgspec.Struct default disjoint_map {"k": 10} accepted
+msgspec.Struct default disjoint_map {"k": 0} rejected
+msgspec.Struct default disjoint_map {"k": 11} rejected
+msgspec.Struct default overlap_items [5] accepted
+msgspec.Struct default overlap_items [6] accepted
+msgspec.Struct default overlap_items [4] rejected
+msgspec.Struct default overlap_map {"k": 5} accepted
+msgspec.Struct default overlap_map {"k": 6} accepted
+msgspec.Struct default overlap_map {"k": 4} rejected
+msgspec.Struct default redundant_items [1] accepted
+msgspec.Struct default redundant_items [2] accepted
+msgspec.Struct default redundant_items [0] rejected
+msgspec.Struct default redundant_map {"k": 1} accepted
+msgspec.Struct default redundant_map {"k": 2} accepted
+msgspec.Struct default redundant_map {"k": 0} rejected
+msgspec.Struct default looser_items [1] accepted
+msgspec.Struct default looser_items [2] accepted
+msgspec.Struct default looser_items [0] rejected
+msgspec.Struct default looser_map {"k": 1} accepted
+msgspec.Struct default looser_map {"k": 2} accepted
+msgspec.Struct default looser_map {"k": 0} rejected
+msgspec.Struct default member_items [2] accepted
+msgspec.Struct default member_items [9] accepted
+msgspec.Struct default member_items [1] rejected
+msgspec.Struct default member_items [10] rejected
+msgspec.Struct default member_map {"k": 2} accepted
+msgspec.Struct default member_map {"k": 9} accepted
+msgspec.Struct default member_map {"k": 1} rejected
+msgspec.Struct default member_map {"k": 10} rejected
+msgspec.Struct default two_items [4] accepted
+msgspec.Struct default two_items [5] accepted
+msgspec.Struct default two_items [3] rejected
+msgspec.Struct default two_items [6] rejected
+msgspec.Struct default two_map {"k": 4} accepted
+msgspec.Struct default two_map {"k": 5} accepted
+msgspec.Struct default two_map {"k": 3} rejected
+msgspec.Struct default two_map {"k": 6} rejected
+msgspec.Struct default stamp_items ["2020-01-01T00:00:00Z"] accepted
+msgspec.Struct default stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
+msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} rejected
+msgspec.Struct default enum_items [1] accepted
+msgspec.Struct default enum_items [2] accepted
+msgspec.Struct default enum_items [3] accepted
+msgspec.Struct default enum_items [20] rejected
+msgspec.Struct default enum_map {"k": 1} accepted
+msgspec.Struct default enum_map {"k": 2} accepted
+msgspec.Struct default enum_map {"k": 3} accepted
+msgspec.Struct default enum_map {"k": 20} accepted
+msgspec.Struct default nested_items [2] accepted
+msgspec.Struct default nested_items [9] accepted
+msgspec.Struct default nested_items [1] accepted
+msgspec.Struct default nested_items [10] accepted
+msgspec.Struct default nested_map {"k": 2} accepted
+msgspec.Struct default nested_map {"k": 9} accepted
+msgspec.Struct default nested_map {"k": 1} rejected
+msgspec.Struct default nested_map {"k": 10} rejected
+msgspec.Struct default point_items [{"x": 1}] accepted
+msgspec.Struct default point_items [{"x": "a"}] rejected
+msgspec.Struct default point_map {"k": {"x": 1}} accepted
+msgspec.Struct default point_map {"k": {"x": "a"}} rejected
+msgspec.Struct default letter_items ["a"] accepted
+msgspec.Struct default letter_items ["bb"] accepted
+msgspec.Struct default letter_items ["c"] rejected
+msgspec.Struct default letter_map {"k": "a"} accepted
+msgspec.Struct default letter_map {"k": "bb"} accepted
+msgspec.Struct default letter_map {"k": "c"} rejected
+msgspec.Struct default false_items [1] accepted
 pydantic_v2.BaseModel --field-constraints disjoint_items [1] accepted
 pydantic_v2.BaseModel --field-constraints disjoint_items [10] accepted
 pydantic_v2.BaseModel --field-constraints disjoint_items [0] rejected
@@ -265,6 +283,12 @@ pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] raised TypeErro
 pydantic_v2.BaseModel --field-constraints point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": 1}} raised TypeError
 pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints letter_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints letter_items ["bb"] accepted
+pydantic_v2.BaseModel --field-constraints letter_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --field-constraints letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --field-constraints false_items [1] accepted
 pydantic_v2.BaseModel --use-annotated disjoint_items [1] accepted
 pydantic_v2.BaseModel --use-annotated disjoint_items [10] accepted
@@ -332,6 +356,12 @@ pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] raised TypeError
 pydantic_v2.BaseModel --use-annotated point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --use-annotated letter_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated letter_items ["bb"] accepted
+pydantic_v2.BaseModel --use-annotated letter_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --use-annotated letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --use-annotated false_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models disjoint_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models disjoint_items [10] accepted
@@ -399,74 +429,86 @@ pydantic_v2.BaseModel --collapse-root-models point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --collapse-root-models point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --collapse-root-models point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --collapse-root-models point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --collapse-root-models letter_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models letter_items ["bb"] accepted
+pydantic_v2.BaseModel --collapse-root-models letter_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --collapse-root-models letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --collapse-root-models false_items [1] accepted
-msgspec.Struct --collapse-root-models disjoint_items [1] import error
-msgspec.Struct --collapse-root-models disjoint_items [10] import error
-msgspec.Struct --collapse-root-models disjoint_items [0] import error
-msgspec.Struct --collapse-root-models disjoint_items [11] import error
-msgspec.Struct --collapse-root-models disjoint_map {"k": 1} import error
-msgspec.Struct --collapse-root-models disjoint_map {"k": 10} import error
-msgspec.Struct --collapse-root-models disjoint_map {"k": 0} import error
-msgspec.Struct --collapse-root-models disjoint_map {"k": 11} import error
-msgspec.Struct --collapse-root-models overlap_items [5] import error
-msgspec.Struct --collapse-root-models overlap_items [6] import error
-msgspec.Struct --collapse-root-models overlap_items [4] import error
-msgspec.Struct --collapse-root-models overlap_map {"k": 5} import error
-msgspec.Struct --collapse-root-models overlap_map {"k": 6} import error
-msgspec.Struct --collapse-root-models overlap_map {"k": 4} import error
-msgspec.Struct --collapse-root-models redundant_items [1] import error
-msgspec.Struct --collapse-root-models redundant_items [2] import error
-msgspec.Struct --collapse-root-models redundant_items [0] import error
-msgspec.Struct --collapse-root-models redundant_map {"k": 1} import error
-msgspec.Struct --collapse-root-models redundant_map {"k": 2} import error
-msgspec.Struct --collapse-root-models redundant_map {"k": 0} import error
-msgspec.Struct --collapse-root-models looser_items [1] import error
-msgspec.Struct --collapse-root-models looser_items [2] import error
-msgspec.Struct --collapse-root-models looser_items [0] import error
-msgspec.Struct --collapse-root-models looser_map {"k": 1} import error
-msgspec.Struct --collapse-root-models looser_map {"k": 2} import error
-msgspec.Struct --collapse-root-models looser_map {"k": 0} import error
-msgspec.Struct --collapse-root-models member_items [2] import error
-msgspec.Struct --collapse-root-models member_items [9] import error
-msgspec.Struct --collapse-root-models member_items [1] import error
-msgspec.Struct --collapse-root-models member_items [10] import error
-msgspec.Struct --collapse-root-models member_map {"k": 2} import error
-msgspec.Struct --collapse-root-models member_map {"k": 9} import error
-msgspec.Struct --collapse-root-models member_map {"k": 1} import error
-msgspec.Struct --collapse-root-models member_map {"k": 10} import error
-msgspec.Struct --collapse-root-models two_items [4] import error
-msgspec.Struct --collapse-root-models two_items [5] import error
-msgspec.Struct --collapse-root-models two_items [3] import error
-msgspec.Struct --collapse-root-models two_items [6] import error
-msgspec.Struct --collapse-root-models two_map {"k": 4} import error
-msgspec.Struct --collapse-root-models two_map {"k": 5} import error
-msgspec.Struct --collapse-root-models two_map {"k": 3} import error
-msgspec.Struct --collapse-root-models two_map {"k": 6} import error
-msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] import error
-msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
-msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00Z"} import error
-msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
-msgspec.Struct --collapse-root-models enum_items [1] import error
-msgspec.Struct --collapse-root-models enum_items [2] import error
-msgspec.Struct --collapse-root-models enum_items [3] import error
-msgspec.Struct --collapse-root-models enum_items [20] import error
-msgspec.Struct --collapse-root-models enum_map {"k": 1} import error
-msgspec.Struct --collapse-root-models enum_map {"k": 2} import error
-msgspec.Struct --collapse-root-models enum_map {"k": 3} import error
-msgspec.Struct --collapse-root-models enum_map {"k": 20} import error
-msgspec.Struct --collapse-root-models nested_items [2] import error
-msgspec.Struct --collapse-root-models nested_items [9] import error
-msgspec.Struct --collapse-root-models nested_items [1] import error
-msgspec.Struct --collapse-root-models nested_items [10] import error
-msgspec.Struct --collapse-root-models nested_map {"k": 2} import error
-msgspec.Struct --collapse-root-models nested_map {"k": 9} import error
-msgspec.Struct --collapse-root-models nested_map {"k": 1} import error
-msgspec.Struct --collapse-root-models nested_map {"k": 10} import error
-msgspec.Struct --collapse-root-models point_items [{"x": 1}] import error
-msgspec.Struct --collapse-root-models point_items [{"x": "a"}] import error
-msgspec.Struct --collapse-root-models point_map {"k": {"x": 1}} import error
-msgspec.Struct --collapse-root-models point_map {"k": {"x": "a"}} import error
-msgspec.Struct --collapse-root-models false_items [1] import error
+msgspec.Struct --collapse-root-models disjoint_items [1] accepted
+msgspec.Struct --collapse-root-models disjoint_items [10] accepted
+msgspec.Struct --collapse-root-models disjoint_items [0] rejected
+msgspec.Struct --collapse-root-models disjoint_items [11] rejected
+msgspec.Struct --collapse-root-models disjoint_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models disjoint_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models disjoint_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models disjoint_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models overlap_items [5] accepted
+msgspec.Struct --collapse-root-models overlap_items [6] accepted
+msgspec.Struct --collapse-root-models overlap_items [4] rejected
+msgspec.Struct --collapse-root-models overlap_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models overlap_map {"k": 6} accepted
+msgspec.Struct --collapse-root-models overlap_map {"k": 4} rejected
+msgspec.Struct --collapse-root-models redundant_items [1] accepted
+msgspec.Struct --collapse-root-models redundant_items [2] accepted
+msgspec.Struct --collapse-root-models redundant_items [0] rejected
+msgspec.Struct --collapse-root-models redundant_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models redundant_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models redundant_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models looser_items [1] accepted
+msgspec.Struct --collapse-root-models looser_items [2] accepted
+msgspec.Struct --collapse-root-models looser_items [0] accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models member_items [2] accepted
+msgspec.Struct --collapse-root-models member_items [9] accepted
+msgspec.Struct --collapse-root-models member_items [1] rejected
+msgspec.Struct --collapse-root-models member_items [10] accepted
+msgspec.Struct --collapse-root-models member_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models member_map {"k": 9} accepted
+msgspec.Struct --collapse-root-models member_map {"k": 1} rejected
+msgspec.Struct --collapse-root-models member_map {"k": 10} rejected
+msgspec.Struct --collapse-root-models two_items [4] accepted
+msgspec.Struct --collapse-root-models two_items [5] accepted
+msgspec.Struct --collapse-root-models two_items [3] rejected
+msgspec.Struct --collapse-root-models two_items [6] rejected
+msgspec.Struct --collapse-root-models two_map {"k": 4} accepted
+msgspec.Struct --collapse-root-models two_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models two_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models two_map {"k": 6} rejected
+msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] accepted
+msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
+msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} rejected
+msgspec.Struct --collapse-root-models enum_items [1] accepted
+msgspec.Struct --collapse-root-models enum_items [2] accepted
+msgspec.Struct --collapse-root-models enum_items [3] accepted
+msgspec.Struct --collapse-root-models enum_items [20] rejected
+msgspec.Struct --collapse-root-models enum_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models enum_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models enum_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models enum_map {"k": 20} accepted
+msgspec.Struct --collapse-root-models nested_items [2] accepted
+msgspec.Struct --collapse-root-models nested_items [9] accepted
+msgspec.Struct --collapse-root-models nested_items [1] accepted
+msgspec.Struct --collapse-root-models nested_items [10] accepted
+msgspec.Struct --collapse-root-models nested_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models nested_map {"k": 9} accepted
+msgspec.Struct --collapse-root-models nested_map {"k": 1} rejected
+msgspec.Struct --collapse-root-models nested_map {"k": 10} rejected
+msgspec.Struct --collapse-root-models point_items [{"x": 1}] accepted
+msgspec.Struct --collapse-root-models point_items [{"x": "a"}] rejected
+msgspec.Struct --collapse-root-models point_map {"k": {"x": 1}} accepted
+msgspec.Struct --collapse-root-models point_map {"k": {"x": "a"}} rejected
+msgspec.Struct --collapse-root-models letter_items ["a"] accepted
+msgspec.Struct --collapse-root-models letter_items ["bb"] accepted
+msgspec.Struct --collapse-root-models letter_items ["c"] rejected
+msgspec.Struct --collapse-root-models letter_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models letter_map {"k": "bb"} accepted
+msgspec.Struct --collapse-root-models letter_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models false_items [1] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [1] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [10] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint_items [0] rejected
@@ -533,6 +575,12 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": 
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_items ["bb"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_items [1] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [1] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint_items [10] accepted
@@ -600,74 +648,86 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": 
 pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_items ["bb"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_map {"k": "bb"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letter_map {"k": "c"} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs false_items [1] accepted
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [10] import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [0] import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [11] import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 11} import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_items [5] import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_items [6] import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_items [4] import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 5} import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 6} import error
-msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 4} import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_items [2] import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_items [0] import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 2} import error
-msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_items [2] import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_items [0] import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 2} import error
-msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs member_items [2] import error
-msgspec.Struct --use-site-models-for-constrained-refs member_items [9] import error
-msgspec.Struct --use-site-models-for-constrained-refs member_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs member_items [10] import error
-msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 2} import error
-msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 9} import error
-msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs two_items [4] import error
-msgspec.Struct --use-site-models-for-constrained-refs two_items [5] import error
-msgspec.Struct --use-site-models-for-constrained-refs two_items [3] import error
-msgspec.Struct --use-site-models-for-constrained-refs two_items [6] import error
-msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 4} import error
-msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 5} import error
-msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 3} import error
-msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 6} import error
-msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] import error
-msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
-msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} import error
-msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_items [2] import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_items [3] import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_items [20] import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 2} import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 3} import error
-msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 20} import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_items [2] import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_items [9] import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_items [10] import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 2} import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 9} import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": 1}] import error
-msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": "a"}] import error
-msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} import error
-msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} import error
-msgspec.Struct --use-site-models-for-constrained-refs false_items [1] import error
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_items [11] rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [6] accepted
+msgspec.Struct --use-site-models-for-constrained-refs overlap_items [4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 6} accepted
+msgspec.Struct --use-site-models-for-constrained-refs overlap_map {"k": 4} rejected
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs member_items [9] accepted
+msgspec.Struct --use-site-models-for-constrained-refs member_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_items [10] rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 9} accepted
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs member_map {"k": 10} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_items [4] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_items [3] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_items [6] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [3] rejected
+msgspec.Struct --use-site-models-for-constrained-refs enum_items [20] accepted
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 3} rejected
+msgspec.Struct --use-site-models-for-constrained-refs enum_map {"k": 20} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [9] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested_items [10] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
+msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
+msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
+msgspec.Struct --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+msgspec.Struct --use-site-models-for-constrained-refs letter_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs letter_items ["bb"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs letter_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs letter_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs letter_map {"k": "bb"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs letter_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs false_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [10] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint_items [0] rejected
@@ -734,6 +794,12 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} raised TypeError
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_items ["bb"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint_items [10] accepted
@@ -801,6 +867,12 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_items ["bb"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_map {"k": "bb"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [1] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [10] accepted
@@ -868,6 +940,12 @@ pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"
 pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": 1}} raised TypeError
 pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_items ["a"] raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_items ["bb"] raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_map {"k": "a"} raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_map {"k": "bb"} raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_map {"k": "c"} rejected
 pydantic_v2.BaseModel --field-constraints --collapse-root-models false_items [1] accepted
 pydantic_v2.dataclass --field-constraints disjoint_items [1] accepted
 pydantic_v2.dataclass --field-constraints disjoint_items [10] accepted
@@ -935,4 +1013,10 @@ pydantic_v2.dataclass --field-constraints point_items [{"x": 1}] raised TypeErro
 pydantic_v2.dataclass --field-constraints point_items [{"x": "a"}] rejected
 pydantic_v2.dataclass --field-constraints point_map {"k": {"x": 1}} raised TypeError
 pydantic_v2.dataclass --field-constraints point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass --field-constraints letter_items ["a"] raised TypeError
+pydantic_v2.dataclass --field-constraints letter_items ["bb"] raised TypeError
+pydantic_v2.dataclass --field-constraints letter_items ["c"] rejected
+pydantic_v2.dataclass --field-constraints letter_map {"k": "a"} raised TypeError
+pydantic_v2.dataclass --field-constraints letter_map {"k": "bb"} raised TypeError
+pydantic_v2.dataclass --field-constraints letter_map {"k": "c"} rejected
 pydantic_v2.dataclass --field-constraints false_items [1] accepted

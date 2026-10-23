@@ -1,0 +1,2 @@
+msgspec.Meta does not take ge on Point; PointItem is generated without this constraint.
+msgspec.Meta does not take max_length on Letter; LetterItem is generated without this constraint.

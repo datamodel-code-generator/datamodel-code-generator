@@ -41,6 +41,9 @@ class Point(TypedDict):
     x: NotRequired[int]
 
 
+Letter: TypeAlias = Literal['a', 'bb']
+
+
 class Model(TypedDict):
     disjoint_items: NotRequired[list[Quantity]]
     disjoint_map: NotRequired[dict[str, Quantity]]
@@ -62,4 +65,6 @@ class Model(TypedDict):
     nested_map: NotRequired[dict[str, Quantity]]
     point_items: NotRequired[list[Point]]
     point_map: NotRequired[dict[str, Point]]
+    letter_items: NotRequired[list[Letter]]
+    letter_map: NotRequired[dict[str, Letter]]
     false_items: NotRequired[list[FalseItem]]

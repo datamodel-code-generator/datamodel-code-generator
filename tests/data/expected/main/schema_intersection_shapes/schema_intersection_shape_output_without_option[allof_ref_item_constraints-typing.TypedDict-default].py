@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, TypedDict
+from typing import Any, Literal, TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -27,6 +27,9 @@ Big: TypeAlias = int
 
 class Point(TypedDict):
     x: NotRequired[int]
+
+
+Letter: TypeAlias = Literal['a', 'bb']
 
 
 class TwoItem(TypedDict):
@@ -58,4 +61,6 @@ class Model(TypedDict):
     nested_map: NotRequired[dict[str, Quantity]]
     point_items: NotRequired[list[Point]]
     point_map: NotRequired[dict[str, Point]]
+    letter_items: NotRequired[list[Letter]]
+    letter_map: NotRequired[dict[str, Letter]]
     false_items: NotRequired[list[FalseItem]]

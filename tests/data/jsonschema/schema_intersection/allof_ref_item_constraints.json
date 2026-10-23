@@ -263,6 +263,28 @@
         "minimum": 5
       }
     },
+    "letter_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Letter"
+          }
+        ],
+        "maxLength": 3
+      }
+    },
+    "letter_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Letter"
+          }
+        ],
+        "maxLength": 3
+      }
+    },
     "false_items": {
       "type": "array",
       "minItems": 1,
@@ -304,6 +326,13 @@
           "type": "integer"
         }
       }
+    },
+    "Letter": {
+      "type": "string",
+      "enum": [
+        "a",
+        "bb"
+      ]
     }
   }
 }

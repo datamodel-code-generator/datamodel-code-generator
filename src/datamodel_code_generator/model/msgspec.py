@@ -1190,11 +1190,14 @@ class DataModelField(DataModelFieldBase):
         """Return whether to fall back to nullable type instead of UnsetType."""
         return not self._not_required
 
-    def _meta_keywords(self, data_type: DataType) -> frozenset[str]:
+    def _meta_keywords(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> frozenset[str]:
         """Return the constraint keywords msgspec.Meta takes on a type.
 
         Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
-        a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all.
+        a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all. A
+        referenced type alias takes what its type takes, none when that type writes None; any other referenced model,
+        such as an enum or a Struct, takes none. A chain of aliases that comes back to an alias of its own is
+        unclassified.
         """
         if (
             keywords := _applicability.shape_meta_keywords(
@@ -1203,10 +1206,23 @@ class DataModelField(DataModelFieldBase):
             )
         ) is not None:
             return keywords
+        if (
+            (reference := data_type.reference) is not None
+            and (source := reference.source) is not None
+            and id(source) not in seen
+        ):
+            alias_field = source.fields[0] if isinstance(source, TypeAliasBase) else None
+            if alias_field is None or any((
+                alias_field.nullable is True,
+                alias_field.type_has_null is True,
+                self._data_type_has_top_level_none(alias_field.data_type),
+            )):
+                return _applicability.NO_KEYWORDS
+            return self._meta_keywords(alias_field.data_type, seen | {id(source)})
         if len(data_type.data_types) == 1 and not (
             data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
         ):
-            return self._meta_keywords(data_type.data_types[0])
+            return self._meta_keywords(data_type.data_types[0], seen)
         return _applicability.meta_keywords(
             DataTypeManager.constraint_keywords(data_type, self.target_version_key(data_type))
         )

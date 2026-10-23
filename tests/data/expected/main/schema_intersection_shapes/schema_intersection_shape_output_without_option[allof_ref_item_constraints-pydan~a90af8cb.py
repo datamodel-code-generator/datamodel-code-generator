@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import Any
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel, conint
@@ -37,6 +37,11 @@ class Point(BaseModel):
     x: int | None = None
 
 
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
+
+
 class TwoItem(BaseModel):
     pass
 
@@ -66,4 +71,6 @@ class Model(BaseModel):
     nested_map: dict[str, conint(ge=2, le=9)] | None = None
     point_items: list[Point] | None = None
     point_map: dict[str, Point] | None = None
+    letter_items: list[Letter] | None = None
+    letter_map: dict[str, Letter] | None = None
     false_items: list[Any] | None = Field(None, min_length=1)

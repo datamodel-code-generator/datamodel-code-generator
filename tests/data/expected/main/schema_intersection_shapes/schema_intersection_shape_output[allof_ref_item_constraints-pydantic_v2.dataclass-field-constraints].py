@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Annotated, Any
 
 from pydantic import AwareDatetime, Field
@@ -36,6 +37,11 @@ Big = TypeAliasType("Big", Annotated[int, Field(..., ge=3)])
 @dataclass
 class Point:
     x: int | None = None
+
+
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
 
 
 DisjointItem = TypeAliasType("DisjointItem", Annotated[Quantity, Field(..., le=10)])
@@ -92,6 +98,12 @@ PointItem = TypeAliasType("PointItem", Annotated[Point, Field(..., ge=5)])
 PointMap = TypeAliasType("PointMap", Annotated[Point, Field(..., ge=5)])
 
 
+LetterItem = TypeAliasType("LetterItem", Annotated[Letter, Field(..., max_length=3)])
+
+
+LetterMap = TypeAliasType("LetterMap", Annotated[Letter, Field(..., max_length=3)])
+
+
 @dataclass
 class Model:
     disjoint_items: list[DisjointItem] | None = None
@@ -114,4 +126,6 @@ class Model:
     nested_map: dict[str, NestedMap] | None = None
     point_items: list[PointItem] | None = None
     point_map: dict[str, PointMap] | None = None
+    letter_items: list[LetterItem] | None = None
+    letter_map: dict[str, LetterMap] | None = None
     false_items: list[FalseItem] | None = Field(None, min_length=1)

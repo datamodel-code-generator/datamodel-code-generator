@@ -1,1 +1,3 @@
 msgspec.Meta does not take le on Literal[1, 2, 20]; EnumItem is generated without this constraint.
+msgspec.Meta does not take ge on Point; PointItem is generated without this constraint.
+msgspec.Meta does not take max_length on Letter; LetterItem is generated without this constraint.

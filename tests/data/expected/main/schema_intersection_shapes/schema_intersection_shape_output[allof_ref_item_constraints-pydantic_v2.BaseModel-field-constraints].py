@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
@@ -56,6 +57,14 @@ class NestedMap(RootModel[Any]):
     root: Any
 
 
+class LetterItem(RootModel[Literal['a', 'bb']]):
+    root: Literal['a', 'bb'] = Field(..., max_length=3)
+
+
+class LetterMap(RootModel[Literal['a', 'bb']]):
+    root: Literal['a', 'bb'] = Field(..., max_length=3)
+
+
 class FalseItem(RootModel[Any]):
     root: Any
 
@@ -82,6 +91,11 @@ class Big(RootModel[int]):
 
 class Point(BaseModel):
     x: int | None = None
+
+
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
 
 
 class RedundantItem(RootModel[Quantity]):
@@ -137,4 +151,6 @@ class Model(BaseModel):
     nested_map: dict[str, NestedMap] | None = None
     point_items: list[PointItem] | None = None
     point_map: dict[str, PointMap] | None = None
+    letter_items: list[LetterItem] | None = None
+    letter_map: dict[str, LetterMap] | None = None
     false_items: list[FalseItem] | None = Field(None, min_length=1)

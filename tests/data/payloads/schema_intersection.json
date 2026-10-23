@@ -5448,6 +5448,36 @@
           }
         ]
       },
+      "letter_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "bb"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "letter_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "bb"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
       "false_items": {
         "valid": [],
         "invalid": [

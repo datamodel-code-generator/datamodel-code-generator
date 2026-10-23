@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import Annotated, Any, Literal, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
@@ -71,6 +71,11 @@ class Point(Struct):
     x: int | UnsetType = UNSET
 
 
+class Letter(Enum):
+    a = 'a'
+    bb = 'bb'
+
+
 DisjointItem: TypeAlias = Annotated[Quantity, Meta(le=10)]
 
 
@@ -86,7 +91,10 @@ TwoItem: TypeAlias = Annotated[Small, Meta(ge=4)]
 StampItem: TypeAlias = Annotated[Stamp, Meta(max_length=40)]
 
 
-PointItem: TypeAlias = Annotated[Point, Meta(ge=5)]
+PointItem: TypeAlias = Point
+
+
+LetterItem: TypeAlias = Letter
 
 
 class Model(Struct):
@@ -110,4 +118,6 @@ class Model(Struct):
     nested_map: dict[str, NestedMap] | UnsetType = UNSET
     point_items: list[PointItem] | UnsetType = UNSET
     point_map: dict[str, Point] | UnsetType = UNSET
+    letter_items: list[LetterItem] | UnsetType = UNSET
+    letter_map: dict[str, Letter] | UnsetType = UNSET
     false_items: Annotated[list[FalseItem], Meta(min_length=1)] | UnsetType = UNSET
