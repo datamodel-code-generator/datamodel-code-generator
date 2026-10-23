@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import keyword
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
 
 _KEY_REQUIREDNESS = Why(RuleId("D3.typed-dict.key-requiredness"), keyword="required")
@@ -193,23 +194,33 @@ class TypedDict(DataModel):
         self._set_internal_template_data("typed_dict_kwargs", typed_dict_kwargs)
         self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
 
+    @property
+    def _extra_items_source(self) -> DataType | None:
+        """The data type that ``extra_items`` renders once class names are final, or None."""
+        typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})
+        additional_props_type = self.extra_template_data.get("additionalPropertiesType")
+        if "extra_items" not in typed_dict_kwargs or not isinstance(additional_props_type, _InternalTypeExpression):
+            return None
+        return cast("DataType | None", additional_props_type.source)
+
     @override
     def _name_final_classes(self) -> None:
         """Render ``extra_items`` again from the data type it was built from, as field types render.
 
         It is a string while it names generated classes, which may be declared later.
         """
-        typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})
-        additional_props_type = self.extra_template_data.get("additionalPropertiesType")
-        if (
-            "extra_items" not in typed_dict_kwargs
-            or not isinstance(additional_props_type, _InternalTypeExpression)
-            or (source := additional_props_type.source) is None
-        ):
+        if (source := self._extra_items_source) is None:
             return
+        typed_dict_kwargs: dict[str, str] = self._internal_template_data["typed_dict_kwargs"]
         type_hint = source.type_hint
         extra_items = repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
         self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
+
+    @override
+    def _setting_data_types(self) -> Iterator[DataType]:
+        """Yield the data types of ``extra_items``, which names models as field types do."""
+        if (source := self._extra_items_source) is not None:
+            yield from source.all_data_types
 
     @property
     def _has_pep728_kwargs(self) -> bool:

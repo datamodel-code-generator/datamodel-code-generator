@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Root:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {$ref: '#/components/schemas/b.Bar'}
+    a.Foo:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {$ref: '#/components/schemas/b.Bar'}
+    a.Deep:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties:
+        anyOf:
+          - $ref: '#/components/schemas/b.Bar'
+          - $ref: '#/components/schemas/c.Baz'
+          - $ref: '#/components/schemas/a.Near'
+    a.Bar:
+      type: object
+      properties:
+        y: {type: string}
+    a.Near:
+      type: object
+      properties:
+        n: {type: integer}
+    b.Bar:
+      type: object
+      properties:
+        x: {type: string}
+    c.Baz:
+      type: object
+      properties:
+        z: {type: string}

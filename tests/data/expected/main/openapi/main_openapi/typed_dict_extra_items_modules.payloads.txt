@@ -1,0 +1,9 @@
+Root valid {"name": "n", "extra": {"x": "1"}}: accepted
+Root invalid {"name": "n", "extra": {"x": 1}}: rejected
+Root invalid {"extra": 5}: rejected
+a.Foo valid {"name": "n", "extra": {"x": "1"}}: accepted
+a.Foo invalid {"name": "n", "extra": {"x": 1}}: rejected
+a.Foo invalid {"extra": 5}: rejected
+a.Deep valid {"name": "n", "bar": {"x": "1"}, "baz": {"z": "1"}, "near": {"n": 1}}: accepted
+a.Deep invalid {"extra": 5}: rejected
+a.Deep invalid {"extra": [1]}: rejected

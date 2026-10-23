@@ -1016,14 +1016,23 @@ def _rule_data_types(model: DataModel) -> Iterator[DataType]:
             yield from rule_data_type.all_data_types
 
 
-def _named_data_types(model: DataModel) -> Iterator[DataType]:
-    """Yield the data types a model writes: those of its fields and bases, then those of its schema validator rules.
+def _data_types_beside_fields(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types a model writes beside its fields and bases.
 
-    The class body writes the types of its rules as it writes its field types, so a model they name in another module
-    is imported the same way.
+    Those are the types of its schema validator rules and of its backend settings, such as TypedDict ``extra_items``.
+    """
+    yield from _rule_data_types(model)
+    yield from model._setting_data_types()  # ruff: ignore[private-member-access]
+
+
+def _named_data_types(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types a model writes: those of its fields and bases, then those beside them.
+
+    The class writes the types of its rules and backend settings as it writes its field types, so a model they name in
+    another module is imported the same way.
     """
     yield from model.all_data_types
-    yield from _rule_data_types(model)
+    yield from _data_types_beside_fields(model)
 
 
 def add_model_path_to_list(

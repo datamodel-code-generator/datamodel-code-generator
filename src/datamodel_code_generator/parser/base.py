@@ -215,6 +215,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _annotated_reference,
     _context_models,
     _copy_data_type,
+    _data_types_beside_fields,
     _declares_unique_items,
     _derived_models,
     _FieldTagFacts,
@@ -5412,7 +5413,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 add(field.name)
                 add(field.alias)
                 field.data_type.walk(collect_data_type_names)
-            for data_type in _rule_data_types(model):
+            for data_type in _data_types_beside_fields(model):
                 collect_data_type_names(data_type)
         return names
 

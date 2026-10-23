@@ -3349,6 +3349,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _name_final_classes(self) -> None:
         """Render the backend settings that name the classes of additional properties once class names are final."""
 
+    def _setting_data_types(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
+        """Yield the data types that the backend settings of the class write; the neutral model has none."""
+        yield from ()
+
     def _decide_config_items(self) -> None:
         """Decide the config items the class writes, once every fact they read is final; the neutral model has none."""
 

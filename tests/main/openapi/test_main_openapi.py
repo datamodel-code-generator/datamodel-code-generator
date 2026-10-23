@@ -19,6 +19,9 @@ from typing import TYPE_CHECKING, Any, cast
 import black
 import pydantic
 import pytest
+import yaml
+from jsonschema import Draft202012Validator
+from jsonschema import ValidationError as SchemaValidationError
 from packaging import version
 
 from datamodel_code_generator import (
@@ -14603,6 +14606,53 @@ def test_main_openapi_typed_dict_extra_items_final_name(
         extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", *extra_args],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on")
+def test_main_openapi_typed_dict_extra_items_modules(output_dir: Path) -> None:
+    """Import the class of another module that TypedDict ``extra_items`` names, as field types import it.
+
+    Up to 0.86.0 ``extra_items`` wrote the bare class name in modular output: a class of another module was undefined
+    in ``__init__.py`` and ``a.py``, and ``a.Foo`` named the class of the same name in its own module (``a.Bar``)
+    rather than ``b.Bar``. Pydantic reads ``extra_items`` in the namespace it is given, so each adapter is rebuilt in
+    the namespace of the class's module.
+    """
+    input_path = OPEN_API_DATA_PATH / "typed_dict_extra_items_final_name" / "modules.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load(input_path.read_text(encoding="utf-8"))
+    payloads = json.loads((DATA_PATH / "payloads" / "typed_dict_extra_items_modules.json").read_text())
+    with _generated_package_module(output_dir, "a") as module_a:
+        modules = {"": importlib.import_module(output_dir.name), "a": module_a}
+
+        def verdict(name: str, kind: str, payload: object) -> str:
+            validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{name}"})
+            if kind == "valid":
+                validator.validate(payload)
+            else:
+                with pytest.raises(SchemaValidationError):
+                    validator.validate(payload)
+            module_path, _, class_name = name.rpartition(".")
+            adapter = pydantic.TypeAdapter(getattr(module := modules[module_path], class_name))
+            adapter.rebuild(force=True, _types_namespace=vars(module))
+            try:
+                adapter.validate_json(json.dumps(payload))
+            except pydantic.ValidationError:
+                return "rejected"
+            return "accepted"
+
+        verdicts = "".join(
+            f"{name} {kind} {json.dumps(payload)}: {verdict(name, kind, payload)}\n"
+            for name, cases in payloads.items()
+            for kind, documents in cases.items()
+            for payload in documents
+        )
+    assert_output(verdicts, name="payloads")
 
 
 @pytest.mark.cli_doc(
