@@ -562,6 +562,37 @@ def test_object_maps_schema_validators_collapsed_rule_reference_root(output_file
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+def test_object_maps_schema_validators_collapsed_rule_reference_root_modules(output_dir: Path) -> None:
+    """Import the inner model that replaces a root model of another module for the validator rules that name it.
+
+    The ``parent`` strategy gives the ``Inner`` model of the ``m`` module the name of ``a.Wrapper``; the rules of
+    ``Map`` and of ``a.Map``, whose modules are processed before the holder of ``Wrapper`` is collapsed, then name
+    ``m.Wrapper``.
+    """
+    input_path = OBJECT_MAPS / "collapsed_rule_reference_root_modules.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "parent",
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "collapsed_rule_reference_root_modules.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 @pytest.mark.cli_doc(
     options=["--check-pattern-maps-strictly"],
     option_description="""Check every key of the pattern maps that `--generate-schema-validators` validates.

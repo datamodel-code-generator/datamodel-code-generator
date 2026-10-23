@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "map": {
+      "$ref": "#/$defs/Map"
+    },
+    "other": {
+      "$ref": "#/$defs/a.Map"
+    },
+    "holder": {
+      "$ref": "#/$defs/Holder"
+    }
+  },
+  "$defs": {
+    "Map": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/a.Wrapper"
+        }
+      }
+    },
+    "a.Map": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/a.Wrapper"
+        }
+      }
+    },
+    "a.Wrapper": {
+      "$ref": "#/$defs/m.Inner"
+    },
+    "m.Inner": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n"
+      ]
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "w": {
+          "$ref": "#/$defs/a.Wrapper"
+        }
+      }
+    }
+  }
+}

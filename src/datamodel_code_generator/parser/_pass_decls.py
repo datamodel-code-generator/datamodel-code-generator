@@ -631,6 +631,26 @@ WRITE_RULE_ALIASES_AS_CLASSES = PassDecl(
         ),
     ),
 )
+NAME_INNER_MODELS_IN_RULES = PassDecl(
+    "name_inner_models_in_rules",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.MODELS_EXIST, RenderFact.MODULE_MEMBERSHIP, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    summary=(
+        "After every module is processed: makes the schema validator rules that name a root model the `parent` "
+        "strategy of `collapse_root_models` replaced name its inner model, and imports it in their modules."
+    ),
+    condition="--generate-schema-validators --collapse-root-models-name-strategy parent",
+    after=(
+        After(
+            "write_rule_aliases_as_classes",
+            "the aliases written as classes import what their rules name, which this pass then redirects",
+        ),
+        After("fix_constructor_field_ordering_early", "the types of rules are no constructor fields"),
+    ),
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,

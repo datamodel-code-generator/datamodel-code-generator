@@ -3881,17 +3881,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         own module and replaces the root model, decided at the root model's first holder from the references the
         schema gives, so that every holder follows the same decision. A root model that a schema validator rule names
         stays written after its holders inline it: the rule checks values through its class. A root model that its inner
-        model replaces leaves, and the rules name the inner model instead.
+        model replaces leaves; once every module is processed, the rules name the inner model instead
+        (``__name_inner_models_in_rules``).
         """
         generation_store = self.generation_store
         generation_index = generation_store.index
         graph_builder = self._graph_builder
         circular_root_models = self._recursion_facts["circular_roots"]
-        rule_named_roots: dict[ModelKey, list[DataType]] = {}
-        for holder in self.results if self.generate_schema_validators else ():
-            for rule_data_type in _parsed_rule_data_types(holder):
-                if (reference := rule_data_type.reference) is not None:
-                    rule_named_roots.setdefault(model_key_of(reference), []).append(rule_data_type)
+        rule_named_roots = frozenset(
+            model_key_of(reference)
+            for holder in (self.results if self.generate_schema_validators else ())
+            for rule_data_type in _parsed_rule_data_types(holder)
+            if (reference := rule_data_type.reference) is not None
+        )
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
         redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
@@ -3966,13 +3968,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             data_type,
                             imports.reference_paths.get(root_type_model.path),
                         ))
-                        if not has_remaining_root_references:
-                            if id(root_type_model) in self._replaced_root_models:
-                                for rule_data_type in rule_named_roots.pop(model_key_of(root_type_model.reference), ()):
-                                    graph_builder.collapse_root_data_type(rule_data_type, inner_reference)
-                                unused_models.append(root_type_model)
-                            elif model_key_of(root_type_model.reference) not in rule_named_roots:
-                                unused_models.append(root_type_model)
+                        if not has_remaining_root_references and (
+                            id(root_type_model) in self._replaced_root_models
+                            or model_key_of(root_type_model.reference) not in rule_named_roots
+                        ):
+                            unused_models.append(root_type_model)
 
                         continue
 
@@ -7255,6 +7255,41 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             circular_roots=recursion_facts["circular_roots"],
         )
 
+    def __name_inner_models_in_rules(self, run: _ModulesRun) -> None:
+        """Make the schema validator rules that name a root model the ``parent`` strategy replaced name its inner model.
+
+        Collapse redirects the fields that hold such a root model module by module, and the root model leaves the output
+        once collapse redirected its last holder, which is final only once every module is processed. The rules, which
+        collapse does not redirect, then name the inner model, and their module imports it as a collapsed field's
+        module does.
+        """
+        unused = {id(model) for model in run.unused_models}
+        inner_references = {
+            model_key_of(root_model.reference): inner_model.reference
+            for root_model, inner_model in self._replaced_root_models.values()
+            if id(root_model) in unused
+        }
+        for ctx in run.contexts:
+            rule_users = [
+                (model, data_type, inner_reference, ctx.imports.reference_paths.get(reference.path))
+                for model in ctx.models
+                if id(model) not in unused
+                for data_type in _rule_data_types(model)
+                if (reference := data_type.reference) is not None
+                and (inner_reference := inner_references.get(model_key_of(reference))) is not None
+            ]
+            for _, data_type, inner_reference, _ in rule_users:
+                self._graph_builder.collapse_root_data_type(data_type, inner_reference)
+            self.__import_collapsed_inner_models(
+                ctx.models,
+                [(model, data_type, root_import) for model, data_type, _, root_import in rule_users],
+                ctx.imports,
+                ctx.scoped_model_resolver,
+                run.model_path_to_module_name,
+                is_init=ctx.is_init,
+                internal_modules=run.internal_modules,
+            )
+
     def __write_rule_aliases_as_classes(self, run: _ModulesRun) -> None:
         """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
 
@@ -7848,6 +7883,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generate_schema_validators
                         and self.data_model_type.SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL is not None
                     ),
+                ),
+                PassSpec(
+                    decls.NAME_INNER_MODELS_IN_RULES,
+                    lambda self, run: self.__name_inner_models_in_rules(run),
+                    when=lambda self, _: self.generate_schema_validators and bool(self._replaced_root_models),
                 ),
             ),
         ),

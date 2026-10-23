@@ -72,6 +72,10 @@ COVERAGE_RUNS = (
         "--output-model-type pydantic_v2.dataclass --use-default-factory-for-optional-nested-models "
         "--strip-default-none --order-constructor-fields-by-written-defaults"
     ),
+    (
+        "--input tests/data/jsonschema/object_maps/collapsed_rule_reference_root_modules.json --input-file-type "
+        "jsonschema --generate-schema-validators --collapse-root-models --collapse-root-models-name-strategy parent"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

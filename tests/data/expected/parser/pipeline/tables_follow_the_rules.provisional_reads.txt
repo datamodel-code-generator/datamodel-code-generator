@@ -18,6 +18,7 @@ apply_discriminator_type reads FIELD_TYPES before type_const_narrowed_values wri
 refresh_field_config reads FIELD_ALIASES before rename_fields_hiding_types writes it (the field config is refreshed with the aliases before renaming)
 remove_overridden_models reads TYPE_OVERRIDES before apply_field_type_overrides writes it (overrides apply to the models kept after model-level overrides (#4958))
 type_dict_keys_by_root_types reads MODEL_KIND before write_rule_aliases_as_classes writes it (the aliases written as classes are object maps, which no dict key names)
+fix_constructor_field_ordering_early reads FIELD_TYPES before name_inner_models_in_rules writes it (the types of rules are no constructor fields)
 import_removed_reuse_canonicals reads MODULE_IMPORTS before import_renamed_types writes it (imports renamed types next to the canonicals of removed reuse duplicates)
 import_renamed_types reads MODULE_IMPORTS before import_enum_member_literal_classes writes it (imports literal classes next to the renamed types)
 warn_enums_admitting_other_values reads FIELD_TYPES before import_enum_member_literal_classes writes it (the warning reads the enum types before literal classes replace them)
