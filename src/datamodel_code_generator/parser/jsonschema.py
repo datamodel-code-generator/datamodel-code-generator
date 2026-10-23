@@ -3974,20 +3974,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> list[DataModelFieldBase] | None:
         """Collect Request/Response fields once when separate models are needed.
 
-        The model's own fields and the schema facts of its allOf bases decide; inherited fields are collected only for
-        a model that may split.
+        The model's own fields, the types it writes beside them and the schema facts of its allOf bases decide;
+        inherited fields are collected only for a model that may split.
         """
         if self.read_only_write_only_model_type is None:
             return None
         if not self.dedupe_request_response_variants:
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            return all_fields if self._splits_into_rw_model_variants(all_fields, base_classes) else None
+            return all_fields if self._splits_into_rw_model_variants(reference, all_fields, base_classes) else None
         all_fields: list[DataModelFieldBase] | None = None
-        if self._rw_model_fields_split(fields) or any(
-            self._ref_schema_has_rw_model_facts(base.path) for base in base_classes or () if base.path
+        if (
+            self._rw_model_fields_split(fields)
+            or any(self._ref_schema_has_rw_model_facts(base.path) for base in base_classes or () if base.path)
+            or self._rw_model_writes_variant_beside_fields(reference.path)
         ):
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            if not self._splits_into_rw_model_variants(all_fields, base_classes):
+            if not self._splits_into_rw_model_variants(reference, all_fields, base_classes):
                 all_fields = None
         self._check_rw_model_split(reference, splits=all_fields is not None)
         return all_fields
@@ -4001,26 +4003,46 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _splits_into_rw_model_variants(
         self,
+        reference: Reference,
         all_fields: list[DataModelFieldBase],
         base_classes: list[Reference] | None,
     ) -> bool:
-        """Return whether a model with these effective fields splits into read/write variants.
+        """Return whether the model of ``reference`` with these effective fields splits into read/write variants.
 
-        Under request-response a model also splits where the effective fields of an allOf ancestor split it, or where
-        the references to one of its allOf bases read variants, as those of a root model do: the variants replace the
-        base's model, so nothing can inherit from it, even where the model's own declarations take the flags of the
-        inherited fields away.
+        Under request-response a model also splits where the types it writes beside its fields name a model with
+        variants, where the effective fields of an allOf ancestor split it, or where the references to one of its allOf
+        bases read variants, as those of a root model do: the variants replace the base's model, so nothing can inherit
+        from it, even where the model's own declarations take the flags of the inherited fields away.
         """
         if self._rw_model_fields_split(all_fields):
             return True
         if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
             return False
-        return any(
-            self._rw_model_fields_split(
-                self._get_raw_inherited_fields(self.model_resolver.add_ref(resolved_ref, resolved=True), frozenset())
+        return (
+            any(
+                self._rw_model_fields_split(
+                    self._get_raw_inherited_fields(
+                        self.model_resolver.add_ref(resolved_ref, resolved=True), frozenset()
+                    )
+                )
+                for resolved_ref in self._linearize_inherited_schema_refs(base_classes or [])
             )
-            for resolved_ref in self._linearize_inherited_schema_refs(base_classes or [])
-        ) or any(self._ref_schema_generates_variant(base.path, "Request") for base in base_classes or ())
+            or self._rw_model_writes_variant_beside_fields(reference.path)
+            or any(self._ref_schema_generates_variant(base.path, "Request") for base in base_classes or ())
+        )
+
+    def _rw_model_writes_variant_beside_fields(self, reference_path: str) -> bool:
+        """Return whether a type the model at a key writes beside its fields names a model with variants.
+
+        Under request-response, the type of additional properties that TypedDict writes as extra_items names models as
+        the fields do.
+        """
+        if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
+            return False
+        source = self._output_model_context.additional_properties_type_source(
+            self.extra_template_data.get(reference_path, {})
+        )
+        return source is not None and self._data_types_reference_rw_model_variant([cast("DataType", source)], "Request")
 
     def _should_generate_base_model(self, *, generates_separate_models: bool = False) -> bool:
         """Determine if Base model should be generated."""
@@ -4254,9 +4276,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         suffix: Literal["Request", "Response"],
     ) -> bool:
         """Return whether any nested field reference needs the requested variant."""
-        for field in fields:
-            for data_type in field.data_type.all_data_types:
-                if (reference := data_type.reference) and self._ref_schema_generates_variant(
+        return self._data_types_reference_rw_model_variant((field.data_type for field in fields), suffix)
+
+    def _data_types_reference_rw_model_variant(
+        self,
+        data_types: Iterable[DataType],
+        suffix: Literal["Request", "Response"],
+    ) -> bool:
+        """Return whether any reference these types name, nested ones included, needs the requested variant."""
+        for data_type in data_types:
+            for nested_data_type in data_type.all_data_types:
+                if (reference := nested_data_type.reference) and self._ref_schema_generates_variant(
                     reference.path,
                     suffix,
                 ):
@@ -4269,11 +4299,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         detect_inline_variant: bool,
         types_map: bool,
+        types_extras: bool,
     ) -> Iterator[tuple[JsonSchemaObject, bool, bool]]:
         """Yield type-contributing children, whether their inline models are generated and whether they are merged.
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map``.
+        where ``types_map``, and those of additionalProperties only where ``types_extras``.
         """
         mapping = schema.patternProperties if types_map and not self.generate_schema_validators else schema.properties
         if mapping:
@@ -4289,7 +4320,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
         for item in (
             schema.additionalItems,
-            schema.additionalProperties,
+            schema.additionalProperties if types_extras else None,
         ):
             if isinstance(item, JsonSchemaObject):
                 yield item, detect_inline_variant, False
@@ -4302,6 +4333,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self.generate_schema_validators:
             yield from ((item, detect_inline_variant, False) for item in self._iter_conditional_branches(schema))
 
+    @cached_property
+    def _writes_typed_additional_properties(self) -> bool:
+        """Whether a model with fields writes the type of its additional properties.
+
+        pydantic v2 BaseModel writes it as its typed extra field (or its patternProperties rule), TypedDict as
+        extra_items under --use-closed-typed-dict; the other models accept extra keys of any type.
+        """
+        return self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None or (
+            self.use_closed_typed_dict and self._output_model_context.requires_additional_properties_reference_classes
+        )
+
     def _get_ref_schema_rw_model_reference_facts(
         self,
         resolved_ref: str,
@@ -4312,9 +4354,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
         schema has neither. patternProperties and propertyNames type the values and keys of an object map, propertyNames
         only where no patternProperties give the keys; a schema with properties or allOf, and each inline allOf member
-        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing. A $ref
-        outside allOf with map keywords beside it is read with them as the one schema its model is built from
-        (``_merged_ref_model_schema``).
+        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing, and beside
+        properties additionalProperties type nothing either where the model does not write their type
+        (``_writes_typed_additional_properties``). A $ref outside allOf with map keywords beside it is read with them as
+        the one schema its model is built from (``_merged_ref_model_schema``).
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4358,6 +4401,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     schema,
                     detect_inline_variant=detect_inline_variant,
                     types_map=types_map,
+                    types_extras=self._writes_typed_additional_properties or not model_schema.properties,
                 )
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
@@ -4366,10 +4410,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _merged_ref_model_schema(self, schema: JsonSchemaObject, defining_ref: str) -> JsonSchemaObject:
         """Return the schema whose keywords decide what the map keywords of ``schema`` type.
 
-        The model of a $ref with sibling keywords is built from the $ref merged with them, so where patternProperties or
-        propertyNames sit beside a $ref outside allOf, that merged schema decides; any other schema decides for itself.
+        The model of a $ref with sibling keywords is built from the $ref merged with them, so where patternProperties,
+        propertyNames or a schema-valued additionalProperties sit beside a $ref outside allOf, that merged schema
+        decides; any other schema decides for itself.
         """
-        if not ((schema.patternProperties or schema.propertyNames is not None) and _merges_ref_siblings(schema)):
+        if not (
+            (
+                schema.patternProperties
+                or schema.propertyNames is not None
+                or isinstance(schema.additionalProperties, JsonSchemaObject)
+            )
+            and _merges_ref_siblings(schema)
+        ):
             return schema
         with self._inherited_ref_context(defining_ref):
             return self._merge_ref_with_schema(schema)

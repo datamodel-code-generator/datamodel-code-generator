@@ -5301,7 +5301,11 @@ def test_request_response_schema_graph_helper_edges(tmp_path: Path) -> None:
     tuple_schema = JsonSchemaObject.model_validate({
         "items": [{"type": "string"}, False],
     })
-    children = list(parser._iter_rw_model_schema_children(tuple_schema, detect_inline_variant=True, types_map=True))
+    children = list(
+        parser._iter_rw_model_schema_children(
+            tuple_schema, detect_inline_variant=True, types_map=True, types_extras=True
+        )
+    )
 
     assert len(children) == 1
     assert children[0][0].type == "string"

@@ -26996,6 +26996,65 @@ def test_main_read_only_write_only_map_keywords_beside_ref_or_base(
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "closed_args", "model_name"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], "ModelRequest", id="pydantic_v2"),
+        pytest.param("pydantic_v2.dataclass", [], "Model", id="pydantic_v2_dataclass"),
+        pytest.param("dataclasses.dataclass", [], "Model", id="dataclass"),
+        pytest.param("msgspec.Struct", [], "Model", id="msgspec"),
+        pytest.param("typing.TypedDict", [], "ModelRequest", id="typed_dict"),
+        pytest.param("typing.TypedDict", ["--no-use-closed-typed-dict"], "Model", id="typed_dict-open"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_additional_properties_beside_properties(
+    output_file: Path, output_model_type: str, closed_args: list[str], model_name: str, dedupe_args: list[str]
+) -> None:
+    """Generate request-response models where additionalProperties beside properties reach a readOnly model.
+
+    The model writes the type of its additional properties as the typed extra field of pydantic v2 BaseModel or as the
+    extra_items of TypedDict, which name the readOnly model, so it splits with its references; the other models, and
+    TypedDict under --no-use-closed-typed-dict, accept extra keys of any type, so they keep one class while the readOnly
+    model splits. ``Merged`` takes its properties from the $ref beside the additionalProperties. msgspec decodes the
+    payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_additional_properties_beside_properties.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *closed_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"holder": {"a": "kept", "extra": {"name": "n"}}, "merged": {"extra": {"name": "n"}}}
+    invalid = {"holder": {"a": 1}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_additional_properties_beside_properties", model_name) as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
