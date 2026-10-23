@@ -1198,6 +1198,17 @@ def test_malformed_input_error_messages(
             id="ref-sibling-cycle",
         ),
         pytest.param(
+            "ref_sibling_cycle_additional_properties.yaml",
+            "openapi",
+            ["--output-model-type", "typing.TypedDict"],
+            "Error at schema path 'ref_sibling_cycle_additional_properties.yaml#/components/schemas/A': its $ref "
+            "chain loops back without reaching a schema to type it by: "
+            "ref_sibling_cycle_additional_properties.yaml#/components/schemas/A -> "
+            "ref_sibling_cycle_additional_properties.yaml#/components/schemas/B -> "
+            "ref_sibling_cycle_additional_properties.yaml#/components/schemas/A",
+            id="ref-sibling-cycle-additional-properties-typeddict",
+        ),
+        pytest.param(
             "schema_location_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "api"],

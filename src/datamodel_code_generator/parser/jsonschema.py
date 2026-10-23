@@ -16535,7 +16535,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 target = next_target
             if (import_ := self._mapped_definition_imports.get(target.path)) is not None:
                 self._type_users_by_import(reference, import_)
-            elif target.path in seen and self.generation_store.index.has_data_type_references(reference):
+            elif target.path in seen and (
+                self.generation_store.index.has_data_type_references(reference)
+                or any(key in model.additional_properties_reference_classes for model in self.results)
+            ):
                 cycle = " -> ".join(redact_reference(path) for path in (*seen, target.path))
                 msg = f"its $ref chain loops back without reaching a schema to type it by: {cycle}"
                 raise SchemaParseError(msg, path=[key])
