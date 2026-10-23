@@ -82,6 +82,11 @@
     "number": {
       "type": "number",
       "maximum": 9223372036854776000
+    },
+    "qualified": {
+      "type": "integer",
+      "maximum": 18446744073709551615,
+      "x-python-type": "typing.Annotated[int, str]"
     }
   },
   "$defs": {

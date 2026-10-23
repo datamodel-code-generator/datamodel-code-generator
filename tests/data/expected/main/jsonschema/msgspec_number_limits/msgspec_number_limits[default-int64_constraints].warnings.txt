@@ -8,3 +8,4 @@ msgspec.Meta takes the number constraints of an int only within the 64-bit range
 msgspec.Meta takes the number constraints of an int only within the 64-bit range, not multiple_of=9223372036854776000; Model.divisor is generated without this constraint.
 msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Model.nullable is generated without this constraint.
 msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=9223372036854776000; Model.pattern is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=18446744073709551615; Model.qualified is generated without this constraint.

@@ -140,16 +140,27 @@ def test_main_yaml_integer_beyond_int64(output_file: Path) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "document",
+    [
+        pytest.param((YAML_DATA_PATH / "broken.yaml").read_text(), id="unclosed"),
+        pytest.param(f"default: {'9' * (sys.get_int_max_str_digits() + 1)}\n", id="integer_beyond_digit_limit"),
+    ],
+)
 @pytest.mark.usefixtures("yaml_backend")
-def test_main_yaml_ryaml_error_when_pyyaml_cannot_read(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A document that PyYAML cannot read either reports the error of ryaml."""
+def test_main_yaml_ryaml_error_when_pyyaml_cannot_read(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], document: str
+) -> None:
+    """Report ryaml's error for a document PyYAML cannot read either, such as an integer beyond the digit limit."""
+    input_path = tmp_path / "document.yaml"
+    input_path.write_text(document)
     run_main_and_assert(
-        input_path=YAML_DATA_PATH / "broken.yaml",
+        input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="broken.yaml: InvalidYamlError: ryaml cannot read this document",
+        expected_stderr_contains="document.yaml: InvalidYamlError: ryaml cannot read this document",
     )
 
 

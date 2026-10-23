@@ -80,6 +80,7 @@ from datamodel_code_generator.types import (
     DataType,
     _create_context_data_type,
     _is_value_literal,
+    _qualified_type_path,
     build_union,
     chain_as_tuple,
     merge_normalized_constraint,
@@ -1337,7 +1338,8 @@ class DataModelField(DataModelFieldBase):
         """Return the constraints ``Meta(...)`` writes, normalized for the field's numeric type, merging collisions.
 
         A constraint ``Meta`` has no argument for, a non-finite bound, an integer ``multiple_of`` of one and, on an
-        int, a number beyond the 64-bit range go to ``omitted``; that last one warns.
+        int (``_names_int``), a number beyond the 64-bit range go to ``omitted``; that last one warns, also where the
+        number has no finite float.
         """
         has_integer_constraints = any(key in self._COMPARE_EXPRESSIONS for key in declared)
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float")
@@ -1346,7 +1348,7 @@ class DataModelField(DataModelFieldBase):
             has_integer_constraints
             and self.use_annotated
             and (target := self._meta_type(self._annotated_base_data_type())) is not None
-            and target.type == "int"
+            and self._names_int(target)
         )
         values: dict[str, Any] = {}
         sources: dict[str, tuple[str, ...]] = {}
@@ -1355,20 +1357,17 @@ class DataModelField(DataModelFieldBase):
             if k not in self._META_FIELD_KEYS:
                 omitted.append(Omitted(item, v, "backend-cannot-express", Why(_CONSTRAINT, k)))
                 continue
-            if (
-                normalized := self._get_strict_field_constraint(
-                    k, v, is_float_type=is_float_type, is_int_type=is_int_type
+            normalized = self._get_strict_field_constraint(k, v, is_float_type=is_float_type, is_int_type=is_int_type)
+            if annotates_int and _beyond_int_limits(*(constraint := normalized or (k, v))):
+                omitted.append(
+                    Omitted(item, constraint[1], "backend-cannot-express", Why(_INT64_LIMIT, constraint[0]), warns=True)
                 )
-            ) is None:
+                continue
+            if normalized is None:
                 if _is_non_finite(v):
                     omitted.append(Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k)))
                 else:
                     omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
-                continue
-            if annotates_int and _beyond_int_limits(*normalized):
-                omitted.append(
-                    Omitted(item, normalized[1], "backend-cannot-express", Why(_INT64_LIMIT, normalized[0]), warns=True)
-                )
                 continue
             merge_normalized_constraint(values, normalized[0], normalized[1])
             sources[normalized[0]] = (*sources.get(normalized[0], ()), item)
@@ -1376,6 +1375,12 @@ class DataModelField(DataModelFieldBase):
             key: Kwarg(key, value, Why(_CONSTRAINT, sources[key][0].removeprefix("constraint:")), sources[key])
             for key, value in values.items()
         }
+
+    def _names_int(self, data_type: DataType) -> bool:
+        """Return whether a type is int, also where an annotation names the int that Annotated or Final qualifies."""
+        if (python_type := data_type.python_type) is None:
+            return data_type.type == "int"
+        return _qualified_type_path(python_type.expression, self.target_version_key(data_type)) == "int"
 
     def _dropped_meta_keywords(self, data: dict[str, Any]) -> tuple[frozenset[str], bool]:
         """Return the constraints msgspec.Meta does not take on the type, and whether a float multiple_of is inexact.

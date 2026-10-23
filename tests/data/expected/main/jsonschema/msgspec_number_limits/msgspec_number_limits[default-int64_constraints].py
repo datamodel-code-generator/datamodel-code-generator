@@ -39,3 +39,4 @@ class Model(Struct):
     alias: Big | UnsetType = UNSET
     site: Count | UnsetType = UNSET
     number: Annotated[float, Meta(le=9.223372036854776e+18)] | UnsetType = UNSET
+    qualified: Annotated[int, str] | UnsetType = UNSET

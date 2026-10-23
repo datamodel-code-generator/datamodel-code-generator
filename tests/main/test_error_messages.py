@@ -1096,6 +1096,13 @@ def test_malformed_input_error_messages(
             id="invalid-operation-paths",
         ),
         pytest.param(
+            "invalid_operation_null_schema.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'invalid_operation_null_schema.yaml#/paths/~1pets/post': ValidationError: ",
+            id="invalid-operation-beside-null-schemas-paths",
+        ),
+        pytest.param(
             "schema_location_unsatisfiable_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "paths"],

@@ -144,7 +144,7 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
     """Load YAML content using ryaml (if available) or PyYAML.
 
     PyYAML reads a document that ryaml cannot, such as one holding an integer outside 64 bits; when PyYAML cannot
-    read it either, ryaml's error is raised.
+    read it either, such as an integer beyond Python's digit limit or nesting beyond the stack, ryaml's error is raised.
     """
     from datamodel_code_generator.util import get_yaml_backend, reject_unsupported_yaml_tags  # noqa: PLC0415
 
@@ -162,7 +162,7 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
         except ryaml.InvalidYamlError:
             import yaml  # noqa: PLC0415
 
-            with contextlib.suppress(yaml.YAMLError):
+            with contextlib.suppress(yaml.YAMLError, ValueError, RecursionError):
                 return _load_pyyaml(text)
             raise
     return _load_pyyaml(text)

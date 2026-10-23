@@ -251,14 +251,14 @@ def _held_schemas(
 ) -> Iterator[tuple[dict[str, YamlValue], str, tuple[str, ...]]]:
     """Yield the holder, key and tokens below ``raw`` of each schema that ``raw``, an OpenAPI ``kind``, holds.
 
-    A reference object holds none.
+    A reference object holds none, and a field set to null holds nothing, as the models read it.
     """
     if not isinstance(raw, dict) or "$ref" in raw:
         return
     for field, member, many in _HELD_OBJECTS.get(kind, ()):
-        if field not in raw:
+        if (value := raw.get(field)) is None:
             continue
-        value, at = raw[field], (*tokens, field)
+        at = (*tokens, field)
         if member is JsonSchemaObject:
             yield raw, field, at
         elif not many:

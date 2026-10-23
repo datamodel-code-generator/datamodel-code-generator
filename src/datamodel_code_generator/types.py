@@ -1564,6 +1564,36 @@ def _standard_type_path(path: str, target_version: tuple[int, int]) -> str:
     return _STANDARD_CLASS_PATHS.get(path, path)
 
 
+def _annotation_base_path(expression: PythonTypeExpr, target_version: tuple[int, int]) -> tuple[PythonTypeExpr, str]:
+    """Return the base of an annotation, the type it subscripts or itself, and the path that classifies that base."""
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeBoundName,
+        PythonTypeSubscript,
+        iter_python_type_expr_qualified_names,
+        python_type_expr_base_name,
+    )
+
+    base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
+    return base, _standard_type_path(
+        f"{base.import_from}.{base.import_name}"
+        if isinstance(base, PythonTypeBoundName) and base.import_from
+        else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base),
+        target_version,
+    )
+
+
+def _qualified_type_path(expression: PythonTypeExpr, target_version: tuple[int, int]) -> str:
+    """Return the path that classifies the type an annotation names, that of the type Annotated or Final qualifies."""
+    from datamodel_code_generator._python_type_annotation import python_type_expr_arguments  # noqa: PLC0415
+
+    base, path = _annotation_base_path(expression, target_version)
+    if base is expression or path not in _QUALIFIER_PATHS:
+        return path
+    return next(
+        (_qualified_type_path(member, target_version) for member in python_type_expr_arguments(expression)[:1]), path
+    )
+
+
 @cache
 def _import_paths(module: ModuleType) -> frozenset[str]:
     """Return the import path of every type or name a generator imports module declares."""
@@ -1783,22 +1813,13 @@ class DataTypeManager(ABC):
         generator cannot classify, such as an enum member, takes them all.
         """
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-            PythonTypeBoundName,
             PythonTypeEllipsis,
-            PythonTypeSubscript,
             PythonTypeUnion,
-            iter_python_type_expr_qualified_names,
             python_type_expr_arguments,
             python_type_expr_base_name,
         )
 
-        base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
-        path = _standard_type_path(
-            f"{base.import_from}.{base.import_name}"
-            if isinstance(base, PythonTypeBoundName) and base.import_from
-            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base),
-            target_version,
-        )
+        base, path = _annotation_base_path(expression, target_version)
         members = None
         if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
             if not cls.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:

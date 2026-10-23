@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
 
@@ -30,3 +30,4 @@ class Model(Struct):
     alias: Big | UnsetType = UNSET
     site: Count | UnsetType = UNSET
     number: float | UnsetType = UNSET
+    qualified: Annotated[int, str] | UnsetType = UNSET

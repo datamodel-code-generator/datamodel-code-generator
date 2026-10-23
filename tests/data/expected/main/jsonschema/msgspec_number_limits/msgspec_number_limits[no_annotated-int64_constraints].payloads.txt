@@ -17,3 +17,4 @@ invalid {"alias": -2}: accepted
 invalid {"alias": 9223372036854776001}: accepted
 invalid {"site": 9223372036854776001}: accepted
 invalid {"number": 1e+19}: accepted
+invalid {"qualified": 18446744073709551616}: accepted

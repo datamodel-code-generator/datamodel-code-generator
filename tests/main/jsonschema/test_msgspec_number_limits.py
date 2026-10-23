@@ -32,8 +32,9 @@ def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecord
     """Write the number constraints of an int within the 64-bit range only, and finite numbers only.
 
     msgspec refuses a ``Meta`` whose int constraint lies beyond the 64-bit range, at every decode, but decodes ints of
-    any size, so the field goes without it, accepts the values beyond it and warns. A number beyond the float range
-    is left out like the infinite bound it is as a float, without a warning.
+    any size, so the field goes without it, accepts the values beyond it and warns, also on the int that an
+    ``x-python-type`` of ``Annotated`` qualifies and for a bound beyond the float range. Any other number beyond the
+    float range is left out like the infinite bound it is as a float, without a warning.
     """
     input_path = NUMBER_LIMITS / f"{name}.json"
     run_main_and_assert(
