@@ -7797,6 +7797,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     get_special_path("imported_name", model.path.split("/")),
                     model.reference.name,
                     class_name=True,
+                    unique=True,
                 ).name,
             )
             renamed = True

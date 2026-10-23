@@ -6364,5 +6364,28 @@
         ]
       }
     }
+  },
+  "enum_ref_consts_draft04": {
+    "model": "Model",
+    "fields": {
+      "cst": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "one": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      }
+    }
   }
 }

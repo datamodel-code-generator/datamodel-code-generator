@@ -36,7 +36,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._types import AsyncAPIParserConfigDict
     from datamodel_code_generator.config import AsyncAPIParserConfig
-    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
 
@@ -293,7 +292,7 @@ class AsyncAPIParser(OpenAPIParser):
     @override
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a located tree whose root the schema graph owns, for converted payloads."""
-        return cast("SchemaGraphBuilder", self._schema_graph).mount_root(super()._index_document(raw, path_parts))
+        return self._graph.mount_root(super()._index_document(raw, path_parts))
 
     def _current_asyncapi_context(self) -> AsyncAPIContext:
         return AsyncAPIContext(
@@ -379,9 +378,7 @@ class AsyncAPIParser(OpenAPIParser):
         converted_schema = self._mount_converted_schema(
             converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
         )
-        cast("SchemaGraphBuilder", self._schema_graph).mount_in(
-            context.raw_obj, INTERNAL_SCHEMA_CONTAINER, converted_schema_key, converted_schema
-        )
+        self._graph.mount_in(context.raw_obj, INTERNAL_SCHEMA_CONTAINER, converted_schema_key, converted_schema)
         root_path = [*context.root_parts, f"#/{INTERNAL_SCHEMA_CONTAINER}", converted_schema_key]
         schemas = [self._schema(name, converted_schema, root_path, context)] if include_root_schema else []
         schemas.extend(

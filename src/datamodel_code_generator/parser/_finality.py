@@ -233,9 +233,12 @@ def _guarded_mutator(name: str) -> Callable[..., Any]:
     mutate = getattr(list, name)
 
     def mutator(self: _GuardedList, *args: Any, **kwargs: Any) -> Any:
-        if (checks := _CHECKS.get()) is not None and checks.armed:
-            checks.on_list_write(self, name, args)
-        return mutate(self, *args, **kwargs)
+        if (checks := _CHECKS.get()) is None or not checks.armed:
+            return mutate(self, *args, **kwargs)
+        before = checks.on_list_write(self, name, args)
+        result = mutate(self, *args, **kwargs)
+        checks.judge_list_write(self, before)
+        return result
 
     mutator.__name__ = name
     return mutator
@@ -657,13 +660,13 @@ class _Finality:
         mode: CheckMode,
         error: type[Exception],
         store: GenerationStore,
-        guard_lists: Callable[[object], None],
+        guard_lists: Callable[[object, dict[int, _GuardedList]], None],
         *,
         sweep: bool,
     ) -> None:
         self.mode = mode
         self._guard_lists = guard_lists
-        """Puts the plain lists of an object it holds into guarded lists."""
+        """Puts the plain lists of an object it holds into guarded lists, sharing those it has guarded already."""
         self.sweep = sweep
         """Whether a global pass that transforms or repairs compares every model (``FACT_FINALITY_SWEEP``)."""
         self.error = error
@@ -721,10 +724,11 @@ class _Finality:
         referenced: list[object] = []
         self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase))
         model_id = id(model)
+        lists: dict[int, _GuardedList] = {}
         for object_id, entry in entries.items():
             self.owners.setdefault(object_id, {})[model_id] = model
             self.held[object_id] = entry.owner
-            self._guard_lists(entry.owner)
+            self._guard_lists(entry.owner, lists)
         return _ModelPrint(model, entries, tuple(referenced))
 
     def _settle(self, models: Iterable[DataModel], run: _PassRun | None = None, *, reach: bool = False) -> None:
@@ -1197,7 +1201,7 @@ class _ParseChecks:
                 mode,
                 self.error,
                 store,
-                self._guard_owner_lists,
+                self._guard_lists,
                 sweep=check_mode(CheckArea.FACT_FINALITY_SWEEP) is not None,
             )
             enter_phase = store.enter_phase
@@ -1240,10 +1244,6 @@ class _ParseChecks:
             )
         return guarded
 
-    def _guard_owner_lists(self, owner: object) -> None:
-        """Guard the plain lists of an object created after arming, when a fingerprint holds it."""
-        self._guard_lists(owner, {})
-
     def _guard_lists(self, owner: object, lists: dict[int, _GuardedList]) -> None:
         """Put the container attributes of ``owner`` that hold plain lists into guarded lists, keeping them shared."""
         values = owner.__dict__
@@ -1269,11 +1269,12 @@ class _ParseChecks:
             self.report_write(mode, type(owner).__name__, name, "=", None, frame)
         return value
 
-    def on_list_write(self, guarded: _GuardedList, operation: str, args: tuple[Any, ...]) -> None:
-        """Watch a mutation of a guarded list by the caller of its mutator."""
+    def on_list_write(self, guarded: _GuardedList, operation: str, args: tuple[Any, ...]) -> tuple[Any, ...] | None:
+        """Watch a mutation of a guarded list by the caller of its mutator; return the items to judge it against."""
+        before = None
         if (finality := self.finality) is not None and (holder := guarded._holder()) is not None:  # noqa: SLF001
             finality.touch(holder)
-            finality.judge_write(holder, guarded._attribute)  # noqa: SLF001
+            before = tuple(guarded)
         if (mode := self.writes) is not None and not self.operations:
             self.report_write(
                 mode,
@@ -1283,6 +1284,17 @@ class _ParseChecks:
                 _key_kind(operation, args),
                 sys._getframe(2),  # noqa: SLF001
             )
+        return before
+
+    def judge_list_write(self, guarded: _GuardedList, before: tuple[Any, ...] | None) -> None:
+        """Judge a mutation of a guarded list that changed its items; one that left them as they were writes nothing."""
+        if (
+            before is not None
+            and (finality := self.finality) is not None
+            and (holder := guarded._holder()) is not None  # noqa: SLF001
+            and (len(before) != len(guarded) or any(old is not new for old, new in zip(before, guarded, strict=True)))
+        ):
+            finality.judge_write(holder, guarded._attribute)  # noqa: SLF001
 
     def report_write(  # noqa: PLR0913, PLR0917
         self, mode: CheckMode, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType

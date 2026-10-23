@@ -1,0 +1,72 @@
+pydantic_v2.BaseModel default cst "a" accepted
+pydantic_v2.BaseModel default cst "b" accepted
+pydantic_v2.BaseModel default cst "c" rejected
+pydantic_v2.BaseModel default one "b" accepted
+pydantic_v2.BaseModel default one "a" accepted
+pydantic_v2.BaseModel default one "c" rejected
+pydantic_v2.dataclass default cst "a" accepted
+pydantic_v2.dataclass default cst "b" accepted
+pydantic_v2.dataclass default cst "c" rejected
+pydantic_v2.dataclass default one "b" accepted
+pydantic_v2.dataclass default one "a" accepted
+pydantic_v2.dataclass default one "c" rejected
+msgspec.Struct default cst "a" accepted
+msgspec.Struct default cst "b" accepted
+msgspec.Struct default cst "c" rejected
+msgspec.Struct default one "b" accepted
+msgspec.Struct default one "a" accepted
+msgspec.Struct default one "c" rejected
+pydantic_v2.BaseModel --field-constraints cst "a" accepted
+pydantic_v2.BaseModel --field-constraints cst "b" accepted
+pydantic_v2.BaseModel --field-constraints cst "c" rejected
+pydantic_v2.BaseModel --field-constraints one "b" accepted
+pydantic_v2.BaseModel --field-constraints one "a" accepted
+pydantic_v2.BaseModel --field-constraints one "c" rejected
+pydantic_v2.BaseModel --use-annotated cst "a" accepted
+pydantic_v2.BaseModel --use-annotated cst "b" accepted
+pydantic_v2.BaseModel --use-annotated cst "c" rejected
+pydantic_v2.BaseModel --use-annotated one "b" accepted
+pydantic_v2.BaseModel --use-annotated one "a" accepted
+pydantic_v2.BaseModel --use-annotated one "c" rejected
+pydantic_v2.BaseModel --collapse-root-models cst "a" accepted
+pydantic_v2.BaseModel --collapse-root-models cst "b" accepted
+pydantic_v2.BaseModel --collapse-root-models cst "c" rejected
+pydantic_v2.BaseModel --collapse-root-models one "b" accepted
+pydantic_v2.BaseModel --collapse-root-models one "a" accepted
+pydantic_v2.BaseModel --collapse-root-models one "c" rejected
+msgspec.Struct --collapse-root-models cst "a" accepted
+msgspec.Struct --collapse-root-models cst "b" accepted
+msgspec.Struct --collapse-root-models cst "c" rejected
+msgspec.Struct --collapse-root-models one "b" accepted
+msgspec.Struct --collapse-root-models one "a" accepted
+msgspec.Struct --collapse-root-models one "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs cst "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs cst "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs cst "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs one "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs one "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs cst "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one "c" rejected

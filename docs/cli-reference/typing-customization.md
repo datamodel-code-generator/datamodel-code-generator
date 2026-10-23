@@ -4939,9 +4939,9 @@ cannot express the object exactly (keys outside the patterns, different value sc
 The null and the other types of a `type` array, such as `[object, string, null]`, join the dict in a union, and its
 property counts stay on the dict; the dict root model of an object without `properties`, such as a nullable
 `additionalProperties` map, takes the same null. The stricter pattern-map checks of `--generate-schema-validators`
-are under `--check-pattern-maps-strictly`. Without the option the map is written as in 0.86.0: a union of dicts, one
-per value type of the patterns, the other types of a `type` array left out; msgspec, which cannot decode a union of
-several dicts, gets the one dict.
+are under `--check-pattern-maps-strictly`. Without `--use-single-dict-for-object-maps` the map is written as in
+0.86.0: a union of dicts, one per value type of the patterns, the other types of a `type` array left out; msgspec,
+which cannot decode a union of several dicts, gets the one dict.
 
 !!! tip "Usage"
 

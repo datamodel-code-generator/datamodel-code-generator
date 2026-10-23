@@ -913,15 +913,21 @@ def _derived_site(site: JsonSchemaObject, refs: Sequence[str]) -> JsonSchemaObje
 
 
 def _enum_narrowed_by_part_consts(
-    intersection: JsonSchemaObject, parts: Sequence[JsonSchemaObject]
+    intersection: JsonSchemaObject, parts: Sequence[JsonSchemaObject], *, const_support: bool
 ) -> JsonSchemaObject:
     """Return the intersection of allOf value parts with its enum narrowed to the const of each part without an enum.
+
+    A dialect without ``const`` (draft-04, OpenAPI 3.0) reads it as an unknown keyword, so nothing narrows there.
 
     Such a const is a part of its own that a value must equal, as the one-value enum --use-single-value-enum-as-const
     reads as that const is, so it narrows the enum the same way and the enum then stands for it. The intersection is
     returned as it is without such a const, and where no enum value equals every such const (no value meets the parts).
     """
-    if not intersection.enum or not (consts := [part.extras["const"] for part in parts if _is_enumless_const(part)]):
+    if (
+        not const_support
+        or not intersection.enum
+        or not (consts := [part.extras["const"] for part in parts if _is_enumless_const(part)])
+    ):
         return intersection
     excluded = {
         position
@@ -5906,6 +5912,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._check_ref_target("_load_ref_schema_object", ref, loaded.schema_location)
         return loaded
 
+    @property
+    def _graph(self) -> SchemaGraphBuilder:
+        """Return the schema graph of the parse."""
+        return cast("SchemaGraphBuilder", self._schema_graph)
+
     def _key_node(self, resolved_ref: str) -> _TargetNode:
         """Return the schema graph node at a reference key, or the key when the graph does not locate its value.
 
@@ -7581,7 +7592,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         written = self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0])) if layered else {}
         target = self._intersect_typed_value_parts(target_parts, None)
         intersection = _enum_narrowed_by_part_consts(
-            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")), parts
+            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")),
+            parts,
+            const_support=self.schema_features.const_support,
         )
         target_dump = target.model_dump(exclude_unset=True, by_alias=True)
         target_keys = {keyword for keyword in target.__constraint_field_order__ if getattr(target, keyword) is not None}
@@ -10257,7 +10270,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not self.config.use_site_models_for_constrained_refs:
             return None
         intersection = _enum_narrowed_by_part_consts(
-            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")), parts
+            self._intersect_typed_value_parts(parts, str(obj.schema_location or "allOf")),
+            parts,
+            const_support=self.schema_features.const_support,
         )
         literals = intersection.enum
         if all(

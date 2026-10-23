@@ -122,6 +122,17 @@ class GrowingParser(JsonSchemaParser):
         new.data_types.append(DataType(type="str"))
 
 
+class NoOpMutatingParser(JsonSchemaParser):
+    """Calls list mutators that leave the lists of every model as they were once its modules are finalized."""
+
+    def _finalize_modules(self, *args: Any) -> None:
+        super()._finalize_modules(*args)
+        for model in self.results:
+            model.fields.extend([])
+            model.fields.sort(key=lambda _field: 0)
+            model.base_classes.sort(key=lambda _base: 0)
+
+
 def _reported(report: Path) -> str:
     """Return the reported violations without what depends on the checkout."""
     lines = report.read_text(encoding="utf-8").splitlines() if report.exists() else []
@@ -230,6 +241,13 @@ def test_fact_finality_does_not_judge_a_list_write_that_changes_no_item(
     _finality_only(monkeypatch, "1")
 
     assert_output(RewritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
+
+
+def test_fact_finality_does_not_judge_a_list_mutator_that_changes_no_item(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An empty extend and a stable sort after a freeze point change no value."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(NoOpMutatingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
 
 
 def test_fact_finality_judges_a_write_to_a_list_created_after_arming_where_it_is_made(

@@ -363,11 +363,12 @@ def _copy(imports: Imports) -> Imports:
 @final
 @dataclass(frozen=True, slots=True)
 class NameRequested:
-    """``ModelResolver.add`` on the resolver of a module: the path, the name asked for and whether as a class name."""
+    """``ModelResolver.add`` on the resolver of a module: the path, the name asked for, as a class name or unique."""
 
     path: tuple[str, ...]
     original_name: str
     class_name: bool = False
+    unique: bool = True
 
 
 @final
@@ -415,7 +416,7 @@ def allocate_bindings(
         if isinstance(event, NamesReleased):
             resolver.delete_names(event.names)
         else:
-            resolver.add(event.path, event.original_name, class_name=event.class_name)
+            resolver.add(event.path, event.original_name, class_name=event.class_name, unique=event.unique)
     return {
         request: reference.name
         for request in requests
@@ -609,7 +610,7 @@ class ModuleImportLedger:
         """Name the parts of the imports that differ from the replay of their entries."""
         return _differences(imports, replay(self.entries(imports), use_exact=imports.use_exact))
 
-    def add_name(
+    def add_name(  # noqa: PLR0913
         self,
         imports: Imports,
         resolver: ModelResolver,
@@ -617,10 +618,11 @@ class ModuleImportLedger:
         original_name: str,
         *,
         class_name: bool = False,
+        unique: bool = True,
     ) -> Reference:
         """Ask the resolver of the module that ``imports`` belongs to for a name (``ModelResolver.add``)."""
-        self._name_events_of(imports).append(NameRequested(tuple(path), original_name, class_name))
-        return resolver.add(path, original_name, class_name=class_name)
+        self._name_events_of(imports).append(NameRequested(tuple(path), original_name, class_name, unique))
+        return resolver.add(path, original_name, class_name=class_name, unique=unique)
 
     def release_names(self, imports: Imports, resolver: ModelResolver, names: AbstractSet[str]) -> None:
         """Release names in the resolver of the module that ``imports`` belongs to (``ModelResolver.delete_names``)."""
