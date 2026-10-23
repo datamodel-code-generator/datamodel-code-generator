@@ -26712,6 +26712,78 @@ def test_main_read_only_write_only_map_keywords_of_models(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "merge_args", "valid", "invalid"),
+    [
+        pytest.param(
+            "read_only_write_only_redeclared_inherited_flag.json",
+            [],
+            {
+                "child": {"id": 1, "name": "kept"},
+                "grandChild": {"id": 2, "note": "kept"},
+                "relinked": {"label": "kept"},
+            },
+            {"child": {"name": 1}},
+            id="ref",
+        ),
+        pytest.param(
+            "read_only_write_only_redeclared_inherited_flag_inline.json",
+            ["--allof-merge-mode", "none"],
+            {"child": {"id": 1, "name": "kept"}},
+            {"child": {"name": 1}},
+            id="inline_none",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_redeclared_inherited_flag(
+    output_file: Path,
+    input_name: str,
+    merge_args: list[str],
+    valid: dict[str, Any],
+    invalid: dict[str, Any],
+    dedupe_args: list[str],
+) -> None:
+    """Split a model whose allOf ancestor splits, even where it re-declares the inherited flagged property.
+
+    The request and response variants replace the ancestor's model, so nothing inherits from it: ``Child`` re-declares
+    the readOnly ``id`` through a $ref (or inline under --allof-merge-mode none) and ``Relinked`` re-declares the
+    reference to a readOnly model, and each splits into variants that keep the re-declared property, as does
+    ``GrandChild`` below ``Child``; the fields that reference them read their variants.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / input_name
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *merge_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"rw_redeclared_{input_path.stem}",
+        model_name="ModelRequest",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,

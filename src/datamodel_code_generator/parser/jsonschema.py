@@ -3978,28 +3978,47 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.read_only_write_only_model_type is None:
             return None
-        request_response = self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
         if not self.dedupe_request_response_variants:
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            if any(field.read_only or field.write_only for field in all_fields) or (
-                request_response and self._fields_reference_rw_model_variant(all_fields, "Request")
-            ):
-                return all_fields
-            return None
+            return all_fields if self._splits_into_rw_model_variants(all_fields, base_classes) else None
         all_fields: list[DataModelFieldBase] | None = None
-        if (
-            any(field.read_only or field.write_only for field in fields)
-            or (request_response and self._fields_reference_rw_model_variant(fields, "Request"))
-            or any(self._ref_schema_has_rw_model_facts(base.path) for base in base_classes or () if base.path)
+        if self._rw_model_fields_split(fields) or any(
+            self._ref_schema_has_rw_model_facts(base.path) for base in base_classes or () if base.path
         ):
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
-            if not (
-                any(field.read_only or field.write_only for field in all_fields)
-                or (request_response and self._fields_reference_rw_model_variant(all_fields, "Request"))
-            ):
+            if not self._splits_into_rw_model_variants(all_fields, base_classes):
                 all_fields = None
         self._check_rw_model_split(reference, splits=all_fields is not None)
         return all_fields
+
+    def _rw_model_fields_split(self, fields: list[DataModelFieldBase]) -> bool:
+        """Return whether fields split their model: one is flagged or, under request-response, references variants."""
+        return any(field.read_only or field.write_only for field in fields) or (
+            self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
+            and self._fields_reference_rw_model_variant(fields, "Request")
+        )
+
+    def _splits_into_rw_model_variants(
+        self,
+        all_fields: list[DataModelFieldBase],
+        base_classes: list[Reference] | None,
+    ) -> bool:
+        """Return whether a model with these effective fields splits into read/write variants.
+
+        Under request-response a model also splits where the effective fields of an allOf ancestor split it: the
+        variants replace the ancestor's model, so nothing can inherit from it, even where the model's own declarations
+        take the flags of the inherited fields away.
+        """
+        if self._rw_model_fields_split(all_fields):
+            return True
+        if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
+            return False
+        return any(
+            self._rw_model_fields_split(
+                self._get_raw_inherited_fields(self.model_resolver.add_ref(resolved_ref, resolved=True), frozenset())
+            )
+            for resolved_ref in self._linearize_inherited_schema_refs(base_classes or [])
+        )
 
     def _should_generate_base_model(self, *, generates_separate_models: bool = False) -> bool:
         """Determine if Base model should be generated."""

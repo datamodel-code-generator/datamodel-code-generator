@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "Int": {
+      "type": "integer"
+    },
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/Int"
+            }
+          }
+        }
+      ]
+    },
+    "GrandChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Child"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "note": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Linked": {
+      "type": "object",
+      "properties": {
+        "flagged": {
+          "$ref": "#/$defs/Flagged"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "Relinked": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Linked"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "flagged": {
+              "$ref": "#/$defs/Plain"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "hid": {
+      "type": "integer",
+      "readOnly": true
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    },
+    "grandChild": {
+      "$ref": "#/$defs/GrandChild"
+    },
+    "relinked": {
+      "$ref": "#/$defs/Relinked"
+    }
+  }
+}

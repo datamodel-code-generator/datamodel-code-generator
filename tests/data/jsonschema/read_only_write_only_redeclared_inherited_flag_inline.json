@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "hid": {
+      "type": "integer",
+      "readOnly": true
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  }
+}
