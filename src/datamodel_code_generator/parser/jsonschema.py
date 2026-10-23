@@ -813,8 +813,15 @@ def _get_rw_model_variant_source_path(
     base_reference: Reference,
     suffix: Literal["Request", "Response"],
 ) -> str:
-    """Return the legacy logical source path for a generated variant."""
-    source_prefix, separator, source_name = base_reference.path.rpartition("/")
+    """Return the legacy logical source path for a generated variant.
+
+    A model built from a member of a document root joins its path to the document with ``/`` (``doc.json/p#...``); its
+    source path names the location in that document (``doc.json#/p#...``), as those of the members of other schemas do.
+    """
+    path = base_reference.path
+    if (location := location_of(base_reference)) is not None and path.startswith(prefix := f"{location.document}/"):
+        path = f"{location.document}#/{path.removeprefix(prefix)}"
+    source_prefix, separator, source_name = path.rpartition("/")
     return f"{source_prefix}{separator}{source_name}{suffix}"
 
 

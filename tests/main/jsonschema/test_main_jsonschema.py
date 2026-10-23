@@ -27102,6 +27102,89 @@ def test_main_read_only_write_only_additional_properties_beside_properties(
 
 
 @pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize(
+    ("rw_args", "model_name"),
+    [
+        pytest.param(["request-response"], "ModelRequest", id="request_response"),
+        pytest.param(["request-response", "--dedupe-request-response-variants"], "ModelRequest", id="dedupe"),
+        pytest.param(["all"], "Model", id="all"),
+    ],
+)
+def test_main_read_only_write_only_root_document_inline_object(
+    output_file: Path, output_model_type: str, rw_args: list[str], model_name: str
+) -> None:
+    """Generate the read/write variants of the inline objects under the root document's properties.
+
+    The inline objects of ``profile``, of its ``credentials`` and of the ``entries`` items split as they do under a
+    property of a model in $defs, and the root model takes the matching variants. msgspec decodes the payloads of the
+    TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_root_document_inline_object.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            *rw_args,
+        ],
+    )
+    valid = {"profile": {"name": "n", "credentials": {"password": "p", "user": "u"}}, "entries": [{"label": "l"}]}
+    invalid = {"profile": {"name": 1}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_root_document_inline_object", model_name) as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_external_root_inline_object(output_file: Path, dedupe_args: list[str]) -> None:
+    """Generate the read/write variants of an inline object under the root properties of a referenced document."""
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_external_root_inline_object" / "main.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rw_external_root_inline_object",
+        model_name="ModelRequest",
+        valid_json=json.dumps({"account": {"profile": {"name": "n"}}}),
+        invalid_json=json.dumps({"account": {"profile": {"name": 1}}}),
+        expected_error_type="string_type",
+    )
+
+
+@pytest.mark.parametrize(
     "dedupe_args",
     [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
 )
