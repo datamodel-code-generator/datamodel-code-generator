@@ -1,7 +1,8 @@
 """The settle passes (L2): what the parsed models settle into before they are grouped into output modules.
 
-Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/base.py``; the parser
-comes in through ``SettleHost``, which ``Parser`` satisfies structurally.
+Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/_passes/_tables.py``;
+the parser comes in through ``SettleHost``, which ``Parser`` satisfies structurally. The passes of the parse segment
+before them, which run L0 and L1, take it through ``ParseHost``.
 """
 
 from __future__ import annotations
@@ -10,10 +11,10 @@ import operator
 import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
-from warnings import warn
 
 from typing_extensions import Protocol, TypeVar
 
+from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model.base import DataModel, sort_data_models_for_mro
@@ -24,6 +25,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _sort_models_by_class_body_references,
 )
 from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED, location_of
 
@@ -37,13 +39,17 @@ if TYPE_CHECKING:
         ReadOnlyWriteOnlyModelType,
     )
     from datamodel_code_generator.parser._graph_ids import KeyedModels
-    from datamodel_code_generator.parser._passes._state import ConfigT, SettleRun, SortedDataModels
+    from datamodel_code_generator.parser._passes._state import ConfigT, SettleRun, SortedDataModels, _ConstNarrowing
     from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver
+    from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.types import DataType
 
 __all__ = [
     "MAX_RECURSION_COUNT",
+    "ParseHost",
     "SettleHost",
+    "index_const_narrowed_values",
+    "parse_raw",
     "prepare_run_parse_config",
     "record_source_reference_paths",
     "report_parse_diagnostics",
@@ -115,6 +121,29 @@ class SettleHost(Protocol[_ConfigT_co]):
 
     def _run_with_suppressed_warnings(self, callback: Callable[[], None]) -> None:
         """Run ``callback`` with warnings suppressed."""
+
+
+class ParseHost(Protocol):
+    """The hooks and run state of the parser that the passes of the parse segment read and write."""
+
+    _const_narrowed_values: dict[int, tuple[DataType, _ConstNarrowing]]
+
+    @property
+    def _const_narrowed_references(self) -> list[tuple[Reference, _ConstNarrowing]]:
+        """The references of the enums a const narrows, with that const, as L1 marked them."""
+
+    @property
+    def generation_store(self) -> GenerationStore:
+        """The generation store of the parse."""
+
+    def _close_http_fetch_session(self) -> None:
+        """Close and discard the parser-scoped HTTP session."""
+
+    def _run_with_suppressed_warnings(self, callback: Callable[[], None]) -> None:
+        """Run ``callback`` with warnings suppressed."""
+
+    def parse_raw(self) -> None:
+        """Load the sources and parse them into models (L0 and L1)."""
 
 
 def _runtime_validation_names_later_model(
@@ -383,9 +412,10 @@ def warn_about_unmatched_model_name_keys(parser: SettleHost[Any]) -> None:
         unmatched_keys := sorted({redact_reference(key) for key in parser.model_resolver.unmatched_model_name_keys()})
     ):
         listed = ", ".join(map(repr, unmatched_keys))
-        warn(
+        warn_as_parser_base(
             f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
             f"matched no generated model: {listed}",
+            UserWarning,
             stacklevel=2,
         )
 
@@ -445,3 +475,33 @@ def sort_parsed_models(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
 def record_source_reference_paths(run: SettleRun[Any]) -> None:
     """Record the reference path each model was parsed from, for the model metadata."""
     run.model_identities = {model: model.reference.path for model in run.sorted_data_models.values()}
+
+
+def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
+    """Run L0 and L1, without repeating warnings on a retry; the HTTP session closes either way.
+
+    A parse that exceeds the recursion limit on deeply nested schemas stops with an error, not a partial result.
+    """
+    try:
+        if run.suppress_parse_warnings:
+            parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
+        else:
+            parser.parse_raw()
+    except RecursionError:
+        msg = (
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
+            f"limit ({sys.getrecursionlimit()})."
+        )
+        raise Error(msg) from None
+    finally:
+        parser._close_http_fetch_session()  # noqa: SLF001
+
+
+def index_const_narrowed_values(parser: ParseHost, _run: SettleRun[Any]) -> None:
+    """Index the data types whose value a const narrows, by data type."""
+    parser._const_narrowed_values = {  # noqa: SLF001
+        id(fact.data_type): (fact.data_type, narrowing)
+        for reference, narrowing in parser._const_narrowed_references  # noqa: SLF001
+        for fact in parser.generation_store.index.data_type_facts_for_reference(reference)
+        if fact.role != "base"
+    }

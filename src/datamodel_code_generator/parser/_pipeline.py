@@ -1,6 +1,7 @@
 """The post-parse pipeline of ``Parser.parse()``: its steps, segments and boundaries, and the runner that executes them.
 
-``Parser`` keeps the pipeline as class-level tables. A ``PassSpec`` runs one declared pass (``parser/_pass_decls.py``);
+The tables of ``parser/_passes/_tables.py`` hold the pipeline, which ``Parser`` runs. A ``PassSpec`` runs one declared
+pass (``parser/_pass_decls.py``);
 a ``ForEachModule`` runs passes once per output module; a ``HookCall`` calls an overridable parser method whose default
 runs a sub-table; a ``Segment`` runs the steps of one phase, entering the phase and the boundary before it. The
 ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is false and runs every other one inside
@@ -135,7 +136,7 @@ class ForEachModule(Generic[P, S, M]):
 
     name: str
     modules: Callable[[P, S], Iterable[M]]
-    body: tuple[PassSpec[P, M], ...]
+    body: tuple[StepLike[P, M], ...]
 
     def execute(self, runner: Runner, parser: P, state: S) -> None:
         """Run the body once per module."""

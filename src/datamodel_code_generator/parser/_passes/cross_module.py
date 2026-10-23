@@ -1,13 +1,12 @@
 """The cross-module passes (L6a): what the processed modules settle once every module is processed.
 
-Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/base.py``; the parser
-comes in through ``CrossModuleHost``, which ``Parser`` satisfies structurally.
+Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/_passes/_tables.py``;
+the parser comes in through ``CrossModuleHost``, which ``Parser`` satisfies structurally.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Final, cast
-from warnings import warn
 
 from typing_extensions import Protocol
 
@@ -39,6 +38,7 @@ from datamodel_code_generator.parser._passes._shared import (
     register_reference_import,
     set_reference_expression,
 )
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
@@ -216,9 +216,10 @@ def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:
     """
     values = (narrowing for field, narrowing in parser._enum_admits_other_values if not field.is_class_var)  # noqa: SLF001
     for narrowing in {narrowing.location: narrowing for narrowing in values}.values():
-        warn(
+        warn_as_parser_base(
             f"The schema at {narrowing.location} admits only its const {narrowing.const!r} of its enum values, but "
             "its values are typed as its enum class, which accepts the other values too.",
+            UserWarning,
             stacklevel=2,
         )
 

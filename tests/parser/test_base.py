@@ -77,6 +77,7 @@ from datamodel_code_generator.parser.base import (
     override_required_field,
     plans,
     relative,
+    render_prep,
     sort_data_models,
     structure,
     to_hashable,
@@ -645,7 +646,7 @@ def test_dataclass_required_override_of_inherited_default_uses_exact_assignment(
         keyword_only=keyword_only,
     )
 
-    parser_fixture._Parser__fix_constructor_field_ordering([child])
+    render_prep.fix_constructor_field_ordering(parser_fixture, [child])
 
     assert required_override.extras == {}
     assert str(required_override) == expected_assignment
@@ -709,7 +710,7 @@ def test_dataclass_inherited_init_cleanup_without_other_adjustments(parser_fixtu
         reference=_reference("InitChild"),
     )
 
-    parser_fixture._Parser__fix_constructor_field_ordering([child])
+    render_prep.fix_constructor_field_ordering(parser_fixture, [child])
 
     assert required_override.extras == {}
     assert not str(required_override)
@@ -739,7 +740,7 @@ def test_dataclass_metadata_assignment_without_default_stays_positional(parser_f
         reference=_reference("MetadataChild"),
     )
 
-    parser_fixture._Parser__fix_constructor_field_ordering([child])
+    render_prep.fix_constructor_field_ordering(parser_fixture, [child])
 
     assert str(metadata_field) == "field(repr=False)"
     assert child_field.extras == {}

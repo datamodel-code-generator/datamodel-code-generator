@@ -18,6 +18,7 @@ from graphql import Source as GraphQLSource
 
 from datamodel_code_generator import (
     DanglingRefWarning,
+    DataModelType,
     Error,
     InputFileType,
     InvalidFileFormatError,
@@ -1575,6 +1576,56 @@ def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: py
                 Path(warning.filename).name for warning in warning_records if warning.category is DanglingRefWarning
             )
         )
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "input_file_type", "options"),
+    [
+        (DATA_PATH / "jsonschema" / "msgspec_wide_int_enums.json", InputFileType.JsonSchema, {}),
+        (
+            DATA_PATH / "openapi" / "discriminator_msgspec_tagged_unions_inherited.yaml",
+            InputFileType.OpenAPI,
+            {"use_msgspec_tagged_unions": True, "snake_case_field": True},
+        ),
+    ],
+    ids=["finish-pass", "module-pass"],
+)
+def test_pass_warnings_name_the_package_once_traced(
+    monkeypatch: pytest.MonkeyPatch, source: Path, input_file_type: InputFileType, options: dict[str, object]
+) -> None:
+    """Once the tracing that ``--debug`` installs has wrapped the pass functions, their warnings still name the caller.
+
+    The frame they name is the package's frame that called the pass, and a filter on module ``parser.base`` matches
+    them, as without the wrappers.
+    """
+    pysnooper = pytest.importorskip("pysnooper")
+    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
+
+    @snooper_to_methods()
+    class TracedParser(JsonSchemaParser):
+        """A parser whose decoration wraps the functions of the pass modules, which stay wrapped."""
+
+    monkeypatch.setattr(pysnooper.tracer, "DISABLED", True)
+
+    def warned(*filters: str) -> list[warnings.WarningMessage]:
+        with warnings.catch_warnings(record=True) as records:
+            warnings.simplefilter("always")
+            for module in filters:
+                warnings.filterwarnings("ignore", module=module)
+            generate(
+                source,
+                input_file_type=input_file_type,
+                output_model_type=DataModelType.MsgspecStruct,
+                formatters=[Formatter.BUILTIN],
+                **options,
+            )
+        return [record for record in records if record.category is UserWarning]
+
+    kept = warned(r"datamodel_code_generator\.parser\.base$")
+    assert_output(
+        "".join(f"{Path(record.filename).name}: {str(record.message)[:60]}\n" for record in warned())
+        + f"kept by a parser.base module filter: {len(kept)}\n"
     )
 
 

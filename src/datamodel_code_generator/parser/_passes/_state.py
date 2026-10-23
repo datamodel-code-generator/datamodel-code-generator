@@ -1,41 +1,53 @@
 """The run state the passes of ``Parser.parse()`` read and write, and the shapes of output modules they build.
 
-``parser/base.py`` re-imports these names; ``ParseConfig`` stays there, since its module is public, so the run views
-take the configuration as a type parameter.
+``parser/base.py`` re-imports these names; ``ParseConfig``, ``ModuleContext`` and ``Result`` stay there, since their
+module is public, so the run state takes them as type parameters (``ConfigT``, ``ContextT``, ``ResultT``).
 """
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
+from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, Final, Generic, NamedTuple, TypeAlias
+from weakref import WeakKeyDictionary
 
 from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, final
 
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator.model.base import DataModel, _keyed_answer
+from datamodel_code_generator.parser._phases import DecisionOutcome
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
+    from datamodel_code_generator._requirements import PydanticFloor
     from datamodel_code_generator.format import CodeFormatter
-    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.reference import ModelResolver, Reference
 
 __all__ = [
     "ConfigT",
+    "ContextT",
+    "FinishRun",
     "ForwarderMap",
     "ModuleContextFields",
     "ModuleContextView",
     "ModuleModels",
     "ModulePath",
     "ParseConfigView",
+    "ProcessingRun",
+    "PydanticFloors",
     "RecursionFacts",
+    "ResultT",
+    "ResultView",
     "SettleRun",
     "SortedDataModels",
     "StructuredRun",
+    "pydantic_floors_recorded",
 ]
 
 ModulePath: TypeAlias = tuple[str, ...]
@@ -47,6 +59,14 @@ ModuleContextFields: TypeAlias = "tuple[ModulePath, ModulePath, list[DataModel],
 
 class ModuleContextView(Protocol):
     """What the passes read of a processed module: ``parser/base.py:ModuleContext``, whose module is public."""
+
+    @property
+    def module(self) -> ModulePath:
+        """The path of the module's file."""
+
+    @property
+    def module_key(self) -> ModulePath:
+        """The path of the module as the module structure grouped it."""
 
     @property
     def models(self) -> list[DataModel]:
@@ -63,6 +83,21 @@ class ModuleContextView(Protocol):
     @property
     def scoped_model_resolver(self) -> ModelResolver:
         """The resolver of the names the module binds."""
+
+    def _replace(self, *, module: ModulePath) -> Self:
+        """Return the context with another file path."""
+
+
+class ResultView(Protocol):
+    """What the passes read of the result of one module: ``parser/base.py:Result``, whose module is public."""
+
+    @property
+    def body(self) -> str:
+        """The code of the module."""
+
+
+ContextT = TypeVar("ContextT", bound=ModuleContextView)
+ResultT = TypeVar("ResultT", bound=ResultView)
 
 
 @final
@@ -172,8 +207,16 @@ class ParseConfigView(Protocol):
     """What the passes read of the parse configuration: ``parser/base.py:ParseConfig``, whose module is public."""
 
     @property
+    def all_exports_scope(self) -> AllExportsScope | None:
+        """The scope of the ``__all__`` exports of package modules, if configured."""
+
+    @property
     def code_formatter(self) -> CodeFormatter | None:
         """The code formatter of the run, or None when the builtin defaults need none."""
+
+    @property
+    def use_deferred_annotations(self) -> bool:
+        """Whether the modules defer the evaluation of their annotations."""
 
     def _replace(self, *, code_formatter: CodeFormatter | None) -> Self:
         """Return the configuration with another code formatter."""
@@ -201,6 +244,10 @@ class StructuredRun(SettleRun[ConfigT], Protocol[ConfigT]):
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]]
     model_path_to_module_name: dict[str, str]
 
+    @property
+    def default_build_code_formatter(self) -> Callable[..., CodeFormatter]:
+        """``Parser._build_code_formatter``, which a subclass of the parser may override."""
+
 
 @final
 @dataclass(slots=True)
@@ -214,3 +261,174 @@ class _StructureState:
     model_path_to_module_name: _ModuleNames = dataclasses.field(init=False)
     internal_modules: set[ModulePath] = dataclasses.field(init=False)
     forwarder_map: ForwarderMap = dataclasses.field(init=False)
+
+
+@final
+class PydanticFloors:
+    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's."""
+
+    __slots__ = ("_floors",)
+
+    def __init__(self) -> None:
+        """Start with no parse recorded."""
+        self._floors: WeakKeyDictionary[object, PydanticFloor] = WeakKeyDictionary()
+
+    def record(self, parser: object, floor: PydanticFloor | None) -> None:
+        """Record the floor of the models that ``parser`` emitted, None when they need nothing above the target."""
+        if floor is None:
+            self._floors.pop(parser, None)
+        else:
+            self._floors[parser] = floor
+
+    def of(self, parser: object) -> PydanticFloor | None:
+        """Return the floor that ``parser`` recorded, or None."""
+        return self._floors.get(parser)
+
+
+_PYDANTIC_FLOORS: ContextVar[PydanticFloors | None] = ContextVar("pydantic_floors", default=None)
+
+
+@contextlib.contextmanager
+def pydantic_floors_recorded() -> Generator[PydanticFloors]:
+    """Record the Pydantic floors of the parses run inside, for the generation to state the one of the parse it keeps.
+
+    A parse a generation discards, such as a compatibility retry it does not take, is never read.
+    """
+    record = PydanticFloors()
+    token = _PYDANTIC_FLOORS.set(record)
+    try:
+        yield record
+    finally:
+        _PYDANTIC_FLOORS.reset(token)
+
+
+_NO_DECISIONS: Final = DecisionOutcome(())
+
+
+@final
+@dataclass(slots=True)
+class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
+    """The state of one ``Parser.parse()`` call, filled segment by segment; a value read before it is set raises.
+
+    ``Parser.parse()`` gives it what the passes need of the class: its ``_build_code_formatter`` and the class of each
+    module's result.
+    """
+
+    args: _ParseArgs
+    suppress_parse_warnings: bool
+    default_build_code_formatter: Callable[..., CodeFormatter]
+    result_type: Callable[..., ResultT]
+    config: ConfigT = dataclasses.field(init=False)
+    sorted_data_models: SortedDataModels = dataclasses.field(init=False)
+    model_identities: Mapping[DataModel, str] | None = None
+    module_models: ModuleModels = dataclasses.field(init=False)
+    internal_modules: set[ModulePath] = dataclasses.field(init=False)
+    forwarder_map: ForwarderMap = dataclasses.field(init=False)
+    model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
+    model_path_to_module_name: dict[str, str] = dataclasses.field(init=False)
+    module_results: dict[ModulePath, ResultT] = dataclasses.field(default_factory=dict)
+    unused_models: list[DataModel] = dataclasses.field(default_factory=list)
+    module_to_import: dict[ModulePath, Imports] = dataclasses.field(default_factory=dict)
+    contexts: list[ContextT] = dataclasses.field(default_factory=list)
+    opted_out: list[DataModel] = dataclasses.field(default_factory=list)
+    decisions: DecisionOutcome = _NO_DECISIONS
+    output: str | dict[tuple[str, ...], ResultT] = dataclasses.field(init=False)
+
+
+class ProcessingRun(StructuredRun[ConfigT], Protocol[ConfigT, ContextT, ResultT]):
+    """What the processing of output modules reads and writes."""
+
+    module_results: dict[ModulePath, ResultT]
+    unused_models: list[DataModel]
+    module_to_import: dict[ModulePath, Imports]
+    contexts: list[ContextT]
+
+
+class FinishRun(ProcessingRun[ConfigT, ContextT, ResultT], Protocol[ConfigT, ContextT, ResultT]):
+    """What the passes after the output modules are processed read and write."""
+
+    opted_out: list[DataModel]
+    decisions: DecisionOutcome
+    """What the decision phase changed."""
+    output: str | dict[tuple[str, ...], ResultT]
+
+    @property
+    def result_type(self) -> Callable[..., ResultT]:
+        """The class of each module's result."""
+
+
+@final
+@dataclass(slots=True, kw_only=True)
+class _ModuleState(Generic[ConfigT]):
+    """The state of one ``_process_single_module`` call.
+
+    ``model_list`` is the list of the module's models: after model-level type overrides removed models, the kept
+    list, and ``model_list_before_override_removal`` the list before.
+    """
+
+    is_init: bool
+    model_list: list[DataModel]
+    imports: Imports
+    scoped_model_resolver: ModelResolver
+    all_module_fields: set[str]
+    config: ConfigT
+    internal_modules: set[ModulePath]
+    model_path_to_module_name: dict[str, str]
+    require_update_action_models: list[str]
+    unused_models: list[DataModel]
+    unused_models_start: int = dataclasses.field(init=False)
+    model_list_before_override_removal: list[DataModel] = dataclasses.field(init=False)
+    current_unused_models: Sequence[DataModel] = ()
+    live_models: list[DataModel] = dataclasses.field(init=False)
+
+
+@final
+@dataclass(slots=True, kw_only=True)
+class _PreparedModule(Generic[ConfigT]):
+    """One output module as ``_process_single_module`` left it, for its render preparation after the decision phase.
+
+    ``model_list`` holds the models of the module that render, ``model_list_before_override_removal`` also those a
+    model-level type override replaces, which constructor ordering still orders, and ``current_unused_models`` the
+    unused models the module added.
+    """
+
+    model_list: list[DataModel]
+    model_list_before_override_removal: list[DataModel]
+    config: ConfigT
+    current_unused_models: Sequence[DataModel]
+    live_models: list[DataModel] = dataclasses.field(init=False)
+
+    @classmethod
+    def of(cls, state: _ModuleState[ConfigT]) -> _PreparedModule[ConfigT]:
+        """Take the module of ``state`` with its model lists as they are now."""
+        return cls(
+            model_list=list(state.model_list),
+            model_list_before_override_removal=list(state.model_list_before_override_removal),
+            config=state.config,
+            current_unused_models=state.current_unused_models,
+        )
+
+
+@final
+@dataclass(slots=True)
+class _FinalizeState(Generic[ContextT]):
+    """The state of one ``_finalize_modules`` call.
+
+    ``all_models`` are the models of every module as they were before unused models left them.
+    """
+
+    contexts: list[ContextT]
+    unused_models: list[DataModel]
+    model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]]
+    module_to_import: dict[ModulePath, Imports]
+    all_models: list[DataModel] = dataclasses.field(init=False)
+    model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
+    renamed_models: bool = False
+    additional_properties_models: list[DataModel] = dataclasses.field(default_factory=list)
+
+    def collect_additional_properties_models(self) -> bool:
+        """Take the models whose additional properties reference classes; return whether there is any."""
+        self.additional_properties_models = [
+            model for model in self.all_models if len(model.additional_properties_reference_classes)
+        ]
+        return bool(self.additional_properties_models)

@@ -8,6 +8,7 @@ ledger, the finality checks, the model graph ids, the shared keys and the run st
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CO
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
+from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
@@ -65,6 +67,7 @@ from datamodel_code_generator.types import DataType, DefaultValueRecipe
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch
@@ -72,7 +75,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _RenamedType
+    from datamodel_code_generator.parser._passes._state import (
+        ModuleContextView,
+        ModulePath,
+        _FinalizeState,
+        _RenamedType,
+    )
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
@@ -1685,3 +1693,88 @@ def _get_enum_from_base(
             if enum_from_base := base_field.data_type.find_source(Enum):  # pragma: no branch
                 return enum_from_base
     return None
+
+
+_STRING_LITERAL_SOURCE: Final = r"""'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|"""
+_STRING_OR_IDENTIFIER_PATTERN: Final = re.compile(
+    _STRING_LITERAL_SOURCE + r"""^[ \t]*[A-Za-z_]\w*(?=:)|([A-Za-z_]\w*)""", re.MULTILINE
+)
+_STRING_OR_TARGET_IDENTIFIER_SOURCE: Final = _STRING_LITERAL_SOURCE + r"""^[ \t]*(?#identifier)(?=:)|((?#identifier))"""
+
+
+def _string_or_identifier_pattern(text: str, target_python_version: PythonVersion) -> re.Pattern[str]:
+    """Return the pattern that finds string literals, field declarations and names in text, as the target names them."""
+    return (
+        _STRING_OR_IDENTIFIER_PATTERN
+        if text.isascii()
+        else target_pattern(_STRING_OR_TARGET_IDENTIFIER_SOURCE, target_python_version, re.MULTILINE)
+    )
+
+
+def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
+    """Apply the module-key normalization used by the public parser result."""
+    normalized = tuple(part.replace("-", "_") for part in module)
+    if treat_dot_as_module:
+        return normalized
+    return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
+
+
+SPECIAL_PATH_FORMAT: str = "#-datamodel-code-generator-#-{}-#-special-#"
+
+
+def get_special_path(keyword: str, path: list[str]) -> list[str]:
+    """Create a special path marker for internal reference tracking."""
+    return [*path, SPECIAL_PATH_FORMAT.format(keyword)]
+
+
+def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPositions, index: int) -> list[DataType]:
+    """Return the field's enum member literals whose enum the module defines at or after the model at ``index``.
+
+    A member is a value, so a deferred annotation does not resolve it later: reading the class evaluates the member
+    to a ``ForwardRef`` that stays inside the ``Literal``, unless the annotation is a string. ``positions`` gives each
+    model of the module its order.
+    """
+    return [
+        data_type
+        for data_type in field.data_type.all_data_types
+        if (reference := data_type._enum_member_literal_reference) is not None  # noqa: SLF001
+        and positions.rank(reference) >= index
+    ]
+
+
+def _hidden_type_names(model: DataModel) -> Collection[str | None]:
+    """Return the names of the model's fields that hide a type named by an annotation of the model.
+
+    Python looks an annotation up in the class namespace first. A library that resolves string annotations
+    from the module still finds such a type when it is written as a string, like a forward reference.
+    """
+    if not type(model).RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
+        return ()
+    return {
+        reference.short_name
+        for field in model.fields
+        for data_type in field.data_type.all_data_types
+        if (reference := _annotated_reference(data_type)) is not None and not data_type.alias
+    } & {field.name for field in model.fields if model.field_name_hides_types(field)}
+
+
+def unused_model_lists(
+    host: ReplacedRootsHost, state: _FinalizeState[Any]
+) -> Iterator[tuple[DataModel, ModulePath, list[DataModel]]]:
+    """Yield each unused model with the module and the model list it leaves.
+
+    A root model that collapsing replaced leaves the list of the module that writes it now.
+    """
+    replaced_root_modules = (
+        {
+            id(model): (ctx.module_key, ctx.models)
+            for ctx in state.contexts
+            for model in ctx.models
+            if id(model) in replaced_root_models
+        }
+        if (replaced_root_models := host._replaced_root_models)  # noqa: SLF001
+        else {}
+    )
+    for unused_model in state.unused_models:
+        module, models = replaced_root_modules.pop(id(unused_model), None) or state.model_to_module_models[unused_model]
+        yield unused_model, module, models

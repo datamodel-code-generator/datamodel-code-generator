@@ -1,7 +1,7 @@
 """Check the pass pipeline of ``Parser.parse()``, and record which passes one generation runs.
 
-Every run checks the tables of ``src/datamodel_code_generator/parser/base.py`` (``Parser`` runs them through
-``parser/_pipeline.py``):
+Every run checks the tables of ``src/datamodel_code_generator/parser/_passes/_tables.py`` (``Parser`` runs them
+through ``parser/_pipeline.py``):
 
 * the table runs every declaration of ``parser/_pass_decls.py`` once, in the order ``PASS_DECLS`` lists them;
 * each pass runs in the phase its segment enters, module passes in module bodies and global passes elsewhere;
@@ -71,6 +71,7 @@ from datamodel_code_generator.parser._pass_decls import (  # noqa: E402, PLC2701
     PassKind,
     Scope,
 )
+from datamodel_code_generator.parser._passes._tables import PIPELINE  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._phases import (  # noqa: E402, PLC2701
     DecisionPass,
     DecisionWriter,
@@ -109,7 +110,6 @@ __all__ = [
     "decision_order",
 ]
 
-PIPELINE: tuple[StepLike[Any, Any], ...] = Parser._Parser__PIPELINE  # noqa: SLF001
 BOUNDARIES = (Boundary.PARSED, Boundary.FACTS_FINAL, Boundary.DECIDED, Boundary.RENDER_READY)
 """The boundaries the segments enter, in order; ``MODULE_DONE`` ends each module body."""
 REPAIRS = frozenset({

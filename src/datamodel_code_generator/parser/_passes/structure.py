@@ -1,7 +1,7 @@
 """The structure passes (L3): the output modules the settled models are grouped into, deduplicated and merged.
 
 Each pass is a function of the parser and the structure state or the run, called from the pipeline tables of
-``parser/base.py``; the parser comes in through ``StructureHost``, which ``Parser`` satisfies structurally.
+``parser/_passes/_tables.py``; the parser comes in through ``StructureHost``, which ``Parser`` satisfies structurally.
 """
 
 from __future__ import annotations

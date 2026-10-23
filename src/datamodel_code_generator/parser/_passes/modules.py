@@ -1,10 +1,12 @@
 """The module passes (L5): what the models of one output module take while the module is processed.
 
 Each pass is a function of the parser and the models or the state of the module, called from the pipeline tables of
-``parser/base.py`` once per output module; the parser comes in through ``ModulesHost`` (reuse, collapse and
-discriminator tags through the narrower ``ReuseHost``, ``CollapseHost`` and ``DiscriminatorHost``) and the state
-through ``ModuleStateView``, which ``Parser`` and its module state satisfy structurally. ``name_inner_models_in_rules``
-runs once every module is processed, on the run through ``ModulesRun``.
+``parser/_passes/_tables.py`` once per output module; the parser comes in through ``ModulesHost`` (importing the
+models of other modules, reuse, collapse and discriminator tags through the narrower ``ImportFromHost``, ``ReuseHost``,
+``CollapseHost`` and ``DiscriminatorHost``) and the state through ``ModuleStateView``, which ``Parser`` and its module
+state satisfy structurally. ``process_each_module`` runs the passes of each module through the
+``_process_single_module`` hook (``ModuleLoopHost``); ``write_rule_aliases_as_classes`` (``RuleAliasHost``) and
+``name_inner_models_in_rules`` run once every module is processed, on the run through ``ModulesRun``.
 """
 
 from __future__ import annotations
@@ -48,6 +50,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
+    BaseClassDataType,
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
@@ -61,7 +64,9 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._facts import Phase
+from datamodel_code_generator.parser._finality import module_checkpoint, pass_scope
+from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL, skips_root_model
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
@@ -76,9 +81,11 @@ from datamodel_code_generator.parser._passes._shared import (
     TypeOverrideHost,
     _annotated_reference,
     _assign_module_name,
+    _context_models,
     _copy_data_type,
     _declares_unique_items,
     _derived_models,
+    _get_data_type_target_full_name,
     _get_discriminator_field_value,
     _get_enum_from_base,
     _get_mapping_discriminator_values,
@@ -91,6 +98,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_discriminator_data_types,
     _iter_import_bindings,
     _ModelPositions,
+    _named_data_types,
     _parsed_rule_data_types,
     _register_data_type_import,
     _restore_inherited_field_names_for_unique_aliases,
@@ -107,29 +115,38 @@ from datamodel_code_generator.parser._passes._shared import (
     names_left_by_replaced_roots,
     record_renamed_type,
     redirect_collapsed_reuse_users,
+    register_reference_import,
     replace_model_in_list,
     require_update_action,
     set_reference_expression,
 )
-from datamodel_code_generator.parser._passes._state import RecursionFacts, _RenamedType
+from datamodel_code_generator.parser._passes._state import ConfigT, ContextT, RecursionFacts, ResultT, _RenamedType
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
 from datamodel_code_generator.types import ANY, NONE, DataType, Types
 
 if TYPE_CHECKING:
+    from collections import defaultdict
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
+    from pathlib import Path
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.config import ParserConfig
-    from datamodel_code_generator.enums import TargetPydanticVersion
+    from datamodel_code_generator.enums import DataclassArguments, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch, VariantTagSource
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ModelShapes, ShapeRow
     from datamodel_code_generator.parser._passes._shared import _ReuseOptimizationContext
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _ConstNarrowing
+    from datamodel_code_generator.parser._passes._state import (
+        ModuleContextView,
+        ModulePath,
+        ProcessingRun,
+        _ConstNarrowing,
+        _PreparedModule,
+    )
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelType, Reference
     from datamodel_code_generator.types import DataTypeManager
@@ -137,19 +154,24 @@ if TYPE_CHECKING:
 __all__ = [
     "CollapseHost",
     "DiscriminatorHost",
+    "ImportFromHost",
+    "ModuleLoopHost",
     "ModuleStateView",
     "ModulesHost",
     "ModulesRun",
     "ReuseHost",
+    "RuleAliasHost",
     "apply_base_class_type_overrides",
     "apply_discriminator_type",
     "apply_field_type_overrides",
     "change_field_name",
+    "change_module_from_import",
     "collapse_module_root_models",
     "collapse_root_models",
     "extract_module_inherited_enums",
     "mark_unused_models_start",
     "name_inner_models_in_rules",
+    "process_each_module",
     "record_decimal_alias_models",
     "remove_module_overridden_models",
     "rename_fields_hiding_types",
@@ -163,6 +185,7 @@ __all__ = [
     "sort_models",
     "type_const_narrowed_values",
     "type_module_dict_keys_by_root_types",
+    "write_rule_aliases_as_classes",
 ]
 
 
@@ -507,6 +530,64 @@ class DiscriminatorHost(Protocol):
         self, original_field_name: str, field_name: str, class_name: str | None = None
     ) -> str | None:
         """Return the serialization alias configured for a field, if any."""
+
+
+class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
+    """The option, the import ledger and the replaced roots that importing the models of other modules reads."""
+
+
+class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
+    """The hook and run state of the parser that processing the output modules one by one calls and writes."""
+
+    _defers_tagged_unions: bool
+
+    def _process_single_module(  # noqa: PLR0913, PLR0917
+        self,
+        module_: ModulePath,
+        models: list[DataModel],
+        results: dict[ModulePath, ResultT],
+        config: ConfigT,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
+        require_update_action_models: list[str],
+        unused_models: list[DataModel],
+    ) -> ContextT:
+        """Process a single module and return its context."""
+
+
+class RuleAliasHost(ImportFromHost, Protocol):
+    """The options, run state and hook of the parser that writing rule aliases as classes reads and calls."""
+
+    @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The builder that changes the model graph through the generation store."""
+
+    @property
+    def _prepared_modules(self) -> list[_PreparedModule[Any]]:
+        """The output modules as ``_process_single_module`` left them, for their render preparation."""
+
+    @property
+    def custom_template_dir(self) -> Path | None:
+        """The directory of custom templates, if configured."""
+
+    @property
+    def data_model_type(self) -> type[DataModel]:
+        """The model type of the output."""
+
+    @property
+    def dataclass_arguments(self) -> DataclassArguments | None:
+        """The arguments of the dataclass decorator, if configured."""
+
+    @property
+    def extra_template_data(self) -> defaultdict[str, Any]:
+        """The extra template data, by class name."""
+
+    @property
+    def keyword_only(self) -> bool:
+        """Whether the models take keyword-only arguments."""
+
+    def _create_data_model(self, model_type: type[DataModel] | None = None, **kwargs: Any) -> DataModel:
+        """Create a model of ``model_type``, the model type of the output by default."""
 
 
 class ModuleStateView(Protocol):
@@ -2982,3 +3063,190 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
             is_init=ctx.is_init,
             internal_modules=run.internal_modules,
         )
+
+
+def change_from_import(  # noqa: PLR0913
+    parser: ImportFromHost,
+    models: list[DataModel],
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    *,
+    init: bool,
+    internal_modules: set[tuple[str, ...]] | None = None,
+    model_path_to_module_name: dict[str, str] | None = None,
+) -> None:
+    """Import into a module the models of other modules that its models reference, and name them by their imports."""
+    models = module_members(parser, models)
+    members = keyed_models(models, "module members")
+    internal_modules = internal_modules or set()
+    model_path_to_module_name = model_path_to_module_name or {}
+
+    ledger = parser._import_ledger  # noqa: SLF001
+    for model in models:
+        ledger.add_name(imports, scoped_model_resolver, [model.path], model.class_name)
+    for model in models:
+        producer = ImportProducer("change-from-import", model)
+        before_import = model.imports
+        ledger.append(imports, before_import, producer)
+        current_module_name = _get_model_module_name(model, model_path_to_module_name)
+        # Some imports are derived from type hints, so aliases can affect them.
+        import_sensitive_alias_changed = False
+        for data_type in _named_data_types(model):
+            match data_type.reference:
+                case None:
+                    continue
+                case reference if members.key_of(reference) in members.models:
+                    continue
+                case reference:
+                    pass
+
+            if alias := register_reference_import(
+                reference,
+                current_module_name,
+                _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+                imports,
+                scoped_model_resolver,
+                init=init,
+                internal_modules=internal_modules,
+                base_class=isinstance(data_type, BaseClassDataType),
+                producer=producer,
+                treat_dot_as_module=parser.treat_dot_as_module,
+                import_ledger=parser._import_ledger,  # noqa: SLF001
+            ):
+                data_type.alias = alias
+                import_sensitive_alias_changed = True
+        if import_sensitive_alias_changed:  # pragma: no cover
+            after_import = model.imports
+            if before_import != after_import:
+                ledger.remove(imports, before_import, producer)
+                ledger.append(imports, after_import, producer)
+
+
+def change_module_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
+    """Import the referenced models of other modules into the module."""
+    change_from_import(
+        parser,
+        state.model_list,
+        state.imports,
+        state.scoped_model_resolver,
+        init=state.is_init,
+        internal_modules=state.internal_modules,
+        model_path_to_module_name=state.model_path_to_module_name,
+    )
+
+
+def process_each_module(
+    parser: ModuleLoopHost[ConfigT, ContextT, ResultT], run: ProcessingRun[ConfigT, ContextT, ResultT]
+) -> None:
+    """Process every output module through ``_process_single_module``, in module order."""
+    module_models = run.module_models
+    require_update = parser._recursion_facts["require_update"]  # noqa: SLF001
+    require_update_action_models = [
+        model.path for _, models in module_models for model in models if model_key_of(model.reference) in require_update
+    ]
+    for position, (module_, models) in enumerate(module_models, 1):
+        parser._defers_tagged_unions = position < len(module_models)  # noqa: SLF001
+        with pass_scope("Parser._process_single_module", Phase.MODULES), module_checkpoint(models):
+            ctx = parser._process_single_module(  # noqa: SLF001
+                module_,
+                models,
+                run.module_results,
+                run.config,
+                run.internal_modules,
+                run.model_path_to_module_name,
+                require_update_action_models,
+                run.unused_models,
+            )
+        run.module_to_import[module_] = ctx.imports
+        run.contexts.append(ctx)
+    settle_update_actions(parser, require_update_action_models, _context_models(run.contexts))
+
+
+def settle_update_actions(parser: RecursionFactsHost, listed_paths: Iterable[str], models: Iterable[DataModel]) -> None:
+    """Give the reference update action to the models at the paths that ``_process_single_module`` listed.
+
+    The parser lists the paths of the models needing the action. A listed path that none of them holds, as one a
+    parser extension lists, names the model at it (row ``legacy-keyless-reference-by-path``).
+    """
+    keyed = keyed_models(models, "listed reference update actions")
+    recursion_facts = parser._recursion_facts  # noqa: SLF001
+    require_update = recursion_facts["require_update"]
+    held = {keyed.models[key].path for key in require_update & keyed.models.keys()}
+    parser._recursion_facts = RecursionFacts(  # noqa: SLF001
+        require_update=require_update.union(
+            keyed.resolve(path for path in listed_paths if path not in held) - {UNRESOLVED_MODEL_KEY}
+        ),
+        circular_roots=recursion_facts["circular_roots"],
+    )
+
+
+def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any, ModuleContextView, Any]) -> None:
+    """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
+
+    An alias has no class body for the rules. Whether collapse inlines an alias into all its holders is final only
+    once every module is processed, so each alias still written takes its class here, under its model key and the
+    source location the model metadata names for it. The class imports the models of other modules that its rules
+    name, as ``change_from_import`` imports them for a class that writes its rules from the start.
+    """
+    unused = {id(model) for model in run.unused_models}
+    if not (
+        aliases := [
+            model
+            for model in _context_models(run.contexts)
+            if id(model) not in unused and model._unwritable_runtime_rules  # noqa: SLF001
+        ]
+    ):
+        return
+    root_model_type = cast(
+        "Callable[[], type[DataModel]]", parser.data_model_type.SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL
+    )()
+    replacements = {
+        id(model): parser._create_data_model(  # noqa: SLF001
+            model_type=root_model_type,
+            reference=model.reference,
+            fields=model.fields,
+            decorators=model.decorators,
+            custom_base_class=model.custom_base_class,
+            custom_template_dir=parser.custom_template_dir,
+            extra_template_data=parser.extra_template_data,
+            path=model.file_path,
+            description=model.description,
+            nullable=model.nullable,
+            keyword_only=parser.keyword_only,
+            treat_dot_as_module=parser.treat_dot_as_module,
+            dataclass_arguments=parser.dataclass_arguments,
+        )
+        for model in aliases
+    }
+    for model_list in chain(
+        (ctx.models for ctx in run.contexts),
+        (models for _, models in run.module_models),
+        (prepared.model_list for prepared in parser._prepared_modules),  # noqa: SLF001
+        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),  # noqa: SLF001
+    ):
+        model_list[:] = [replacements.get(id(model), model) for model in model_list]
+    for model in aliases:
+        parser._graph_builder.replace_model(model, replacements[id(model)])  # noqa: SLF001
+    if (identities := run.model_identities) is not None:
+        run.model_identities = {replacements.get(id(model), model): identity for model, identity in identities.items()}
+    classes = {id(model) for model in replacements.values()}
+    for ctx in run.contexts:
+        members = keyed_models(module_members(parser, ctx.models), "module members")
+        for model in ctx.models:
+            if id(model) not in classes:
+                continue
+            for data_type in _rule_data_types(model):
+                if (reference := data_type.reference) is None or members.key_of(reference) in members.models:
+                    continue
+                set_reference_expression(
+                    parser,
+                    data_type,
+                    _get_model_module_name(model, run.model_path_to_module_name),
+                    _get_data_type_target_full_name(data_type, reference, run.model_path_to_module_name),
+                    ctx.imports,
+                    ctx.scoped_model_resolver,
+                    same_module=False,
+                    init=ctx.is_init,
+                    internal_modules=run.internal_modules,
+                    producer=ImportProducer("change-from-import", model),
+                )

@@ -18,6 +18,7 @@ from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONDECIMAL
 from datamodel_code_generator.model.types import DataTypeManager as _CommonDataTypeManager
 from datamodel_code_generator.parser._passes._shared import _resolve_default_scalar_data_type
+from datamodel_code_generator.parser.base import render_prep
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import PythonRuntimeExpression
 from datamodel_code_generator.reference import ModelType, Reference
@@ -177,7 +178,7 @@ def test_custom_renderer_can_disable_deserialized_defaults() -> None:
         fields=[field],
     )
 
-    parser._Parser__deserialize_default_value(model, field)
+    render_prep.deserialize_default_value(parser, model, field)
 
     assert DataModel.SUPPORTS_DESERIALIZED_DEFAULT_VALUES
     assert not model.SUPPORTS_DESERIALIZED_DEFAULT_VALUES
@@ -206,7 +207,7 @@ def test_custom_data_type_manager_fails_closed_without_value_semantics() -> None
         fields=[field],
     )
 
-    assert not parser._Parser__deserialize_default_value(model, field)
+    assert not render_prep.deserialize_default_value(parser, model, field)
     assert field.default == "1.23"
     assert not field.runtime_expression_imports
 
@@ -237,7 +238,7 @@ def test_decimal_constraint_imports_stay_unmodified_without_a_deserialized_defau
         fields=[field],
     )
 
-    parser._Parser__set_validate_default_on_fields([model])
+    render_prep.set_validate_default_on_fields(parser, [model])
 
     assert data_type.kwargs == {"ge": Decimal(0)}
     assert not data_type.runtime_expression_imports
@@ -265,7 +266,7 @@ def test_decimal_constraint_non_runtime_values_stay_unmodified_after_deserializa
         fields=[decimal_field, constraint_field],
     )
 
-    parser._Parser__set_validate_default_on_fields([model])
+    render_prep.set_validate_default_on_fields(parser, [model])
 
     assert isinstance(decimal_field.default, PythonRuntimeExpression)
     assert constraint_type.kwargs == {"strict": True}
@@ -294,7 +295,7 @@ def test_decimal_constraint_import_override_stays_unmodified_after_deserializati
         fields=[constraint_field, decimal_field],
     )
 
-    parser._Parser__set_validate_default_on_fields([model])
+    render_prep.set_validate_default_on_fields(parser, [model])
 
     assert isinstance(decimal_field.default, PythonRuntimeExpression)
     assert constraint_type.kwargs == {"ge": Decimal(0)}

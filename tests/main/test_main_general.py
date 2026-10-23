@@ -829,7 +829,9 @@ def test_model_graph_check_reports_a_differing_reference_graph_answer(
     (`1`, as the test suite sets it) raises where the two answers differ; `report:<path>` appends the difference to the
     file as one JSON line; with the check off (`0`) the snapshot's answer quotes the containers of the cycle.
     """
-    monkeypatch.setattr("datamodel_code_generator.parser.base.find_circular_sccs", lambda _graph: [])
+    from datamodel_code_generator.parser.base import render_prep
+
+    monkeypatch.setattr(render_prep, "find_circular_sccs", lambda _graph: [])
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     source = JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json"

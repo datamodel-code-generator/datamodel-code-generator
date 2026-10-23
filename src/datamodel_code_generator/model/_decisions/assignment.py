@@ -4,8 +4,9 @@ Every input is an immutable fact of ``AssignmentInputs``, so ``classify_assignme
 model names its row (``AssignmentRow``) and the field's backend reports what it writes (``WrittenAssignment``); the
 adapter ``model/base.py:_assignment_inputs`` reads both from the live objects, and
 ``model/base.py:DataModel._field_assignment_facts`` is the one entry for the passes that read the result: the L1
-construction key (``DataModel.FIELD_CONSTRUCTION_ORDER_KEY``), L5 ``Parser.__fix_constructor_field_ordering``, L6
-``Parser.__fix_tag_opt_out_field_ordering``, the hidden-type checks and the signature warning. The public hooks
+construction key (``DataModel.FIELD_CONSTRUCTION_ORDER_KEY``), in ``parser/_passes/render_prep.py``
+``fix_constructor_field_ordering`` and ``fix_tag_opt_out_field_ordering``, the hidden-type checks and the signature
+warning. The public hooks
 ``FIELD_ASSIGNMENT_CHECKER``, ``FIELD_DEFAULT_CLASSIFIER``, ``FIELD_PARTICIPATES_IN_CONSTRUCTOR``,
 ``FIELD_CONSTRUCTION_ORDER_KEY`` and ``DataModel.field_binds_class_attribute`` of the built-in outputs are views of
 the same rows.

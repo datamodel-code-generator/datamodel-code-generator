@@ -121,7 +121,7 @@ ImportPass: TypeAlias = Literal[
   into the shared imports (L1).
 * ``deferred-annotations``: ``from __future__ import annotations``, shared by ``_prepare_parse_config`` and per module
   by ``_get_module_future_imports`` (L7).
-* ``change-from-import``: ``__change_from_import`` (L5 prepare), the imports of each model and the models of other
+* ``change-from-import``: ``change_from_import`` (L5 prepare), the imports of each model and the models of other
   modules that it references.
 * ``collapse-root-models``: ``collapse_root_models_in_scope`` and ``import_collapsed_inner_models`` (L5), the
   imports of inlined root types and of the inner models that holders are redirected to, without those of the roots.
@@ -132,7 +132,7 @@ ImportPass: TypeAlias = Literal[
 * ``import-removed-reuse-canonicals``, ``import-renamed-types``, ``import-enum-member-literal-classes``: the L6
   repairs of the same names.
 * ``generic-base-class``: ``apply_generic_base_class`` (L6), the generated base model instead of the output base class.
-* ``type-alias-fields``: ``__prepare_type_alias_fields``, drops the imports a prepared type-alias body no longer uses.
+* ``type-alias-fields``: ``prepare_type_alias_fields``, drops the imports a prepared type-alias body no longer uses.
 * ``model-imports-snapshot``: ``_finalize_modules``, the imports of each model once more, read after the generic base
   class.
 * ``unused-models``: ``_finalize_modules``, drops the imports of the models that collapse left unused.
@@ -141,11 +141,11 @@ ImportPass: TypeAlias = Literal[
 * ``remove-unused``: ``_finalize_modules``, drops the imports whose name no model uses.
 * ``import-conflicts``: the output model's ``resolve_module_import_conflicts``, recorded through ``external``.
 * ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
-* ``reused-variant-literal``: ``__alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
+* ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.
 * ``shadowed-imports``: ``alias_shadowed_imports`` (L6), aliases of structured imports that a field name hides.
 * ``import-overrides``: ``_remap_imports``, ``--import-overrides`` moving names to other modules.
-* ``future-imports``: ``__render_modules`` and ``_get_module_future_imports`` (L7), moving the ``__future__`` imports
+* ``future-imports``: ``render_modules`` and ``_get_module_future_imports`` (L7), moving the ``__future__`` imports
   out to write them first.
 """
 

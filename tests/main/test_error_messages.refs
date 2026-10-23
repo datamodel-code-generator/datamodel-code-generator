@@ -245,6 +245,9 @@ empty	main/malformed/parsed_empty_pointer.py
 missing	main/malformed/parsed_missing_pointer.py
 [test_parse_file_object_path_without_resolved_ref]
 	main/malformed/parsed_empty_pointer.py
+[test_pass_warnings_name_the_package_once_traced]
+finish-pass	main/error_messages/pass_warnings_name_the_package_once_traced[finish-pass].txt
+module-pass	main/error_messages/pass_warnings_name_the_package_once_traced[module-pass].txt
 [test_remote_dangling_ref_omits_credentials_and_query]
 warning	main/error_messages/remote_dangling_ref_omits_credentials_and_query[warning].py
 [test_remote_resource_ref_warning_omits_credentials_and_query]

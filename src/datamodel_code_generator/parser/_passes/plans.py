@@ -1,7 +1,7 @@
 """The plan passes (L4): what the passes that process each output module read, decided before the first module.
 
-Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/base.py``; the parser
-comes in through ``PlansHost``, which ``Parser`` satisfies structurally.
+Each pass is a function of the parser and the run, called from the pipeline tables of ``parser/_passes/_tables.py``;
+the parser comes in through ``PlansHost``, which ``Parser`` satisfies structurally.
 """
 
 from __future__ import annotations
