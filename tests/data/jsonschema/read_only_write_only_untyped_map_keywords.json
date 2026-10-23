@@ -1,0 +1,172 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Patterned": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    },
+    "Extra": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/Flagged"
+      }
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "next": {
+          "$ref": "#/$defs/Node"
+        }
+      }
+    },
+    "PatternedWithProperties": {
+      "$ref": "#/$defs/Patterned",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "ExtraWithProperties": {
+      "$ref": "#/$defs/Extra",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "BoundedExtra": {
+      "$ref": "#/$defs/Extra",
+      "minProperties": 1
+    },
+    "NodeWithProperties": {
+      "$ref": "#/$defs/Node",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "NodeHolder": {
+      "type": "object",
+      "properties": {
+        "node": {
+          "$ref": "#/$defs/NodeWithProperties"
+        }
+      }
+    },
+    "MemberExtra": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Flagged"
+          }
+        }
+      ]
+    },
+    "MemberExtraBesideBase": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Flagged"
+          }
+        }
+      ]
+    },
+    "MemberMap": {
+      "allOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Flagged"
+          }
+        }
+      ]
+    },
+    "ExtraBesideBase": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/Flagged"
+      }
+    },
+    "PatternedBesideBase": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "patternProperties": {
+        "^x-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "patterned_with_properties": {
+      "$ref": "#/$defs/PatternedWithProperties"
+    },
+    "extra_with_properties": {
+      "$ref": "#/$defs/ExtraWithProperties"
+    },
+    "bounded_extra": {
+      "$ref": "#/$defs/BoundedExtra"
+    },
+    "node_holder": {
+      "$ref": "#/$defs/NodeHolder"
+    },
+    "member_extra": {
+      "$ref": "#/$defs/MemberExtra"
+    },
+    "member_extra_beside_base": {
+      "$ref": "#/$defs/MemberExtraBesideBase"
+    },
+    "member_map": {
+      "$ref": "#/$defs/MemberMap"
+    },
+    "extra_beside_base": {
+      "$ref": "#/$defs/ExtraBesideBase"
+    },
+    "patterned_beside_base": {
+      "$ref": "#/$defs/PatternedBesideBase"
+    }
+  }
+}

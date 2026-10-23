@@ -511,6 +511,13 @@ def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
     return obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only
 
 
+def _has_map_keywords(obj: JsonSchemaObject) -> bool:
+    """Return whether a schema has keywords that type the keys or values of an object map."""
+    return bool(
+        obj.patternProperties or obj.propertyNames is not None or isinstance(obj.additionalProperties, JsonSchemaObject)
+    )
+
+
 def _then_parse_refs(build: Callable[[JsonSchemaParser, _Site], object]) -> Callable[[JsonSchemaParser, _Site], None]:
     """Return the build of a definition row: ``build``, then the references of the site's schema."""
 
@@ -4372,10 +4379,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
         schema has neither. patternProperties and propertyNames type the values and keys of an object map, propertyNames
         only where no patternProperties give the keys; a schema with properties or allOf, and each inline allOf member
-        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing, and beside
-        properties additionalProperties type nothing either where the model does not write their type
-        (``_writes_typed_additional_properties``). A $ref outside allOf with map keywords beside it is read with them as
-        the one schema its model is built from (``_merged_ref_model_schema``).
+        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing, and
+        additionalProperties type nothing either where the model is no map (``_schema_builds_map_model``) and does not
+        write their type (``_writes_typed_additional_properties``); those of an inline allOf member type something only
+        where the allOf merges into a map. A $ref outside allOf with sibling keywords is read with them as the one
+        schema its model is built from (``_merged_ref_model_schemas``).
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4386,9 +4394,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         has_inline_variant = False
         references: dict[str, None] = {}
-        stack = [(root_schema, True, False)]
+        stack: list[tuple[JsonSchemaObject, bool, bool | None]] = [(root_schema, True, None)]
         while stack:
-            schema, detect_inline_variant, merged = stack.pop()
+            schema, detect_inline_variant, merged_into_map = stack.pop()
             if (
                 detect_inline_variant
                 and not has_inline_variant
@@ -4398,13 +4406,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._rw_model_references_cache[resolved_ref] = result = (True, ())
                     return result
                 has_inline_variant = True
+            if merged_into_map is None:
+                schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
+                builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
+                types_map = not (model_schema.properties or model_schema.allOf)
+                types_extras = self._writes_typed_additional_properties or builds_map
+            else:
+                model_schema = schema
+                builds_map = types_extras = merged_into_map
+                types_map = False
             for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
                 if not ref:
                     continue
                 if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
                     references.setdefault(nested_ref, None)
-            model_schema = schema if merged else self._merged_ref_model_schema(schema, resolved_ref)
-            types_map = not (merged or model_schema.properties or model_schema.allOf)
             property_name_refs, property_name_schemas = (
                 self._get_rw_property_name_sources(property_names=schema.propertyNames, defining_ref=resolved_ref)
                 if types_map and not model_schema.patternProperties
@@ -4413,36 +4428,63 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for ref in property_name_refs:
                 if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
                     references.setdefault(nested_ref, None)
-            stack.extend((item, True, False) for item in property_name_schemas)
+            stack.extend((item, True, None) for item in property_name_schemas)
             stack.extend(
-                self._iter_rw_model_schema_children(
+                (item, detect, builds_map if merged else None)
+                for item, detect, merged in self._iter_rw_model_schema_children(
                     schema,
                     detect_inline_variant=detect_inline_variant,
                     types_map=types_map,
-                    types_extras=self._writes_typed_additional_properties or not model_schema.properties,
+                    types_extras=types_extras,
                 )
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
 
-    def _merged_ref_model_schema(self, schema: JsonSchemaObject, defining_ref: str) -> JsonSchemaObject:
-        """Return the schema whose keywords decide what the map keywords of ``schema`` type.
+    def _merged_ref_model_schemas(
+        self, schema: JsonSchemaObject, defining_ref: str
+    ) -> tuple[JsonSchemaObject, JsonSchemaObject]:
+        """Return the schema the walk reads for ``schema`` and the schema whose keywords decide what its keywords type.
 
-        The model of a $ref with sibling keywords is built from the $ref merged with them, so where patternProperties,
-        propertyNames or a schema-valued additionalProperties sit beside a $ref outside allOf, that merged schema
-        decides; any other schema decides for itself.
+        The model of a $ref with sibling keywords is built from the $ref merged with them, so where map keywords sit
+        beside a $ref outside allOf, that merged schema decides what they type. Where the target builds a map with map
+        keywords and the merged schema builds none (``_schema_builds_map_model``), the model types none of the target's
+        map keywords and never names the target's model, so the walk reads the merged schema in place of the reference
+        to the target. Any other schema decides for itself.
         """
-        if not (
-            (
-                schema.patternProperties
-                or schema.propertyNames is not None
-                or isinstance(schema.additionalProperties, JsonSchemaObject)
-            )
-            and _merges_ref_siblings(schema)
-        ):
-            return schema
+        if not _merges_ref_siblings(schema):
+            return schema, schema
         with self._inherited_ref_context(defining_ref):
-            return self._merge_ref_with_schema(schema)
+            if self._is_ref_circular(resolved_ref := self._ref_path(ref := self._lenient_ref(cast("str", schema.ref)))):
+                return schema, schema
+            target = self._schema_object(self._ref_target_dump(ref, resolved_ref)[0])
+            target_builds_map = _has_map_keywords(target) and self._schema_builds_map_model(target, defining_ref)
+            if not (target_builds_map or _has_map_keywords(schema)):
+                return schema, schema
+            merged = self._merge_ref_with_schema(schema)
+        if target_builds_map and not self._schema_builds_map_model(merged, defining_ref):
+            return merged, merged
+        return schema, merged
+
+    def _schema_builds_map_model(self, schema: JsonSchemaObject, defining_ref: str) -> bool:
+        """Return whether the model built from a schema is an object map, whose map keywords type its keys and values.
+
+        A schema with properties builds a model with fields. An allOf builds a map only where the schema has no
+        patternProperties or propertyNames and every item is an object map (``_is_all_of_mapping_item``), as
+        ``_merge_all_of_root_schema`` merges it; otherwise the allOf builds a model with fields or bases.
+        """
+        if schema.properties:
+            return False
+        if not schema.allOf:
+            return True
+        if schema.patternProperties or schema.propertyNames is not None:
+            return False
+        with self._inherited_ref_context(defining_ref):
+            return all(
+                isinstance(item, JsonSchemaObject)
+                and self._is_all_of_mapping_item(self._load_ref_schema_object(item.ref) if item.ref else item)
+                for item in schema.allOf
+            )
 
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""
@@ -9968,6 +10010,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged["required"] = required
         return _located(merged, children[-1].schema_location if children else None)
 
+    def _is_all_of_mapping_item(self, schema: JsonSchemaObject) -> bool:
+        """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
+        return not (
+            schema.properties
+            or schema.patternProperties
+            or schema.propertyNames is not None
+            or not _is_object_only_type(_non_null_types(schema.type) if self.intersects_allof_keywords else schema.type)
+            or not isinstance(schema.additionalProperties, JsonSchemaObject)
+        )
+
     def _merge_all_of_root_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:  # noqa: PLR0912
         """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
         if obj.properties or obj.patternProperties or obj.propertyNames is not None:
@@ -10038,15 +10090,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         **obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True),
                     })
                 )
-            if (
-                schema.properties
-                or schema.patternProperties
-                or schema.propertyNames is not None
-                or not _is_object_only_type(
-                    _non_null_types(schema.type) if self.intersects_allof_keywords else schema.type
-                )
-                or not isinstance(schema.additionalProperties, JsonSchemaObject)
-            ):
+            if not self._is_all_of_mapping_item(schema):
                 return None
             mapping_schemas.append(schema)
 

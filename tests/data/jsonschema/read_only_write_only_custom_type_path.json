@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Extended": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "flagged": {
+          "$ref": "#/$defs/Flagged",
+          "customTypePath": "builtins.dict"
+        }
+      }
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        },
+        "flagged": {
+          "$ref": "#/$defs/Flagged",
+          "customTypePath": "builtins.dict"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "extended": {
+      "$ref": "#/$defs/Extended"
+    },
+    "other": {
+      "$ref": "#/$defs/Other"
+    }
+  }
+}

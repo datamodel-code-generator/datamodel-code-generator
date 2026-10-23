@@ -27185,6 +27185,69 @@ def test_main_read_only_write_only_external_root_inline_object(output_file: Path
 
 
 @pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_untyped_map_keywords(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Keep one class for the models that reach a readOnly model only through map keywords they do not type.
+
+    ``PatternedWithProperties`` and ``ExtraWithProperties`` merge a map with their properties, the allOf members of
+    ``MemberExtra`` and ``MemberExtraBesideBase`` and the allOf of ``ExtraBesideBase`` and ``PatternedBesideBase`` build
+    models with fields: their map keywords type nothing there (the additionalProperties of a model beside its fields
+    only where pydantic v2 BaseModel or TypedDict writes their type), so those models keep one class, as without the
+    option, while the readOnly model and the maps that type it (``BoundedExtra``, ``MemberMap``) split. msgspec decodes
+    the payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_untyped_map_keywords.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    flagged = {"name": "n"}
+    valid = {
+        "patterned_with_properties": {"a": "kept", "x-a": flagged},
+        "extra_with_properties": {"k": flagged},
+        "bounded_extra": {"k": flagged},
+        "member_extra": {"a": "kept", "k": flagged},
+        "member_extra_beside_base": {"k": flagged},
+        "member_map": {"k": flagged},
+        "extra_beside_base": {"k": flagged},
+        "patterned_beside_base": {"b": "kept", "x-a": flagged},
+        "node_holder": {"node": {"next": {}}},
+    }
+    invalid = {"member_map": {"k": {"name": 1}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_untyped_map_keywords", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"msgspec.Struct", "typing.TypedDict"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
     "dedupe_args",
     [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
 )
@@ -27242,15 +27305,15 @@ def test_schema_graph_check_of_read_write_splits(
 ) -> None:
     """Report a model that does not split while the references to it read a request/response variant.
 
-    A reference under the additionalProperties of an inline allOf member makes the schema need variants, but the model
-    the allOf builds holds no field for it; the check (`1`) stops at the first such model and `report:<path>` appends
+    The reference of a property whose customTypePath gives its type makes the schema need variants, but the model
+    types the property with the custom type; the check (`1`) stops at the first such model and `report:<path>` appends
     each one as an `rw-split` line. The check runs under --dedupe-request-response-variants, where the schema graph
     decides the splits.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_additional_properties_allof_member.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_custom_type_path.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[
