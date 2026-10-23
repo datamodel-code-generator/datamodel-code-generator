@@ -40,6 +40,7 @@ from datamodel_code_generator.model.runtime_validation import (
 from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
+    _restore_inherited_field_names_for_unique_aliases,
     exact_import,
     is_ancestor_package_reference,
 )
@@ -66,13 +67,13 @@ from datamodel_code_generator.parser.base import (
     _is_pydantic_v2_data_model_field,
     _merge_data_type_modifiers,
     _needs_validate_default,
-    _restore_inherited_field_names_for_unique_aliases,
     _unwrap_type_alias,
     add_model_path_to_list,
     alias_shadowed_imports,
     escape_characters,
     get_module_directory,
     get_most_of_parent,
+    modules,
     override_required_field,
     plans,
     relative,
@@ -672,8 +673,8 @@ def test_apply_type_overrides_fast_path_preserves_models(parser_fixture: C) -> N
     parser_fixture._type_override_imports = {"Other.value": Import(from_="custom", import_="Value")}
     parser_fixture._model_type_override_imports = {}
 
-    parser_fixture._Parser__apply_field_type_overrides([model])
-    parser_fixture._Parser__apply_base_class_type_overrides([model])
+    modules.apply_field_type_overrides(parser_fixture, [model])
+    modules.apply_base_class_type_overrides(parser_fixture, [model])
 
     assert model.fields == [field]
 

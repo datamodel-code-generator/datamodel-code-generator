@@ -204,6 +204,16 @@ type = 2
 default = 1
 extras = 1
 
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_copy_data_type"]
+data_types = 2
+dict_key = 1
+enum_member_literals = 1
+kwargs = 1
+literals = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
+alias = 1
+
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_restore_inherited_field_names_for_unique_aliases"]
 alias = 1
 name = 2
@@ -238,15 +248,25 @@ file_path = 1
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."import_enum_member_literal_classes"]
 enum_member_literals = 1
 
+["src/datamodel_code_generator/parser/_passes/modules.py"."_rename_field_preserving_alias"]
+alias = 1
+name = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."_replace_default_enum_list_members"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."change_field_name"]
+alias = 1
+name = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."set_default_enum_member"]
+alias = 1
+
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_discriminator_type"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__change_field_name"]
-alias = 1
-name = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_from_import"]
 alias = 1
@@ -257,9 +277,6 @@ use_union_operator = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__init__"]
 results = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__set_default_enum_member"]
-alias = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__update_type_aliases"]
 alias = 1
@@ -289,13 +306,6 @@ type_has_null = 2
 default = 1
 extras = 1
 validation_aliases = 1
-
-["src/datamodel_code_generator/parser/base.py"."_copy_data_type"]
-data_types = 2
-dict_key = 1
-enum_member_literals = 1
-kwargs = 1
-literals = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
 '__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 2
@@ -330,16 +340,6 @@ is_tuple = 1
 kwargs = 1
 'kwargs[...]' = 1
 tuple_item_count = 1
-
-["src/datamodel_code_generator/parser/base.py"."_register_data_type_import"]
-alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."_rename_field_preserving_alias"]
-alias = 1
-name = 1
-
-["src/datamodel_code_generator/parser/base.py"."_replace_default_enum_list_members"]
-alias = 1
 
 ["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser._resolve_typename_collisions.resolve"]
 alias = 1

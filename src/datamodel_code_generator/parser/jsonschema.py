@@ -165,7 +165,7 @@ from datamodel_code_generator.parser._null_facts import (
     NullSources,
     resolve_null_facts,
 )
-from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
+from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
@@ -195,7 +195,6 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
-    _DERIVED_FROM_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     SPECIAL_PATH_FORMAT,

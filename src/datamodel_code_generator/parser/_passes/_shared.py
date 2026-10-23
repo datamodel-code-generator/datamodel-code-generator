@@ -2,16 +2,18 @@
 
 A helper that reads parser state takes it as arguments, or takes the parser through one of the narrow protocols below,
 which ``Parser`` satisfies structurally. This module imports no parser module but the generation store, the import
-ledger, the model graph ids, the shared keys and the run state, so it never imports ``parser/base.py``.
+ledger, the finality checks, the model graph ids, the shared keys and the run state, so it never imports
+``parser/base.py``.
 """
 
 from __future__ import annotations
 
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
 
 from typing_extensions import Protocol, final
 
@@ -23,19 +25,25 @@ from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import mapped_tags
 from datamodel_code_generator.model.base import (
     BaseClassDataType,
+    ConstraintsBase,
     DataModel,
     _find_base_classes,
     _keyed_answer,
+    _ModelKeys,
+    direct_base_models,
     get_inherited_fields,
+    linearize_data_models,
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser._finality import record_ordering_inputs
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
+    _DERIVED_FROM_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
 )
@@ -57,7 +65,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _RenamedType
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
@@ -1280,3 +1288,258 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             import_ledger=host._import_ledger,  # noqa: SLF001
         )
     )
+
+
+def _copy_data_type(data_type: DataType, *, register_references: bool = True) -> DataType:
+    """Copy a DataType tree without detaching its model references."""
+    copied_data_type = data_type.model_copy()
+    copied_data_type.parent = None
+    copied_data_type.children = []
+    copied_data_type.literals = list(data_type.literals)
+    copied_data_type.enum_member_literals = list(data_type.enum_member_literals)
+    if (kwargs := data_type.kwargs) is not None:
+        copied_data_type.kwargs = deepcopy(kwargs)
+
+    data_types = data_type.data_types
+    dict_key = data_type.dict_key
+    match data_types, dict_key:
+        case [], None:
+            copied_data_type.data_types = []
+        case _:
+            copied_data_type.data_types = _copy_data_types(data_types, register_references=register_references)
+            for nested_data_type in copied_data_type.data_types:
+                nested_data_type.parent = copied_data_type
+            if dict_key is not None:
+                copied_data_type.dict_key = _copy_data_type(dict_key, register_references=register_references)
+                copied_data_type.dict_key.parent = copied_data_type
+
+    if register_references:
+        copied_data_type.register_reference()
+    return copied_data_type
+
+
+def _copy_data_types(data_types: list[DataType], *, register_references: bool = True) -> list[DataType]:
+    """Copy DataType trees while preserving shared model references."""
+    return [_copy_data_type(data_type, register_references=register_references) for data_type in data_types]
+
+
+def _declares_unique_items(field: DataModelFieldBase) -> bool:
+    """Return whether a field declares ``uniqueItems: true``."""
+    match field.constraints:
+        case ConstraintsBase(unique_items=True) | {"uniqueItems": True}:
+            return True
+    return False
+
+
+def _unique_items_tuple(data_type: DataType) -> DataType | None:
+    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
+    if data_type.is_tuple:
+        return data_type
+    if data_type.is_list or data_type.is_set or data_type.is_frozen_set:
+        return None
+    return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
+
+
+def _annotated_reference(data_type: DataType) -> Reference | None:
+    """Return the type that the annotation of ``data_type`` names: its reference, or the enum of its enum members."""
+    return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
+
+
+@final
+class _ModelPositions:
+    """The position of each model in the model list of a module, found by model key."""
+
+    __slots__ = ("_keyed", "_positions", "paths")
+
+    def __init__(self, models: list[DataModel], site: str) -> None:
+        """Index ``models``, which ``site`` names in a violation."""
+        self._keyed = keyed_models(models, site)
+        self._positions = {model_key_of(model.reference): index for index, model in enumerate(models)}
+        self.paths: Mapping[str, int] = {model.path: index for index, model in enumerate(models)}
+        """The position of each model by path, as the ``DataModel`` hooks that take positions read them."""
+
+    def get(self, reference: Reference) -> int | None:
+        """Return the position of the model of the list that ``reference`` names (`KeyedModels.key_of`), or None."""
+        return self._positions.get(self._keyed.key_of(reference))
+
+    def rank(self, reference: Reference) -> int:
+        """Return the position of the model of the list that ``reference`` names, or -1."""
+        return self._positions.get(self._keyed.key_of(reference), -1)
+
+
+def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataModel]]:
+    """Map the model key of each base model to the models of ``models`` derived from it directly."""
+    keys = _ModelKeys("derived models")
+    derived_models: defaultdict[ModelKey, list[DataModel]] = defaultdict(list)
+    for derived_model in models:
+        for base_model in _find_base_classes(derived_model):
+            derived_models[keys.of(base_model)].append(derived_model)
+    return derived_models
+
+
+def _register_data_type_import(  # ruff: ignore[too-many-arguments]
+    data_type: DataType,
+    model: DataModel,
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    model_path_to_module_name: dict[str, str] | None,
+    *,
+    ledger: ModuleImportLedger,
+    producer: ImportProducer,
+) -> None:
+    match data_type.reference:
+        case None:
+            return
+        case reference:
+            pass
+
+    model_path_to_module_name = model_path_to_module_name or {}
+    current_module_name = _get_model_module_name(model, model_path_to_module_name)
+    from_, import_ = full_path = relative(
+        current_module_name,
+        target_full_name := _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+    )
+    if imports.use_exact:
+        from_, import_ = full_path = _resolve_exact_import(
+            current_module_name,
+            target_full_name,
+            from_,
+            import_,
+            reference.short_name,
+        )
+    if not (from_ and import_):
+        return
+
+    alias = ledger.add_name(imports, scoped_model_resolver, full_path, import_)
+    data_type.alias = alias.name if reference.short_name == import_ else f"{alias.name}.{reference.short_name}"
+    ledger.append(
+        imports,
+        Import(
+            from_=from_,
+            import_=import_,
+            alias=alias.name,
+            reference_path=reference.path,
+        ),
+        producer,
+    )
+
+
+class RenamedTypesHost(Protocol):
+    """The class names renamed types had, which the passes that rename a type record."""
+
+    @property
+    def _renamed_type_paths(self) -> dict[str, list[_RenamedType]]:
+        """The class names renamed types had, by the path imports of them were added under."""
+
+    @property
+    def _renamed_types(self) -> dict[ModelKey, list[_RenamedType]]:
+        """The class names renamed types had, by model key."""
+
+
+def record_renamed_type(host: RenamedTypesHost, model: DataModel, renamed_type: _RenamedType) -> None:
+    """Record a class name that ``model`` had before a rename, under its model key and its current path."""
+    host._renamed_types.setdefault(model_key_of(model.reference), []).append(renamed_type)  # noqa: SLF001
+    host._renamed_type_paths.setdefault(model.path, []).append(renamed_type)  # noqa: SLF001
+
+
+class TypeOverrideHost(Protocol):
+    """The model-level type overrides, which replace the models they name."""
+
+    @property
+    def _model_type_override_imports(self) -> dict[str, Import]:
+        """The imports of the types that override models, by model name."""
+
+
+def enum_site_override_import(host: TypeOverrideHost, reference: Reference) -> Import | None:
+    """Return the model-level override of the target an enum site model is built from, which replaces the model.
+
+    An enum cannot take the type that replaces its target as its root, so it gives way to that type as the target
+    does: the model is left out and its references take the type.
+    """
+    if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
+        return None
+    return host._model_type_override_imports.get(target.name)  # noqa: SLF001
+
+
+_ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
+
+
+class _InheritedConstructorInfo(NamedTuple):
+    required_assignment_names: frozenset[str]
+    ordering_conflicts: frozenset[str]
+
+
+class ConstructorInfoHost(Protocol):
+    """The bases constructor ordering reads in place of others: the stand-ins of overridden bases, the generic base."""
+
+    @property
+    def _base_stand_ins(self) -> dict[int, Reference | None]:
+        """The generated model each base that a model-level type override replaced stood for, by base."""
+
+    @property
+    def _generic_base_model(self) -> DataModel | None:
+        """The generated base class of every model, if the output has one."""
+
+
+def get_inherited_constructor_info(
+    host: ConstructorInfoHost, model: DataModel, *, early: bool = False
+) -> _InheritedConstructorInfo | None:
+    """Return inherited value leaks and exact positional ordering conflicts."""
+    if not model.SUPPORTS_KW_ONLY:
+        return None
+    if not model.base_classes:
+        return None
+
+    stand_ins = {} if early else host._base_stand_ins  # noqa: SLF001
+    inherited_models = [
+        base
+        for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
+        if base is not host._generic_base_model  # noqa: SLF001
+    ]
+    if not inherited_models:
+        return None
+    if not early:
+        record_ordering_inputs(model, inherited_models, stand_ins)
+
+    supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
+    required_assignment_names: set[str] = set()
+    effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {}
+    for inherited_model in reversed(inherited_models):
+        for field in inherited_model.fields:
+            if not (field_name := field.name):
+                continue
+            has_default: bool | None = None
+            if supports_inherited_override:
+                has_default, has_value_default = model._field_assignment_facts(field).default_info  # noqa: SLF001
+                if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
+                    required_assignment_names.add(field_name)
+            effective_fields[field_name] = field, inherited_model, has_default
+    for field in model.fields:
+        if field.name:
+            effective_fields[field.name] = field, model, None
+
+    ordering_conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
+    return _InheritedConstructorInfo(
+        frozenset(required_assignment_names),
+        ordering_conflicts,
+    )
+
+
+def get_constructor_field_adjustment(
+    model: DataModel,
+    field: DataModelFieldBase,
+    inherited: _InheritedConstructorInfo,
+    *,
+    supports_inherited_override: bool,
+) -> _ConstructorFieldAdjustment | None:
+    """Return the exact explicit assignment needed for a required child field."""
+    facts = model._field_assignment_facts(field)  # noqa: SLF001
+    if not facts.participates_in_constructor:
+        return None
+    if field.name in inherited.ordering_conflicts:
+        return "keyword_only"
+    if facts.assigned:
+        return None
+    if field.required and supports_inherited_override and field.name in inherited.required_assignment_names:
+        return "assignment"
+    return None

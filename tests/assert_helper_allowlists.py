@@ -507,7 +507,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._is_pydantic_v2_data_model_field",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._merge_data_type_modifiers",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._needs_validate_default",
-        "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._restore_inherited_field_names_for_unique_aliases",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._unwrap_type_alias",
         "private-import:tests/parser/test_builtin_formatter_contract.py::datamodel_code_generator._builtin_formatter",
         "private-import:tests/parser/test_default_put_dict.py::datamodel_code_generator._shared_types",

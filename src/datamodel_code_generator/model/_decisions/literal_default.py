@@ -5,10 +5,11 @@ or as the tag field of a discriminated union variant. Every input is an immutabl
 functions read nothing else. The adapters read the facts from the live objects and write the decision with
 ``model/base.py:_apply_literal_default``: ``model/base.py:DataModelFieldBase._process_const_as_literal`` (the
 ``process_const`` hook of the Pydantic, dataclass and TypedDict fields, at L1 and again when L5 collapse inlines a
-root model's extras), ``model/msgspec.py:DataModelField.process_const``, and in ``parser/base.py`` (L5)
-``Parser.__set_one_literal_on_default`` and ``Parser.__set_tag_literal_default``, for the tags fields hold (also
-those nested choices give a union) and those ``Parser.__apply_discriminator_type`` writes (with the default from
-``_get_single_discriminator_default``). ``const_type`` gives the
+root model's extras), ``model/msgspec.py:DataModelField.process_const``, at L5
+``parser/_passes/modules.py:set_one_literal_on_default`` and, in ``parser/base.py``,
+``Parser.__set_tag_literal_default``, for the tags fields hold (also those nested choices give a union) and those
+``Parser.__apply_discriminator_type`` writes (with the default from ``_get_single_discriminator_default``).
+``const_type`` gives the
 type of a const, for the field hook and for ``parser/jsonschema.py:JsonSchemaParser._get_const_data_type`` (L1),
 which returns it before the null a ``type`` list or ``nullable`` (under ``--strict-nullable``) adds beside it.
 

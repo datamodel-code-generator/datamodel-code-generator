@@ -3,7 +3,7 @@
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters read the facts
 from the live objects and build the class through ``model/enum.py:_enum_class``:
 ``parser/jsonschema.py:JsonSchemaParser._get_enum_model_class``,
-``parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`` and ``parser/base.py:Parser.__extract_inherited_enum``.
+``parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`` and ``parser/_passes/modules.py:extract_inherited_enum``.
 
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.

@@ -1,8 +1,9 @@
 """Show what changed, beyond the mechanical rewrite, in code moved from ``parser/base.py`` into ``parser/_passes/``.
 
-A pass moves from a ``Parser`` method to a function of a pass module by a mechanical rewrite: ``self`` becomes the
-``parser`` parameter (``host`` in ``_shared.py``), ``self.__helper(...)`` becomes ``helper(parser, ...)``, the method
-name loses its leading underscores and the parameters take the types of the pass modules. This script undoes that
+A pass moves from a ``Parser`` method to a function of a pass module by a mechanical rewrite: ``self`` (``cls`` of a
+classmethod) becomes the ``parser`` parameter (``host`` in ``_shared.py``) or goes when the function does not read the
+parser, ``self.__helper(...)`` becomes ``helper(parser, ...)``, the method name loses its leading underscores and the
+parameters take the types of the pass modules. This script undoes that
 rewrite on the AST of both sides, so formatting, comments, docstring indentation, parameter annotations and the rewrite
 itself drop out, and prints every definition added to ``parser/_passes/`` since ``BASE`` as identical, changed (with a
 diff of the normalized code) or new (no definition of that name in ``parser/base.py`` at ``BASE``).
@@ -50,6 +51,7 @@ def _definitions(tree: ast.Module) -> dict[str, ast.stmt]:
 
 
 _PARSER_PARAMETERS = frozenset({"host", "parser"})
+_RECEIVER_DECORATORS = frozenset({"classmethod", "staticmethod"})
 
 
 def _takes_parser(node: ast.stmt) -> bool:
@@ -101,8 +103,26 @@ def _without_parameter_annotations(node: ast.stmt) -> str:
     return ast.unparse(node)
 
 
+def _as_instance_method(node: ast.stmt) -> ast.stmt:
+    """Rewrite a classmethod or staticmethod as the instance method that its move treats it as."""
+    if not isinstance(node, ast.FunctionDef):
+        return node
+    kinds = {decorator.id for decorator in node.decorator_list if isinstance(decorator, ast.Name)}
+    node.decorator_list = [
+        decorator
+        for decorator in node.decorator_list
+        if not (isinstance(decorator, ast.Name) and decorator.id in _RECEIVER_DECORATORS)
+    ]
+    if "staticmethod" in kinds:
+        node.args.args.insert(0, ast.arg("self"))
+    elif "classmethod" in kinds and node.args.args:
+        node = _Renamed(node.args.args[0].arg, "self").visit(node)
+        node.args.args[0].arg = "self"
+    return node
+
+
 def _normalized_old(node: ast.stmt, name: str, transformer: _UndoRewrite, *, takes_parser: bool) -> str:
-    node = transformer.visit(ast.parse(ast.unparse(node)).body[0])
+    node = transformer.visit(_as_instance_method(ast.parse(ast.unparse(node)).body[0]))
     if isinstance(node, ast.FunctionDef):
         node.name = name
         if node.args.args and node.args.args[0].arg == "self":
@@ -122,13 +142,14 @@ def _normalized_new(node: ast.stmt) -> str:
 
 
 class _Renamed(ast.NodeTransformer):
-    """Rename the parser parameter of a shared helper (``host``) to ``parser``."""
+    """Rename a parameter: the parser parameter of a shared helper (``host``) to ``parser``, ``cls`` to ``self``."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, target: str = "parser") -> None:
         self.name = name
+        self.target = target
 
     def visit_Name(self, node: ast.Name) -> ast.AST:
-        return ast.Name("parser", node.ctx) if node.id == self.name else node
+        return ast.Name(self.target, node.ctx) if node.id == self.name else node
 
 
 def main() -> int:
