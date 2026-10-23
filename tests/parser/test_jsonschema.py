@@ -3971,7 +3971,7 @@ def test_clear_inherited_field_caches_releases_deferred_list_wrapper_cycles(
 
 
 def test_inherited_parent_property_cache_is_context_scoped() -> None:
-    """Pure references reuse only identical recursive and relative-ref contexts."""
+    """Pure references reuse only identical recursive and parent contexts."""
     parser = JsonSchemaParser("")
     parser.raw_obj = {
         "$defs": {
@@ -4003,19 +4003,16 @@ def test_inherited_parent_property_cache_is_context_scoped() -> None:
     })
     first_parent_ref = f"{DATA_PATH / 'first' / 'parent.json'}#/$defs/Parent"
     second_parent_ref = f"{DATA_PATH / 'second' / 'parent.json'}#/$defs/Parent"
-    with parser._inherited_ref_context(first_parent_ref):
-        first_resolved_ref = parser.model_resolver.resolve_ref(relative_ref.ref)
-    with parser._inherited_ref_context(second_parent_ref):
-        second_resolved_ref = parser.model_resolver.resolve_ref(relative_ref.ref)
+    resolved_relative_ref = parser._ref_path(relative_ref.ref)
     first_relative = parser._resolve_inherited_parent_property(
         relative_ref,
         first_parent_ref,
-        frozenset({first_resolved_ref}),
+        frozenset({resolved_relative_ref}),
     )
     second_relative = parser._resolve_inherited_parent_property(
         relative_ref,
         second_parent_ref,
-        frozenset({second_resolved_ref}),
+        frozenset({resolved_relative_ref}),
     )
 
     assert repeated is first

@@ -169,10 +169,8 @@ from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UN
 from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
-    Choice,
     Default,
     DispatchTable,
-    Position,
     Row,
     SchemaSite,
     Step,
@@ -509,7 +507,6 @@ def _located_model_schema(source: Any, handler: GetCoreSchemaHandler) -> CoreSch
 
 
 _Site: TypeAlias = "SchemaSite[JsonSchemaObject]"
-_ResultT = TypeVar("_ResultT")
 
 
 def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
@@ -3577,7 +3574,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             target = self._load_inherited_schema_object(ref)
             keywords = _validation_keywords(
                 False if target.is_boolean_schema_false else target.model_dump(exclude_unset=True, by_alias=True),
-                partial(self._resolve_inherited_child_ref, parent_ref=ref),
+                self._ref_path,
             )
         return keywords
 
@@ -6851,9 +6848,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for keyword in ("$ref", "$dynamicRef"):
                 match node.get(keyword):
                     case str() as ref if keyword == "$ref" or not _is_plain_name_fragment(ref):
-                        node[keyword] = keep_resolved_ref(
-                            ref, self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
-                        )
+                        node[keyword] = keep_resolved_ref(ref, self._schema_location(self._ref_path(ref)))
             match node:
                 case {"$recursiveRef": "#"} if "$ref" not in node and (
                     target := self._recursive_ref_target(defining_ref, path)
@@ -6887,8 +6882,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if (target != "#" or "#" in anchors) and self._declares_recursive_anchor():
                 return None
+        with self._inherited_ref_context(defining_ref):
+            location = self._schema_location(self.model_resolver.resolve_ref(target))
         return self._derived_ref(
-            self._schema_location(self._resolve_inherited_child_ref(target, defining_ref)),
+            location,
             SchemaLocation(file_part, tuple(parts)),
             "$recursiveRef",
             target,
@@ -8314,11 +8311,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 next_active = active
                 effective_refs_resolved = parent_refs_resolved
                 if parent_schema.ref:
-                    resolved_ref = (
-                        parent_schema.ref
-                        if parent_refs_resolved
-                        else self._resolve_inherited_child_ref(parent_schema.ref, parent_ref)
-                    )
+                    resolved_ref = parent_schema.ref if parent_refs_resolved else self._ref_path(parent_schema.ref)
                     effective_parent, effective_ref, next_active, effective_refs_resolved = (
                         self._resolve_inherited_parent_property(
                             parent_schema,
@@ -8438,17 +8431,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 return cached[1]
         while schema.ref:
-            resolved_ref = schema.ref if refs_resolved else self._resolve_inherited_child_ref(schema.ref, parent_ref)
+            resolved_ref = schema.ref if refs_resolved else self._ref_path(schema.ref)
             if (node := self._inherited_node(resolved_ref)) in active:
                 break
             active |= {node}
             referenced_schema = self._load_inherited_schema_object(resolved_ref)
             if schema.has_ref_with_schema_keywords:
                 referenced_dict = referenced_schema.model_dump(exclude_unset=True, by_alias=True)
-                self._resolve_schema_refs_in_place(referenced_dict, resolved_ref)
+                self._resolve_schema_refs_in_place(referenced_dict)
                 sibling_dict = schema.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
                 if not refs_resolved:
-                    self._resolve_schema_refs_in_place(sibling_dict, parent_ref)
+                    self._resolve_schema_refs_in_place(sibling_dict)
                 schema = self._intersect_ref_siblings_schema(
                     referenced_dict,
                     sibling_dict,
@@ -8626,10 +8619,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         parent_shape = self._get_inherited_type_shape(
             effective_parent,
-            str if effective_refs_resolved else partial(self._resolve_inherited_child_ref, parent_ref=effective_ref),
+            str if effective_refs_resolved else self._ref_path,
         )
         if not effective_refs_resolved:
-            self._resolve_schema_refs_in_place(parent_shape, effective_ref)
+            self._resolve_schema_refs_in_place(parent_shape)
         child_obj = self._schema_object(child)
         excludes_null = self._null_facts(child_obj, "inherited-child").admits_null is False
         if excludes_null:
@@ -8948,7 +8941,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 merged_changed = merged_changed or merged_property is not effective_child
                 continue
             parent_dict = parent_prop.model_dump(exclude_unset=True, by_alias=True)
-            self._resolve_schema_refs_in_place(parent_dict, parent_ref)
+            self._resolve_schema_refs_in_place(parent_dict)
             child_dict = effective_child.model_dump(exclude_unset=True, by_alias=True)
             intersection = self._intersect_parts(
                 [parent_dict, child_dict], self._merge_property_schemas(parent_dict, child_dict)
@@ -9005,11 +8998,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with self._dynamic_scope_context([resolved_ref], bindings):
                 yield
 
-    def _resolve_inherited_child_ref(self, ref: str, parent_ref: str) -> str:
-        """Resolve a nested inherited reference in its defining document."""
-        with self._inherited_ref_context(parent_ref):
-            return self._ref_path(ref)
-
     def _inherited_node(self, resolved_ref: str) -> _TargetNode:
         """Return the schema graph node of the inherited schema at a key (``_load_inherited_schema_object``).
 
@@ -9043,10 +9031,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference = (
                 self._add_ref(ref)
                 if defining_ref is None
-                else self.model_resolver.add_ref(
-                    self._resolve_inherited_child_ref(ref, defining_ref),
-                    resolved=True,
-                )
+                else self.model_resolver.add_ref(self._ref_path(ref), resolved=True)
             )
             references.setdefault(reference.path, reference)
         return list(references.values())
@@ -9066,7 +9051,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return frozenset()
         ancestors: set[str] = set()
         for ref in self._iter_allof_refs(schema):
-            parent_ref = self._resolve_inherited_child_ref(ref, resolved_ref)
+            parent_ref = self._ref_path(ref)
             ancestors.add(parent_ref)
             ancestors.update(
                 self._get_inherited_schema_ancestor_paths(
@@ -9109,9 +9094,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             schema = self._load_inherited_schema_object(ref)
             if (node := _schema_node(schema, ref)) in active:
                 return [ref]
-            parents = [
-                self._resolve_inherited_child_ref(parent_ref, ref) for parent_ref in self._iter_allof_refs(schema)
-            ]
+            parents = [self._ref_path(parent_ref) for parent_ref in self._iter_allof_refs(schema)]
             parents.sort(
                 key=lambda parent: sum(parent in self._get_inherited_schema_ancestor_paths(other) for other in parents)
             )
@@ -9337,17 +9320,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 existing_names.add(required_name)
         return fields
 
-    def _resolve_schema_refs_in_place(self, value: Any, parent_ref: str) -> None:
-        """Canonicalize copied inherited refs before parsing them in a child document."""
+    def _resolve_schema_refs_in_place(self, value: Any) -> None:
+        """Write the key of each reference in a copied schema in place of its value, keeping its edge."""
         match value:
             case dict() as mapping:
                 if isinstance(ref := mapping.get("$ref"), str):
-                    mapping["$ref"] = keep_resolved_ref(ref, self._resolve_inherited_child_ref(ref, parent_ref))
+                    mapping["$ref"] = keep_resolved_ref(ref, self._ref_path(ref))
                 for nested_value in mapping.values():
-                    self._resolve_schema_refs_in_place(nested_value, parent_ref)
+                    self._resolve_schema_refs_in_place(nested_value)
             case list() as items:
                 for item in items:
-                    self._resolve_schema_refs_in_place(item, parent_ref)
+                    self._resolve_schema_refs_in_place(item)
 
     def _iter_inherited_schema_objects(
         self, base_classes: list[Reference], visited: frozenset[_TargetNode]
@@ -9401,10 +9384,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             parent_result: DataType | None = None
             if parent_schema.allOf:
                 grandparent_refs = [
-                    self.model_resolver.add_ref(
-                        self._resolve_inherited_child_ref(ref, parent_ref),
-                        resolved=True,
-                    )
+                    self.model_resolver.add_ref(self._ref_path(ref), resolved=True)
                     for ref in self._iter_allof_refs(parent_schema)
                 ]
                 if grandparent_refs:
@@ -9460,11 +9440,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if visited is None:
             visited = frozenset()
 
-        def find_property(
-            schema: JsonSchemaObject,
-            current_visited: frozenset[_TargetNode],
-            current_ref: str,
-        ) -> JsonSchemaObject | None:
+        def find_property(schema: JsonSchemaObject, current_visited: frozenset[_TargetNode]) -> JsonSchemaObject | None:
             if schema.properties and isinstance(
                 property_schema := schema.properties.get(prop_name),
                 JsonSchemaObject,
@@ -9475,23 +9451,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if (
                     isinstance(item, JsonSchemaObject)
                     and not item.ref
-                    and (inline_property := find_property(item, current_visited, current_ref))
+                    and (inline_property := find_property(item, current_visited))
                 ):
                     return inline_property
 
             for item in schema.allOf:
                 if not isinstance(item, JsonSchemaObject) or not item.ref:
                     continue
-                resolved_ref = self._resolve_inherited_child_ref(item.ref, current_ref)
+                resolved_ref = self._ref_path(item.ref)
                 parent_schema = self._load_inherited_schema_object(resolved_ref)
                 if (node := _schema_node(parent_schema, resolved_ref)) in current_visited:
                     continue
-                if property_schema := find_property(parent_schema, current_visited | {node}, resolved_ref):
+                if property_schema := find_property(parent_schema, current_visited | {node}):
                     return property_schema
             return None
 
-        for parent_schema, next_visited, parent_ref in self._iter_inherited_schema_objects(base_classes, visited):
-            if property_schema := find_property(parent_schema, next_visited, parent_ref):
+        for parent_schema, next_visited, _ in self._iter_inherited_schema_objects(base_classes, visited):
+            if property_schema := find_property(parent_schema, next_visited):
                 return property_schema
 
         return None
@@ -9905,7 +9881,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             child_schema = child
             if child.ref:
                 resolved = self._load_ref_schema_object(child.ref).model_dump(exclude_unset=True, by_alias=True)
-                self._resolve_schema_refs_in_place(resolved, self._ref_path(child.ref))
+                self._resolve_schema_refs_in_place(resolved)
                 children.append(self._schema_object(resolved))
                 child_schema = child.model_copy(update={"ref": None})
             children.append(child_schema)
@@ -10002,7 +9978,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 merged_root: JsonSchemaObject | None = None
                 if materialize_siblings:
                     merged = schema.model_dump(exclude_unset=True, by_alias=True)
-                    self._resolve_schema_refs_in_place(merged, self._ref_path(ref))
+                    self._resolve_schema_refs_in_place(merged)
                     referenced_schema = self._schema_object(merged)
                     merged.update(item.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
                     merged.update(obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True))
@@ -13887,7 +13863,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse a single JSON Schema item into a data type, within the schema resource it declares.
 
-        The name and the $ref sibling keywords are resolved here and the row of the field table (``Position.FIELD``)
+        The name and the $ref sibling keywords are resolved here and the row of the field table (``_FIELD_TABLE``)
         is built in this frame, so a nested schema costs no more frames than the parse methods it reaches.
         """
         with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
@@ -13908,11 +13884,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 item, merged_scope = merged_item, self._subschema_scope(merged_item)
             with nullcontext() if merged_scope is None else merged_scope:
-                choice = self._choose(
-                    Position.FIELD,
-                    self._FIELD_TABLE,
-                    SchemaSite(name, item, path, singular_name=singular_name, parent=parent),
-                    self._legacy_field_path,
+                choice = self._FIELD_TABLE.choose(
+                    self, SchemaSite(name, item, path, singular_name=singular_name, parent=parent)
                 )
                 return choice.build(self, choice.site)
 
@@ -14160,52 +14133,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ),
         Default("data-type", _build_field_data_type),
     )
-
-    def _legacy_field_path(self, written: _Site, _site: _Site) -> tuple[str, ...]:  # noqa: PLR0911, PLR0912
-        """Return the entries the dispatch the field table replaced takes for an item, for the schema graph check."""
-        item, parent = written.obj, written.parent
-        if parent and not item.enum and not self._const_literal_enforces_constraints(item):
-            has_materialized_container_constraints = bool(
-                item.__dict__.get(_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY)
-                and (item.is_array or item.is_object or item.propertyNames is not None)
-                and self._has_effective_constraints(item)
-            )
-            if has_materialized_container_constraints or (
-                item.has_constraint and (parent.has_constraint or self.field_constraints)
-            ):
-                return ("constrained-item",)
-        if (item.recursiveRef or item.dynamicRef) and not item.ref:
-            return ("dynamic-ref",)
-        if item.is_ref_with_nullable_only and item.ref:
-            return ("ref-nullable-only",)
-        if item.ref:
-            return ("ref",)
-        if item.custom_type_path:
-            return ("custom-type",)
-        shared_numeric_constraints = self._has_shared_numeric_union_constraints(item)
-        if not shared_numeric_constraints and self._localizes_constrained_type_union(item):
-            return ("constrained-type-union",)
-        if item.is_array:
-            return ("array",)
-        if item.discriminator and parent and parent.is_array and (item.oneOf or item.anyOf):
-            return ("discriminated-union-item",)
-        if self.generate_schema_validators and self._should_parse_object_with_schema_validators(item):
-            return ("schema-validator-object",)
-        if item.anyOf:
-            return ("any-of",)
-        if item.oneOf:
-            return ("one-of",)
-        if item.allOf:
-            return ("all-of",)
-        if item.is_object or item.patternProperties or item.propertyNames is not None:
-            return ("object",)
-        if item.enum and not self.ignore_enum_constraints:
-            return ("enum",)
-        if shared_numeric_constraints:
-            return ("shared-numeric-constraints",)
-        if self._typed_nullable_map_value_schema(item) is not None:
-            return ("typed-nullable-map",)
-        return ("data-type",)
 
     def _join_object_type_array(self, site: _Site, model_type: DataType) -> DataType:
         """Join the model of an object in a union with the other types of its type array."""
@@ -16455,35 +16382,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _drop_ref_from_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         return self._schema_object(obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True))
 
-    def _choose(
-        self,
-        position: Position,
-        table: DispatchTable[Self, JsonSchemaObject, _ResultT],
-        site: _Site,
-        legacy_path: Callable[[_Site, _Site], tuple[str, ...]],
-    ) -> Choice[Self, JsonSchemaObject, _ResultT]:
-        """Return the row the table of a site's position chooses; the caller builds it, so nested schemas add no frame.
-
-        The schema graph check also asks the dispatch the table replaced (``legacy_path``, given the site as written
-        and as the table's steps rewrote it) and reports a site for which it takes other entries.
-        """
-        choice = table.choose(self, site)
-        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None and (
-            legacy := legacy_path(site, choice.site)
-        ) != choice.path:
-            location = redact_path(_named_path(site.obj.schema_location, site.path))
-            mode.violation(
-                Error,
-                f"the {position.value} table takes {' > '.join(choice.path)} for the schema at {location!r}, "
-                f"but the dispatch it replaced takes {' > '.join(legacy)}",
-                kind="dispatch",
-                position=position.value,
-                location=location,
-                table=list(choice.path),
-                legacy=list(legacy),
-            )
-        return choice
-
     def parse_obj(
         self,
         name: str,
@@ -16507,13 +16405,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> None:
-        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``Position.DEFINITION``)."""
-        choice = self._choose(
-            Position.DEFINITION,
-            self._DEFINITION_TABLE,
-            SchemaSite(name, self._array_all_of_site_schema(obj), path),
-            self._legacy_definition_path,
-        )
+        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
+        choice = self._DEFINITION_TABLE.choose(self, SchemaSite(name, self._array_all_of_site_schema(obj), path))
         choice.build(self, choice.site)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:
@@ -16637,53 +16530,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ),
         Default("root-type", _then_parse_refs(_parse_root_type_site)),
     )
-
-    def _legacy_definition_path(self, written: _Site, site: _Site) -> tuple[str, ...]:  # noqa: PLR0911, PLR0912
-        """Return the entries the dispatch the definition table replaced takes for a schema, for the schema graph check.
-
-        ``site`` is the schema as the table's steps rewrote it: a `$ref` merged with its sibling keywords, or a
-        reference to the current root without its `$ref`.
-        """
-        obj, path = written.obj, written.path
-        steps: tuple[str, ...] = ()
-        if obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only:
-            if obj.ref == "#" and self._is_current_root_schema(obj):
-                steps = ("root-self-reference",)
-            elif site.obj is not obj and site.scope is not None:
-                return ("ref-siblings", "merged-ref-in-own-scope")
-            else:
-                steps = ("ref-siblings",)
-            obj = site.obj
-            if obj.ref:
-                if self._is_named_schema_definition_path(path) or tuple(path) in self._dynamic_specialization_paths:
-                    return (*steps, "ref-of-definition-entry")
-                return (*steps, "ref")
-        if obj.is_array:
-            return (*steps, "array")
-        if obj.allOf and (obj.oneOf or obj.anyOf):
-            return (*steps, "all-of-beside-one-of")
-        if obj.allOf:
-            return (*steps, "all-of")
-        if self.generate_schema_validators and self._should_parse_object_with_schema_validators(obj):
-            return (*steps, "schema-validator-object")
-        if obj.oneOf or obj.anyOf:
-            return (*steps, "one-of-any-of")
-        if obj.properties or self._should_parse_object_with_schema_validators(obj):
-            return (*steps, "object-model")
-        if obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
-            return (*steps, "object-map")
-        if obj.type == "object":
-            return (*steps, "object")
-        if obj.propertyNames is False:
-            return (*steps, "closed-property-names")
-        if (
-            obj.enum
-            and not self.ignore_enum_constraints
-            and not self._reads_enum_as_const(obj)
-            and not self.should_parse_enum_as_literal(obj, property_name=written.name)
-        ):
-            return (*steps, "enum")
-        return (*steps, "root-type")
 
     def _get_context_source_path_parts(self) -> Iterator[tuple[Source, list[str]]]:
         """Get source and path parts for each input file with context managers."""

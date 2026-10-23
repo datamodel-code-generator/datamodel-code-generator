@@ -1,1 +1,0 @@
-{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: the definition table takes enum for the schema at 'enum_builtin_conflict_two.json#', but the dispatch it replaced takes root-type", "kind": "dispatch", "position": "definition", "location": "enum_builtin_conflict_two.json#", "table": ["enum"], "legacy": ["root-type"]}

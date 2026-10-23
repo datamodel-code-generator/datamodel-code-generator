@@ -30,7 +30,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIVersion, VersionMode
-from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Position, Row, SchemaSite
+from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import RefOrigin, keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
@@ -558,7 +558,7 @@ class OpenAPIParser(JsonSchemaParser):
                 ]
                 if subtypes and ref.partition("#")[0] == current_document:
                     return build_union(self.data_type, [self._get_discriminator_subtype_data_type(v) for v in subtypes])
-                subtypes = [keep_resolved_ref(v, self._resolve_inherited_child_ref(v, ref)) for v in subtypes]
+                subtypes = [keep_resolved_ref(v, self._ref_path(v)) for v in subtypes]
         if not subtypes:
             return None
         data_types: list[DataType] = []
@@ -811,11 +811,9 @@ class OpenAPIParser(JsonSchemaParser):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> DataType:
-        """Parse a JSON schema object into a data type (``Position.OPENAPI_OPERATION``)."""
+        """Parse a JSON schema object into a data type (``_OPENAPI_OPERATION_TABLE``)."""
         site = SchemaSite(name, self._array_all_of_site_schema(obj), path)
-        choice = self._choose(
-            Position.OPENAPI_OPERATION, self._OPENAPI_OPERATION_TABLE, site, self._legacy_openapi_operation_path
-        )
+        choice = self._OPENAPI_OPERATION_TABLE.choose(self, site)
         data_type = choice.build(self, choice.site)
         self.parse_ref(site.obj, path)
         return data_type
@@ -886,27 +884,6 @@ class OpenAPIParser(JsonSchemaParser):
         ),
         Default("data-type", _parse_unmodeled_operation_schema),
     )
-
-    def _legacy_openapi_operation_path(  # noqa: PLR0911
-        self, written: SchemaSite[JsonSchemaObject], _site: SchemaSite[JsonSchemaObject]
-    ) -> tuple[str, ...]:
-        """Return the row the dispatch the operation table replaced takes for a schema, for the schema graph check."""
-        obj = written.obj
-        if obj.is_array:
-            return ("array",)
-        if obj.allOf:
-            return ("all-of",)
-        if obj.oneOf or obj.anyOf:
-            return ("one-of-any-of",)
-        if obj.is_object:
-            return ("object",)
-        if is_inline_object_body(obj) and self.config.openapi_paths_bodies_as_definitions:
-            return ("inline-object-body",)
-        if obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(obj):
-            return ("enum",)
-        if obj.ref:
-            return ("ref",)
-        return ("data-type",)
 
     def parse_request_body(
         self,

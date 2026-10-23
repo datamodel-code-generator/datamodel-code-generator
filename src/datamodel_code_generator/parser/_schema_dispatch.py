@@ -1,8 +1,9 @@
 """Choose the parse method of a schema position from one ordered table.
 
-A position is a place where the parser meets a schema object (``Position``). Its table holds, in order, the steps that
-rewrite the site before the rows after them read it (``Step``: a ``$ref`` merged with its sibling keywords) and the
-rows that choose the parse method (``Row``); the first row that applies builds the result, else the table's
+A position is a place where the parser meets a schema object: a definition (a schema that becomes a model of its own), a
+field, item or map value, or a body, response or parameter of the legacy OpenAPI scopes. Its table holds, in order, the
+steps that rewrite the site before the rows after them read it (``Step``: a ``$ref`` merged with its sibling keywords)
+and the rows that choose the parse method (``Row``); the first row that applies builds the result, else the table's
 ``Default``.
 The parser keeps the predicates and builders: rows call its public hooks through the parser, so overriding subclasses
 keep working.
@@ -11,7 +12,6 @@ keep working.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from typing_extensions import final
@@ -20,22 +20,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from contextlib import AbstractContextManager
 
-__all__ = ["Choice", "Default", "DispatchTable", "Position", "Row", "SchemaSite", "Step"]
+__all__ = ["Choice", "Default", "DispatchTable", "Row", "SchemaSite", "Step"]
 
 ParserT_contra = TypeVar("ParserT_contra", contravariant=True)
 SchemaT = TypeVar("SchemaT")
 ResultT_co = TypeVar("ResultT_co", covariant=True)
-
-
-class Position(Enum):
-    """A place where the parser meets a schema object; each has one table."""
-
-    DEFINITION = "definition"
-    """A schema that becomes a model of its own: a definition, a root, a reserved target, a payload."""
-    FIELD = "field"
-    """A schema whose $ref siblings are merged that types a field, an item or a map value."""
-    OPENAPI_OPERATION = "openapi-operation"
-    """A request body, response or parameter schema of the legacy OpenAPI scopes."""
 
 
 @final
