@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "wide": {
+      "enum": [
+        1,
+        9223372036854775808
+      ]
+    },
+    "negative": {
+      "enum": [
+        1,
+        -9223372036854775809
+      ]
+    },
+    "edge": {
+      "enum": [
+        -9223372036854775808,
+        9223372036854775807
+      ]
+    },
+    "typed": {
+      "type": "integer",
+      "enum": [
+        2,
+        1e19
+      ]
+    },
+    "letters": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "constant": {
+      "const": 18446744073709551616
+    },
+    "listed": {
+      "type": "array",
+      "items": {
+        "enum": [
+          3,
+          9223372036854775809
+        ]
+      }
+    },
+    "either": {
+      "anyOf": [
+        {
+          "enum": [
+            4,
+            5
+          ]
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    }
+  }
+}

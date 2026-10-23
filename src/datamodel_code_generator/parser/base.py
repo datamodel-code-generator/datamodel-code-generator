@@ -2071,6 +2071,43 @@ def _msgspec_mixed_enum_message(model: Enum) -> str | None:
     )
 
 
+_MSGSPEC_INT_MIN: Final = -(2**63)
+"""The least int msgspec decodes as an Enum or a Literal value, that of the signed 64-bit range."""
+_MSGSPEC_INT_MAX: Final = 2**63 - 1
+"""The greatest int msgspec decodes as an Enum or a Literal value, that of the signed 64-bit range."""
+_BEYOND_MSGSPEC_INTS: Final = (
+    "is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1"
+)
+
+
+def _msgspec_wide_int(values: Iterable[object]) -> int | None:
+    """Return the first int of the values that msgspec refuses as an Enum or a Literal value (``_MSGSPEC_INT_MIN``).
+
+    A bool, which is no int as a value, lies within the range.
+    """
+    return next(
+        (value for value in values if isinstance(value, int) and not _MSGSPEC_INT_MIN <= value <= _MSGSPEC_INT_MAX),
+        None,
+    )
+
+
+def _msgspec_wide_int_enum_message(model: Enum) -> str | None:
+    """Describe an enum holding an int that msgspec refuses (``_msgspec_wide_int``).
+
+    An ``IntEnum`` or an ``(int, Enum)`` makes every value an int, an integral float such as ``1e+19`` too; a
+    ``StrEnum`` or an enum on another value type holds no int.
+    """
+    value_types = {base.type for base in model.base_classes}
+    if isinstance(model, StrEnum) or value_types & {"str", "float", "bytes"}:
+        return None
+    values = [get_raw_enum_member_value(field.default) for field in model.fields]
+    if isinstance(model, IntEnum) or "int" in value_types:
+        values = [int(value) if isinstance(value, float) and value.is_integer() else value for value in values]
+    if (value := _msgspec_wide_int(values)) is None:
+        return None
+    return f"msgspec cannot decode the enum {model.class_name}: its value {value} {_BEYOND_MSGSPEC_INTS}."
+
+
 def _is_enum_member_tag(
     model: DataModel, field_name: str, tag_name: str, value: DiscriminatorValue, *, use_field_name: bool
 ) -> bool:
@@ -4531,7 +4568,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 warn(message, stacklevel=2)
         self._variant_discriminator_tags.clear()
 
-    def __warn_about_msgspec_decoding(self, contexts: Sequence[ModuleContext]) -> None:
+    def __warn_about_msgspec_decoding(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912
         """Warn once per union and enum of msgspec output that msgspec refuses to decode."""
         if not self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
             return
@@ -4546,6 +4583,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     (
                         None if self.use_msgspec_nullable_enum_alias else _msgspec_null_enum_message(model),
                         _msgspec_mixed_enum_message(model),
+                        _msgspec_wide_int_enum_message(model),
                     ),
                 ):
                     warn(message, stacklevel=2)
@@ -4567,7 +4605,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)
                 )
                 clashes = _msgspec_field_enum_clashes(nested)
-                if member is None and not refused and not clashes:
+                wide = _msgspec_wide_int(chain.from_iterable(data_type.literals for data_type in nested))
+                if member is None and not refused and not clashes and wide is None:
                     continue
                 name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
                 if member is not None:
@@ -4576,6 +4615,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
                 for clash in clashes.items():
                     warn(_msgspec_enum_union_message(name, clash), stacklevel=2)
+                if wide is not None:
+                    warn(
+                        f"msgspec cannot decode {name}: its Literal value {wide} {_BEYOND_MSGSPEC_INTS}.", stacklevel=2
+                    )
 
     def _apply_inherited_field_default(
         self,

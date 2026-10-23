@@ -1,0 +1,16 @@
+wide=9223372036854775808: schema accepts, model type refused by msgspec
+negative=-9223372036854775809: schema accepts, model type refused by msgspec
+edge=9223372036854775807: schema accepts, model accepts
+typed=2: schema accepts, model accepts
+letters="a": schema accepts, model accepts
+constant=18446744073709551616: schema accepts, model type refused by msgspec
+listed=[9223372036854775809]: schema accepts, model type refused by msgspec
+either=6: schema accepts, model accepts
+wide=2: schema rejects, model type refused by msgspec
+negative=2: schema rejects, model type refused by msgspec
+edge=0: schema rejects, model rejects
+typed=3: schema rejects, model rejects
+letters="c": schema rejects, model rejects
+constant=1: schema rejects, model type refused by msgspec
+listed=[4]: schema rejects, model type refused by msgspec
+either="x": schema rejects, model rejects

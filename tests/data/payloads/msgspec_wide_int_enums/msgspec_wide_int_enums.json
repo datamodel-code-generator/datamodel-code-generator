@@ -1,0 +1,26 @@
+{
+  "valid": {
+    "wide": 9223372036854775808,
+    "negative": -9223372036854775809,
+    "edge": 9223372036854775807,
+    "typed": 2,
+    "letters": "a",
+    "constant": 18446744073709551616,
+    "listed": [
+      9223372036854775809
+    ],
+    "either": 6
+  },
+  "invalid": {
+    "wide": 2,
+    "negative": 2,
+    "edge": 0,
+    "typed": 3,
+    "letters": "c",
+    "constant": 1,
+    "listed": [
+      4
+    ],
+    "either": "x"
+  }
+}

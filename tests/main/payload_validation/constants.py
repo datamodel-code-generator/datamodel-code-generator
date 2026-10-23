@@ -91,6 +91,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError, and Pydantic refuses "
         "the infinite multiple_of at import; test_msgspec_number_limits validates its msgspec payloads"
     ),
+    "jsonschema/msgspec_wide_int_enums.json": (
+        "Pydantic refuses JSON ints beyond the 64-bit range as Enum and Literal values (int_parsing_size); "
+        "test_msgspec_wide_int_enums validates its msgspec payloads"
+    ),
     "jsonschema/non_dict_files/list_only.json": "input is JSON data, not a JSON Schema document",
     "jsonschema/non_dict_files/list_only.yaml": "input is YAML data, not a JSON Schema document",
     "jsonschema/non_dict_files/whitespace_only.yaml": "empty YAML fixture",
