@@ -33,6 +33,7 @@ from datamodel_code_generator.parser.jsonschema import (
 from datamodel_code_generator.parser.openapi import OPERATION_NAMES, OpenAPIParser, ReferenceObject
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
+    encoding_applies,
     encoding_media,
 )
 from datamodel_code_generator.reference import ModelResolver, SchemaLocation
@@ -533,13 +534,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         if declaration in self._processed_declarations:
             return
         with self._schema_frame(name, path, self.raw_obj, declaration=declaration, raw_schema=raw, role=role):
-            ref = raw.get("$ref") if isinstance(raw, dict) else None
-            validated = (
-                self._validate_schema_object(raw, path)
-                if isinstance(ref, str) and isinstance(raw, dict) and len(raw) > 1
-                else None
-            )
-            if isinstance(ref, str) and not (validated and validated.has_ref_with_schema_keywords):
+            ref, validated = self._reference_use(raw, path)
+            if ref is not None:
                 self._declaration_types[declaration] = self._parse_schema_or_ref(
                     name, ReferenceObject.model_validate({"$ref": ref}), path
                 )
@@ -554,6 +550,16 @@ class ApiOpenAPIParser(OpenAPIParser):
             else:
                 self._parse_raw_or_validated_obj(name, raw, path, validated)
             self._processed_declarations.add(declaration)
+
+    def _reference_use(self, raw: YamlValue, path: list[str]) -> tuple[str | None, JsonSchemaObject | None]:
+        """Return the reference ``raw`` is used as, if any, and ``raw`` validated when a reference has siblings.
+
+        A reference is used as the model it names unless a sibling keyword constrains it.
+        """
+        if not isinstance(raw, dict) or not isinstance(ref := raw.get("$ref"), str):
+            return None, None
+        validated = self._validate_schema_object(raw, path) if len(raw) > 1 else None
+        return (None if validated and validated.has_ref_with_schema_keywords else ref), validated
 
     def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
         self,
@@ -650,9 +656,13 @@ class ApiOpenAPIParser(OpenAPIParser):
         """Use existing media-schema and itemSchema projection decisions."""
         schema_role: SchemaRole = role or ("request_body" if owner == "request_body" else "response_body")
         with self._api_object_context(target):
-            for media, value in _mapping(target.value.get("content", {}), [*target.path, "content"]).items():
-                media_path = [*target.path, "content", media]
+            content_path = [*target.path, "content"]
+            content = _mapping(target.value.get("content", {}), content_path)
+            for media, value in content.items():
+                media_path = [*content_path, media]
                 medium = _mapping(value, media_path)
+                if not isinstance(media, str) and self._reads_media_type(medium, [*content_path, str(media)], owner):
+                    self._key_name(content, media, content_path, "media type")
                 if (schema := self._get_raw_media_schema(medium)) is not None:
                     if schema.from_item_schema:
                         declaration = self._declared(medium).child("itemSchema")
@@ -675,12 +685,25 @@ class ApiOpenAPIParser(OpenAPIParser):
                         self._record_boolean_schema_location(schema.schema, [*media_path, "schema"], declaration)
                 self._walk_encoding(name, medium, media, media_path, owner)
 
+    def _reads_media_type(self, medium: dict[str, YamlValue], path: list[str], owner: MediaOwner) -> bool:
+        """Return whether walking ``medium`` at ``path`` builds a schema path from its media type or parses it.
+
+        Its item schema, a schema not used as the model its reference names, and an encoding that applies do.
+        """
+        if (schema := self._get_raw_media_schema(medium)) is not None and (
+            schema.from_item_schema or self._reference_use(schema.schema, [*path, "schema"])[0] is None
+        ):
+            return True
+        return "encoding" in medium and encoding_applies(owner, openapi_32=self.schema_features.media_item_schema)
+
     def _walk_response(self, name: str, target: _ApiObject, *, header_name: str | None = None) -> None:
         """Collect all response media followed by response headers."""
         with self._api_object_context(target):
             self._walk_content(name, target, owner="response")
-            for key, value in _mapping(target.value.get("headers", {}), [*target.path, "headers"]).items():
-                if key.lower() == "content-type":
+            headers_path = [*target.path, "headers"]
+            headers = _mapping(target.value.get("headers", {}), headers_path)
+            for key, value in headers.items():
+                if self._key_name(headers, key, headers_path, "header name").lower() == "content-type":
                     self._ignore_declaration(
                         self._declared(target.value).child("headers", key),
                         "oas_header_ignored",
@@ -987,7 +1010,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         if isinstance(parsed_media, str):
             self._ignore_declaration(self._declared(medium).child("encoding"), parsed_media, owner, media=media)
             return
-        for property_name, value in _mapping(medium["encoding"], encoding_path).items():
+        for property_name, value in (encodings := _mapping(medium["encoding"], encoding_path)).items():
             property_path = [*encoding_path, property_name]
             encoding = _mapping(value, property_path)
             headers = encoding.get("headers", {})
@@ -1002,8 +1025,9 @@ class ApiOpenAPIParser(OpenAPIParser):
                             wire_name=key,
                         )
                 continue
-            for key, header_value in _mapping(headers, [*property_path, "headers"]).items():
-                if key.lower() == "content-type":
+            headers_path = [*property_path, "headers"]
+            for key, header_value in (headers := _mapping(headers, headers_path)).items():
+                if self._key_name(headers, key, headers_path, "header name").lower() == "content-type":
                     self._ignore_declaration(
                         self._declared(encoding).child("headers", key),
                         "oas_header_ignored",
@@ -1012,11 +1036,12 @@ class ApiOpenAPIParser(OpenAPIParser):
                         wire_name=key,
                     )
                     continue
+                property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
                 header = self._resolve_api_object(header_value, [*property_path, "headers", key])
                 with self._api_object_context(header):
                     candidate = (
                         name
-                        + self._get_model_name(property_name, "", "")
+                        + self._get_model_name(property_key, "", "")
                         + self._get_model_name(key, "", "EncodingHeader")
                     )
                     self._walk_parameter(

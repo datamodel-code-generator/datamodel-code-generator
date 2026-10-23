@@ -1115,6 +1115,56 @@ def test_malformed_input_error_messages(
             id="integer-additional-operation-referenced-api",
         ),
         pytest.param(
+            "integer_header_name.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_header_name.yaml#/paths/~1pets/get/responses/200/headers/1': "
+            "header name 1 is not a string",
+            id="integer-header-name-api",
+        ),
+        pytest.param(
+            "integer_media_type.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_media_type.yaml#/paths/~1pets/get/responses/200/content/1': "
+            "media type 1 is not a string",
+            id="integer-media-type-api",
+        ),
+        pytest.param(
+            "integer_media_type_item_schema.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_media_type_item_schema.yaml#/paths/~1pets/get/responses/200/content/1': "
+            "media type 1 is not a string",
+            id="integer-media-type-of-item-schema-api",
+        ),
+        pytest.param(
+            "integer_media_type_encoding.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_media_type_encoding.yaml#/paths/~1pets/post/requestBody/content/1': "
+            "media type 1 is not a string",
+            id="integer-media-type-beside-encoding-api",
+        ),
+        pytest.param(
+            "integer_encoding_header_name.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_encoding_header_name.yaml"
+            "#/paths/~1pets/post/requestBody/content/multipart~1form-data/encoding/name/headers/1': "
+            "header name 1 is not a string",
+            id="integer-encoding-header-name-api",
+        ),
+        pytest.param(
+            "integer_encoding_property_name.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_encoding_property_name.yaml"
+            "#/paths/~1pets/post/requestBody/content/multipart~1form-data/encoding/1': "
+            "encoding property name 1 is not a string",
+            id="integer-encoding-property-name-api",
+        ),
+        pytest.param(
             "integer_asyncapi_component.yaml",
             "asyncapi",
             [],

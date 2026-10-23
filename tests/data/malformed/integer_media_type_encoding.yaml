@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Integer media type beside an encoding
+  version: '1.0'
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          1:
+            encoding:
+              name:
+                contentType: text/plain
+      responses:
+        '200':
+          description: OK
