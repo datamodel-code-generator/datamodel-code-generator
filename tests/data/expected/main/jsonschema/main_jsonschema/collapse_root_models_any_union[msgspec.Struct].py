@@ -9,7 +9,7 @@ from msgspec import UNSET, Struct, UnsetType
 
 
 class Model(Struct):
-    direct: UnsetType = UNSET
+    direct: Any | UnsetType = UNSET
     items: list[Any] | UnsetType = UNSET
     values: dict[str, Any] | UnsetType = UNSET
     patterns: dict[str, Any] | UnsetType = UNSET

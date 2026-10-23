@@ -6064,7 +6064,7 @@ tree-type-alias	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*
 [test_main_jsonschema_collapse_root_models_any_union]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].py
-msgspec.Struct	main/jsonschema/main_jsonschema/collapse_root_models_any_union[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/collapse_root_models_any_union[msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
 msgspec.Struct	main/jsonschema/main_jsonschema/collapse_root_models_any_union[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.BaseModel].payloads.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.BaseModel].py

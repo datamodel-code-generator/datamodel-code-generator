@@ -855,6 +855,16 @@ class DataModelField(DataModelFieldBase):
     def _data_type_is_plain_union(data_type: DataType) -> bool:
         return bool(union_members(data_type))
 
+    def _data_type_spreads_members(self, data_type: DataType) -> bool:
+        """Return whether a field's unset union writes the members of its union type one by one.
+
+        A union none of whose members writes anything renders ``Any`` whole, as every other hint of it does.
+        """
+        return any(
+            self._data_type_has_renderable_structure(member) or bool(member.type_hint)
+            for member in union_members(data_type)
+        )
+
     def _copy_data_type(self, data_type: DataType) -> DataType:
         copied = data_type.model_copy()
         copied.parent = None
@@ -885,7 +895,7 @@ class DataModelField(DataModelFieldBase):
 
         data_types = []
         has_none = self._field_has_top_level_none()
-        match (has_none, self._data_type_is_plain_union(self.data_type)):
+        match (has_none, self._data_type_spreads_members(self.data_type)):
             case (False, True):
                 data_types.extend(self._copy_data_type(child) for child in self.data_type.data_types)
             case (True, _):
