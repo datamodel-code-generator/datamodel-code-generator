@@ -314,6 +314,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "drop_field_discriminator",
             "drop_held_null",
             "drop_union_member_constraints",
+            "drop_union_operator",
             "inline_shared",
             "insert_field",
             "mark_target_null",

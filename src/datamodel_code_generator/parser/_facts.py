@@ -325,6 +325,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.QUOTING,),
         Phase.MODULES,
         FreezePoint.RENDER,
+        store_ops=("drop_union_operator",),
     ),
     AttributeFact("DataType", "preserve_union_member_order", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(

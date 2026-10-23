@@ -1949,6 +1949,19 @@ def _find_field(field_name: str, models: list[DataModel]) -> DataModelFieldBase 
     return get_inherited_fields(models).get(field_name)
 
 
+def _wraps_member_hints(data_type: DataType) -> bool:
+    """Return whether the type writes the hints of its members inside a container."""
+    return (
+        data_type.is_list
+        or data_type.is_dict
+        or data_type.is_set
+        or data_type.is_frozen_set
+        or data_type.is_mapping
+        or data_type.is_sequence
+        or data_type.is_tuple
+    )
+
+
 def _copy_data_type(data_type: DataType, *, register_references: bool = True) -> DataType:
     """Copy a DataType tree without detaching its model references."""
     copied_data_type = data_type.model_copy()
@@ -7562,16 +7575,40 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return overridden
 
     @staticmethod
-    def __disable_union_operator_for_forward_ref(data_type: DataType, *, use_typing_generics: bool = False) -> None:
-        """Keep a quoted name out of ``|`` and, with ``use_typing_generics``, out of builtin generics."""
-        data_type.use_union_operator = False
+    def __disable_union_operator_for_forward_ref(
+        data_type: DataType,
+        graph_builder: GraphBuilder,
+        inlined_holders: Callable[[DataType], tuple[DataType, ...]],
+        *,
+        use_typing_generics: bool = False,
+    ) -> None:
+        """Keep a quoted name out of ``|`` and, with ``use_typing_generics``, out of builtin generics.
+
+        Every union above the name through its parent stops using ``|``. A string cannot be an operand of ``|``, so
+        every union that joins the name, itself or through the unions it spreads, stops using it too where it holds
+        the name through a type sharing the parent's children, as the sites of a collapsed root model do
+        (``inlined_holders``). A container ends the walk: it takes the name inside its brackets.
+        """
+        graph_builder.drop_union_operator(data_type)
         parent = data_type.parent
         while isinstance(parent, DataType):
             if parent.is_union:
-                parent.use_union_operator = False
+                graph_builder.drop_union_operator(parent)
             if use_typing_generics:
                 parent.use_standard_collections = False
             parent = parent.parent
+        pending = [data_type]
+        seen: set[int] = set()
+        while pending:
+            node = pending.pop()
+            for holder in (node.parent, *inlined_holders(node)):
+                if not isinstance(holder, DataType) or id(holder) in seen or holder.alias or holder.type:
+                    continue
+                seen.add(id(holder))
+                if holder.is_union and not holder.is_tuple:
+                    graph_builder.drop_union_operator(holder)
+                if not _wraps_member_hints(holder):
+                    pending.append(holder)
 
     @staticmethod
     def __forward_references(
@@ -7666,14 +7703,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             _flatten_union_members(root)
 
     @classmethod
-    def __quote_forward_enum_member_literals(
-        cls, field: DataModelFieldBase, positions: _ModelPositions, index: int, *, use_typing_generics: bool
+    def __quote_forward_enum_member_literals(  # noqa: PLR0913
+        cls,
+        field: DataModelFieldBase,
+        positions: _ModelPositions,
+        index: int,
+        graph_builder: GraphBuilder,
+        inlined_holders: Callable[[DataType], tuple[DataType, ...]],
+        *,
+        use_typing_generics: bool,
     ) -> bool:
         """Write each enum member literal of the field whose enum is defined later as a string; return whether any."""
         member_literals = _forward_enum_member_literals(field, positions, index)
         for member_literal in member_literals:
             member_literal._set_forward_reference(True)  # noqa: FBT003, SLF001
-            cls.__disable_union_operator_for_forward_ref(member_literal, use_typing_generics=use_typing_generics)
+            cls.__disable_union_operator_for_forward_ref(
+                member_literal, graph_builder, inlined_holders, use_typing_generics=use_typing_generics
+            )
         return bool(member_literals)
 
     @classmethod
@@ -7685,6 +7731,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         use_deferred_annotations: bool = True,
         defers_recursive_containers: bool,
         graph_builder: GraphBuilder,
+        inlined_holders: Callable[[DataType], tuple[DataType, ...]],
         hidden_type_names: Callable[[DataModel], Collection[str | None]],
         quotes_forward_enum_member_literals: bool,
         use_typing_generics: bool,
@@ -7735,6 +7782,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     field,
                     positions,
                     i,
+                    graph_builder,
+                    inlined_holders,
                     use_typing_generics=quotes_in_typing_generics and model.WRITES_QUOTED_NAMES_IN_TYPING_GENERICS,
                 ):
                     has_aliased_forward_ref = True
@@ -7751,6 +7800,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     data_type.alias = f'"{name}"'
                     cls.__disable_union_operator_for_forward_ref(
                         data_type,
+                        graph_builder,
+                        inlined_holders,
                         use_typing_generics=quotes_in_typing_generics
                         and (model.WRITES_QUOTED_NAMES_IN_TYPING_GENERICS or name in hidden_names),
                     )
@@ -9049,6 +9100,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 "pydantic.type_alias_module_namespace", self.target_pydantic_version
             ),
             graph_builder=self._graph_builder,
+            inlined_holders=self.generation_store.index.inlined_holders_of,
             hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
             quotes_forward_enum_member_literals=self._quotes_hidden_types,
             use_typing_generics=not python_target_meets(

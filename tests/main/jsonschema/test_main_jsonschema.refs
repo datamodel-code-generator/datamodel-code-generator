@@ -6128,6 +6128,10 @@ parent	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_reused
 [test_main_jsonschema_collapsed_external_references]
 	main/jsonschema/external_other_ref2.py
 	main/jsonschema/external_ref0.py
+[test_main_jsonschema_collapsed_recursive_union_quoted_names]
+pydantic_v2.BaseModel-options0	main/jsonschema/main_jsonschema/collapsed_recursive_union_quoted_names[pydantic_v2.BaseModel-options0].py
+pydantic_v2.BaseModel-options1	main/jsonschema/main_jsonschema/collapsed_recursive_union_quoted_names[pydantic_v2.BaseModel-options1].py
+pydantic_v2.dataclass-options2	main/jsonschema/main_jsonschema/collapsed_recursive_union_quoted_names[pydantic_v2.dataclass-options2].py
 [test_main_jsonschema_combine_any_of_object]
 None-pydantic_v2.BaseModel-combine_any_of_object_v2.py	main/jsonschema/combine_any_of_object_v2.py
 left_to_right-pydantic_v2.BaseModel-combine_any_of_object_left_to_right.py	main/jsonschema/combine_any_of_object_left_to_right.py

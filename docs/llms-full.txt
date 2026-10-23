@@ -67325,8 +67325,9 @@ Current behaviour that a decision reading the index must allow for:
 - The operations that write values the facts do not record neither note models nor mark the facts dirty: a field's
   default (`set_field_default`), `required` (`require_field`), constraints (`set_field_constraints`), extras
   (`set_field_extras`, `set_field_extra`, `drop_field_discriminator`), and the import of a model-level
-  `--type-overrides` entry (`override_type_import`, `add_model_import`). An entry written into a field's extras, a
-  discriminator dropped from a field's type and an override's import are seen by every holder of the dict or type.
+  `--type-overrides` entry (`override_type_import`, `add_model_import`), and the `Union` that a quoted name asks of
+  the unions joining it (`drop_union_operator`). An entry written into a field's extras, a discriminator dropped from
+  a field's type, an override's import and a dropped union operator are seen by every holder of the dict or type.
   Writes on a copy that is not installed yet (`_copy_resolved_inherited_field`, `_apply_override_to_field`) stay
   outside the store.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by

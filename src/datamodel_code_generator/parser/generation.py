@@ -143,6 +143,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "drop_field_discriminator",
     "drop_held_null",
     "drop_union_member_constraints",
+    "drop_union_operator",
     "inline_shared",
     "insert_field",
     "mark_target_null",
@@ -212,6 +213,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "discard_derived_facts",
     "drop_field_discriminator",
     "drop_held_null",
+    "drop_union_operator",
     "mark_target_null",
     "move_model",
     "override_type_import",
@@ -1245,6 +1247,21 @@ class GenerationIndex:
             return None
         return facts.model_facts[fact.owner_model].model
 
+    def inlined_holders_of(self, data_type: DataType) -> tuple[DataType, ...]:
+        """Return the types besides its ``parent`` that hold ``data_type``, sharing the parent's children with it.
+
+        Root-model collapse makes them as copies of the root type for its sites (``GenerationStore.inline_shared``).
+        """
+        parent = data_type.parent
+        if (owners := self._store._inlined_owners.get(NodeKey(id(parent)))) is None:  # noqa: SLF001
+            return ()
+        return tuple(
+            owner
+            for owner in owners
+            if owner is not parent
+            and (owner.dict_key is data_type or any(member is data_type for member in owner.data_types))
+        )
+
     def root_model_wrappers_for_reference(
         self,
         reference: Reference,
@@ -2223,6 +2240,12 @@ class GenerationStore:  # noqa: PLR0904
         data_type.discriminator = discriminator
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().drop_union_operator() instead.", category=None)
+    def drop_union_operator(data_type: DataType) -> None:
+        """Join the members of a data type with ``Union`` instead of ``|``, which every holder of the type sees."""
+        data_type.use_union_operator = False
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().override_type_import() instead.", category=None)
     def override_type_import(data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
@@ -2809,6 +2832,10 @@ class GraphBuilder:
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store."""
         self._store.note_changed_models(*models)  # ty: ignore[deprecated]
+
+    def drop_union_operator(self, data_type: DataType) -> None:
+        """Join the members of a data type with ``Union`` instead of ``|``, which every holder of the type sees."""
+        self._store.drop_union_operator(data_type)  # ty: ignore[deprecated]
 
     def override_type_import(self, data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""

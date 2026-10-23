@@ -16585,6 +16585,41 @@ def test_main_jsonschema_type_alias_recursive_container(
         )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "options"),
+    [
+        ("pydantic_v2.BaseModel", ()),
+        ("pydantic_v2.BaseModel", ("--disable-future-imports",)),
+        ("pydantic_v2.dataclass", ()),
+    ],
+)
+def test_main_jsonschema_collapsed_recursive_union_quoted_names(
+    output_file: Path, output_model_type: str, options: tuple[str, ...]
+) -> None:
+    """Keep a union out of ``|`` where a collapsed root model quotes the names it shares with the field's union.
+
+    ``Grove`` collapses into ``Document.grove`` and quotes ``Hub`` and ``Left``, which follow it; 0.86.0 wrote
+    ``int | "Hub" | "Left" | None``, which fails to import.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            *options,
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-type-alias-type"],
     option_description="""Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).
