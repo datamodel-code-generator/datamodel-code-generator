@@ -45,6 +45,7 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
+    _float_constraint,
     chain_as_tuple,
     merge_normalized_constraint,
     normalize_integer_constraint,
@@ -270,7 +271,7 @@ class DataModelField(DataModelFieldBase):
         if value is None or constraint not in self._INTEGER_CONSTRAINTS:
             return constraint, value
         if is_float_type:
-            return constraint, float(value)
+            return constraint, _float_constraint(value)
         if is_int_type:
             return normalize_integer_constraint(constraint, value)
         if isinstance(value, float) and value.is_integer():

@@ -1,0 +1,6 @@
+{"below": 1.5, "negative": -1.5, "nullable": null, "member": "x", "count": 5, "finite": 1.5}: schema accepts, model accepts
+{"member": 1.5, "count": 9223372036854775808}: schema accepts, model accepts
+{"below": 1.5, "negative": -1.5, "nullable": null, "member": "x", "count": 5, "finite": 1.5, "above": 1.5}: schema rejects, model rejects
+{"below": 1.5, "negative": -1.5, "nullable": -1.5, "member": "x", "count": 5, "finite": 1.5}: schema rejects, model rejects
+{"below": 1.5, "negative": -1.5, "nullable": null, "member": "x", "count": 5, "finite": -1.5}: schema rejects, model rejects
+{"below": 1.5, "negative": -1.5, "nullable": null, "member": "x", "count": 5, "finite": 1.7e+308}: schema rejects, model rejects

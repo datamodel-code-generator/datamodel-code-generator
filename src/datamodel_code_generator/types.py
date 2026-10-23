@@ -16,6 +16,7 @@ from enum import Enum, auto
 from fractions import Fraction
 from functools import cache, lru_cache
 from itertools import chain, repeat
+from math import inf
 from re import Pattern
 from types import MappingProxyType
 from typing import (
@@ -308,6 +309,15 @@ def _get_fraction_ceil(value: Fraction) -> int:
 
 def _get_constraint_number(value: Any) -> Any:
     return value.value if isinstance(value, UnionIntFloat) else value
+
+
+def _float_constraint(value: Any) -> float:
+    """Return a number constraint as a float: an int beyond the float range is the infinity of its sign, as 1e400 is."""
+    number = _get_constraint_number(value)
+    try:
+        return float(number)
+    except OverflowError:
+        return inf if number > 0 else -inf
 
 
 def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:  # noqa: PLR0911

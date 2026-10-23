@@ -1,0 +1,30 @@
+{
+  "valid": [
+    {
+      "below": 1.5,
+      "negative": -1.5,
+      "nullable": null,
+      "member": "x",
+      "count": 5,
+      "finite": 1.5
+    },
+    {
+      "member": 1.5,
+      "count": 9223372036854775808
+    }
+  ],
+  "invalid": [
+    {
+      "above": 1.5
+    },
+    {
+      "nullable": -1.5
+    },
+    {
+      "finite": -1.5
+    },
+    {
+      "finite": 1.7e+308
+    }
+  ]
+}

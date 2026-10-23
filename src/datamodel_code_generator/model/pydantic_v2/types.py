@@ -87,6 +87,7 @@ from datamodel_code_generator.types import (
     StrictTypes,
     Types,
     UnionIntFloat,
+    _float_constraint,
     normalize_integer_constraints,
 )
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBase
@@ -378,7 +379,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
                     return self.data_type.from_import(IMPORT_NON_NEGATIVE_FLOAT)
                 if data_type_kwargs == {"le": 0} and self.use_non_positive_negative_number_constrained_types:
                     return self.data_type.from_import(IMPORT_NON_POSITIVE_FLOAT)
-            kwargs = {k: float(v) for k, v in data_type_kwargs.items()}
+            kwargs = {k: _float_constraint(v) for k, v in data_type_kwargs.items()}
             if strict:
                 kwargs["strict"] = True
             return self.data_type.from_import(IMPORT_CONFLOAT, kwargs=kwargs)

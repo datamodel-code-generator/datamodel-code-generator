@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from jsonschema import Draft202012Validator
 from pydantic import TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
 
@@ -19,6 +20,7 @@ from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     _assert_model_json_invalid,
     _generated_model,
+    _model_json_validator,
     assert_generated_model_json_validation,
     run_generate_and_assert,
     run_generate_file_and_assert,
@@ -27,7 +29,11 @@ from tests.main.conftest import (
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
+
+BEYOND_FLOAT_RANGE = JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision" / "beyond_float_range.json"
+BEYOND_FLOAT_RANGE_PAYLOADS = JSON_DATA_PATH / "numeric_constraint_precision" / "beyond_float_range_payloads.json"
 
 
 @pytest.mark.parametrize("entry_point", ["api", "cli"])
@@ -156,3 +162,45 @@ def test_numeric_constraint_serialization(fixture: str, serialization: str, cons
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param((), id="constrained"),
+        pytest.param(("--field-constraints",), id="field"),
+        pytest.param(("--use-annotated",), id="annotated"),
+        pytest.param(("--output-model-type", "pydantic_v2.dataclass", "--strict-types", "float"), id="dataclass"),
+    ],
+)
+def test_number_bounds_beyond_float_range(output_file: Path, extra_args: tuple[str, ...]) -> None:
+    """Write a number bound beyond the float range as the infinity of its sign, as the same number written 1e400."""
+    run_main_and_assert(
+        input_path=BEYOND_FLOAT_RANGE,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+    payloads = json.loads(BEYOND_FLOAT_RANGE_PAYLOADS.read_text(encoding="utf-8"))
+    documents = [
+        *payloads["valid"],
+        *({**payloads["valid"][0], **change} for change in payloads["invalid"]),
+    ]
+    validator = Draft202012Validator(json.loads(BEYOND_FLOAT_RANGE.read_text(encoding="utf-8")))
+    with _generated_model(output_file, "number_bounds_beyond_float_range", "Model") as model:
+        validate_json = _model_json_validator(model)
+        verdicts = "".join(
+            f"{json.dumps(document)}: schema {'accepts' if validator.is_valid(document) else 'rejects'}, "
+            f"model {_model_verdict(validate_json, document)}\n"
+            for document in documents
+        )
+    assert_output(verdicts, name="payloads")
+
+
+def _model_verdict(validate_json: Callable[[str], Any], document: object) -> str:
+    """Return whether a generated model accepts or rejects a JSON document."""
+    try:
+        validate_json(json.dumps(document))
+    except ValidationError:
+        return "rejects"
+    return "accepts"
