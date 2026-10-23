@@ -76,6 +76,7 @@ from datamodel_code_generator.parser.base import (
     override_required_field,
     relative,
     sort_data_models,
+    structure,
     to_hashable,
 )
 from datamodel_code_generator.reference import Reference, model_key_of, snake_to_upper_camel
@@ -1828,18 +1829,17 @@ def test_get_module_directory(module: tuple[str, ...], expected: tuple[str, ...]
     ids=["name_conflict", "multiple_conflicts", "different_prefix_break"],
 )
 def test_compute_internal_module_path(
-    parser_fixture: C,
     scc_modules: set[tuple[str, ...]],
     existing_modules: set[tuple[str, ...]],
     expected: tuple[str, ...],
 ) -> None:
-    """Test __compute_internal_module_path with various conflict scenarios."""
-    result = parser_fixture._Parser__compute_internal_module_path(scc_modules, existing_modules)
+    """Test compute_internal_module_path with various conflict scenarios."""
+    result = structure.compute_internal_module_path(scc_modules, existing_modules)
     assert result == expected
 
 
 def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
-    """Test __module_dependency_cycles when reference path is not in path_to_module."""
+    """Test module_dependency_cycles when reference path is not in path_to_module."""
     missing_reference = Reference(path="nonexistent.Model", original_name="Missing", name="Missing")
     model1 = BaseModel(
         fields=[DataModelField(data_type=DataType(reference=missing_reference))],
@@ -1851,7 +1851,7 @@ def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
         (("pkg",), [model1]),
     ]
 
-    assert parser_fixture._Parser__module_dependency_cycles(module_models_list) == []
+    assert structure.module_dependency_cycles(parser_fixture, module_models_list) == []
 
 
 def test_collapse_root_models_preserves_root_model_used_by_other_modules() -> None:

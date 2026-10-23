@@ -135,7 +135,7 @@ def test_parser_behavior_capabilities_have_no_concrete_helper_dependencies() -> 
     from datamodel_code_generator.parser import base
 
     checker_tree = ast.parse(textwrap.dedent(inspect.getsource(DataModel._field_assignment_facts)))
-    tree_reuse_source = inspect.getsource(vars(base.Parser)["_Parser__create_shared_module_from_duplicates"])
+    tree_reuse_source = inspect.getsource(base.structure.create_shared_module_from_duplicates)
 
     assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in ast.walk(checker_tree))
     assert not any(

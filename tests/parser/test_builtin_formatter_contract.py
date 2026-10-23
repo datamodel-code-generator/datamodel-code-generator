@@ -11,26 +11,26 @@ import pytest
 
 import datamodel_code_generator._builtin_formatter as builtin_formatter
 import datamodel_code_generator.config as config_module
-from datamodel_code_generator.parser.base import Parser
+from datamodel_code_generator.parser.base import Parser, structure
 from tests.conftest import assert_output
 
 EXPECTED_PATH = Path(__file__).parents[1] / "data" / "expected" / "builtin_formatter"
 PYTHON_DATA_PATH = Path(__file__).parents[1] / "data" / "python"
 
 
-def _assigned_value(tree: ast.AST, attribute_name: str) -> ast.expr:
+def _assigned_value(tree: ast.AST, attribute_name: str, *, owner: str = "self") -> ast.expr:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
             continue
         if any(
             isinstance(target, ast.Attribute)
             and isinstance(target.value, ast.Name)
-            and target.value.id == "self"
+            and target.value.id == owner
             and target.attr == attribute_name
             for target in node.targets
         ):
             return node.value
-    msg = f"Parser.__init__ no longer assigns self.{attribute_name}"  # pragma: no cover
+    msg = f"no longer assigns {owner}.{attribute_name}"  # pragma: no cover
     raise AssertionError(  # pragma: no cover
         msg
     )
@@ -46,9 +46,9 @@ def _attributes_on(node: ast.AST, object_name: str) -> set[str]:
 
 def _generated_formatter_guarded_config_fields() -> set[str]:
     init_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser.__init__)))
-    parse_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser._Parser__detect_standard_generation_templates)))
+    parse_tree = ast.parse(textwrap.dedent(inspect.getsource(structure.detect_standard_generation_templates)))
     configured_types = _assigned_value(init_tree, "_configured_generation_types_are_builtin")
-    standard_templates = _assigned_value(parse_tree, "_uses_standard_generation_templates")
+    standard_templates = _assigned_value(parse_tree, "_uses_standard_generation_templates", owner="parser")
     config_by_instance_attribute: dict[str, str] = {}
     for node in ast.walk(init_tree):
         match node:

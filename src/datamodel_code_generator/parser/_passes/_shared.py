@@ -2,7 +2,7 @@
 
 A helper that reads parser state takes it as arguments, or takes the parser through one of the narrow protocols below,
 which ``Parser`` satisfies structurally. This module imports no parser module but the generation store, the import
-ledger and the shared keys, so it never imports ``parser/base.py``.
+ledger, the model graph ids, the shared keys and the run state, so it never imports ``parser/base.py``.
 """
 
 from __future__ import annotations
@@ -16,10 +16,15 @@ from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator import AllOfMergeMode
+from datamodel_code_generator._graph import stable_toposort
+from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
+from datamodel_code_generator.model._decisions.tag_value import mapped_tags
+from datamodel_code_generator.model.base import DataModel, _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,
@@ -28,19 +33,22 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
 )
+from datamodel_code_generator.parser._passes._state import RecursionFacts
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     rewrite_runtime_expressions,
     rewrite_runtime_imports,
 )
-from datamodel_code_generator.reference import ModelType
+from datamodel_code_generator.reference import ModelType, _source_path
 from datamodel_code_generator.types import DataType, DefaultValueRecipe
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Mapping
+    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
@@ -891,3 +899,164 @@ def alias_shadowed_imports(
     if module_imports is not None:
         for aliased_import in aliased_imports.values():
             host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)  # noqa: SLF001
+
+
+def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel] | None) -> bool:
+    return root_model_type is not None and isinstance(model, root_model_type)
+
+
+@dataclass(frozen=True, slots=True)
+class _ReuseOptimizationContext:
+    """Parser-owned semantic constraints for model reuse optimizations."""
+
+    type_override_model_names: frozenset[str] = frozenset()
+
+    @classmethod
+    def from_type_overrides(cls, type_overrides: Mapping[str, str]) -> _ReuseOptimizationContext:
+        """Build reuse constraints without importing output-backend policy."""
+        if not type_overrides:
+            return cls()
+
+        return cls(frozenset(override_key.partition(".")[0] for override_key in type_overrides))
+
+    def allows_model(self, model: DataModel) -> bool:
+        """Return whether reuse can preserve all pending parser semantics."""
+        return model.class_name not in self.type_override_model_names
+
+    def eligible_models(self, models: Iterable[DataModel]) -> Iterable[DataModel]:
+        """Return models eligible for reuse without allocating on the fast path."""
+        if not self.type_override_model_names:
+            return models
+        return (model for model in models if self.allows_model(model))
+
+
+def _sort_models_by_class_body_references(
+    models: list[DataModel],
+    pydantic_v2_root_model_type: type[DataModel] | None,
+    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]],
+) -> list[DataModel]:
+    """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
+    keyed = keyed_models(models, GraphSnapshot.CLASS_BODY_ORDER.value)
+    order_index = {key: index for index, key in enumerate(keyed.models)}
+    targets: dict[ModelKey, set[ModelKey]] = {}
+    for model_key, model in keyed.models.items():
+        model_targets = targets[model_key] = {
+            keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
+        }
+        model_targets.update(runtime_validation_references.get(model_key, ()))
+        if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
+            model_targets.update(
+                keyed.key_of(data_type.reference)
+                for field in model.fields
+                for data_type in field.data_type.all_data_types
+                if data_type.reference
+            )
+        model_targets.discard(model_key)
+    graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
+
+    def old() -> list[ModelKey]:
+        edges: dict[ModelKey, set[ModelKey]] = {key: set() for key in keyed.models}
+        for model_key, model_targets in targets.items():
+            for reference_key in model_targets:
+                if reference_key in edges:
+                    edges[reference_key].add(model_key)
+        return stable_toposort(list(order_index), edges, key=order_index.__getitem__)
+
+    sorted_keys = graph_answer(
+        GraphSnapshot.CLASS_BODY_ORDER,
+        graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__),
+        old,
+    )
+    return [keyed.models[key] for key in sorted_keys]
+
+
+def _runtime_validation_reference_keys(
+    models: Sequence[DataModel], *, same_module: bool
+) -> dict[ModelKey, frozenset[ModelKey]]:
+    """Map models to the listed models their runtime rules name; with ``same_module``, other modules are imported."""
+    references_by_key: dict[ModelKey, frozenset[ModelKey]] = {}
+    keyed: KeyedModels | None = None
+    for model in models:
+        if not (references := model.schema_runtime_validation_references):
+            continue
+        keyed = keyed or keyed_models(models, "runtime validation references")
+        module_path = model.module_path if same_module else None
+        if reference_keys := frozenset(
+            reference_key
+            for reference in references
+            if (reference_key := keyed.key_of(reference)) in keyed.models
+            and (
+                module_path is None
+                or (isinstance(source := reference.source, DataModel) and source.module_path == module_path)
+            )
+        ):
+            references_by_key[model_key_of(model.reference)] = reference_keys
+    return references_by_key
+
+
+def add_model_path_to_list(
+    paths: list[str] | None,
+    model: DataModel,
+    /,
+) -> list[str]:
+    """
+    Auxiliary method which adds model path to list, provided the following hold.
+
+    - model is not a type alias
+    - path is not already in the list.
+
+    """
+    if paths is None:
+        paths = []
+    if model.is_alias:
+        return paths
+    if (path := model.path) in paths:
+        return paths
+    paths.append(path)
+    return paths
+
+
+def _get_schema_path(model: DataModel | Reference) -> str:
+    """Return the path of the schema a model is generated from, through read and write variants and reuse."""
+    source = model if isinstance(model, DataModel) else model.source
+    reused = source.reused_reference if isinstance(source, DataModel) else None
+    return _source_path((reused or model).path)
+
+
+def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
+    """Return the mapping values that select a variant directly or through its base classes (``mapped_tags``)."""
+    if not mapping:
+        return []
+    return mapped_tags(
+        mapping,
+        schema_path=_get_schema_path(discriminator_model),
+        base_schema_paths=(
+            _get_schema_path(reference)
+            for base_class in discriminator_model.base_classes
+            if (reference := base_class.reference)
+        ),
+    )
+
+
+class RecursionFactsHost(Protocol):
+    """The recursion facts of the run, which the passes that add models needing a reference update action extend."""
+
+    _recursion_facts: RecursionFacts
+
+
+def require_update_action(
+    host: RecursionFactsHost, models: Sequence[DataModel], require_update_action_models: list[str] | None = None
+) -> None:
+    """Add the models that are not type aliases to the models needing a reference update action.
+
+    ``require_update_action_models`` is the list of their paths that ``_process_single_module`` takes.
+    """
+    recursion_facts = host._recursion_facts  # noqa: SLF001
+    for model in models:
+        add_model_path_to_list(require_update_action_models, model)
+    host._recursion_facts = RecursionFacts(  # noqa: SLF001
+        require_update=recursion_facts["require_update"].union(
+            model_key_of(model.reference) for model in models if not model.is_alias
+        ),
+        circular_roots=recursion_facts["circular_roots"],
+    )

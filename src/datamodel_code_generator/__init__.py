@@ -355,10 +355,15 @@ DEFAULT_MAX_VARIABLE_LENGTH: int = 100
 
 
 _pysnooper_default_state_set: bool = False
+_LAYER_MODULE_PREFIX = "datamodel_code_generator.parser._passes."
 
 
 def snooper_to_methods() -> Callable[..., Any]:
-    """Class decorator to add pysnooper tracing to all methods."""
+    """Class decorator to add pysnooper tracing to all methods.
+
+    It also traces the functions of the pass layer modules (``parser/_passes/<layer>.py``) the pipeline of ``Parser``
+    calls through their modules, once each.
+    """
 
     def inner(cls: type[T]) -> type[T]:
         global _pysnooper_default_state_set  # noqa: PLW0603
@@ -378,6 +383,12 @@ def snooper_to_methods() -> Callable[..., Any]:
         for name, method in methods:
             snooper_method = pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
             setattr(cls, name, snooper_method)
+        for module_name, module in [*sys.modules.items()]:
+            if not module_name.startswith(_LAYER_MODULE_PREFIX) or module_name.rpartition(".")[2].startswith("_"):
+                continue
+            for name, function in inspect.getmembers(module, predicate=inspect.isfunction):
+                if function.__module__ == module_name and not hasattr(function, "__wrapped__"):
+                    setattr(module, name, pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(function))
         return cls
 
     return inner

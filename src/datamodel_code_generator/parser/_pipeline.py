@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
 
-from typing_extensions import final
+from typing_extensions import ParamSpec, final
 
 from datamodel_code_generator.parser._finality import fact_pass, pass_scope
 
@@ -51,6 +51,7 @@ __all__ = [
     "check_order",
     "decision_order",
     "flatten",
+    "late",
     "release_parse_caller",
     "segment_bodies",
     "stacklevel_at_parse_caller",
@@ -58,6 +59,7 @@ __all__ = [
 
 P = TypeVar("P")
 R = TypeVar("R")
+Q = ParamSpec("Q")
 S = TypeVar("S")
 M = TypeVar("M")
 P_contra = TypeVar("P_contra", contravariant=True)
@@ -90,6 +92,18 @@ class StepLike(Protocol[P_contra, S_contra]):
 
     def passes(self) -> Iterator[PassDecl]:
         """Yield the declarations of the passes the step runs, in table order."""
+
+
+def late(function: Callable[Q, R]) -> Callable[Q, R]:
+    """Return ``function`` looked up on its module at call time, so a tracer that replaces module attributes sees it."""
+    named = cast("Any", function)
+    module = named.__module__
+    name = named.__name__
+
+    def call(*args: Q.args, **kwargs: Q.kwargs) -> R:
+        return cast("Callable[Q, R]", getattr(sys.modules[module], name))(*args, **kwargs)
+
+    return call
 
 
 @final
