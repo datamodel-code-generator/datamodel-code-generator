@@ -7185,6 +7185,39 @@ def test_use_annotated_deprecation_warning_pydantic_v2(output_file: Path) -> Non
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_stderr_contains"),
+    [
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            "DeprecationWarning: Pydantic v2 with --use-annotated is recommended",
+            id="model-run-options",
+        ),
+        pytest.param(
+            ["--allow-extra-fields"],
+            "DeprecationWarning: --allow-extra-fields is deprecated",
+            id="config",
+        ),
+    ],
+)
+def test_option_warning_as_error_fails_the_run(
+    extra_args: list[str], expected_stderr_contains: str, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A warning turned into an error while the options are processed fails the run with exit 2 (#5212)."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=extra_args,
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains=expected_stderr_contains,
+            output_should_not_exist=True,
+        )
+
+
 def test_use_annotated_no_warning_with_flag(output_file: Path) -> None:
     """Test that no warning is emitted when --use-annotated is explicitly set."""
     with warnings.catch_warnings(record=True) as w:
