@@ -2101,6 +2101,13 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         return bool(self.__constraint_fields__ & self.model_fields_set)
 
     @cached_property
+    def ref_type(self) -> JSONReference | None:
+        """Get the reference type (LOCAL, REMOTE, or URL)."""
+        if self.ref:
+            return get_ref_type(self.ref)
+        return None
+
+    @cached_property
     def type_has_null(self) -> bool:
         """Check if the type list or oneOf/anyOf contains null.
 

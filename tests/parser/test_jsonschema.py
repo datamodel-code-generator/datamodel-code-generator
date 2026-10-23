@@ -94,6 +94,13 @@ def _json_schema_object(data: dict[str, Any]) -> JsonSchemaObject:
     return JsonSchemaObject.model_validate(data)
 
 
+def test_json_schema_object_ref_type() -> None:
+    """Keep the public ``ref_type`` property: the kind of the ``$ref``, or None without one."""
+    refs = ["#/$defs/Model", "other.json#/Model", "https://example.com/schema.json", None]
+    kinds = [_json_schema_object({"$ref": ref} if ref else {}).ref_type for ref in refs]
+    assert_output("\n".join(f"{ref}: {kind}" for ref, kind in zip(refs, kinds, strict=True)))
+
+
 @pytest.mark.parametrize("entrypoint", ["config", "options", "api"])
 @pytest.mark.parametrize("custom_factory", [False, True])
 def test_parser_template_data_reuse(output_file: Path, entrypoint: str, *, custom_factory: bool) -> None:

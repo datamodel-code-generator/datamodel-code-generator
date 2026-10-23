@@ -1,0 +1,4 @@
+#/$defs/Model: JSONReference.LOCAL
+other.json#/Model: JSONReference.REMOTE
+https://example.com/schema.json: JSONReference.URL
+None: None

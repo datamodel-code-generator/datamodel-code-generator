@@ -6,6 +6,8 @@
 	parser/builtin_formatter_custom_resolve_action.snapshot
 [test_generated_formatter_mode_only_enabled_for_builtin]
 	parser/generated_formatter_modes.snapshot
+[test_json_schema_object_ref_type]
+	parser/jsonschema/json_schema_object_ref_type.txt
 [test_parse_nested_array]
 	parser/nested_array.json.snapshot
 [test_parser_template_data_reuse]
