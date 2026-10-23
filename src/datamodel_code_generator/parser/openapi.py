@@ -25,6 +25,7 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     OpenAPIScope,
+    SchemaParseError,
     snooper_to_methods,
 )
 from datamodel_code_generator._source import YamlValue
@@ -39,6 +40,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _locate,
     _located,
     _located_model_schema,
+    _named_path,
     get_model_by_path,
 )
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
@@ -368,6 +370,22 @@ class OpenAPIParser(JsonSchemaParser):
         """Return the context in which an input specification names itself by its OpenAPI 3.2 `$self`."""
         return self.openapi_self_context(raw) if document in self._specification_documents else nullcontext()
 
+    def _component_name(self, components: object, key: object, path: list[str]) -> str:
+        """Return ``key``, which names a component of ``components`` at ``path``; a key that is no string is an error.
+
+        A YAML key such as ``1`` loads as a number.
+        """
+        if isinstance(key, str):
+            return key
+        msg = f"component name {key!r} is not a string"
+        raise SchemaParseError(msg, path=_named_path(self._member_location(components, str(key)), [*path, str(key)]))
+
+    def _named_components(self, components: dict[Any, YamlValue], path: list[str]) -> dict[str, YamlValue]:
+        """Return ``components`` once each of its keys names a component (``_component_name``)."""
+        for key in components:
+            self._component_name(components, key, path)
+        return components
+
     def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
         """Parse the loaded OpenAPI specification."""
         if self.openapi_include_info_version:
@@ -384,7 +402,7 @@ class OpenAPIParser(JsonSchemaParser):
                 stacklevel=2,
             )
         if OpenAPIScope.Schemas in self.open_api_scopes:
-            for obj_name in schemas:
+            for obj_name in self._named_components(schemas, [*path_parts, "#/components", "schemas"]):
                 self._parse_raw_member(obj_name, schemas, obj_name, [*path_parts, "#/components", "schemas", obj_name])
         if OpenAPIScope.Paths in self.open_api_scopes:
             # Resolve $ref in global parameter list
@@ -416,11 +434,14 @@ class OpenAPIParser(JsonSchemaParser):
                     media_schema = self._get_raw_media_schema(media_obj)
                     if media_schema is None:
                         continue
+                    name = self._component_name(
+                        request_bodies, body_name, [*path_parts, "#/components", "requestBodies"]
+                    )
                     media_path = [
                         *path_parts,
                         "#/components",
                         "requestBodies",
-                        body_name,
+                        name,
                         "content",
                         media_type,
                     ]
@@ -429,9 +450,9 @@ class OpenAPIParser(JsonSchemaParser):
                         from_item_schema=media_schema.from_item_schema,
                     )
                     if media_schema.from_item_schema:
-                        self.parse_raw_obj(body_name, media_schema.schema, schema_path)
+                        self.parse_raw_obj(name, media_schema.schema, schema_path)
                     else:
-                        self._parse_raw_member(body_name, media_obj, "schema", schema_path)
+                        self._parse_raw_member(name, media_obj, "schema", schema_path)
 
     def _insert_info_version_constant(self, body: str, info_version: str) -> str:  # noqa: PLR6301
         constant = f"OPENAPI_INFO_VERSION = {info_version!r}"

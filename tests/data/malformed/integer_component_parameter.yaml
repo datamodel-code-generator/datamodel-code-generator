@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: Integer parameter name
+  version: '1.0'
+paths: {}
+components:
+  parameters:
+    1:
+      name: p
+      in: query
+      schema:
+        type: string

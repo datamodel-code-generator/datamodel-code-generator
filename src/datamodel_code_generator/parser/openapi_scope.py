@@ -450,7 +450,8 @@ class ApiOpenAPIParser(OpenAPIParser):
             ("headers", "Header"),
         )
         for category, suffix in categories:
-            for key, value in _mapping(components.get(category, {}), ["#/components", category]).items():
+            entries = _mapping(components.get(category, {}), ["#/components", category])
+            for key, value in self._named_components(entries, [*path_parts, "#/components", category]).items():
                 path = [*path_parts, "#/components", category, key]
                 target = self._resolve_api_object(value, path)
                 name = self._get_model_name(key, "", suffix)
@@ -470,12 +471,14 @@ class ApiOpenAPIParser(OpenAPIParser):
         self.walk_api_path_items(
             _mapping(specification.get("webhooks", {}), ["#/webhooks"]), [*path_parts, "#/webhooks"], scope="webhooks"
         )
+        path_items = _mapping(components.get("pathItems", {}), ["#/components/pathItems"])
         self.walk_api_path_items(
-            _mapping(components.get("pathItems", {}), ["#/components/pathItems"]),
+            self._named_components(path_items, [*path_parts, "#/components", "pathItems"]),
             [*path_parts, "#/components", "pathItems"],
             scope="pathItems",
         )
-        for key, value in _mapping(components.get("callbacks", {}), ["#/components/callbacks"]).items():
+        callbacks = _mapping(components.get("callbacks", {}), ["#/components/callbacks"])
+        for key, value in self._named_components(callbacks, [*path_parts, "#/components", "callbacks"]).items():
             path = [*path_parts, "#/components", "callbacks", key]
             callback = _mapping(value, path)
             self._walk_callback(callback, path, self._get_model_name(key, "", "Callback"), self._declared(callback))
@@ -491,7 +494,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         components = _mapping(raw.get("components", {}), [document, "components"])
         schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
         potential: dict[str, tuple[dict[str, YamlValue], list[str]]] = {}
-        for name, schema in schemas.items():
+        for name, schema in self._named_components(schemas, [document, "components", "schemas"]).items():
             local_ref = "#" + pointer_fragment(("components", "schemas", name))
             match schema:
                 case bool():

@@ -998,6 +998,62 @@ def test_malformed_input_error_messages(
             id="scalar-component-api",
         ),
         pytest.param(
+            "integer_component_parameter.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "api"],
+            "Error at schema path 'integer_component_parameter.yaml#/components/parameters/1': "
+            "component name 1 is not a string",
+            id="integer-parameter-name-api",
+        ),
+        pytest.param(
+            "integer_component_schema.yaml",
+            "openapi",
+            [],
+            "Error at schema path 'integer_component_schema.yaml#/components/schemas/1': "
+            "component name 1 is not a string",
+            id="integer-schema-name",
+        ),
+        pytest.param(
+            "integer_component_schema.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_component_schema.yaml#/components/schemas/1': "
+            "component name 1 is not a string",
+            id="integer-schema-name-api",
+        ),
+        pytest.param(
+            "integer_component_request_body.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "requestbodies"],
+            "Error at schema path 'integer_component_request_body.yaml#/components/requestBodies/1': "
+            "component name 1 is not a string",
+            id="integer-request-body-name",
+        ),
+        pytest.param(
+            "integer_component_request_body.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_component_request_body.yaml#/components/requestBodies/1': "
+            "component name 1 is not a string",
+            id="integer-request-body-name-api",
+        ),
+        pytest.param(
+            "integer_component_path_item.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_component_path_item.yaml#/components/pathItems/1': "
+            "component name 1 is not a string",
+            id="integer-path-item-name-api",
+        ),
+        pytest.param(
+            "integer_component_callback.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'integer_component_callback.yaml#/components/callbacks/1': "
+            "component name 1 is not a string",
+            id="integer-callback-name-api",
+        ),
+        pytest.param(
             "schema_location_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "api"],

@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Integer request body name
+  version: '1.0'
+paths: {}
+components:
+  requestBodies:
+    1:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
