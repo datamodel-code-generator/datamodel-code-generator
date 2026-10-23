@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 OPT_IN_OPTIONS: tuple[str, ...] = (
     "--use-single-value-enum-as-const",
     "--openapi-paths-bodies-as-definitions",
+    "--openapi-ref-components-as-definitions",
     "--use-site-models-for-constrained-refs",
     "--omit-redundant-constraints",
     "--read-const-beside-enum",
@@ -149,6 +150,12 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
                 "request-response",
             ],
             id="dedupe-request-response-variants",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "ref_siblings_recursive_target" / "schema.yaml",
+            "openapi",
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            id="openapi-ref-components-as-definitions",
         ),
         pytest.param(
             OPEN_API_DATA_PATH / "redundant_reference_null.yaml",

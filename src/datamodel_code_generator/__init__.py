@@ -1173,6 +1173,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
         "openapi_paths_bodies_as_definitions": config.openapi_paths_bodies_as_definitions,
+        "openapi_ref_components_as_definitions": config.openapi_ref_components_as_definitions,
     }
 
 

@@ -14683,3 +14683,55 @@ def test_main_openapi_reference_to_component_without_model(output_model: str, ou
             invalid_json=json.dumps({"tree": {"children": [1]}}),
             expected_error_type="model_type",
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--openapi-ref-components-as-definitions"],
+    option_description="""Give a `$ref` component with sibling keywords to a recursive schema its own model.
+
+A component such as `Tree: {$ref: '#/components/schemas/Node', minProperties: 1}`, where `Node` leads back to `Tree`
+or to itself, cannot merge its sibling keywords into `Node`. Without the option it gets no model, as in 0.86.0, and a
+reference to it is typed by `Node`; with `--openapi-ref-components-as-definitions` it gets the root model
+`Tree(RootModel[Node])` that the same schema gets as a `$defs` entry, references to it name `Tree`, and a component
+nothing references is generated too. Such a component in another document gets that model with or without the
+option.""",
+    input_schema="openapi/ref_siblings_recursive_target/schema.yaml",
+    cli_args=["--openapi-ref-components-as-definitions"],
+    golden_output="main/openapi/main_openapi/ref_components_as_definitions[with-option].py",
+    comparison_output="main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-ref-components-as-definitions"], id="with-option"),
+        pytest.param([], id="without-option"),
+    ],
+)
+def test_main_openapi_ref_components_as_definitions(output_file: Path, extra_args: list[str]) -> None:
+    """Give a component written as a ``$ref`` to a recursive schema with sibling keywords its own model.
+
+    Without --openapi-ref-components-as-definitions ``Tree``, ``Grove`` and ``Forest`` get no model, as in 0.86.0, and
+    references to them are typed by ``Node``; with it each gets the root model its ``$defs`` entry would get.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_siblings_recursive_target" / "schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *extra_args,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"ref_components_as_definitions_{len(extra_args)}",
+        model_name="Holder",
+        valid_json=json.dumps({"tree": {"children": [{"children": []}]}, "grove": {}, "byName": {"a": {}}}),
+        invalid_json=json.dumps({"trees": [{"children": [1]}]}),
+        expected_error_type="model_type",
+    )

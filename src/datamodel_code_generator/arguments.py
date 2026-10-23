@@ -1549,6 +1549,14 @@ openapi_options.add_argument(
     default=None,
 )
 openapi_options.add_argument(
+    "--openapi-ref-components-as-definitions",
+    help="Give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model a "
+    "definitions entry of the same schema gets; without it such a component gets no model, and a reference to it is "
+    "typed by the schema its $ref names",
+    action="store_true",
+    default=None,
+)
+openapi_options.add_argument(
     "--validation",
     help=f"Deprecated: {deprecation_message('cli.validation')}",
     action="store_true",

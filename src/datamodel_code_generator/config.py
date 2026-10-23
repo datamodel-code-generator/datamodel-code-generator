@@ -353,6 +353,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_paths_bodies_as_definitions: bool = False
+    openapi_ref_components_as_definitions: bool = False
     openapi_version: OpenAPIVersion | None = None
 
 
@@ -365,6 +366,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_paths_bodies_as_definitions: bool = False
+    openapi_ref_components_as_definitions: bool = False
     openapi_version: OpenAPIVersion | None = None
     asyncapi_version: AsyncAPIVersion | None = None
 

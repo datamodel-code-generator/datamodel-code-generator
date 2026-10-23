@@ -286,6 +286,18 @@ class OpenAPIParser(JsonSchemaParser):
         """Whether the document's OpenAPI or AsyncAPI version reads the keywords beside a ``$ref`` as parts."""
         return self.schema_features.ref_sibling_keywords
 
+    @override
+    def _definition_entry_prefixes(self) -> tuple[tuple[str, ...], ...]:
+        """Return the definitions containers, and under --openapi-ref-components-as-definitions the components too.
+
+        A specification parses its components under ``#/components``, ``schemas``, which then name a container as
+        ``#/components/schemas`` does where another document's components are parsed.
+        """
+        prefixes = super()._definition_entry_prefixes()
+        if not self.config.openapi_ref_components_as_definitions:
+            return prefixes
+        return (*prefixes, *((f"#/{first}", *rest) for _, (first, *rest) in self.schema_paths))
+
     _config_class_name: ClassVar[str] = "OpenAPIParserConfig"
     _supports_api_scope: ClassVar[bool] = False
     _api_scope_error: ClassVar[str] = "OpenAPIScope.Api requires ApiOpenAPIParser"

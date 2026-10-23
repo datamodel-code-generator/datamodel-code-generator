@@ -1016,6 +1016,46 @@ class PetsPostRequest(RootModel[dict[str, Any] | None]):
     root: dict[str, Any] | None
 ```
 
+### `--openapi-ref-components-as-definitions`
+
+| | |
+|---|---|
+| Option | `--openapi-ref-components-as-definitions` |
+| Preset | `20261019` |
+| Class | opt-in |
+| Release | 0.87.0 |
+| Issue | [#5176](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5176), [#5162](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5162) |
+
+**Affects:** an OpenAPI component written as a `$ref` to a recursive schema with sibling keywords, such as `minProperties`. The component gets the root model that the same schema gets as a `$defs` entry, references to it name that model, and a component that nothing references is generated too. Such a component in another document gets that model with or without the option.
+
+Schema: `Node: {type: object, properties: {children: {type: array, items: {$ref: '#/components/schemas/Tree'}}}}`, `Tree: {$ref: '#/components/schemas/Node', description: A tree., minProperties: 1}`, `Holder: {type: object, properties: {tree: {$ref: '#/components/schemas/Tree'}}}`.
+
+Without the option (same as 0.86.0, where a reference to `Tree` failed with "A Parser can not resolve classes"; see [Crash and import fixes in the default output](#crash-and-import-fixes-in-the-default-output)), `Tree` gets no model and references to it are typed by `Node`:
+
+```python
+class Node(BaseModel):
+    children: list[Node] | None = None
+
+
+class Holder(BaseModel):
+    tree: Node | None = None
+```
+
+With the option:
+
+```python
+class Node(BaseModel):
+    children: list[Tree] | None = None
+
+
+class Holder(BaseModel):
+    tree: Tree | None = None
+
+
+class Tree(RootModel[Node]):
+    root: Node = Field(..., description="A tree.")
+```
+
 ### Crash and import fixes in the default output
 
 These fixes apply without any option: the old result could not be generated or imported, so nothing could depend on it.

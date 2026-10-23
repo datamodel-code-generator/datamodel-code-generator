@@ -181,6 +181,7 @@ reviewed-safe include_path_parameters
 reviewed-safe openapi_include_info_version
 reviewed-safe openapi_include_paths
 reviewed-safe openapi_paths_bodies_as_definitions
+reviewed-safe openapi_ref_components_as_definitions
 reviewed-safe openapi_scopes
 reviewed-safe openapi_version
 reviewed-safe use_status_code_in_response_name

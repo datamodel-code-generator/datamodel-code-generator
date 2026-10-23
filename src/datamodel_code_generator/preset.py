@@ -657,6 +657,14 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Ref components modeled as definitions",
+        config=PresetConfig(openapi_ref_components_as_definitions=True),
+        description=(
+            "Give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model "
+            "a definitions entry of the same schema gets, instead of no model."
+        ),
+    ),
+    PresetOptionGroup(
         title="Paths bodies modeled as definitions",
         config=PresetConfig(openapi_paths_bodies_as_definitions=True),
         description=(

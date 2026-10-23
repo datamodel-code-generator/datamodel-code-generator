@@ -1521,6 +1521,9 @@ typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= 
 	main/openapi/recursive_ref_discriminator_pydantic_v2.py	= main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_request_response]
 	main/openapi/openapi_recursive_ref_discriminator_request_response.py	= main/openapi/recursive_ref_discriminator.py
+[test_main_openapi_ref_components_as_definitions]
+with-option	main/openapi/main_openapi/ref_components_as_definitions[with-option].py
+without-option	main/openapi/main_openapi/ref_components_as_definitions[without-option].py	= main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py
 [test_main_openapi_ref_nullable_strict_nullable]
 	main/openapi/ref_nullable_strict_nullable.py
 [test_main_openapi_reference_same_hierarchy_directory]

@@ -13,7 +13,7 @@ This documentation is auto-generated from test cases.
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
-| 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
+| 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
@@ -28,7 +28,7 @@ Use these pages when you know the workflow area but not the exact option name.
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 28 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
-| [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
+| [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
 
@@ -275,6 +275,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
 - [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions)
+- [`--openapi-ref-components-as-definitions`](openapi-only-options.md#openapi-ref-components-as-definitions)
 - [`--openapi-scopes`](openapi-only-options.md#openapi-scopes)
 - [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names)
 - [`--order-constructor-fields-by-written-defaults`](model-customization.md#order-constructor-fields-by-written-defaults)

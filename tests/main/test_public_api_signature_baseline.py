@@ -389,6 +389,7 @@ def _baseline_generate(
     openapi_include_paths: list[str] | None = None,
     openapi_include_info_version: bool = False,
     openapi_paths_bodies_as_definitions: bool = False,
+    openapi_ref_components_as_definitions: bool = False,
     graphql_scopes: list[GraphQLScope] | None = None,
     graphql_no_typename: bool = False,
     wrap_string_literal: bool | None = None,

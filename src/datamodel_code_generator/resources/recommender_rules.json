@@ -933,6 +933,10 @@
         "openapi.paths-bodies-as-definitions"
       ]
     },
+    "openapi_ref_components_as_definitions": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+    },
     "openapi_scopes": {
       "not_recommended": "style",
       "reason": "Which OpenAPI sections generate models; the project decides which models it needs."

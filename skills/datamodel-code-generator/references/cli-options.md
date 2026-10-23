@@ -222,6 +222,7 @@ OpenAPI-specific generation behavior.
 - `--openapi-include-paths`: Include only OpenAPI paths matching fnmatch patterns. Use wildcards: '*' matches any chars, '?' matches single char. Example: '/users/*' '/products'. Requires '--openapi-scopes' to include 'paths'.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as OPENAPI_INFO_VERSION in generated models
 - `--openapi-paths-bodies-as-definitions`: Give the request and response bodies of the paths and webhooks scopes the model a schema definition of the same body gets: an object body with a type array such as [object, null], or with map keywords and no type, becomes a model instead of an inline type
+- `--openapi-ref-components-as-definitions`: Give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of the same schema gets; without it such a component gets no model, and a reference to it is typed by the schema its $ref names
 - `--validation` (deprecated): Deprecated: The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.
 - `--read-only-write-only-model-type`: Model generation for readOnly/writeOnly fields: 'request-response' = Request/Response models only (no base model), 'all' = Base + Request + Response models. Choices: `request-response`, `all`.
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each inline model once, without the unreferenced duplicate classes and shifted class numbers of 0.86.0

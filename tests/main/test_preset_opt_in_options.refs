@@ -15,6 +15,8 @@ keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 omit-redundant-reference-null-practical	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 omit-redundant-reference-null-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
+openapi-ref-components-as-definitions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-practical].py
+openapi-ref-components-as-definitions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-standard].py
 order-constructor-fields-by-final-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-final-names-practical]/
 order-constructor-fields-by-final-names-standard	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-final-names-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-final-names-practical]/
 order-constructor-fields-by-written-defaults-practical	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-written-defaults-practical].py

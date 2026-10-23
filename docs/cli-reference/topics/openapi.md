@@ -10,7 +10,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [OpenAPI Naming](#openapi-naming) | 2 | Operation and response model naming. |
 | [OpenAPI Paths](#openapi-paths) | 3 | Path selection and path parameter output. |
-| [OpenAPI Scopes](#openapi-scopes) | 1 | OpenAPI generation scopes. |
+| [OpenAPI Scopes](#openapi-scopes) | 2 | OpenAPI generation scopes. |
 | [Read Only Write Only](#read-only-write-only) | 3 | readOnly/writeOnly model behavior. |
 
 ## OpenAPI Naming {#openapi-naming}
@@ -38,6 +38,7 @@ OpenAPI generation scopes.
 
 | Option | Description |
 |--------|-------------|
+| [`--openapi-ref-components-as-definitions`](../openapi-only-options.md#openapi-ref-components-as-definitions) | Give a `$ref` component with sibling keywords to a recursive schema its own mode... |
 | [`--openapi-scopes`](../openapi-only-options.md#openapi-scopes) | Specify OpenAPI scopes to generate (schemas, paths, parameters). |
 
 ## Read Only Write Only {#read-only-write-only}

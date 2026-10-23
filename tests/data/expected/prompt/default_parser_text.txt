@@ -200,6 +200,7 @@
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
 - `--openapi-paths-bodies-as-definitions`: Give the bodies of the paths and webhooks scopes the models their sch...
+- `--openapi-ref-components-as-definitions`: Give a `$ref` component with sibling keywords to a recursive schema...
 - `--openapi-scopes`: Specify OpenAPI scopes to generate (schemas, paths, parameters).
 - `--read-only-write-only-model-type`: Generate separate request and response models for readOnly/writeOnly fields.
 - `--use-operation-id-as-name`: Use OpenAPI operationId as the generated function/class name.

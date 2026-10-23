@@ -16186,15 +16186,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Mark x-python-import reference as loaded to skip model generation."""
         self.model_resolver.add(path, name, class_name=True, loaded=True)
 
-    def _is_named_schema_definition_path(self, path: list[str]) -> bool:
-        """Check if path points to a named schema entry under definitions/$defs."""
-        current_root = list(self.model_resolver.current_root)
-        if len(path) < len(current_root) + 2:
-            return False
+    def _definition_entry_prefixes(self) -> tuple[tuple[str, ...], ...]:
+        """Return the path segments after a document root that name a definitions container (``#/$defs``)."""
+        return tuple((schema_path,) for schema_path, _ in self.schema_paths)
 
-        schema_container_path = path[len(current_root)]
-        return path[: len(current_root)] == current_root and any(
-            schema_container_path == schema_path for schema_path, _ in self.schema_paths
+    def _is_named_schema_definition_path(self, path: list[str]) -> bool:
+        """Check if path points to a named schema entry under a definitions container."""
+        current_root = list(self.model_resolver.current_root)
+        if path[: len(current_root)] != current_root:
+            return False
+        entry_path = tuple(path[len(current_root) :])
+        return any(
+            len(entry_path) > len(prefix) and entry_path[: len(prefix)] == prefix
+            for prefix in self._definition_entry_prefixes()
         )
 
     def _is_current_root_schema(self, obj: JsonSchemaObject) -> bool:
