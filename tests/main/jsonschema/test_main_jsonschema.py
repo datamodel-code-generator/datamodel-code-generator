@@ -20002,6 +20002,65 @@ def test_main_jsonschema_merged_ref_target_mappings(output_file: Path, mapping: 
     )
 
 
+def test_main_jsonschema_external_ref_mapping_whole_document(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Stop with an error that asks for a fragment where a $ref names the whole document a mapping imports from.
+
+    Up to 0.86.0 the run failed with "A Parser can not resolve classes".
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_ref_mapping_whole_document" / "api.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--external-ref-mapping", "common.json=mapped_whole_document.models"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Error at schema path 'api.json#': $ref 'common.json#' names no schema of the document that "
+            "--external-ref-mapping maps to 'mapped_whole_document.models'; a mapped $ref needs a fragment that names "
+            "a schema of that document"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_main_jsonschema_external_ref_mapping_whole_document_unused(output_file: Path) -> None:
+    """Generate the models where a $ref to the whole mapped document is in a keyword that types no field."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_ref_mapping_whole_document_unused.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--external-ref-mapping",
+            "external_ref_mapping_whole_document/common.json=mapped_whole_document.models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(output_dir: Path) -> None:
+    """Type a $ref to the whole mapped document by its generated root model where the document is an input too."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_ref_mapping_whole_document",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--external-ref-mapping",
+            "common.json=mapped_whole_document.models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     ("name", "model_name", "valid_json", "invalid_json"),
     [

@@ -11304,7 +11304,7 @@ def test_main_openapi_external_ref_mapping_local_ref_unchanged(tmp_path: Path) -
 def test_main_openapi_external_ref_mapping_ref_without_fragment_errors(tmp_path: Path) -> None:
     """Refs without a fragment remain unsupported and fail clearly."""
     output_file = tmp_path / "output.py"
-    with pytest.raises(Exception, match="A Parser can not resolve classes"):
+    with pytest.raises(Exception, match=r"a mapped \$ref needs a fragment that names a schema of that document"):
         generate(
             input_=EXTERNAL_REF_MAPPING_DATA_PATH / "api_no_fragment.yaml",
             input_file_type=InputFileType.OpenAPI,

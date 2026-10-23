@@ -312,6 +312,7 @@ jsonschema/external_files_in_directory/definitions/food.json	payloads/native_num
 jsonschema/external_files_in_directory/definitions/relative/animal/fur.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/directory/placeholder.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_whole_document/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_root_refs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extra_fields.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extras.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1991,6 +1992,7 @@ jsonschema/external_files_in_directory/definitions/food.json	payloads/native_num
 jsonschema/external_files_in_directory/definitions/relative/animal/fur.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/directory/placeholder.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_whole_document/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_root_refs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extra_fields.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extras.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

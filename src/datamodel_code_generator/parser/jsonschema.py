@@ -2580,6 +2580,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._loads_only_used_references = False
         self._definitions_without_model: dict[str, Reference] = {}
         self._mapped_definition_imports: dict[str, Import] = {}
+        self._mapped_references: dict[str, tuple[str, str]] = {}
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
@@ -6032,12 +6033,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _add_ref(self, ref: str) -> Reference:
         """Return the Reference at the key of a reference's edge, named after the edge's spelling if it is new.
 
-        A plain string is added as ``ModelResolver.add_ref`` adds it in the current context.
+        A plain string is added as ``ModelResolver.add_ref`` adds it in the current context. The package and fragment
+        that ``--external-ref-mapping`` maps a reference to are recorded for its Reference (``_mapped_references``).
         """
-        if not isinstance(ref, ResolvedRef):
-            return self.model_resolver.add_ref(ref)
-        key = self._ref_key(ref)
-        return self.model_resolver._add_ref_at(key.key, key.spelling)  # noqa: SLF001
+        if isinstance(ref, ResolvedRef):
+            key = self._ref_key(ref)
+            reference, mapping = self.model_resolver._add_ref_at(key.key, key.spelling), key.mapping  # noqa: SLF001
+        else:
+            reference, mapping = self.model_resolver.add_ref(ref), self._resolve_external_ref_mapping(ref)
+        if mapping is not None:
+            self._mapped_references[reference.path] = mapping
+        return reference
 
     def _check_ref_key(self, site: str, ref: str, key: RefKey, *, embedded: bool) -> None:
         """Report a reference keyword that the context of ``site`` resolves to another target than its edge.
@@ -16400,9 +16406,36 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._type_additional_properties_by_import(model, reference, import_, other_classes)
             self._graph_builder.redirect_reference_users(reference, target)
 
+    def _reject_mapped_references_without_schema(self) -> None:
+        """Stop with an error at a model that uses a mapped reference whose fragment names no schema.
+
+        Such a reference, one to the whole document for example, names no class that ``--external-ref-mapping`` could
+        import. A reference that no model uses, and one that got a model, such as the root of an input document, keep
+        their output.
+        """
+        if not self._mapped_references:
+            return
+        modelled = {model.reference.path for model in self.results}
+        index = self.generation_store.index
+        for path, (python_package, fragment) in self._mapped_references.items():
+            if (
+                path in modelled
+                or self._external_ref_mapping_import(python_package, fragment) is not None
+                or not (facts := index.data_type_facts_for_reference(self.model_resolver.references[path]))
+            ):
+                continue
+            owner = cast("DataModel", index.owner_model_for_data_type(facts[0].data_type))
+            raise SchemaParseError(
+                message=f"$ref {redact_reference(path)!r} names no schema of the document that "
+                f"--external-ref-mapping maps to {python_package!r}; a mapped $ref needs a fragment that names a "
+                "schema of that document",
+                path=_named_path(location_of(owner.reference), [owner.reference.path]),
+            )
+
     def _end_schema_parsing(self) -> None:
-        """Settle the references to definitions without a model, then run the late parser extension hook."""
+        """Settle definition references, reject mapped references that name no schema, then run the late hook."""
         self._type_references_to_definitions_without_model()
+        self._reject_mapped_references_without_schema()
         self._generate_forced_base_models()
 
     def _definition_array_applies(self, site: _Site) -> bool:  # noqa: PLR6301

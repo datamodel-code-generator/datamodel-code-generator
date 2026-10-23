@@ -1402,6 +1402,7 @@ INPUT_TREES = (
     "jsonschema/dotted_module_exports_reuse",
     "jsonschema/dynamic_ref_merged_generic",
     "jsonschema/dynamic_ref_partial_binding",
+    "jsonschema/external_ref_mapping_whole_document",
     "jsonschema/external_reference",
     "jsonschema/field_type_collision_inherited_modules",
     "jsonschema/field_type_collision_inherited_modules_child_first",

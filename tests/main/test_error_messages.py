@@ -1122,15 +1122,13 @@ def test_malformed_input_error_messages(
             id="asyncapi-api-scope",
         ),
         pytest.param(
-            "schema_location_unresolved_class/api.yaml",
+            "schema_location_mapped_ref_without_fragment/api.yaml",
             "openapi",
             ["--external-ref-mapping", "common.yaml=mypackage.shared.models"],
-            "A Parser can not resolve classes: "
-            "[class: api.yaml#/components/schemas/UserResponse/properties/wrapper "
-            "references: frozenset({'common.yaml#'})], "
-            "[class: api.yaml#/components/schemas/UserResponse "
-            "references: frozenset({'api.yaml#/components/schemas/UserResponse/properties/wrapper'})].",
-            id="unresolved-class",
+            "Error at schema path 'api.yaml#/components/schemas/UserResponse/properties/wrapper': "
+            "$ref 'common.yaml#' names no schema of the document that --external-ref-mapping maps to "
+            "'mypackage.shared.models'; a mapped $ref needs a fragment that names a schema of that document",
+            id="mapped-ref-without-fragment",
         ),
         pytest.param(
             "schema_location_unresolved_mapped_base/api.yaml",
