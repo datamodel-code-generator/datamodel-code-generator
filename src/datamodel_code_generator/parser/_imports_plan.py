@@ -131,7 +131,7 @@ ImportPass: TypeAlias = Literal[
   dict keys take instead of root models that cannot be dict keys.
 * ``import-removed-reuse-canonicals``, ``import-renamed-types``, ``import-enum-member-literal-classes``: the L6
   repairs of the same names.
-* ``generic-base-class``: ``__apply_generic_base_class``, the generated base model instead of the output base class.
+* ``generic-base-class``: ``apply_generic_base_class`` (L6), the generated base model instead of the output base class.
 * ``type-alias-fields``: ``__prepare_type_alias_fields``, drops the imports a prepared type-alias body no longer uses.
 * ``model-imports-snapshot``: ``_finalize_modules``, the imports of each model once more, read after the generic base
   class.

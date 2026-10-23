@@ -21,11 +21,14 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator.format import CodeFormatter
-    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.reference import ModelResolver, Reference
 
 __all__ = [
     "ConfigT",
     "ForwarderMap",
+    "ModuleContextFields",
+    "ModuleContextView",
     "ModuleModels",
     "ModulePath",
     "ParseConfigView",
@@ -38,6 +41,28 @@ __all__ = [
 ModulePath: TypeAlias = tuple[str, ...]
 ModuleModels: TypeAlias = list[tuple[ModulePath, list[DataModel]]]
 ForwarderMap: TypeAlias = dict[ModulePath, tuple[ModulePath, list[tuple[str, str]]]]
+ModuleContextFields: TypeAlias = "tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]"
+"""The fields of ``parser/base.py:ModuleContext`` in order, for the passes that unpack it."""
+
+
+class ModuleContextView(Protocol):
+    """What the passes read of a processed module: ``parser/base.py:ModuleContext``, whose module is public."""
+
+    @property
+    def models(self) -> list[DataModel]:
+        """The models the module writes."""
+
+    @property
+    def is_init(self) -> bool:
+        """Whether the module is a package ``__init__``."""
+
+    @property
+    def imports(self) -> Imports:
+        """The imports of the module."""
+
+    @property
+    def scoped_model_resolver(self) -> ModelResolver:
+        """The resolver of the names the module binds."""
 
 
 @final
@@ -98,6 +123,26 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
 
 
 SortedDataModels = dict[ModelKey, DataModel]
+
+
+class _RenamedType(NamedTuple):
+    """A class name a type had before a rename, and the path imports of that name were added under."""
+
+    class_name: str
+    import_path: str
+
+
+@dataclass(frozen=True, slots=True)
+class _ConstNarrowing:
+    """The const that admits one value of the enum a model is built from, read at each value typed by that model.
+
+    ``as_member`` says whether the value is typed ``Literal[<Enum>.<member>]``, which needs members equal to their
+    values and an output whose Literal holds enum members; a null const types the value None.
+    """
+
+    const: object
+    location: str
+    as_member: bool
 
 
 class RecursionFacts(TypedDict):

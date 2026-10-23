@@ -21,8 +21,14 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import mapped_tags
-from datamodel_code_generator.model.base import DataModel, _find_base_classes, get_inherited_fields
-from datamodel_code_generator.model.enum import Enum
+from datamodel_code_generator.model.base import (
+    BaseClassDataType,
+    DataModel,
+    _find_base_classes,
+    _keyed_answer,
+    get_inherited_fields,
+)
+from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
@@ -33,7 +39,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
 )
-from datamodel_code_generator.parser._passes._state import RecursionFacts
+from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
     rewrite_runtime_expressions,
@@ -51,6 +57,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._null_facts import NullRule
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
@@ -1059,4 +1066,217 @@ def require_update_action(
             model_key_of(model.reference) for model in models if not model.is_alias
         ),
         circular_roots=recursion_facts["circular_roots"],
+    )
+
+
+DiscriminatorValue: TypeAlias = str | int | bool
+
+
+def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Reference) -> str | None:
+    """Return the module name scope planning gives the model ``reference`` names, or None."""
+    if isinstance(model_path_to_module_name, _ModuleNames):
+        return model_path_to_module_name.of(reference)
+    return model_path_to_module_name.get(reference.path)
+
+
+def _module_name_from_module_path(module: ModulePath) -> str:
+    if module == ("__init__.py",):
+        return ""
+
+    parts = [*module]
+    if parts and parts[-1].endswith(".py"):  # pragma: no branch - Module paths are Python files.
+        parts[-1] = parts[-1][:-3]
+    return ".".join(parts[:-1] if parts[-1:] == ["__init__"] else parts)
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _FieldTagFacts:
+    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the Enum its type names."""
+
+    field: DataModelFieldBase
+
+    def has_const(self) -> bool:
+        """Return whether the field has a ``const`` other than None."""
+        return self.field.extras.get("const") is not None
+
+    def const(self) -> Any:
+        """Return the field's ``const``."""
+        return self.field.extras.get("const")
+
+    def literals(self) -> list[DiscriminatorValue]:
+        """Return the values of the ``Literal`` the field's type is."""
+        return self.field.data_type.literals
+
+    def enum_member(self) -> tuple[int, Any]:
+        """Return how many members the Enum the field's type names has, and the first one's value."""
+        fields = enum_source.fields if (enum_source := self.field.data_type.find_source(Enum)) else []
+        return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
+
+    def referenced_tag(self) -> None:
+        """Return no tag: a field has no ``$ref`` of its own."""
+
+
+def _is_discriminator_container(data_type: DataType) -> bool:
+    return (
+        data_type.is_dict
+        or data_type.is_list
+        or data_type.is_set
+        or data_type.is_frozen_set
+        or data_type.is_mapping
+        or data_type.is_sequence
+        or data_type.is_tuple
+    )
+
+
+def _is_discriminator_wrapper(model: DataModel) -> bool:
+    return model.IS_ALIAS or model.IS_ROOT_MODEL
+
+
+def _iter_discriminator_data_types(
+    data_types: Iterable[DataType],
+    active_union_models: set[int] | None = None,
+    *,
+    can_update_discriminator: bool = True,
+    discriminator_owner: int | None = None,
+) -> Iterator[tuple[DataType, bool, int]]:
+    for data_type in data_types:
+        if data_type.is_union and not _is_discriminator_container(data_type):
+            yield from _iter_discriminator_data_types(
+                data_type.data_types,
+                active_union_models,
+                can_update_discriminator=False,
+                discriminator_owner=discriminator_owner,
+            )
+        else:
+            source = data_type.reference.source if data_type.reference else None
+            owner = discriminator_owner or (id(source) if source is not None else id(data_type))
+            if not isinstance(source, DataModel) or not _is_discriminator_wrapper(source):
+                yield data_type, can_update_discriminator, owner
+            else:
+                source_id = id(source)
+                if active_union_models is None:
+                    active_union_models = set()
+                if source_id in active_union_models or not source.fields:
+                    yield data_type, can_update_discriminator, owner
+                else:
+                    active_union_models.add(source_id)
+                    try:
+                        yield from _iter_discriminator_data_types(
+                            (source.fields[0].data_type,),
+                            active_union_models,
+                            can_update_discriminator=False,
+                            discriminator_owner=owner,
+                        )
+                    finally:
+                        active_union_models.remove(source_id)
+
+
+def _generic_base_class_module(module: ModulePath, base_module: ModulePath) -> str:
+    """Return the module that ``module`` imports the generated base class from, which ``base_module`` writes."""
+    from_ = relative(".".join(module[:-1]) if module else "", ".".join(base_module[:-1]) if base_module else "")[0]
+    name = base_module[-1].replace(".py", "")
+    return f"{from_}{name}" if from_.endswith(".") else f"{from_}.{name}"
+
+
+def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
+    """Return the module name scope planning gives a model, or the model's own module name."""
+    module_name = _module_name_of(model_path_to_module_name, model.reference)
+    return model.module_name if module_name is None else module_name
+
+
+def _get_data_type_target_full_name(
+    data_type: DataType,
+    reference: Reference,
+    model_path_to_module_name: Mapping[str, str],
+) -> str:
+    if (ref_module_name := _module_name_of(model_path_to_module_name, reference)) is None:
+        ref_module_name = data_type.full_name.rsplit(".", 1)[0] if "." in data_type.full_name else ""
+    return f"{ref_module_name}.{reference.short_name}" if ref_module_name else reference.short_name
+
+
+def _context_models(contexts: Iterable[ModuleContextView]) -> list[DataModel]:
+    return [model for ctx in contexts for model in ctx.models]
+
+
+class ReplacedRootsHost(Protocol):
+    """The roots that collapse replaced by their inner models, which leave the modules that held them."""
+
+    @property
+    def _replaced_root_models(self) -> dict[int, tuple[DataModel, DataModel]]:
+        """The replaced roots by id, with the root and the inner model that replaces it."""
+
+
+class ReferenceExpressionHost(Protocol):
+    """The option and the import ledger that writing how a data type names its reference reads."""
+
+    @property
+    def _import_ledger(self) -> ModuleImportLedger:
+        """The ledger of the imports each module adds."""
+
+    @property
+    def treat_dot_as_module(self) -> bool | None:
+        """Whether dots in schema names make modules."""
+
+
+def module_members(host: ReplacedRootsHost, models: list[DataModel]) -> list[DataModel]:
+    """Return the models of a module that stay in it: a root replaced by its inner model leaves at the decision."""
+    if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
+        return models
+    return [model for model in models if id(model) not in replaced_root_models]
+
+
+def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel], members: KeyedModels) -> set[str]:
+    """Return the class names that roots replaced by their inner models leave free in a module.
+
+    A root keeps its name for the inner model when the inner model, which takes the root's path, is in the same
+    module.
+    """
+    replaced_root_models = host._replaced_root_models  # noqa: SLF001
+    return {
+        model.class_name
+        for model in models
+        if (replacement := replaced_root_models.get(id(model))) is not None
+        and not _keyed_answer(
+            "names left by replaced roots",
+            model_key_of(replacement[1].reference) in members.models,
+            lambda model=model: model.path in members.keys_by_path,
+        )
+    }
+
+
+def set_reference_expression(  # noqa: PLR0913, PLR0917
+    host: ReferenceExpressionHost,
+    data_type: DataType,
+    current_module_name: str,
+    target_full_name: str,
+    imports: Imports,
+    scoped_model_resolver: ModelResolver,
+    *,
+    same_module: bool,
+    init: bool,
+    internal_modules: set[ModulePath],
+    producer: ImportProducer,
+) -> None:
+    """Write how a data type names its reference in the current module.
+
+    A model the module emits is written by its class name; any other is imported, and written by the expression
+    the import gives when that is not the class name.
+    """
+    data_type.alias = (
+        None
+        if same_module
+        else register_reference_import(
+            cast("Reference", data_type.reference),
+            current_module_name,
+            target_full_name,
+            imports,
+            scoped_model_resolver,
+            init=init,
+            internal_modules=internal_modules,
+            base_class=isinstance(data_type, BaseClassDataType),
+            producer=producer,
+            treat_dot_as_module=host.treat_dot_as_module,
+            import_ledger=host._import_ledger,  # noqa: SLF001
+        )
     )

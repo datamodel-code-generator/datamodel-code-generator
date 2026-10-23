@@ -228,15 +228,21 @@ use_default_with_required = 1
 use_serialization_alias = 1
 validation_aliases = 1
 
+["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
+_additional_imports = 1
+file_path = 1
+
+["src/datamodel_code_generator/parser/_passes/cross_module.py"."import_enum_member_literal_classes"]
+enum_member_literals = 1
+
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_discriminator_type"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__apply_generic_base_class"]
-_additional_imports = 1
-file_path = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_field_name"]
 alias = 1
@@ -249,16 +255,10 @@ alias = 1
 alias = 1
 use_union_operator = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__import_enum_member_literal_classes"]
-enum_member_literals = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__init__"]
 results = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_default_enum_member"]
-alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_expression"]
 alias = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__update_type_aliases"]

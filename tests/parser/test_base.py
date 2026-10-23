@@ -74,6 +74,7 @@ from datamodel_code_generator.parser.base import (
     get_module_directory,
     get_most_of_parent,
     override_required_field,
+    plans,
     relative,
     sort_data_models,
     structure,
@@ -1960,7 +1961,7 @@ def test_restore_inherited_field_names_handles_noncollisions_and_existing_aliase
     )
 
 
-def test_root_dict_key_reference_paths_ignores_primitive_keys(parser_fixture: C) -> None:
+def test_root_dict_key_reference_paths_ignores_primitive_keys() -> None:
     """Primitive mapping keys do not create circular model-reference edges."""
     model = BaseModel(
         fields=[
@@ -1976,7 +1977,7 @@ def test_root_dict_key_reference_paths_ignores_primitive_keys(parser_fixture: C)
         reference=_reference("Model"),
     )
 
-    assert not parser_fixture._Parser__root_dict_key_references(model)
+    assert not plans.root_dict_key_references(model)
 
 
 def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:

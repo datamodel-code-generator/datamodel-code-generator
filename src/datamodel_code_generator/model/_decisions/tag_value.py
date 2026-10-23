@@ -189,7 +189,7 @@ MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 * ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
   path starts with ``#/``, or by a path relative to the document.
 * ``legacy-any-key``: by all four, which can name more schemas; the layout prediction of msgspec base flattening
-  (``Parser.__find_possible_tag_names``) reads it until a tag plan replaces the prediction.
+  (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the prediction.
 """
 
 MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
