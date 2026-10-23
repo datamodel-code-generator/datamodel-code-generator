@@ -1,0 +1,4 @@
+msgspec cannot decode Wide.k: its Literal value 9223372036854775808 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode BigCat.kind: its Literal value -9223372036854775809 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the discriminated union Model.wide: its Struct types Wide, Wide1 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the union Model.animal: its Struct types BigCat, Mouse are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

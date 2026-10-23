@@ -30,7 +30,11 @@ from datamodel_code_generator.model._decisions.assignment import (
     written_data,
 )
 from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
-from datamodel_code_generator.model._decisions.tag_value import struct_discriminator_tag, struct_tag_options
+from datamodel_code_generator.model._decisions.tag_value import (
+    struct_discriminator_tag,
+    struct_tag_options,
+    struct_tag_refused,
+)
 from datamodel_code_generator.model._render_plan import (
     CallArguments,
     CallPlan,
@@ -629,7 +633,12 @@ class Struct(DataModel):
 
     @override
     def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> None:
-        """Configure msgspec's tag and exclude the discriminator from instance fields."""
+        """Configure msgspec's tag and exclude the discriminator from instance fields.
+
+        A tag msgspec refuses (``struct_tag_refused``) is left out, and the discriminator stays a field.
+        """
+        if struct_tag_refused(value):
+            return
         self.add_base_class_kwarg("tag_field", repr(field_name))
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True

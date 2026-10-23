@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "wide": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": 9223372036854775808
+            }
+          },
+          "required": [
+            "k"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": 1
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "edge": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": -9223372036854775808
+            }
+          },
+          "required": [
+            "k"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": 9223372036854775807
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "pet": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ]
+    },
+    "animal": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BigCat"
+        },
+        {
+          "$ref": "#/$defs/Mouse"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": 1
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "Dog": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": 2
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "BigCat": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": -9223372036854775809
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "Mouse": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": 4
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    }
+  }
+}

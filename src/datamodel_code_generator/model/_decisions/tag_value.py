@@ -96,6 +96,7 @@ __all__ = [
     "struct_tag_conflicts",
     "struct_tag_field",
     "struct_tag_options",
+    "struct_tag_refused",
     "tag_field_matches",
     "tag_key",
     "tagged_union_discriminator",
@@ -132,8 +133,9 @@ FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-literal-onl
 * ``variant-field``: L5, the tag field of a variant (``_get_discriminator_field_value``): its ``const``, its one
   ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``).
 * ``legacy-literal-only``: L6, a field of a msgspec Struct that redeclares the tag field of a tagged base
-  (``_tag_fields_of_tagged_bases``): only its one ``Literal``, so a ``const`` or a one-member Enum there opts the
-  Struct out of the inherited tag instead of tagging it.
+  (``_tag_fields_of_tagged_bases``): only its one ``Literal``, so a ``const``, a one-member Enum or a ``Literal``
+  msgspec refuses as a tag (``struct_tag_refused``) there opts the Struct out of the inherited tag instead of
+  tagging it.
 """
 
 FieldTagRule: TypeAlias = Literal[
@@ -271,6 +273,8 @@ def field_tag(site: FieldTagSite, facts: FieldTagFacts, /) -> FieldTag | None:
     if site != "legacy-literal-only" and facts.has_const():
         return _value_tag(site, facts.const(), "const")
     if len(literals := facts.literals()) == 1:
+        if site == "legacy-literal-only" and struct_tag_refused(literals[0]):
+            return None
         return FieldTag(literals[0], "one-literal")
     if site == "legacy-literal-only":
         return None
@@ -433,13 +437,26 @@ def struct_tag_field(*, property_name: str, field_name: str, by_payload_name: bo
     return property_name if by_payload_name else field_name
 
 
-def struct_tag_conflicts(value: TagValue | None, mapped: Iterable[str], /) -> bool:
-    """Return whether a variant cannot take ``value`` as its msgspec tag: it has none, or a key naming it differs.
+_STRUCT_TAG_INTS = range(-(2**63), 2**63)
+"""The ints msgspec takes as a Struct tag: those of the signed 64-bit range."""
 
-    A mapping key is a string, so it names the tag whose text it is, as ``Enum.find_member`` reads keys: the key
-    ``"1"`` names the tag ``1`` an integer Enum member gives it (``enum_tag_literal``), as for ``Literal[1]``.
+
+def struct_tag_refused(value: object, /) -> bool:
+    """Return whether msgspec refuses a value as a Struct tag: an int beyond the 64-bit range (``_STRUCT_TAG_INTS``).
+
+    A bool is no int (``literal_value_kind``).
     """
-    return value is None or any(key != str(value) for key in mapped)
+    return literal_value_kind(value) == "int" and value not in _STRUCT_TAG_INTS
+
+
+def struct_tag_conflicts(value: TagValue | None, mapped: Iterable[str], /) -> bool:
+    """Return whether a variant cannot take ``value`` as its msgspec tag: none, a refused one or a differing key.
+
+    msgspec refuses an int beyond the 64-bit range (``struct_tag_refused``). A mapping key is a string, so it names the
+    tag whose text it is, as ``Enum.find_member`` reads keys: the key ``"1"`` names the tag ``1`` an integer Enum
+    member gives it (``enum_tag_literal``), as for ``Literal[1]``.
+    """
+    return value is None or struct_tag_refused(value) or any(key != str(value) for key in mapped)
 
 
 def struct_tag_clash(
