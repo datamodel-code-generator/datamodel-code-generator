@@ -33,6 +33,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _generic_base_class_module,
     _get_data_type_target_full_name,
     _get_model_module_name,
+    _named_data_types,
     module_members,
     names_left_by_replaced_roots,
     register_reference_import,
@@ -262,7 +263,7 @@ def import_removed_reuse_canonicals(
             continue
         members = keyed_models(ctx.models, "module members")
         for model in ctx.models:
-            for data_type in model.all_data_types:
+            for data_type in _named_data_types(model):
                 user, paths = users.get(id(data_type), (None, ()))
                 if user is not data_type or not (
                     stale_import := next(filter(None, map(stale_imports.get, paths)), None)
@@ -316,7 +317,7 @@ def import_renamed_types(
         stale_users = [
             (data_type, reference, model, import_)
             for model in members
-            for data_type in model.all_data_types
+            for data_type in _named_data_types(model)
             if (reference := data_type.reference) is not None
             and (renamed_types := renamed_types_of(parser, reference)) is not None
             and keyed_members.key_of(reference) not in keyed_members.models

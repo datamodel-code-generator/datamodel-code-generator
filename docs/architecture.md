@@ -403,7 +403,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `alias_shadowed_imports` (`parser/_passes/_shared.py`) | field names vs imported names | import aliases |
 | prepare | `override_required_field` (`parser/_passes/_shared.py`) | inherited placeholders, base models (any module) | replaces placeholders by copies of inherited fields, required, defaults |
 | prepare | `replace_unique_list_to_set` (`parser/_passes/modules.py`) | `uniqueItems`, defaults | list to set (`_create_set_from_list`), set defaults |
-| prepare | `__change_from_import` | references to other modules | module imports, `data_type.alias` |
+| prepare | `__change_from_import` | references to other modules, in field and base types and in the types of schema validator rules | module imports, `data_type.alias` |
 | prepare | `extract_inherited_enum` (`parser/_passes/modules.py`) | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`) |
 | process | `set_reference_default_value_to_field` (`parser/_passes/modules.py`) | defaults of referenced models | field defaults |
 | process | `__reuse_model` | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
@@ -425,6 +425,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 Once every module is processed, `__write_rule_aliases_as_classes` (`--generate-schema-validators`) writes each type
 alias that holds schema validator rules and that collapse left written as the RootModel class, under its model key:
 an alias has no class body for the rules, and whether collapse inlines it into all its holders is final only then.
+The class imports the models of other modules that its rules name, as `__change_from_import` does for a class.
 
 **L6**, after the module loop:
 
@@ -632,7 +633,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | MODULES | `fix_constructor_field_ordering_early` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Orders constructor fields while the modules are processed, before every field has its final name. Runs when: without --order-constructor-fields-by-final-names. |
 | MODULES | `snapshot_module_unused_models` | module | bookkeeping | - | - |  |
 | MODULES | `apply_base_class_type_overrides` | module | transform | BASES, MODULE_IMPORTS, TYPE_OVERRIDES | TYPE_OVERRIDES | After `type_dict_keys_by_root_types`: both add module imports; base overrides come after field types are final. |
-| MODULES | `write_rule_aliases_as_classes` | global | transform | MODEL_KIND | MODELS_EXIST, MODEL_KIND | After every module is processed: writes each type alias that holds schema validator rules and that `collapse_root_models` left written as the RootModel class, under its model key. Runs when: --generate-schema-validators. After `type_dict_keys_by_root_types`: the aliases written as classes are object maps, which no dict key names. |
+| MODULES | `write_rule_aliases_as_classes` | global | transform | IMPORT_ALIASES, MODEL_KIND, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODEL_KIND, MODULE_MEMBERSHIP | After every module is processed: writes each type alias that holds schema validator rules and that `collapse_root_models` left written as the RootModel class, under its model key, and imports the models of other modules that its rules name. Runs when: --generate-schema-validators. After `type_dict_keys_by_root_types`: the aliases written as classes are object maps, which no dict key names. After `apply_base_class_type_overrides`: imports what the rules of the new classes name once every module has written its imports. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | DISCRIMINATOR_TAGS, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag. Runs when: msgspec. |
 | CROSS_MODULE | `warn_enums_admitting_other_values` | global | check | STDERR | DISCRIMINATOR_TAGS, FIELD_TYPES |  |
 | CROSS_MODULE | `import_removed_reuse_canonicals` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | Removed by RP15b. |

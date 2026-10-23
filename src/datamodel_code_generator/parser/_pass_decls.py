@@ -612,17 +612,22 @@ WRITE_RULE_ALIASES_AS_CLASSES = PassDecl(
     Phase.MODULES,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND),
-    writes=_facts(Fact.MODEL_KIND),
+    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND, RenderFact.MODULE_MEMBERSHIP, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.MODEL_KIND, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
     summary=(
         "After every module is processed: writes each type alias that holds schema validator rules and that "
-        "`collapse_root_models` left written as the RootModel class, under its model key."
+        "`collapse_root_models` left written as the RootModel class, under its model key, and imports the models of "
+        "other modules that its rules name."
     ),
     condition="--generate-schema-validators",
     after=(
         After(
             "type_dict_keys_by_root_types",
             "the aliases written as classes are object maps, which no dict key names",
+        ),
+        After(
+            "apply_base_class_type_overrides",
+            "imports what the rules of the new classes name once every module has written its imports",
         ),
     ),
 )

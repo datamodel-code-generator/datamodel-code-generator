@@ -230,8 +230,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _iter_discriminator_data_types,
     _ModelPositions,
     _module_name_from_module_path,
+    _named_data_types,
     _register_data_type_import,
     _ReuseOptimizationContext,
+    _rule_data_types,
     _unique_items_tuple,
     _unwrap_type_alias,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
@@ -2132,7 +2134,7 @@ def _written_model_names(model: DataModel) -> Iterator[tuple[Reference, str, boo
     A type that names a model writes its import's expression (unquoted) or the class name; an enum member literal
     writes the class name of its enum.
     """
-    for data_type in model.all_data_types:
+    for data_type in _named_data_types(model):
         if (reference := data_type.reference) is not None:
             yield (
                 reference,
@@ -3233,7 +3235,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             current_module_name = _get_model_module_name(model, model_path_to_module_name)
             # Some imports are derived from type hints, so aliases can affect them.
             import_sensitive_alias_changed = False
-            for data_type in model.all_data_types:
+            for data_type in _named_data_types(model):
                 match data_type.reference:
                     case None:
                         continue
@@ -5410,6 +5412,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 add(field.name)
                 add(field.alias)
                 field.data_type.walk(collect_data_type_names)
+            for data_type in _rule_data_types(model):
+                collect_data_type_names(data_type)
         return names
 
     def __generate_forwarder_content(  # noqa: PLR6301
@@ -7195,7 +7199,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
 
         An alias has no class body for the rules. Whether collapse inlines an alias into all its holders is final only
-        once every module is processed, so each alias still written takes its class here, under its model key.
+        once every module is processed, so each alias still written takes its class here, under its model key. The
+        class imports the models of other modules that its rules name, as ``__change_from_import`` imports them for
+        a class that writes its rules from the start.
         """
         unused = {id(model) for model in run.unused_models}
         if not (
@@ -7236,6 +7242,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_list[:] = [replacements.get(id(model), model) for model in model_list]
         for model in aliases:
             self._graph_builder.replace_model(model, replacements[id(model)])
+        classes = {id(model) for model in replacements.values()}
+        for ctx in run.contexts:
+            members = keyed_models(module_members(self, ctx.models), "module members")
+            for model in ctx.models:
+                if id(model) not in classes:
+                    continue
+                for data_type in _rule_data_types(model):
+                    if (reference := data_type.reference) is None or members.key_of(reference) in members.models:
+                        continue
+                    set_reference_expression(
+                        self,
+                        data_type,
+                        _get_model_module_name(model, run.model_path_to_module_name),
+                        _get_data_type_target_full_name(data_type, reference, run.model_path_to_module_name),
+                        ctx.imports,
+                        ctx.scoped_model_resolver,
+                        same_module=False,
+                        init=ctx.is_init,
+                        internal_modules=run.internal_modules,
+                        producer=ImportProducer("change-from-import", model),
+                    )
 
     def __record_generated_class_names(self, run: _FinishRun) -> None:
         """Record the class name of every generated model."""

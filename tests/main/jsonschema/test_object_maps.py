@@ -26,6 +26,7 @@ from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     _generated_model,
+    _generated_package_module,
     run_main_and_assert,
 )
 
@@ -127,16 +128,23 @@ def test_object_maps(
     assert_output(_payload_verdicts(output_file, output_model_type, payloads), name="payloads")
 
 
-def _payload_verdicts(output_file: Path, output_model_type: str, payloads: dict[str, Any]) -> str:
+def _payload_verdicts(output_path: Path, output_model_type: str, payloads: dict[str, Any]) -> str:
     """Return whether the generated ``Model`` accepts the valid payload and each invalid change of it.
 
-    typing caches subscriptions such as ``NotRequired[dict[str, int] | str]`` by equal arguments, and a union equals
-    its members in any order, so the caches are cleared first: Pydantic then tries the union members in the order this
-    output writes them, whatever an earlier test wrote.
+    A package output gives ``Model`` from its ``__init__``. typing caches subscriptions such as
+    ``NotRequired[dict[str, int] | str]`` by equal arguments, and a union equals its members in any order, so the caches
+    are cleared first: Pydantic then tries the union members in the order this output writes them, whatever an earlier
+    test wrote.
     """
     for clear_cache in typing._cleanups:
         clear_cache()
-    with _generated_model(output_file, "object_maps_model", "Model") as model:
+    package = output_path.is_dir()
+    with (
+        _generated_package_module(output_path, "")
+        if package
+        else _generated_model(output_path, "object_maps_model", "Model")
+    ) as generated:
+        model = generated.Model if package else generated
         verdicts = [f"valid: {_verdict(model, output_model_type, payloads['valid'])}"]
         verdicts.extend(
             f"invalid {', '.join(change)}: {_verdict(model, output_model_type, {**payloads['valid'], **change})}"
@@ -416,6 +424,37 @@ def test_object_maps_schema_validators_recursive_values(output_file: Path, name:
         with pytest.raises(SchemaValidationError):
             validator.validate({**payloads["valid"], **change})
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--use-type-alias"], id="use-type-alias"),
+        pytest.param(["--use-exact-imports"], id="use-exact-imports"),
+    ],
+)
+def test_object_maps_schema_validators_cross_module_rule_types(output_dir: Path, extra_args: list[str]) -> None:
+    """Import the models of another module that the validator rules of a class name, as its field types import them.
+
+    The rules of ``Holder`` and ``Labels`` name ``Count`` and ``Name`` of the ``common`` module; ``--use-type-alias``
+    makes the two classes only once every module is processed.
+    """
+    input_path = OBJECT_MAPS / "cross_module_rule_types.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp", "--generate-schema-validators", *extra_args],
+    )
+    payloads = json.loads((PAYLOADS / "cross_module_rule_types.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
 @pytest.mark.parametrize(

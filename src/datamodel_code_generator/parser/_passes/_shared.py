@@ -1009,6 +1009,23 @@ def _runtime_validation_reference_keys(
     return references_by_key
 
 
+def _rule_data_types(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types of a model's schema validator rules, nested ones included."""
+    if runtime_validation := model.schema_runtime_validation:
+        for rule_data_type in runtime_validation.data_types:
+            yield from rule_data_type.all_data_types
+
+
+def _named_data_types(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types a model writes: those of its fields and bases, then those of its schema validator rules.
+
+    The class body writes the types of its rules as it writes its field types, so a model they name in another module
+    is imported the same way.
+    """
+    yield from model.all_data_types
+    yield from _rule_data_types(model)
+
+
 def add_model_path_to_list(
     paths: list[str] | None,
     model: DataModel,

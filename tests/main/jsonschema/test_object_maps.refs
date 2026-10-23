@@ -1426,6 +1426,15 @@ field_constraints	main/jsonschema/object_maps/schema_validators_collapsed_rule_r
 [test_object_maps_schema_validators_cross_document]
 	main/jsonschema/object_maps/schema_validators_cross_document.payloads.txt
 	main/jsonschema/object_maps/schema_validators_cross_document.py
+[test_object_maps_schema_validators_cross_module_rule_types]
+collapse-root-models	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models].payloads.txt
+collapse-root-models	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models]/
+default	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[default].payloads.txt	= main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models].payloads.txt
+default	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[default]/	= main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models]/
+use-exact-imports	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-exact-imports].payloads.txt	= main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models].payloads.txt
+use-exact-imports	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-exact-imports]/
+use-type-alias	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-type-alias].payloads.txt	= main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models].payloads.txt
+use-type-alias	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-type-alias]/
 [test_object_maps_schema_validators_false_property]
 	main/jsonschema/object_maps/schema_validators_false_property.payloads.txt
 	main/jsonschema/object_maps/schema_validators_false_property.py
