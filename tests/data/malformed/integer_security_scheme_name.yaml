@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Integer security scheme name
+  version: '1.0'
+servers:
+  - url: https://example.com
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    1:
+      type: http
+      scheme: bearer

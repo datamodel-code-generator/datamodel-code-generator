@@ -452,6 +452,61 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("target", [SERVER, CLIENT], ids=["server", "client"])
+@pytest.mark.parametrize(
+    ("fixture_name", "message"),
+    [
+        pytest.param(
+            "integer_media_type_reference.yaml",
+            "Error at schema path 'integer_media_type_reference.yaml#/paths/~1pets/post/requestBody/content/1': "
+            "media type 1 is not a string",
+            id="media-type-of-reference",
+        ),
+        pytest.param(
+            "integer_encoding_property_name_without_headers.yaml",
+            "Error at schema path 'integer_encoding_property_name_without_headers.yaml"
+            "#/paths/~1pets/post/requestBody/content/multipart~1form-data/encoding/1': "
+            "encoding property name 1 is not a string",
+            id="encoding-property-name",
+        ),
+        pytest.param(
+            "integer_form_encoding_header_name.yaml",
+            "Error at schema path 'integer_form_encoding_header_name.yaml"
+            "#/paths/~1pets/post/requestBody/content/application~1x-www-form-urlencoded/encoding/name/headers/1': "
+            "header name 1 is not a string",
+            id="form-encoding-header-name",
+        ),
+        pytest.param(
+            "integer_link_name.yaml",
+            "Error at schema path 'integer_link_name.yaml#/paths/~1pets/get/responses/200/links/1': "
+            "link name 1 is not a string",
+            id="link-name",
+        ),
+        pytest.param(
+            "integer_security_scheme_name.yaml",
+            "Error at schema path 'integer_security_scheme_name.yaml#/components/securitySchemes/1': "
+            "component name 1 is not a string",
+            id="security-scheme-name",
+        ),
+    ],
+)
+def test_generate_target_key_errors(fixture_name: str, message: str, target: dict[str, Any], tmp_path: Path) -> None:
+    """Refuse a key that is no string where the target locates a member by it, as models refuse one, writing nothing."""
+    run_generate_and_assert(
+        input_=DATA / "malformed" / fixture_name,
+        expected_error=Error,
+        expected_error_match=f"^{re.escape(message)}$",
+        **{
+            **MODELS,
+            "output": tmp_path / "models.py",
+            "server_output": tmp_path / "server",
+            "client_output": tmp_path / "client",
+            **target,
+        },
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
+
+
 @pytest.mark.parametrize("output", ["models.py", None])
 def test_generate_server_warnings(output: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Warn once about documentation the served document leaves out, from the package, with or without an output."""

@@ -70,3 +70,14 @@ sentinel-target-2.11	main/generation_platform/generate/nothing-written.txt
 target-pydantic	main/generation_platform/generate/nothing-written.txt
 target-python	main/generation_platform/generate/nothing-written.txt
 unknown-encoding	main/generation_platform/generate/nothing-written.txt
+[test_generate_target_key_errors]
+encoding-property-name-client	main/generation_platform/generate/nothing-written.txt
+encoding-property-name-server	main/generation_platform/generate/nothing-written.txt
+form-encoding-header-name-client	main/generation_platform/generate/nothing-written.txt
+form-encoding-header-name-server	main/generation_platform/generate/nothing-written.txt
+link-name-client	main/generation_platform/generate/nothing-written.txt
+link-name-server	main/generation_platform/generate/nothing-written.txt
+media-type-of-reference-client	main/generation_platform/generate/nothing-written.txt
+media-type-of-reference-server	main/generation_platform/generate/nothing-written.txt
+security-scheme-name-client	main/generation_platform/generate/nothing-written.txt
+security-scheme-name-server	main/generation_platform/generate/nothing-written.txt

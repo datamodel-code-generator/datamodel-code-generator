@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Integer encoding property name without headers
+  version: '1.0'
+servers:
+  - url: https://example.com
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+            encoding:
+              1:
+                contentType: text/plain
+      responses:
+        '200':
+          description: OK

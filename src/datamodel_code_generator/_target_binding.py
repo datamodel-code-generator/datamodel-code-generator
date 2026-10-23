@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 from urllib.parse import ParseResult, unquote, urljoin
 
-from typing_extensions import Sentinel
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
@@ -614,6 +614,11 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             if (copy := self.copies.get(id(field))) is None:
                 return False
             field = copy[1]
+        return True
+
+    @override
+    def _reads_media_type(self, medium: dict[str, YamlValue], path: list[str], owner: MediaOwner) -> bool:
+        """Return True: the bindings locate every medium by its media type, so walking one reads it."""
         return True
 
     def _acquire_schema(
@@ -3437,6 +3442,17 @@ class _Contracts(_SchemaUses):
         """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
         return self.parser.resolutions.get(declaration) or (declaration, _mapping(raw))
 
+    def named(self, raw: YamlValue, holder: SchemaLocation, kind: str) -> Iterator[tuple[str, YamlValue]]:
+        """Yield the members of the object at ``holder`` by the keys that locate them.
+
+        A key that is no string, such as a YAML key ``1`` loaded as a number, names no ``kind``: it is a schema error.
+        """
+        for key, value in _mapping(raw).items():
+            if not isinstance(key, str):
+                path = [str(holder.child(str(key)))]
+                raise self.parser._key_error(key, kind, path)  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+            yield key, value
+
     def metadata(
         self,
         kind: Literal["link", "callback", "security_scheme"],
@@ -3608,7 +3624,9 @@ class _Contracts(_SchemaUses):
                 header_role: TypeUseRole = (
                     "response_encoding_header" if role.startswith("response") else "request_encoding_header"
                 )
-                for property_name, encoding_value in _mapping(medium.get("encoding")).items():
+                for property_name, encoding_value in self.named(
+                    medium.get("encoding"), encoding_declaration, "encoding property name"
+                ):
                     encoding = _mapping(encoding_value)
                     declared = encoding_declaration.child(property_name)
                     used = media_use.child("encoding", property_name)
@@ -3729,7 +3747,7 @@ class _Contracts(_SchemaUses):
                 status=status,
                 media=media,
             )
-            for name, value in _mapping(raw).items()
+            for name, value in self.named(raw, declaration, "header name")
             if declaration.child(name) not in self.ignored_declarations
         )
 
@@ -3748,7 +3766,7 @@ class _Contracts(_SchemaUses):
         )
         links = tuple(
             self.metadata("link", name, declared.child("links", name), use_site.child("links", name), link)
-            for name, link in _mapping(value.get("links")).items()
+            for name, link in self.named(value.get("links"), declared.child("links"), "link name")
         )
         locate = self.documents.location
         return WireDeclaration(
@@ -3869,8 +3887,11 @@ class _Contracts(_SchemaUses):
         declarations: list[WireDeclaration] = []
         for document in self.documents.walked:
             raw = self.documents.documents[document]
-            for name, scheme in _mapping(_mapping(_mapping(raw).get("components")).get("securitySchemes")).items():
-                use = SchemaLocation(document, ("components", "securitySchemes", name))
+            schemes = SchemaLocation(document, ("components", "securitySchemes"))
+            for name, scheme in self.named(
+                _mapping(_mapping(raw).get("components")).get("securitySchemes"), schemes, "component name"
+            ):
+                use = schemes.child(name)
                 declarations.append(self.metadata("security_scheme", name, use, use, scheme))
         return tuple(declarations)
 
@@ -3970,5 +3991,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
+    from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import Reference
