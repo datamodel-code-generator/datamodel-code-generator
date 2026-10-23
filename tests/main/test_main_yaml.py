@@ -144,7 +144,11 @@ def test_main_yaml_integer_beyond_int64(output_file: Path) -> None:
     "document",
     [
         pytest.param((YAML_DATA_PATH / "broken.yaml").read_text(), id="unclosed"),
-        pytest.param(f"default: {'9' * (sys.get_int_max_str_digits() + 1)}\n", id="integer_beyond_digit_limit"),
+        pytest.param(
+            f"default: {'9' * (getattr(sys, 'get_int_max_str_digits', lambda: 4300)() + 1)}\n",
+            id="integer_beyond_digit_limit",
+            marks=pytest.mark.skipif(not hasattr(sys, "set_int_max_str_digits"), reason="no int digit limit"),
+        ),
     ],
 )
 @pytest.mark.usefixtures("yaml_backend")
