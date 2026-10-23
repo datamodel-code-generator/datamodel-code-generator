@@ -19076,6 +19076,70 @@ def test_main_jsonschema_collapse_root_models_empty_union(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        "pydantic_v2.BaseModel",
+        "pydantic_v2.dataclass",
+        "dataclasses.dataclass",
+        pytest.param(
+            "typing.TypedDict",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
+            ),
+        ),
+        "msgspec.Struct",
+    ],
+)
+def test_main_jsonschema_collapse_root_models_any_union(output_file: Path, output_model_type: str) -> None:
+    """Import ``Any`` for a union that collapsing root models leaves with no member to write, wherever it sits.
+
+    ``ImportsEntryOrFallback`` holds a reference and an unconstrained schema. Collapsing it into the fields leaves a
+    union whose members write nothing, which renders as ``Any``. Up to 0.86.0 the import of ``Any`` came only from
+    rendering that union, which no field did before its imports were collected, so Pydantic failed to build ``Model``
+    and the other outputs failed to resolve its annotations.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "collapse_root_models_any_union.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            "--output-model-type",
+            output_model_type,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / "payloads" / "collapse_root_models_any_union.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    documents = {f"valid {json.dumps({key: value})}": {key: value} for key, value in payloads["valid"].items()}
+    for change in payloads["invalid"]:
+        documents[f"invalid {json.dumps(change)}"] = document = {**payloads["valid"], **change}
+        with pytest.raises(SchemaValidationError):
+            validator.validate(document)
+    with _generated_model(output_file, "collapse_root_models_any_union", "Model") as model:
+        decode = (
+            partial(msgspec.json.decode, type=model)
+            if output_model_type == "msgspec.Struct"
+            else TypeAdapter(model).validate_json
+        )
+
+        def verdict(document: object) -> str:
+            try:
+                decode(json.dumps(document))
+            except (ValidationError, msgspec.ValidationError):
+                return "rejected"
+            return "accepted"
+
+        verdicts = "".join(f"{name}: {verdict(document)}\n" for name, document in documents.items())
+    assert_output(verdicts, name="payloads")
+
+
 def test_main_jsonschema_collapse_root_models_with_optional(output_file: Path) -> None:
     """Test that collapse-root-models correctly preserves Optional import when needed."""
     run_main_and_assert(

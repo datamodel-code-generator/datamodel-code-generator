@@ -6061,6 +6061,17 @@ typed-dict	main/jsonschema/boolean_property/typing_TypedDict.py
 module	main/jsonschema/collapse_reuse_models_cross_module_users//*.py
 tree	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
 tree-type-alias	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
+[test_main_jsonschema_collapse_root_models_any_union]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/collapse_root_models_any_union[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/collapse_root_models_any_union[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.BaseModel].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.BaseModel].payloads.txt
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[pydantic_v2.dataclass].py
+typing.TypedDict	main/jsonschema/main_jsonschema/collapse_root_models_any_union[typing.TypedDict].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
+typing.TypedDict	main/jsonschema/main_jsonschema/collapse_root_models_any_union[typing.TypedDict].py
 [test_main_jsonschema_collapse_root_models_array_item_union_self_reference]
 	main/jsonschema/collapse_root_models_array_item_union_self_reference.py
 [test_main_jsonschema_collapse_root_models_atomic_replace]

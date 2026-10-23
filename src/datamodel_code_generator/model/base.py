@@ -1056,20 +1056,23 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return requirements
 
     def _union_typing_import_requirements(self, data_type: DataType) -> _TypingImportRequirements:
+        """Return the typing imports a union needs; one whose members all write nothing or None renders ``Any``."""
         requirements = _TypingImportRequirements()
         branch_keys: set[tuple[Any, ...]] = set()
         has_none = False
+        writes_member = False
         for child in data_type.data_types:
             requirements = requirements.merge(self._data_type_typing_import_requirements(child))
             if self._data_type_renders_none(child):
                 has_none = True
                 continue
             branch_keys.add(self._data_type_import_key(child))
+            writes_member = writes_member or self._data_type_has_renderable_structure(child) or bool(child.type_hint)
 
         if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
             requirements = requirements.with_import_name(IMPORT_OPTIONAL.import_)
         ordered_none_branch_count = int(data_type.preserve_union_member_order and has_none)
-        if not branch_keys and data_type.data_types and not ordered_none_branch_count:
+        if not writes_member and data_type.data_types and not ordered_none_branch_count:
             requirements = replace(requirements, any_=True)
         if len(branch_keys) + ordered_none_branch_count > 1 and not data_type.use_union_operator:
             requirements = requirements.with_import_name(IMPORT_UNION.import_)

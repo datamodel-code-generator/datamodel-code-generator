@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "definitions": {
+    "ImportsEntryObject": {
+      "type": "object",
+      "patternProperties": {
+        "^types@.+$": {
+          "$ref": "#/definitions/ImportsEntryOrFallback"
+        }
+      }
+    },
+    "ImportsEntry": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ImportsEntryObject"
+        }
+      ]
+    },
+    "ImportsFallback": {},
+    "ImportsEntryOrFallback": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ImportsEntry"
+        },
+        {
+          "$ref": "#/definitions/ImportsFallback"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "direct": {
+      "$ref": "#/definitions/ImportsEntryOrFallback"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ImportsEntryOrFallback"
+      }
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/ImportsEntryOrFallback"
+      }
+    },
+    "patterns": {
+      "type": "object",
+      "patternProperties": {
+        "^#.+$": {
+          "$ref": "#/definitions/ImportsEntryOrFallback"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
