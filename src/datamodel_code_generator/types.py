@@ -16,7 +16,7 @@ from enum import Enum, auto
 from fractions import Fraction
 from functools import cache, lru_cache
 from itertools import chain, repeat
-from math import inf
+from math import inf, isfinite
 from re import Pattern
 from types import MappingProxyType
 from typing import (
@@ -103,6 +103,7 @@ _HELD_NULL_DROPPED_DATA_TYPE_KEY = _null_markers.HELD_NULL_DROPPED_KEY
 _RENDER_PREPARATION_NULL_DATA_TYPE_KEY = _null_markers.RENDER_PREPARATION_NULL_KEY
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 _VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
+_DROPPED_MULTIPLE_OF_KEY = _applicability.DROPPED_MULTIPLE_OF_KEY
 _RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
@@ -318,6 +319,18 @@ def _float_constraint(value: Any) -> float:
         return float(number)
     except OverflowError:
         return inf if number > 0 else -inf
+
+
+def _non_finite_as_written(value: Any, *, as_float: bool) -> float | None:
+    """Return a number constraint as the infinity or NaN that a type writes it as, or None when it writes it finite.
+
+    A float type writes an int beyond the float range as an infinity too (``_float_constraint``); an int or a
+    ``Decimal`` type writes an int as it is.
+    """
+    number = _get_constraint_number(value)
+    if not as_float and not isinstance(number, float):
+        return None
+    return None if isfinite(written := _float_constraint(number)) else written
 
 
 def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:  # noqa: PLR0911
@@ -717,6 +730,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             _VALUES_AS_WRITTEN_KEY,
             _TARGET_NULL_DATA_TYPE_KEY,
             _HELD_NULL_DROPPED_DATA_TYPE_KEY,
+            _DROPPED_MULTIPLE_OF_KEY,
         ):
             if key in self.__dict__:
                 new_obj.__dict__[key] = self.__dict__[key]
@@ -1697,6 +1711,10 @@ class DataTypeManager(ABC):
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType:
         """Map a Types enum value to a DataType. Must be implemented by subclasses."""
         raise NotImplementedError
+
+    def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:  # noqa: ARG002, PLR6301
+        """Return the ``multipleOf`` that ``get_data_type`` leaves out of the type as the backend refuses it, if any."""
+        return None
 
     def get_default_value_descriptor(self, data_type: DataType) -> DefaultValueDescriptor | None:
         """Return this backend's semantic descriptor for an emitted scalar import."""

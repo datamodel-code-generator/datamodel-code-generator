@@ -4969,7 +4969,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             **_get_data_type_constraint_kwargs(obj, types),
             **self._get_format_type_kwargs(type_, format_, types),
         }
-        return self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs)
+        data_type = self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs)
+        if (
+            not field_constraints
+            and (dropped := self.data_type_manager._non_finite_multiple_of(types, kwargs)) is not None  # noqa: SLF001
+        ):
+            self._graph_builder.record_dropped_multiple_of(data_type, dropped)
+        return data_type
 
     def _get_type_array_data_type(self, types: list[str], data_types: list[DataType]) -> DataType:
         """Return the type of a type array from the types of its members other than null.

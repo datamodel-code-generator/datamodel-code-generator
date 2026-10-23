@@ -88,6 +88,7 @@ from datamodel_code_generator.types import (
     Types,
     UnionIntFloat,
     _float_constraint,
+    _non_finite_as_written,
     normalize_integer_constraints,
 )
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBase
@@ -476,9 +477,28 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         return (
             self.use_decimal_for_multiple_of
             and kwargs.get("multipleOf") is not None
-            and types in _FLOAT_TYPES
-            and not kwargs.get("string_format")
+            and self._is_float_number(types, kwargs)
         )
+
+    @override
+    def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:
+        """Return the infinity or NaN that a number type would write its ``multipleOf`` as, which Pydantic refuses.
+
+        A float writes an int beyond the float range as an infinity too; a ``Decimal`` under
+        ``use_decimal_for_multiple_of`` and an int write an int as it is.
+        """
+        if (multiple_of := kwargs.get("multipleOf")) is None or not (
+            types in _INT_TYPES or types == Types.decimal or self._is_float_number(types, kwargs)
+        ):
+            return None
+        return _non_finite_as_written(
+            multiple_of, as_float=types in _FLOAT_TYPES and not self.use_decimal_for_multiple_of
+        )
+
+    @staticmethod
+    def _is_float_number(types: Types, kwargs: Mapping[str, Any]) -> bool:
+        """Return whether a number type writes its constraints as a float, not as a string of a format."""
+        return types in _FLOAT_TYPES and not kwargs.get("string_format")
 
     def _is_strict_number(self, types: Types) -> bool:
         """Return whether ``--strict-types`` makes the number type a schema type maps to strict."""
@@ -519,7 +539,10 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         of a schema that has exactly one (row ``legacy-consumed-at-object-property`` writes it again, except under
         ``omit_redundant_constraints``, where a strict number takes none of them); a number with
         ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``, strict under ``--strict-types float``.
+        A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent.
         """
+        if self._non_finite_multiple_of(types, kwargs) is not None:
+            kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
         if field_constraints:
             if self._is_decimal_multiple(types, kwargs):
                 return self.data_type.from_import(IMPORT_DECIMAL, strict=StrictTypes.float in self.strict_types)
@@ -528,7 +551,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.get_data_str_type(types, **kwargs)
         if types in _INT_TYPES:
             return self.get_data_int_type(types, **kwargs)
-        if types in _FLOAT_TYPES and not kwargs.get("string_format"):
+        if self._is_float_number(types, kwargs):
             return self.get_data_float_type(types, **kwargs)
         if types == Types.decimal:
             return self.get_data_decimal_type(types, **kwargs)

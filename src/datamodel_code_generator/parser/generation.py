@@ -52,7 +52,11 @@ from typing_extensions import deprecated, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
-from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY, VALUES_AS_WRITTEN_KEY
+from datamodel_code_generator._constraint_applicability import (
+    DROPPED_MULTIPLE_OF_KEY,
+    TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    VALUES_AS_WRITTEN_KEY,
+)
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._null_markers import (
     HELD_NULL_DROPPED_KEY,
@@ -150,6 +154,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "move_model",
     "note_changed_models",
     "override_type_import",
+    "record_dropped_multiple_of",
     "record_values_as_written",
     "redirect_model_reference_users",
     "redirect_reference_users",
@@ -218,6 +223,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "mark_target_null",
     "move_model",
     "override_type_import",
+    "record_dropped_multiple_of",
     "record_values_as_written",
     "remove_field",
     "rename_model",
@@ -1798,6 +1804,15 @@ class GenerationStore:  # noqa: PLR0904
         owner.__dict__[VALUES_AS_WRITTEN_KEY] = tuple(values)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().record_dropped_multiple_of() instead.", category=None)
+    def record_dropped_multiple_of(data_type: DataType, value: float) -> None:
+        """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it.
+
+        The field holding the type warns that it is generated without it (``dropped_constraints_warning``).
+        """
+        data_type.__dict__[DROPPED_MULTIPLE_OF_KEY] = value
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().mark_target_null() instead.", category=None)
     def mark_target_null(data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits.
@@ -2852,6 +2867,10 @@ class GraphBuilder:
     def override_type_import(self, data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
         self._store.override_type_import(data_type, import_)  # ty: ignore[deprecated]
+
+    def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
+        """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""
+        self._store.record_dropped_multiple_of(data_type, value)  # ty: ignore[deprecated]
 
     def record_values_as_written(self, owner: DataModel | DataType, values: Sequence[Any]) -> None:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""

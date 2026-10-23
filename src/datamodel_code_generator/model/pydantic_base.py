@@ -14,6 +14,7 @@ from pydantic import Field as _Field
 from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
+from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
 from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
     UNDEFINED,
@@ -46,6 +47,7 @@ from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
     _float_constraint,
+    _non_finite_as_written,
     chain_as_tuple,
     merge_normalized_constraint,
     normalize_integer_constraint,
@@ -99,6 +101,8 @@ _ANYURL = RuleId("legacy-anyurl-keeps-string-keywords")
 _CONSTRAINT = RuleId("D2.pydantic.constraint")
 _NONE_TYPE = RuleId("D2.pydantic.none-type-number")
 _MULTIPLE_OF_ONE = RuleId("D2.pydantic.integer-multiple-of-one")
+_NON_FINITE_MULTIPLE_OF = RuleId("D2.pydantic.non-finite-multiple-of")
+"""Pydantic takes ``multiple_of`` only as a finite number (``_non_finite_as_written``)."""
 _EXTRA = RuleId("D11.pydantic.field-extra")
 _DISCRIMINATOR = RuleId("D7.tag.discriminator")
 
@@ -198,6 +202,19 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
+        if non_finite := [
+            *(o.value for o in omitted if o.why.rule == _NON_FINITE_MULTIPLE_OF),
+            *(
+                dropped
+                for data_type in self.data_type.all_data_types
+                if (dropped := data_type.__dict__.get(DROPPED_MULTIPLE_OF_KEY)) is not None
+            ),
+        ]:
+            reasons.append(
+                "Pydantic takes multiple_of only as a finite number, not "
+                + ", ".join(f"multiple_of={represent_python_value(value)}" for value in dict.fromkeys(non_finite))
+            )
+            count += len(non_finite)
         return self._generated_without_constraints("; ".join(reasons), count) if reasons else None
 
     @property
@@ -303,6 +320,11 @@ class DataModelField(DataModelFieldBase):
         sources: dict[str, tuple[str, ...]] = {}
         for k, v in dumped.items():
             item = f"constraint:{k}"
+            if k == "multiple_of" and (written := _non_finite_as_written(v, as_float=is_float_type)) is not None:
+                omitted.append(
+                    Omitted(item, written, "backend-cannot-express", Why(_NON_FINITE_MULTIPLE_OF, k), warns=True)
+                )
+                continue
             if (
                 normalized := self._get_strict_field_constraint(
                     k, v, is_float_type=is_float_type, is_int_type=is_int_type

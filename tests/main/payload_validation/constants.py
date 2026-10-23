@@ -88,8 +88,8 @@ EXCLUDED_FILES: dict[str, str] = {
         "(10 examples take 47 s at depth 10); test_main_dataclass_nested_mapping_default_chain covers its generation"
     ),
     "jsonschema/msgspec_number_limits/float_range_bounds.json": (
-        "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError, and Pydantic refuses "
-        "the infinite multiple_of at import; test_msgspec_number_limits validates its msgspec payloads"
+        "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
+        "test_msgspec_number_limits validates its msgspec payloads"
     ),
     "jsonschema/msgspec_wide_int_enums.json": (
         "Pydantic refuses JSON ints beyond the 64-bit range as Enum and Literal values (int_parsing_size); "
@@ -103,6 +103,10 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/numeric_constraint_precision/beyond_float_range.json": (
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
         "test_number_bounds_beyond_float_range validates its payloads"
+    ),
+    "jsonschema/numeric_constraint_precision/non_finite_multiple_of.json": (
+        "a multipleOf beyond the float range has no JSON value for the payload generator; "
+        "test_non_finite_multiple_of_left_out_accepts_non_multiples validates its payloads"
     ),
     "jsonschema/ref_to_json_list/list.json": "referenced JSON data list, not a schema document",
     "jsonschema/schema_validators_multiple_aliases_property_count.json": (

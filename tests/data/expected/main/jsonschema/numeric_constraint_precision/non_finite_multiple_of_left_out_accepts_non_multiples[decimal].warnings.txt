@@ -1,0 +1,5 @@
+Pydantic takes multiple_of only as a finite number, not multiple_of=float('inf'); Model.infinite is generated without this constraint.
+Pydantic takes multiple_of only as a finite number, not multiple_of=float('inf'); Model.bounded is generated without this constraint.
+Pydantic takes multiple_of only as a finite number, not multiple_of=float('inf'); Model.count is generated without this constraint.
+Pydantic takes multiple_of only as a finite number, not multiple_of=float('inf'); Model.amount is generated without this constraint.
+Pydantic takes multiple_of only as a finite number, not multiple_of=float('inf'); Model.either is generated without this constraint.
