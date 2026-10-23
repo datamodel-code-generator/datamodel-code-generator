@@ -1,0 +1,39 @@
+{
+  "valid": {
+    "count": 1,
+    "counts": {
+      "a1": 2,
+      "other": "x"
+    },
+    "tallies": {
+      "name": "t",
+      "n1": "s",
+      "z": 3
+    }
+  },
+  "invalid": [
+    {
+      "count": -1
+    },
+    {
+      "counts": {
+        "a1": -1
+      }
+    },
+    {
+      "counts": {
+        "a1": "x"
+      }
+    },
+    {
+      "tallies": {
+        "z": -1
+      }
+    },
+    {
+      "tallies": {
+        "z": "x"
+      }
+    }
+  ]
+}

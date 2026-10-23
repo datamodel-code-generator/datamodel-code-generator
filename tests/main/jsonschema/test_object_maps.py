@@ -418,6 +418,43 @@ def test_object_maps_schema_validators_recursive_values(output_file: Path, name:
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="annotated"),
+    ],
+)
+def test_object_maps_schema_validators_collapsed_rule_root(output_file: Path, extra_args: list[str]) -> None:
+    """Keep writing a root model that a validator rule names after --collapse-root-models inlines it into its fields.
+
+    The rules of ``counts`` and ``tallies`` check their values through the class, which keeps the minimum that
+    the ``count`` field takes beside the inlined type.
+    """
+    input_path = OBJECT_MAPS / "collapsed_rule_root.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--collapse-root-models",
+            *extra_args,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "collapsed_rule_root.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 @pytest.mark.cli_doc(
     options=["--check-pattern-maps-strictly"],
     option_description="""Check every key of the pattern maps that `--generate-schema-validators` validates.

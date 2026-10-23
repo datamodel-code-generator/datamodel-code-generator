@@ -232,6 +232,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _module_name_from_module_path,
     _register_data_type_import,
     _ReuseOptimizationContext,
+    _runtime_validation_reference_keys,
     _unique_items_tuple,
     _unwrap_type_alias,
     add_model_path_to_list,  # noqa: F401  # Preserve the established parser.base export.
@@ -3819,12 +3820,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         A holder of a root model whose root type is a reference to another model gets the output it would get if it
         referenced that model directly. Under the ``parent`` strategy that model takes the root model's name in its
         own module and replaces the root model, decided at the root model's first holder from the references the
-        schema gives, so that every holder follows the same decision.
+        schema gives, so that every holder follows the same decision. A root model that a schema validator rule names
+        stays written after its holders inline it: the rule checks values through its class.
         """
         generation_store = self.generation_store
         generation_index = generation_store.index
         graph_builder = self._graph_builder
         circular_root_models = self._recursion_facts["circular_roots"]
+        rule_named_roots = (
+            frozenset().union(*_runtime_validation_reference_keys(self.results, same_module=False).values())
+            if self.generate_schema_validators
+            else frozenset()
+        )
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
         redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
@@ -3899,7 +3906,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             data_type,
                             imports.reference_paths.get(root_type_model.path),
                         ))
-                        if not has_remaining_root_references:
+                        if (
+                            not has_remaining_root_references
+                            and model_key_of(root_type_model.reference) not in rule_named_roots
+                        ):
                             unused_models.append(root_type_model)
 
                         continue
@@ -4033,7 +4043,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             )
 
                     self._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)
-                    if not has_remaining_root_references:
+                    if (
+                        not has_remaining_root_references
+                        and model_key_of(root_type_model.reference) not in rule_named_roots
+                    ):
                         unused_models.append(root_type_model)
 
         self.__import_collapsed_inner_models(

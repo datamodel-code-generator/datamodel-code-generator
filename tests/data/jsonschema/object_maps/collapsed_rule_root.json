@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "properties": {
+    "count": {
+      "$ref": "#/$defs/Count"
+    },
+    "counts": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "$ref": "#/$defs/Count"
+        }
+      }
+    },
+    "tallies": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^n": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Count"
+      }
+    }
+  }
+}

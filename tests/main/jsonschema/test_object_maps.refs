@@ -1409,6 +1409,13 @@ type_array_maps	main/jsonschema/object_maps/schema_validators[type_array_maps].w
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].payloads.txt	= main/jsonschema/object_maps/object_maps[annotated-pydantic_v2.BaseModel-type_list_maps].payloads.txt
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].py	= main/jsonschema/object_maps/object_maps[default-pydantic_v2.BaseModel-type_list_maps].py
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_object_maps_schema_validators_collapsed_rule_root]
+annotated	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].payloads.txt
+annotated	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].py
+default	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[default].payloads.txt	= main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].payloads.txt
+default	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[default].py
+field_constraints	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[field_constraints].payloads.txt	= main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].payloads.txt
+field_constraints	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[field_constraints].py
 [test_object_maps_schema_validators_cross_document]
 	main/jsonschema/object_maps/schema_validators_cross_document.payloads.txt
 	main/jsonschema/object_maps/schema_validators_cross_document.py
