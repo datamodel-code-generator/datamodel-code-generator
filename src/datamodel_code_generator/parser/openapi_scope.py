@@ -772,7 +772,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     path = [*target.path, *operation_tokens]
                     operation = _mapping(value, path)
                     if not self.use_operation_id_as_name:
-                        self._validate_operation_name_keys(prefix, operation_tokens, use_site)
+                        self._validate_operation_name_keys(prefix, operation_tokens, use_site, target.declaration)
                     self._walk_api_operation(
                         operation,
                         path,
@@ -785,16 +785,17 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._active_api_objects.remove(target.declaration)
 
     def _validate_operation_name_keys(
-        self, prefix: str, operation_tokens: tuple[str, ...], use_site: SchemaLocation
+        self, prefix: str, operation_tokens: tuple[str, ...], use_site: SchemaLocation, declaration: SchemaLocation
     ) -> None:
         """Require the keys an operation's model name is built from to be strings: the item's prefix and the method.
 
-        Only a webhook name, the prefix of the path item at ``use_site``, can be another value by then.
+        Only a webhook name, the prefix of the path item at ``use_site``, can be another value by then. The method is
+        written in the path item's ``declaration``, which a reference can place elsewhere than ``use_site``.
         """
         if not isinstance(prefix, str):
             raise self._key_error(prefix, "webhook name", [str(use_site)])
         if not isinstance(method := operation_tokens[-1], str):
-            raise self._key_error(method, "method", [str(use_site.child(*operation_tokens[:-1], str(method)))])
+            raise self._key_error(method, "method", [str(declaration.child(*operation_tokens[:-1], str(method)))])
 
     def _api_operations(self, target: _ApiObject) -> Generator[tuple[tuple[str, ...], YamlValue], None, None]:
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""

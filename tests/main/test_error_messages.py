@@ -1106,6 +1106,15 @@ def test_malformed_input_error_messages(
             id="integer-additional-operation-api",
         ),
         pytest.param(
+            "integer_additional_operation_ref.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path "
+            "'integer_additional_operation_ref.yaml#/components/pathItems/Pets/additionalOperations/1': "
+            "method 1 is not a string",
+            id="integer-additional-operation-referenced-api",
+        ),
+        pytest.param(
             "integer_asyncapi_component.yaml",
             "asyncapi",
             [],
