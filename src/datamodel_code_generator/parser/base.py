@@ -268,7 +268,6 @@ from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.python_literal import (
     PythonCode,
     PythonRuntimeExpression,
-    _semantic_value_text,
     runtime_expression_imports,
 )
 from datamodel_code_generator.reference import (
@@ -2584,6 +2583,36 @@ def _tag_field_matches(
     )
 
 
+def _one_selected_enum_member(data_type: DataType) -> tuple[Any] | None:
+    """Return the semantic value of the one member an enum-member literal selects.
+
+    The literal selects that member, not the other members of a shared enum. A sanitized member name resolves through
+    the enum's fields. ``const`` and a raw ``Literal`` still precede it (``field_tag``).
+    """
+    if len(data_type.enum_member_literals) != 1:
+        return None
+    reference = _annotated_reference(data_type)
+    if reference is None or not isinstance(source := reference.source, Enum):  # pragma: no branch
+        return None  # pragma: no cover
+    _, member_name = data_type.enum_member_literals[0]
+    return next(
+        ((get_raw_enum_member_value(field.default),) for field in source.fields if field.name == member_name),
+        None,
+    )
+
+
+def _enum_of_member_literal(data_type: DataType) -> Enum | None:
+    """Return the Enum an enum-member literal names after its ordinary reference was detached."""
+    for nested in data_type.all_data_types:
+        if not nested.enum_member_literals:
+            continue
+        reference = _annotated_reference(nested)
+        if reference is None or not isinstance(source := reference.source, Enum):  # pragma: no branch
+            continue  # pragma: no cover
+        return source
+    return None
+
+
 def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:
     """Return the one tag a variant's tag field holds (``field_tag``)."""
     tag = field_tag("variant-field", _FieldTagFacts(discriminator_field))
@@ -2610,7 +2639,12 @@ class _FieldTagFacts:
         return self.field.data_type.literals
 
     def enum_member(self) -> tuple[int, Any]:
-        """Return how many members the Enum the field's type names has, and the first one's value."""
+        """Return how many members the Enum the field's type names has, and the first one's value.
+
+        An enum-member literal contributes its selected member. A literal of several members is not one tag.
+        """
+        if (selected := _one_selected_enum_member(self.field.data_type)) is not None:
+            return (1, selected[0])
         fields = enum_source.fields if (enum_source := self.field.data_type.find_source(Enum)) else []
         return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
 
@@ -5238,18 +5272,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         discriminator_values: list[DiscriminatorValue],
         discriminator_model: DataModel,  # noqa: ARG002
         imports: Imports,  # noqa: ARG002
-    ) -> DataType:
-        """Create a data type for discriminator field, using enum literals if available."""
+    ) -> DataType | None:
+        """Create a data type for a discriminator field, using enum literals when a member matches.
+
+        A tag that names no member returns None. The caller keeps a tag the field already renders, instead of
+        inventing a member name from the tag.
+        """
         if enum_source:
             if self.use_enum_values_in_discriminator:
                 enum_class_name = enum_source.reference.short_name
                 enum_member_literals: list[tuple[str, str]] = []
                 for value in discriminator_values:
                     member = enum_source.find_member(value, coerce_strings=True)
-                    if member and member.field.name:
-                        enum_member_literals.append((enum_class_name, member.field.name))
-                    else:  # pragma: no cover
-                        enum_member_literals.append((enum_class_name, _semantic_value_text(value)))
+                    member_name = member.field.name if member is not None else None
+                    if not member_name:
+                        return None
+                    enum_member_literals.append((enum_class_name, member_name))
                 data_type = self.data_type(enum_member_literals=enum_member_literals)
                 data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
             else:
@@ -5471,13 +5509,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                         enum_source = discriminator_field.data_type.find_source(Enum)
                         if self.use_enum_values_in_discriminator:
-                            enum_source = enum_source or _get_enum_from_base(
-                                discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
+                            # The ordinary reference was detached when an earlier union wrote the enum member.
+                            member_literal_enum = _enum_of_member_literal(discriminator_field.data_type)
+                            enum_source = (
+                                enum_source
+                                or member_literal_enum
+                                or _get_enum_from_base(
+                                    discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
+                                )
                             )
-
-                        for field_data_type in discriminator_field.data_type.all_data_types:
-                            if field_data_type.reference:  # pragma: no cover
-                                self._graph_builder.detach_data_type_ref(field_data_type)
 
                         new_discriminator_data_type = self._create_discriminator_data_type(
                             enum_source,
@@ -5485,6 +5525,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             discriminator_model,
                             imports,
                         )
+                        if new_discriminator_data_type is None:  # pragma: no cover
+                            # No member matches. Keep the tag this field already renders.
+                            break
+                        for field_data_type in discriminator_field.data_type.all_data_types:
+                            if field_data_type.reference:  # pragma: no cover
+                                self._graph_builder.detach_data_type_ref(field_data_type)
                         self._graph_builder.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         tag_fields.append((discriminator_field, discriminator_values))
@@ -5511,15 +5557,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             ImportProducer("discriminator", discriminator_model, discriminator_field),
                         )
                         has_one_literal = True
-                    if not has_one_literal:
-                        new_data_type = self._create_discriminator_data_type(
-                            base_enum_source := _get_enum_from_base(
-                                discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
-                            ),
-                            discriminator_values,
-                            discriminator_model,
-                            imports,
+                    if (
+                        not has_one_literal
+                        and (
+                            new_data_type := self._create_discriminator_data_type(
+                                base_enum_source := _get_enum_from_base(
+                                    discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
+                                ),
+                                discriminator_values,
+                                discriminator_model,
+                                imports,
+                            )
                         )
+                        is not None
+                    ):
                         # Handle multiple aliases (Pydantic v2 AliasChoices)
                         single_alias, validation_aliases = self._split_field_alias(alias)
                         self._graph_builder.append_field(
