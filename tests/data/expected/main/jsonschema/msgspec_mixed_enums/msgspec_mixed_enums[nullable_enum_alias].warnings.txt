@@ -1,0 +1,7 @@
+msgspec cannot decode the enum Mixed: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum Floats: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+msgspec cannot decode the enum Bools: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum TypedMixed: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum Numbers: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+msgspec cannot decode the enum NullableMixedEnum: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum ListOnly: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.

@@ -1,0 +1,32 @@
+{
+  "valid": [
+    {
+      "mixed": "a",
+      "floats": 1.5,
+      "bools": true,
+      "typed_mixed": "a",
+      "numbers": 2,
+      "nullable_mixed": null,
+      "aliased": 1,
+      "letters": "b",
+      "listed": "a",
+      "list_only": [
+        "b"
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "mixed": "1"
+    },
+    {
+      "floats": 3.5
+    },
+    {
+      "bools": 1
+    },
+    {
+      "letters": "c"
+    }
+  ]
+}

@@ -481,6 +481,7 @@ unknown
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries msgspec.Struct
+  warning UserWarning: msgspec cannot decode the enum ValuesGetResponse204XRatioHeader: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
   public type exports ['JSONValue']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''

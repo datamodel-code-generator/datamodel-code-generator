@@ -7637,14 +7637,23 @@ def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: li
     --use-subclass-enum a ``(str, Enum)`` holding ``'1'``, and a ``format: byte`` enum a ``(bytes, Enum)`` that failed
     at import. Members that the base keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it. msgspec
     keeps the 0.86.0 IntEnum or ``(T, Enum)`` where it could not decode the plain Enum, until msgspec Enums are decided
-    as a whole.
+    as a whole; msgspec output warns about the plain Enums of mixed values it cannot decode.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", output_model, *extra_args, "--keep-enum-member-values"],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model, *extra_args, "--keep-enum-member-values"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
 
 
@@ -7656,14 +7665,24 @@ def test_main_jsonschema_enum_value_base_kinds_without_option(
 
     ``[1, 2.5]`` stays an IntEnum (``2.5`` written as ``2``) and ``['a', 1]`` under --use-subclass-enum a
     ``(str, Enum)``, as in 0.86.0; only a base that cannot construct a member, so that the class failed at import
-    (``'a'`` in an IntEnum, ``format: byte`` strings in a ``(bytes, Enum)``), gives a plain Enum.
+    (``'a'`` in an IntEnum, ``format: byte`` strings in a ``(bytes, Enum)``), gives a plain Enum; msgspec output warns
+    about the plain Enums of mixed values it cannot decode.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", output_model, *extra_args],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model, *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
 
 
@@ -8168,14 +8187,24 @@ def test_main_jsonschema_enum_const_without_option(
 ) -> None:
     """Ignore a const beside an enum without --read-const-beside-enum, as 0.86.0 does.
 
-    Every enum class keeps its values and every value that names it is typed by the enum, with no warning.
+    Every enum class keeps its values and every value that names it is typed by the enum, with no warning about the
+    const; msgspec output warns only about an enum whose values msgspec cannot decode.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", output_model, *extra_args],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model, *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
 
 
@@ -27375,14 +27404,26 @@ def test_main_jsonschema_non_finite_number_values(output_file: Path) -> None:
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
 )
 def test_main_jsonschema_non_finite_enum_members(output_model: str, output_file: Path) -> None:
-    """Render non-finite enum member values, also inside array and object members, as importable expressions."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "non_finite_enum_members.yaml",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", output_model],
-        importable_module_name="generated_non_finite_enum_members",
-        importable_module_attribute="Model",
+    """Render non-finite enum member values, also inside array and object members, as importable expressions.
+
+    msgspec output warns that it cannot decode the enums of float values.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "non_finite_enum_members.yaml",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model],
+            importable_module_name="generated_non_finite_enum_members",
+            importable_module_attribute="Model",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
 
 
@@ -28781,38 +28822,47 @@ def test_msgspec_enum_diagnostics_integer_subclasses(output_file: Path, integer_
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_msgspec_unused_enum_generation(output_file: Path, entrypoint: str) -> None:
-    """Allow a usable root alongside definitions whose Enum values msgspec cannot decode."""
+    """Allow a usable root alongside definitions whose Enum values msgspec cannot decode, and warn about them."""
     import msgspec
 
     input_path = JSON_SCHEMA_DATA_PATH / "msgspec_enum_diagnostics/unused.json"
     expected_file = "msgspec_enum_diagnostics/unused.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            extra_args=[
-                "--output-model-type",
-                "msgspec.Struct",
-                "--target-python-version",
-                "3.10",
-                "--disable-timestamp",
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            output_model_type=DataModelType.MsgspecStruct,
-            target_python_version=PythonVersion.PY_310,
-            disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-        )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="jsonschema",
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                extra_args=[
+                    "--output-model-type",
+                    "msgspec.Struct",
+                    "--target-python-version",
+                    "3.10",
+                    "--disable-timestamp",
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                output_model_type=DataModelType.MsgspecStruct,
+                target_python_version=PythonVersion.PY_310,
+                disable_timestamp=True,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+            )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
     payloads = json.loads((DATA_PATH / "payloads/msgspec_enum_diagnostics/unused.json").read_text())
     with _generated_model(output_file, f"unused_enums_{entrypoint}", "Payload") as model:
         result = {

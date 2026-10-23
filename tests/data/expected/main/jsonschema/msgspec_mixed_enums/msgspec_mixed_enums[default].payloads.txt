@@ -1,0 +1,5 @@
+valid: type refused by msgspec
+invalid {"mixed": "1"}: type refused by msgspec
+invalid {"floats": 3.5}: type refused by msgspec
+invalid {"bools": 1}: type refused by msgspec
+invalid {"letters": "c"}: type refused by msgspec

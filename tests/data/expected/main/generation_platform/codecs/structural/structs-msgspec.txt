@@ -1,3 +1,4 @@
+warning UserWarning: msgspec cannot decode the enum Ratio: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
 use /paths/~1holders/post request_body: MsgspecCodec
 use /paths/~1limits/post request_body: MsgspecCodec
 use /paths/~1limits/post response_body 200: MsgspecCodec

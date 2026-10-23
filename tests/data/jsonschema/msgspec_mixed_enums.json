@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "mixed": {
+      "$ref": "#/$defs/Mixed"
+    },
+    "floats": {
+      "$ref": "#/$defs/Floats"
+    },
+    "bools": {
+      "$ref": "#/$defs/Bools"
+    },
+    "typed_mixed": {
+      "$ref": "#/$defs/TypedMixed"
+    },
+    "numbers": {
+      "$ref": "#/$defs/Numbers"
+    },
+    "nullable_mixed": {
+      "$ref": "#/$defs/NullableMixed"
+    },
+    "aliased": {
+      "$ref": "#/$defs/Aliased"
+    },
+    "letters": {
+      "$ref": "#/$defs/Letters"
+    },
+    "listed": {
+      "$ref": "#/$defs/Listed"
+    },
+    "list_only": {
+      "$ref": "#/$defs/ListOnly"
+    }
+  },
+  "$defs": {
+    "Mixed": {
+      "enum": [
+        "a",
+        1
+      ]
+    },
+    "Floats": {
+      "enum": [
+        1.5,
+        2.5
+      ]
+    },
+    "Bools": {
+      "enum": [
+        true,
+        false
+      ]
+    },
+    "TypedMixed": {
+      "type": "string",
+      "enum": [
+        "a",
+        1
+      ]
+    },
+    "Numbers": {
+      "type": "number",
+      "enum": [
+        1.5,
+        2
+      ]
+    },
+    "NullableMixed": {
+      "enum": [
+        "a",
+        1,
+        null
+      ]
+    },
+    "Aliased": {
+      "enum": [
+        1,
+        true
+      ]
+    },
+    "Letters": {
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Listed": {
+      "enum": [
+        "a",
+        [
+          "a"
+        ]
+      ]
+    },
+    "ListOnly": {
+      "enum": [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ]
+      ]
+    }
+  }
+}

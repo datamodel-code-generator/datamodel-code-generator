@@ -1,0 +1,5 @@
+valid: accepted
+invalid {"mixed": "1"}: rejected
+invalid {"floats": 3.5}: accepted
+invalid {"bools": 1}: rejected
+invalid {"letters": "c"}: rejected

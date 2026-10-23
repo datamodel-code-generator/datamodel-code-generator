@@ -1,1 +1,5 @@
+msgspec cannot decode the enum Float: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+msgspec cannot decode the enum Flag: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum Shape: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
 msgspec cannot decode the enum Null: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum Picked: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.

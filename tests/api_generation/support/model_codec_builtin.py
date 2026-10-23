@@ -620,26 +620,37 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, serve
     """Edit generated copies and start their native app or client codec.
 
     Each case edits the generated files as a stale or hand-edited package would: it rebinds model names in the
-    models module, or changes the binding, models, bundle, or directional view of one generated codec.
+    models module, or changes the binding, models, bundle, or directional view of one generated codec. The
+    generator's warnings come first.
     """
     source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     package, backend = fixture["package"], fixture["backend"]
     generated = root / "generated"
-    if diagnostics := generate_package(source, fixture, generated, backend, fixture.get("config", {}), server=server):
-        return _text(diagnostics, package)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        diagnostics = generate_package(source, fixture, generated, backend, fixture.get("config", {}), server=server)
+    warned = generator_warnings(caught)
+    if diagnostics:
+        return _text([*warned, *diagnostics], package)
     if server:
         return _text(
             [
-                f"{case['name']}: {_native_startup(generated, root / 'cases', package, case)}"
-                for case in fixture["startup"]
-                if case["name"] not in {"converter", "backend", "missing-model"}
+                *warned,
+                *(
+                    f"{case['name']}: {_native_startup(generated, root / 'cases', package, case)}"
+                    for case in fixture["startup"]
+                    if case["name"] not in {"converter", "backend", "missing-model"}
+                ),
             ],
             package,
         )
     lines = [
-        f"{case['name']}: {_startup(generated, root / 'cases', package, case, case)}"
-        for case in fixture["startup"]
-        if "models" in case and case.keys().isdisjoint({"binding", "bundle", "patch"})
+        *warned,
+        *(
+            f"{case['name']}: {_startup(generated, root / 'cases', package, case, case)}"
+            for case in fixture["startup"]
+            if "models" in case and case.keys().isdisjoint({"binding", "bundle", "patch"})
+        ),
     ]
     return _text(lines, package)

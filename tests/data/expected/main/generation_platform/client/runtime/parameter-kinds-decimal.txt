@@ -358,6 +358,8 @@
   warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; Values.step is generated without this constraint.
   warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; ValuesGetQueryStepParameter is generated without this constraint.
   warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; ValuesGetResponse204XStepHeader is generated without this constraint.
+  warning UserWarning: msgspec cannot decode the enum ValuesGetQueryRatioParameter: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+  warning UserWarning: msgspec cannot decode the enum ValuesGetResponse204XRatioHeader: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
   > GET https://api.example.com/values?amount=12345678901234567890.123
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send amount Decimal('12345678901234567890.123') = None

@@ -1,1 +1,3 @@
+msgspec cannot decode the enum Step: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
 msgspec cannot decode the enum Maybe: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum Mixed: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.

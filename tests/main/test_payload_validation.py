@@ -1288,10 +1288,12 @@ def test_payload_runtime_union_options(
 
 
 @pytest.mark.filterwarnings("ignore:msgspec cannot decode the union Payload:UserWarning")
+@pytest.mark.filterwarnings("ignore:msgspec cannot decode the enum:UserWarning")
 def test_payload_runtime_msgspec_gaps(generated_model_cache: dict[str, Any]) -> None:
     """Prove classified msgspec gaps with source-valid payloads and real generated modules.
 
-    Generation warns about the unions of these gaps that hold an Enum beside another str-like member.
+    Generation warns about the unions of these gaps that hold an Enum beside another str-like member, and about the
+    enum of mixed values.
     """
     payloads = json.loads((RUNTIME_COMPATIBILITY_PATH / "msgspec_gaps.json").read_text())
     results = {}

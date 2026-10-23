@@ -6378,26 +6378,47 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[p
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].warnings.txt
 [test_main_jsonschema_enum_const_without_option]
 collapsed-root-models-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[msgspec.Struct].py
+collapsed-root-models-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 collapsed-root-models-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-pydantic_v2.BaseModel].py
+collapsed-root-models-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[collapsed-root-models-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 discriminator-tag-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_discriminator_tag.py
+discriminator-tag-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 discriminator-tag-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-pydantic_v2.BaseModel].py
+discriminator-tag-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[discriminator-tag-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 draft-04-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_draft_04[msgspec.Struct].py
+draft-04-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 draft-04-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_draft_04[pydantic_v2.BaseModel].py
+draft-04-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[draft-04-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 forward-positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-msgspec.Struct].py
+forward-positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 forward-positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-pydantic_v2.BaseModel].py
+forward-positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[forward-positions-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 hidden-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-msgspec.Struct].py
+hidden-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 hidden-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-pydantic_v2.BaseModel].py
+hidden-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 integral-float-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-msgspec.Struct].py
+integral-float-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-msgspec.Struct].warnings.txt
 integral-float-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-pydantic_v2.BaseModel].py
+integral-float-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 marker-in-document-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-msgspec.Struct].py
+marker-in-document-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 marker-in-document-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-pydantic_v2.BaseModel].py
+marker-in-document-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 non-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[non-literal-pydantic_v2.BaseModel].py
+non-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[non-literal-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[positions-msgspec.Struct].py
+positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[positions-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[positions-pydantic_v2.BaseModel].py
+positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[positions-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 type-list-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].py
+type-list-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 type-list-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_type_list[pydantic_v2.BaseModel].py
+type-list-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[type-list-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 unsatisfiable-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].py
+unsatisfiable-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-msgspec.Struct].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 unsatisfiable-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_unsatisfiable[pydantic_v2.BaseModel].py
+unsatisfiable-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[unsatisfiable-pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_enum_deserialization_preset_opt_out]
 	main/jsonschema/enum_member_typed_defaults_preset_opt_out.py
 [test_main_jsonschema_enum_list_defaults]
@@ -6423,40 +6444,74 @@ legacy-option	main/jsonschema/enum_member_typed_defaults.py
 	main/jsonschema/root_in_enum.py
 [test_main_jsonschema_enum_value_base_kinds]
 default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].warnings.txt
 default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
+default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].py
+preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].warnings.txt
 preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-pydantic-v2].py
+preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].warnings.txt
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
+py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-msgspec].py
+py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].warnings.txt
 py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
+py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-msgspec].py
+subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].warnings.txt
 subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
+subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-dataclasses].py
+subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-msgspec].py
+subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].warnings.txt
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-pydantic-v2].py
+subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_enum_value_base_kinds_without_option]
 default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-dataclasses].py
+default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].warnings.txt
 default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].py
+default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].py
+preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].warnings.txt
 preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-pydantic-v2].py
+preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-dataclasses].py
+py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
+py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].warnings.txt
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[default-pydantic-v2].py
+py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-dataclasses].py
+py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-msgspec].py
+py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].warnings.txt
 py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-pydantic-v2].py
+py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-dataclasses].py
+subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-msgspec].py
+subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].warnings.txt
 subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[py311-subclass-pydantic-v2].py
+subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-dataclasses].py
+subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-msgspec].py
+subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].warnings.txt
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-pydantic-v2].py
+subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_external_discriminator]
 msgspec.Struct-discriminator_with_external_reference_msgspec.py	main/jsonschema/discriminator_with_external_reference_msgspec.py
 pydantic_v2.BaseModel-discriminator_with_external_reference.py	main/jsonschema/discriminator_with_external_reference.py
@@ -6810,10 +6865,15 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 	main/jsonschema/non_dict_files//*.py
 [test_main_jsonschema_non_finite_enum_members]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[dataclasses.dataclass].py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[dataclasses.dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 msgspec.Struct	main/jsonschema/main_jsonschema/non_finite_enum_members[msgspec.Struct].py
+msgspec.Struct	main/jsonschema/main_jsonschema/non_finite_enum_members[msgspec.Struct].warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.dataclass].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 typing.TypedDict	main/jsonschema/main_jsonschema/non_finite_enum_members[typing.TypedDict].py
+typing.TypedDict	main/jsonschema/main_jsonschema/non_finite_enum_members[typing.TypedDict].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_non_finite_enum_members_subclass]
 	main/jsonschema/main_jsonschema/non_finite_enum_members_subclass.py
 [test_main_jsonschema_non_finite_number_values]
@@ -8795,8 +8855,10 @@ DataModelType.TypingTypedDict-jsonschema-cli	payloads/msgspec_inheritance_typed_
 jsonschema_untagged_base-api	main/msgspec_inheritance/absent.txt	= main/jsonschema/msgspec_enum_diagnostics/absent.txt
 jsonschema_untagged_base-api	main/msgspec_inheritance/jsonschema_untagged_base.txt
 [test_msgspec_unused_enum_generation]
+api	main/jsonschema/main_jsonschema/msgspec_unused_enum_generation[api].warnings.txt
 api	main/jsonschema/msgspec_enum_diagnostics/unused.py
 api	main/jsonschema/msgspec_enum_diagnostics/unused.txt	= main/jsonschema/msgspec_enum_diagnostics/subclass_only.txt
+cli	main/jsonschema/main_jsonschema/msgspec_unused_enum_generation[cli].warnings.txt	= main/jsonschema/main_jsonschema/msgspec_unused_enum_generation[api].warnings.txt
 cli	main/jsonschema/msgspec_enum_diagnostics/unused.py
 cli	main/jsonschema/msgspec_enum_diagnostics/unused.txt	= main/jsonschema/msgspec_enum_diagnostics/subclass_only.txt
 [test_nested_schema_resources]

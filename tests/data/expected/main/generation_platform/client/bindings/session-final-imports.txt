@@ -20,8 +20,10 @@ render typing.TypedDict plain
 render typing.TypedDict annotated
   diagnostic Error: /components/schemas/Types/properties/native: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type; /components/schemas/Types/properties/bound_native: The typing.TypedDict converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type; /components/schemas/Types/properties/handler: The typing.TypedDict converter has no conversion for the Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type; /components/schemas/Types/properties/record: The typing.TypedDict converter has no conversion for the NamedTuple type; /paths/~1bindings~12/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type; /paths/~1bindings~12/post/responses/200/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type; /paths/~1bindings~13/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type; /paths/~1bindings~13/post/responses/200/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type
 render msgspec.Struct plain
+  warning UserWarning: msgspec cannot decode the enum LiteralModel: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
   models.py
   model_bindings.py msgspec_Struct/plain
 render msgspec.Struct annotated
+  warning UserWarning: msgspec cannot decode the enum LiteralModel: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
   models.py
   model_bindings.py msgspec_Struct/plain

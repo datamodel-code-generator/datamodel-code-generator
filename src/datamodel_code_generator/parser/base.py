@@ -155,6 +155,7 @@ from datamodel_code_generator.model.enum import (
     Enum,
     IntEnum,
     Member,
+    StrEnum,
     get_raw_enum_member_value,
 )
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
@@ -2025,6 +2026,48 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     return (
         f"msgspec cannot decode the enum {model.class_name}: {member} makes its values neither all str nor all int. "
         f"{fix}"
+    )
+
+
+_WRITTEN_ENUM_VALUE: Final[Mapping[str, Callable[[Any], object]]] = {
+    "bool": bool,
+    "int": int.__index__,
+    "float": float.__float__,
+    "str": str.__str__,
+}
+"""The value an enum module writes for a member value of each kind: a plain ``bool``, ``int``, ``float`` or ``str``."""
+
+
+def _msgspec_mixed_enum_message(model: Enum) -> str | None:
+    """Describe an enum whose values msgspec refuses: besides None, they are neither all str nor all int.
+
+    An ``IntEnum``, a ``StrEnum`` and an ``(int, Enum)`` or ``(str, Enum)`` make every value one of them, a
+    ``(float, Enum)`` or ``(bytes, Enum)`` every value a float or bytes. A plain ``Enum`` keeps the values as the
+    module writes them, where one equal to an earlier value is an alias of that member, as Python has it, so ``1`` and
+    ``True`` make one int member; msgspec skips a list or an object value, which has no hash, and refuses an enum left
+    without values.
+    """
+    values = [value for field in model.fields if (value := get_raw_enum_member_value(field.default)) is not None]
+    value_types = {base.type for base in model.base_classes}
+    if not values or isinstance(model, (IntEnum, StrEnum)) or value_types & {"int", "str"}:
+        return None
+    kinds: set[str] = set()
+    if value_type := next((name for name in ("float", "bytes") if name in value_types), None):
+        kinds.add(value_type)
+    else:
+        members: dict[object, None] = {}
+        for value in values:
+            if (written := _WRITTEN_ENUM_VALUE.get(kind := literal_value_kind(value))) is not None and (
+                key := written(value)
+            ) not in members:
+                members[key] = None
+                kinds.add(kind)
+    if kinds in ({"str"}, {"int"}):
+        return None
+    floats = " A float value, which a msgspec Literal does not hold, is written as float." if "float" in kinds else ""
+    return (
+        f"msgspec cannot decode the enum {model.class_name}: its values are neither all str nor all int. "
+        f"Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.{floats}"
     )
 
 
@@ -4498,7 +4541,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         named = {model.class_name: model for model in models}
         for model in models:
             if isinstance(model, Enum):
-                if not self.use_msgspec_nullable_enum_alias and (message := _msgspec_null_enum_message(model)):
+                for message in filter(
+                    None,
+                    (
+                        None if self.use_msgspec_nullable_enum_alias else _msgspec_null_enum_message(model),
+                        _msgspec_mixed_enum_message(model),
+                    ),
+                ):
                     warn(message, stacklevel=2)
                 continue
             if isinstance(model, _DataTypeUnionBase):

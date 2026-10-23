@@ -10,7 +10,7 @@
 msgspec.Struct	main/jsonschema/enum_names_beside_null_msgspec_default.py
 msgspec.Struct	main/jsonschema/enum_names_beside_null_msgspec_default_warnings.txt
 msgspec.Struct-nullable-enum-alias	main/jsonschema/enum_names_beside_null_msgspec.py
-msgspec.Struct-nullable-enum-alias	main/jsonschema/enum_names_beside_null_msgspec_warnings.txt	= main/jsonschema/enum_names_beside_null_warnings.txt
+msgspec.Struct-nullable-enum-alias	main/jsonschema/enum_names_beside_null_msgspec_warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/enum_names_beside_null.py
 pydantic_v2.BaseModel	main/jsonschema/enum_names_beside_null_warnings.txt
 [test_main_jsonschema_required_only_object_type_list_with_schema_validator]
