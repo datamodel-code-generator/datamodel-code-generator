@@ -46,6 +46,8 @@ openapi	main/jsonschema/model_metadata/schema_location_metadata[openapi].metadat
 openapi	main/jsonschema/model_metadata/schema_location_metadata[openapi].py
 request-response	main/jsonschema/model_metadata/schema_location_metadata[request-response].metadata.txt
 request-response	main/jsonschema/model_metadata/schema_location_metadata[request-response].py
+schema-validator-alias-class	main/jsonschema/model_metadata/schema_location_metadata[schema-validator-alias-class].metadata.txt
+schema-validator-alias-class	main/jsonschema/model_metadata/schema_location_metadata[schema-validator-alias-class].py	= main/jsonschema/object_maps/check_pattern_maps_strictly[without-option].py
 yaml-aliases	main/jsonschema/model_metadata/schema_location_metadata[yaml-aliases].metadata.txt
 yaml-aliases	main/jsonschema/model_metadata/schema_location_metadata[yaml-aliases].py
 [test_schema_location_metadata_of_shared_dict_input]

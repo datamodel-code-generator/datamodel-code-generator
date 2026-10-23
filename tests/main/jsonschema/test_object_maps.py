@@ -460,6 +460,43 @@ def test_object_maps_schema_validators_cross_module_rule_types(output_dir: Path,
 @pytest.mark.parametrize(
     "extra_args",
     [
+        pytest.param(["--reuse-scope", "tree"], id="tree-scope"),
+        pytest.param(["--use-type-alias"], id="use-type-alias"),
+        pytest.param(["--use-type-alias", "--collapse-reuse-models"], id="use-type-alias-collapse-reuse-models"),
+    ],
+)
+def test_object_maps_schema_validators_same_name_rule_types(output_dir: Path, extra_args: list[str]) -> None:
+    """Keep apart under --reuse-model the maps whose validator rules name models of other modules with one name.
+
+    The rules of ``First`` and ``Second`` name ``Count`` of the ``left`` and of the ``right`` module, which render alike
+    until imports are final.
+    """
+    input_path = OBJECT_MAPS / "same_name_rule_types.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--reuse-model",
+            *extra_args,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "same_name_rule_types.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
         pytest.param([], id="default"),
         pytest.param(["--field-constraints"], id="field_constraints"),
         pytest.param(["--use-annotated"], id="annotated"),
@@ -486,6 +523,37 @@ def test_object_maps_schema_validators_collapsed_rule_root(output_file: Path, ex
         ],
     )
     payloads = json.loads((PAYLOADS / "collapsed_rule_root.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize("strategy", ["parent", "child"])
+def test_object_maps_schema_validators_collapsed_rule_reference_root(output_file: Path, strategy: str) -> None:
+    """Collapse a root model of a reference that a validator rule names by each --collapse-root-models-name-strategy.
+
+    Under ``parent`` the inner model replaces ``Wrapper`` under its name and the rule of ``ws`` names it; under
+    ``child`` ``Wrapper`` stays written for the rule.
+    """
+    input_path = OBJECT_MAPS / "collapsed_rule_reference_root.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            strategy,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "collapsed_rule_reference_root.json").read_text())
     validator = Draft202012Validator(json.loads(input_path.read_text()))
     validator.validate(payloads["valid"])
     for change in payloads["invalid"]:

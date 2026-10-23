@@ -1416,6 +1416,11 @@ type_array_maps	main/jsonschema/object_maps/schema_validators[type_array_maps].w
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].payloads.txt	= main/jsonschema/object_maps/object_maps[annotated-pydantic_v2.BaseModel-type_list_maps].payloads.txt
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].py	= main/jsonschema/object_maps/object_maps[default-pydantic_v2.BaseModel-type_list_maps].py
 type_list_maps	main/jsonschema/object_maps/schema_validators[type_list_maps].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_object_maps_schema_validators_collapsed_rule_reference_root]
+child	main/jsonschema/object_maps/schema_validators_collapsed_rule_reference_root[child].payloads.txt
+child	main/jsonschema/object_maps/schema_validators_collapsed_rule_reference_root[child].py
+parent	main/jsonschema/object_maps/schema_validators_collapsed_rule_reference_root[parent].payloads.txt	= main/jsonschema/object_maps/schema_validators_collapsed_rule_reference_root[child].payloads.txt
+parent	main/jsonschema/object_maps/schema_validators_collapsed_rule_reference_root[parent].py
 [test_object_maps_schema_validators_collapsed_rule_root]
 annotated	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].payloads.txt
 annotated	main/jsonschema/object_maps/schema_validators_collapsed_rule_root[annotated].py
@@ -1447,6 +1452,13 @@ recursive_cycle	main/jsonschema/object_maps/schema_validators_recursive_values[r
 recursive_cycle	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_cycle].py
 recursive_pattern	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_pattern].payloads.txt
 recursive_pattern	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_pattern].py
+[test_object_maps_schema_validators_same_name_rule_types]
+tree-scope	main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope].payloads.txt
+tree-scope	main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope]/
+use-type-alias	main/jsonschema/object_maps/schema_validators_same_name_rule_types[use-type-alias].payloads.txt	= main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope].payloads.txt
+use-type-alias	main/jsonschema/object_maps/schema_validators_same_name_rule_types[use-type-alias]/	= main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope]/
+use-type-alias-collapse-reuse-models	main/jsonschema/object_maps/schema_validators_same_name_rule_types[use-type-alias-collapse-reuse-models].payloads.txt	= main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope].payloads.txt
+use-type-alias-collapse-reuse-models	main/jsonschema/object_maps/schema_validators_same_name_rule_types[use-type-alias-collapse-reuse-models]/	= main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope]/
 [test_object_maps_schema_validators_target_pydantic_version]
 root_models	main/jsonschema/object_maps/schema_validators_target_pydantic_version[root_models].payloads.txt	= main/jsonschema/object_maps/schema_validators[pattern_checks].payloads.txt
 root_models	main/jsonschema/object_maps/schema_validators_target_pydantic_version[root_models].py	= main/jsonschema/object_maps/schema_validators[pattern_checks].py

@@ -215,6 +215,10 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         """Return the references of the model's data types in render order."""
         raise NotImplementedError
 
+    def rule_references(self, model: ModelT) -> Sequence[ReferenceT]:
+        """Return the references of the types that the model's schema validator rules name, in order."""
+        raise NotImplementedError
+
     def model_of(self, reference: ReferenceT) -> ModelT | None:
         """Return the model a reference names, or None when it names no model."""
         raise NotImplementedError
@@ -275,8 +279,17 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
         )
         key = (type(model), masked, imports, len(references), *written)
-        self.memo[model] = shape = ((*key, *tags) if (tags := self._tags(model)) else key), references
+        compared = (*references, *self.source.rule_references(model))
+        self.memo[model] = shape = ((*key, *tags) if (tags := self._tags(model)) else key), compared
         return shape
+
+    def _compared_references(self, model: ModelT) -> tuple[ReferenceT, ...]:
+        """Return the references that the models a model matches must match too: its own, then those its rules name.
+
+        Rules name a model by its class name alone until imports are final, so models of other modules that share a
+        name tell the rules apart only by their shapes. The masked rendering keeps the names that rules write.
+        """
+        return (*self.source.references(model), *self.source.rule_references(model))
 
     def references_match(self, left: ModelT, right: ModelT) -> bool:
         """Return whether equally rendered models also reference models of the same shape.
@@ -288,7 +301,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         assumed to match, which keeps recursive models finite, and models that reference the very same models match
         without rendering them again.
         """
-        left_references, right_references = self.source.references(left), self.source.references(right)
+        left_references, right_references = self._compared_references(left), self._compared_references(right)
         if len(left_references) == len(right_references) and all(map(is_, left_references, right_references)):
             return True
         pending: list[tuple[ModelT | None, ModelT | None]] = [(left, right)]
@@ -325,7 +338,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         """
         return tuple(
             self.shape(source)[0] if (source := self.source.model_of(reference)) is not None else id(reference)
-            for reference in self.source.references(model)
+            for reference in self._compared_references(model)
         )
 
     def iter_matching_duplicates(self, models: Iterable[ModelT], *, keyed: bool) -> Iterator[tuple[ModelT, ModelT]]:
@@ -342,7 +355,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         unshaped: dict[Key | None, list[ModelT]] = {}
         for model in models:
             key = self.key(model) if keyed else None
-            references = (key, *map(id, self.source.references(model)))
+            references = (key, *map(id, self._compared_references(model)))
             if (canonical := by_references.get(references)) is None and (pending := unshaped.get(key)) is not None:
                 for candidate in pending:
                     by_shapes[key, self._referenced_shapes(candidate)].append(candidate)

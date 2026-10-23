@@ -112,6 +112,12 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
             JSON_SCHEMA_DATA_PATH / "all_of_any_of_base_class_ref.json", "jsonschema", [], id="colliding-parse-paths"
         ),
         pytest.param(
+            JSON_SCHEMA_DATA_PATH / "object_maps" / "strict_pattern_maps.json",
+            "jsonschema",
+            ["--generate-schema-validators", "--use-type-alias"],
+            id="schema-validator-alias-class",
+        ),
+        pytest.param(
             OPEN_API_DATA_PATH / "schema_location.yaml",
             "openapi",
             ["--openapi-scopes", "schemas", "paths", "parameters", "webhooks"],
@@ -137,7 +143,8 @@ def test_schema_location_metadata(
     Read and write variants share the location of their schema, a YAML alias is located where it is used whatever the
     YAML loader, and GraphQL, which has no JSON document, keeps its reference paths. A model whose parse path collides
     with another schema object's (the anyOf branches of the allOf members in ``all_of_any_of_base_class_ref.json``)
-    keeps its reference path instead of a pointer that could disagree with its content.
+    keeps its reference path instead of a pointer that could disagree with its content. A type alias written as a class
+    for its schema validator rules (``labels``) keeps the location of its schema.
     """
     metadata_path = output_file.with_suffix(".metadata.json")
     run_main_and_assert(

@@ -1392,6 +1392,16 @@ def _model_references(model: DataModel) -> list[Reference]:
     return [reference for data_type in model.all_data_types if (reference := data_type.reference)]
 
 
+def _parsed_rule_data_types(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types of the parser's schema validator rules of a model, nested ones included.
+
+    A type alias holds them too until the parser writes it as a class that writes them.
+    """
+    if rules := model.schema_runtime_validation or model._unwritable_runtime_rules:  # noqa: SLF001
+        for rule_data_type in rules.data_types:
+            yield from rule_data_type.all_data_types
+
+
 @final
 @dataclass(frozen=True, slots=True)
 class _ModelShapeSource:
@@ -1429,6 +1439,10 @@ class _ModelShapeSource:
     def references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
         """Return the references of the model's data types in render order."""
         return _model_references(model)
+
+    def rule_references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
+        """Return the references of the types that the model's schema validator rules name, in order."""
+        return [reference for data_type in _parsed_rule_data_types(model) if (reference := data_type.reference)]
 
     def model_of(self, reference: Reference) -> DataModel | None:  # noqa: PLR6301
         """Return the model a reference names, or None when it names no model."""
@@ -3823,24 +3837,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         referenced that model directly. Under the ``parent`` strategy that model takes the root model's name in its
         own module and replaces the root model, decided at the root model's first holder from the references the
         schema gives, so that every holder follows the same decision. A root model that a schema validator rule names
-        stays written after its holders inline it: the rule checks values through its class.
+        stays written after its holders inline it: the rule checks values through its class. A root model that its inner
+        model replaces leaves, and the rules name the inner model instead.
         """
         generation_store = self.generation_store
         generation_index = generation_store.index
         graph_builder = self._graph_builder
         circular_root_models = self._recursion_facts["circular_roots"]
-        rule_named_roots = (
-            frozenset(
-                model_key_of(reference)
-                for holder in self.results
-                if (rules := holder.schema_runtime_validation or holder._unwritable_runtime_rules)  # noqa: SLF001
-                for rule_data_type in rules.data_types
-                for nested in rule_data_type.all_data_types
-                if (reference := nested.reference) is not None
-            )
-            if self.generate_schema_validators
-            else frozenset()
-        )
+        rule_named_roots: dict[ModelKey, list[DataType]] = {}
+        for holder in self.results if self.generate_schema_validators else ():
+            for rule_data_type in _parsed_rule_data_types(holder):
+                if (reference := rule_data_type.reference) is not None:
+                    rule_named_roots.setdefault(model_key_of(reference), []).append(rule_data_type)
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
         redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
@@ -3915,11 +3923,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             data_type,
                             imports.reference_paths.get(root_type_model.path),
                         ))
-                        if (
-                            not has_remaining_root_references
-                            and model_key_of(root_type_model.reference) not in rule_named_roots
-                        ):
-                            unused_models.append(root_type_model)
+                        if not has_remaining_root_references:
+                            if id(root_type_model) in self._replaced_root_models:
+                                for rule_data_type in rule_named_roots.pop(model_key_of(root_type_model.reference), ()):
+                                    graph_builder.collapse_root_data_type(rule_data_type, inner_reference)
+                                unused_models.append(root_type_model)
+                            elif model_key_of(root_type_model.reference) not in rule_named_roots:
+                                unused_models.append(root_type_model)
 
                         continue
 
@@ -7200,9 +7210,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
 
         An alias has no class body for the rules. Whether collapse inlines an alias into all its holders is final only
-        once every module is processed, so each alias still written takes its class here, under its model key. The
-        class imports the models of other modules that its rules name, as ``__change_from_import`` imports them for
-        a class that writes its rules from the start.
+        once every module is processed, so each alias still written takes its class here, under its model key and the
+        source location the model metadata names for it. The class imports the models of other modules that its rules
+        name, as ``__change_from_import`` imports them for a class that writes its rules from the start.
         """
         unused = {id(model) for model in run.unused_models}
         if not (
@@ -7243,6 +7253,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_list[:] = [replacements.get(id(model), model) for model in model_list]
         for model in aliases:
             self._graph_builder.replace_model(model, replacements[id(model)])
+        if (identities := run.model_identities) is not None:
+            run.model_identities = {
+                replacements.get(id(model), model): identity for model, identity in identities.items()
+            }
         classes = {id(model) for model in replacements.values()}
         for ctx in run.contexts:
             members = keyed_models(module_members(self, ctx.models), "module members")
