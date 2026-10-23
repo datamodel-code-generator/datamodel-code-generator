@@ -255,6 +255,9 @@ name = 1
 ["src/datamodel_code_generator/parser/_passes/modules.py"."_replace_default_enum_list_members"]
 alias = 1
 
+["src/datamodel_code_generator/parser/_passes/modules.py"."apply_discriminator_type"]
+'__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
+
 ["src/datamodel_code_generator/parser/_passes/modules.py"."change_field_name"]
 alias = 1
 name = 1
@@ -264,9 +267,6 @@ alias = 1
 
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__apply_discriminator_type"]
-'__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_from_import"]
 alias = 1

@@ -500,8 +500,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._copy_data_type",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._copy_resolved_inherited_field",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._find_field",
-        "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._get_discriminator_field_value",
-        "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._get_enum_from_base",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._get_inherited_type_modifiers",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._get_pydantic_v2_root_model_type",
         "private-import:tests/parser/test_base.py::datamodel_code_generator.parser.base._is_pydantic_v2_data_model_field",

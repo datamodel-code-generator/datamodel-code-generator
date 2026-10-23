@@ -18,11 +18,17 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, ca
 from typing_extensions import Protocol, final
 
 from datamodel_code_generator import AllOfMergeMode
+from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.model._decisions.tag_value import mapped_tags
+from datamodel_code_generator.model._decisions.tag_value import (
+    enum_tag_literal,
+    field_tag,
+    mapped_tags,
+    tag_field_matches,
+)
 from datamodel_code_generator.model.base import (
     BaseClassDataType,
     ConstraintsBase,
@@ -61,6 +67,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -1568,4 +1575,113 @@ def get_constructor_field_adjustment(
         return None
     if field.required and supports_inherited_override and field.name in inherited.required_assignment_names:
         return "assignment"
+    return None
+
+
+_TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = TYPE_DEPENDENT_CONSTRAINTS_KEY
+
+
+def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
+    """Return whether a root field has constraints, as Field() arguments or written inside its type."""
+    return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
+        data_type._consumed_constraints  # noqa: SLF001
+        for data_type in (root_field.data_type, *root_field.data_type.data_types)
+    )
+
+
+def _assign_module_name(
+    model_path_to_module_name: dict[str, str], model: DataModel, module_name: str, *, keep: bool = False
+) -> None:
+    """Give ``model`` the module name in the map, by model key too unless a subclass of the parser built the map."""
+    if isinstance(model_path_to_module_name, _ModuleNames):
+        model_path_to_module_name.assign(model, module_name, keep=keep)
+    elif keep:
+        model_path_to_module_name.setdefault(model.path, module_name)
+    else:
+        model_path_to_module_name[model.path] = module_name
+
+
+def _iter_import_bindings(imports: Imports) -> Iterator[str]:
+    """Yield names bound by one generated import block."""
+    for from_, imported_names in imports.items():
+        for imported_name in imported_names:
+            effective_name = imports.get_effective_name(from_, imported_name)
+            yield (
+                imported_name.partition(".")[0] if from_ is None and effective_name == imported_name else effective_name
+            )
+
+
+def _parsed_rule_data_types(model: DataModel) -> Iterator[DataType]:
+    """Yield the data types of the parser's schema validator rules of a model, nested ones included.
+
+    A type alias holds them too until the parser writes it as a class that writes them.
+    """
+    if rules := model.schema_runtime_validation or model._unwritable_runtime_rules:  # noqa: SLF001
+        for rule_data_type in rules.data_types:
+            yield from rule_data_type.all_data_types
+
+
+def _tag_field_matches(
+    field: DataModelFieldBase, match: TagFieldMatch, wanted: str, *, python_name: str | None = None
+) -> bool:
+    """Return whether a field holds the discriminator's property ``wanted`` (``tag_field_matches``)."""
+    return tag_field_matches(
+        match, wanted, name=field.name, original_name=field.original_name, alias=field.alias, python_name=python_name
+    )
+
+
+@dataclass(slots=True)
+class _VariantDiscriminatorTags:
+    """The tags a variant keeps from the first union that tagged it, and the other tags unions map it to."""
+
+    variant: DataModel
+    property_name: str
+    kept: list[DiscriminatorValue]
+    owner: str
+    others: dict[str, list[DiscriminatorValue]]
+
+    def warning_messages(self) -> Iterator[str]:
+        """Describe the tags that the generated variant cannot carry."""
+        if self.others:
+            name = self.variant.class_name
+            unions = ", ".join(f"{union} ({_format_tags(tags)})" for union, tags in self.others.items())
+            yield (
+                f"{name} is a variant of discriminated unions that map {self.property_name!r} to different tags: "
+                f"it keeps {_format_tags(self.kept)} from {self.owner}, so these unions cannot decode it: {unions}."
+            )
+
+
+def _format_tags(tags: list[DiscriminatorValue]) -> str:
+    """Spell discriminator tags as the document writes them."""
+    return ", ".join(map(repr, tags))
+
+
+def enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
+    """Return the tag ``Literal`` value that a discriminator value takes from the member of its enum, if any."""
+    member = enum_source.find_member(value, coerce_strings=True)
+    return enum_tag_literal(value, member.value) if member else value
+
+
+def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:
+    """Return the one tag a variant's tag field holds (``field_tag``)."""
+    tag = field_tag("variant-field", _FieldTagFacts(discriminator_field))
+    return None if tag is None else tag.value
+
+
+def _get_enum_from_base(
+    discriminator_model: DataModel, field_name: str, *, use_field_name: bool = False
+) -> Enum | None:
+    for base_class in discriminator_model.base_classes:
+        if not base_class.reference or not base_class.reference.source:  # pragma: no cover
+            continue
+        base_model = base_class.reference.source
+        if not isinstance(base_model, DataModel) or not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
+            continue
+        for base_field in base_model.fields:  # pragma: no branch
+            if not _tag_field_matches(
+                base_field, "python-name" if use_field_name else "python-or-original-name", field_name
+            ):
+                continue
+            if enum_from_base := base_field.data_type.find_source(Enum):  # pragma: no branch
+                return enum_from_base
     return None

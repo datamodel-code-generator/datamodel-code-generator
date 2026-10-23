@@ -3,9 +3,9 @@
 The functions read only their arguments and change none of them (a mapping passed in is read, never copied).
 ``field_tag`` and ``variant_tags`` ask read-only views (``FieldTagFacts``, ``VariantTagFacts``) for the facts their
 rows need, in their order, as an Enum lookup or a variant's mapped tags cost more than the decision. The adapters
-read the facts from the live objects: ``parser/base.py`` (``_tag_field_matches``, ``_FieldTagFacts``,
-``_VariantTagFacts``, ``_get_mapping_discriminator_values``, ``Parser._get_enum_discriminator_literal`` and the
-passes that apply tags), ``parser/jsonschema.py`` (``_SchemaTagFacts`` behind
+read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_FieldTagFacts``,
+``_get_mapping_discriminator_values``, ``enum_discriminator_literal``), ``parser/_passes/modules.py``
+(``_VariantTagFacts`` and the passes that apply tags), ``parser/jsonschema.py`` (``_SchemaTagFacts`` behind
 ``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
 ``_get_tagged_union_field_values``, ``_set_tagged_union_discriminator``) and ``model/msgspec.py``
 (``Struct._tag_options``, ``Struct.discriminator_tag``).

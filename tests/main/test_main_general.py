@@ -106,6 +106,7 @@ from tests.main.conftest import (
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
     from datamodel_code_generator.reference import Reference
 
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
@@ -257,9 +258,9 @@ def test_collapse_root_models_recursion_limit_is_a_model_graph_violation(
     The check (`1`, as the test suite sets it) raises; `report:<path>` appends the violation to the file as a JSON line
     and retries, as the check off (`0`) does. When the retry reaches the limit too, its RecursionError is the error.
     """
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.parser.base import modules
 
-    collapse = JsonSchemaParser._Parser__collapse_root_models
+    collapse = modules.collapse_root_models
     reached_limit = False
 
     def collapse_past_the_recursion_limit(parser: JsonSchemaParser, *args: Any, **kwargs: Any) -> None:
@@ -270,7 +271,7 @@ def test_collapse_root_models_recursion_limit_is_a_model_graph_violation(
             raise RecursionError(message)
         collapse(parser, *args, **kwargs)
 
-    monkeypatch.setattr(JsonSchemaParser, "_Parser__collapse_root_models", collapse_past_the_recursion_limit)
+    monkeypatch.setattr(modules, "collapse_root_models", collapse_past_the_recursion_limit)
     report_path = tmp_path / "checks.jsonl"
     check_values = {"check": "1", "report": f"report:{report_path}", "off": "0", "off_every_parse": "0"}
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, check_values[flag])

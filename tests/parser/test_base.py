@@ -40,6 +40,8 @@ from datamodel_code_generator.model.runtime_validation import (
 from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
+    _get_discriminator_field_value,
+    _get_enum_from_base,
     _restore_inherited_field_names_for_unique_aliases,
     exact_import,
     is_ancestor_package_reference,
@@ -60,8 +62,6 @@ from datamodel_code_generator.parser.base import (
     _copy_data_type,
     _copy_resolved_inherited_field,
     _find_field,
-    _get_discriminator_field_value,
-    _get_enum_from_base,
     _get_inherited_type_modifiers,
     _get_pydantic_v2_root_model_type,
     _is_pydantic_v2_data_model_field,
@@ -1887,7 +1887,7 @@ def test_collapse_root_models_preserves_root_model_used_by_other_modules() -> No
         parser.generation_store.register_model(model)
     unused_models: list[DataModel] = []
 
-    parser._Parser__collapse_root_models([local_model], unused_models, Imports(), parser.model_resolver)
+    modules.collapse_root_models(parser, [local_model], unused_models, Imports(), parser.model_resolver)
 
     assert local_type.reference is inner_reference
     assert external_type.reference is root_reference
@@ -1917,7 +1917,7 @@ def test_collapse_root_models_uses_model_module_names_without_scope_map() -> Non
     for model in (root_model, local_model):
         parser.generation_store.register_model(model)
 
-    parser._Parser__collapse_root_models([local_model], [], Imports(), parser.model_resolver)
+    modules.collapse_root_models(parser, [local_model], [], Imports(), parser.model_resolver)
 
     assert local_model.fields[0].data_type.type == "str"
 
