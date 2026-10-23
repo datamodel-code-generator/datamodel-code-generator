@@ -14,7 +14,6 @@ import pytest
 from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
-from datamodel_code_generator.util import get_yaml_backend
 from tests.api_generation.support.target_generation import SOURCE, target_render_report
 from tests.conftest import assert_directory_content, assert_output, freeze_time
 from tests.main.conftest import run_main_and_assert, run_main_with_args
@@ -67,10 +66,7 @@ def test_target_render(
     case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Generate models once, plan target files, and write them like model output: overwrite, never delete."""
-    expected = f"{case}.txt"
-    if case.startswith("input-cycle"):
-        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
-    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / expected)
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
 
 
 @pytest.mark.parametrize(

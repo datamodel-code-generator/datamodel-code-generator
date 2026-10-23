@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator.__main__ import Exit
-from datamodel_code_generator.util import get_yaml_backend
 from tests.main.conftest import run_main_with_args
 
 if TYPE_CHECKING:
@@ -81,11 +80,6 @@ def _input(value: dict[str, Any], server: str | None) -> list[str]:
             raise ValueError(value)
 
 
-def _exit(value: str | dict[str, str]) -> Exit:
-    """Return the exit a run expects; a mapping names it per YAML backend, which may reject an input."""
-    return Exit[value if isinstance(value, str) else value[get_yaml_backend()]]
-
-
 def _printed(stdout: str, stderr: str, root: Path) -> list[str]:
     """Report the files a check names and what a run prints on stderr, leaving out diff bodies.
 
@@ -131,7 +125,7 @@ class _Scenario:
             text = Path("spec", source["text"]).read_text(encoding="utf-8")
             self.monkeypatch.setattr("sys.stdin", io.StringIO(text))
         self.capsys.readouterr()
-        exit_ = run_main_with_args(args, expected_exit=_exit(overrides.get("exit", "OK")))
+        exit_ = run_main_with_args(args, expected_exit=Exit[overrides.get("exit", "OK")])
         captured = self.capsys.readouterr()
         self.lines.extend(_printed(captured.out, captured.err, self.root))
         return exit_

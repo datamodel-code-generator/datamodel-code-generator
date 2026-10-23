@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info:
+  title: Integer bounds beyond int64
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Seed:
+      type: integer
+      minimum: -9223372036854776000
+      maximum: 9223372036854776000

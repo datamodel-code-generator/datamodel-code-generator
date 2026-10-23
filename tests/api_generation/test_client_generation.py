@@ -9,7 +9,6 @@ from typing import Any
 import pytest
 
 from datamodel_code_generator import get_version
-from datamodel_code_generator.util import get_yaml_backend
 from tests.api_generation.support.client_generation import (
     client_api_report,
     client_config_report,
@@ -37,12 +36,8 @@ SOURCE = DATA / "generation_platform" / "client"
     "case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-cycle-reference", "input-aliases"]
 )
 def test_client_input(case: str, tmp_path: Path) -> None:
-    """Accept cyclic input the loader keeps, which nothing traverses, and shared aliases; ryaml refuses cycles."""
-    report = client_input_report(case, tmp_path)
-    expected = f"{case}.txt"
-    if case.startswith("input-cycle"):
-        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
-    assert_output(report, EXPECTED / expected)
+    """Accept cyclic input the loader keeps, which nothing traverses, and shared aliases."""
+    assert_output(client_input_report(case, tmp_path), EXPECTED / f"{case}.txt")
 
 
 @pytest.mark.parametrize(

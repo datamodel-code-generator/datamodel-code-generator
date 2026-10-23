@@ -4,6 +4,9 @@
 	main/yaml.py
 [test_main_yaml_deprecated_bool]
 	main/main_yaml/deprecated_bool.py
+[test_main_yaml_integer_beyond_int64]
+pyyaml	main/main_yaml/integer_beyond_int64[pyyaml].py
+ryaml	main/main_yaml/integer_beyond_int64[ryaml].py	= main/main_yaml/integer_beyond_int64[pyyaml].py
 [test_main_yaml_root_list]
 	main/yaml/root_list.py
 [test_main_yaml_scientific_notation]

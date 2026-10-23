@@ -141,7 +141,11 @@ def _is_parsed_source_cache_enabled() -> bool:
 
 
 def load_yaml(stream: str | TextIO) -> YamlValue:
-    """Load YAML content using ryaml (if available) or PyYAML."""
+    """Load YAML content using ryaml (if available) or PyYAML.
+
+    PyYAML reads a document that ryaml cannot, such as one holding an integer outside 64 bits; when PyYAML cannot
+    read it either, ryaml's error is raised.
+    """
     from datamodel_code_generator.util import get_yaml_backend, reject_unsupported_yaml_tags  # noqa: PLC0415
 
     text = stream if isinstance(stream, str) else stream.read()
@@ -153,8 +157,19 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
         from datamodel_code_generator.util import warn_yaml_deprecated_bool_values  # noqa: PLC0415
 
         warn_yaml_deprecated_bool_values(text)
-        return ryaml.loads(text)
+        try:
+            return ryaml.loads(text)
+        except ryaml.InvalidYamlError:
+            import yaml  # noqa: PLC0415
 
+            with contextlib.suppress(yaml.YAMLError):
+                return _load_pyyaml(text)
+            raise
+    return _load_pyyaml(text)
+
+
+def _load_pyyaml(text: str) -> YamlValue:
+    """Load YAML content with PyYAML."""
     import yaml  # noqa: PLC0415
 
     from datamodel_code_generator.util import SafeLoader  # noqa: PLC0415

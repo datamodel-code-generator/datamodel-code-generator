@@ -496,29 +496,16 @@ def client_ordinary_models(case_name: str, root: Path) -> dict[str, Path]:
     return directories
 
 
-def cyclic_input_failure(error: Exception, *, source: str, pointer: str, location: tuple[int, int]) -> str:
-    """Report only the two handled cyclic-input refusals for the seven retained YAML cases.
+def cyclic_input_failure(error: Exception, *, source: str, pointer: str) -> str:
+    """Report only the handled cyclic-input refusal of the retained cyclic metadata cases.
 
-    A loader may reject the fixed anchor before the target reports the cycle, naming a document other than the
-    root input. Raw recursion errors, other parse errors, model errors, and the removed BindingCaptureError remain
-    failures.
+    Raw recursion errors, parse errors, model errors, and the removed BindingCaptureError remain failures.
     """
     refusal = f"{pointer}: The input document contains a cyclic mapping or sequence"
     if not isinstance(error, InvalidFileFormatError) and (
         str(error) == refusal or re.fullmatch(rf"{re.escape(refusal)} in '.*/{re.escape(source)}'", str(error))
     ):
         return "cyclic YAML input rejected"
-    if isinstance(error, InvalidFileFormatError):
-        original = error.original_error
-        if type(original) is Error:
-            original = original.__cause__
-        if (
-            type(original).__module__ == "_ryaml"
-            and type(original).__name__ == "InvalidYamlError"
-            and str(original) == f"recursion limit exceeded at line {location[0]} column {location[1]}"
-            and (error.source is None or Path(error.source).name == source)
-        ):
-            return "cyclic YAML input rejected"
     raise error
 
 
@@ -540,13 +527,7 @@ def client_cyclic_metadata_report(source: Path, root: Path, model: Mapping[str, 
             )
     except Error as error:
         lines.append(
-            "  "
-            + cyclic_input_failure(
-                error,
-                source=source.name,
-                pointer="/paths/~1items/get/externalDocs/extra",
-                location=(8, 21),
-            )
+            "  " + cyclic_input_failure(error, source=source.name, pointer="/paths/~1items/get/externalDocs/extra")
         )
     else:
         lines.append(f"  render returned {len(returned)} files")
@@ -559,39 +540,10 @@ def client_cyclic_metadata_report(source: Path, root: Path, model: Mapping[str, 
     return "\n".join(lines) + "\n"
 
 
-def _cyclic_reference_models(source: Path, output: Path, backend: str, case: dict[str, Any]) -> list[str]:
-    """Keep ordinary model output or the exact loader refusal of the retained cyclic reference."""
-    lines = [f"model-only {backend}"]
-    try:
-        generate(source, config=model_config(output, backend, case.get("model", {})))
-    except InvalidFileFormatError as error:
-        lines.append(
-            "  InvalidFileFormatError: "
-            + cyclic_input_failure(
-                error, source="input-cycle-reference-model.yaml", pointer="/x-cycle/self", location=(6, 10)
-            )
-        )
-        files = sorted(
-            path.relative_to(output.parent).as_posix()
-            for path in output.parent.rglob("*")
-            if path.is_file() and path.name not in {case["input"], *case.get("references", ())}
-        )
-        lines.append(f"  files {files}")
-    else:
-        lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
-    return lines
-
-
 def client_input_report(case_name: str, root: Path) -> str:
     """Generate an input for each backend without and with an output, reporting diagnostics and the files left."""
     case = _case(case_name)
     lines = [f"# {case_name}"]
-    cycles = {
-        "input-cycle-dict": ("input-cycle-dict.yaml", "/x-cycle/self", (14, 10)),
-        "input-cycle-list": ("input-cycle-list.yaml", "/x-cycle/0", (14, 10)),
-        "input-cycle-mutual": ("input-cycle-mutual.yaml", "/x-outer/nested/child/back~1to~0outer/0", (15, 11)),
-        "input-cycle-reference": ("input-cycle-reference-model.yaml", "/x-cycle/self", (6, 10)),
-    }
     for backend in case["backends"]:
         for name in ("render", "generate"):
             attempt = root / backend.replace(".", "_") / name
@@ -607,14 +559,9 @@ def client_input_report(case_name: str, root: Path) -> str:
                         config=model_config(attempt / "models.py" if name == "generate" else None, backend, options),
                     )
             except Error as error:
-                if case_name in cycles:
-                    filename, pointer, location = cycles[case_name]
-                    failure = cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
-                    lines.extend(("  " + failure, f"  source ../{filename}"))
-                elif not isinstance(error, InvalidFileFormatError):
-                    lines.append(f"  Error: {error}")
-                else:
+                if isinstance(error, InvalidFileFormatError):
                     raise
+                lines.append(f"  Error: {error}")
             else:
                 lines.append("  accepted")
             files = sorted(
@@ -633,12 +580,9 @@ def client_input_report(case_name: str, root: Path) -> str:
             source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
             copy_references(case, attempt)
             output = attempt / "models.py"
-            if case_name == "input-cycle-reference":
-                lines.extend(_cyclic_reference_models(source, output, backend, case))
-            else:
-                generate(source, config=model_config(output, backend, case.get("model", {})))
-                lines.append(f"model-only {backend}")
-                lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
+            generate(source, config=model_config(output, backend, case.get("model", {})))
+            lines.append(f"model-only {backend}")
+            lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
     return "\n".join(lines) + "\n"
 
 
@@ -687,7 +631,6 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
                         error,
                         source="session-cyclic-sequence-library.yaml",
                         pointer="/path-item/get/externalDocs/extra/0",
-                        location=(5, 14),
                     )
                 )
             elif not isinstance(error, InvalidFileFormatError):

@@ -272,6 +272,7 @@ openapi/input_diff/model_name_map_new.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/model_name_map_old.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/new.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/old.yaml	yaml_fast_constructor/parity.txt
+openapi/integer_bounds_beyond_int64.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_conflicting_models.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_external_relative_ref.yaml	yaml_fast_constructor/parity.txt

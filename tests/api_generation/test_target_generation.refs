@@ -20,10 +20,8 @@ first-run	main/generation_platform/targets/first-run.txt
 format-errors	main/generation_platform/targets/format-errors.txt
 include-paths	main/generation_platform/targets/include-paths.txt
 input-aliases	main/generation_platform/targets/input-aliases.txt
-input-cycle-reference	main/generation_platform/targets/input-cycle-reference-ryaml.txt	?
-input-cycle-reference	main/generation_platform/targets/input-cycle-reference.txt	?
-input-cycles	main/generation_platform/targets/input-cycles-ryaml.txt	?
-input-cycles	main/generation_platform/targets/input-cycles.txt	?
+input-cycle-reference	main/generation_platform/targets/input-cycle-reference.txt
+input-cycles	main/generation_platform/targets/input-cycles.txt
 inputs	main/generation_platform/targets/inputs.txt
 layout-embedded	main/generation_platform/targets/layout-embedded.txt
 local-references	main/generation_platform/targets/local-references.txt

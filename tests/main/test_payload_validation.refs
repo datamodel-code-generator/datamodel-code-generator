@@ -1372,6 +1372,7 @@ openapi/include_path_parameters.yaml::components.schemas.Post	payloads/native_nu
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3042,6 +3043,7 @@ openapi/include_path_parameters.yaml::components.schemas.Post	payloads/native_nu
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

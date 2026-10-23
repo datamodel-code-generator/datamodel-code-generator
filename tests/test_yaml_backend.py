@@ -215,24 +215,24 @@ class TestInferInputType:
         assert result == InputFileType.CSV
 
     def test_csv_with_ryaml_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """CSV-looking YAML parse error from ryaml returns CSV type."""
+        """CSV-looking text that neither ryaml nor PyYAML reads returns CSV type."""
         mock_invalid_yaml_error = type("InvalidYamlError", (Exception,), {})
         mock_ryaml = MagicMock()
         mock_ryaml.InvalidYamlError = mock_invalid_yaml_error
         mock_ryaml.loads.side_effect = mock_invalid_yaml_error("parse error")
         monkeypatch.setitem(sys.modules, "ryaml", mock_ryaml)
-        result = infer_input_type("a,b,c\n1,2,3\n")
+        result = infer_input_type("a,b:\n1,2\n")
         assert result == InputFileType.CSV
 
     def test_non_csv_ryaml_error_raises_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Non-CSV YAML parse error from ryaml raises inference error."""
+        """Non-CSV text that neither ryaml nor PyYAML reads raises the inference error with ryaml's parse error."""
         mock_invalid_yaml_error = type("InvalidYamlError", (Exception,), {})
         mock_ryaml = MagicMock()
         mock_ryaml.InvalidYamlError = mock_invalid_yaml_error
         mock_ryaml.loads.side_effect = mock_invalid_yaml_error("parse error")
         monkeypatch.setitem(sys.modules, "ryaml", mock_ryaml)
         with pytest.raises(Error, match=r"YAML parser error: InvalidYamlError: parse error"):
-            infer_input_type(":::invalid yaml:::")
+            infer_input_type("key: [unclosed\n")
 
     def test_openapi_detection(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """OpenAPI input is detected correctly regardless of backend."""
