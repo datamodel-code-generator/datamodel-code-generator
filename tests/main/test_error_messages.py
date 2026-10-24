@@ -1408,7 +1408,9 @@ def _object_with_ref(name: str) -> dict[str, YamlValue]:
         pytest.param(
             {
                 "type": "object",
-                "properties": {"values": {"type": "array", "items": {"allOf": [{"type": "string"}, False]}}},
+                "properties": {
+                    "values": {"type": "array", "items": {"allOf": [{"type": "string"}, False], "minLength": 1}}
+                },
             },
             "#/properties/values/items",
             "allOf",

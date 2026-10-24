@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "m": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "n": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": false
+    },
+    "v": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false
+      }
+    },
+    "u": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false
+    },
+    "p": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "w": {
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "l": {
+      "type": "array",
+      "items": false
+    },
+    "t": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "items": false
+    },
+    "e": {
+      "$ref": "#/$defs/Empty"
+    },
+    "s": {
+      "$ref": "#/$defs/Nothing"
+    },
+    "r": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Empty",
+        "maxProperties": 3
+      }
+    },
+    "i": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "Empty": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Nothing": {
+      "type": "array",
+      "items": false
+    }
+  }
+}

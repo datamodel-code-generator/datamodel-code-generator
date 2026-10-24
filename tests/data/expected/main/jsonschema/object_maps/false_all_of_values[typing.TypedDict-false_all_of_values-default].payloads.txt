@@ -1,0 +1,13 @@
+valid: accepted
+invalid m: accepted
+invalid n: accepted
+invalid v: accepted
+invalid u: accepted
+invalid p: accepted
+invalid w: accepted
+invalid l: accepted
+invalid t: rejected (string_type)
+invalid e: rejected (extra_forbidden)
+invalid s: accepted
+invalid r: accepted
+invalid i: accepted

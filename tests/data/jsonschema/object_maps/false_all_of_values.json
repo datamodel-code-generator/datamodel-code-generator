@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "m": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "n": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": {
+        "description": "No key is allowed.",
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "v": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    },
+    "u": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "p": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "w": {
+      "type": "object",
+      "unevaluatedProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "l": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "t": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "items": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          false
+        ]
+      }
+    },
+    "e": {
+      "$ref": "#/$defs/Empty"
+    },
+    "s": {
+      "$ref": "#/$defs/Nothing"
+    },
+    "r": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Empty",
+        "maxProperties": 3
+      }
+    },
+    "i": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Empty": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "string",
+                "readOnly": true
+              }
+            }
+          },
+          false
+        ]
+      }
+    },
+    "Nothing": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "string",
+                "readOnly": true
+              }
+            }
+          },
+          false
+        ]
+      }
+    }
+  }
+}

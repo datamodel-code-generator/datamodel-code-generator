@@ -1184,6 +1184,9 @@ enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_co
 	main/openapi/additional_properties.py
 [test_main_openapi_extra_template_data_config]
 	main/openapi/extra_template_data_config_pydantic_v2.py
+[test_main_openapi_false_all_of_values]
+false_all_of_values	main/openapi/main_openapi/false_all_of_values[false_all_of_values].py
+false_values	main/openapi/main_openapi/false_all_of_values[false_values].py	= main/openapi/main_openapi/false_all_of_values[false_all_of_values].py
 [test_main_openapi_field_name_collision_with_alias_constraints]
 alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args6-alias_description_property_names.py	main/openapi/field_name_collision/alias_description_property_names.py
 annotated_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args5-annotated_model_type_alias.py	main/openapi/field_name_collision/annotated_model_type_alias.py
