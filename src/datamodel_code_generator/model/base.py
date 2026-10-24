@@ -2436,6 +2436,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the output decodes a union of any value types (msgspec decodes unions of some kinds only)."""
     _READ_BY_PYDANTIC: ClassVar[bool] = False
     """Whether Pydantic builds the output, so that a run states the Pydantic release its constructs need."""
+    _READ_BY_MSGSPEC: ClassVar[bool] = False
+    """Whether msgspec decodes data by the output's annotations, which it resolves at the first decode."""
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = None
     """The construct that the model's own form writes where Pydantic reads it, such as a ``type`` statement."""
     _CONFIG_KEYS_WITHOUT_REQUIREMENT: ClassVar[Callable[[], tuple[str, ...]]] = staticmethod(tuple)

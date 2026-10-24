@@ -1,18 +1,26 @@
-"""Type aliases of components that only reference each other, which Pydantic cannot build when a class uses them.
+"""Type aliases of components that only reference each other, which Pydantic cannot build nor msgspec decode.
 
-Generation stops when a class of output that Pydantic builds reaches such aliases (see ``test_error_messages.py``);
-output where no class reaches them keeps its 0.86.0 bytes, and so does a BaseModel, whose root models Pydantic builds.
+Generation stops when a class of output that Pydantic builds or msgspec decodes reaches such aliases (see
+``test_error_messages.py``); output where no class reaches them keeps its 0.86.0 bytes, and so does a BaseModel, whose
+root models Pydantic builds.
 """
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
+import msgspec
 import pytest
+import yaml
+from jsonschema import Draft202012Validator
+from jsonschema import ValidationError as SchemaValidationError
 
+from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
     OPEN_API_DATA_PATH,
+    _generated_model,
     assert_generated_model_json_validation,
     run_main_and_assert,
 )
@@ -47,6 +55,31 @@ def test_ref_alias_cycle_no_class_uses(output_file: Path, extra_args: list[str])
         expected_attribute_path=("size", "value"),
         expected_attribute_value=1,
     )
+
+
+def test_ref_alias_cycle_no_class_uses_msgspec(output_file: Path) -> None:
+    """Keep the msgspec aliases of a cycle that no class reaches; the class that uses other aliases decodes.
+
+    The schema accepts and rejects the payloads as the generated Struct does.
+    """
+    input_path = OPEN_API_DATA_PATH / "ref_alias_cycle_unused.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "msgspec.Struct"],
+    )
+    valid = {"first": "a", "second": "b", "label": "c", "size": {"value": 1}, "count": 2}
+    invalid = {"size": {"value": "x"}}
+    validator = Draft202012Validator({**yaml.safe_load(input_path.read_text()), "$ref": "#/components/schemas/Holder"})
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "ref_alias_cycle_unused_msgspec", "Holder") as model:
+        parsed = msgspec.json.decode(json.dumps(valid), type=model)
+        with pytest.raises(msgspec.ValidationError, match=r"Expected `int`, got `str` - at `\$\.size\.value`"):
+            msgspec.json.decode(json.dumps(invalid), type=model)
+    assert_output(f"{parsed!r}\n", name="parsed")
 
 
 def test_ref_alias_cycle_base_model(output_file: Path) -> None:

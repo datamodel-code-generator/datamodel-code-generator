@@ -5,3 +5,6 @@
 [test_ref_alias_cycle_no_class_uses]
 base-model-type-alias	main/openapi/ref_alias_cycle/no_class_uses[base-model-type-alias].py
 pydantic-dataclass	main/openapi/ref_alias_cycle/no_class_uses[pydantic-dataclass].py
+[test_ref_alias_cycle_no_class_uses_msgspec]
+	main/openapi/ref_alias_cycle/no_class_uses_msgspec.parsed.txt
+	main/openapi/ref_alias_cycle/no_class_uses_msgspec.py

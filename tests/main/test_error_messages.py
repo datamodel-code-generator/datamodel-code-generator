@@ -1227,6 +1227,24 @@ def test_malformed_input_error_messages(
             id="ref-alias-cycle-through-alias-pydantic-dataclass",
         ),
         pytest.param(
+            "ref_alias_cycle.yaml",
+            "openapi",
+            ["--output-model-type", "msgspec.Struct"],
+            "Holder uses type aliases whose $ref chain loops back without reaching a schema, which msgspec cannot "
+            "decode: A (ref_alias_cycle.yaml#/components/schemas/A) -> B (ref_alias_cycle.yaml#/components/schemas/B) "
+            "-> A (ref_alias_cycle.yaml#/components/schemas/A)",
+            id="ref-alias-cycle-msgspec",
+        ),
+        pytest.param(
+            "ref_alias_cycle_through_alias.json",
+            "jsonschema",
+            ["--output-model-type", "msgspec.Struct"],
+            "Model uses type aliases whose $ref chain loops back without reaching a schema, which msgspec cannot "
+            "decode: A (ref_alias_cycle_through_alias.json#/$defs/A) -> "
+            "B (ref_alias_cycle_through_alias.json#/$defs/B) -> A (ref_alias_cycle_through_alias.json#/$defs/A)",
+            id="ref-alias-cycle-through-alias-msgspec",
+        ),
+        pytest.param(
             "schema_location_request_body.yaml",
             "openapi",
             ["--openapi-scopes", "api"],

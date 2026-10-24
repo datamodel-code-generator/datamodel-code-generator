@@ -890,17 +890,19 @@ def _alias_cycles(models: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...
     return cycles
 
 
-def reject_alias_cycles_without_schema(contexts: Sequence[ModuleContextView]) -> None:
-    """Reject a class of output that Pydantic builds when it reaches type aliases that only name each other.
+def reject_alias_cycles_without_schema(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
+    """Reject a class of output that Pydantic builds or msgspec decodes when it reaches aliases naming each other.
 
     Such aliases stand for ``$ref`` chains that loop back without reaching a schema. Pydantic cannot build a type
-    alias whose whole value is the next alias of such a cycle (``circular-reference-schema``), so a class whose
-    fields reach one, directly or through other aliases, could never be built. Aliases that no class reaches keep
+    alias whose whole value is the next alias of such a cycle (``circular-reference-schema``), and msgspec resolves
+    such an alias to a string naming the next one, which it cannot decode, so a class whose fields reach one,
+    directly or through other aliases, could never be built or decode a value. Aliases that no class reaches keep
     their output.
     """
     models = [model for context in contexts for model in context.models]
     if not (cycles := _alias_cycles(models)):
         return
+    failure = "Pydantic cannot build" if parser.data_model_type._READ_BY_PYDANTIC else "msgspec cannot decode"  # noqa: SLF001
     for model in models:
         if isinstance(model, TypeAliasBase):
             continue
@@ -919,7 +921,7 @@ def reject_alias_cycles_without_schema(contexts: Sequence[ModuleContextView]) ->
                 )
                 msg = (
                     f"{model.class_name} uses type aliases whose $ref chain loops back without reaching a schema, "
-                    f"which Pydantic cannot build: {aliases}"
+                    f"which {failure}: {aliases}"
                 )
                 raise Error(msg)
             seen.add(id(source))
