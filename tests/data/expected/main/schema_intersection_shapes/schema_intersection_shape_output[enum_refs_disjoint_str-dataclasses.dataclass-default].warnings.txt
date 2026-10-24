@@ -1,0 +1,1 @@
+enum_refs_disjoint_str.json#/$defs/Disjoint: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.
