@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Mapped document in a subdirectory whose inline model names a schema of it in its additional properties
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      properties:
+        id:
+          type: integer
+        bag:
+          type: object
+          properties:
+            size:
+              type: integer
+          additionalProperties:
+            $ref: '#/components/schemas/Twig'
+      required:
+        - id

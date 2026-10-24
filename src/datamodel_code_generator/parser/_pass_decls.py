@@ -651,6 +651,27 @@ NAME_INNER_MODELS_IN_RULES = PassDecl(
         After("fix_constructor_field_ordering_early", "the types of rules are no constructor fields"),
     ),
 )
+APPLY_BASE_STAND_IN_IMPORTS = PassDecl(
+    "apply_base_stand_in_imports",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.BASES),
+    writes=_facts(Fact.BASES, RenderFact.MODULE_IMPORTS),
+    summary=(
+        "After every module is processed: replaces the bases that name a stand-in (a schema that a base names and the "
+        "output types by an import) by that import, so that the passes of every module read the stand-in as a "
+        "generated base whatever the module order."
+    ),
+    condition="a base names a stand-in",
+    after=(
+        After(
+            "apply_base_class_type_overrides",
+            "every module reads the stand-ins as the bases of models of other modules before imports replace them",
+        ),
+        After("name_inner_models_in_rules", "both add module imports once every module is processed"),
+    ),
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,

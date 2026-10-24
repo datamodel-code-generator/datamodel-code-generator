@@ -1444,6 +1444,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._model_type_override_imports: dict[str, Import] = {
             key: import_ for key, import_ in self._type_override_imports.items() if "." not in key
         }
+        self._base_stand_in_imports: dict[ModelKey, Import] = {}
+        """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
+        output types by an import (``--external-ref-mapping``) is parsed into a model that is never written, which
+        the passes read as the generated base until that import replaces the base."""
         self._reuse_optimization_context = _ReuseOptimizationContext.from_type_overrides(self.type_overrides)
         self.read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = config.read_only_write_only_model_type
         self.dedupe_request_response_variants: bool = config.dedupe_request_response_variants
@@ -2070,14 +2074,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
     def _apply_override_to_data_type(self, data_type: DataType) -> bool:
-        """Recursively apply model-level overrides to a DataType."""
+        """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first."""
         overridden = False
         if (reference := data_type.reference) and (
-            override_import := self._model_type_override_imports.get(reference.name)
+            override_import := self._base_stand_in_imports.get(model_key_of(reference))
+            or self._model_type_override_imports.get(reference.name)
             or enum_site_override_import(self, reference)
         ):
             self._graph_builder.override_type_import(data_type, override_import)
-            data_type.alias = override_import.import_
+            data_type.alias = override_import.binding_name
             self._graph_builder.detach_data_type_ref(data_type)
             overridden = True
         # Handle nested types (List[CustomType], Optional[CustomType], etc.)

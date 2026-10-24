@@ -76,6 +76,10 @@ COVERAGE_RUNS = (
         "--input tests/data/jsonschema/object_maps/collapsed_rule_reference_root_modules.json --input-file-type "
         "jsonschema --generate-schema-validators --collapse-root-models --collapse-root-models-name-strategy parent"
     ),
+    (
+        "--input tests/data/openapi/external_ref_mapping_all_of/api.yaml --input-file-type openapi "
+        "--external-ref-mapping shared.yaml=mapped.models"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

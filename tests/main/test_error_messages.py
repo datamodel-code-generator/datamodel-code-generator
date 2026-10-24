@@ -1293,13 +1293,13 @@ def test_malformed_input_error_messages(
             id="mapped-ref-without-fragment",
         ),
         pytest.param(
-            "schema_location_unresolved_mapped_base/api.yaml",
+            "schema_location_python_import_expression_base.yaml",
             "openapi",
-            ["--external-ref-mapping", "shrubs.yaml=shared.models"],
+            [],
             "A Parser can not resolve classes: "
-            "[class: api.yaml#/components/schemas/Branch "
-            "references: frozenset({'shrubs.yaml#/components/schemas/Twig'})].",
-            id="unresolved-mapped-base",
+            "[class: schema_location_python_import_expression_base.yaml#/components/schemas/Branch "
+            "references: frozenset({'schema_location_python_import_expression_base.yaml#/components/schemas/Twig'})].",
+            id="python-import-expression-base",
         ),
     ],
 )

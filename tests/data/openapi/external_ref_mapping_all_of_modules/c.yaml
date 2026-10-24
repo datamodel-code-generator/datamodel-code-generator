@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A model that inherits a mapped schema in a module of an import cycle
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Arbor:
+      allOf:
+        - $ref: '../external_ref_mapping_all_of/shared.yaml#/components/schemas/Leafy'
+        - type: object
+          properties:
+            hedge:
+              $ref: 'd.yaml#/components/schemas/Hedge'
+          required:
+            - shape

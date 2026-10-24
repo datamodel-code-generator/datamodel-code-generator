@@ -1,0 +1,4 @@
+Branch {"id": 1, "bush": {"id": 2, "height": 3}}: accepted
+Branch {"bush": {"id": 2}}: rejected
+Arbor {"shape": {}, "hedge": {"leafy": {"local": "a"}}}: accepted
+Arbor {"twigs": []}: rejected

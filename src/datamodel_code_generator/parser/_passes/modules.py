@@ -5,8 +5,9 @@ Each pass is a function of the parser and the models or the state of the module,
 models of other modules, reuse, collapse and discriminator tags through the narrower ``ImportFromHost``, ``ReuseHost``,
 ``CollapseHost`` and ``DiscriminatorHost``) and the state through ``ModuleStateView``, which ``Parser`` and its module
 state satisfy structurally. ``process_each_module`` runs the passes of each module through the
-``_process_single_module`` hook (``ModuleLoopHost``); ``write_rule_aliases_as_classes`` (``RuleAliasHost``) and
-``name_inner_models_in_rules`` run once every module is processed, on the run through ``ModulesRun``.
+``_process_single_module`` hook (``ModuleLoopHost``); ``apply_base_stand_in_imports``,
+``write_rule_aliases_as_classes`` (``RuleAliasHost``) and ``name_inner_models_in_rules`` run once every module is
+processed, on the run through ``ModulesRun``.
 """
 
 from __future__ import annotations
@@ -72,6 +73,7 @@ from datamodel_code_generator.parser._model_shapes import REUSE_MODEL, skips_roo
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    BaseStandInHost,
     ConstructorInfoHost,
     DiscriminatorValue,
     RecursionFactsHost,
@@ -162,6 +164,7 @@ __all__ = [
     "ReuseHost",
     "RuleAliasHost",
     "apply_base_class_type_overrides",
+    "apply_base_stand_in_imports",
     "apply_discriminator_type",
     "apply_field_type_overrides",
     "change_field_name",
@@ -532,8 +535,8 @@ class DiscriminatorHost(Protocol):
         """Return the serialization alias configured for a field, if any."""
 
 
-class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
-    """The option, the import ledger and the replaced roots that importing the models of other modules reads."""
+class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, Protocol):
+    """The option, the import ledger, the replaced roots and the stand-ins that importing other modules reads."""
 
 
 class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
@@ -2833,16 +2836,21 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
 
 
 def remove_overridden_models(parser: ModulesHost, models: list[DataModel]) -> list[DataModel]:
-    """Remove models that are being overridden by custom types (model-level only).
+    """Remove models that are being overridden by custom types (model-level only), and the stand-ins.
 
     Only model-level overrides (keys without dots) cause model removal.
     Scoped overrides (ClassName.field) only affect specific fields.
     """
-    if not (overrides := parser._model_type_override_imports):  # noqa: SLF001
+    overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports  # noqa: SLF001
+    if not (overrides or stand_ins):
         return models
     kept: list[DataModel] = []
     for model in models:
-        if model.class_name in overrides or enum_site_override_import(parser, model.reference) is not None:
+        if (
+            model.class_name in overrides
+            or enum_site_override_import(parser, model.reference) is not None
+            or model_key_of(model.reference) in stand_ins
+        ):
             parser._graph_builder.retire_model(model)  # noqa: SLF001
         else:
             kept.append(model)
@@ -3015,14 +3023,39 @@ def apply_base_class_type_overrides(parser: ModulesHost, models: list[DataModel]
     """Replace base classes that model-level overrides name with custom import types, before constructor ordering.
 
     Each replaced base keeps the generated model it referenced as its stand-in: constructor ordering, after the
-    decision phase, reads it as the only description of the class that replaces it.
+    decision phase, reads it as the only description of the class that replaces it. A base that names a stand-in of
+    the parse is left to ``apply_base_stand_in_imports``.
     """
     if not parser._model_type_override_imports:  # noqa: SLF001
         return
+    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    _replace_bases_by_imports(
+        parser, models, lambda reference: reference is None or model_key_of(reference) not in stand_ins
+    )
+
+
+def apply_base_stand_in_imports(parser: ModulesHost, run: ModulesRun) -> None:
+    """Replace the bases that name a stand-in by the import of the class it stands for, once every module is processed.
+
+    Until then the passes of every module, whatever the order of the modules, read the stand-in as a generated base
+    when they walk the bases of a model of another module; constructor ordering reads it afterwards as model-level
+    overrides keep it.
+    """
+    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    for ctx in run.contexts:
+        _replace_bases_by_imports(
+            parser, ctx.models, lambda reference: reference is not None and model_key_of(reference) in stand_ins
+        )
+
+
+def _replace_bases_by_imports(
+    parser: ModulesHost, models: list[DataModel], replaces: Callable[[Reference | None], bool]
+) -> None:
+    """Replace the bases of the models whose reference ``replaces`` takes by their imports, keeping their models."""
     for model in models:
         for base_class in model.base_classes:
             reference = base_class.reference
-            if parser._apply_override_to_data_type(base_class):  # noqa: SLF001
+            if replaces(reference) and parser._apply_override_to_data_type(base_class):  # noqa: SLF001
                 parser._base_stand_ins[id(base_class)] = reference  # noqa: SLF001
                 for import_ in base_class.all_imports:
                     parser._graph_builder.add_model_import(model, import_)  # noqa: SLF001
@@ -3075,8 +3108,13 @@ def change_from_import(  # noqa: PLR0913
     internal_modules: set[tuple[str, ...]] | None = None,
     model_path_to_module_name: dict[str, str] | None = None,
 ) -> None:
-    """Import into a module the models of other modules that its models reference, and name them by their imports."""
+    """Import into a module the models of other modules that its models reference, and name them by their imports.
+
+    A stand-in is no member of its module: it takes no name there, and neither it nor a base that names it imports.
+    """
     models = module_members(parser, models)
+    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
+        models = [model for model in models if model_key_of(model.reference) not in stand_ins]
     members = keyed_models(models, "module members")
     internal_modules = internal_modules or set()
     model_path_to_module_name = model_path_to_module_name or {}
@@ -3095,7 +3133,7 @@ def change_from_import(  # noqa: PLR0913
             match data_type.reference:
                 case None:
                     continue
-                case reference if members.key_of(reference) in members.models:
+                case reference if members.key_of(reference) in members.models or model_key_of(reference) in stand_ins:
                     continue
                 case reference:
                     pass

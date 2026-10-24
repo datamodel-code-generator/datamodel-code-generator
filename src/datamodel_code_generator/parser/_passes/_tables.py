@@ -713,6 +713,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 late(modules.name_inner_models_in_rules),
                 when=lambda self, _: self.generate_schema_validators and bool(self._replaced_root_models),
             ),
+            PassSpec(
+                decls.APPLY_BASE_STAND_IN_IMPORTS,
+                late(modules.apply_base_stand_in_imports),
+                when=lambda self, _: bool(self._base_stand_in_imports),
+            ),
         ),
     ),
     Segment(

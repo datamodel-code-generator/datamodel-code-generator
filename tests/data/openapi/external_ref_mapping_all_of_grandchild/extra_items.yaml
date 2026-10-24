@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: A model that inherits a schema of a mapped document in a subdirectory and requires its inline model
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Branch:
+      allOf:
+        - $ref: 'sub/extra_items.yaml#/components/schemas/Twig'
+        - required:
+            - bag

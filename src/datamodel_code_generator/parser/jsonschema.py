@@ -74,6 +74,7 @@ from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
     is_portable_pattern,
@@ -91,7 +92,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._url_redaction import redact_path, redact_reference, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
-from datamodel_code_generator.imports import IMPORT_ANY, Import
+from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
@@ -3991,9 +3992,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Collect Request/Response fields once when separate models are needed.
 
         The model's own fields, the types it writes beside them and the schema facts of its allOf bases decide;
-        inherited fields are collected only for a model that may split.
+        inherited fields are collected only for a model that may split. A stand-in never splits.
         """
-        if self.read_only_write_only_model_type is None:
+        if self.read_only_write_only_model_type is None or self._is_base_stand_in(reference):
             return None
         if not self.dedupe_request_response_variants:
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
@@ -12472,6 +12473,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
         splits = (
             self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
+            and not self._is_base_stand_in(reference)
             and self._fields_reference_rw_model_variant(fields, "Request")
         )
         if self.dedupe_request_response_variants:
@@ -16636,9 +16638,93 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 path=_named_path(location_of(owner.reference), [owner.reference.path]),
             )
 
+    def _is_base_stand_in(self, reference: Reference) -> bool:
+        """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
+        return model_key_of(reference) in self._base_stand_in_imports
+
+    def _base_import(self, reference: Reference) -> Import | None:
+        """Return the import of the class that types a schema a base names, as it types a field that names it.
+
+        A schema of a document that ``--external-ref-mapping`` maps is the class the mapping imports.
+        """
+        if (mapping := self._mapped_references.get(reference.path)) is None:
+            return None
+        return self._external_ref_mapping_import(*mapping)
+
+    def _base_stand_in_targets(self) -> dict[str, tuple[Reference, Import, Path | None]]:
+        """Return the schemas models name as bases that got no model and that the output types by an import.
+
+        Each comes with that import and the source of the first model that names it, whose module the stand-in takes.
+        """
+        modelled = {model.reference.path for model in self.results}
+        targets: dict[str, tuple[Reference, Import, Path | None]] = {}
+        for model in self.results:
+            for base_class in model.base_classes:
+                if (
+                    (reference := base_class.reference) is None
+                    or reference.path in modelled
+                    or reference.path in targets
+                    or self._is_base_stand_in(reference)
+                    or (import_ := self._base_import(reference)) is None
+                ):
+                    continue
+                targets[reference.path] = reference, import_, model.file_path
+        return targets
+
+    def _parse_base_stand_ins(self) -> None:
+        """Parse each schema a base names and the output types by an import into a stand-in (D1).
+
+        A stand-in is the model of that schema, parsed in its own document under the reference the base names, in the
+        module of the first model that names it; it is never written, and once every module is processed the import
+        replaces the bases that name it, so that everything before reads it as a generated base in every module. Only
+        that schema is a stand-in: the other models its parse adds are written. A stand-in may name further such
+        bases, and definitions parsed as their ``$ref`` alone, so the parse repeats until no new stand-in appears.
+        Then the import types every other user of a stand-in, one that a reference its document does not map names,
+        as it types a mapped ``$ref``. The parse adds nothing to the imports every module shares: a stand-in is never
+        written, and the models the parse writes import what their types name.
+        """
+        if not (targets := self._base_stand_in_targets()):
+            return
+        stand_ins: list[tuple[Reference, Import]] = []
+        shared_imports, self.imports = self.imports, Imports(self.use_exact_imports)
+        try:
+            while targets:
+                for reference, import_, file_path in targets.values():
+                    self._base_stand_in_imports[model_key_of(reference)] = import_
+                    stand_ins.append((reference, import_))
+                    self._parse_base_stand_in(reference, file_path)
+                self._type_references_to_definitions_without_model()
+                targets = self._base_stand_in_targets()
+            for reference, import_ in stand_ins:
+                self._type_users_by_import(reference, import_)
+                for model in self.results:
+                    if reference.path in (classes := model.additional_properties_reference_classes):
+                        self._type_additional_properties_by_import(
+                            model, reference, import_, {path for path in classes if path != reference.path}
+                        )
+        finally:
+            self.imports = shared_imports
+        self._reuse_optimization_context = replace(
+            self._reuse_optimization_context, base_stand_in_keys=frozenset(self._base_stand_in_imports)
+        )
+
+    def _parse_base_stand_in(self, reference: Reference, file_path: Path | None) -> None:
+        """Parse the schema at the key of ``reference`` into its model, in its document and in the module of a model."""
+        source_path = self.current_source_path
+        if source_path is not None:
+            self.current_source_path = file_path
+        try:
+            with self._ref_document_context(reference.path.partition("#")[0]) as (_, raw):
+                path_parts = list(self.model_resolver.current_root)
+                self.parse_json_pointer(raw, reference.path, path_parts)
+                self._parse_reserved_targets(raw, path_parts)
+        finally:
+            self.current_source_path = source_path
+
     def _end_schema_parsing(self) -> None:
-        """Settle definition references, reject mapped references that name no schema, then run the late hook."""
+        """Settle definition references, parse stand-ins, reject mapped references that name no schema, run the hook."""
         self._type_references_to_definitions_without_model()
+        self._parse_base_stand_ins()
         self._reject_mapped_references_without_schema()
         self._generate_forced_base_models()
 
@@ -17192,22 +17278,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 validated_definition_objects.get(tuple(path)),
                             )
 
-                taken: set[str] = set()
-                while (reserved := self.reserved_refs.get(tuple(path_parts))) and reserved != taken:
-                    taken = set(reserved)
-                    for target in self._reserved_targets(path_parts, raw, self._reserved_ref_settled):
-                        reserved_path = target["key"]
-                        reference = self.model_resolver.references[reserved_path]
-                        object_paths, reference_paths = _split_json_pointer(raw, reserved_path.split("#", 1)[-1])
-                        if not object_paths:
-                            self.parse_obj(
-                                reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path]
-                            )
-                            continue
-                        models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
-                        model_name = reference_paths[-1]
-                        path = [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
-                        self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
+                self._parse_reserved_targets(raw, path_parts)
+
+    def _parse_reserved_targets(self, raw: dict[str, Any], path_parts: list[str]) -> None:
+        """Parse the targets the document at ``path_parts`` reserves from its prepared tree, while it reserves more."""
+        taken: set[str] = set()
+        while (reserved := self.reserved_refs.get(tuple(path_parts))) and reserved != taken:
+            taken = set(reserved)
+            for target in self._reserved_targets(path_parts, raw, self._reserved_ref_settled):
+                reserved_path = target["key"]
+                reference = self.model_resolver.references[reserved_path]
+                object_paths, reference_paths = _split_json_pointer(raw, reserved_path.split("#", 1)[-1])
+                if not object_paths:
+                    self.parse_obj(reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path])
+                    continue
+                models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
+                model_name = reference_paths[-1]
+                path = [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
+                self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
 
 
 # Snapshot the default hooks after JsonSchemaParser is fully defined. The local

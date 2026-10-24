@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: A model that inherits the same mapped schema in another module
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Bush:
+      allOf:
+        - $ref: '../external_ref_mapping_all_of/shared.yaml#/components/schemas/Twig'
+        - type: object
+          properties:
+            height:
+              type: integer

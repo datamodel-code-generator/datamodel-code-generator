@@ -29,6 +29,7 @@ from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE, skips_root_model
 from datamodel_code_generator.parser._passes._shared import (
+    BaseStandInHost,
     _get_mapping_discriminator_values,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
@@ -81,7 +82,7 @@ __all__ = [
 ]
 
 
-class StructureHost(Protocol):
+class StructureHost(BaseStandInHost, Protocol):
     """The options, run state and hooks of the parser that the structure passes read and write."""
 
     _recursion_facts: RecursionFacts
@@ -366,7 +367,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
     models_to_remove: set[DataModel] = set()
     reuse_constraint = (
         parser._reuse_optimization_context.allows_model  # noqa: SLF001
-        if parser._reuse_optimization_context.type_override_model_names  # noqa: SLF001
+        if parser._reuse_optimization_context.constrains  # noqa: SLF001
         else None
     )
     for model in parser._site_models_last(models):  # noqa: SLF001
@@ -485,14 +486,27 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
 
     Renames change the rendered type hints of referencing models, so cached dedup keys of the
     module are dropped whenever a model is renamed. Models of typed map values come last, so the other
-    models keep the names they had before values were typed.
+    models keep the names they had before values were typed. A stand-in, which is never written, neither takes nor
+    keeps a name from the others, and the class it stands for binds its name as an import of each model that
+    inherits it.
     """
-    models = parser._typed_map_values_last(models)  # noqa: SLF001
+    models = all_models = parser._typed_map_values_last(models)  # noqa: SLF001
     for model in models:
         model._write_pre_render_nullability()  # noqa: SLF001
         remember_nested_factory_order_before_nullability(model)
+    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
+        models = [model for model in models if model_key_of(model.reference) not in stand_ins]
+    exclude_names = {i.alias or i.import_ for m in models for i in m.imports}
+    if stand_ins:
+        exclude_names.update(
+            import_.alias or import_.import_
+            for model in models
+            for base_class in model.base_classes
+            if base_class.reference is not None
+            and (import_ := stand_ins.get(model_key_of(base_class.reference))) is not None
+        )
     scoped_model_resolver = ModelResolver(
-        exclude_names={i.alias or i.import_ for m in models for i in m.imports},
+        exclude_names=exclude_names,
         duplicate_name_suffix="Model",
         custom_class_name_generator=(lambda name: name) if parser.custom_class_name_generator else None,
         target_python_version=parser.target_python_version,
@@ -525,7 +539,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
 
     if not renamed:
         return
-    for model in models:
+    for model in all_models:
         model.invalidate_render_caches()
 
 
@@ -769,30 +783,31 @@ def rename_and_relocate_scc_models(
 ) -> defaultdict[tuple[str, ...], list[tuple[str, str]]]:
     """Rename duplicate classes and relocate models to internal module.
 
-    Class names follow ``_merged_class_names``; forwarders re-export each model under its original name.
+    Class names follow ``_merged_class_names``; forwarders re-export each model under its original name. A stand-in
+    moves with its module, but takes no part in the names and is re-exported nowhere.
 
     Returns:
         Mapping from original module to list of (original_name, new_name) tuples.
     """
     internal_module_str = ".".join(internal_module)
     module_class_mappings: defaultdict[tuple[str, ...], list[tuple[str, str]]] = defaultdict(list)
-    original_class_names = [model.class_name for model in all_scc_models]
-    new_class_names = _merged_class_names(original_class_names)
+    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    named_models = [model for model in all_scc_models if model_key_of(model.reference) not in stand_ins]
+    original_class_names = [model.class_name for model in named_models]
+    new_class_names = dict(zip(map(id, named_models), _merged_class_names(original_class_names), strict=True))
 
     with parser._graph_builder.defer_refresh():  # noqa: SLF001
-        for model, original_class_name, new_class_name in zip(
-            all_scc_models, original_class_names, new_class_names, strict=True
-        ):
-            original_module = model_to_original_module[id(model)]
-            new_path = f"{internal_module_str}.{new_class_name}"
+        for model in all_scc_models:
+            original_class_name = model.class_name
+            new_class_name = new_class_names.get(id(model), original_class_name)
             parser._graph_builder.rename_model(  # noqa: SLF001
                 model,
                 reference_name=new_class_name,
-                new_path=new_path,
+                new_path=f"{internal_module_str}.{new_class_name}",
                 new_file_path=internal_path,
             )
-
-            module_class_mappings[original_module].append((original_class_name, new_class_name))
+            if id(model) in new_class_names:
+                module_class_mappings[model_to_original_module[id(model)]].append((original_class_name, new_class_name))
 
     return module_class_mappings
 
@@ -801,7 +816,15 @@ def module_dependency_cycles(
     parser: StructureHost,
     module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
 ) -> list[set[tuple[str, ...]]]:
-    """Find the modules that import each other, from the snapshot of the references between their models."""
+    """Find the modules that import each other, from the snapshot of the references between their models.
+
+    A stand-in is no member of its module: its module imports nothing for it, and nothing imports it.
+    """
+    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
+        module_models_list = [
+            (module, [model for model in models if model_key_of(model.reference) not in stand_ins])
+            for module, models in module_models_list
+        ]
     snapshot = GraphSnapshot.MODULE_DEPENDENCIES
     keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
     module_of: dict[ModelKey, tuple[str, ...]] = {}

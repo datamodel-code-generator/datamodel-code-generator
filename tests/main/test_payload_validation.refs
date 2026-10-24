@@ -1367,6 +1367,13 @@ openapi/external_ref_mapping/api_local_ref.yaml::components.schemas.User	payload
 openapi/external_ref_mapping/common.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping/common.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping/common_normalized.yaml::components.schemas.user-name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/api.yaml::components.schemas.Pod	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/api.yaml::components.schemas.Twig	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Bud	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Field	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Update	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3045,6 +3052,13 @@ openapi/external_ref_mapping/api_local_ref.yaml::components.schemas.User	payload
 openapi/external_ref_mapping/common.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping/common.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping/common_normalized.yaml::components.schemas.user-name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/api.yaml::components.schemas.Pod	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/api.yaml::components.schemas.Twig	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Bud	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Field	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Update	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -940,6 +940,8 @@ class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
 
     type_override_model_names: frozenset[str] = frozenset()
+    base_stand_in_keys: frozenset[ModelKey] = frozenset()
+    """The model keys of the stand-ins, which are never written and take part in no reuse."""
 
     @classmethod
     def from_type_overrides(cls, type_overrides: Mapping[str, str]) -> _ReuseOptimizationContext:
@@ -949,13 +951,21 @@ class _ReuseOptimizationContext:
 
         return cls(frozenset(override_key.partition(".")[0] for override_key in type_overrides))
 
+    @property
+    def constrains(self) -> bool:
+        """Return whether any model is kept out of reuse."""
+        return bool(self.type_override_model_names or self.base_stand_in_keys)
+
     def allows_model(self, model: DataModel) -> bool:
         """Return whether reuse can preserve all pending parser semantics."""
-        return model.class_name not in self.type_override_model_names
+        return (
+            model.class_name not in self.type_override_model_names
+            and model_key_of(model.reference) not in self.base_stand_in_keys
+        )
 
     def eligible_models(self, models: Iterable[DataModel]) -> Iterable[DataModel]:
         """Return models eligible for reuse without allocating on the fast path."""
-        if not self.type_override_model_names:
+        if not self.constrains:
             return models
         return (model for model in models if self.allows_model(model))
 
@@ -1483,8 +1493,16 @@ def record_renamed_type(host: RenamedTypesHost, model: DataModel, renamed_type: 
     host._renamed_type_paths.setdefault(model.path, []).append(renamed_type)  # noqa: SLF001
 
 
-class TypeOverrideHost(Protocol):
-    """The model-level type overrides, which replace the models they name."""
+class BaseStandInHost(Protocol):
+    """The stand-ins: models of schemas that bases name and the output types by an import, which are never written."""
+
+    @property
+    def _base_stand_in_imports(self) -> dict[ModelKey, Import]:
+        """The imports of the classes the stand-in models stand for, by model key."""
+
+
+class TypeOverrideHost(BaseStandInHost, Protocol):
+    """The model-level type overrides, which replace the models they name, and the stand-ins, which imports replace."""
 
     @property
     def _model_type_override_imports(self) -> dict[str, Import]:

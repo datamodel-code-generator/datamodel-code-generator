@@ -1,0 +1,23 @@
+Branch {"id": 1, "twigs": [{"id": 2}], "name": "a"}: accepted
+Branch {"name": "a"}: rejected
+Bush {"id": 1, "height": 2}: accepted
+Bush {"id": 1, "twigs": [{"id": "two"}]}: rejected
+Tree {"crown": {"id": 1, "leaves": 2}}: accepted
+Tree {"crown": {"leaves": 2}}: rejected
+Grove {"twigs": []}: accepted
+Grove {}: rejected
+Grove {"twigs": 5}: rejected
+Thicket {"twigs": []}: accepted
+Thicket {}: rejected
+Thicket {"twigs": 5}: rejected
+Hedge {"twigs": [], "soil": "clay"}: accepted
+Hedge {"soil": "clay"}: rejected
+Hedge {"twigs": 5}: rejected
+Sprout {"name": "a"}: accepted
+Sprout {}: rejected
+Sprout {"name": "a", "twigs": 5}: rejected
+Arbor {"shape": {"round": true}, "color": "green"}: accepted
+Arbor {"shape": {}}: rejected
+Arbor {"shape": {}, "color": "red"}: rejected
+Blossom {"size": 1, "pod": {"size": 2}}: accepted
+Blossom {"size": "one"}: rejected

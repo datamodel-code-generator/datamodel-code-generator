@@ -1,0 +1,14 @@
+aaa:
+Grand {"id": 1, "kids": [{"id": 2}], "leaf": {"color": "green"}, "name": "a"}: accepted
+Grand {"id": 1}: rejected
+Grand {"id": 1, "kids": []}: rejected
+Grand {"id": 1, "leaf": {}}: rejected
+Grand {"kids": [], "leaf": {}}: rejected
+Grand {"id": 1, "kids": [{"kids": []}], "leaf": {}}: rejected
+zzz:
+Grand {"id": 1, "kids": [{"id": 2}], "leaf": {"color": "green"}, "name": "a"}: accepted
+Grand {"id": 1}: rejected
+Grand {"id": 1, "kids": []}: rejected
+Grand {"id": 1, "leaf": {}}: rejected
+Grand {"kids": [], "leaf": {}}: rejected
+Grand {"id": 1, "kids": [{"kids": []}], "leaf": {}}: rejected
