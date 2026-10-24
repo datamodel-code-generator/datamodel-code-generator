@@ -1,0 +1,2 @@
+valid: accepted
+invalid a: rejected (unexpected_keyword_argument)

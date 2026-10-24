@@ -903,7 +903,7 @@ class OpenAPIParser(JsonSchemaParser):
         path: list[str],
     ) -> DataType:
         """Parse a JSON schema object into a data type (``_OPENAPI_OPERATION_TABLE``)."""
-        site = SchemaSite(name, self._array_all_of_site_schema(obj), path)
+        site = SchemaSite(name, self._read_false_all_of_values(self._array_all_of_site_schema(obj)), path)
         choice = self._OPENAPI_OPERATION_TABLE.choose(self, site)
         data_type = choice.build(self, choice.site)
         self.parse_ref(site.obj, path)
@@ -1089,6 +1089,7 @@ class OpenAPIParser(JsonSchemaParser):
                 param_schema = self._array_all_of_site_schema(parameter.schema_)
                 if param_schema.has_ref_with_schema_keywords and not param_schema.is_ref_with_nullable_only:
                     param_schema = self._merge_ref_with_schema(param_schema)
+                param_schema = self._read_false_all_of_values(param_schema)
                 field_schemas.append((param_schema, [*path, name, parameter_name]))
                 effective_required = parameter.required
                 effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
@@ -1126,10 +1127,14 @@ class OpenAPIParser(JsonSchemaParser):
                         [*path, name, parameter_name, media_type],
                         from_item_schema=schema_result.from_item_schema,
                     )
-                    object_schema = self._array_all_of_site_schema(
-                        _locate(self._validate_schema_object(schema_result.schema, schema_path), schema_result.location)
-                        if isinstance(schema_result.schema, bool)
-                        else self.resolve_object(schema_result.schema, JsonSchemaObject)
+                    object_schema = self._read_false_all_of_values(
+                        self._array_all_of_site_schema(
+                            _locate(
+                                self._validate_schema_object(schema_result.schema, schema_path), schema_result.location
+                            )
+                            if isinstance(schema_result.schema, bool)
+                            else self.resolve_object(schema_result.schema, JsonSchemaObject)
+                        )
                     )
                     data_types.append(
                         self.parse_item(

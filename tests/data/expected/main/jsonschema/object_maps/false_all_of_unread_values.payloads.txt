@@ -1,0 +1,4 @@
+valid: accepted
+invalid o: accepted
+invalid q: rejected (value_error)
+invalid z: rejected (too_long)

@@ -277,6 +277,8 @@ openapi/external_relative_ref/model_a/types.openapi.yaml	yaml_fast_constructor/p
 openapi/external_relative_ref/model_b/module.openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/extracted_branch_default.yaml	yaml_fast_constructor/parity.txt
 openapi/extracted_branch_nullable_default.yaml	yaml_fast_constructor/parity.txt
+openapi/false_all_of_values.yaml	yaml_fast_constructor/parity.txt
+openapi/false_values.yaml	yaml_fast_constructor/parity.txt
 openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt

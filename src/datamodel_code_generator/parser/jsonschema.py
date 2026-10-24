@@ -556,12 +556,19 @@ def _dump_without_keywords(schema: JsonSchemaObject, keywords: Container[str]) -
 
 
 def _is_false_all_of(schema: object) -> bool:
-    """Return whether a schema is ``false`` written as an allOf that holds false, beside annotations and ``x-`` keys."""
-    if not isinstance(schema, JsonSchemaObject) or not any(item is False for item in schema.allOf):
-        return False
-    remaining = _dump_without_keywords(schema, _FALSE_ALL_OF_KEYWORDS)
-    extras = remaining.pop(JsonSchemaObject.__extra_key__, {})
-    return not any(not key.startswith("x-") for key in (*remaining, *extras))
+    """Return whether a schema is ``false`` written as an allOf that holds false, beside annotations and ``x-`` keys.
+
+    The schema is a schema object or, before validation, the dict it is validated from.
+    """
+    match schema:
+        case JsonSchemaObject() if any(item is False for item in schema.allOf):
+            remaining = _dump_without_keywords(schema, _FALSE_ALL_OF_KEYWORDS)
+            extras = remaining.pop(JsonSchemaObject.__extra_key__, {})
+            return not any(not key.startswith("x-") for key in (*remaining, *extras))
+        case {"allOf": list() as all_of} if any(item is False for item in all_of):
+            plain_keys = {key for key in schema if not (isinstance(key, str) and key.startswith("x-"))}
+            return plain_keys <= _FALSE_ALL_OF_KEYWORDS
+    return False
 
 
 def _validation_keywords(
@@ -1904,12 +1911,14 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         objects are validated with the same context. The schema object of the document decides, as written: an
         applicator that evaluates no property leaves the keys ``unevaluatedProperties`` sees those of
         ``additionalProperties``. A dump or a merge the parser validates again keeps that decision, also where it
-        drops the applicators. Defined last, it runs before the other validators and sees the document object.
+        drops the applicators. Defined last, it runs before the other validators and sees the document object. A
+        value that is ``false`` written as an allOf (``_is_false_all_of``), of a schema object without properties, is
+        read as ``false``, which stays where it is.
         """
         if (
             not (info.context or {}).get(READ_UNEVALUATED_PROPERTIES_CONTEXT)
             or not _is_document_object(values)
-            or not isinstance(values.get("unevaluatedProperties"), dict)
+            or not isinstance(unevaluated_properties := values.get("unevaluatedProperties"), dict)
             or "additionalProperties" in values
             or not all(
                 _applicator_evaluates_no_property(keyword, values[keyword])
@@ -1917,7 +1926,9 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
             )
         ):
             return values
-        return {**values, "additionalProperties": values["unevaluatedProperties"]}
+        if not values.get("properties") and _is_false_all_of(unevaluated_properties):
+            return {**values, "unevaluatedProperties": False}
+        return {**values, "additionalProperties": unevaluated_properties}
 
     @property
     def python_field_overrides(self) -> Mapping[str, str]:
@@ -4480,7 +4491,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             schema, detect_inline_variant, merged_into_map = stack.pop()
             if merged_into_map is None:
                 is_key_model = schema is root_schema
-                schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
+                schema, model_schema = map(
+                    self._read_false_all_of_values, self._merged_ref_model_schemas(schema, resolved_ref)
+                )
                 builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
                 types_map = not (model_schema.properties or model_schema.allOf)
                 extras = self._rw_typed_additional_properties(schema, model_schema, resolved_ref, builds_map=builds_map)
@@ -10513,6 +10526,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for value in target.enum
         )
 
+    def _read_false_all_of_values(self, obj: JsonSchemaObject) -> JsonSchemaObject:
+        """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf.
+
+        That schema is the additionalProperties of a map that types values with it: an object without properties or
+        patternProperties, the keys no pattern matches under --use-single-dict-for-object-maps (``_other_keys_schema``)
+        where no patternProperties validator owns them, and a type array of object under
+        --use-typed-nullable-map-values (``_typed_nullable_map_value_schema``). It is also the items of an array,
+        unless the array is a tuple of no items under --use-tuple-for-fixed-length-arrays
+        (``_get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
+        (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
+        array no item past its prefixItems. Where no value is typed with it, it keeps its output.
+        """
+        update: dict[str, bool] = {}
+        if (
+            _is_false_all_of(obj.additionalProperties)
+            and not obj.properties
+            and (
+                not self._has_pattern_properties_validator(obj) and self._other_keys_schema(obj) is not None
+                if obj.patternProperties
+                else obj.is_object or self._typed_nullable_map_value_schema(obj) is not None
+            )
+        ):
+            update["additionalProperties"] = False
+        if _is_false_all_of(obj.items) and self._get_fixed_length_homogeneous_tuple_length(obj) != 0:
+            update["items"] = False
+        return obj.model_copy(update=update) if update else obj
+
     def _array_all_of_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Return an array site with ``allOf`` as the intersection of its own keywords and its members, else ``obj``.
 
@@ -13057,6 +13097,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             field = self._array_all_of_site_schema(field)  # noqa: PLW2901
             if field.has_ref_with_schema_keywords and not field.is_ref_with_nullable_only:
                 field = self._merge_ref_with_schema(field)  # noqa: PLW2901
+            field = self._read_false_all_of_values(field)  # noqa: PLW2901
 
             if original_field_name == variant_key:
                 self.model_resolver.name_past_parent([*path, field_name])
@@ -13214,7 +13255,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constrained_name: str | None = None,
     ) -> DataType:
         """Parse a mapping value schema while preserving supported Annotated constraints."""
-        additional_properties = self._array_all_of_site_schema(additional_properties)
+        additional_properties = self._read_false_all_of_values(self._array_all_of_site_schema(additional_properties))
         if not self._output_model_context.supports_annotated_constraints:
             return self.parse_item(
                 name,
@@ -13814,7 +13855,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             admitted.append(_schema_assertions(other_keys))
             if any(schema is False for schema in pattern_properties.values()):
                 reasons.append("admits keys whose pattern rejects every value")
-        elif admitted and obj.additionalProperties is not False:
+        elif admitted and obj.additionalProperties is not False and not _is_false_all_of(obj.additionalProperties):
             reasons.append("allows keys that match no pattern")
         if any(schema != admitted[0] for schema in admitted):
             reasons.append(
@@ -14141,7 +14182,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         is built in this frame, so a nested schema costs no more frames than the parse methods it reaches.
         """
         with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
-            item = self._array_all_of_site_schema(item)
+            item = self._read_false_all_of_values(self._array_all_of_site_schema(item))
             python_type_override = self._get_python_type_override(item)
             if python_type_override:
                 return python_type_override
@@ -14156,7 +14197,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not item.is_ref_with_nullable_only
                 and (merged_item := self._merge_ref_with_schema(item)) is not item
             ):
-                item, merged_scope = merged_item, self._subschema_scope(merged_item)
+                item, merged_scope = self._read_false_all_of_values(merged_item), self._subschema_scope(merged_item)
             with nullcontext() if merged_scope is None else merged_scope:
                 choice = self._FIELD_TABLE.choose(
                     self, SchemaSite(name, item, path, singular_name=singular_name, parent=parent)
@@ -16593,7 +16634,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
     ) -> None:
         """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
-        choice = self._DEFINITION_TABLE.choose(self, SchemaSite(name, self._array_all_of_site_schema(obj), path))
+        choice = self._DEFINITION_TABLE.choose(
+            self, SchemaSite(name, self._read_false_all_of_values(self._array_all_of_site_schema(obj)), path)
+        )
         choice.build(self, choice.site)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:

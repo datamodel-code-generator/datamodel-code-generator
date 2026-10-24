@@ -11189,7 +11189,6 @@ def test_main_jsonschema_false_schema_errors(schema: dict[str, object], output_f
 @pytest.mark.parametrize(
     "additional_properties",
     [
-        pytest.param({"allOf": [False, {"type": "integer"}]}, id="direct-false"),
         pytest.param(
             {"allOf": [{"$ref": "#/$defs/Never"}, {"type": "integer", "minimum": 1}]},
             id="ref-false",
