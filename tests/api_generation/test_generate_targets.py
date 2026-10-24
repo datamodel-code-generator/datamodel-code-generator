@@ -488,10 +488,16 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
             "component name 1 is not a string",
             id="security-scheme-name",
         ),
+        pytest.param(
+            "integer_and_string_status.yaml",
+            "Error at schema path 'integer_and_string_status.yaml#/paths/~1pets/get/responses/200': "
+            "response status 200 is given by two keys, 200 and '200'",
+            id="integer-and-string-status",
+        ),
     ],
 )
 def test_generate_target_key_errors(fixture_name: str, message: str, target: dict[str, Any], tmp_path: Path) -> None:
-    """Refuse a key that is no string where the target locates a member by it, as models refuse one, writing nothing."""
+    """Refuse a key that is no string or repeats a response status where the target locates by it, writing nothing."""
     run_generate_and_assert(
         input_=DATA / "malformed" / fixture_name,
         expected_error=Error,

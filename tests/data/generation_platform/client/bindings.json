@@ -3181,10 +3181,8 @@
     }
   },
   "session-ambiguous-status": {
-    "pins": "a YAML response status written once as a string and once as an integer escapes target generation as the internal BindingCaptureError instead of a diagnostic (not yet filed)",
     "source": "generation_platform/binding/session-ambiguous-status.yaml",
     "verbatim": true,
-    "raises": "BindingCaptureError",
     "model": {
       "openapi_scopes": [
         "paths",

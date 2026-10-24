@@ -1,3 +1,3 @@
 # session-ambiguous-status
 render pydantic_v2.BaseModel default
-  diagnostic BindingCaptureError: Source pointer is ambiguous between string and integer keys
+  diagnostic Error: Error at schema path 'session-ambiguous-status.yaml#/paths/~1items/post/responses/200': response status 200 is given by two keys, 200 and '200'

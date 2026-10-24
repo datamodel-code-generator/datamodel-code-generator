@@ -75,6 +75,8 @@ encoding-property-name-client	main/generation_platform/generate/nothing-written.
 encoding-property-name-server	main/generation_platform/generate/nothing-written.txt
 form-encoding-header-name-client	main/generation_platform/generate/nothing-written.txt
 form-encoding-header-name-server	main/generation_platform/generate/nothing-written.txt
+integer-and-string-status-client	main/generation_platform/generate/nothing-written.txt
+integer-and-string-status-server	main/generation_platform/generate/nothing-written.txt
 link-name-client	main/generation_platform/generate/nothing-written.txt
 link-name-server	main/generation_platform/generate/nothing-written.txt
 media-type-of-reference-client	main/generation_platform/generate/nothing-written.txt

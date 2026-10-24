@@ -22,8 +22,8 @@ from urllib.parse import ParseResult, unquote, urljoin
 
 from typing_extensions import Sentinel, override
 
-from datamodel_code_generator import Error
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
+from datamodel_code_generator import Error, SchemaParseError
+from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BackendFieldFacts,
@@ -3453,6 +3453,23 @@ class _Contracts(_SchemaUses):
                 raise self.parser._key_error(key, kind, path)  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
             yield key, value
 
+    @staticmethod
+    def statuses(raw: YamlValue, holder: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the responses of the object at ``holder`` by their status, the text of their key.
+
+        YAML loads a status key such as ``200`` as a number, so two keys such as ``200`` and ``'200'`` give one status
+        twice: it is a schema error.
+        """
+        keys: dict[str, object] = {}
+        statuses: dict[str, YamlValue] = {}
+        for key, value in _mapping(raw).items():
+            if (status := str(key)) in keys:
+                msg = f"response status {status} is given by two keys, {keys[status]!r} and {key!r}"
+                raise SchemaParseError(msg, path=[str(holder.child(status))])
+            keys[status] = key
+            statuses[status] = value
+        return statuses
+
     def metadata(
         self,
         kind: Literal["link", "callback", "security_scheme"],
@@ -3818,19 +3835,15 @@ class _Contracts(_SchemaUses):
                 _facts(value, ("required", "description"), declared),
                 children=self.media(value.get("content"), declared, used, identity, "request_body"),
             )
-        statuses = {str(status): value for status, value in _mapping(raw.get("responses")).items()}
-        if len(statuses) != len(_mapping(raw.get("responses"))):
-            msg = "Source pointer is ambiguous between string and integer keys"
-            raise BindingCaptureError(msg)
         responses = tuple(
             self.response(
-                statuses[str(status)],
-                declaration.child("responses", str(status)),
-                use_site.child("responses", str(status)),
+                value,
+                declaration.child("responses", status),
+                use_site.child("responses", status),
                 identity,
-                str(status),
+                status,
             )
-            for status in _mapping(raw.get("responses"))
+            for status, value in self.statuses(raw.get("responses"), declaration.child("responses")).items()
         )
         callbacks = tuple(
             self.metadata(

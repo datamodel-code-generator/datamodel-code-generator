@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Integer and string status
+  version: '1.0'
+servers:
+  - url: https://example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        200:
+          description: Integer
+        '200':
+          description: String
