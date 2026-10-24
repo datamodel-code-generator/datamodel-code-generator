@@ -1387,6 +1387,27 @@ without_single_dict_typed_nullable_map_values-typing.TypedDict-type_array_maps	m
 without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps	main/jsonschema/object_maps/object_maps[without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps].payloads.txt	= main/jsonschema/object_maps/object_maps[annotated-dataclasses.dataclass-type_list_maps].payloads.txt
 without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps	main/jsonschema/object_maps/object_maps[without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps].py	= main/jsonschema/object_maps/object_maps[annotated-typing.TypedDict-type_list_maps].py
 without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps	main/jsonschema/object_maps/object_maps[without_single_dict_typed_nullable_map_values-typing.TypedDict-type_list_maps].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_object_maps_collapsed_recursive_root]
+dataclasses.dataclass-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-pattern-map].payloads.txt
+dataclasses.dataclass-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-pattern-map].py
+dataclasses.dataclass-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-property-names-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-pattern-map].payloads.txt
+dataclasses.dataclass-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-property-names-map].py
+msgspec.Struct-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[msgspec.Struct-pattern-map].payloads.txt
+msgspec.Struct-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[msgspec.Struct-pattern-map].py
+msgspec.Struct-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[msgspec.Struct-property-names-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[msgspec.Struct-pattern-map].payloads.txt
+msgspec.Struct-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[msgspec.Struct-property-names-map].py
+pydantic_v2.BaseModel-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-pattern-map].payloads.txt
+pydantic_v2.BaseModel-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-pattern-map].py
+pydantic_v2.BaseModel-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-property-names-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-pattern-map].payloads.txt
+pydantic_v2.BaseModel-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-property-names-map].py
+pydantic_v2.dataclass-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.dataclass-pattern-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-pattern-map].payloads.txt
+pydantic_v2.dataclass-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.dataclass-pattern-map].py
+pydantic_v2.dataclass-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.dataclass-property-names-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.BaseModel-pattern-map].payloads.txt
+pydantic_v2.dataclass-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[pydantic_v2.dataclass-property-names-map].py
+typing.TypedDict-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[typing.TypedDict-pattern-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-pattern-map].payloads.txt
+typing.TypedDict-pattern-map	main/jsonschema/object_maps/collapsed_recursive_root[typing.TypedDict-pattern-map].py
+typing.TypedDict-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[typing.TypedDict-property-names-map].payloads.txt	= main/jsonschema/object_maps/collapsed_recursive_root[dataclasses.dataclass-pattern-map].payloads.txt
+typing.TypedDict-property-names-map	main/jsonschema/object_maps/collapsed_recursive_root[typing.TypedDict-property-names-map].py
 [test_object_maps_released_pattern_properties_hook]
 	main/jsonschema/object_maps/released_pattern_properties_hook.txt
 [test_object_maps_released_pattern_properties_hook_without_single_dict]

@@ -3194,14 +3194,14 @@ def test_field_import_fallback_collects_explicit_typing_names_with_ast() -> None
 
 
 def test_field_import_fallback_collects_dict_key_typing_names() -> None:
-    """Test dict key annotations contribute structured typing imports."""
+    """Test dict key annotations contribute structured typing imports, beside the Any written for the missing value."""
     field = DataModelFieldBase(
         name="a",
         data_type=DataType(is_dict=True, dict_key=DataType(type="Optional[str]")),
         required=True,
     )
 
-    assert field.imports == (IMPORT_DICT, IMPORT_OPTIONAL)
+    assert field.imports == (IMPORT_ANY, IMPORT_DICT, IMPORT_OPTIONAL)
 
 
 def test_field_import_fallback_collects_nullable_reference_in_union() -> None:

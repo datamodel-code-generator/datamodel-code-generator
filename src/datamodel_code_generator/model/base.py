@@ -1048,6 +1048,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
         if data_type.dict_key:
             requirements = requirements.merge(self._data_type_typing_import_requirements(data_type.dict_key))
+            if not self._mapping_writes_value(data_type):
+                requirements = replace(requirements, any_=True)
 
         if data_type.discriminator:
             requirements = requirements.with_import_name(IMPORT_ANNOTATED.import_)
@@ -1067,7 +1069,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
                 has_none = True
                 continue
             branch_keys.add(self._data_type_import_key(child))
-            writes_member = writes_member or self._data_type_has_renderable_structure(child) or bool(child.type_hint)
+            writes_member = writes_member or self._data_type_writes_hint(child)
 
         if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
             requirements = requirements.with_import_name(IMPORT_OPTIONAL.import_)
@@ -1111,6 +1113,18 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self._data_type_renders_none(data_type):
             return False
         return self._data_type_has_renderable_structure(data_type)
+
+    @classmethod
+    def _data_type_writes_hint(cls, data_type: DataType) -> bool:
+        """Return whether a data type writes a hint: a renderable structure or a hint of its own."""
+        return cls._data_type_has_renderable_structure(data_type) or bool(data_type.type_hint)
+
+    @classmethod
+    def _mapping_writes_value(cls, data_type: DataType) -> bool:
+        """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
+        return bool(data_type.alias or data_type.type) or any(
+            cls._data_type_writes_hint(child) for child in data_type.data_types
+        )
 
     @staticmethod
     def _data_type_has_renderable_structure(data_type: DataType) -> bool:

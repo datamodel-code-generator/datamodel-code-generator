@@ -860,10 +860,7 @@ class DataModelField(DataModelFieldBase):
 
         A union none of whose members writes anything renders ``Any`` whole, as every other hint of it does.
         """
-        return any(
-            self._data_type_has_renderable_structure(member) or bool(member.type_hint)
-            for member in union_members(data_type)
-        )
+        return any(self._data_type_writes_hint(member) for member in union_members(data_type))
 
     def _copy_data_type(self, data_type: DataType) -> DataType:
         copied = data_type.model_copy()

@@ -593,6 +593,48 @@ def test_object_maps_schema_validators_collapsed_rule_reference_root_modules(out
     assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param("collapsed_recursive_pattern_map", [SINGLE_DICT], id="pattern-map"),
+        pytest.param("collapsed_recursive_property_names_map", [], id="property-names-map"),
+    ],
+)
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_object_maps_collapsed_recursive_root(
+    output_file: Path, name: str, extra_args: list[str], output_model_type: str
+) -> None:
+    """Import ``Any`` for the value of a recursive map whose root model --collapse-root-models inlines.
+
+    ``Entry`` takes the dict of ``Map`` before the reference of that dict to ``Choice`` is collapsed, so its dict keeps
+    a value that writes nothing, which a map with a key type writes as ``Any``. That ``Any`` was not imported, so the
+    Pydantic module failed to import: the pattern map under --use-single-dict-for-object-maps and the propertyNames map
+    without it.
+    """
+    input_path = OBJECT_MAPS / f"{name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--collapse-root-models",
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "collapsed_recursive_map.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, output_model_type, payloads), name="payloads")
+
+
 @pytest.mark.cli_doc(
     options=["--check-pattern-maps-strictly"],
     option_description="""Check every key of the pattern maps that `--generate-schema-validators` validates.

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Map": {
+      "type": "object",
+      "patternProperties": {
+        "^t@.+$": {
+          "$ref": "#/$defs/Choice"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Entry": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Map"
+        }
+      ]
+    },
+    "Fallback": {},
+    "Choice": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Entry"
+        },
+        {
+          "$ref": "#/$defs/Fallback"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "direct": {
+      "$ref": "#/$defs/Choice"
+    },
+    "entry": {
+      "$ref": "#/$defs/Entry"
+    }
+  }
+}
