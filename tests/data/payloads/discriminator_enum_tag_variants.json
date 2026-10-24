@@ -1,0 +1,39 @@
+{
+  "LoneRequired": {
+    "valid": [
+      {"id": "a", "type": "required"}
+    ],
+    "invalid": [
+      {"id": "a", "type": "other"},
+      {"id": "a"},
+      {"type": "required"}
+    ]
+  },
+  "LoneOptional": {
+    "valid": [
+      {"type": "optional"},
+      {"type": "optional", "note": "n"},
+      {}
+    ],
+    "invalid": [
+      {"type": "other"}
+    ]
+  },
+  "Pets": {
+    "valid": [
+      {},
+      {"choice": {"type": "cat"}},
+      {"choice": {"type": "dog", "bark": true}},
+      {"choice": {"type": "bird", "wings": 2}},
+      {"inline": {"type": "cat"}},
+      {"inline": {"type": "dog", "bark": false}},
+      {"inline": {"type": "bird", "wings": 1}}
+    ],
+    "invalid": [
+      {"choice": {"type": "fish"}},
+      {"choice": {"type": "dog", "bark": "loud"}},
+      {"inline": {"type": "fish"}},
+      {"inline": {"type": "bird", "wings": "two"}}
+    ]
+  }
+}

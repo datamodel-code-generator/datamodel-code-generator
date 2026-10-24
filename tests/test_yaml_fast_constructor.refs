@@ -182,6 +182,7 @@ openapi/discriminator_enum_sanitized.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_enum_single_value.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_enum_single_value_anyof.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_enum_single_value_msgspec.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_enum_tag_variants.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_external_mapping/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_external_mapping/schemas/bar.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_external_mapping/schemas/foo.yaml	yaml_fast_constructor/parity.txt

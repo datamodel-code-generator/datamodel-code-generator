@@ -1188,6 +1188,11 @@ openapi/discriminator_enum_single_value_anyof.yaml::components.schemas.CustomToo
 openapi/discriminator_enum_single_value_anyof.yaml::components.schemas.ToolType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_enum_single_value_msgspec.yaml::components.schemas.StartedEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_enum_single_value_msgspec.yaml::components.schemas.StoppedEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.BirdType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.OptionalTag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.RequiredTagType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/openapi.yaml::components.schemas.Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/schemas/bar.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/schemas/foo.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2914,6 +2919,11 @@ openapi/discriminator_enum_single_value_anyof.yaml::components.schemas.CustomToo
 openapi/discriminator_enum_single_value_anyof.yaml::components.schemas.ToolType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_enum_single_value_msgspec.yaml::components.schemas.StartedEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_enum_single_value_msgspec.yaml::components.schemas.StoppedEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.BirdType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.OptionalTag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_enum_tag_variants.yaml::components.schemas.RequiredTagType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/openapi.yaml::components.schemas.Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/schemas/bar.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_external_mapping/schemas/foo.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

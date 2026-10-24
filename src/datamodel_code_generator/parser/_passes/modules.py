@@ -1336,20 +1336,24 @@ def _drop_discriminator_tag_patterns(
         field.invalidate_semantic_caches()
 
 
-def _iter_nested_discriminator_tag_fields(
+def _iter_nested_discriminator_variants(
     data_types: Iterable[DataType],
     field_name: str,
     *,
     field_name_mode: Literal["source-name", "python-or-original-name"],
-) -> Iterator[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]]:
-    """Yield the tag fields of the variants that nested choices give a union, with their tag values.
+    can_update_discriminator: bool = True,
+) -> Iterator[tuple[DataType, DataModelFieldBase, Sequence[DiscriminatorValue]]]:
+    """Yield the variants that nested choices give a union, with their tag fields and tag values.
 
     Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
-    one, which the empty subclass of a reused model also reads.
+    one, which the empty subclass of a reused model also reads. A union's lone variant is one of them
+    (``can_update_discriminator`` is False), as the variants it lists are not.
     """
-    for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(data_types):
+    for data_type, can_update, _ in _iter_discriminator_data_types(
+        data_types, can_update_discriminator=can_update_discriminator
+    ):
         source = data_type.reference.source if data_type.reference else None
-        if can_update_discriminator or not isinstance(source, DataModel):
+        if can_update or not isinstance(source, DataModel):
             continue
         for tag_field, value in islice(
             _iter_discriminator_fields(
@@ -1357,7 +1361,21 @@ def _iter_nested_discriminator_tag_fields(
             ),
             1,
         ):
-            yield tag_field, (value,)
+            yield data_type, tag_field, (value,)
+
+
+def _is_lone_variant(field: DataModelFieldBase) -> bool:
+    """Return whether a field's type names the one variant of a union that ``discriminator=`` is written for.
+
+    Its type is the ``$ref`` itself, so there is no list of variants to read, and the variant is read like one that a
+    nested choice gives the union.
+    """
+    return field.SUPPORTS_DISCRIMINATOR and not field.data_type.data_types and field.data_type.reference is not None
+
+
+def _is_enum_tag(tag_field: DataModelFieldBase) -> bool:
+    """Return whether a variant's tag field is typed by its Enum, which Pydantic does not read as a ``Literal``."""
+    return not tag_field.data_type.literals and tag_field.data_type.find_source(Enum) is not None
 
 
 def _find_tag_enum(model: DataModel, field_name: str, tag_name: str, *, use_field_name: bool) -> Enum | None:
@@ -2286,13 +2304,26 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
             ):
                 parser._graph_builder.drop_field_discriminator(field)  # noqa: SLF001
                 continue
-            tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = [
-                *_iter_nested_discriminator_tag_fields(
-                    field.data_type.data_types,
+            lone_variant = _is_lone_variant(field)
+            nested_variants = [
+                *_iter_nested_discriminator_variants(
+                    [field.data_type] if lone_variant else field.data_type.data_types,
                     property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
                     field_name_mode="source-name" if field.SUPPORTS_DISCRIMINATOR else "python-or-original-name",
+                    can_update_discriminator=not lone_variant,
                 )
             ]
+            enum_tagged: list[DataType] = []
+            tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = []
+            for data_type, tag_field, values in nested_variants:
+                if (
+                    field.SUPPORTS_DISCRIMINATOR
+                    and not parser.use_enum_values_in_discriminator
+                    and _is_enum_tag(tag_field)
+                ):
+                    enum_tagged.append(data_type)
+                else:
+                    tag_fields.append((tag_field, values))
             set_nested_discriminator_literal_defaults(parser, tag_fields)
 
             if field.SUPPORTS_DISCRIMINATOR:
@@ -2314,7 +2345,10 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 for data_type in field.data_type.data_types
                 if data_type.reference
             )
-            for index, data_type in enumerate(field.data_type.data_types):
+            for index, data_type in (
+                *enumerate(field.data_type.data_types),
+                *((None, enum_tagged_type) for enum_tagged_type in enum_tagged),
+            ):
                 if not data_type.reference:  # pragma: no cover
                     continue
                 discriminator_model = data_type.reference.source
@@ -2325,41 +2359,45 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 ):  # pragma: no cover
                     continue
 
-                annotates_new_tag = has_reused_variant and not (
-                    tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+                annotates_new_tag = (
+                    index is not None
+                    and has_reused_variant
+                    and not (tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR)
                 )
                 # A resolved Python name can equal a different field's wire name.
                 discriminator_values = _get_discriminator_values(
                     discriminator_model,
                     field_name,
                     mapping,
+                    require_literal=index is None,
                     field_name_mode=field_name_mode,
                 )
-                record_variant_discriminator_tags(
-                    parser,
-                    discriminator_model,
-                    union_name,
-                    property_name=property_name,
-                    field_name=field_name,
-                    mapping=mapping,
-                    values=discriminator_values,
-                    field_name_mode=field_name_mode,
-                )
-                for collapsed_name, collapsed_types, collapsed_mapping in (
-                    (union_name, field.data_type.data_types, mapping),
-                    *collapsed_unions,
-                ):
-                    record_collapsed_variant_tags(
+                if index is not None:
+                    record_variant_discriminator_tags(
                         parser,
                         discriminator_model,
-                        collapsed_name,
-                        collapsed_types[index],
+                        union_name,
                         property_name=property_name,
                         field_name=field_name,
-                        mapping=collapsed_mapping,
+                        mapping=mapping,
                         values=discriminator_values,
                         field_name_mode=field_name_mode,
                     )
+                    for collapsed_name, collapsed_types, collapsed_mapping in (
+                        (union_name, field.data_type.data_types, mapping),
+                        *collapsed_unions,
+                    ):
+                        record_collapsed_variant_tags(
+                            parser,
+                            discriminator_model,
+                            collapsed_name,
+                            collapsed_types[index],
+                            property_name=property_name,
+                            field_name=field_name,
+                            mapping=collapsed_mapping,
+                            values=discriminator_values,
+                            field_name_mode=field_name_mode,
+                        )
                 has_one_literal = False
                 for discriminator_field in discriminator_model.fields:
                     if not _tag_field_matches(discriminator_field, field_name_mode, field_name):

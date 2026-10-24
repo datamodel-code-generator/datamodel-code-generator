@@ -552,6 +552,7 @@ def test_main_openapi_discriminator_enum_single_value(output_file: Path) -> None
         assert_func=assert_file_content,
         expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "enum_single_value.py",
         extra_args=["--target-python-version", "3.10", "--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
     )
 
 
@@ -10121,6 +10122,16 @@ def test_main_openapi_discriminator_optional_pydantic_v2(
             "dataclasses.dataclass",
             (),
         ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            (),
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.dataclass",
+            (),
+        ),
     ],
 )
 def test_main_openapi_discriminator_optional_literal(
@@ -10130,7 +10141,7 @@ def test_main_openapi_discriminator_optional_literal(
 
     Variants that nested choices give the union follow the same rule. A tag the schema declares not nullable keeps
     its ``None`` default unless the ``MISSING`` sentinel would replace it, and a nested tag that is not a ``Literal``
-    keeps its type.
+    keeps its type where the output writes no ``discriminator`` argument (``dataclasses.dataclass``).
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
@@ -10148,6 +10159,71 @@ def test_main_openapi_discriminator_optional_literal(
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model", "extra_args"),
+    [
+        ("discriminator_enum_single_value", "pydantic_v2.BaseModel", []),
+        ("discriminator_enum_single_value", "pydantic_v2.BaseModel", ["--use-annotated"]),
+        ("discriminator_enum_single_value", "pydantic_v2.dataclass", []),
+        ("discriminator_enum_tag_variants", "pydantic_v2.BaseModel", []),
+        ("discriminator_enum_tag_variants", "pydantic_v2.BaseModel", ["--use-annotated"]),
+        ("discriminator_enum_tag_variants", "pydantic_v2.BaseModel", ["--enum-field-as-literal", "one"]),
+        ("discriminator_enum_tag_variants", "pydantic_v2.dataclass", []),
+        ("discriminator_enum_tag_variants", "pydantic_v2.dataclass", ["--use-annotated"]),
+    ],
+)
+def test_main_openapi_discriminator_enum_tag_variants(
+    input_name: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write the one-value Enum tag of a lone or nested variant as its ``Literal``, as listed variants have it.
+
+    Up to 0.86.0 a variant that nested choices give a union, or the one variant a union names, kept the tag typed by
+    its Enum, which Pydantic rejects as a discriminator when the module is imported (a Pydantic dataclass failed when
+    its type alias was first used). The tag is the one value of the Enum, own or inherited, and a tag that is
+    optional takes no default, as the tags of listed variants. The verdicts of each payload are the generated
+    models', and the schema's decides whether the payload is valid.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load((OPEN_API_DATA_PATH / f"{input_name}.yaml").read_text(encoding="utf-8"))
+
+    def schema_decides(validator: Draft202012Validator, kind: str, payload: object) -> None:
+        if kind == "valid":
+            validator.validate(payload)
+        else:
+            with pytest.raises(SchemaValidationError):
+                validator.validate(payload)
+
+    verdicts = []
+    for model_name, cases in json.loads((DATA_PATH / "payloads" / f"{input_name}.json").read_text()).items():
+        validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{model_name}"})
+        with _generated_model(output_file, input_name, model_name) as model:
+            validate = _model_json_validator(model)
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                schema_decides(validator, kind, payload)
+                try:
+                    validate(json.dumps(payload))
+                except pydantic.ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{model_name} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
 
 
 @pytest.mark.skipif(

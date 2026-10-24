@@ -1,0 +1,19 @@
+LoneRequired valid {"id": "a", "type": "required"}: accepted
+LoneRequired invalid {"id": "a", "type": "other"}: rejected
+LoneRequired invalid {"id": "a"}: rejected
+LoneRequired invalid {"type": "required"}: rejected
+LoneOptional valid {"type": "optional"}: accepted
+LoneOptional valid {"type": "optional", "note": "n"}: accepted
+LoneOptional valid {}: rejected
+LoneOptional invalid {"type": "other"}: rejected
+Pets valid {}: accepted
+Pets valid {"choice": {"type": "cat"}}: accepted
+Pets valid {"choice": {"type": "dog", "bark": true}}: accepted
+Pets valid {"choice": {"type": "bird", "wings": 2}}: accepted
+Pets valid {"inline": {"type": "cat"}}: accepted
+Pets valid {"inline": {"type": "dog", "bark": false}}: accepted
+Pets valid {"inline": {"type": "bird", "wings": 1}}: accepted
+Pets invalid {"choice": {"type": "fish"}}: rejected
+Pets invalid {"choice": {"type": "dog", "bark": "loud"}}: rejected
+Pets invalid {"inline": {"type": "fish"}}: rejected
+Pets invalid {"inline": {"type": "bird", "wings": "two"}}: rejected
