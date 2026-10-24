@@ -510,7 +510,7 @@ def test_generate_target_key_errors(fixture_name: str, message: str, target: dic
             **target,
         },
     )
-    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
 
 
 @pytest.mark.parametrize("output", ["models.py", None])

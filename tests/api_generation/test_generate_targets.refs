@@ -71,15 +71,15 @@ target-pydantic	main/generation_platform/generate/nothing-written.txt
 target-python	main/generation_platform/generate/nothing-written.txt
 unknown-encoding	main/generation_platform/generate/nothing-written.txt
 [test_generate_target_key_errors]
-encoding-property-name-client	main/generation_platform/generate/nothing-written.txt
-encoding-property-name-server	main/generation_platform/generate/nothing-written.txt
-form-encoding-header-name-client	main/generation_platform/generate/nothing-written.txt
-form-encoding-header-name-server	main/generation_platform/generate/nothing-written.txt
-integer-and-string-status-client	main/generation_platform/generate/nothing-written.txt
-integer-and-string-status-server	main/generation_platform/generate/nothing-written.txt
-link-name-client	main/generation_platform/generate/nothing-written.txt
-link-name-server	main/generation_platform/generate/nothing-written.txt
-media-type-of-reference-client	main/generation_platform/generate/nothing-written.txt
-media-type-of-reference-server	main/generation_platform/generate/nothing-written.txt
-security-scheme-name-client	main/generation_platform/generate/nothing-written.txt
-security-scheme-name-server	main/generation_platform/generate/nothing-written.txt
+encoding-property-name-client	api_generation/generate_targets/generate_target_key_errors[encoding-property-name-client].txt	= main/generation_platform/generate/nothing-written.txt
+encoding-property-name-server	api_generation/generate_targets/generate_target_key_errors[encoding-property-name-server].txt	= main/generation_platform/generate/nothing-written.txt
+form-encoding-header-name-client	api_generation/generate_targets/generate_target_key_errors[form-encoding-header-name-client].txt	= main/generation_platform/generate/nothing-written.txt
+form-encoding-header-name-server	api_generation/generate_targets/generate_target_key_errors[form-encoding-header-name-server].txt	= main/generation_platform/generate/nothing-written.txt
+integer-and-string-status-client	api_generation/generate_targets/generate_target_key_errors[integer-and-string-status-client].txt	= main/generation_platform/generate/nothing-written.txt
+integer-and-string-status-server	api_generation/generate_targets/generate_target_key_errors[integer-and-string-status-server].txt	= main/generation_platform/generate/nothing-written.txt
+link-name-client	api_generation/generate_targets/generate_target_key_errors[link-name-client].txt	= main/generation_platform/generate/nothing-written.txt
+link-name-server	api_generation/generate_targets/generate_target_key_errors[link-name-server].txt	= main/generation_platform/generate/nothing-written.txt
+media-type-of-reference-client	api_generation/generate_targets/generate_target_key_errors[media-type-of-reference-client].txt	= main/generation_platform/generate/nothing-written.txt
+media-type-of-reference-server	api_generation/generate_targets/generate_target_key_errors[media-type-of-reference-server].txt	= main/generation_platform/generate/nothing-written.txt
+security-scheme-name-client	api_generation/generate_targets/generate_target_key_errors[security-scheme-name-client].txt	= main/generation_platform/generate/nothing-written.txt
+security-scheme-name-server	api_generation/generate_targets/generate_target_key_errors[security-scheme-name-server].txt	= main/generation_platform/generate/nothing-written.txt
