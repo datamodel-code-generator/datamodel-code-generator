@@ -408,6 +408,7 @@ openapi/redundant_reference_null.yaml	yaml_fast_constructor/parity.txt
 openapi/redundant_reference_null_inline.yaml	yaml_fast_constructor/parity.txt
 openapi/redundant_reference_null_null_type.yaml	yaml_fast_constructor/parity.txt
 openapi/redundant_reference_null_oas30.yaml	yaml_fast_constructor/parity.txt
+openapi/ref_alias_cycle_unused.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_edges/operation_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_merge_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_nullable.yaml	yaml_fast_constructor/parity.txt

@@ -21,6 +21,7 @@ from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import rendering_memo
 from datamodel_code_generator._requirements import pydantic_floor
+from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_LITERAL, Import
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
@@ -853,6 +854,78 @@ def tuple_unique_items_warning(parser: FinishHost, field: DataModelFieldBase) ->
         f"{tuple_type.type_hint}",
         1,
     )
+
+
+def _named_alias(model: DataModel) -> TypeAliasBase | None:
+    """Return the type alias that a built-in type alias writes as its whole value, by nothing but its name."""
+    if not isinstance(model, TypeAliasBase) or model._uses_custom_root_template or len(model.fields) != 1:  # noqa: SLF001
+        return None
+    field = model.fields[0]
+    if (
+        (reference := (data_type := field.data_type).reference) is None
+        or not isinstance(target := reference.source, TypeAliasBase)
+        or field.annotated
+        or field.field
+        or field.type_hint.strip("\"'") != (data_type.alias or reference.short_name).strip("\"'")
+    ):
+        return None
+    return target
+
+
+def _alias_cycles(models: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...]]:
+    """Map each type alias that only names the next alias of a cycle to that cycle, starting at the alias."""
+    named = {id(model): target for model in models if (target := _named_alias(model)) is not None}
+    by_id = {id(model): model for model in models}
+    cycles: dict[int, tuple[DataModel, ...]] = {}
+    visited: set[int] = set()
+    for start in named:
+        path: dict[int, None] = {}
+        current = start
+        while current in named and current not in visited and current not in path:
+            path[current] = None
+            current = id(named[current])
+        visited.update(path)
+        if current in path:
+            members = [*path][[*path].index(current) :]
+            for index, member in enumerate(members):
+                cycles[member] = tuple(by_id[item] for item in (*members[index:], *members[:index]))
+    return cycles
+
+
+def reject_alias_cycles_without_schema(contexts: Sequence[ModuleContextView]) -> None:
+    """Reject a class of output that Pydantic builds when it reaches type aliases that only name each other.
+
+    Such aliases stand for ``$ref`` chains that loop back without reaching a schema. Pydantic cannot build a type
+    alias whose whole value is the next alias of such a cycle (``circular-reference-schema``), so a class whose
+    fields reach one, directly or through other aliases, could never be built. Aliases that no class reaches keep
+    their output.
+    """
+    models = [model for context in contexts for model in context.models]
+    if not (cycles := _alias_cycles(models)):
+        return
+    for model in models:
+        if isinstance(model, TypeAliasBase):
+            continue
+        pending = [*model.all_data_types]
+        seen: set[int] = set()
+        while pending:
+            if (
+                (reference := pending.pop().reference) is None
+                or not isinstance(source := reference.source, TypeAliasBase)
+                or id(source) in seen
+            ):
+                continue
+            if (cycle := cycles.get(id(source))) is not None:
+                aliases = " -> ".join(
+                    f"{member.class_name} ({redact_reference(member.path)})" for member in (*cycle, cycle[0])
+                )
+                msg = (
+                    f"{model.class_name} uses type aliases whose $ref chain loops back without reaching a schema, "
+                    f"which Pydantic cannot build: {aliases}"
+                )
+                raise Error(msg)
+            seen.add(id(source))
+            pending.extend(source.all_data_types)
 
 
 def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:

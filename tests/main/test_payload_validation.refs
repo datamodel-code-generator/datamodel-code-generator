@@ -1564,6 +1564,8 @@ openapi/redundant_reference_null_inline.yaml::components.schemas.Use	payloads/na
 openapi/redundant_reference_null_null_type.yaml::components.schemas.Nothing	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/redundant_reference_null_oas30.yaml::components.schemas.NullEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/redundant_reference_null_oas30.yaml::components.schemas.NullStr	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_alias_cycle_unused.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_alias_cycle_unused.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_edges/operation_refs.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3254,6 +3256,8 @@ openapi/redundant_reference_null_inline.yaml::components.schemas.Use	payloads/na
 openapi/redundant_reference_null_null_type.yaml::components.schemas.Nothing	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/redundant_reference_null_oas30.yaml::components.schemas.NullEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/redundant_reference_null_oas30.yaml::components.schemas.NullStr	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_alias_cycle_unused.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_alias_cycle_unused.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_edges/operation_refs.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

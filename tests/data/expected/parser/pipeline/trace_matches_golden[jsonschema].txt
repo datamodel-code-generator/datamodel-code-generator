@@ -73,6 +73,7 @@ change_imported_model_name
 decide_config_items
 record_generated_class_names
 check_model_inheritance
+reject_alias_cycles_without_schema
 warn_about_dropped_constraints
 warn_about_decimal_defaults
 warn_about_variant_discriminator_tags

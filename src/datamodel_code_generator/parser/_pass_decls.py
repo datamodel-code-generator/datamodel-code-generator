@@ -1177,6 +1177,21 @@ CHECK_MODEL_INHERITANCE = PassDecl(
     PassKind.CHECK,
     reads=_facts(Fact.BASES, Fact.FIELD_SET, RenderFact.MODULE_MEMBERSHIP),
 )
+REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
+    "reject_alias_cycles_without_schema",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.CHECK,
+    reads=_facts(
+        Fact.MODEL_KIND,
+        Fact.FIELD_TYPES,
+        Fact.CONSTRAINTS,
+        Fact.NULLABLE,
+        RenderFact.TYPE_ALIAS_BODY,
+        RenderFact.MODULE_MEMBERSHIP,
+    ),
+    condition="output that Pydantic builds",
+)
 WARN_ABOUT_DROPPED_CONSTRAINTS = PassDecl(
     "warn_about_dropped_constraints",
     Phase.IMPORTS,
