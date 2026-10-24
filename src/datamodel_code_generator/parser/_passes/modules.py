@@ -111,6 +111,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _unique_items_tuple,
     _VariantDiscriminatorTags,
     enum_discriminator_literal,
+    enum_discriminator_members,
     enum_site_override_import,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
@@ -1355,11 +1356,9 @@ def _iter_nested_discriminator_tag_fields(
             yield tag_field, (value,)
 
 
-def _is_enum_member_tag(
-    model: DataModel, field_name: str, tag_name: str, value: DiscriminatorValue, *, use_field_name: bool
-) -> bool:
-    """Return whether the Enum typing a variant's tag field has a member for ``value``, written as that member."""
-    enum_source = next(
+def _find_tag_enum(model: DataModel, field_name: str, tag_name: str, *, use_field_name: bool) -> Enum | None:
+    """Return the Enum typing a variant's tag field, of the field itself or else of its bases."""
+    return next(
         (
             enum_source
             for field in model.fields
@@ -1368,7 +1367,36 @@ def _is_enum_member_tag(
         ),
         None,
     ) or _get_enum_from_base(model, field_name, use_field_name=use_field_name)
+
+
+def _is_enum_member_tag(
+    model: DataModel, field_name: str, tag_name: str, value: DiscriminatorValue, *, use_field_name: bool
+) -> bool:
+    """Return whether the Enum typing a variant's tag field has a member for ``value``, written as that member."""
+    enum_source = _find_tag_enum(model, field_name, tag_name, use_field_name=use_field_name)
     return enum_source is not None and enum_source.find_member(value, coerce_strings=True) is not None
+
+
+def _unnamed_enum_member_values(
+    model: DataModel, field_name: str, tag_name: str, values: list[DiscriminatorValue], *, use_field_name: bool
+) -> list[Any]:
+    """Return the values of the members that a variant none of whose tags names a member is written with.
+
+    A tag field that already is the one ``Literal`` of the variant's tag is kept as it is.
+    """
+    literal_kept = any(
+        _tag_field_matches(field, "source-name" if use_field_name else "python-or-original-name", tag_name)
+        and len(literals := field.data_type.literals) == 1
+        and same_tag(literals[0], values[0], "legacy-python-equality")
+        for field in model.fields
+    )
+    if (
+        literal_kept
+        or (enum_source := _find_tag_enum(model, field_name, tag_name, use_field_name=use_field_name)) is None
+    ):
+        return []
+    tags = enum_discriminator_members(enum_source, values)
+    return [] if tags.rule == "named-members" else [member.value for member in tags.members]
 
 
 def _discriminator_variants_are_valid(
@@ -1416,6 +1444,21 @@ def _discriminator_variants_are_valid(
             for value in discriminator_values
         ):
             return False
+        if (
+            enum_member_tags
+            and can_update_discriminator
+            and not discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+        ):
+            discriminator_values = [
+                *discriminator_values,
+                *_unnamed_enum_member_values(
+                    discriminator_model,
+                    field_name,
+                    original_name if original_name is not None else field_name,
+                    discriminator_values,
+                    use_field_name=original_name is not None,
+                ),
+            ]
         for key in (tag_key(value, "legacy-python-equality") for value in discriminator_values):
             if (previous_owner := discriminator_value_owners.get(key)) is not None and previous_owner != owner:
                 return False

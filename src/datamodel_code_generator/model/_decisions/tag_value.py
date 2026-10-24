@@ -4,9 +4,9 @@ The functions read only their arguments and change none of them (a mapping passe
 ``field_tag`` and ``variant_tags`` ask read-only views (``FieldTagFacts``, ``VariantTagFacts``) for the facts their
 rows need, in their order, as an Enum lookup or a variant's mapped tags cost more than the decision. The adapters
 read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_FieldTagFacts``,
-``_get_mapping_discriminator_values``, ``enum_discriminator_literal``), ``parser/_passes/modules.py``
-(``_VariantTagFacts`` and the passes that apply tags), ``parser/jsonschema.py`` (``_SchemaTagFacts`` behind
-``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
+``_get_mapping_discriminator_values``, ``enum_discriminator_literal``, ``enum_discriminator_members``),
+``parser/_passes/modules.py`` (``_VariantTagFacts`` and the passes that apply tags), ``parser/jsonschema.py``
+(``_SchemaTagFacts`` behind ``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
 ``_get_tagged_union_field_values``, ``_set_tagged_union_discriminator``) and ``model/msgspec.py``
 (``Struct._tag_options``, ``Struct.discriminator_tag``).
 
@@ -26,7 +26,7 @@ from typing_extensions import assert_never
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind, is_tag_kind, literal_value_kind
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Container, Iterable, Mapping, Sequence
     from collections.abc import Set as AbstractSet
     from typing import Protocol
 
@@ -68,6 +68,8 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "EnumTagMembers",
+    "EnumTagRule",
     "FieldTag",
     "FieldTagRule",
     "FieldTagSite",
@@ -82,6 +84,7 @@ __all__ = [
     "VariantTags",
     "distinct_tags",
     "enum_tag_literal",
+    "enum_tag_members",
     "field_source_name",
     "field_tag",
     "is_tag_value",
@@ -176,6 +179,14 @@ VariantTagRule: TypeAlias = Literal[
 * ``none``: a nested variant without a tag.
 """
 
+EnumTagRule: TypeAlias = Literal["named-members", "all-members"]
+"""The rows of ``enum_tag_members``.
+
+* ``named-members``: the members its tags name.
+* ``all-members``: no tag names a member (the schema name of the variant, a mapping key its Enum lacks), so the variant
+  takes every member of its Enum, which are the only values its tag field can hold.
+"""
+
 TagIdentity: TypeAlias = Literal["type-and-value", "legacy-python-equality"]
 """How tags are told apart (``tag_key``).
 
@@ -218,6 +229,15 @@ class VariantTags:
 
     values: tuple[Any, ...]
     rule: VariantTagRule
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class EnumTagMembers:
+    """The members of an Enum that tag a variant, and the row of ``EnumTagRule`` they come from."""
+
+    members: tuple[Any, ...]
+    rule: EnumTagRule
 
 
 def field_source_name(*, name: str | None, original_name: str | None, alias: str | None) -> str | None:
@@ -372,6 +392,17 @@ def enum_tag_literal(value: TagValue, member_value: Any, /) -> TagValue:
     A mapping key ``"1"`` naming the member ``1`` of an integer Enum so becomes ``Literal[1]``.
     """
     return member_value if is_literal_kind(literal_value_kind(member_value)) else value
+
+
+def enum_tag_members(named: Iterable[Any], members: Callable[[], Iterable[Any]], /) -> EnumTagMembers:
+    """Return the members of an Enum that tag a variant, written as members (``EnumTagRule``).
+
+    ``named`` holds, for each tag of the variant, the member it names or None, and ``members`` yields every member of
+    the Enum, which it is asked for only when no tag names one.
+    """
+    if found := tuple(member for member in named if member is not None):
+        return EnumTagMembers(found, "named-members")
+    return EnumTagMembers(tuple(members()), "all-members")
 
 
 def tag_key(value: Any, /, identity: TagIdentity) -> object:
