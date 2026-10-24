@@ -1,0 +1,5 @@
+valid: accepted
+invalid {"pair": ["a", 1]}: rejected
+invalid {"pair": [1, "a", "b"]}: rejected
+invalid {"triple": [1.5, true, "b"]}: rejected
+invalid {"triple": [1.5, "b"]}: rejected

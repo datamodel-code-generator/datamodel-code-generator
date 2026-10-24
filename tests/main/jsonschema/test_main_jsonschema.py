@@ -19215,6 +19215,80 @@ def test_main_jsonschema_collapse_root_models_any_union(output_file: Path, outpu
     assert_output(verdicts, name="payloads")
 
 
+@pytest.mark.parametrize(
+    ("input_name", "tuple_option"),
+    [
+        pytest.param("collapse_root_models_tuple_items", "--use-tuple-for-fixed-items", id="items-array"),
+        pytest.param("collapse_root_models_tuple_prefix_items", "--use-tuple-for-closed-arrays", id="prefix-items"),
+    ],
+)
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        "pydantic_v2.BaseModel",
+        "pydantic_v2.dataclass",
+        "dataclasses.dataclass",
+        pytest.param(
+            "typing.TypedDict",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
+            ),
+        ),
+        "msgspec.Struct",
+    ],
+)
+def test_main_jsonschema_collapse_root_models_tuple_item_order(
+    output_file: Path, output_model_type: str, input_name: str, tuple_option: str
+) -> None:
+    """Keep each tuple item that --collapse-root-models inlines at its position.
+
+    Up to 0.86.0 the inlined root type of a tuple item moved to the end of the tuple, so ``[Flag, string]`` became
+    ``tuple[str, int | bool]`` and ``[number, Label, boolean]`` became ``tuple[float, bool, str]``, which reject every
+    payload the schema accepts.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / f"{input_name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            tuple_option,
+            "--output-model-type",
+            output_model_type,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / "payloads" / "collapse_root_models_tuple_items.json").read_text())
+    schema = json.loads(input_path.read_text())
+    validator = validator_for(schema)(schema)
+    validator.validate(payloads["valid"])
+    documents = {"valid": payloads["valid"]}
+    for change in payloads["invalid"]:
+        documents[f"invalid {json.dumps(change)}"] = document = {**payloads["valid"], **change}
+        with pytest.raises(SchemaValidationError):
+            validator.validate(document)
+    with _generated_model(output_file, input_name, "Model") as model:
+        decode = (
+            partial(msgspec.json.decode, type=model)
+            if output_model_type == "msgspec.Struct"
+            else TypeAdapter(model).validate_json
+        )
+
+        def verdict(document: object) -> str:
+            try:
+                decode(json.dumps(document))
+            except (ValidationError, msgspec.ValidationError):
+                return "rejected"
+            return "accepted"
+
+        verdicts = "".join(f"{name}: {verdict(document)}\n" for name, document in documents.items())
+    assert_output(verdicts, name="payloads")
+
+
 def test_main_jsonschema_collapse_root_models_with_optional(output_file: Path) -> None:
     """Test that collapse-root-models correctly preserves Optional import when needed."""
     run_main_and_assert(

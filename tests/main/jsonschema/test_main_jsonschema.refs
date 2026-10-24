@@ -6134,6 +6134,27 @@ parent	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_reused
 	main/jsonschema/jsonschema_collapse_root_models_stops_before_a_data_type_cycle.py
 [test_main_jsonschema_collapse_root_models_transitive_reference_cycle]
 	main/jsonschema/jsonschema_collapse_root_models_transitive_reference_cycle.py
+[test_main_jsonschema_collapse_root_models_tuple_item_order]
+dataclasses.dataclass-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+dataclasses.dataclass-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].py
+dataclasses.dataclass-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-prefix-items].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+dataclasses.dataclass-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-prefix-items].py
+msgspec.Struct-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[msgspec.Struct-items-array].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+msgspec.Struct-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[msgspec.Struct-items-array].py
+msgspec.Struct-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[msgspec.Struct-prefix-items].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+msgspec.Struct-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[msgspec.Struct-prefix-items].py
+pydantic_v2.BaseModel-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.BaseModel-items-array].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+pydantic_v2.BaseModel-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.BaseModel-items-array].py
+pydantic_v2.BaseModel-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.BaseModel-prefix-items].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+pydantic_v2.BaseModel-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.BaseModel-prefix-items].py
+pydantic_v2.dataclass-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.dataclass-items-array].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+pydantic_v2.dataclass-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.dataclass-items-array].py
+pydantic_v2.dataclass-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.dataclass-prefix-items].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+pydantic_v2.dataclass-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[pydantic_v2.dataclass-prefix-items].py
+typing.TypedDict-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[typing.TypedDict-items-array].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+typing.TypedDict-items-array	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[typing.TypedDict-items-array].py
+typing.TypedDict-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[typing.TypedDict-prefix-items].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[dataclasses.dataclass-items-array].payloads.txt
+typing.TypedDict-prefix-items	main/jsonschema/main_jsonschema/collapse_root_models_tuple_item_order[typing.TypedDict-prefix-items].py
 [test_main_jsonschema_collapse_root_models_with_optional]
 	main/jsonschema/jsonschema_collapse_root_models_with_optional.py
 [test_main_jsonschema_collapsed_container_quoted_name]

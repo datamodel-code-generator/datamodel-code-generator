@@ -2289,7 +2289,7 @@ class GenerationStore:  # noqa: PLR0904
         old_data_type: DataType,
         new_data_type: DataType,
     ) -> None:
-        """Replace a nested data type; its replacement goes last (row ``legacy-replacement-last``).
+        """Replace a nested data type in its place in a tuple, last in a union (row ``legacy-replacement-last``).
 
         The sites of the replacement are overridden.
         """
@@ -2302,6 +2302,12 @@ class GenerationStore:  # noqa: PLR0904
             self._note_changed_data_types((parent_data_type,))
             self._invalidate_owner_caches(*cache_owners)
             self._invalidate_after_mutation()
+            return
+        if parent_data_type.is_tuple:
+            self._builder.set_nested_data_types(
+                parent_data_type,
+                [new_data_type if member is old_data_type else member for member in parent_data_type.data_types],
+            )
             return
 
         members = (*parent_data_type.data_types, new_data_type)
@@ -2931,7 +2937,7 @@ class GraphBuilder:
     def replace_nested_data_type(
         self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType
     ) -> None:
-        """Replace a nested data type; its replacement goes last (row ``legacy-replacement-last``)."""
+        """Replace a nested data type in its place in a tuple, last in a union (row ``legacy-replacement-last``)."""
         self._store.replace_nested_data_type(parent_data_type, old_data_type, new_data_type)  # ty: ignore[deprecated]
 
     def require_field(self, field_: DataModelFieldBase, *, use_default_with_required: bool) -> None:
