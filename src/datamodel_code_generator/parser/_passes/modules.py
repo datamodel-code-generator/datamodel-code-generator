@@ -13,6 +13,7 @@ processed, on the run through ``ModulesRun``.
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
@@ -129,7 +130,6 @@ from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY,
 from datamodel_code_generator.types import ANY, NONE, DataType, Types
 
 if TYPE_CHECKING:
-    from collections import defaultdict
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
@@ -580,10 +580,6 @@ class RuleAliasHost(ImportFromHost, Protocol):
     @property
     def dataclass_arguments(self) -> DataclassArguments | None:
         """The arguments of the dataclass decorator, if configured."""
-
-    @property
-    def extra_template_data(self) -> defaultdict[str, Any]:
-        """The extra template data, by class name."""
 
     @property
     def keyword_only(self) -> bool:
@@ -3223,7 +3219,9 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
 
     An alias has no class body for the rules. Whether collapse inlines an alias into all its holders is final only
     once every module is processed, so each alias still written takes its class here, under its model key and the
-    source location the model metadata names for it. The class imports the models of other modules that its rules
+    source location the model metadata names for it. The class takes the template data the alias holds, its rules
+    among them, not the parser's entry at its path: moving the alias into an ``_internal`` module or onto the path of
+    the root model it replaces leaves that entry behind. The class imports the models of other modules that its rules
     name, as ``change_from_import`` imports them for a class that writes its rules from the start.
     """
     unused = {id(model) for model in run.unused_models}
@@ -3246,7 +3244,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
             decorators=model.decorators,
             custom_base_class=model.custom_base_class,
             custom_template_dir=parser.custom_template_dir,
-            extra_template_data=parser.extra_template_data,
+            extra_template_data=defaultdict(dict, {model.path: model.extra_template_data}),
             path=model.file_path,
             description=model.description,
             nullable=model.nullable,

@@ -628,6 +628,47 @@ def test_object_maps_schema_validators_collapsed_rule_reference_root_modules(out
 @pytest.mark.parametrize(
     ("name", "extra_args"),
     [
+        pytest.param("internal_rule_alias", [], id="internal-module"),
+        pytest.param(
+            "collapsed_rule_alias_root",
+            ["--collapse-root-models", "--collapse-root-models-name-strategy", "parent"],
+            id="collapsed-root",
+        ),
+    ],
+)
+def test_object_maps_schema_validators_moved_rule_alias(output_dir: Path, name: str, extra_args: list[str]) -> None:
+    """Keep the validator rules of an alias written as a class after an earlier pass gave it another path.
+
+    Under ``--use-type-alias`` the alias ``Holder`` takes its class only once every module is processed. The class
+    keeps the rules ``Holder`` holds when the import cycle of ``common`` and ``other`` moves it into ``_internal``,
+    and when it replaces the collapsed ``a.Wrapper`` under the ``parent`` strategy.
+    """
+    input_path = OBJECT_MAPS / f"{name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+            "--use-type-alias",
+            *extra_args,
+        ],
+    )
+    payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
         pytest.param("collapsed_recursive_pattern_map", [SINGLE_DICT], id="pattern-map"),
         pytest.param("collapsed_recursive_property_names_map", [], id="property-names-map"),
     ],

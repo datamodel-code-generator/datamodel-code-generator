@@ -1467,6 +1467,11 @@ use-type-alias	main/jsonschema/object_maps/schema_validators_cross_module_rule_t
 [test_object_maps_schema_validators_false_property]
 	main/jsonschema/object_maps/schema_validators_false_property.payloads.txt
 	main/jsonschema/object_maps/schema_validators_false_property.py
+[test_object_maps_schema_validators_moved_rule_alias]
+collapsed-root	main/jsonschema/object_maps/schema_validators_moved_rule_alias[collapsed-root].payloads.txt
+collapsed-root	main/jsonschema/object_maps/schema_validators_moved_rule_alias[collapsed-root]/
+internal-module	main/jsonschema/object_maps/schema_validators_moved_rule_alias[internal-module].payloads.txt
+internal-module	main/jsonschema/object_maps/schema_validators_moved_rule_alias[internal-module]/
 [test_object_maps_schema_validators_recursive_values]
 recursive_additional	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_additional].payloads.txt
 recursive_additional	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_additional].py
