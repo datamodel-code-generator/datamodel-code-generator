@@ -4440,9 +4440,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         properties alone, so its map keywords type nothing. additionalProperties are typed by ``parse_item`` where the
         model is a map (``_schema_builds_map_model``); a model with fields types those its builder types beside them
         (``_rw_typed_additional_properties``). TypedDict also records those of the key's model and of each inline model
-        with fields as their extra_items type (``set_additional_properties``); that type generates no model, so the walk
-        takes the models it names (``_extra_items_type_reference_paths``), and the model splits where one has variants.
-        Those of an inline allOf member type something only where the allOf merges into a map.
+        with fields, unless an inline allOf member closes it (``_model_additional_properties``), as their extra_items
+        type (``set_additional_properties``); that type generates no model, so the walk takes the models it names
+        (``_extra_items_type_reference_paths``), and the model splits where one has variants. Those of an inline allOf
+        member type something only where the allOf merges into a map.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4474,7 +4475,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if (
                     (is_key_model or not builds_map)
                     and self._writes_extra_items_type
-                    and isinstance(extra_items := model_schema.additionalProperties, JsonSchemaObject)
+                    and isinstance(extra_items := self._model_additional_properties(model_schema), JsonSchemaObject)
                 ):
                     with self._inherited_ref_context(resolved_ref):
                         references.update(dict.fromkeys(self._extra_items_type_reference_paths(extra_items)))
@@ -5432,6 +5433,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._graph_builder.mark_target_null(data_type)
         return data_type
 
+    def _model_additional_properties(self, obj: JsonSchemaObject) -> JsonSchemaObject | bool | None:
+        """Return the additionalProperties of the model built from ``obj``.
+
+        An inline allOf member with additionalProperties: false and no patternProperties closes the combined model.
+        """
+        if (
+            obj.allOf
+            and obj.additionalProperties is not False
+            and any(
+                source.additionalProperties is False and not source.patternProperties
+                for source in self._iter_schema_validation_sources(obj, include_references=False)
+            )
+        ):
+            return False
+        return obj.additionalProperties
+
     def set_additional_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set additional properties flag in extra template data.
 
@@ -5441,18 +5458,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         This is controlled by use_closed_typed_dict option. When disabled,
         the additionalProperties constraint is not converted to PEP 728 syntax.
-        An inline allOf member with additionalProperties: false and no patternProperties closes the combined model.
+        The additionalProperties are those of the model (``_model_additional_properties``).
         """
-        additional_properties = obj.additionalProperties
-        if (
-            obj.allOf
-            and additional_properties is not False
-            and any(
-                source.additionalProperties is False and not source.patternProperties
-                for source in self._iter_schema_validation_sources(obj, include_references=False)
-            )
-        ):
-            additional_properties = False
+        additional_properties = self._model_additional_properties(obj)
         if isinstance(additional_properties, bool):
             if not self.use_closed_typed_dict:
                 return
@@ -5461,7 +5469,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 value=additional_properties,
                 target_python_version=self.target_python_version,
             )
-        elif isinstance(obj.additionalProperties, JsonSchemaObject):
+        elif isinstance(additional_properties, JsonSchemaObject):
             # A schema-valued additionalProperties still means extra keys are accepted.
             # Keep typed extra validation out of this bugfix; PEP 728 TypedDict uses
             # output-owned type metadata below when explicitly enabled.
@@ -5471,7 +5479,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if not self.use_closed_typed_dict:
                 return
-            additional_props_type = self._build_lightweight_type(obj.additionalProperties)
+            additional_props_type = self._build_lightweight_type(additional_properties)
             if additional_props_type:  # pragma: no branch
                 reference_classes = (
                     {

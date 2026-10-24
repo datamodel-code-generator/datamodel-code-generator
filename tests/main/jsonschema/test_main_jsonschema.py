@@ -27722,6 +27722,44 @@ def test_main_read_only_write_only_typed_extras(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_closed_extra_items(output_file: Path, dedupe_args: list[str]) -> None:
+    """Keep one TypedDict class for models an inline allOf member closes, whose extra_items type is never written.
+
+    ``Closed``, ``ClosedNested`` and the inline object of ``Holder`` have additionalProperties naming the readOnly
+    ``Item``, but an allOf member with additionalProperties false closes each of them, so they keep one class as
+    without request-response. ``Open`` splits with its extra_items type. msgspec decodes the payloads.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_closed_extra_items.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "typing.TypedDict",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"closed": {}, "closedNested": {}, "holder": {"inner": {}}, "open": {"name": "n", "k": {"name": "x"}}}
+    invalid = {"open": {"name": 1}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_closed_extra_items", "ModelRequest") as model:
+        msgspec.json.decode(json.dumps(valid), type=model)
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.json.decode(json.dumps(invalid), type=model)
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
