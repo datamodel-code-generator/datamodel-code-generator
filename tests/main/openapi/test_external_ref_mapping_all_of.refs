@@ -46,3 +46,17 @@ typing.TypedDict-subdirectory	main/openapi/external_ref_mapping_all_of/grandchil
 [test_external_ref_mapping_all_of_unmapped_extra_items]
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.extra_items.txt
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.py
+[test_python_import_all_of_base]
+dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].py
+msgspec.Struct	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[msgspec.Struct].payloads.txt	= main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
+msgspec.Struct	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[pydantic_v2.BaseModel].payloads.txt	= main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
+pydantic_v2.BaseModel	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[pydantic_v2.dataclass].payloads.txt	= main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
+pydantic_v2.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[pydantic_v2.dataclass].py
+typing.TypedDict	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[typing.TypedDict].payloads.txt	= main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
+typing.TypedDict	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[typing.TypedDict].py
+[test_python_import_all_of_grandchild_modules]
+	main/openapi/external_ref_mapping_all_of/python_import_all_of_grandchild_modules.payloads.txt	= main/openapi/external_ref_mapping_all_of/grandchild_modules[dataclasses.dataclass-beside].payloads.txt
+	main/openapi/external_ref_mapping_all_of/python_import_all_of_grandchild_modules/

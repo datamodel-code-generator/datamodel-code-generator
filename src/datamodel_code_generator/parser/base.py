@@ -1446,8 +1446,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
         self._base_stand_in_imports: dict[ModelKey, Import] = {}
         """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
-        output types by an import (``--external-ref-mapping``) is parsed into a model that is never written, which
-        the passes read as the generated base until that import replaces the base."""
+        output types by an import (``--external-ref-mapping``, ``x-python-import``) is parsed into a model that is
+        never written, which the passes read as the generated base until that import replaces the base."""
+        self._declared_class_stand_ins: set[ModelKey] = set()
+        """The stand-ins of schemas whose ``x-python-import`` declares the class: that class is the base whatever the
+        schema describes, so the stand-in is never dropped as a generated root model is."""
         self._reuse_optimization_context = _ReuseOptimizationContext.from_type_overrides(self.type_overrides)
         self.read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = config.read_only_write_only_model_type
         self.dedupe_request_response_variants: bool = config.dedupe_request_response_variants

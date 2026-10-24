@@ -1,0 +1,12 @@
+Branch {"id": 1, "twigs": [{"id": 2}], "name": "a"}: accepted
+Branch {"name": "a"}: rejected
+Grove {"id": 1, "twigs": []}: accepted
+Grove {"id": 1}: rejected
+Grove {"id": 1, "twigs": 5}: rejected
+Sprout {"id": 1, "label": "a"}: accepted
+Sprout {"id": 1}: rejected
+Sprout {"label": "a"}: rejected
+Holder {"twig": {"id": 1}}: accepted
+Holder {"twig": {"twigs": []}}: rejected
+Seedling {"size": 1, "name": "a"}: accepted
+Seedling {"size": "one"}: rejected

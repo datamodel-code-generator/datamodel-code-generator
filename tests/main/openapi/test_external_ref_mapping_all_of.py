@@ -1,10 +1,10 @@
-"""allOf members that name a schema of a document that --external-ref-mapping maps.
+"""allOf members that name a schema the output types by an import: of a mapped document, or with x-python-import.
 
 Up to 0.86.0 such a member failed with "A Parser can not resolve classes". The model now inherits the class that
-``--external-ref-mapping`` imports, as a field that names the schema is typed by it. What the generator writes for
-the model reads the schema of that class as it reads a generated base: the fields a model requires or narrows, the
-keyword-only fields of dataclasses and msgspec Structs, and the models nested in the schema, which are written as a
-generated base gives them.
+``--external-ref-mapping`` or ``x-python-import`` imports, as a field that names the schema is typed by it. What the
+generator writes for the model reads the schema of that class as it reads a generated base: the fields a model
+requires or narrows, the keyword-only fields of dataclasses and msgspec Structs, and the models nested in the schema,
+which are written as a generated base gives them.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ GRANDCHILD_PAYLOADS: tuple[tuple[str, tuple[dict[str, Any], ...]], ...] = (
 def _generate_mapped_package(
     tmp_path: Path, package: str, output_model_type: str, mapped_document: Path = INPUT_PATH / "shared.yaml"
 ) -> None:
-    """Generate the package the mapping names from the mapped document, as its users would."""
+    """Generate the package the import names from the mapped document, as its users would."""
     (package_path := tmp_path / package).mkdir()
     (package_path / "__init__.py").write_text("", encoding="utf-8")
     run_main_with_args([
@@ -290,3 +290,64 @@ def test_external_ref_mapping_all_of_base_in_input_directory(output_dir: Path) -
         input_file_type="openapi",
         extra_args=["--external-ref-mapping", "shared.yaml=mapped.models", *COMMON_ARGS],
     )
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_python_import_all_of_base(
+    output_model_type: str, output_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Inherit the class that x-python-import names where an allOf member names the component.
+
+    The schema of the component describes the class, as the schema of a mapped document does: a model that requires a
+    property only the class declares gets the field, and dataclasses and msgspec Structs write a required field of
+    their own as keyword-only. A component whose schema is no object, ``Bud`` with nothing beside x-python-import, is
+    still the class it declares.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_import_all_of" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, *COMMON_ARGS],
+    )
+    for module_name in ("python_import_bases.models", "python_import_bases"):
+        monkeypatch.delitem(sys.modules, module_name, raising=False)
+    _generate_mapped_package(tmp_path, "python_import_bases", output_model_type)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    with _generated_model(output_file, "python_import_all_of_base", "Branch") as branch:
+        verdicts = _verdicts(
+            sys.modules[branch.__module__],
+            output_model_type,
+            (
+                ("Branch", ({"id": 1, "twigs": [{"id": 2}], "name": "a"}, {"name": "a"})),
+                ("Grove", ({"id": 1, "twigs": []}, {"id": 1}, {"id": 1, "twigs": 5})),
+                ("Sprout", ({"id": 1, "label": "a"}, {"id": 1}, {"label": "a"})),
+                ("Holder", ({"twig": {"id": 1}}, {"twig": {"twigs": []}})),
+                ("Seedling", ({"size": 1, "name": "a"}, {"size": "one"})),
+            ),
+        )
+    assert_output(verdicts, name="payloads")
+
+
+def test_python_import_all_of_grandchild_modules(
+    output_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Read the schema of an x-python-import component through the model of another module that inherits it.
+
+    As with a mapped schema, ``zzz`` is processed before the module of ``Branch`` and ``aaa`` after it, and only the
+    modules whose fields name the imported classes import them.
+    """
+    run_main_and_assert(
+        input_path=GRANDCHILD_PATH / "python_import.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[*COMMON_ARGS],
+    )
+    _generate_mapped_package(
+        tmp_path, "python_import_grandchild", "pydantic_v2.BaseModel", GRANDCHILD_PATH / "shared.yaml"
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    verdicts: list[str] = []
+    for module_path in ("aaa", "zzz"):
+        with _generated_package_module(output_dir, module_path) as module:
+            verdicts.append(f"{module_path}:\n{_verdicts(module, 'pydantic_v2.BaseModel', GRANDCHILD_PAYLOADS)}")
+    assert_output("".join(verdicts), name="payloads")

@@ -102,6 +102,10 @@ class StructureHost(BaseStandInHost, Protocol):
         """Whether the configured model, field and type manager types are the builtin ones."""
 
     @property
+    def _declared_class_stand_ins(self) -> set[ModelKey]:
+        """The stand-ins of schemas whose ``x-python-import`` declares the class, which no root-model rule drops."""
+
+    @property
     def _graph_builder(self) -> GraphBuilder:
         """The builder that changes the model graph through the generation store."""
 
@@ -374,7 +378,9 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         if model in models_to_remove:  # pragma: no cover
             continue
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
-        if parser._is_root_model(model):  # noqa: SLF001
+        if parser._is_root_model(model) and (  # noqa: SLF001
+            model_key_of(model.reference) not in parser._declared_class_stand_ins  # noqa: SLF001
+        ):
             root_data_type = model.fields[0].data_type
 
             # backward compatible

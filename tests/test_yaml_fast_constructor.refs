@@ -258,6 +258,7 @@ openapi/external_ref_mapping_all_of/api.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of/shared.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/beside.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/extra_items.yaml	yaml_fast_constructor/parity.txt
+openapi/external_ref_mapping_all_of_grandchild/python_import.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/shared.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/extra_items.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml	yaml_fast_constructor/parity.txt
@@ -367,6 +368,7 @@ openapi/paths_ref_with_external_schema/openapi.yaml	yaml_fast_constructor/parity
 openapi/pattern.yaml	yaml_fast_constructor/parity.txt
 openapi/pattern_backreference.yaml	yaml_fast_constructor/parity.txt
 openapi/pattern_lookaround.yaml	yaml_fast_constructor/parity.txt
+openapi/python_import_all_of/api.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters_with_config.yaml	yaml_fast_constructor/parity.txt
 openapi/querystring_parameter_31.yaml	yaml_fast_constructor/parity.txt

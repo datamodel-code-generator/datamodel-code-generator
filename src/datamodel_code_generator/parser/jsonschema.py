@@ -2597,6 +2597,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._definitions_without_model: dict[str, Reference] = {}
         self._mapped_definition_imports: dict[str, Import] = {}
         self._mapped_references: dict[str, tuple[str, str]] = {}
+        self._python_import_values: dict[str, YamlValue] = {}
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
@@ -16289,8 +16290,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         validated_obj: JsonSchemaObject | None = None,
     ) -> None:
         """Parse a raw schema, reusing a validated object when available."""
-        if isinstance(raw, dict) and "x-python-import" in raw:
+        if isinstance(raw, dict) and "x-python-import" in raw and not self._is_base_stand_in_path(path):
             self._handle_python_import(name, path)
+            self._python_import_values[self.model_resolver.join_path(tuple(path))] = raw["x-python-import"]
             return
 
         # Strict mode: check for version-specific features before validation
@@ -16642,14 +16644,29 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
         return model_key_of(reference) in self._base_stand_in_imports
 
+    def _is_base_stand_in_path(self, path: list[str]) -> bool:
+        """Return whether the schema at ``path`` is parsed into a stand-in."""
+        return bool(self._base_stand_in_imports) and (
+            (reference := self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))) is not None
+            and self._is_base_stand_in(reference)
+        )
+
     def _base_import(self, reference: Reference) -> Import | None:
         """Return the import of the class that types a schema a base names, as it types a field that names it.
 
-        A schema of a document that ``--external-ref-mapping`` maps is the class the mapping imports.
+        A schema of a document that ``--external-ref-mapping`` maps is the class the mapping imports, a schema with
+        ``x-python-import`` the class it names; a type expression in its place (``qualname``, ``native-field``,
+        ``x-python-type``) names no class to inherit.
         """
-        if (mapping := self._mapped_references.get(reference.path)) is None:
+        if (mapping := self._mapped_references.get(reference.path)) is not None:
+            return self._external_ref_mapping_import(*mapping)
+        if (
+            not isinstance(x_python_import := self._python_import_values.get(reference.path), dict)
+            or (full_path := self._get_x_python_import_path(x_python_import)) is None
+            or self._get_x_python_import_expression(x_python_import, reference.path) is not None
+        ):
             return None
-        return self._external_ref_mapping_import(*mapping)
+        return self._get_x_python_import(full_path)
 
     def _base_stand_in_targets(self) -> dict[str, tuple[Reference, Import, Path | None]]:
         """Return the schemas models name as bases that got no model and that the output types by an import.
@@ -16690,7 +16707,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         try:
             while targets:
                 for reference, import_, file_path in targets.values():
-                    self._base_stand_in_imports[model_key_of(reference)] = import_
+                    self._base_stand_in_imports[key := model_key_of(reference)] = import_
+                    if reference.path not in self._mapped_references:
+                        self._declared_class_stand_ins.add(key)
                     stand_ins.append((reference, import_))
                     self._parse_base_stand_in(reference, file_path)
                 self._type_references_to_definitions_without_model()
