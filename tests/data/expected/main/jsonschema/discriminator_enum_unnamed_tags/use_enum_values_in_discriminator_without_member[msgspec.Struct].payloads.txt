@@ -27,3 +27,10 @@ I {"k": "I"}: schema rejects, model type refused by msgspec
 I {"k": "r"}: schema rejects, model type refused by msgspec
 J {"k": "r"}: schema accepts, model type refused by msgspec
 J {"k": "p"}: schema rejects, model type refused by msgspec
+N1 {"k": 1, "n": "a"}: schema accepts, model type refused by msgspec
+N1 {"k": 3, "n": "a"}: schema rejects, model type refused by msgspec
+N1 {"k": 1}: schema rejects, model type refused by msgspec
+N2 {"k": 2, "m": 1}: schema accepts, model type refused by msgspec
+N2 {"k": 2, "m": "one"}: schema rejects, model type refused by msgspec
+P2 {"k": 1, "q": "a"}: schema accepts, model accepts
+P2 {"k": 2, "q": "a"}: schema rejects, model rejects

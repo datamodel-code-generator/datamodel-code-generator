@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Literal
 
 from msgspec import UNSET, Struct, UnsetType
@@ -101,9 +101,40 @@ class J(Struct):
     k: Literal[K7.r]
 
 
+class Count(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+class N1(Struct):
+    k: Literal[Count.integer_1]
+    n: str
+
+
+class N2(Struct):
+    k: Literal[Count.integer_1, Count.integer_2]
+    m: int
+
+
+class Plain(Enum):
+    int_1 = 1
+    int_2 = 2
+
+
+class P1(Struct):
+    k: Literal[Plain.int_1]
+    p: str
+
+
+class P2(Struct, tag_field='k', tag=1):
+    q: str
+
+
 class Model(Struct):
     own_enums: A | B | UnsetType = UNSET
     mapped: C | D | UnsetType = UNSET
     mixed: E | F | UnsetType = UNSET
     shared: G | H | UnsetType = UNSET
     inherited: I | J | UnsetType = UNSET
+    coerced: N1 | N2 | UnsetType = UNSET
+    plain: P1 | P2 | UnsetType = UNSET

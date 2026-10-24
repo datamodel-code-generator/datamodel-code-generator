@@ -23,6 +23,13 @@ H {"k": "z", "h": 1}: schema accepts, model accepts
 H {"k": "x", "h": "one"}: schema rejects, model rejects
 J {"k": "r"}: schema accepts, model accepts
 J {"k": "p"}: schema rejects, model rejects
+N1 {"k": 1, "n": "a"}: schema accepts, model accepts
+N1 {"k": 3, "n": "a"}: schema rejects, model rejects
+N1 {"k": 1}: schema rejects, model rejects
+N2 {"k": 2, "m": 1}: schema accepts, model accepts
+N2 {"k": 2, "m": "one"}: schema rejects, model rejects
+P2 {"k": 1, "q": "a"}: schema accepts, model accepts
+P2 {"k": 2, "q": "a"}: schema rejects, model rejects
 Model.own_enums {"own_enums": {"k": "x"}}: schema accepts, model accepts
 Model.own_enums {"own_enums": {"k": "z"}}: schema accepts, model accepts
 Model.own_enums {"own_enums": {"k": "A"}}: schema rejects, model rejects
@@ -36,3 +43,6 @@ Model.mixed {"mixed": {"k": "foo"}}: schema rejects, model rejects
 Model.shared {"shared": {"k": "x", "g": "a"}}: schema accepts, model accepts
 Model.shared {"shared": {"k": "y", "h": 1}}: schema accepts, model accepts
 Model.shared {"shared": {"k": "x"}}: schema rejects, model rejects
+Model.coerced {"coerced": {"k": 1, "n": "a"}}: schema accepts, model accepts
+Model.coerced {"coerced": {"k": 2, "m": 1}}: schema accepts, model accepts
+Model.coerced {"coerced": {"k": 1}}: schema rejects, model rejects

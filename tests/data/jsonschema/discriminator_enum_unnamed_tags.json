@@ -76,6 +76,39 @@
       "discriminator": {
         "propertyName": "k"
       }
+    },
+    "coerced": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/N1"
+        },
+        {
+          "$ref": "#/$defs/N2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "1": "#/$defs/N1",
+          "foo": "#/$defs/N2"
+        }
+      }
+    },
+    "plain": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/P1"
+        },
+        {
+          "$ref": "#/$defs/P2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "1": "#/$defs/P1"
+        }
+      }
     }
   },
   "$defs": {
@@ -248,6 +281,79 @@
       },
       "required": [
         "k"
+      ]
+    },
+    "Count": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "N1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Count"
+        },
+        "n": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "n"
+      ]
+    },
+    "N2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Count"
+        },
+        "m": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "k",
+        "m"
+      ]
+    },
+    "Plain": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "P1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Plain"
+        },
+        "p": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "p"
+      ]
+    },
+    "P2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": 1
+        },
+        "q": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "q"
       ]
     }
   }

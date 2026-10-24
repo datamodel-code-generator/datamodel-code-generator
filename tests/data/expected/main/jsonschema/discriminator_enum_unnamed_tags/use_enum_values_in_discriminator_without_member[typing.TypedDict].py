@@ -58,9 +58,37 @@ class J(TypedDict):
     k: Literal['r']
 
 
+Count: TypeAlias = Literal[1, 2]
+
+
+class N1(TypedDict):
+    k: Count
+    n: str
+
+
+class N2(TypedDict):
+    k: Count
+    m: int
+
+
+Plain: TypeAlias = Literal[1, 2]
+
+
+class P1(TypedDict):
+    k: Plain
+    p: str
+
+
+class P2(TypedDict):
+    k: Literal[1]
+    q: str
+
+
 class Model(TypedDict):
     own_enums: NotRequired[A | B]
     mapped: NotRequired[C | D]
     mixed: NotRequired[E | F]
     shared: NotRequired[G | H]
     inherited: NotRequired[I | J]
+    coerced: NotRequired[N1 | N2]
+    plain: NotRequired[P1 | P2]

@@ -1377,12 +1377,25 @@ def _is_enum_member_tag(
     return enum_source is not None and enum_source.find_member(value, coerce_strings=True) is not None
 
 
-def _unnamed_enum_member_values(
-    model: DataModel, field_name: str, tag_name: str, values: list[DiscriminatorValue], *, use_field_name: bool
-) -> list[Any]:
-    """Return the values of the members that a variant none of whose tags names a member is written with.
+def _members_equal_values(enum_source: Enum) -> bool:
+    """Return whether the members of an Enum equal their values at runtime, as Pydantic compares discriminator choices.
 
-    A tag field that already is the one ``Literal`` of the variant's tag is kept as it is.
+    So do the members of an ``IntEnum``, a ``StrEnum`` and an Enum that subclasses its value type; a member of a plain
+    Enum equals only itself.
+    """
+    return isinstance(enum_source, (IntEnum, StrEnum)) or any(
+        base.reference is None and base.import_ is None for base in enum_source.base_classes
+    )
+
+
+def _written_enum_member_keys(
+    model: DataModel, field_name: str, tag_name: str, values: list[DiscriminatorValue], *, use_field_name: bool
+) -> list[object]:
+    """Return the keys of the choices that the members a variant is written with make (``enum_discriminator_members``).
+
+    A member is its value where members equal their values, else only itself (its Enum and its value). A variant tagged
+    by no member takes every member, so its tags are their values whatever the Enum compares. A tag field that already
+    is the one ``Literal`` of the variant's tag is kept as it is.
     """
     literal_kept = any(
         _tag_field_matches(field, "source-name" if use_field_name else "python-or-original-name", tag_name)
@@ -1396,7 +1409,11 @@ def _unnamed_enum_member_values(
     ):
         return []
     tags = enum_discriminator_members(enum_source, values)
-    return [] if tags.rule == "named-members" else [member.value for member in tags.members]
+    values_of_members = [tag_key(member.value, "legacy-python-equality") for member in tags.members]
+    keys: list[object] = (
+        values_of_members if _members_equal_values(enum_source) else [(id(enum_source), v) for v in values_of_members]
+    )
+    return [*keys, *values_of_members] if tags.rule == "all-members" else keys
 
 
 def _discriminator_variants_are_valid(
@@ -1444,22 +1461,20 @@ def _discriminator_variants_are_valid(
             for value in discriminator_values
         ):
             return False
+        keys = [tag_key(value, "legacy-python-equality") for value in discriminator_values]
         if (
             enum_member_tags
             and can_update_discriminator
             and not discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
         ):
-            discriminator_values = [
-                *discriminator_values,
-                *_unnamed_enum_member_values(
-                    discriminator_model,
-                    field_name,
-                    original_name if original_name is not None else field_name,
-                    discriminator_values,
-                    use_field_name=original_name is not None,
-                ),
-            ]
-        for key in (tag_key(value, "legacy-python-equality") for value in discriminator_values):
+            keys += _written_enum_member_keys(
+                discriminator_model,
+                field_name,
+                original_name if original_name is not None else field_name,
+                discriminator_values,
+                use_field_name=original_name is not None,
+            )
+        for key in keys:
             if (previous_owner := discriminator_value_owners.get(key)) is not None and previous_owner != owner:
                 return False
             discriminator_value_owners[key] = owner

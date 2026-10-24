@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Literal
 
 
@@ -111,6 +111,40 @@ class J:
     k: Literal[K7.r]
 
 
+class Count(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+@dataclass
+class N1:
+    k: Count
+    n: str
+
+
+@dataclass
+class N2:
+    k: Count
+    m: int
+
+
+class Plain(Enum):
+    int_1 = 1
+    int_2 = 2
+
+
+@dataclass
+class P1:
+    k: Literal[Plain.int_1]
+    p: str
+
+
+@dataclass
+class P2:
+    k: Literal[1]
+    q: str
+
+
 @dataclass
 class Model:
     own_enums: A | B | None = None
@@ -118,3 +152,5 @@ class Model:
     mixed: E | F | None = None
     shared: G | H | None = None
     inherited: I | J | None = None
+    coerced: N1 | N2 | None = None
+    plain: P1 | P2 | None = None

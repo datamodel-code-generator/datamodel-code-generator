@@ -49,6 +49,9 @@ VARIANT_PAYLOADS: tuple[tuple[str, tuple[dict[str, Any], ...]], ...] = (
     ("H", ({"k": "z", "h": 1}, {"k": "x", "h": "one"})),
     ("I", ({"k": "p"}, {"k": "q", "i": 1}, {"k": "I"}, {"k": "r"})),
     ("J", ({"k": "r"}, {"k": "p"})),
+    ("N1", ({"k": 1, "n": "a"}, {"k": 3, "n": "a"}, {"k": 1})),
+    ("N2", ({"k": 2, "m": 1}, {"k": 2, "m": "one"})),
+    ("P2", ({"k": 1, "q": "a"}, {"k": 2, "q": "a"})),
 )
 UNION_PAYLOADS: tuple[tuple[str, tuple[dict[str, Any], ...]], ...] = (
     ("own_enums", ({"k": "x"}, {"k": "z"}, {"k": "A"}, {"k": "q"})),
@@ -56,6 +59,7 @@ UNION_PAYLOADS: tuple[tuple[str, tuple[dict[str, Any], ...]], ...] = (
     ("mixed", ({"k": "x"}, {"k": "z"}, {"k": "foo"})),
     ("shared", ({"k": "x", "g": "a"}, {"k": "y", "h": 1}, {"k": "x"})),
     ("inherited", ({"k": "p"}, {"k": "r"}, {"k": "I"})),
+    ("coerced", ({"k": 1, "n": "a"}, {"k": 2, "m": 1}, {"k": 1})),
 )
 """Documents per variant class and per property of ``Model``, some valid against the schema and some not."""
 
@@ -123,8 +127,11 @@ def test_use_enum_values_in_discriminator_without_member(output_model_type: str,
 
     ``A`` and ``B`` hold their own Enums and are tagged by their schema names, ``C`` and ``D`` by mapping keys the Enums
     lack, ``E`` by a mapping key that names a member and one that does not, ``I`` inherits the Enum of its base. ``G``
-    and ``H`` share one Enum, so their tags would share every value: that union keeps no discriminator. The module
-    imports and each model accepts the documents of its schema and rejects the others.
+    and ``H`` share one Enum, so their tags would share every value: that union keeps no discriminator, as does the
+    one of ``N1`` and ``N2``, whose mapping key ``"1"`` names the member ``1`` that the other one, tagged by no member,
+    takes too. The member ``1`` of the plain Enum that ``P1`` is tagged with never equals the literal ``1`` of ``P2``,
+    so that union keeps its discriminator. The module imports and each model accepts the documents of its schema and
+    rejects the others, ``P1`` apart, whose Enum member Pydantic does not take for the JSON value.
     """
     run_main_and_assert(
         input_path=INPUT_PATH,
