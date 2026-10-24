@@ -1476,6 +1476,11 @@ recursive_cycle	main/jsonschema/object_maps/schema_validators_recursive_values[r
 recursive_cycle	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_cycle].py
 recursive_pattern	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_pattern].payloads.txt
 recursive_pattern	main/jsonschema/object_maps/schema_validators_recursive_values[recursive_pattern].py
+[test_object_maps_schema_validators_rule_type_module_cycle]
+class	main/jsonschema/object_maps/schema_validators_rule_type_module_cycle[class].payloads.txt
+class	main/jsonschema/object_maps/schema_validators_rule_type_module_cycle[class]/
+use-type-alias	main/jsonschema/object_maps/schema_validators_rule_type_module_cycle[use-type-alias].payloads.txt
+use-type-alias	main/jsonschema/object_maps/schema_validators_rule_type_module_cycle[use-type-alias]/
 [test_object_maps_schema_validators_same_name_rule_types]
 tree-scope	main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope].payloads.txt
 tree-scope	main/jsonschema/object_maps/schema_validators_same_name_rule_types[tree-scope]/

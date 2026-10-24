@@ -31,6 +31,7 @@ from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_N
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     _get_mapping_discriminator_values,
+    _parsed_rule_data_types,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
     redirect_collapsed_reuse_users,
@@ -824,6 +825,8 @@ def module_dependency_cycles(
 ) -> list[set[tuple[str, ...]]]:
     """Find the modules that import each other, from the snapshot of the references between their models.
 
+    The models that the schema validator rules of a model name count as its field types do: its module imports them
+    for the class body that evaluates the rules, an alias written as a class for its rules included.
     A stand-in is no member of its module: its module imports nothing for it, and nothing imports it.
     """
     if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
@@ -838,13 +841,20 @@ def module_dependency_cycles(
         for model in models:
             module_of[model_key_of(model.reference)] = module
     index = parser.generation_store.index
+    rule_references = {
+        key: keyed.keys_of(
+            reference for data_type in _parsed_rule_data_types(model) if (reference := data_type.reference) is not None
+        )
+        for key, model in keyed.models.items()
+    }
     graph = reference_graph(
         snapshot,
         keyed.models,
         {
             EdgeKind.REFERENCE: {
                 key: index.referenced_keys_for_model(model, keyed) for key, model in keyed.models.items()
-            }
+            },
+            EdgeKind.RULE_TYPE: rule_references,
         },
     )
 
@@ -854,12 +864,16 @@ def module_dependency_cycles(
         for module, models in module_models_list:
             module_graph[module] = set()
             for model in models:
-                for reference_key in index.referenced_keys_for_model(model, silent):
+                for reference_key in (
+                    index.referenced_keys_for_model(model, silent) | rule_references[model_key_of(model.reference)]
+                ):
                     if (target_module := module_of.get(reference_key)) is not None and target_module != module:
                         module_graph[module].add(target_module)
         return find_circular_sccs(module_graph)
 
-    return graph_answer(snapshot, find_circular_sccs(graph.quotient(module_of, (EdgeKind.REFERENCE,))), old)
+    return graph_answer(
+        snapshot, find_circular_sccs(graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))), old
+    )
 
 
 def resolve_circular_imports(

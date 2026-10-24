@@ -1,0 +1,4 @@
+valid: accepted
+invalid box: rejected (int_parsing)
+invalid box: rejected (model_type)
+invalid box: rejected (int_parsing)

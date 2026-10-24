@@ -44,6 +44,8 @@ class EdgeKind(Enum):
     """The references that the mapping-key annotations of a root model reach."""
     CONTAINER_ITEM = "container-item"
     """The aliases that an alias references as a container item."""
+    RULE_TYPE = "rule-type"
+    """The other models that the schema validator rules of a model name, which its class body evaluates."""
     CLASS_BODY = "class-body"
     """The other models a class body evaluates: base classes, root types and runtime rule types."""
     DEFINITION = "definition"

@@ -458,6 +458,38 @@ def test_object_maps_schema_validators_cross_module_rule_types(output_dir: Path,
 
 
 @pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param("rule_type_module_cycle", [], id="class"),
+        pytest.param("alias_rule_type_module_cycle", ["--use-type-alias"], id="use-type-alias"),
+    ],
+)
+def test_object_maps_schema_validators_rule_type_module_cycle(
+    output_dir: Path, name: str, extra_args: list[str]
+) -> None:
+    """Merge the modules that a validator rule type closes a cycle of into ``_internal``, as a field type closes one.
+
+    ``common.Box`` holds ``other.Holder``, whose rule names ``Box``: the class body evaluates the rule as the module
+    runs, so the two modules imported each other and the package failed to import. Under ``--use-type-alias``
+    ``Holder`` is an alias written as a class for its rules only once every module is processed.
+    """
+    input_path = OBJECT_MAPS / f"{name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp", "--generate-schema-validators", *extra_args],
+    )
+    payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_dir, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param(["--reuse-scope", "tree"], id="tree-scope"),

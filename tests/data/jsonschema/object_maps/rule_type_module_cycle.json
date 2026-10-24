@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "box": {
+      "$ref": "#/$defs/common.Box"
+    }
+  },
+  "$defs": {
+    "common.Box": {
+      "type": "object",
+      "properties": {
+        "holder": {
+          "$ref": "#/$defs/other.Holder"
+        },
+        "n": {
+          "type": "integer"
+        }
+      }
+    },
+    "other.Holder": {
+      "type": "object",
+      "patternProperties": {
+        "^b": {
+          "$ref": "#/$defs/common.Box"
+        }
+      }
+    }
+  }
+}
