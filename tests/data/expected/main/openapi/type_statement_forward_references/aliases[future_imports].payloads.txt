@@ -1,0 +1,5 @@
+[["a"], "b"]: schema accepts, model accepts
+[]: schema rejects, model rejects (string_type)
+1: schema rejects, model rejects (string_type)
+[1]: schema rejects, model rejects (string_type)
+[[]]: schema rejects, model rejects (string_type)

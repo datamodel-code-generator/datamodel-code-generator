@@ -1698,6 +1698,7 @@ openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Gain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order_deep_base.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_statement_forward_references.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_union_nullable.json::components.schemas.Root	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3421,6 +3422,7 @@ openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Gain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order_deep_base.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_statement_forward_references.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_union_nullable.json::components.schemas.Root	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
