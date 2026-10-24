@@ -138,6 +138,10 @@ class RenderPrepHost(
         """Whether annotations are not deferred, so a type that a field hides is written as a string."""
 
     @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+    @property
     def config(self) -> ParserConfig:
         """The parser configuration."""
 
@@ -830,16 +834,19 @@ def disable_union_operator_for_forward_ref(
                 pending.append((holder, writes_name and not joins_members))
 
 
-def field_forward_references(
+def field_forward_references(  # noqa: PLR0913
     field: DataModelFieldBase,
     model: DataModel,
     model_index: Mapping[str, int],
     index: int,
+    *,
     hidden_names: Collection[str | None] = (),
+    unwritten: Collection[int] = (),
 ) -> list[tuple[DataType, str]]:
     """Collect the field's references to same-module models declared at or after the model.
 
-    A model whose name is in ``hidden_names`` counts as declared later.
+    A model whose name is in ``hidden_names`` counts as declared later, and so does a model in ``unwritten`` (by id),
+    which the module never declares, unless a model of the module holds its name.
     """
     forward_references: list[tuple[DataType, str]] = []
     for data_type in field.data_type.all_data_types:
@@ -857,7 +864,7 @@ def field_forward_references(
         if isinstance(source, TypeStatement):
             continue  # pragma: no cover
         source_index = model_index.get(name)
-        if source_index is not None and source_index >= index:
+        if (source_index is None and id(source) in unwritten) or (source_index is not None and source_index >= index):
             forward_references.append((data_type, name))
     return forward_references
 
@@ -994,6 +1001,7 @@ def update_type_aliases(  # noqa: PLR0913
     hidden_type_names: Callable[[DataModel], Collection[str | None]],
     quotes_forward_enum_member_literals: bool,
     use_typing_generics: bool,
+    unwritten: Collection[int] = (),
 ) -> None:
     """Update type aliases and RootModels to properly handle forward references per PEP 484.
 
@@ -1007,6 +1015,8 @@ def update_type_aliases(  # noqa: PLR0913
     is quoted, and with ``quotes_forward_enum_member_literals`` in every model, as no deferred annotation holds it.
     ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
     quoted name of a model that asks for it, is written as ``List["Name"]``.
+    A model in ``unwritten`` (by id), which no module writes while its users name it, is quoted as a model the module
+    declares later, so that no name of it is evaluated when the module is imported.
     """
     model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
     positions = _ModelPositions(models, "type aliases")
@@ -1051,7 +1061,9 @@ def update_type_aliases(  # noqa: PLR0913
                 hidden_only := not process_all_fields and not field.requires_immediate_forward_reference_resolution
             ) and not hidden_names:
                 continue
-            forward_references = field_forward_references(field, model, model_index, i, hidden_names)
+            forward_references = field_forward_references(
+                field, model, model_index, i, hidden_names=hidden_names, unwritten=unwritten
+            )
             if hidden_only:
                 forward_references = [reference for reference in forward_references if reference[1] in hidden_names]
             if not forward_references:
@@ -1115,6 +1127,7 @@ def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[An
         use_typing_generics=not python_target_meets(
             "python.builtin_generic_strings", parser.target_python_version.version_key
         ),
+        unwritten={id(model) for model in parser._self_named_root_models},  # noqa: SLF001
     )
 
 

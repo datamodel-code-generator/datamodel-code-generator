@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Aliases of a component that is only a $ref to itself beside a class that does not use them
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/A'
+    Alias:
+      $ref: '#/components/schemas/A'
+    Choice:
+      anyOf:
+        - $ref: '#/components/schemas/A'
+        - type: integer
+    Items:
+      type: array
+      items:
+        $ref: '#/components/schemas/A'
+    Holder:
+      type: object
+      properties:
+        count:
+          type: integer
+        label:
+          type: string
+      additionalProperties: false

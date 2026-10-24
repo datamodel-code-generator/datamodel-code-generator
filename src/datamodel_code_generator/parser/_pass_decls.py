@@ -802,7 +802,13 @@ UPDATE_TYPE_ALIASES = PassDecl(
     Phase.RENDER_PREPARATION,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODEL_ORDER, RenderFact.CLASS_NAMES, RenderFact.UNBOUND_FIELDS),
+    reads=_facts(
+        Fact.MODELS_EXIST,
+        Fact.FIELD_TYPES,
+        RenderFact.MODEL_ORDER,
+        RenderFact.CLASS_NAMES,
+        RenderFact.UNBOUND_FIELDS,
+    ),
     writes=_facts(Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.QUOTING, RenderFact.TYPE_ALIAS_BODY),
     after=(
         After("fix_constructor_field_ordering", "ordering reads the field types before aliases quote them"),
