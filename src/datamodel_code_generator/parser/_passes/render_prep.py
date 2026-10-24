@@ -842,8 +842,8 @@ def field_forward_references(  # noqa: PLR0913
     """Collect the field's references to same-module models declared at or after the model.
 
     A model whose name is in ``hidden_names`` counts as declared later. A ``type`` statement counts only with
-    ``quotes_type_statements``, for a type that the module evaluates as it runs: a deferred annotation reaches it
-    later.
+    ``quotes_type_statements``, for a type that the module evaluates as it runs: its value is deferred, but its name
+    is bound only when the statement runs, and a deferred annotation reaches the name later.
     """
     forward_references: list[tuple[DataType, str]] = []
     for data_type in field.data_type.all_data_types:
@@ -859,7 +859,7 @@ def field_forward_references(  # noqa: PLR0913
             forward_references.append((data_type, name))
             continue
         if isinstance(source, TypeStatement) and not quotes_type_statements:
-            continue  # pragma: no cover
+            continue
         source_index = model_index.get(name)
         if source_index is not None and source_index >= index:
             forward_references.append((data_type, name))
@@ -992,6 +992,7 @@ def update_type_aliases(  # noqa: PLR0913
     pydantic_v2_root_model_type: type[DataModel] | None,
     *,
     use_deferred_annotations: bool = True,
+    defers_annotations_natively: bool,
     defers_recursive_containers: bool,
     graph_builder: GraphBuilder,
     inlined_holders: Callable[[DataType], tuple[DataType, ...]],
@@ -1008,6 +1009,10 @@ def update_type_aliases(  # noqa: PLR0913
     holds, even for native deferred annotations, for the types that ``hidden_type_names`` reports as hidden
     by a field of the model, and for the fields that ``fields_evaluated_at_definition`` returns, which the
     statement defining the model evaluates as it runs (the functional TypedDict, with the fields it inherits).
+    A ``type`` statement the module defines later is quoted only where the runtime evaluates its name as the model is
+    defined: in those fields, in aliases and root models, in every field unless the annotations are deferred, by
+    ``use_deferred_annotations`` or by the target (``defers_annotations_natively``), and in a field that needs
+    immediate resolution unless the target defers its annotations.
     An enum member literal whose enum the module defines later is written as a string wherever a forward name
     is quoted, and with ``quotes_forward_enum_member_literals`` in every model, as no deferred annotation holds it.
     ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
@@ -1017,6 +1022,7 @@ def update_type_aliases(  # noqa: PLR0913
     positions = _ModelPositions(models, "type aliases")
     alias_cycles: Mapping[int, int] | None = None
     quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
+    evaluates_annotations = not (use_deferred_annotations or defers_annotations_natively)
 
     for i, model in enumerate(models):
         quote_forward_rule_types(model, model_index, i)
@@ -1030,7 +1036,9 @@ def update_type_aliases(  # noqa: PLR0913
         # are evaluated immediately, and Pydantic can force native deferred annotations
         # while constructing the class, so their forward references must stay quoted.
         evaluated_fields = model.fields_evaluated_at_definition()
-        process_all_fields = is_type_alias_or_root or not use_deferred_annotations or bool(evaluated_fields)
+        runs_at_definition = is_type_alias_or_root or bool(evaluated_fields)
+        process_all_fields = runs_at_definition or not use_deferred_annotations
+        quotes_type_statements = runs_at_definition or evaluates_annotations
         quotes_member_literals = process_all_fields or quotes_forward_enum_member_literals
         hidden_names = hidden_type_names(model)
         if (
@@ -1058,7 +1066,13 @@ def update_type_aliases(  # noqa: PLR0913
             ) and not hidden_names:
                 continue
             forward_references = field_forward_references(
-                field, model, model_index, i, hidden_names, quotes_type_statements=bool(evaluated_fields)
+                field,
+                model,
+                model_index,
+                i,
+                hidden_names,
+                quotes_type_statements=quotes_type_statements
+                or (field.requires_immediate_forward_reference_resolution and not defers_annotations_natively),
             )
             if hidden_only:
                 forward_references = [reference for reference in forward_references if reference[1] in hidden_names]
@@ -1113,6 +1127,9 @@ def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[An
         state.model_list,
         parser.pydantic_v2_root_model_type,
         use_deferred_annotations=state.config.use_deferred_annotations,
+        defers_annotations_natively=python_target_meets(
+            "python.deferred_annotations", parser.target_python_version.version_key
+        ),
         defers_recursive_containers=pydantic_target_meets(
             "pydantic.type_alias_module_namespace", parser.target_pydantic_version
         ),

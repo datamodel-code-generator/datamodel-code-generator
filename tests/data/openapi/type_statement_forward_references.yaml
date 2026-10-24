@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Type statements that classes name before the module defines them
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        early:
+          $ref: "#/components/schemas/Early"
+        chain:
+          $ref: "#/components/schemas/Chain"
+        chains:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chain"
+    Early:
+      type: array
+      items:
+        type: string
+    Chain:
+      type: array
+      items:
+        $ref: "#/components/schemas/Link"
+    Link:
+      type: object
+      properties:
+        value:
+          type: string
+        next:
+          $ref: "#/components/schemas/Chain"
+    Bag:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        $ref: "#/components/schemas/Later"
+    Later:
+      type: array
+      items:
+        anyOf:
+          - $ref: "#/components/schemas/Bag"
+          - type: integer

@@ -1,0 +1,32 @@
+{
+  "Holder": {
+    "valid": {
+      "early": ["a"],
+      "chain": [{"value": "x", "next": [{"value": "y"}]}],
+      "chains": [[{"value": "z"}], []]
+    },
+    "invalid": [
+      {"early": [1]},
+      {"chain": "x"},
+      {"chain": [1]},
+      {"chain": [{"value": 1}]},
+      {"chain": [{"next": [{"value": 2}]}]},
+      {"chains": [["z"]]}
+    ]
+  },
+  "Bag": {
+    "valid": {
+      "name": "n",
+      "extra": [{"name": "m", "other": [1]}, 3]
+    },
+    "invalid": [
+      {"name": 1},
+      {"extra": "no"},
+      {"extra": ["no"]}
+    ]
+  },
+  "ArrayTypeUnionSelfRef": {
+    "valid": [["a"], "b"],
+    "invalid": [[], 1, [1], [[]]]
+  }
+}
