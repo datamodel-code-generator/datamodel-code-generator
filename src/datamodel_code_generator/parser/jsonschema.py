@@ -556,12 +556,12 @@ def _dump_without_keywords(schema: JsonSchemaObject, keywords: Container[str]) -
 
 
 def _is_false_all_of(schema: object) -> bool:
-    """Return whether a schema is ``false`` written as an allOf that holds false, with only annotations beside it."""
-    return (
-        isinstance(schema, JsonSchemaObject)
-        and any(item is False for item in schema.allOf)
-        and not _dump_without_keywords(schema, _FALSE_ALL_OF_KEYWORDS)
-    )
+    """Return whether a schema is ``false`` written as an allOf that holds false, beside annotations and ``x-`` keys."""
+    if not isinstance(schema, JsonSchemaObject) or not any(item is False for item in schema.allOf):
+        return False
+    remaining = _dump_without_keywords(schema, _FALSE_ALL_OF_KEYWORDS)
+    extras = remaining.pop(JsonSchemaObject.__extra_key__, {})
+    return not any(not key.startswith("x-") for key in (*remaining, *extras))
 
 
 def _validation_keywords(
@@ -4370,8 +4370,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Yield the children ``parse_item`` types, whether their inline models are generated and whether they merge.
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, the
-        additionalProperties the model types are ``extras``, and additionalItems are children only beside tuple-style
+        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them (not a value
+        that is false written as an allOf, ``_is_false_all_of``: the rules forbid its keys), the additionalProperties
+        the model types are ``extras``, and additionalItems are children only beside tuple-style
         items, as array parsing reads them (``_get_list_item_schemas``). A child typed by a customTypePath names no
         model (``_site_writes_custom_type``).
         """
@@ -4379,10 +4380,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         def site(item: object) -> TypeGuard[JsonSchemaObject]:
             return isinstance(item, JsonSchemaObject) and not self._site_writes_custom_type(item, defining_ref)
 
+        pattern_properties = schema.patternProperties
+        if self.generate_schema_validators and not types_map and pattern_properties:
+            pattern_properties = {
+                pattern: value for pattern, value in pattern_properties.items() if not _is_false_all_of(value)
+            }
         mappings = (
-            (schema.properties, schema.patternProperties)
+            (schema.properties, pattern_properties)
             if self.generate_schema_validators
-            else (schema.patternProperties if types_map else schema.properties,)
+            else (pattern_properties if types_map else schema.properties,)
         )
         yield from (
             (item, detect_inline_variant, False)
