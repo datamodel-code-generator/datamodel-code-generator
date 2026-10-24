@@ -403,6 +403,37 @@ def test_object_maps_schema_validators_false_property(output_file: Path) -> None
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param([STRICT_PATTERN_MAPS], id="strict"),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], id="request-response"),
+    ],
+)
+def test_object_maps_schema_validators_false_all_of(output_file: Path, extra_args: list[str]) -> None:
+    """Read an allOf that holds false, with only annotations beside it, as false in the patternProperties rules.
+
+    The additionalProperties of ``m`` forbids the keys that match neither ``a`` nor ``^x``, and the pattern ``^x`` of
+    ``p`` forbids the keys it matches, declared ``xa`` included. The rules type no value with ``Item``, so its readOnly
+    property splits no class that names ``m``.
+    """
+    input_path = OBJECT_MAPS / "false_all_of.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", *extra_args],
+    )
+    payloads = json.loads((PAYLOADS / "false_all_of.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 @pytest.mark.parametrize("name", ["recursive_pattern", "recursive_cycle", "recursive_additional", "recursive_compound"])
 def test_object_maps_schema_validators_recursive_values(output_file: Path, name: str) -> None:
     """Name a map value type that is the model itself or a later model of its cycle as a string in the class body.

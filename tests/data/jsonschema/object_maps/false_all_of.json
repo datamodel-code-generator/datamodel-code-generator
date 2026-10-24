@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "m": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "description": "No value meets both members.",
+        "allOf": [
+          false,
+          {
+            "$ref": "#/$defs/Item"
+          }
+        ]
+      }
+    },
+    "p": {
+      "type": "object",
+      "properties": {
+        "xa": {
+          "type": "string"
+        },
+        "b": {
+          "type": "integer"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "allOf": [
+            false
+          ]
+        },
+        "^y": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "n": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
