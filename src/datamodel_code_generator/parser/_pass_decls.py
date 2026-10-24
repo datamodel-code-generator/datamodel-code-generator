@@ -1212,6 +1212,7 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
     Scope.GLOBAL,
     PassKind.CHECK,
     reads=_facts(
+        Fact.MODELS_EXIST,
         Fact.MODEL_KIND,
         Fact.FIELD_TYPES,
         Fact.CONSTRAINTS,

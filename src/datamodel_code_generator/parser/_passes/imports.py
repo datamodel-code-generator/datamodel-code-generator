@@ -194,6 +194,10 @@ class FinishHost(Protocol):
         """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values."""
 
     @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+    @property
     def _typed_map_value_reference_ids(self) -> set[int]:
         """The ids of the references of typed map values."""
 
@@ -891,16 +895,18 @@ def _alias_cycles(models: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...
 
 
 def reject_alias_cycles_without_schema(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
-    """Reject a class of output that Pydantic builds or msgspec decodes when it reaches aliases naming each other.
+    """Reject a class of output that Pydantic builds or msgspec decodes when it reaches a ``$ref`` chain looping back.
 
-    Such aliases stand for ``$ref`` chains that loop back without reaching a schema. Pydantic cannot build a type
-    alias whose whole value is the next alias of such a cycle (``circular-reference-schema``), and msgspec resolves
-    such an alias to a string naming the next one, which it cannot decode, so a class whose fields reach one,
-    directly or through other aliases, could never be built or decode a value. Aliases that no class reaches keep
-    their output.
+    Such a chain never reaches a schema. Its type aliases only name each other: Pydantic cannot build a type alias
+    whose whole value is the next alias of such a cycle (``circular-reference-schema``), and msgspec resolves such an
+    alias to a string naming the next one, which it cannot decode. A root model whose root names the model itself has
+    no type either: deduplication dropped it while its users still name it (``_self_named_root_models``). A class
+    whose fields reach one, directly or through type aliases, could never be built or decode a value. Aliases that no
+    class reaches keep their output.
     """
     models = [model for context in contexts for model in context.models]
-    if not (cycles := _alias_cycles(models)):
+    cycles = _alias_cycles(models) | {id(model): (model,) for model in parser._self_named_root_models}  # noqa: SLF001
+    if not cycles:
         return
     failure = "Pydantic cannot build" if parser.data_model_type._READ_BY_PYDANTIC else "msgspec cannot decode"  # noqa: SLF001
     for model in models:
@@ -909,23 +915,20 @@ def reject_alias_cycles_without_schema(parser: FinishHost, contexts: Sequence[Mo
         pending = [*model.all_data_types]
         seen: set[int] = set()
         while pending:
-            if (
-                (reference := pending.pop().reference) is None
-                or not isinstance(source := reference.source, TypeAliasBase)
-                or id(source) in seen
-            ):
+            if (reference := pending.pop().reference) is None or id(source := reference.source) in seen:
                 continue
             if (cycle := cycles.get(id(source))) is not None:
-                aliases = " -> ".join(
+                chain = " -> ".join(
                     f"{member.class_name} ({redact_reference(member.path)})" for member in (*cycle, cycle[0])
                 )
                 msg = (
-                    f"{model.class_name} uses type aliases whose $ref chain loops back without reaching a schema, "
-                    f"which {failure}: {aliases}"
+                    f"{model.class_name} uses a $ref chain that loops back without reaching a schema, "
+                    f"which {failure}: {chain}"
                 )
                 raise Error(msg)
             seen.add(id(source))
-            pending.extend(source.all_data_types)
+            if isinstance(source, TypeAliasBase):
+                pending.extend(source.all_data_types)
 
 
 def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:

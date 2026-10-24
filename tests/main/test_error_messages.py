@@ -1212,7 +1212,7 @@ def test_malformed_input_error_messages(
             "ref_alias_cycle.yaml",
             "openapi",
             ["--output-model-type", "pydantic_v2.dataclass"],
-            "Holder uses type aliases whose $ref chain loops back without reaching a schema, which Pydantic cannot "
+            "Holder uses a $ref chain that loops back without reaching a schema, which Pydantic cannot "
             "build: A (ref_alias_cycle.yaml#/components/schemas/A) -> B (ref_alias_cycle.yaml#/components/schemas/B) "
             "-> A (ref_alias_cycle.yaml#/components/schemas/A)",
             id="ref-alias-cycle-pydantic-dataclass",
@@ -1221,7 +1221,7 @@ def test_malformed_input_error_messages(
             "ref_alias_cycle_through_alias.json",
             "jsonschema",
             ["--output-model-type", "pydantic_v2.dataclass"],
-            "Model uses type aliases whose $ref chain loops back without reaching a schema, which Pydantic cannot "
+            "Model uses a $ref chain that loops back without reaching a schema, which Pydantic cannot "
             "build: A (ref_alias_cycle_through_alias.json#/$defs/A) -> B (ref_alias_cycle_through_alias.json#/$defs/B) "
             "-> A (ref_alias_cycle_through_alias.json#/$defs/A)",
             id="ref-alias-cycle-through-alias-pydantic-dataclass",
@@ -1230,7 +1230,7 @@ def test_malformed_input_error_messages(
             "ref_alias_cycle.yaml",
             "openapi",
             ["--output-model-type", "msgspec.Struct"],
-            "Holder uses type aliases whose $ref chain loops back without reaching a schema, which msgspec cannot "
+            "Holder uses a $ref chain that loops back without reaching a schema, which msgspec cannot "
             "decode: A (ref_alias_cycle.yaml#/components/schemas/A) -> B (ref_alias_cycle.yaml#/components/schemas/B) "
             "-> A (ref_alias_cycle.yaml#/components/schemas/A)",
             id="ref-alias-cycle-msgspec",
@@ -1239,10 +1239,42 @@ def test_malformed_input_error_messages(
             "ref_alias_cycle_through_alias.json",
             "jsonschema",
             ["--output-model-type", "msgspec.Struct"],
-            "Model uses type aliases whose $ref chain loops back without reaching a schema, which msgspec cannot "
+            "Model uses a $ref chain that loops back without reaching a schema, which msgspec cannot "
             "decode: A (ref_alias_cycle_through_alias.json#/$defs/A) -> "
             "B (ref_alias_cycle_through_alias.json#/$defs/B) -> A (ref_alias_cycle_through_alias.json#/$defs/A)",
             id="ref-alias-cycle-through-alias-msgspec",
+        ),
+        *(
+            pytest.param(
+                "ref_self_reference.yaml",
+                "openapi",
+                ["--output-model-type", output_model_type],
+                f"Holder uses a $ref chain that loops back without reaching a schema, which {failure}: "
+                "A (ref_self_reference.yaml#/components/schemas/A) -> "
+                "A (ref_self_reference.yaml#/components/schemas/A)",
+                id=f"ref-self-reference-{output_model_type}",
+            )
+            for output_model_type, failure in (
+                ("pydantic_v2.BaseModel", "Pydantic cannot build"),
+                ("pydantic_v2.dataclass", "Pydantic cannot build"),
+                ("msgspec.Struct", "msgspec cannot decode"),
+            )
+        ),
+        *(
+            pytest.param(
+                "ref_self_reference_through_alias.json",
+                "jsonschema",
+                ["--output-model-type", output_model_type],
+                f"{user} uses a $ref chain that loops back without reaching a schema, which {failure}: "
+                "A (ref_self_reference_through_alias.json#/$defs/A) -> "
+                "A (ref_self_reference_through_alias.json#/$defs/A)",
+                id=f"ref-self-reference-through-alias-{output_model_type}",
+            )
+            for output_model_type, user, failure in (
+                ("pydantic_v2.BaseModel", "C", "Pydantic cannot build"),
+                ("pydantic_v2.dataclass", "Model", "Pydantic cannot build"),
+                ("msgspec.Struct", "Model", "msgspec cannot decode"),
+            )
         ),
         pytest.param(
             "schema_location_request_body.yaml",

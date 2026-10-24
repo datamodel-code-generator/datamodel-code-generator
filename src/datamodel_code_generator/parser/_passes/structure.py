@@ -119,6 +119,10 @@ class StructureHost(BaseStandInHost, Protocol):
         """The constraints that type overrides put on reuse."""
 
     @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+    @property
     def _typed_map_value_reference_ids(self) -> set[int]:
         """The ids of the references of typed map values."""
 
@@ -360,6 +364,18 @@ def renders_as_duplicate(
     )
 
 
+def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_reference: Reference) -> None:
+    """Redirect the users of a duplicated root model to the reference its root names, and detach its own types.
+
+    A root model whose root names the model itself keeps users that still name it, which
+    ``reject_alias_cycles_without_schema`` reads from ``_self_named_root_models``.
+    """
+    if root_reference is model.reference:
+        parser._self_named_root_models.append(model)  # noqa: SLF001
+    parser._graph_builder.redirect_reference_users(model.reference, root_reference)  # noqa: SLF001
+    parser._graph_builder.detach_model_data_type_refs(model)  # noqa: SLF001
+
+
 def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> None:  # noqa: PLR0912
     if not models:
         return
@@ -389,9 +405,8 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
             if reuse_allowed and (
                 root_reference := parser._get_duplicate_root_reference(model, root_data_type, models_set)  # noqa: SLF001
             ):
-                parser._graph_builder.redirect_reference_users(model.reference, root_reference)  # noqa: SLF001
+                _drop_duplicate_root_model(parser, model, root_reference)
                 models_to_remove.add(model)
-                parser._graph_builder.detach_model_data_type_refs(model)  # noqa: SLF001
                 continue
 
             # Remove parser from all DataModel children's base_classes
@@ -961,9 +976,10 @@ def group_models_by_module(parser: StructureHost, state: _StructureState) -> Non
 
 
 def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) -> None:
-    """Forget the models collapsed reuse removed in an earlier parse."""
+    """Forget the models collapsed reuse removed, and the root models deduplication dropped, in an earlier parse."""
     parser._collapsed_reuse_models.clear()  # noqa: SLF001
     parser._collapsed_reuse_users.clear()  # noqa: SLF001
+    parser._self_named_root_models.clear()  # noqa: SLF001
 
 
 def snapshot_union_tags(parser: StructureHost, state: _StructureState) -> None:
