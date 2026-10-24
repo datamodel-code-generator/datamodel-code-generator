@@ -66712,7 +66712,7 @@ bases put after a default, which `dataclasses` rejects while creating the class,
 | `sort_data_models` (`parser/_passes/settle.py`) | references through the store index | model order, models that need forward-reference updates |
 | `sort_base_classes_for_mro` (`parser/_passes/settle.py`) | base classes | base order (before L3 and L5 reuse add bases) |
 | L3 `_union_tags` snapshot (`parser/_passes/structure.py`) | discriminator mappings | union tags that reuse compares, taken before any merge |
-| L3 `delete_duplicate_models` (`parser/_passes/structure.py`) | rendered model text (`ModelShapes.key` of `parser/_model_shapes.py`) | redirects users, edits base lists (drops root-model bases, not the stand-ins of `x-python-import`), removes models |
+| L3 `delete_duplicate_models` (`parser/_passes/structure.py`) | rendered model text (`ModelShapes.key` of `parser/_model_shapes.py`) | redirects users, edits base lists (drops root-model bases, not the stand-ins of `x-python-import`), removes models (a root model that names itself is recorded in `_self_named_root_models`, as its users keep its name) |
 | L3 `replace_duplicate_name_in_module` (`parser/_passes/structure.py`) | class names, the imports stand-ins stand for (bound in each module that inherits one) | `class_name` (not of stand-ins) |
 | L3 `reuse_model_tree_scope` (`parser/_passes/structure.py`) | rendered model text across modules | moves canonicals to a shared module, replaces duplicates by empty subclasses or removes them |
 | L3 `resolve_circular_imports` (`parser/_passes/structure.py`) | module dependency graph (the references of field and base types and of the types that schema validator rules name, those of an alias written as a class for its rules included; without stand-ins), class names | merges cyclic modules into `_internal` modules, relocates models; a model whose class name an earlier model of the merge holds takes `<name>_<n>` with the smallest `n` no merged model holds (`_merged_class_names`); a stand-in moves along without taking part in the names or the re-exports |
@@ -67014,7 +67014,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | IMPORTS | `record_generated_class_names` | global | bookkeeping | - | CLASS_NAMES | Runs when: class names are collected. |
 | IMPORTS | `record_model_placement` | global | bookkeeping | - | CLASS_NAMES, MODULE_MEMBERSHIP | Runs when: typed or untyped nullable maps. |
 | IMPORTS | `check_model_inheritance` | global | check | - | BASES, FIELD_SET, MODULE_MEMBERSHIP |  |
-| IMPORTS | `reject_alias_cycles_without_schema` | global | check | - | CONSTRAINTS, FIELD_TYPES, MODEL_KIND, MODULE_MEMBERSHIP, NULLABLE, TYPE_ALIAS_BODY | Runs when: output that Pydantic builds or msgspec decodes. |
+| IMPORTS | `reject_alias_cycles_without_schema` | global | check | - | CONSTRAINTS, FIELD_TYPES, MODELS_EXIST, MODEL_KIND, MODULE_MEMBERSHIP, NULLABLE, TYPE_ALIAS_BODY | Runs when: output that Pydantic builds or msgspec decodes. |
 | IMPORTS | `warn_about_dropped_constraints` | global | check | STDERR | CONSTRAINTS |  |
 | IMPORTS | `warn_about_decimal_defaults` | global | check | STDERR | DEFAULTS | After `warn_about_dropped_constraints`: warnings keep their order. |
 | IMPORTS | `warn_about_variant_discriminator_tags` | global | check | STDERR | DISCRIMINATOR_TAGS | After `warn_about_decimal_defaults`: warnings keep their order. |
