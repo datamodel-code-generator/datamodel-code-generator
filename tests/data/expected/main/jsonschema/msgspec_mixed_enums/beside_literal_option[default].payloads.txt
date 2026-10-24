@@ -1,0 +1,6 @@
+valid: type refused by msgspec
+invalid {"kept": "1"}: type refused by msgspec
+invalid {"mapped": "2"}: type refused by msgspec
+invalid {"listed": ["z"]}: type refused by msgspec
+invalid {"choice": 1}: type refused by msgspec
+invalid {"free": "4"}: type refused by msgspec

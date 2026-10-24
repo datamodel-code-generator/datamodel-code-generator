@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Mixed operation enum
+  version: "1"
+paths:
+  /value:
+    get:
+      responses:
+        "200":
+          description: A value that is a bool, a str or an int
+          content:
+            application/json:
+              schema:
+                enum: [true, "x", 2]
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        value:
+          enum: [true, "x", 3]

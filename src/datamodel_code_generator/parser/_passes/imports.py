@@ -189,6 +189,10 @@ class FinishHost(Protocol):
     typed_map_values_may_move_models: bool
 
     @property
+    def _literal_under_all_enum_reference_ids(self) -> set[int]:
+        """The ids of the references of the enums that ``--enum-field-as-literal all`` writes as Literal values."""
+
+    @property
     def _typed_map_value_reference_ids(self) -> set[int]:
         """The ids of the references of typed map values."""
 
@@ -502,7 +506,9 @@ _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
 })
 
 
-_MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...]]
+_MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...], bool]
+"""A kind of a union that msgspec refuses for an Enum, its written members, and whether ``--enum-field-as-literal all``
+writes every Enum among them as a Literal."""
 
 
 def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
@@ -514,14 +520,19 @@ def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[Data
             yield data_type
 
 
-def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumClash, ...]:
+def _msgspec_enum_clashes(
+    data_types: Iterable[DataType], literal_enum_ids: Collection[int]
+) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind and its written members of a union that msgspec decodes once its Enums are written as Literal.
 
     msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
     values as its one int-like member, while it takes Literal values beside each other and beside str or int. A
     member of another str-like type, such as bytes, refuses a Literal of str values too, so it leaves the str side be.
+    ``literal_enum_ids`` holds the ids of the references of the Enums that ``--enum-field-as-literal all`` writes as a
+    Literal.
     """
     enums: dict[str, set[int]] = {"str": set(), "int": set()}
+    classes: dict[str, set[int]] = {"str": set(), "int": set()}
     names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
     others: set[str] = set()
     refused: set[str] = set()
@@ -533,6 +544,8 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
                 ) in ({"str"}, {"int"}):
                     enums[kind := kinds.pop()].add(id(source))
                     names[kind][member.type_hint] = None
+                    if id(source.reference) not in literal_enum_ids:
+                        classes[kind].add(id(source))
             elif source is None and not leaf.data_types and not leaf.enum_member_literals:
                 if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
                     refused.add("str")
@@ -542,39 +555,57 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
                     others.add(kind)
                     names[kind][member.type_hint] = None
     return tuple(
-        (kind, (*names[kind],))
+        (kind, (*names[kind],), not classes[kind])
         for kind, ids in enums.items()
         if ids and len(ids) + (kind in others) > 1 and kind not in refused
     )
 
 
-def _msgspec_refused_union_enums(data_type: DataType) -> tuple[_MsgspecEnumClash, ...]:
+def _msgspec_refused_union_enums(
+    data_type: DataType, literal_enum_ids: Collection[int]
+) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
     if (
         not data_type.is_union
         or _is_discriminator_container(data_type)
-        or not (clashes := _msgspec_enum_clashes(data_type.data_types))
+        or not (clashes := _msgspec_enum_clashes(data_type.data_types, literal_enum_ids))
     ):
         return ()
-    covered = {kind for root in _iter_union_alias_roots(data_type) for kind, _ in _msgspec_enum_clashes((root,))}
+    covered = {
+        clash[0]
+        for root in _iter_union_alias_roots(data_type)
+        for clash in _msgspec_enum_clashes((root,), literal_enum_ids)
+    }
     return tuple(clash for clash in clashes if clash[0] not in covered)
 
 
-def _msgspec_field_enum_clashes(data_types: Iterable[DataType]) -> dict[str, tuple[str, ...]]:
-    """Return the written members of each kind that the unions among some types are refused for, the first union's."""
-    clashes: dict[str, tuple[str, ...]] = {}
-    for kind, members in chain.from_iterable(map(_msgspec_refused_union_enums, data_types)):
-        clashes.setdefault(kind, members)
+def _msgspec_field_enum_clashes(
+    data_types: Iterable[DataType], literal_enum_ids: Collection[int]
+) -> dict[str, _MsgspecEnumClash]:
+    """Return the clash of each kind that the unions among some types are refused for, the first union's."""
+    clashes: dict[str, _MsgspecEnumClash] = {}
+    for clash in chain.from_iterable(
+        _msgspec_refused_union_enums(data_type, literal_enum_ids) for data_type in data_types
+    ):
+        clashes.setdefault(clash[0], clash)
     return clashes
 
 
 def _msgspec_enum_union_message(name: str, clash: _MsgspecEnumClash) -> str:
-    """Describe a union that msgspec refuses to decode because it holds an Enum beside another member of its kind."""
-    kind, members = clash
-    return (
+    """Describe a union that msgspec refuses to decode because it holds an Enum beside another member of its kind.
+
+    The message recommends ``--enum-field-as-literal all`` only where that option writes every such Enum as a Literal.
+    """
+    kind, members, literal_under_all = clash
+    message = (
         f"msgspec cannot decode the union {name}: its {kind}-like members {', '.join(members)} include an Enum, "
-        f"while a msgspec union holds an Enum only as its one {kind}-like member. Pass --enum-field-as-literal all "
-        f"to write enums as Literal values, which msgspec decodes beside {kind} and other Literal values."
+        f"while a msgspec union holds an Enum only as its one {kind}-like member."
+    )
+    if not literal_under_all:
+        return message
+    return (
+        f"{message} Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes beside "
+        f"{kind} and other Literal values."
     )
 
 
@@ -646,8 +677,11 @@ _WRITTEN_ENUM_VALUE: Final[Mapping[str, Callable[[Any], object]]] = {
 """The value an enum module writes for a member value of each kind: a plain ``bool``, ``int``, ``float`` or ``str``."""
 
 
-def _msgspec_mixed_enum_message(model: Enum) -> str | None:
+def _msgspec_mixed_enum_message(model: Enum, *, literal_under_all: bool) -> str | None:
     """Describe an enum whose values msgspec refuses: besides None, they are neither all str nor all int.
+
+    The message recommends ``--enum-field-as-literal all`` only where that option writes the enum as a Literal
+    (``literal_under_all``).
 
     An ``IntEnum``, a ``StrEnum`` and an ``(int, Enum)`` or ``(str, Enum)`` make every value one of them, a
     ``(float, Enum)`` or ``(bytes, Enum)`` every value a float or bytes. A plain ``Enum`` keeps the values as the
@@ -672,10 +706,12 @@ def _msgspec_mixed_enum_message(model: Enum) -> str | None:
                 kinds.add(kind)
     if kinds in ({"str"}, {"int"}):
         return None
+    message = f"msgspec cannot decode the enum {model.class_name}: its values are neither all str nor all int."
+    if not literal_under_all:
+        return message
     floats = " A float value, which a msgspec Literal does not hold, is written as float." if "float" in kinds else ""
     return (
-        f"msgspec cannot decode the enum {model.class_name}: its values are neither all str nor all int. "
-        f"Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.{floats}"
+        f"{message} Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.{floats}"
     )
 
 
@@ -867,13 +903,14 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
 
     models = [model for context in contexts for model in context.models]
     named = {model.class_name: model for model in models}
+    literal_enum_ids = parser._literal_under_all_enum_reference_ids  # noqa: SLF001
     for model in models:
         if isinstance(model, Enum):
             for message in filter(
                 None,
                 (
                     None if parser.use_msgspec_nullable_enum_alias else _msgspec_null_enum_message(model),
-                    _msgspec_mixed_enum_message(model),
+                    _msgspec_mixed_enum_message(model, literal_under_all=id(model.reference) in literal_enum_ids),
                     _msgspec_wide_int_enum_message(model),
                 ),
             ):
@@ -897,7 +934,7 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
             refused = bool(refusal[0]) and (
                 refusal[1] is not None or not (discriminated and parser.use_msgspec_tagged_unions)
             )
-            clashes = _msgspec_field_enum_clashes(nested)
+            clashes = _msgspec_field_enum_clashes(nested, literal_enum_ids)
             wide = _msgspec_wide_int(chain.from_iterable(data_type.literals for data_type in nested))
             if member is None and not refused and not clashes and wide is None:
                 continue
@@ -908,7 +945,7 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 warn_as_parser_base(
                     _msgspec_union_message(name, refusal, discriminated=discriminated), UserWarning, stacklevel=2
                 )
-            for clash in clashes.items():
+            for clash in clashes.values():
                 warn_as_parser_base(_msgspec_enum_union_message(name, clash), UserWarning, stacklevel=2)
             if wide is not None:
                 warn_as_parser_base(

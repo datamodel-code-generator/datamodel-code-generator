@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kept": {
+      "enum": ["a", 1],
+      "x-enum-field-as-literal": false
+    },
+    "mapped": {
+      "enum": ["b", 2]
+    },
+    "listed": {
+      "type": ["array", "string", "integer"],
+      "items": {"type": "string"},
+      "enum": ["c", 3, ["d"]]
+    },
+    "choice": {
+      "anyOf": [
+        {"$ref": "#/$defs/Letters"},
+        {"type": "string"}
+      ]
+    },
+    "free": {
+      "enum": ["e", 4]
+    }
+  },
+  "$defs": {
+    "Letters": {
+      "enum": ["x", "y"],
+      "x-enum-field-as-literal": false
+    }
+  }
+}

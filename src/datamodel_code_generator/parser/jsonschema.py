@@ -259,7 +259,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
-    from datamodel_code_generator.model._decisions.enum_kind import LiteralValueKind
+    from datamodel_code_generator.model._decisions.enum_kind import LiteralSetting, LiteralValueKind
     from datamodel_code_generator.parser._schema_graph import SchemaNodeId
 
 JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
@@ -2831,12 +2831,46 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         2. enum_field_as_literal_map matching Model.field or field
         3. Global enum_field_as_literal setting
         """
+        return self._enum_as_literal_under(
+            self.enum_field_as_literal.value if self.enum_field_as_literal else None, obj, property_name, property_obj
+        )
+
+    def _enum_as_literal_under(
+        self,
+        setting: LiteralSetting | None,
+        obj: JsonSchemaObject,
+        property_name: str | None,
+        property_obj: JsonSchemaObject | None,
+    ) -> bool:
+        """Return whether an enum is written as a Literal under an ``--enum-field-as-literal`` setting."""
         return enum_as_literal(
             extension=(property_obj if property_obj is not None else obj).x_enum_field_as_literal,
             mapped=self.enum_field_as_literal_map.get(property_name) if property_name else None,
-            setting=self.enum_field_as_literal.value if self.enum_field_as_literal else None,
+            setting=setting,
             member_count=len(obj.enum),
         )
+
+    def _parse_enum_class(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        *,
+        property_obj: JsonSchemaObject | None = None,
+        singular_name: bool = False,
+    ) -> DataType:
+        """Parse an enum that ``should_parse_enum_as_literal`` leaves a class, as ``parse_enum`` does.
+
+        The classes it builds are remembered when ``--enum-field-as-literal all`` would write the enum as a Literal,
+        so that the warnings about enums msgspec cannot decode recommend that option for them only.
+        """
+        built = len(self.results)
+        data_type = self.parse_enum(name, obj, path, singular_name=singular_name)
+        if self._enum_as_literal_under("all", obj, name, property_obj):
+            self._literal_under_all_enum_reference_ids.update(
+                id(model.reference) for model in self.results[built:] if isinstance(model, Enum)
+            )
+        return data_type
 
     def _extract_const_enum_from_combined(  # noqa: PLR0912
         self, items: list[JsonSchemaObject | bool], parent: JsonSchemaObject, *, writes: bool = False
@@ -12715,7 +12749,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and not self._reads_enum_as_const(merged_root)
             and not self.should_parse_enum_as_literal(merged_root, property_name=name)
         ):
-            return self.parse_enum(name, self._definition_enum(merged_root), path)
+            return self._parse_enum_class(name, self._definition_enum(merged_root), path)
         return (
             self.parse_array(name, merged_root, path)
             if merged_root.is_array
@@ -13998,7 +14032,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         synthetic_obj = self._create_synthetic_enum_obj(obj, *const_enum_data)
         if self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
             return self.parse_enum_as_literal(synthetic_obj)
-        return self.parse_enum(name, synthetic_obj, enum_path, singular_name=singular_name)
+        return self._parse_enum_class(name, synthetic_obj, enum_path, property_obj=obj, singular_name=singular_name)
 
     def parse_item(
         self,
@@ -14147,7 +14181,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._get_const_data_type(self._exact_const_enum_value(item)[0], item)
         if self.should_parse_enum_as_literal(item, property_name=name):
             return self._enum_value_type(item, self.parse_enum_as_literal(item))
-        return self.parse_enum(name, item, get_special_path("enum", site.path), singular_name=site.singular_name)
+        return self._parse_enum_class(name, item, get_special_path("enum", site.path), singular_name=site.singular_name)
 
     def _parse_typed_nullable_map_item(self, site: _Site) -> DataType:
         item, name, path = site.obj, site.name, site.path
@@ -16486,7 +16520,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if const_enum_data is not None:
             synthetic_obj = self._create_synthetic_enum_obj(obj, *const_enum_data)
             if not self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
-                self.parse_enum(name, synthetic_obj, path)
+                self._parse_enum_class(name, synthetic_obj, path, property_obj=obj)
             else:
                 self.parse_root_type(name, synthetic_obj, path)
             return
@@ -16780,7 +16814,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _build_definition_enum(self, site: _Site) -> object:
-        return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
+        return self._parse_enum_class(site.name, self._definition_enum(site.obj), site.path)
 
     _DEFINITION_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, None]] = DispatchTable(
         (

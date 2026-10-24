@@ -16,3 +16,13 @@ nullable_enum_alias	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[null
 subclass_enum	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[subclass_enum].payloads.txt	= main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].payloads.txt
 subclass_enum	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[subclass_enum].py
 subclass_enum	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[subclass_enum].warnings.txt
+[test_msgspec_mixed_enums_beside_literal_option]
+default	main/jsonschema/msgspec_mixed_enums/beside_literal_option[default].payloads.txt
+default	main/jsonschema/msgspec_mixed_enums/beside_literal_option[default].py
+default	main/jsonschema/msgspec_mixed_enums/beside_literal_option[default].warnings.txt
+literal_all	main/jsonschema/msgspec_mixed_enums/beside_literal_option[literal_all].payloads.txt	= main/jsonschema/msgspec_mixed_enums/beside_literal_option[default].payloads.txt
+literal_all	main/jsonschema/msgspec_mixed_enums/beside_literal_option[literal_all].py
+literal_all	main/jsonschema/msgspec_mixed_enums/beside_literal_option[literal_all].warnings.txt
+[test_msgspec_mixed_operation_enum]
+	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_operation_enum.py
+	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_operation_enum.warnings.txt
