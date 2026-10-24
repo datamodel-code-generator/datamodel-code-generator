@@ -324,6 +324,7 @@ _ANNOTATION_KEYWORDS = frozenset({
     "writeOnly",
 })
 _NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMediaType", "contentSchema", "format"}
+_FALSE_ALL_OF_KEYWORDS = _ANNOTATION_KEYWORDS | {"allOf"}
 _INHERITED_NESTED_SCHEMA_FIELDS = (
     "items",
     "additionalItems",
@@ -552,6 +553,15 @@ def _dump_without_keywords(schema: JsonSchemaObject, keywords: Container[str]) -
         else:
             schema_dict.pop(JsonSchemaObject.__extra_key__, None)
     return schema_dict
+
+
+def _is_false_all_of(schema: object) -> bool:
+    """Return whether a schema is ``false`` written as an allOf that holds false, with only annotations beside it."""
+    return (
+        isinstance(schema, JsonSchemaObject)
+        and any(item is False for item in schema.allOf)
+        and not _dump_without_keywords(schema, _FALSE_ALL_OF_KEYWORDS)
+    )
 
 
 def _validation_keywords(
@@ -11561,11 +11571,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 continue
             for pattern_index, (pattern, schema) in enumerate(source.patternProperties.items()):
                 match schema:
-                    case False:
-                        rejected_patterns.append(pattern)
                     case True:
                         pattern_value_types.append((pattern, self.data_type_manager.get_data_type(Types.any)))
-                    case JsonSchemaObject():
+                    case JsonSchemaObject() if not _is_false_all_of(schema):
                         pattern_value_types.append((
                             pattern,
                             self.data_type_manager.get_data_type(
@@ -11583,13 +11591,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 ),
                             ),
                         ))
+                    case False | JsonSchemaObject():
+                        rejected_patterns.append(pattern)
 
         if not pattern_value_types and not rejected_patterns:
             return pattern_value_types, rejected_patterns, None, allow_unmatched
-        if (additional_property := self._pattern_rule_additional_properties(obj)) is None:
+        if (additional_property := self._first_schema_additional_properties(obj)) is None:
             return pattern_value_types, rejected_patterns, None, allow_unmatched
 
         source_index, source, additional_properties = additional_property
+        if _is_false_all_of(additional_properties):
+            return pattern_value_types, rejected_patterns, None, False
         additional_property_name = f"{name}AdditionalProperty"
         additional_property_type = self._parse_additional_properties_value(
             additional_property_name,
@@ -11600,18 +11612,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return pattern_value_types, rejected_patterns, additional_property_type, allow_unmatched
 
-    def _pattern_rule_additional_properties(
+    def _first_schema_additional_properties(
         self, obj: JsonSchemaObject
     ) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | None:
-        """Return the index, schema and value of the additionalProperties the patternProperties rules of ``obj`` type.
+        """Return the index, schema and value of the first schema-valued additionalProperties of ``obj``.
 
-        They are the first schema-valued additionalProperties of ``obj`` and its allOf sources
-        (``_iter_schema_validation_sources``).
+        It is read from ``obj`` and then its allOf sources (``_iter_schema_validation_sources``).
         """
         for index, source in enumerate(self._iter_schema_validation_sources(obj)):
             if isinstance(additional_properties := source.additionalProperties, JsonSchemaObject):
                 return index, source, additional_properties
         return None
+
+    def _pattern_rule_additional_properties(
+        self, obj: JsonSchemaObject
+    ) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | None:
+        """Return the index, schema and value of the additionalProperties the patternProperties rules of ``obj`` type.
+
+        They are the first schema-valued additionalProperties (``_first_schema_additional_properties``), except one
+        that is ``false`` written as an allOf (``_is_false_all_of``): the rules forbid the keys it covers instead.
+        """
+        if (additional_property := self._first_schema_additional_properties(obj)) is None or _is_false_all_of(
+            additional_property[2]
+        ):
+            return None
+        return additional_property
 
     @staticmethod
     def _plain_pattern_value_type(schema: object, *, allow_minimum: bool = False) -> str | None:
@@ -11659,7 +11684,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Prove a skipped pattern rejects some value accepted by a simple declared field."""
         declared_type = cls._plain_pattern_value_type(declared)
         if declared_type is not None:
-            if pattern is False:
+            if pattern is False or _is_false_all_of(pattern):
                 return True
             return (
                 declared_type == "integer"

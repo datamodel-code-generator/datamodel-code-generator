@@ -1464,6 +1464,13 @@ use-exact-imports	main/jsonschema/object_maps/schema_validators_cross_module_rul
 use-exact-imports	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-exact-imports]/
 use-type-alias	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-type-alias].payloads.txt	= main/jsonschema/object_maps/schema_validators_cross_module_rule_types[collapse-root-models].payloads.txt
 use-type-alias	main/jsonschema/object_maps/schema_validators_cross_module_rule_types[use-type-alias]/
+[test_object_maps_schema_validators_false_all_of]
+default	main/jsonschema/object_maps/schema_validators_false_all_of[default].payloads.txt
+default	main/jsonschema/object_maps/schema_validators_false_all_of[default].py
+request-response	main/jsonschema/object_maps/schema_validators_false_all_of[request-response].payloads.txt	= main/jsonschema/object_maps/schema_validators_false_all_of[default].payloads.txt
+request-response	main/jsonschema/object_maps/schema_validators_false_all_of[request-response].py
+strict	main/jsonschema/object_maps/schema_validators_false_all_of[strict].payloads.txt	= main/jsonschema/object_maps/schema_validators_false_all_of[default].payloads.txt
+strict	main/jsonschema/object_maps/schema_validators_false_all_of[strict].py	= main/jsonschema/object_maps/schema_validators_false_all_of[default].py
 [test_object_maps_schema_validators_false_property]
 	main/jsonschema/object_maps/schema_validators_false_property.payloads.txt
 	main/jsonschema/object_maps/schema_validators_false_property.py
