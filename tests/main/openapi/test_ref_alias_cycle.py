@@ -100,3 +100,44 @@ def test_ref_alias_cycle_base_model(output_file: Path) -> None:
         expected_attribute_path=("a",),
         expected_attribute_value=None,
     )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_ref_sibling_cycle_description_collapse_root_models(output_file: Path, output_model_type: str) -> None:
+    """Write None where --collapse-root-models inlines the root of a cycle that deduplication left without a type.
+
+    The classes that name the cycle take the type their field writes without ``Annotated``: msgspec writes it inside
+    ``Annotated`` too, instead of leaving it empty, which is not Python.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_cycle_description.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, "--collapse-root-models"],
+    )
+
+
+def test_ref_sibling_cycle_description_collapse_root_models_msgspec_decode(output_file: Path) -> None:
+    """Decode the msgspec classes that name a cycle beside a description; the schema decides the other fields."""
+    input_path = OPEN_API_DATA_PATH / "ref_sibling_cycle_description.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "msgspec.Struct", "--collapse-root-models"],
+    )
+    valid = {"count": 1}
+    invalid = {"count": "x"}
+    validator = Draft202012Validator({**yaml.safe_load(input_path.read_text()), "$ref": "#/components/schemas/Holder"})
+    validator.validate({})
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "ref_sibling_cycle_description_msgspec", "Holder") as model:
+        parsed = [msgspec.json.decode(json.dumps(payload), type=model) for payload in ({}, valid)]
+        with pytest.raises(msgspec.ValidationError, match=r"Expected `int`, got `str` - at `\$\.count`"):
+            msgspec.json.decode(json.dumps(invalid), type=model)
+    assert_output(f"{parsed!r}\n", name="parsed")

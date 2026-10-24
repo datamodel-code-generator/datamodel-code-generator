@@ -421,6 +421,7 @@ openapi/ref_alias_cycle_unused.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_edges/operation_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_merge_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_nullable.yaml	yaml_fast_constructor/parity.txt
+openapi/ref_sibling_cycle_description.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/mapped.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/schema.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_siblings_recursive_target/shrubs.yaml	yaml_fast_constructor/parity.txt
