@@ -566,7 +566,8 @@ def _is_false_all_of(schema: object) -> bool:
             extras = remaining.pop(JsonSchemaObject.__extra_key__, {})
             return not any(not key.startswith("x-") for key in (*remaining, *extras))
         case {"allOf": list() as all_of} if any(item is False for item in all_of):
-            return {key for key in schema if not key.startswith("x-")} <= _FALSE_ALL_OF_KEYWORDS
+            plain_keys = {key for key in schema if not (isinstance(key, str) and key.startswith("x-"))}
+            return plain_keys <= _FALSE_ALL_OF_KEYWORDS
     return False
 
 
@@ -1911,20 +1912,22 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         applicator that evaluates no property leaves the keys ``unevaluatedProperties`` sees those of
         ``additionalProperties``. A dump or a merge the parser validates again keeps that decision, also where it
         drops the applicators. Defined last, it runs before the other validators and sees the document object. A
-        value that is ``false`` written as an allOf (``_is_false_all_of``) stays where it is, as ``false`` does.
+        value that is ``false`` written as an allOf (``_is_false_all_of``), of a schema object without properties, is
+        read as ``false``, which stays where it is.
         """
         if (
             not (info.context or {}).get(READ_UNEVALUATED_PROPERTIES_CONTEXT)
             or not _is_document_object(values)
             or not isinstance(unevaluated_properties := values.get("unevaluatedProperties"), dict)
-            or _is_false_all_of(unevaluated_properties)
+            or "additionalProperties" in values
+            or not all(
+                _applicator_evaluates_no_property(keyword, values[keyword])
+                for keyword in _IN_PLACE_APPLICATOR_KEYWORDS.intersection(values)
+            )
         ):
             return values
-        if "additionalProperties" in values or not all(
-            _applicator_evaluates_no_property(keyword, values[keyword])
-            for keyword in _IN_PLACE_APPLICATOR_KEYWORDS.intersection(values)
-        ):
-            return values
+        if not values.get("properties") and _is_false_all_of(unevaluated_properties):
+            return {**values, "unevaluatedProperties": False}
         return {**values, "additionalProperties": unevaluated_properties}
 
     @property
@@ -13852,7 +13855,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             admitted.append(_schema_assertions(other_keys))
             if any(schema is False for schema in pattern_properties.values()):
                 reasons.append("admits keys whose pattern rejects every value")
-        elif admitted and obj.additionalProperties is not False:
+        elif admitted and obj.additionalProperties is not False and not _is_false_all_of(obj.additionalProperties):
             reasons.append("allows keys that match no pattern")
         if any(schema != admitted[0] for schema in admitted):
             reasons.append(
