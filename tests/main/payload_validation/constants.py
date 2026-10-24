@@ -87,6 +87,14 @@ EXCLUDED_FILES: dict[str, str] = {
         "30-level chain with two references per level: hypothesis-jsonschema time roughly doubles per level "
         "(10 examples take 47 s at depth 10); test_main_dataclass_nested_mapping_default_chain covers its generation"
     ),
+    "jsonschema/discriminator_enum_const_outside_enum.json": (
+        "the const lies outside the Enum of the base, so no document is valid; "
+        "test_use_enum_values_in_discriminator_const_outside_enum covers its generation"
+    ),
+    "jsonschema/discriminator_enum_unnamed_tags.json": (
+        "option-only e2e fixture; payload validation intentionally uses default generation, which tags the variants "
+        "by schema name; test_use_enum_values_in_discriminator_without_member validates its payloads"
+    ),
     "jsonschema/msgspec_number_limits/float_range_bounds.json": (
         "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
         "test_msgspec_number_limits validates its msgspec payloads"

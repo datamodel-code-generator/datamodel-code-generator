@@ -27,6 +27,7 @@ from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
+    enum_tag_members,
     field_tag,
     mapped_tags,
     tag_field_matches,
@@ -70,7 +71,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch
+    from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -1706,6 +1707,14 @@ def enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> 
     """Return the tag ``Literal`` value that a discriminator value takes from the member of its enum, if any."""
     member = enum_source.find_member(value, coerce_strings=True)
     return enum_tag_literal(value, member.value) if member else value
+
+
+def enum_discriminator_members(enum_source: Enum, values: Iterable[DiscriminatorValue]) -> EnumTagMembers:
+    """Return the members of an Enum that tag a variant whose tags are ``values`` (``enum_tag_members``)."""
+    return enum_tag_members(
+        (enum_source.find_member(value, coerce_strings=True) for value in values),
+        lambda: [enum_source.get_member(field) for field in enum_source.fields],
+    )
 
 
 def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:

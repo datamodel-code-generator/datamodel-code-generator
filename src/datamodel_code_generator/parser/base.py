@@ -173,6 +173,7 @@ from datamodel_code_generator.parser._passes._shared import (
     alias_shadowed_imports,
     apply_inherited_field_default,
     enum_discriminator_literal,
+    enum_discriminator_members,
     enum_site_override_import,
     field_name_model_type_of,
     normalize_default_value_constraints,
@@ -213,9 +214,6 @@ from datamodel_code_generator.parser._pipeline import (
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
-from datamodel_code_generator.python_literal import (
-    _semantic_value_text,
-)
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
@@ -1865,14 +1863,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if enum_source:
             if self.use_enum_values_in_discriminator:
                 enum_class_name = enum_source.reference.short_name
-                enum_member_literals: list[tuple[str, str]] = []
-                for value in discriminator_values:
-                    member = enum_source.find_member(value, coerce_strings=True)
-                    if member and member.field.name:
-                        enum_member_literals.append((enum_class_name, member.field.name))
-                    else:  # pragma: no cover
-                        enum_member_literals.append((enum_class_name, _semantic_value_text(value)))
-                data_type = self.data_type(enum_member_literals=enum_member_literals)
+                data_type = self.data_type(
+                    enum_member_literals=[
+                        (enum_class_name, member.field.name)
+                        for member in enum_discriminator_members(enum_source, discriminator_values).members
+                        if member.field.name
+                    ]
+                )
                 data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
             else:
                 data_type = self.data_type(

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kept": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/M1"
+        },
+        {
+          "$ref": "#/$defs/M2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "m",
+            "n"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "M1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "m1"
+            }
+          }
+        }
+      ]
+    },
+    "M2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "m2"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
