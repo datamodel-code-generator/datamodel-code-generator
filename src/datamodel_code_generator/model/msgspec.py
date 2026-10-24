@@ -914,8 +914,9 @@ class DataModelField(DataModelFieldBase):
         return self._copy_data_type_without_top_level_none(self.data_type)
 
     def _annotated_union_data_type(self, meta: str, *, include_unset: bool) -> DataType:
+        """Return the ``Annotated`` field type, over None where the type writes nothing, as the field hint does."""
         annotated = self.data_type.__class__(
-            type=f"Annotated[{(base_data_type := self._annotated_base_data_type()).type_hint}, {meta}]",
+            type=f"Annotated[{(base_data_type := self._annotated_base_data_type()).type_hint or NONE}, {meta}]",
             data_types=[base_data_type],
             use_union_operator=self.data_type.use_union_operator,
         )

@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, TypedDict
+from typing import Any, TypeAlias
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
+
+
+class Q(TypedDict, extra_items=list[Any]):
+    s: NotRequired[str]
+
 
 Tail: TypeAlias = list[str]
 
@@ -24,3 +29,4 @@ class Model(TypedDict):
     v: NotRequired[dict[str, str]]
     w: NotRequired[dict[str, Any]]
     r: NotRequired[Tail]
+    q: NotRequired[Q]

@@ -13,3 +13,4 @@ invalid k: rejected (too_long)
 invalid v: rejected (too_long)
 invalid w: rejected (too_long)
 invalid r: rejected (too_long)
+invalid q: accepted

@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Dict
 
-from pydantic import BaseModel, Field, RootModel, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
 from typing_extensions import TypeAliasType
 
 EAdditionalProperty = TypeAliasType(
     "EAdditionalProperty", Annotated[list[str], Field(max_length=1)]
 )
+
+
+QAdditionalProperty = TypeAliasType(
+    "QAdditionalProperty", Annotated[list[Any], Field(max_length=0)]
+)
+
+
+class Q(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, QAdditionalProperty],
+    }
+    s: str | None = None
 
 
 class Tail(RootModel[list[str]]):
@@ -31,3 +46,4 @@ class Model(BaseModel):
     v: Annotated[dict[str, str] | None, Field(max_length=0)] = None
     w: Annotated[dict[str, Any] | None, Field(max_length=0)] = None
     r: Tail | None = None
+    q: Q | None = None
