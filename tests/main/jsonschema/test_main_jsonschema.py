@@ -27452,6 +27452,58 @@ def test_main_read_only_write_only_custom_type_path(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_merged_all_of_extras(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Split the models whose written additional-properties type reaches a readOnly model through a merge or a list.
+
+    The allOf members of ``Merged`` redeclare ``count``, so they merge into one object that keeps the member's
+    additionalProperties; pydantic v2 BaseModel and TypedDict write their type, which names ``Item``, so ``Merged``
+    splits there. TypedDict writes the additionalProperties of ``Listed`` as extra_items, read from the $ref of their
+    items without the customTypePath, so ``Listed`` splits there and keeps one class elsewhere. msgspec decodes the
+    payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_merged_all_of_extras.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "merged": {"count": 1, "k": {"name": "n"}},
+        "listed": {"count": 1, "k": [{"any": 1}]},
+        "item": {"name": "n"},
+    }
+    invalid = {"merged": {"count": "x"}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_merged_all_of_extras", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
