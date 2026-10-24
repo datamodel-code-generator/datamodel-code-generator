@@ -9,6 +9,10 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 EAdditionalProperty: TypeAlias = Annotated[list[str], Meta(max_length=1)]
 
 
+class Q(Struct):
+    s: str | UnsetType = UNSET
+
+
 Tail: TypeAlias = Annotated[list[str], Meta(max_length=1)]
 
 
@@ -27,3 +31,4 @@ class Model(Struct):
     v: Annotated[dict[str, str], Meta(max_length=0)] | UnsetType = UNSET
     w: Annotated[dict[str, Any], Meta(max_length=0)] | None | UnsetType = UNSET
     r: Tail | UnsetType = UNSET
+    q: Q | UnsetType = UNSET

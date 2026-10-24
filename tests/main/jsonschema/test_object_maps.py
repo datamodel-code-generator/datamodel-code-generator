@@ -566,6 +566,7 @@ def test_object_maps_false_all_of_unevaluated_properties(output_file: Path, name
         pytest.param([SINGLE_DICT, TYPED_NULLABLE_MAP_VALUES], id="single-dict-typed-nullable-map-values"),
         pytest.param(["--use-tuple-for-closed-arrays", "--use-tuple-for-fixed-items"], id="tuples"),
         pytest.param(["--use-annotated", "--field-constraints"], id="annotated"),
+        pytest.param(["--use-closed-typed-dict"], id="closed-typed-dict"),
     ],
 )
 @pytest.mark.parametrize("kind", ["keywords", "tuples"])
@@ -578,9 +579,10 @@ def test_object_maps_false_all_of_keywords(
 
     ``false_all_of_*`` writes ``false`` as an allOf that holds false, with only annotations beside it, and ``false_*``
     as ``false``: both give the same module. ``keywords`` holds unevaluatedItems, a prefixItems entry beside an items
-    tail, patternProperties and propertyNames, ``tuples`` the entries of a tuple ``items`` and additionalItems of
-    draft 7. Each is read as a property, as an array item, as a map value and through a ``$ref``, and an array or a
-    map that types a position or a key with it admits none.
+    tail, patternProperties and propertyNames and a prefixItems entry in the extra_items type of a closed TypedDict,
+    ``tuples`` the entries of a tuple ``items`` and additionalItems of draft 7. Each is read as a property, as an array
+    item, as a map value and through a ``$ref``, and an array or a map that types a position or a key with it admits
+    none.
     """
     input_path = OBJECT_MAPS / f"{prefix}{kind}.json"
     run_main_and_assert(

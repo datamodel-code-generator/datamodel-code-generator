@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import Field, StringConstraints
+from pydantic import ConfigDict, Field, StringConstraints
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 EAdditionalProperty = TypeAliasType(
     "EAdditionalProperty", Annotated[list[str], Field(max_length=1)]
 )
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class Q:
+    s: str | None = None
 
 
 Tail = TypeAliasType("Tail", Annotated[list[str], Field(max_length=1)])
@@ -32,3 +37,4 @@ class Model:
     v: Annotated[dict[str, str] | None, Field(max_length=0)] = None
     w: Annotated[dict[str, Any] | None, Field(max_length=0)] = None
     r: Tail | None = None
+    q: Q | None = None

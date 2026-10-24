@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import Field, constr
+from pydantic import ConfigDict, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class Q:
+    s: str | None = None
+
 
 Tail = TypeAliasType("Tail", Annotated[list[str], Field(..., max_length=1)])
 
@@ -27,3 +33,4 @@ class Model:
     v: dict[str, str] | None = Field(None, max_length=0)
     w: dict[str, Any] | None = Field(None, max_length=0)
     r: Tail | None = None
+    q: Q | None = None

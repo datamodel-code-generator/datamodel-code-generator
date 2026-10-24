@@ -13,3 +13,4 @@ invalid k: rejected
 invalid v: rejected
 invalid w: rejected
 invalid r: rejected
+invalid q: accepted

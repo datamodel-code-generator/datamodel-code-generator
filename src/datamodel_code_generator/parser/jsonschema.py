@@ -5510,7 +5510,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if not self.use_closed_typed_dict:
                 return
-            additional_props_type = self._build_lightweight_type(additional_properties)
+            additional_props_type = self._build_lightweight_type(
+                self._read_false_all_of_values(additional_properties, lightweight=True)
+            )
             if additional_props_type:  # pragma: no branch
                 reference_classes = (
                     {
@@ -10532,7 +10534,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for value in target.enum
         )
 
-    def _read_false_all_of_values(self, obj: JsonSchemaObject) -> JsonSchemaObject:
+    def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
         """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf.
 
         That schema is the additionalProperties of a map that types values with it: an object without properties or
@@ -10544,7 +10546,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
         array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
         array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
-        (``_read_false_all_of_map_schemas``) are read the same way.
+        (``_read_false_all_of_map_schemas``) are read the same way. ``lightweight`` reads the array positions as the
+        lightweight type of a TypedDict ``extra_items`` types them (``_build_lightweight_array_type``).
         """
         update: dict[str, object] = {}
         if (
@@ -10559,15 +10562,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             update["additionalProperties"] = False
         if _is_false_all_of(obj.items) and self._get_fixed_length_homogeneous_tuple_length(obj) != 0:
             update["items"] = False
-        update |= self._read_false_all_of_array_positions(obj) | self._read_false_all_of_map_schemas(obj)
+        update |= self._read_false_all_of_array_positions(
+            obj, lightweight=lightweight
+        ) | self._read_false_all_of_map_schemas(obj)
         return obj.model_copy(update=update) if update else obj
 
-    def _read_false_all_of_array_positions(self, obj: JsonSchemaObject) -> dict[str, object]:
+    def _read_false_all_of_array_positions(
+        self, obj: JsonSchemaObject, *, lightweight: bool = False
+    ) -> dict[str, object]:
         """Return the array keywords of ``obj`` whose false allOf the array parse types, with ``false`` in its place.
 
         Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before
         the first false (``_get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that types
-        the items past them. A position it leaves untyped keeps its output.
+        the items past them. A position it leaves untyped keeps its output. The lightweight type of ``lightweight``
+        types the prefixItems and the true tail as well.
         """
         if not obj.is_array or obj.ref:
             return {}
@@ -10575,7 +10583,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         tails = {"additionalItems": obj.additionalItems, "unevaluatedItems": obj.unevaluatedItems}
         if not any(_is_false_all_of(item) for item in (*chain.from_iterable(entries.values()), *tails.values())):
             return {}
-        typed = {id(item) for item in self._get_array_item_schemas(obj)[0]}
+        typed = {
+            id(item)
+            for item in self._get_array_item_schemas(
+                obj, include_true_tail_schema=lightweight, force_prefix_items=lightweight
+            )[0]
+        }
 
         def reads(item: object) -> bool:
             return id(item) in typed and _is_false_all_of(item)

@@ -170,6 +170,27 @@
     },
     "r": {
       "$ref": "#/$defs/Tail"
+    },
+    "q": {
+      "type": "object",
+      "properties": {
+        "s": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "allOf": [
+              false
+            ]
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
     }
   },
   "$defs": {

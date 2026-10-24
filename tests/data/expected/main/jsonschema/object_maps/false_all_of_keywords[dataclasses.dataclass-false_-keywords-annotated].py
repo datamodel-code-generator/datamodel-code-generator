@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, TypeAlias
 
+
+@dataclass
+class Q:
+    s: str | None = None
+
+
 Tail: TypeAlias = list[str]
 
 
@@ -24,3 +30,4 @@ class Model:
     v: dict[str, str] | None = None
     w: dict[str, Any] | None = None
     r: Tail | None = None
+    q: Q | None = None

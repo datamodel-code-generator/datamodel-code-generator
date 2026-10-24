@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+
+
+class Q(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[Any]],
+    }
+    s: str | None = None
 
 
 class Tail(RootModel[list[str]]):
@@ -26,3 +36,4 @@ class Model(BaseModel):
     v: dict[str, str] | None = Field(None, max_length=0)
     w: dict[str, Any] | None = Field(None, max_length=0)
     r: Tail | None = None
+    q: Q | None = None
