@@ -670,6 +670,8 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     ``model``. A field of a model that is not written, a stand-in or a base a model-level override replaced, is left
     as it is.
     """
+    if not inherited.inherited_conflicts:
+        return []
     members = keyed_models(module_members(parser, ctx.models), "module members")
     module_name = _get_model_module_name(model, copies.model_path_to_module_name)
     copied_fields: list[DataModelFieldBase] = []
