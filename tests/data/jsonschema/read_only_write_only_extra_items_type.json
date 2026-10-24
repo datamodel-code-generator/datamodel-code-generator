@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "refBesideObject": {
+      "$ref": "#/definitions/RefBesideObject"
+    },
+    "refBesideRef": {
+      "$ref": "#/definitions/RefBesideRef"
+    },
+    "typedRefs": {
+      "$ref": "#/definitions/TypedRefs"
+    },
+    "falseMember": {
+      "$ref": "#/definitions/FalseMember"
+    },
+    "wideUnion": {
+      "$ref": "#/definitions/WideUnion"
+    },
+    "deep": {
+      "$ref": "#/definitions/Deep"
+    },
+    "named": {
+      "$ref": "#/definitions/Named"
+    }
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        }
+      }
+    },
+    "RefBesideObject": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Plain"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "z": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/definitions/Item"
+            }
+          }
+        ]
+      }
+    },
+    "RefBesideRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Plain"
+          },
+          {
+            "$ref": "#/definitions/Item"
+          }
+        ]
+      }
+    },
+    "TypedRefs": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Plain"
+          },
+          {
+            "$ref": "#/definitions/Item"
+          }
+        ]
+      }
+    },
+    "FalseMember": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          false,
+          {
+            "$ref": "#/definitions/Item"
+          }
+        ]
+      }
+    },
+    "WideUnion": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "const": "a"
+          },
+          {
+            "$ref": "#/definitions/Item"
+          }
+        ]
+      }
+    },
+    "Deep": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Item"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Named": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/Item"
+        }
+      }
+    }
+  }
+}

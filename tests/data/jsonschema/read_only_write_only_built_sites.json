@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "merged": {"$ref": "#/definitions/Merged"},
+    "tagged": {"$ref": "#/definitions/Tagged"},
+    "extras": {"$ref": "#/definitions/Extras"},
+    "mixed": {"$ref": "#/definitions/Mixed"}
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {"id": {"type": "string", "readOnly": true}, "count": {"type": "integer"}}
+        },
+        {"type": "object", "properties": {"count": {"type": "integer", "minimum": 0}}}
+      ]
+    },
+    "Tagged": {
+      "type": "object",
+      "properties": {
+        "tags": {"type": "array", "items": {"type": "string"}, "additionalItems": {"$ref": "#/definitions/Item"}}
+      }
+    },
+    "Extras": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"type": "object", "properties": {"id": {"type": "string", "readOnly": true}}}
+    },
+    "Mixed": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"anyOf": [{"const": 1}, {"type": "boolean"}, {"allOf": [{"$ref": "#/definitions/Item"}]}]}
+    }
+  }
+}

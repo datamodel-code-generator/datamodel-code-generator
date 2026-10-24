@@ -27504,6 +27504,98 @@ def test_main_read_only_write_only_merged_all_of_extras(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_built_sites(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Split the models a reference reaches exactly where the types their builder writes name a split model.
+
+    The allOf members of ``Merged`` redeclare ``count`` and merge into one object whose readOnly ``id`` splits it.
+    ``Tagged`` keeps one class: its array has one items schema, so array parsing ignores the additionalItems naming
+    ``Item``. ``Extras`` splits where pydantic writes its typed extra field from the inline object, and keeps one class
+    where TypedDict writes that object as extra_items ``dict[str, Any]``. The additionalProperties of ``Mixed`` name
+    ``Item`` through an allOf beside a const and a boolean, so ``Mixed`` splits with both. msgspec decodes the payloads
+    of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_built_sites.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "merged": {"count": 1},
+        "tagged": {"tags": ["a"]},
+        "extras": {"name": "n", "k": {"id": "x"}},
+        "mixed": {"name": "n", "a": 1, "b": True, "c": {"name": "x"}},
+    }
+    invalid = {"tagged": {"tags": [1]}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_built_sites", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_extra_items_type(output_file: Path, dedupe_args: list[str]) -> None:
+    """Split a TypedDict model exactly where the extra_items type it writes names a model with variants.
+
+    Every model's additionalProperties reach the readOnly ``Item``, but only the extra_items type of ``Named`` names it:
+    an allOf with a $ref writes the first $ref, an allOf with a false member, a union wider than the lightweight type
+    takes and a nesting deeper than it reads write no model. msgspec decodes the payloads.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_extra_items_type.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "typing.TypedDict",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"named": {"name": "n", "k": [{"name": "x"}]}, "refBesideRef": {"name": "n", "k": {"v": 1}}}
+    invalid = {"named": {"name": 1}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_extra_items_type", "ModelRequest") as model:
+        msgspec.json.decode(json.dumps(valid), type=model)
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.json.decode(json.dumps(invalid), type=model)
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,

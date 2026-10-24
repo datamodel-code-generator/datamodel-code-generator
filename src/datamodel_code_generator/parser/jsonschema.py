@@ -21,7 +21,7 @@ from pathlib import Path
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, Union, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
-from warnings import warn
+from warnings import catch_warnings, simplefilter, warn
 
 from pydantic import (
     ConfigDict,
@@ -4315,27 +4315,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _iter_rw_model_schema_children(
         self,
         schema: JsonSchemaObject,
-        defining_ref: str | None,
+        defining_ref: str,
         *,
         detect_inline_variant: bool,
         types_map: bool,
         types_extras: bool,
-    ) -> Iterator[tuple[JsonSchemaObject, bool, bool, bool]]:
-        """Yield type-contributing children, whether their inline models are generated, merged and in extra_items.
+    ) -> Iterator[tuple[JsonSchemaObject, bool, bool]]:
+        """Yield the children ``parse_item`` types, whether their inline models are generated and whether they merge.
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, and those of
-        additionalProperties only where ``types_extras``. A child typed by a customTypePath names no model
-        (``_site_writes_custom_type``), except within additionalProperties that TypedDict writes as extra_items
-        (``_writes_extra_items_type``), whose type is read without customTypePath throughout: there ``defining_ref`` is
-        None.
+        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, those of
+        additionalProperties only where ``types_extras``, and additionalItems only beside tuple-style items, as array
+        parsing reads them (``_get_list_item_schemas``). A child typed by a customTypePath names no model
+        (``_site_writes_custom_type``).
         """
-        in_extra_items = defining_ref is None
 
         def site(item: object) -> TypeGuard[JsonSchemaObject]:
-            return isinstance(item, JsonSchemaObject) and (
-                defining_ref is None or not self._site_writes_custom_type(item, defining_ref)
-            )
+            return isinstance(item, JsonSchemaObject) and not self._site_writes_custom_type(item, defining_ref)
 
         mappings = (
             (schema.properties, schema.patternProperties)
@@ -4343,7 +4339,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else (schema.patternProperties if types_map else schema.properties,)
         )
         yield from (
-            (item, detect_inline_variant, False, in_extra_items)
+            (item, detect_inline_variant, False)
             for mapping in mappings
             if mapping
             for item in mapping.values()
@@ -4351,47 +4347,43 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         match schema.items:
             case JsonSchemaObject() as item if site(item):
-                yield item, detect_inline_variant, False, in_extra_items
+                yield item, detect_inline_variant, False
             case list() as items:
-                yield from ((item, detect_inline_variant, False, in_extra_items) for item in items if site(item))
-        if site(schema.additionalItems):
-            yield schema.additionalItems, detect_inline_variant, False, in_extra_items
-        if (
-            types_extras
-            and isinstance(extras := schema.additionalProperties, JsonSchemaObject)
-            and (self._writes_extra_items_type or site(extras))
-        ):
-            yield extras, detect_inline_variant, False, in_extra_items or self._writes_extra_items_type
+                yield from ((item, detect_inline_variant, False) for item in items if site(item))
+                if site(schema.additionalItems):
+                    yield schema.additionalItems, detect_inline_variant, False
+        if types_extras and site(schema.additionalProperties):
+            yield schema.additionalProperties, detect_inline_variant, False
         yield from (
-            (item, detect_inline_variant, False, in_extra_items)
+            (item, detect_inline_variant, False)
             for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf)
             if site(item)
         )
-        yield from (
-            (item, detect_inline_variant, True, in_extra_items)
-            for item in schema.allOf
-            if isinstance(item, JsonSchemaObject)
-        )
+        yield from ((item, detect_inline_variant, True) for item in schema.allOf if isinstance(item, JsonSchemaObject))
         if self.generate_schema_validators:
-            yield from (
-                (item, detect_inline_variant, False, in_extra_items) for item in self._iter_conditional_branches(schema)
-            )
+            yield from ((item, detect_inline_variant, False) for item in self._iter_conditional_branches(schema))
 
-    @cached_property
-    def _writes_typed_additional_properties(self) -> bool:
-        """Whether a model with fields writes the type of its additional properties.
+    def _extra_items_type_reference_paths(self, extras: JsonSchemaObject) -> tuple[str, ...]:
+        """Return the keys of the models the extra_items type TypedDict writes for ``extras`` names.
 
-        pydantic v2 BaseModel writes it as its typed extra field (or its patternProperties rule), TypedDict as
-        extra_items under --use-closed-typed-dict; the other models accept extra keys of any type.
+        The type is the one ``set_additional_properties`` writes, built by ``_build_lightweight_type``, which generates
+        no model; it is built here only to read its references, so its warnings stay with the model's own build.
         """
-        return self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None or self._writes_extra_items_type
+        with catch_warnings():
+            simplefilter("ignore")
+            data_type = self._build_lightweight_type(extras)
+        if data_type is None:
+            return ()
+        paths = tuple(item.reference.path for item in data_type.all_data_types if item.reference)
+        self._unregister_temporary_type(data_type)
+        return paths
 
     @cached_property
     def _writes_extra_items_type(self) -> bool:
         """Whether TypedDict writes the type of additional properties as extra_items, under --use-closed-typed-dict.
 
-        That type is read from the keywords of additionalProperties without their customTypePath
-        (``_build_lightweight_type``), so the models they name are named there.
+        That type is the lightweight type of additionalProperties (``_build_lightweight_type``), which names models
+        and generates none.
         """
         return (
             self.use_closed_typed_dict and self._output_model_context.requires_additional_properties_reference_classes
@@ -4403,15 +4395,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys its references name.
 
-        The walk stops at the first flagged property: the references of a node that needs variants are never read
-        (without --dedupe-request-response-variants it reads them all, as 0.86.0 did). A key that names no loadable
-        schema has neither. patternProperties and propertyNames type the values and keys of an object map, propertyNames
-        only where no patternProperties give the keys; a schema with properties or allOf, and each inline allOf member
-        merged into it, builds a model whose fields hold properties alone, so its map keywords type nothing, and
-        additionalProperties type nothing either where the model is no map (``_schema_builds_map_model``) and does not
-        write their type (``_writes_typed_additional_properties``); those of an inline allOf member type something only
-        where the allOf merges into a map. A $ref outside allOf with sibling keywords is read with them as the one
-        schema its model is built from (``_merged_ref_model_schemas``).
+        Every schema is read as the one its model is built from (``_merged_ref_model_schemas``), and its flags, its
+        references and its children all from that schema. The walk stops at the first flagged property: the
+        references of a node that needs variants are never read (without --dedupe-request-response-variants it reads
+        them all, as 0.86.0 did). A key that names no loadable schema has neither. patternProperties and propertyNames
+        type the values and keys of an object map, propertyNames only where no patternProperties give the keys; a
+        schema with properties or allOf, and each inline allOf member merged into it, builds a model whose fields hold
+        properties alone, so its map keywords type nothing. additionalProperties are typed by ``parse_item`` where the
+        model is a map (``_schema_builds_map_model``) or pydantic writes its typed extra field. TypedDict also records
+        those of the key's model and of each inline model with fields as their extra_items type
+        (``set_additional_properties``); that type generates no model, so the walk takes the models it names
+        (``_extra_items_type_reference_paths``), and the model splits where one has variants. Those of an inline allOf
+        member type something only where the allOf merges into a map.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4422,9 +4417,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         has_inline_variant = False
         references: dict[str, None] = {}
-        stack: list[tuple[JsonSchemaObject, bool, bool | None, bool]] = [(root_schema, True, None, False)]
+
+        def add_reference(ref: str | None) -> None:
+            if ref and (nested_ref := self._resolve_rw_model_reference(ref, resolved_ref)):
+                references.setdefault(nested_ref, None)
+
+        stack: list[tuple[JsonSchemaObject, bool, bool | None]] = [(root_schema, True, None)]
         while stack:
-            schema, detect_inline_variant, merged_into_map, in_extra_items = stack.pop()
+            schema, detect_inline_variant, merged_into_map = stack.pop()
+            if merged_into_map is None:
+                is_key_model = schema is root_schema
+                schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
+                builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
+                types_map = not (model_schema.properties or model_schema.allOf)
+                types_extras = builds_map or self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None
+                if (
+                    (is_key_model or not builds_map)
+                    and self._writes_extra_items_type
+                    and isinstance(extras := model_schema.additionalProperties, JsonSchemaObject)
+                ):
+                    with self._inherited_ref_context(resolved_ref):
+                        references.update(dict.fromkeys(self._extra_items_type_reference_paths(extras)))
+            else:
+                model_schema = schema
+                builds_map = types_extras = merged_into_map
+                types_map = False
             if (
                 detect_inline_variant
                 and not has_inline_variant
@@ -4434,34 +4451,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._rw_model_references_cache[resolved_ref] = result = (True, ())
                     return result
                 has_inline_variant = True
-            if merged_into_map is None:
-                schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
-                builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
-                types_map = not (model_schema.properties or model_schema.allOf)
-                types_extras = self._writes_typed_additional_properties or builds_map
-            else:
-                model_schema = schema
-                builds_map = types_extras = merged_into_map
-                types_map = False
             for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
-                if not ref:
-                    continue
-                if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
-                    references.setdefault(nested_ref, None)
+                add_reference(ref)
             property_name_refs, property_name_schemas = (
                 self._get_rw_property_name_sources(property_names=schema.propertyNames, defining_ref=resolved_ref)
                 if types_map and not model_schema.patternProperties
                 else ((), ())
             )
             for ref in property_name_refs:
-                if nested_ref := self._resolve_rw_model_reference(ref, resolved_ref):
-                    references.setdefault(nested_ref, None)
-            stack.extend((item, True, None, in_extra_items) for item in property_name_schemas)
+                add_reference(ref)
+            stack.extend((item, True, None) for item in property_name_schemas)
             stack.extend(
-                (item, detect, builds_map if merged else None, extra_items)
-                for item, detect, merged, extra_items in self._iter_rw_model_schema_children(
+                (item, detect, builds_map if merged else None)
+                for item, detect, merged in self._iter_rw_model_schema_children(
                     schema,
-                    None if in_extra_items else resolved_ref,
+                    resolved_ref,
                     detect_inline_variant=detect_inline_variant,
                     types_map=types_map,
                     types_extras=types_extras,
