@@ -661,8 +661,6 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
         "Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias "
         "that msgspec decodes."
     )
-    if isinstance(model, IntEnum):
-        return f"The IntEnum {model.class_name} cannot be imported: {member} is not an int. {fix}"
     return (
         f"msgspec cannot decode the enum {model.class_name}: {member} makes its values neither all str nor all int. "
         f"{fix}"
