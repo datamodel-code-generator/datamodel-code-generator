@@ -1,0 +1,17 @@
+Holder valid {}: accepted
+Holder valid {"first-chain": [["a", [["b"]]]], "chains": [[], [["x"]]], "label": "h"}: accepted
+Holder invalid {"first-chain": [1]}: rejected
+Holder invalid {"chains": [[["a", 1]]]}: rejected
+Holder invalid {"label": 1}: rejected
+Chain valid []: accepted
+Chain valid [["a"]]: accepted
+Chain valid [[[["b"]], "c"]]: accepted
+Chain invalid [1]: rejected
+Chain invalid [["a", 2]]: rejected
+Chain invalid "text": rejected
+Link valid []: accepted
+Link valid ["a", []]: accepted
+Link valid [[["b"]]]: accepted
+Link invalid [1]: rejected
+Link invalid [["a", 3]]: rejected
+Link invalid {}: rejected

@@ -1,0 +1,10 @@
+Node valid {}: accepted
+Node valid {"label": "root", "note": null, "maybe": null}: accepted
+Node valid {"next-node": {"label": "next"}, "children": [{"children": []}, {"label": "leaf"}]}: accepted
+Node valid {"by-name": {"a": {"either": 1}, "b": {"either": {"either": 2}}}, "maybe": {"label": "m"}}: accepted
+Node invalid {"label": 1}: rejected
+Node invalid {"next-node": {"label": 1}}: rejected
+Node invalid {"children": [{"label": "ok"}, {"children": [{"note": 5}]}]}: rejected
+Node invalid {"by-name": {"a": {"either": "text"}}}: rejected
+Node invalid {"maybe": 5}: rejected
+Node invalid {"either": [1]}: rejected

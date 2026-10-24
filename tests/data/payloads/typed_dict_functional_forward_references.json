@@ -1,0 +1,432 @@
+{
+  "self_reference": {
+    "Node": {
+      "valid": [
+        {},
+        {
+          "label": "root",
+          "note": null,
+          "maybe": null
+        },
+        {
+          "next-node": {
+            "label": "next"
+          },
+          "children": [
+            {
+              "children": []
+            },
+            {
+              "label": "leaf"
+            }
+          ]
+        },
+        {
+          "by-name": {
+            "a": {
+              "either": 1
+            },
+            "b": {
+              "either": {
+                "either": 2
+              }
+            }
+          },
+          "maybe": {
+            "label": "m"
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "label": 1
+        },
+        {
+          "next-node": {
+            "label": 1
+          }
+        },
+        {
+          "children": [
+            {
+              "label": "ok"
+            },
+            {
+              "children": [
+                {
+                  "note": 5
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "by-name": {
+            "a": {
+              "either": "text"
+            }
+          }
+        },
+        {
+          "maybe": 5
+        },
+        {
+          "either": [
+            1
+          ]
+        }
+      ]
+    }
+  },
+  "mutual_references": {
+    "Parent": {
+      "valid": [
+        {},
+        {
+          "first-child": {
+            "parent": {
+              "label": "p"
+            }
+          },
+          "kids": [
+            {},
+            {
+              "label": "k"
+            }
+          ]
+        }
+      ],
+      "invalid": [
+        {
+          "first-child": {
+            "parent": {
+              "label": 1
+            }
+          }
+        },
+        {
+          "kids": [
+            {
+              "parent": {
+                "kids": [
+                  {
+                    "label": 1
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "kids": {}
+        }
+      ]
+    },
+    "Child": {
+      "valid": [
+        {},
+        {
+          "parent": {
+            "first-child": {
+              "label": "c"
+            }
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "parent": {
+            "first-child": {
+              "parent": 5
+            }
+          }
+        },
+        {
+          "label": []
+        }
+      ]
+    },
+    "Ring1": {
+      "valid": [
+        {
+          "next": {
+            "next-ring": {
+              "back-to-start": {
+                "label": "again"
+              }
+            }
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "next": {
+            "next-ring": {
+              "self-loop": {
+                "self-loop": {
+                  "label": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "next": 1
+        }
+      ]
+    },
+    "Ring2": {
+      "valid": [
+        {
+          "next-ring": {
+            "self-loop": {
+              "back-to-start": {
+                "next": {}
+              }
+            }
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "next-ring": {
+            "back-to-start": {
+              "next": {
+                "label": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Ring3": {
+      "valid": [
+        {
+          "self-loop": {
+            "self-loop": {
+              "label": "deep"
+            }
+          },
+          "back-to-start": {
+            "next": {}
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "self-loop": {
+            "self-loop": {
+              "label": 1
+            }
+          }
+        },
+        {
+          "back-to-start": {
+            "next": {
+              "next-ring": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "inherited_fields": {
+    "Early": {
+      "valid": [
+        {},
+        {
+          "label": "e"
+        }
+      ],
+      "invalid": [
+        {
+          "label": 1
+        }
+      ]
+    },
+    "Base": {
+      "valid": [
+        {
+          "kid": {
+            "a-b": "x",
+            "me": {
+              "kid": {}
+            }
+          },
+          "early": {
+            "label": "e"
+          },
+          "name": "b"
+        }
+      ],
+      "invalid": [
+        {
+          "kid": {
+            "me": {
+              "a-b": 1
+            }
+          }
+        },
+        {
+          "early": {
+            "label": 1
+          }
+        },
+        {
+          "kid": {
+            "kid": {
+              "kid": {
+                "name": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Child": {
+      "valid": [
+        {
+          "a-b": "x",
+          "me": {
+            "me": {}
+          },
+          "kid": {
+            "kid": {}
+          },
+          "early": {},
+          "name": "c"
+        }
+      ],
+      "invalid": [
+        {
+          "me": {
+            "kid": {
+              "a-b": 1
+            }
+          }
+        },
+        {
+          "kid": {
+            "me": {
+              "me": 1
+            }
+          }
+        },
+        {
+          "name": 1
+        },
+        {
+          "a-b": 1
+        }
+      ]
+    }
+  },
+  "type_aliases": {
+    "Holder": {
+      "valid": [
+        {},
+        {
+          "first-chain": [
+            [
+              "a",
+              [
+                [
+                  "b"
+                ]
+              ]
+            ]
+          ],
+          "chains": [
+            [],
+            [
+              [
+                "x"
+              ]
+            ]
+          ],
+          "label": "h"
+        }
+      ],
+      "invalid": [
+        {
+          "first-chain": [
+            1
+          ]
+        },
+        {
+          "chains": [
+            [
+              [
+                "a",
+                1
+              ]
+            ]
+          ]
+        },
+        {
+          "label": 1
+        }
+      ]
+    },
+    "Chain": {
+      "valid": [
+        [],
+        [
+          [
+            "a"
+          ]
+        ],
+        [
+          [
+            [
+              [
+                "b"
+              ]
+            ],
+            "c"
+          ]
+        ]
+      ],
+      "invalid": [
+        [
+          1
+        ],
+        [
+          [
+            "a",
+            2
+          ]
+        ],
+        "text"
+      ]
+    },
+    "Link": {
+      "valid": [
+        [],
+        [
+          "a",
+          []
+        ],
+        [
+          [
+            [
+              "b"
+            ]
+          ]
+        ]
+      ],
+      "invalid": [
+        [
+          1
+        ],
+        [
+          [
+            "a",
+            3
+          ]
+        ],
+        {}
+      ]
+    }
+  }
+}

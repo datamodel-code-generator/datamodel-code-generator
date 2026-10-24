@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info: {title: Inherited fields, version: '1'}
+paths: {}
+components:
+  schemas:
+    Early:
+      type: object
+      properties:
+        label: {type: string}
+    Base:
+      type: object
+      properties:
+        kid: {$ref: '#/components/schemas/Child'}
+        early: {$ref: '#/components/schemas/Early'}
+        name: {type: string}
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          properties:
+            a-b: {type: string}
+            me: {$ref: '#/components/schemas/Child'}
