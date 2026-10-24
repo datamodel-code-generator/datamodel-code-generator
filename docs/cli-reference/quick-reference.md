@@ -146,8 +146,7 @@ datamodel-codegen [OPTIONS]
 | [`--model-name-map`](model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Use parent-prefixed naming strategy for duplicate model names. |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
-| [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names) | Order the constructor fields of dataclass and msgspec.Struct models by final fie... |
-| [`--order-constructor-fields-by-written-defaults`](model-customization.md#order-constructor-fields-by-written-defaults) | Order the fields of msgspec.Struct models by the defaults they write. |
+| [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) | Order constructor fields by final names or by written defaults. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
 | [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) | Decide a field's alias by the alias generator its model applies. |
@@ -213,10 +212,9 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and build each inline mod... |
 | [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
+| [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions) | Give OpenAPI paths bodies or ref components the models their definitions get. |
 | [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) | Emit OpenAPI info.version as a generated constant. |
 | [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
-| [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions) | Give the bodies of the paths and webhooks scopes the models their schema definit... |
-| [`--openapi-ref-components-as-definitions`](openapi-only-options.md#openapi-ref-components-as-definitions) | Give a `$ref` component with sibling keywords to a recursive schema its own mode... |
 | [`--openapi-scopes`](openapi-only-options.md#openapi-scopes) | Specify OpenAPI scopes to generate (schemas, paths, parameters). |
 | [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name) | Use OpenAPI operationId as the generated function/class name. |
@@ -440,13 +438,11 @@ All options sorted alphabetically:
 - [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) - Use Union[X, Y] / Optional[X] instead of X | Y union operato...
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) - Do not write a constraint again beside a type that already e...
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) - Do not write None again at a reference to a model that holds...
+- [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions) - Give OpenAPI paths bodies or ref components the models their...
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) - Emit OpenAPI info.version as a generated constant.
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) - Filter OpenAPI paths to include in model generation.
-- [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions) - Give the bodies of the paths and webhooks scopes the models ...
-- [`--openapi-ref-components-as-definitions`](openapi-only-options.md#openapi-ref-components-as-definitions) - Give a `$ref` component with sibling keywords to a recursive...
 - [`--openapi-scopes`](openapi-only-options.md#openapi-scopes) - Specify OpenAPI scopes to generate (schemas, paths, paramete...
-- [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names) - Order the constructor fields of dataclass and msgspec.Struct...
-- [`--order-constructor-fields-by-written-defaults`](model-customization.md#order-constructor-fields-by-written-defaults) - Order the fields of msgspec.Struct models by the defaults th...
+- [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) - Order constructor fields by final names or by written defaul...
 - [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) - Specify delimiter for original field names when using snake-...
 - [`--output`](base-options.md#output) - Specify the destination path for generated Python code.
 - [`--output-date-class`](typing-customization.md#output-date-class) - Specify date class type for date schema fields.

@@ -3773,7 +3773,7 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
         pytest.param(
             "field_type_collision_inherited_modules",
             DataModelType.PydanticV2Dataclass,
-            ["--order-constructor-fields-by-final-names"],
+            ["--order-constructor-fields-by", "final-names"],
             "field_type_collision_inherited_modules",
             "b",
             "Bar_1",
@@ -3854,28 +3854,40 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
     ],
 )
 @pytest.mark.cli_doc(
-    options=["--order-constructor-fields-by-final-names"],
-    option_description="""Order the constructor fields of dataclass and msgspec.Struct models by final field names.
+    options=["--order-constructor-fields-by"],
+    option_description="""Order constructor fields by final names or by written defaults.
 
-The `--order-constructor-fields-by-final-names` flag only applies to output models that can mark fields keyword-only
-(`dataclasses.dataclass`, `pydantic_v2.dataclass` and `msgspec.Struct`); other output model types ignore it.
+The `--order-constructor-fields-by` option takes one or more values, `final-names` and `written-defaults`, each a
+separate change; other output model types ignore them.
 
-A field that is renamed because it is named like its type, such as `Bar: Bar`, is renamed in every class of its
-family. Without the flag the order of a class's constructor fields is decided while its module is processed, where
-the inherited field may not be renamed yet: a subclass that overrides it as a required field then reads as a new
-field after the inherited default, and is written keyword-only (`kw_only=True`), which moves it behind the
-positional fields and changes the first positional argument of the constructor. With the flag the order is decided
-once every field has its final name, so the override takes the place of the inherited field and stays positional.""",
+`final-names` applies to `dataclasses.dataclass`, `pydantic_v2.dataclass` and `msgspec.Struct`. A field that is
+renamed because it is named like its type, such as `Bar: Bar`, is renamed in every class of its family. Without the
+value the order of a class's constructor fields is decided while its module is processed, where the inherited field
+may not be renamed yet: a subclass that overrides it as a required field then reads as a new field after the
+inherited default, and is written keyword-only (`kw_only=True`), which moves it behind the positional fields and
+changes the first positional argument of the constructor. With the value the order is decided once every field has
+its final name, so the override takes the place of the inherited field and stays positional.
+
+`written-defaults` changes `msgspec.Struct` output under `--strip-default-none`, and under
+`--use-default-factory-for-optional-nested-models --strip-default-none` the order of dataclass and Pydantic dataclass
+fields beside nested models whose default factory a reference cycle drops. A Struct writes a default for every
+optional field: `UNSET`, or `None` when the type admits None, even where `--strip-default-none` strips the field's
+`None` default. Without the value such a field keeps its schema place among the required fields, the order of
+earlier releases, and the struct is reordered only when a required field would then follow a default (which the
+Struct rejects at import). With the value every optional field goes after the required fields, in schema order,
+which changes the order of the constructor's positional arguments.""",
     input_schema="jsonschema/field_type_collision_inherited_modules",
     cli_args=[
         "--output-model-type",
         "pydantic_v2.dataclass",
         "--target-python-version",
         "3.11",
-        "--order-constructor-fields-by-final-names",
+        "--order-constructor-fields-by",
+        "final-names",
     ],
     golden_output="main/jsonschema/field_type_collision_inherited_modules/",
     comparison_output="main/jsonschema/main_jsonschema/field_type_collision_inherited_modules_default_order/",
+    primary=True,
 )
 def test_main_jsonschema_field_type_collision_inherited_modules(
     output_dir: Path,
@@ -20612,7 +20624,7 @@ def test_main_use_default_factory_for_optional_nested_models(
     [
         pytest.param([], "D(leaf=Leaf(x=1), e=None)", id="schema-place"),
         pytest.param(
-            ["--order-constructor-fields-by-written-defaults"], "D(e=None, leaf=Leaf(x=1))", id="written-defaults"
+            ["--order-constructor-fields-by", "written-defaults"], "D(e=None, leaf=Leaf(x=1))", id="written-defaults"
         ),
     ],
 )
@@ -20623,7 +20635,7 @@ def test_main_nested_model_default_factory_order_in_reference_cycles(
 
     ``B`` is in a reference cycle with ``A``, its stripped ``None`` default kept only for a type that admits None:
     ``A`` keeps the schema order, as in 0.86.0. ``E`` is in a cycle with ``D`` and has no required field: without
-    --order-constructor-fields-by-written-defaults ``D`` puts ``e`` after ``leaf``, as in 0.86.0, though the cycle
+    --order-constructor-fields-by written-defaults ``D`` puts ``e`` after ``leaf``, as in 0.86.0, though the cycle
     drops the factory; with the option the order follows the factories the class bodies write.
     """
     run_main_and_assert(

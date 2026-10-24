@@ -82,8 +82,7 @@ reviewed-safe naming_strategy
 reviewed-safe no_alias
 reviewed-safe omit_redundant_constraints
 reviewed-safe omit_redundant_reference_null
-reviewed-safe order_constructor_fields_by_final_names
-reviewed-safe order_constructor_fields_by_written_defaults
+reviewed-safe order_constructor_fields_by
 reviewed-safe original_field_name_delimiter
 reviewed-safe parent_scoped_naming
 reviewed-safe pin_aliases_with_alias_generator
@@ -178,10 +177,9 @@ reviewed-safe schema_version_mode
 [AsyncAPIParserConfig]
 reviewed-safe asyncapi_version
 reviewed-safe include_path_parameters
+reviewed-safe openapi_as_definitions
 reviewed-safe openapi_include_info_version
 reviewed-safe openapi_include_paths
-reviewed-safe openapi_paths_bodies_as_definitions
-reviewed-safe openapi_ref_components_as_definitions
 reviewed-safe openapi_scopes
 reviewed-safe openapi_version
 reviewed-safe use_status_code_in_response_name

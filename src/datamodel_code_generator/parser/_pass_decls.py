@@ -585,7 +585,7 @@ FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY = PassDecl(
     ),
     writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
     summary="Orders constructor fields while the modules are processed, before every field has its final name.",
-    condition="without --order-constructor-fields-by-final-names",
+    condition="without --order-constructor-fields-by final-names",
 )
 SNAPSHOT_MODULE_UNUSED_MODELS = PassDecl(
     "snapshot_module_unused_models",
@@ -974,7 +974,7 @@ ORDER_CONSTRUCTOR_FIELDS_BY_DECIDED_NESTED_FACTORIES = PassDecl(
     condition="use_default_factory_for_optional_nested_models and order_constructor_fields_by_written_defaults",
     summary=(
         "Orders constructor fields again by the decided nested factories, which the orderings before leave out"
-        " under --order-constructor-fields-by-written-defaults."
+        " under --order-constructor-fields-by written-defaults."
     ),
 )
 FREEZE_FIELD_RENDER_PLANS = PassDecl(

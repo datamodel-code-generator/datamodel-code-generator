@@ -6,15 +6,20 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from datamodel_code_generator import chdir
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+ORDER_CONSTRUCTOR_FIELDS_BY: tuple[str, ...] = ("--order-constructor-fields-by", "final-names", "written-defaults")
+"""The constructor-order values the 20261019 presets set."""
+
 OPT_IN_OPTIONS: tuple[str, ...] = (
     "--use-single-value-enum-as-const",
-    "--openapi-paths-bodies-as-definitions",
-    "--openapi-ref-components-as-definitions",
+    "--openapi-as-definitions",
+    "paths-bodies",
+    "ref-components",
     "--use-site-models-for-constrained-refs",
     "--omit-redundant-constraints",
     "--read-const-beside-enum",
@@ -30,8 +35,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
     "--read-unevaluated-properties",
     "--pin-aliases-with-alias-generator",
     "--tag-msgspec-by-payload-name",
-    "--order-constructor-fields-by-final-names",
-    "--order-constructor-fields-by-written-defaults",
+    *ORDER_CONSTRUCTOR_FIELDS_BY,
     "--dedupe-request-response-variants",
     "--omit-redundant-reference-null",
 )
@@ -198,4 +202,59 @@ def test_preset_sets_opt_in_option(
             if input_path.is_dir()
             else {"expected_output": preset_output.read_text(encoding="utf-8")}
         ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "pyproject_args", "options_args"),
+    [
+        pytest.param(
+            'order-constructor-fields-by = ["written-defaults"]',
+            ["--target-python-version", "3.10", "--formatters", "builtin"],
+            [
+                "--target-python-version",
+                "3.10",
+                "--formatters",
+                "builtin",
+                "--order-constructor-fields-by",
+                "written-defaults",
+            ],
+            id="toml-list",
+        ),
+        pytest.param(
+            'preset = "standard-py312-20261019"\norder-constructor-fields-by = []',
+            ["--disable-timestamp"],
+            [
+                "--preset",
+                "standard-py312-20261017",
+                "--disable-timestamp",
+                *(option for option in OPT_IN_OPTIONS if option not in ORDER_CONSTRUCTOR_FIELDS_BY),
+            ],
+            id="empty-list-under-preset",
+        ),
+    ],
+)
+def test_option_list_in_pyproject(
+    pyproject: str, pyproject_args: list[str], options_args: list[str], tmp_path: Path
+) -> None:
+    """A pyproject.toml list gives a list option its values, and an empty list turns off the values a preset sets."""
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "pyproject.toml").write_text(f"[tool.datamodel-codegen]\n{pyproject}\n", encoding="utf-8")
+    input_path = OPEN_API_DATA_PATH / "strip_default_none_constructor_order.yaml"
+    common = ["--output-model-type", "msgspec.Struct", "--strip-default-none"]
+    pyproject_output = tmp_path / "pyproject.py"
+    with chdir(project):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=pyproject_output,
+            input_file_type="openapi",
+            extra_args=[*common, *pyproject_args],
+        )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=tmp_path / "options.py",
+        input_file_type="openapi",
+        extra_args=[*common, *options_args],
+        expected_output=pyproject_output.read_text(encoding="utf-8"),
     )

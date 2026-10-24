@@ -23,6 +23,7 @@ if TYPE_CHECKING:
         ClientSignatureStyle,
         ClientType,
         CollapseRootModelsNameStrategy,
+        ConstructorFieldOrder,
         CustomFileHeaderMode,
         DataclassArguments,
         DataModelType,
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
         InputFileType,
         ModuleSplitMode,
         NamingStrategy,
+        OpenAPIAsDefinitions,
         OpenAPIScope,
         ReadOnlyWriteOnlyModelType,
         ReuseScope,
@@ -146,8 +148,7 @@ class BaseGenerateConfig(TypedDict):
     include_path_parameters: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
-    openapi_paths_bodies_as_definitions: NotRequired[bool]
-    openapi_ref_components_as_definitions: NotRequired[bool]
+    openapi_as_definitions: NotRequired[Sequence[OpenAPIAsDefinitions]]
     graphql_no_typename: NotRequired[bool]
     wrap_string_literal: NotRequired[bool | None]
     use_title_as_name: NotRequired[bool]
@@ -194,8 +195,7 @@ class BaseGenerateConfig(TypedDict):
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
-    order_constructor_fields_by_final_names: NotRequired[bool]
-    order_constructor_fields_by_written_defaults: NotRequired[bool]
+    order_constructor_fields_by: NotRequired[Sequence[ConstructorFieldOrder]]
     custom_file_header: NotRequired[str | None]
     custom_file_header_path: NotRequired[Path | None]
     custom_file_header_mode: NotRequired[CustomFileHeaderMode]

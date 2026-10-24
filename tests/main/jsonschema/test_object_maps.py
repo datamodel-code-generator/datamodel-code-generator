@@ -1129,23 +1129,33 @@ PATHS_BODIES = ("type_array_request_body", "type_array_response_body", "map_keyw
 
 
 @pytest.mark.cli_doc(
-    options=["--openapi-paths-bodies-as-definitions"],
-    option_description="""Give the bodies of the paths and webhooks scopes the models their schema definitions get.
+    options=["--openapi-as-definitions"],
+    option_description="""Give OpenAPI paths bodies or ref components the models their definitions get.
 
-With `--openapi-scopes paths` (or `webhooks`), request and response bodies are parsed by their own dispatch,
-which types some object bodies inline although a schema definition of the same body gets a model: a body
+The `--openapi-as-definitions` option takes one or more values, `paths-bodies` and `ref-components`, each a
+separate change.
+
+`paths-bodies`: with `--openapi-scopes paths` (or `webhooks`), request and response bodies are parsed by their own
+dispatch, which types some object bodies inline although a schema definition of the same body gets a model: a body
 whose type array admits objects, such as `type: [object, "null"]`, or one with `additionalProperties`,
-`patternProperties` or `propertyNames` and no `type`. With `--openapi-paths-bodies-as-definitions`, such a
-body gets the model its definition would get, such as a root model of `dict[str, Any] | None`, whose values
-`--use-typed-nullable-map-values` types as declared. A document whose only bodies are such schemas then
-generates models instead of failing with "Models not found in the input data", whose message names this
-option when it applies. Bodies typed as objects, arrays, combinations, enums and references, and the `api`
-scope, are unchanged.""",
+`patternProperties` or `propertyNames` and no `type`. With `--openapi-as-definitions paths-bodies`, such a body gets
+the model its definition would get, such as a root model of `dict[str, Any] | None`, whose values
+`--use-typed-nullable-map-values` types as declared. A document whose only bodies are such schemas then generates
+models instead of failing with "Models not found in the input data", whose message names this value when it
+applies. Bodies typed as objects, arrays, combinations, enums and references, and the `api` scope, are unchanged.
+
+`ref-components`: a component such as `Tree: {$ref: '#/components/schemas/Node', minProperties: 1}`, where `Node`
+leads back to `Tree` or to itself, cannot merge its sibling keywords into `Node`. Without the value it gets no model,
+as in 0.86.0, and a reference to it is typed by `Node`; with `--openapi-as-definitions ref-components` it gets the
+root model `Tree(RootModel[Node])` that the same schema gets as a `$defs` entry, references to it name `Tree`, and a
+component nothing references is generated too. Such a component in another document gets that model with or without
+the value.""",
     input_schema="openapi/type_array_request_body.yaml",
-    cli_args=["--openapi-scopes", "paths", "--openapi-paths-bodies-as-definitions"],
+    cli_args=["--openapi-scopes", "paths", "--openapi-as-definitions", "paths-bodies"],
     golden_output=(
         "jsonschema/object_maps/paths_bodies_as_definitions[default-pydantic_v2.BaseModel-type_array_request_body].py"
     ),
+    primary=True,
 )
 @pytest.mark.parametrize("name", PATHS_BODIES)
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
@@ -1164,7 +1174,8 @@ def test_paths_bodies_as_definitions(output_file: Path, output_model_type: str, 
             output_model_type,
             "--openapi-scopes",
             "paths",
-            "--openapi-paths-bodies-as-definitions",
+            "--openapi-as-definitions",
+            "paths-bodies",
             *OPTION_SETS[option_set],
         ],
     )
@@ -1174,7 +1185,7 @@ def test_paths_bodies_as_definitions(output_file: Path, output_model_type: str, 
 
 @pytest.mark.parametrize("name", PATHS_BODIES[:3])
 def test_paths_bodies_inline_hint(output_file: Path, capsys: pytest.CaptureFixture[str], name: str) -> None:
-    """Name --openapi-paths-bodies-as-definitions when the only bodies are object bodies typed inline."""
+    """Name --openapi-as-definitions paths-bodies when the only bodies are object bodies typed inline."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
         output_path=output_file,
@@ -1184,6 +1195,6 @@ def test_paths_bodies_inline_hint(output_file: Path, capsys: pytest.CaptureFixtu
         capsys=capsys,
         expected_stderr_contains=(
             "Models not found in the input data; request or response bodies of the paths or webhooks scope are "
-            "typed inline, and --openapi-paths-bodies-as-definitions gives them the models their schema definitions get"
+            "typed inline, and --openapi-as-definitions paths-bodies gives them the models their schema definitions get"
         ),
     )

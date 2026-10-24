@@ -399,7 +399,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         Rule.FROZEN,
         'DataModelFieldBase.extras["init"]',
         "--input tests/data/openapi/allof_required_inherited_dataclass_metadata.yaml --input-file-type openapi "
-        "--output-model-type dataclasses.dataclass --field-extra-keys init --order-constructor-fields-by-final-names "
+        "--output-model-type dataclasses.dataclass --field-extra-keys init --order-constructor-fields-by final-names "
         "--formatters builtin",
         "RP14c",
     ),

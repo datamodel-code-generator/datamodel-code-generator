@@ -4,7 +4,7 @@ Each pass is a function of the parser and the state of one output module (``_Pre
 ``_process_single_module`` left it) or of every module (``_FinalizeState``, of ``_finalize_modules``), called from the
 pipeline tables of ``parser/_passes/_tables.py``; the parser comes in through ``RenderPrepHost``, which ``Parser``
 satisfies structurally. Constructor ordering also runs early, in the module body, under the form of
-``--order-constructor-fields-by-final-names`` off.
+``--order-constructor-fields-by final-names`` off.
 """
 
 from __future__ import annotations
@@ -571,7 +571,7 @@ def fix_constructor_field_ordering(
     """Fix constructor field ordering after inherited defaults are resolved.
 
     ``early`` runs it where the modules are processed, before the overrides replace the bases and before every
-    field has its final name, the form of ``--order-constructor-fields-by-final-names`` off. With ``copies``, a
+    field has its final name, the form of ``--order-constructor-fields-by final-names`` off. With ``copies``, a
     written model gets a keyword-only copy of each inherited field that two of its bases put after a default. The
     nested factories read row ``legacy-nested-factory-order-before-nullability``.
     """
@@ -596,7 +596,7 @@ def fix_constructor_field_ordering_bases_first(
 def order_constructor_fields_by_decided_nested_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
     """Order constructor fields again by the nested factories render preparation decided.
 
-    Under ``--order-constructor-fields-by-written-defaults`` the orderings before the decision leave the nested
+    Under ``--order-constructor-fields-by written-defaults`` the orderings before the decision leave the nested
     factories out, so a factory that a reference cycle drops moves no field.
     """
     with cast("RenderReady", RENDER_READY.get()).nested_factories_decided():

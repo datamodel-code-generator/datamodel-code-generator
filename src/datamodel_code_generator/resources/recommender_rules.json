@@ -208,9 +208,12 @@
         "value": 1
       },
       "set": {
-        "openapi_paths_bodies_as_definitions": true
+        "openapi_as_definitions": [
+          "paths-bodies",
+          "ref-components"
+        ]
       },
-      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'.",
+      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'. The same principle gives a component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of that schema gets, as the 20261019 presets do.",
       "evidence": [
         "OpenAPI request body {type: [object, null], additionalProperties: {...}} under --openapi-scopes paths: 'Models not found in the input data' without the option, a PetsPostRequest root model of dict[str, ...] | None with it",
         "OpenAPI response body of the same shape: 'Models not found in the input data' without the option, a PetsGetResponse root model with it",
@@ -920,6 +923,11 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
     },
+    "openapi_as_definitions": {
+      "rules": [
+        "openapi.paths-bodies-as-definitions"
+      ]
+    },
     "openapi_include_info_version": {
       "not_recommended": "style",
       "reason": "Adds the API version as a constant; a project need."
@@ -928,26 +936,13 @@
       "not_recommended": "io",
       "reason": "Selects which OpenAPI paths to generate; the project decides what it needs."
     },
-    "openapi_paths_bodies_as_definitions": {
-      "rules": [
-        "openapi.paths-bodies-as-definitions"
-      ]
-    },
-    "openapi_ref_components_as_definitions": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
-    },
     "openapi_scopes": {
       "not_recommended": "style",
       "reason": "Which OpenAPI sections generate models; the project decides which models it needs."
     },
-    "order_constructor_fields_by_final_names": {
+    "order_constructor_fields_by": {
       "not_recommended": "preset",
-      "reason": "Dataclass and msgspec.Struct output only: set by the 20261019 presets; the recommendation starts from a preset."
-    },
-    "order_constructor_fields_by_written_defaults": {
-      "not_recommended": "preset",
-      "reason": "msgspec.Struct output under --strip-default-none only: set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "final-names applies to dataclass and msgspec.Struct output only, written-defaults to msgspec.Struct output under --strip-default-none only: both are set by the 20261019 presets; the recommendation starts from a preset."
     },
     "original_field_name_delimiter": {
       "not_recommended": "style",

@@ -35,6 +35,7 @@ from datamodel_code_generator.enums import (
     ClientSignatureStyle,
     ClientType,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
     CustomFileHeaderMode,
     DataclassArguments,
     DataModelType,
@@ -45,6 +46,7 @@ from datamodel_code_generator.enums import (
     InputModelRefStrategy,
     ModuleSplitMode,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     OpenAPIScope,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
@@ -520,21 +522,17 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
-    "--order-constructor-fields-by-final-names",
-    help="Order the constructor fields of dataclass and msgspec.Struct models after every field has its final name. "
-    "A field that overrides an inherited field renamed in another module is then matched to it and keeps its place; "
-    "without it the override reads as a new field after the inherited default and is written keyword-only "
-    "(kw_only=True).",
-    action="store_true",
-    default=None,
-)
-model_options.add_argument(
-    "--order-constructor-fields-by-written-defaults",
-    help="Order the fields of msgspec.Struct models by the defaults they write. Under --strip-default-none an optional "
-    "field whose None default is stripped still writes UNSET and goes after the required fields with the other "
-    "optional fields; without it the field keeps its schema place among the required fields, and the struct is "
-    "reordered only when a required field would then follow a default.",
-    action="store_true",
+    "--order-constructor-fields-by",
+    help="Decide the order of constructor fields by each given value. final-names: order the constructor fields of "
+    "dataclass and msgspec.Struct models after every field has its final name, so a field that overrides an inherited "
+    "field renamed in another module is matched to it and keeps its place; without it the override reads as a new "
+    "field after the inherited default and is written keyword-only (kw_only=True). written-defaults: order the fields "
+    "of msgspec.Struct models by the defaults they write, so under --strip-default-none an optional field whose None "
+    "default is stripped still writes UNSET and goes after the required fields with the other optional fields; "
+    "without it the field keeps its schema place among the required fields, and the struct is reordered only when a "
+    "required field would then follow a default.",
+    choices=[constructor_field_order.value for constructor_field_order in ConstructorFieldOrder],
+    nargs="+",
     default=None,
 )
 model_options.add_argument(
@@ -1541,19 +1539,14 @@ openapi_options.add_argument(
     default=None,
 )
 openapi_options.add_argument(
-    "--openapi-paths-bodies-as-definitions",
-    help="Give the request and response bodies of the paths and webhooks scopes the model a schema definition of "
-    "the same body gets: an object body with a type array such as [object, null], or with map keywords and no type, "
-    "becomes a model instead of an inline type",
-    action="store_true",
-    default=None,
-)
-openapi_options.add_argument(
-    "--openapi-ref-components-as-definitions",
-    help="Give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model a "
-    "definitions entry of the same schema gets; without it such a component gets no model, and a reference to it is "
-    "typed by the schema its $ref names",
-    action="store_true",
+    "--openapi-as-definitions",
+    help="Give each given kind of OpenAPI schema the model a definitions entry of the same schema gets. paths-bodies: "
+    "the request and response bodies of the paths and webhooks scopes, so an object body with a type array such as "
+    "[object, null], or with map keywords and no type, becomes a model instead of an inline type. ref-components: a "
+    "component written as a $ref to a recursive schema with sibling keywords, which gets the root model; without it "
+    "such a component gets no model, and a reference to it is typed by the schema its $ref names",
+    choices=[as_definitions.value for as_definitions in OpenAPIAsDefinitions],
+    nargs="+",
     default=None,
 )
 openapi_options.add_argument(
