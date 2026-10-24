@@ -13,7 +13,11 @@ from typing_extensions import Protocol
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.model._decisions.tag_value import field_tag, redeclared_tag_field
+from datamodel_code_generator.model._decisions.tag_value import (
+    enum_tag_as_values,
+    field_tag,
+    redeclared_tag_field,
+)
 from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
@@ -50,6 +54,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.enum import Enum
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextFields,
         ModuleContextView,
@@ -204,7 +209,7 @@ def _tag_fields_of_tagged_bases(models: Iterable[DataModel], builder: GraphBuild
                 builder.set_field_extras(
                     field, {key: value for key, value in field.extras.items() if key != "is_classvar"}
                 )
-                if not field.data_type.literals:
+                if not (field.data_type.literals or field.data_type.enum_member_literals):
                     builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
         model.opt_out_of_inherited_tag()
         opted_out.append(model)
@@ -228,6 +233,27 @@ def _tag_fields_of_tagged_bases(models: Iterable[DataModel], builder: GraphBuild
 def tag_fields_of_tagged_bases(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Make the fields of tagged msgspec bases tags, and remember the models that opt out."""
     run.opted_out = _tag_fields_of_tagged_bases(_context_models(run.contexts), parser._graph_builder)  # noqa: SLF001
+
+
+def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:
+    """Write the values of the enum members that tag a variant, where the output's ``Literal`` holds no enum member.
+
+    Every union is processed by then, so a tag that a later union wrote over keeps what it wrote. The tags read a member
+    literal as no literal until the structs are tagged, so this runs after that. A tag takes the values when its
+    ``Literal`` holds each one (``enum_tag_as_values``), else it keeps its members.
+    """
+    for model in _context_models(run.contexts):
+        for field in model.fields:
+            data_type = field.data_type
+            if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
+                continue
+            enum = cast("Enum", reference.source)
+            member_values = {member.name: enum.get_member(member).value for member in enum.fields}
+            values = [member_values[member] for _, member in data_type.enum_member_literals]
+            if enum_tag_as_values(values, bool_literals=parser.data_model_type.SUPPORTS_BOOLEAN_LITERAL):
+                parser._graph_builder.replace_field_type(  # noqa: SLF001
+                    field, data_type.__class__(literals=values, is_optional=data_type.is_optional)
+                )
 
 
 def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:

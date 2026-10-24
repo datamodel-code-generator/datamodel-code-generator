@@ -1445,6 +1445,8 @@ openapi/msgspec_enum_unions.yaml::components.schemas.Name	payloads/native_numeri
 openapi/msgspec_enum_unions.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_enum_unions.yaml::components.schemas.Rank	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_enum_unions.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_enum_values_in_discriminator.yaml::components.schemas.RequestVersionEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.VersionEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3177,6 +3179,8 @@ openapi/msgspec_enum_unions.yaml::components.schemas.Name	payloads/native_numeri
 openapi/msgspec_enum_unions.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_enum_unions.yaml::components.schemas.Rank	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_enum_unions.yaml::components.schemas.Size	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_enum_values_in_discriminator.yaml::components.schemas.RequestVersionEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.VersionEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

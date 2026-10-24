@@ -16,7 +16,7 @@ class K(str, Enum):
 
 
 class A(Struct):
-    k: Literal[K.x, K.y]
+    k: Literal['x', 'y']
 
 
 class K1(str, Enum):
@@ -24,7 +24,7 @@ class K1(str, Enum):
 
 
 class B(Struct):
-    k: Literal[K1.z]
+    k: Literal['z']
 
 
 class K2(str, Enum):
@@ -33,7 +33,7 @@ class K2(str, Enum):
 
 
 class C(Struct):
-    k: Literal[K2.x, K2.y]
+    k: Literal['x', 'y']
 
 
 class K3(str, Enum):
@@ -42,7 +42,7 @@ class K3(str, Enum):
 
 
 class D(Struct):
-    k: Literal[K3.z, K3.w]
+    k: Literal['z', 'w']
 
 
 class K4(str, Enum):
@@ -51,7 +51,7 @@ class K4(str, Enum):
 
 
 class E(Struct):
-    k: Literal[K4.x]
+    k: Literal['x']
 
 
 class K5(str, Enum):
@@ -60,7 +60,7 @@ class K5(str, Enum):
 
 
 class F(Struct):
-    k: Literal[K5.z]
+    k: Literal['z']
 
 
 class Shared(str, Enum):
@@ -70,12 +70,12 @@ class Shared(str, Enum):
 
 
 class G(Struct):
-    k: Literal[Shared.x, Shared.y, Shared.z]
+    k: Literal['x', 'y', 'z']
     g: str
 
 
 class H(Struct):
-    k: Literal[Shared.x, Shared.y, Shared.z]
+    k: Literal['x', 'y', 'z']
     h: int
 
 
@@ -90,7 +90,7 @@ class Base(Struct):
 
 class I(Base):
     i: int | UnsetType = UNSET
-    k: Literal[K6.p, K6.q]
+    k: Literal['p', 'q']
 
 
 class K7(str, Enum):
@@ -98,7 +98,7 @@ class K7(str, Enum):
 
 
 class J(Struct):
-    k: Literal[K7.r]
+    k: Literal['r']
 
 
 class Count(IntEnum):
@@ -107,12 +107,12 @@ class Count(IntEnum):
 
 
 class N1(Struct):
-    k: Literal[Count.integer_1]
+    k: Literal[1]
     n: str
 
 
 class N2(Struct):
-    k: Literal[Count.integer_1, Count.integer_2]
+    k: Literal[1, 2]
     m: int
 
 
@@ -122,7 +122,7 @@ class Plain(Enum):
 
 
 class P1(Struct):
-    k: Literal[Plain.int_1]
+    k: Literal[1]
     p: str
 
 

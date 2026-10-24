@@ -320,6 +320,7 @@ openapi/missing_sentinel_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/modular.yaml	yaml_fast_constructor/parity.txt
 openapi/modular_unencodable_last_module.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_enum_unions.yaml	yaml_fast_constructor/parity.txt
+openapi/msgspec_enum_values_in_discriminator.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_inline_const.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_mixed_operation_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum.yaml	yaml_fast_constructor/parity.txt

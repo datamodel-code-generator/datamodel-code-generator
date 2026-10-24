@@ -84,6 +84,7 @@ __all__ = [
     "VariantTagSource",
     "VariantTags",
     "distinct_tags",
+    "enum_tag_as_values",
     "enum_tag_literal",
     "enum_tag_members",
     "field_source_name",
@@ -407,6 +408,16 @@ def enum_tag_literal(value: TagValue, member_value: Any, /) -> TagValue:
     A mapping key ``"1"`` naming the member ``1`` of an integer Enum so becomes ``Literal[1]``.
     """
     return member_value if is_literal_kind(literal_value_kind(member_value)) else value
+
+
+def enum_tag_as_values(values: Iterable[Any], /, *, bool_literals: bool) -> bool:
+    """Return whether the members that tag a variant are written as their values, ``Literal['v1']``.
+
+    An output whose ``Literal`` holds no enum member (msgspec) writes the values when its ``Literal`` holds each of them
+    (``is_literal_kind``); a tag with any other value keeps its members, as an enum of floats stays one that no msgspec
+    decodes.
+    """
+    return all(is_literal_kind(literal_value_kind(value), bool_literals=bool_literals) for value in values)
 
 
 def enum_tag_members(named: Iterable[Any], members: Callable[[], Iterable[Any]], /) -> EnumTagMembers:

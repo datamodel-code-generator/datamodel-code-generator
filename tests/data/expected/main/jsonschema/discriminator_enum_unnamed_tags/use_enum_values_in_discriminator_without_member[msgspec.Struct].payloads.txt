@@ -1,36 +1,36 @@
-A {"k": "x"}: schema accepts, model type refused by msgspec
-A {"k": "y"}: schema accepts, model type refused by msgspec
-A {"k": "z"}: schema rejects, model type refused by msgspec
-A {"k": "A"}: schema rejects, model type refused by msgspec
-B {"k": "z"}: schema accepts, model type refused by msgspec
-B {"k": "x"}: schema rejects, model type refused by msgspec
-B {"k": "B"}: schema rejects, model type refused by msgspec
-C {"k": "x"}: schema accepts, model type refused by msgspec
-C {"k": "y"}: schema accepts, model type refused by msgspec
-C {"k": "foo"}: schema rejects, model type refused by msgspec
-D {"k": "z"}: schema accepts, model type refused by msgspec
-D {"k": "w"}: schema accepts, model type refused by msgspec
-D {"k": "bar"}: schema rejects, model type refused by msgspec
-E {"k": "x"}: schema accepts, model type refused by msgspec
-E {"k": "foo"}: schema rejects, model type refused by msgspec
-E {"k": "w"}: schema rejects, model type refused by msgspec
-F {"k": "z"}: schema accepts, model type refused by msgspec
-F {"k": "x"}: schema rejects, model type refused by msgspec
-G {"k": "x", "g": "a"}: schema accepts, model type refused by msgspec
-G {"k": "w", "g": "a"}: schema rejects, model type refused by msgspec
-G {"k": "x"}: schema rejects, model type refused by msgspec
-H {"k": "z", "h": 1}: schema accepts, model type refused by msgspec
-H {"k": "x", "h": "one"}: schema rejects, model type refused by msgspec
-I {"k": "p"}: schema accepts, model type refused by msgspec
-I {"k": "q", "i": 1}: schema accepts, model type refused by msgspec
-I {"k": "I"}: schema rejects, model type refused by msgspec
-I {"k": "r"}: schema rejects, model type refused by msgspec
-J {"k": "r"}: schema accepts, model type refused by msgspec
-J {"k": "p"}: schema rejects, model type refused by msgspec
-N1 {"k": 1, "n": "a"}: schema accepts, model type refused by msgspec
-N1 {"k": 3, "n": "a"}: schema rejects, model type refused by msgspec
-N1 {"k": 1}: schema rejects, model type refused by msgspec
-N2 {"k": 2, "m": 1}: schema accepts, model type refused by msgspec
-N2 {"k": 2, "m": "one"}: schema rejects, model type refused by msgspec
+A {"k": "x"}: schema accepts, model accepts
+A {"k": "y"}: schema accepts, model accepts
+A {"k": "z"}: schema rejects, model rejects
+A {"k": "A"}: schema rejects, model rejects
+B {"k": "z"}: schema accepts, model accepts
+B {"k": "x"}: schema rejects, model rejects
+B {"k": "B"}: schema rejects, model rejects
+C {"k": "x"}: schema accepts, model accepts
+C {"k": "y"}: schema accepts, model accepts
+C {"k": "foo"}: schema rejects, model rejects
+D {"k": "z"}: schema accepts, model accepts
+D {"k": "w"}: schema accepts, model accepts
+D {"k": "bar"}: schema rejects, model rejects
+E {"k": "x"}: schema accepts, model accepts
+E {"k": "foo"}: schema rejects, model rejects
+E {"k": "w"}: schema rejects, model rejects
+F {"k": "z"}: schema accepts, model accepts
+F {"k": "x"}: schema rejects, model rejects
+G {"k": "x", "g": "a"}: schema accepts, model accepts
+G {"k": "w", "g": "a"}: schema rejects, model rejects
+G {"k": "x"}: schema rejects, model rejects
+H {"k": "z", "h": 1}: schema accepts, model accepts
+H {"k": "x", "h": "one"}: schema rejects, model rejects
+I {"k": "p"}: schema accepts, model accepts
+I {"k": "q", "i": 1}: schema accepts, model accepts
+I {"k": "I"}: schema rejects, model rejects
+I {"k": "r"}: schema rejects, model rejects
+J {"k": "r"}: schema accepts, model accepts
+J {"k": "p"}: schema rejects, model rejects
+N1 {"k": 1, "n": "a"}: schema accepts, model accepts
+N1 {"k": 3, "n": "a"}: schema rejects, model rejects
+N1 {"k": 1}: schema rejects, model rejects
+N2 {"k": 2, "m": 1}: schema accepts, model accepts
+N2 {"k": 2, "m": "one"}: schema rejects, model rejects
 P2 {"k": 1, "q": "a"}: schema accepts, model accepts
 P2 {"k": 2, "q": "a"}: schema rejects, model rejects

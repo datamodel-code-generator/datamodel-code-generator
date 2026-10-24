@@ -1,0 +1,51 @@
+{
+ "openapi": "3.0.3",
+ "info": {
+  "title": "t",
+  "version": "1"
+ },
+ "paths": {},
+ "components": {
+  "schemas": {
+   "Request": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/V1"
+     },
+     {
+      "$ref": "#/components/schemas/V2"
+     }
+    ],
+    "discriminator": {
+     "propertyName": "version",
+     "mapping": {
+      "v1": "#/components/schemas/V1",
+      "v2": "#/components/schemas/V2"
+     }
+    }
+   },
+   "V1": {
+    "allOf": [
+     {
+      "$ref": "./b.json#/components/schemas/Base"
+     },
+     {
+      "type": "object",
+      "properties": {
+       "x": {
+        "type": "string"
+       }
+      }
+     }
+    ]
+   },
+   "V2": {
+    "allOf": [
+     {
+      "$ref": "./b.json#/components/schemas/Base"
+     }
+    ]
+   }
+  }
+ }
+}

@@ -4,6 +4,7 @@ Up to 0.86.0 such a variant was tagged with a member that does not exist, such a
 ``A`` or for a mapping key the Enum lacks, so the Pydantic module failed at import, and the other outputs failed when
 their annotations were evaluated. The variant is now tagged with the members its tags name, else with every member of
 its Enum, which are the only values its tag field holds. A union whose variants then share a value stays a plain union.
+The ``Literal`` of msgspec holds no Enum member, so a msgspec variant takes the values of those members.
 """
 
 from __future__ import annotations
@@ -65,7 +66,7 @@ UNION_PAYLOADS: tuple[tuple[str, tuple[dict[str, Any], ...]], ...] = (
 
 
 def _verdict(model: Any, text: str, *, is_msgspec: bool) -> str:
-    """Return whether a generated model decodes a JSON document, or that msgspec refuses its type."""
+    """Return whether a generated model decodes a JSON document."""
     get_type_hints(model)
     try:
         if is_msgspec:
@@ -74,17 +75,15 @@ def _verdict(model: Any, text: str, *, is_msgspec: bool) -> str:
             _model_json_validator(model)(text)
     except (ValidationError, msgspec.ValidationError):
         return "rejects"
-    except TypeError:
-        return "type refused by msgspec"
     return "accepts"
 
 
 def _verdicts(output_file: Path, output_model_type: str) -> str:
     """Return whether the schema and each generated model accept each document, one line per document.
 
-    msgspec decodes no Literal of an Enum member and no union of several Structs that are not tagged, so its unions are
-    left out and its variants only show that their annotations evaluate. Pydantic dataclasses do not read the Enum of a
-    base for a tag, so ``I`` keeps its schema name as before and is left out with its union.
+    msgspec takes the values of the members in the ``Literal`` of a variant, and decodes no union of several Structs
+    that are not tagged, so its unions are left out. Pydantic dataclasses do not read the Enum of a base for a tag, so
+    ``I`` keeps its schema name as before and is left out with its union.
     """
     schema = json.loads(INPUT_PATH.read_text(encoding="utf-8"))
     is_msgspec = output_model_type == "msgspec.Struct"

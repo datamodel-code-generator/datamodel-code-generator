@@ -685,6 +685,21 @@ TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     ),
     condition="msgspec",
 )
+WRITE_ENUM_MEMBER_TAGS_AS_VALUES = PassDecl(
+    "write_enum_member_tags_as_values",
+    Phase.CROSS_MODULE,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, Fact.DISCRIMINATOR_TAGS),
+    writes=_facts(Fact.FIELD_TYPES),
+    after=(
+        After(
+            "tag_fields_of_tagged_bases", "the tags read a member literal as no literal until the structs are tagged"
+        ),
+    ),
+    summary="Writes the values of the enum members that tag a variant, where the output's Literal holds no member.",
+    condition="an output whose Literal holds no enum member (msgspec)",
+)
 WARN_ENUMS_ADMITTING_OTHER_VALUES = PassDecl(
     "warn_enums_admitting_other_values",
     Phase.CROSS_MODULE,

@@ -737,6 +737,12 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 checked_models=lambda _, run: _context_models(run.contexts),
             ),
             PassSpec(
+                decls.WRITE_ENUM_MEMBER_TAGS_AS_VALUES,
+                cross_module.write_enum_member_tags_as_values,
+                when=lambda self, _: not self.data_model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
+                checked_models=lambda _, run: _context_models(run.contexts),
+            ),
+            PassSpec(
                 decls.WARN_ENUMS_ADMITTING_OTHER_VALUES,
                 lambda self, _: cross_module.warn_enums_admitting_other_values(self),
             ),
