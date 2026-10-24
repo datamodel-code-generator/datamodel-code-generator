@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: allOf members naming a component that is only a $ref to itself
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    Loop:
+      $ref: '#/components/schemas/Loop'
+    Name:
+      type: string
+    Base:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+        - id
+    Plain:
+      allOf:
+        - $ref: '#/components/schemas/Loop'
+        - type: object
+          properties:
+            x:
+              type: string
+          required:
+            - x
+    Mixed:
+      allOf:
+        - $ref: '#/components/schemas/Loop'
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          properties:
+            y:
+              type: string
+    Holder:
+      type: object
+      properties:
+        inner:
+          allOf:
+            - $ref: '#/components/schemas/Loop'
+            - type: object
+              properties:
+                z:
+                  type: integer
+              required:
+                - z
+        name:
+          $ref: '#/components/schemas/Name'
+      required:
+        - inner

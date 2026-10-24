@@ -364,16 +364,37 @@ def renders_as_duplicate(
     )
 
 
+def _drop_root_model_bases(parser: StructureHost, model: DataModel) -> None:
+    """Remove a root model from the bases of the models that inherit it, which then keep their default base."""
+    for child in model.reference.iter_data_model_children():
+        parser._graph_builder.set_base_classes(  # noqa: SLF001
+            child,
+            [
+                bc
+                for bc in child.base_classes
+                if not _keyed_answer(
+                    "removed base class",
+                    bc.reference is model.reference,
+                    lambda bc=bc, model=model: bc.reference == model.reference,
+                )
+            ],
+        )
+        if not child.base_classes:
+            parser._graph_builder.reset_base_classes(child)  # noqa: SLF001
+
+
 def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_reference: Reference) -> None:
     """Redirect the users of a duplicated root model to the reference its root names, and detach its own types.
 
-    A root model whose root names the model itself keeps users that still name it, which
-    ``reject_alias_cycles_without_schema`` reads from ``_self_named_root_models``.
+    A root model whose root names the model itself has no other model to redirect them to: the models that inherit
+    it drop it from their bases, as they drop every other root model, and the fields that use it keep naming it,
+    which ``reject_alias_cycles_without_schema`` reads from ``_self_named_root_models``.
     """
-    if root_reference is model.reference:
-        parser._self_named_root_models.append(model)  # noqa: SLF001
     parser._graph_builder.redirect_reference_users(model.reference, root_reference)  # noqa: SLF001
     parser._graph_builder.detach_model_data_type_refs(model)  # noqa: SLF001
+    if root_reference is model.reference:
+        parser._self_named_root_models.append(model)  # noqa: SLF001
+        _drop_root_model_bases(parser, model)
 
 
 def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> None:  # noqa: PLR0912
@@ -408,23 +429,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 _drop_duplicate_root_model(parser, model, root_reference)
                 models_to_remove.add(model)
                 continue
-
-            # Remove parser from all DataModel children's base_classes
-            for child in model.reference.iter_data_model_children():
-                parser._graph_builder.set_base_classes(  # noqa: SLF001
-                    child,
-                    [
-                        bc
-                        for bc in child.base_classes
-                        if not _keyed_answer(
-                            "removed base class",
-                            bc.reference is model.reference,
-                            lambda bc=bc, model=model: bc.reference == model.reference,
-                        )
-                    ],
-                )
-                if not child.base_classes:  # pragma: no cover
-                    parser._graph_builder.reset_base_classes(child)  # noqa: SLF001
+            _drop_root_model_bases(parser, model)
 
         class_name = model.duplicate_class_name or model.class_name
         if (

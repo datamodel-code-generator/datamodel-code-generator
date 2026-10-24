@@ -1,0 +1,10 @@
+Plain {"x": "a"}: schema accepts, model accepts
+Plain {}: schema rejects, model rejects
+Plain {"x": 1}: schema rejects, model rejects
+Mixed {"id": 1, "y": "b"}: schema accepts, model accepts
+Mixed {"y": "b"}: schema rejects, model rejects
+Mixed {"id": 1, "y": 2}: schema rejects, model rejects
+Holder {"inner": {"z": 1}, "name": "n"}: schema accepts, model accepts
+Holder {"inner": {}}: schema rejects, model rejects
+Holder {"inner": {"z": "one"}}: schema rejects, model rejects
+Holder {"inner": {"z": 1}, "name": 1}: schema rejects, model rejects
