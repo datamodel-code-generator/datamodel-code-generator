@@ -39,7 +39,7 @@ from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionE
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
-from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind
+from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, holds_inherited_member_value
 from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
 from datamodel_code_generator.model._decisions.tag_value import (
     is_tag_value,
@@ -1481,14 +1481,15 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
             if isinstance(source_model, Enum):
                 enums.append(source_model)
         if enums:
-            specialized = isinstance(enums[0], (IntEnum, StrEnum))
-            kind = decide_enum_kind("merged", first_specialized=specialized)
+            value_type = "int" if isinstance(enums[0], IntEnum) else "str" if isinstance(enums[0], StrEnum) else None
+            kind = decide_enum_kind("merged", first_specialized=value_type is not None)
             merged_enum = _enum_class(kind, enums[0].__class__)(
                 fields=[
                     f
                     for e in enums
                     for f in e.fields
-                    if not (specialized and get_raw_enum_member_value(f.default) is None)
+                    if value_type is None
+                    or holds_inherited_member_value(value_type, get_raw_enum_member_value(f.default))
                 ],
                 description=model.description,
                 reference=model.reference,

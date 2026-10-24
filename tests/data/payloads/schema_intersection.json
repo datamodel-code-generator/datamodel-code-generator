@@ -6441,5 +6441,44 @@
         ]
       }
     }
+  },
+  "enum_refs_unholdable": {
+    "model": "Model",
+    "fields": {
+      "number": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          2,
+          "bad",
+          null
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          2,
+          "bad",
+          null
+        ]
+      }
+    }
+  },
+  "enum_refs_unholdable_str": {
+    "model": "Model",
+    "fields": {
+      "text": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b",
+          1.5,
+          null
+        ]
+      }
+    }
   }
 }

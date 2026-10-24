@@ -10447,10 +10447,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the schema of an allOf site of enum references whose merged enum leaves out what its parts enforce.
 
         Such a site gets a model without fields that ``extract_inherited_enum`` writes as one enum of the members of
-        every referenced enum, in the class of the first, without the ``None`` member a class with a value base cannot
-        hold. That enum stays where each referenced enum lists exactly the values the parts admit together, and where
-        the parts are no value schemas or are not intersected here. Where they admit no value in common (warned
-        about), it stays where it is generated and imports, else the site takes its first part. Elsewhere, under
+        every referenced enum, in the class of the first, without the members a class with a value base cannot hold.
+        That enum stays where each referenced enum lists exactly the values the parts admit together, and where the
+        parts are no value schemas or are not intersected here. Where they admit no value in common (warned about), it
+        stays where its class holds every member, else the site takes its first part. Elsewhere, under
         ``--use-site-models-for-constrained-refs``, the site is the intersection of its parts.
         """
         if (
@@ -10491,12 +10491,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
-        """Return whether the enum merged from the members of ``enums``, in the class of the first, fails at import.
+        """Return whether the enum merged from ``enums``, in the class of the first, takes a member it cannot hold.
 
-        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not hold. Its
-        ``None`` member is left out by ``extract_inherited_enum``, so ``None`` fails the merge only with
-        --intersect-allof-keywords, where the site then takes its first part. An output that writes the first enum as
-        a ``Literal`` or as its const merges no enum class.
+        A class with a value base (``IntEnum``, ``StrEnum``) cannot hold a member its value type does not hold.
+        ``extract_inherited_enum`` leaves out the members it cannot construct (``holds_inherited_member_value``), so
+        the merge imports; this decides only whether a site whose parts admit no value in common takes its first part,
+        as it did when the merge failed at import. A ``None`` member counts only with --intersect-allof-keywords. An
+        output that writes the first enum as a ``Literal`` or as its const merges no enum class.
         """
         first = enums[0]
         if self.should_parse_enum_as_literal(first) or self._reads_enum_as_const(first):

@@ -1,0 +1,56 @@
+pydantic_v2.BaseModel default text "a" accepted
+pydantic_v2.BaseModel default text "b" accepted
+pydantic_v2.BaseModel default text 1.5 accepted
+pydantic_v2.BaseModel default text null accepted
+pydantic_v2.dataclass default text "a" accepted
+pydantic_v2.dataclass default text "b" accepted
+pydantic_v2.dataclass default text 1.5 accepted
+pydantic_v2.dataclass default text null accepted
+msgspec.Struct default text "a" import error
+msgspec.Struct default text "b" import error
+msgspec.Struct default text 1.5 import error
+msgspec.Struct default text null import error
+pydantic_v2.BaseModel --field-constraints text "a" accepted
+pydantic_v2.BaseModel --field-constraints text "b" accepted
+pydantic_v2.BaseModel --field-constraints text 1.5 accepted
+pydantic_v2.BaseModel --field-constraints text null accepted
+pydantic_v2.BaseModel --use-annotated text "a" accepted
+pydantic_v2.BaseModel --use-annotated text "b" accepted
+pydantic_v2.BaseModel --use-annotated text 1.5 accepted
+pydantic_v2.BaseModel --use-annotated text null accepted
+pydantic_v2.BaseModel --collapse-root-models text "a" accepted
+pydantic_v2.BaseModel --collapse-root-models text "b" accepted
+pydantic_v2.BaseModel --collapse-root-models text 1.5 accepted
+pydantic_v2.BaseModel --collapse-root-models text null accepted
+msgspec.Struct --collapse-root-models text "a" import error
+msgspec.Struct --collapse-root-models text "b" import error
+msgspec.Struct --collapse-root-models text 1.5 import error
+msgspec.Struct --collapse-root-models text null import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text "b" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text "b" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text null accepted
+msgspec.Struct --use-site-models-for-constrained-refs text "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs text "b" rejected
+msgspec.Struct --use-site-models-for-constrained-refs text 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs text null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text "b" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text "b" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text null accepted
+pydantic_v2.BaseModel --target-python-version 3.11 text "a" accepted
+pydantic_v2.BaseModel --target-python-version 3.11 text "b" accepted
+pydantic_v2.BaseModel --target-python-version 3.11 text 1.5 rejected
+pydantic_v2.BaseModel --target-python-version 3.11 text null accepted
+msgspec.Struct --target-python-version 3.11 text "a" accepted
+msgspec.Struct --target-python-version 3.11 text "b" accepted
+msgspec.Struct --target-python-version 3.11 text 1.5 rejected
+msgspec.Struct --target-python-version 3.11 text null rejected

@@ -1,0 +1,96 @@
+pydantic_v2.BaseModel default number 1 accepted
+pydantic_v2.BaseModel default number 2 accepted
+pydantic_v2.BaseModel default number "bad" rejected
+pydantic_v2.BaseModel default number null accepted
+pydantic_v2.BaseModel default disjoint 1 accepted
+pydantic_v2.BaseModel default disjoint 2 accepted
+pydantic_v2.BaseModel default disjoint "bad" rejected
+pydantic_v2.BaseModel default disjoint null accepted
+pydantic_v2.dataclass default number 1 accepted
+pydantic_v2.dataclass default number 2 accepted
+pydantic_v2.dataclass default number "bad" rejected
+pydantic_v2.dataclass default number null accepted
+pydantic_v2.dataclass default disjoint 1 accepted
+pydantic_v2.dataclass default disjoint 2 accepted
+pydantic_v2.dataclass default disjoint "bad" rejected
+pydantic_v2.dataclass default disjoint null accepted
+msgspec.Struct default number 1 accepted
+msgspec.Struct default number 2 accepted
+msgspec.Struct default number "bad" rejected
+msgspec.Struct default number null rejected
+msgspec.Struct default disjoint 1 accepted
+msgspec.Struct default disjoint 2 accepted
+msgspec.Struct default disjoint "bad" rejected
+msgspec.Struct default disjoint null rejected
+pydantic_v2.BaseModel --field-constraints number 1 accepted
+pydantic_v2.BaseModel --field-constraints number 2 accepted
+pydantic_v2.BaseModel --field-constraints number "bad" rejected
+pydantic_v2.BaseModel --field-constraints number null accepted
+pydantic_v2.BaseModel --field-constraints disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints disjoint 2 accepted
+pydantic_v2.BaseModel --field-constraints disjoint "bad" rejected
+pydantic_v2.BaseModel --field-constraints disjoint null accepted
+pydantic_v2.BaseModel --use-annotated number 1 accepted
+pydantic_v2.BaseModel --use-annotated number 2 accepted
+pydantic_v2.BaseModel --use-annotated number "bad" rejected
+pydantic_v2.BaseModel --use-annotated number null accepted
+pydantic_v2.BaseModel --use-annotated disjoint 1 accepted
+pydantic_v2.BaseModel --use-annotated disjoint 2 accepted
+pydantic_v2.BaseModel --use-annotated disjoint "bad" rejected
+pydantic_v2.BaseModel --use-annotated disjoint null accepted
+pydantic_v2.BaseModel --collapse-root-models number 1 accepted
+pydantic_v2.BaseModel --collapse-root-models number 2 accepted
+pydantic_v2.BaseModel --collapse-root-models number "bad" rejected
+pydantic_v2.BaseModel --collapse-root-models number null accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 2 accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint "bad" rejected
+pydantic_v2.BaseModel --collapse-root-models disjoint null accepted
+msgspec.Struct --collapse-root-models number 1 accepted
+msgspec.Struct --collapse-root-models number 2 accepted
+msgspec.Struct --collapse-root-models number "bad" rejected
+msgspec.Struct --collapse-root-models number null rejected
+msgspec.Struct --collapse-root-models disjoint 1 accepted
+msgspec.Struct --collapse-root-models disjoint 2 accepted
+msgspec.Struct --collapse-root-models disjoint "bad" rejected
+msgspec.Struct --collapse-root-models disjoint null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number 2 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number "bad" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint "bad" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number 2 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number "bad" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint "bad" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint null accepted
+msgspec.Struct --use-site-models-for-constrained-refs number 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs number 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs number "bad" rejected
+msgspec.Struct --use-site-models-for-constrained-refs number null rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint "bad" rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number "bad" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint "bad" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number 2 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number "bad" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint "bad" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint null accepted

@@ -31,6 +31,7 @@ __all__ = [
     "LiteralValueKind",
     "decide_enum_kind",
     "enum_as_literal",
+    "holds_inherited_member_value",
     "holds_member_value",
     "is_literal_kind",
     "is_tag_kind",
@@ -83,8 +84,9 @@ EnumKindRule: TypeAlias = Literal[
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
-  ``StrEnum``, which the merged enum keeps whatever the members of the other enums are (a ``StrEnum`` holding ``1.5``),
-  except a ``None`` member, which no class with a value base holds, so the merged enum leaves it out.
+  ``StrEnum``, which the merged enum keeps whatever the members of the other enums are (an ``IntEnum`` holding ``2.5``
+  as ``2``), except a member the class cannot hold (``holds_inherited_member_value``), as ``None`` or ``'bad'`` in an
+  ``IntEnum``, which the merged enum leaves out.
 """
 
 LiteralSetting: TypeAlias = Literal["all", "one", "none"]
@@ -229,6 +231,15 @@ def holds_member_value(value_type: str, value: object, /, *, keep_member_values:
     if keep_member_values:
         return keeps_member_value(value_type, value)
     return _constructs(value_type, value)
+
+
+def holds_inherited_member_value(value_type: str, value: object, /) -> bool:
+    """Return whether the ``IntEnum`` (``int``) or ``StrEnum`` (``str``) a merged enum keeps imports with the value.
+
+    An ``IntEnum`` constructs a member with ``int(value)``, as ``holds_member_value`` does without
+    ``--keep-enum-member-values``; a ``StrEnum`` takes only a str, whatever ``str(value)`` gives.
+    """
+    return isinstance(value, str) if value_type == "str" else _constructs(value_type, value)
 
 
 def keeps_member_value(value_type: str, value: object, /) -> bool:
