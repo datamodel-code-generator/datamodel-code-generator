@@ -137,6 +137,8 @@ edge-scope-edges-paths	main/generation_platform/client/bindings/edge-scope-edges
 edge-scope-edges-paths	main/generation_platform/client/bindings/edge-scope-edges-paths//*.py	= main/generation_platform/client/bindings/edge-scope-edges-api//*.py
 edge-self-alias-redirect	main/generation_platform/client/bindings/edge-self-alias-redirect.txt
 edge-self-alias-redirect	main/generation_platform/client/bindings/edge-self-alias-redirect//*.py	= main/generation_platform/fastapi/packages/info/
+edge-self-alias-redirect-no-annotations	main/generation_platform/client/bindings/edge-self-alias-redirect-no-annotations.txt
+edge-self-alias-redirect-no-annotations	main/generation_platform/client/bindings/edge-self-alias-redirect-no-annotations//*.py
 edge-typeddict-field-ownership	main/generation_platform/client/bindings/edge-typeddict-field-ownership.txt
 edge-typeddict-field-ownership	main/generation_platform/client/bindings/edge-typeddict-field-ownership//*.py
 edge-unresolved-reuse	main/generation_platform/client/bindings/edge-unresolved-reuse.txt

@@ -1,0 +1,7 @@
+# edge-self-alias-redirect-no-annotations
+render dataclasses.dataclass default
+  models.py
+  model_bindings.py dataclasses_dataclass/default
+render typing.TypedDict default
+  models.py
+  model_bindings.py dataclasses_dataclass/default
