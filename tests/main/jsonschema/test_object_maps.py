@@ -434,6 +434,20 @@ def test_object_maps_schema_validators_false_all_of(output_file: Path, extra_arg
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+def test_object_maps_nested_false_all_of_annotated_value(output_file: Path) -> None:
+    """Keep the module generated for an additionalProperties allOf whose member is an allOf holding false.
+
+    No level of the value reads as false, so under --use-annotated the constraint merge meets the nested false and
+    gives up, and the value is typed as a model of its own.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "false_all_of_nested_annotated.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--use-annotated"],
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

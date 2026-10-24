@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "additionalProperties": {
+    "allOf": [
+      {
+        "type": "string",
+        "maxLength": 3
+      },
+      {
+        "allOf": [
+          false
+        ]
+      }
+    ]
+  }
+}

@@ -1553,6 +1553,8 @@ typing.TypedDict-false_values-request-response	main/jsonschema/object_maps/false
 typing.TypedDict-false_values-single-dict-typed-nullable-map-values	main/jsonschema/object_maps/false_all_of_values[typing.TypedDict-false_values-single-dict-typed-nullable-map-values].payloads.txt	= main/jsonschema/object_maps/false_all_of_values[typing.TypedDict-false_all_of_values-default].payloads.txt
 typing.TypedDict-false_values-single-dict-typed-nullable-map-values	main/jsonschema/object_maps/false_all_of_values[typing.TypedDict-false_values-single-dict-typed-nullable-map-values].py	= main/jsonschema/object_maps/false_all_of_values[typing.TypedDict-false_all_of_values-default].py
 typing.TypedDict-false_values-single-dict-typed-nullable-map-values	main/jsonschema/object_maps/false_all_of_values[typing.TypedDict-false_values-single-dict-typed-nullable-map-values].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_object_maps_nested_false_all_of_annotated_value]
+	main/jsonschema/object_maps/nested_false_all_of_annotated_value.py
 [test_object_maps_released_pattern_properties_hook]
 	main/jsonschema/object_maps/released_pattern_properties_hook.txt
 [test_object_maps_released_pattern_properties_hook_without_single_dict]
