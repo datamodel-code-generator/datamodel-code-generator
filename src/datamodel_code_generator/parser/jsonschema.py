@@ -4087,7 +4087,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether a type the model at a key writes beside its fields names a model with variants.
 
         Under request-response, the types its schema validator rules name and the type of additional properties that
-        TypedDict writes as extra_items name models as the fields do.
+        TypedDict records as extra_items (``set_additional_properties``) name models as the fields do.
         """
         if self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
             return False
@@ -4437,8 +4437,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         them all, as 0.86.0 did). A key that names no loadable schema has neither. patternProperties and propertyNames
         type the values and keys of an object map, propertyNames only where no patternProperties give the keys; a
         schema with properties or allOf, and each inline allOf member merged into it, builds a model whose fields hold
-        properties alone, so its map keywords type nothing. additionalProperties are typed by ``parse_item`` where the
-        model is a map (``_schema_builds_map_model``); a model with fields types those its builder types beside them
+        properties alone, so its map keywords type nothing. A model types the additionalProperties its builder types,
+        as its values where it is a map (``_schema_builds_map_model``) and beside its fields otherwise
         (``_rw_typed_additional_properties``). TypedDict also records those of the key's model and of each inline model
         with fields, unless an inline allOf member closes it (``_model_additional_properties``), as their extra_items
         type (``set_additional_properties``); that type generates no model, so the walk takes the models it names
@@ -4467,11 +4467,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
                 builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
                 types_map = not (model_schema.properties or model_schema.allOf)
-                extras = (
-                    schema.additionalProperties
-                    if builds_map
-                    else self._rw_typed_additional_properties(schema, model_schema, resolved_ref)
-                )
+                extras = self._rw_typed_additional_properties(schema, model_schema, resolved_ref, builds_map=builds_map)
                 if (
                     (is_key_model or not builds_map)
                     and self._writes_extra_items_type
@@ -4517,12 +4513,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return result
 
     def _rw_typed_additional_properties(
-        self, schema: JsonSchemaObject, model_schema: JsonSchemaObject, defining_ref: str
+        self, schema: JsonSchemaObject, model_schema: JsonSchemaObject, defining_ref: str, *, builds_map: bool
     ) -> JsonSchemaObject | bool | None:
-        """Return the additionalProperties the model with fields built from ``model_schema`` types beside them.
+        """Return the additionalProperties the model built from ``model_schema`` types.
 
         The patternProperties rules of --generate-schema-validators type the value that
-        ``_pattern_rule_additional_properties`` picks; otherwise the typed extra field types those of the model, where
+        ``_pattern_rule_additional_properties`` picks. Otherwise a map types those of the model as its values, except
+        where patternProperties give its values: there they type only the keys no pattern matches, where
+        ``_other_keys_schema`` says so. A model with fields types them in its typed extra field, where
         ``_typed_extra_field_schema`` writes it. Those of the model are read from ``schema``, like its other children.
         """
         with self._inherited_ref_context(defining_ref):
@@ -4531,7 +4529,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     return None
                 _, source, value = rule_extras
                 return schema.additionalProperties if source is model_schema else value
-            if self._typed_extra_field_schema(model_schema) is None:
+            if builds_map:
+                if model_schema.patternProperties and self._other_keys_schema(model_schema) is None:
+                    return None
+            elif self._typed_extra_field_schema(model_schema) is None:
                 return None
         return schema.additionalProperties
 
@@ -12541,7 +12542,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         description: str | None = None,
         default: Any = UNDEFINED,
     ) -> DataModel:
-        """Register a root using an internal alternate output representation."""
+        """Register a root using an internal alternate output representation.
+
+        Under request-response the root splits where its fields or the types it writes beside them
+        (``_rw_model_writes_variant_beside_fields``) name a model with variants, as a model with fields does.
+        """
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
             self._add_unique_items_validator(
@@ -12555,7 +12560,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         splits = (
             self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
             and not self._is_base_stand_in(reference)
-            and self._fields_reference_rw_model_variant(fields, "Request")
+            and (
+                self._fields_reference_rw_model_variant(fields, "Request")
+                or self._rw_model_writes_variant_beside_fields(reference.path)
+            )
         )
         if self.dedupe_request_response_variants:
             self._check_rw_model_split(reference, splits=splits)
@@ -13622,18 +13630,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             dict_key=self._pattern_map_key_type(property_names, "|".join(patterns) if joins_patterns else None),
         )
 
-    def _other_keys_schema(
-        self,
-        additional_properties: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-    ) -> JsonSchemaObject | None:
-        """Return the additionalProperties schema that types the keys no pattern of a pattern map matches.
+    def _other_keys_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the additionalProperties schema that types the keys no pattern of the pattern map of ``obj`` matches.
 
-        Only a schema that asserts something types them, and only where the output decodes a union of any value
-        types (msgspec keeps its earlier type until its union fallbacks are decided); otherwise the map admits the
-        keys of its patterns only.
+        Only the builder of ``--use-single-dict-for-object-maps`` types them, only with a schema that asserts
+        something, and only where the output decodes a union of any value types (msgspec keeps its earlier type until
+        its union fallbacks are decided); otherwise the map admits the keys of its patterns only.
         """
         if (
-            isinstance(additional_properties, JsonSchemaObject)
+            self.use_single_dict_for_object_maps
+            and isinstance(additional_properties := obj.additionalProperties, JsonSchemaObject)
             and self._output_model_context.decodes_value_unions
             and _schema_assertions(additional_properties)
         ):
@@ -13720,7 +13726,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = (
                 self.parse_pattern_properties(name, pattern_properties, object_path, property_names=obj.propertyNames)
-                if (other_keys := self._other_keys_schema(obj.additionalProperties)) is None
+                if (other_keys := self._other_keys_schema(obj)) is None
                 else self._parse_pattern_map(name, pattern_properties, object_path, obj.propertyNames, other_keys)
             )
         elif obj.propertyNames is not None:
@@ -13772,7 +13778,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if schema is not False
         ]
         reasons: list[str] = []
-        if (other_keys := self._other_keys_schema(obj.additionalProperties)) is not None:
+        if (other_keys := self._other_keys_schema(obj)) is not None:
             admitted.append(_schema_assertions(other_keys))
             if any(schema is False for schema in pattern_properties.values()):
                 reasons.append("admits keys whose pattern rejects every value")
