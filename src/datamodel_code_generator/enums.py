@@ -336,6 +336,20 @@ class DefaultValueType(Enum):
     Enum = "enum"
 
 
+class ConstructorFieldOrder(Enum):
+    """What decides the order of the constructor fields of dataclass and msgspec.Struct models."""
+
+    FinalNames = "final-names"
+    WrittenDefaults = "written-defaults"
+
+
+class OpenAPIAsDefinitions(Enum):
+    """OpenAPI schemas that get the model a definitions entry of the same schema gets."""
+
+    PathsBodies = "paths-bodies"
+    RefComponents = "ref-components"
+
+
 class JsonSchemaVersion(Enum):
     """JSON Schema draft versions.
 
@@ -469,6 +483,7 @@ __all__ = [
     "ClientSignatureStyle",
     "ClientType",
     "CollapseRootModelsNameStrategy",
+    "ConstructorFieldOrder",
     "CustomFileHeaderMode",
     "DataModelType",
     "DataclassArguments",
@@ -481,6 +496,7 @@ __all__ = [
     "JsonSchemaVersion",
     "ModuleSplitMode",
     "NamingStrategy",
+    "OpenAPIAsDefinitions",
     "OpenAPIScope",
     "OpenAPIVersion",
     "ProtobufVersion",

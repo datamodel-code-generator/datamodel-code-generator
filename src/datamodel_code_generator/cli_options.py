@@ -324,12 +324,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         group=OptionGroup.MODEL_REUSE,
     ),
     "--keep-model-order": CLIOptionMeta(name="--keep-model-order", category=OptionCategory.MODEL),
-    "--order-constructor-fields-by-final-names": CLIOptionMeta(
-        name="--order-constructor-fields-by-final-names", category=OptionCategory.MODEL
-    ),
-    "--order-constructor-fields-by-written-defaults": CLIOptionMeta(
-        name="--order-constructor-fields-by-written-defaults", category=OptionCategory.MODEL
-    ),
+    "--order-constructor-fields-by": CLIOptionMeta(name="--order-constructor-fields-by", category=OptionCategory.MODEL),
     "--allow-extra-fields": CLIOptionMeta(
         name="--allow-extra-fields",
         category=OptionCategory.MODEL,
@@ -958,14 +953,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--openapi-include-info-version": CLIOptionMeta(
         name="--openapi-include-info-version", category=OptionCategory.OPENAPI
     ),
-    "--openapi-paths-bodies-as-definitions": CLIOptionMeta(
-        name="--openapi-paths-bodies-as-definitions",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_PATHS,
-    ),
-    "--openapi-ref-components-as-definitions": CLIOptionMeta(
-        name="--openapi-ref-components-as-definitions",
+    "--openapi-as-definitions": CLIOptionMeta(
+        name="--openapi-as-definitions",
         category=OptionCategory.OPENAPI,
         topic=OptionTopic.OPENAPI,
         group=OptionGroup.OPENAPI_SCOPES,

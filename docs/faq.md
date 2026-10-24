@@ -559,11 +559,11 @@ class Cat(Struct, tag_field="pet-kind", tag="cat"):
     name: str | UnsetType = UNSET
 ```
 
-### `--order-constructor-fields-by-final-names`
+### `--order-constructor-fields-by final-names`
 
 | | |
 |---|---|
-| Option | `--order-constructor-fields-by-final-names` |
+| Option | `--order-constructor-fields-by final-names` |
 | Preset | `20261019` |
 | Class | opt-in |
 | Release | 0.87.0 |
@@ -785,11 +785,11 @@ class ParentRequest(BaseModel):
     payload: Payload1 | None = None
 ```
 
-### `--order-constructor-fields-by-written-defaults`
+### `--order-constructor-fields-by written-defaults`
 
 | | |
 |---|---|
-| Option | `--order-constructor-fields-by-written-defaults` |
+| Option | `--order-constructor-fields-by written-defaults` |
 | Preset | `20261019` |
 | Class | opt-in |
 | Release | 0.87.0 |
@@ -989,11 +989,11 @@ class Model(BaseModel):
     code: Literal["abc"] | None = None
 ```
 
-### `--openapi-paths-bodies-as-definitions`
+### `--openapi-as-definitions paths-bodies`
 
 | | |
 |---|---|
-| Option | `--openapi-paths-bodies-as-definitions` |
+| Option | `--openapi-as-definitions paths-bodies` |
 | Preset | `20261019` |
 | Class | opt-in |
 | Release | 0.87.0 |
@@ -1006,7 +1006,7 @@ Schema (abridged): the `POST /pets` request body is `{"type": ["object", "null"]
 Without the option (same as 0.86.0), the body is typed inline and a document whose only bodies are such schemas fails:
 
 ```
-Models not found in the input data; request or response bodies of the paths or webhooks scope are typed inline, and --openapi-paths-bodies-as-definitions gives them the models their schema definitions get
+Models not found in the input data; request or response bodies of the paths or webhooks scope are typed inline, and --openapi-as-definitions paths-bodies gives them the models their schema definitions get
 ```
 
 With the option:
@@ -1016,11 +1016,11 @@ class PetsPostRequest(RootModel[dict[str, Any] | None]):
     root: dict[str, Any] | None
 ```
 
-### `--openapi-ref-components-as-definitions`
+### `--openapi-as-definitions ref-components`
 
 | | |
 |---|---|
-| Option | `--openapi-ref-components-as-definitions` |
+| Option | `--openapi-as-definitions ref-components` |
 | Preset | `20261019` |
 | Class | opt-in |
 | Release | 0.87.0 |

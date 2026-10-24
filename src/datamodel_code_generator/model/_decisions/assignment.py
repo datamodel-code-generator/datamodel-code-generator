@@ -64,7 +64,7 @@ AssignmentRow: TypeAlias = Literal["model", "dataclass", "pydantic-dataclass", "
   admits None, and a ``ClassVar`` takes no part in the constructor.
 * ``msgspec``: msgspec Structs: a default for every optional field, as a Struct never strips its defaults. The
   construction key still counts a field whose ``None`` default ``--strip-default-none`` strips as having none, so it
-  keeps its schema place among the required fields, unless ``--order-constructor-fields-by-written-defaults`` is given
+  keeps its schema place among the required fields, unless ``--order-constructor-fields-by written-defaults`` is given
   (``AssignmentInputs.keeps_stripped_place``).
 """
 
@@ -150,7 +150,7 @@ class AssignmentInputs:
     ``init_excluded`` that it declares ``init=False``. ``visibility`` is given for the ``pydantic-dataclass`` row and
     for a ``PydanticDataclassWritten`` assignment, which read it. ``keeps_stripped_place`` tells, for the ``msgspec``
     row, that the construction key counts the field as having no default: ``--strip-default-none`` strips its
-    ``None`` default, and neither ``--order-constructor-fields-by-written-defaults`` nor
+    ``None`` default, and neither ``--order-constructor-fields-by written-defaults`` nor
     ``--use-default-with-required`` is given.
     """
 

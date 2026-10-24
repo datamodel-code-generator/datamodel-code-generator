@@ -84,6 +84,7 @@ from datamodel_code_generator._target_unicode import title
 from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import (
+    ConstructorFieldOrder,
     DefaultValueType,
     StrictTypes,
     _pydantic_version_key,
@@ -1415,8 +1416,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_type_alias = config.use_type_alias
         self.capitalise_enum_members = config.capitalise_enum_members
         self.keep_model_order = config.keep_model_order
-        self.order_constructor_fields_by_final_names = config.order_constructor_fields_by_final_names
-        self.order_constructor_fields_by_written_defaults = config.order_constructor_fields_by_written_defaults
+        self.order_constructor_fields_by_final_names = (
+            ConstructorFieldOrder.FinalNames in config.order_constructor_fields_by
+        )
+        self.order_constructor_fields_by_written_defaults = (
+            ConstructorFieldOrder.WrittenDefaults in config.order_constructor_fields_by
+        )
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions

@@ -30,6 +30,7 @@ from datamodel_code_generator.enums import (
     AsyncAPIVersion,
     ClassNameAffixScope,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
     DataclassArguments,
     DefaultValueType,
     FieldTypeCollisionStrategy,
@@ -38,6 +39,7 @@ from datamodel_code_generator.enums import (
     JsonSchemaVersion,
     ModuleSplitMode,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     OpenAPIScope,
     OpenAPIVersion,
     ProtobufVersion,
@@ -117,7 +119,13 @@ def _rebuild_config_model(model_type: type[BaseModel], types_namespace: dict[str
 def _rebuild_generate_config() -> None:
     _rebuild_config_model(
         GenerateConfig,
-        {"DefaultValueType": DefaultValueType, "StrictTypes": StrictTypes, "UnionMode": UnionMode},
+        {
+            "ConstructorFieldOrder": ConstructorFieldOrder,
+            "DefaultValueType": DefaultValueType,
+            "OpenAPIAsDefinitions": OpenAPIAsDefinitions,
+            "StrictTypes": StrictTypes,
+            "UnionMode": UnionMode,
+        },
     )
 
 
@@ -259,8 +267,7 @@ class ParserConfig(BaseModel):
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
     keep_model_order: bool = False
-    order_constructor_fields_by_final_names: bool = False
-    order_constructor_fields_by_written_defaults: bool = False
+    order_constructor_fields_by: Sequence[ConstructorFieldOrder] = ()
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
     use_msgspec_tagged_unions: bool = False
@@ -352,8 +359,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     use_status_code_in_response_name: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
-    openapi_paths_bodies_as_definitions: bool = False
-    openapi_ref_components_as_definitions: bool = False
+    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
     openapi_version: OpenAPIVersion | None = None
 
 
@@ -365,8 +371,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     use_status_code_in_response_name: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
-    openapi_paths_bodies_as_definitions: bool = False
-    openapi_ref_components_as_definitions: bool = False
+    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
     openapi_version: OpenAPIVersion | None = None
     asyncapi_version: AsyncAPIVersion | None = None
 

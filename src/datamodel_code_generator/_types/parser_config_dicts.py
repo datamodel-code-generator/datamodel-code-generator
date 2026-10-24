@@ -19,12 +19,14 @@ if TYPE_CHECKING:
         AsyncAPIVersion,
         ClassNameAffixScope,
         CollapseRootModelsNameStrategy,
+        ConstructorFieldOrder,
         DataclassArguments,
         DefaultValueType,
         FieldTypeCollisionStrategy,
         HTTPBackend,
         JsonSchemaVersion,
         NamingStrategy,
+        OpenAPIAsDefinitions,
         OpenAPIScope,
         OpenAPIVersion,
         ProtobufVersion,
@@ -162,8 +164,7 @@ class ParserConfigDict(TypedDict):
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
-    order_constructor_fields_by_final_names: NotRequired[bool]
-    order_constructor_fields_by_written_defaults: NotRequired[bool]
+    order_constructor_fields_by: NotRequired[Sequence[ConstructorFieldOrder]]
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]
@@ -239,8 +240,7 @@ class OpenAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     use_status_code_in_response_name: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
-    openapi_paths_bodies_as_definitions: NotRequired[bool]
-    openapi_ref_components_as_definitions: NotRequired[bool]
+    openapi_as_definitions: NotRequired[Sequence[OpenAPIAsDefinitions]]
     openapi_version: NotRequired[OpenAPIVersion | None]
 
 
@@ -250,8 +250,7 @@ class AsyncAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     use_status_code_in_response_name: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
-    openapi_paths_bodies_as_definitions: NotRequired[bool]
-    openapi_ref_components_as_definitions: NotRequired[bool]
+    openapi_as_definitions: NotRequired[Sequence[OpenAPIAsDefinitions]]
     openapi_version: NotRequired[OpenAPIVersion | None]
     asyncapi_version: NotRequired[AsyncAPIVersion | None]
 

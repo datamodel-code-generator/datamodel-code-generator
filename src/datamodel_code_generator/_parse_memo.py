@@ -71,7 +71,7 @@ LEGACY_ROWS: Final[Mapping[MemoTable, str]] = MappingProxyType({
   whose name the inner model takes keeps whether its type named the wrapper before the rename, and whether its
   constraints apply reads that.
 * ``legacy-nested-factory-order-before-nullability`` (``model/base.py:_nested_model_factory``): without
-  ``--order-constructor-fields-by-written-defaults``, the constructor ordering of a Pydantic dataclass under
+  ``--order-constructor-fields-by written-defaults``, the constructor ordering of a Pydantic dataclass under
   ``--use-default-factory-for-optional-nested-models --strip-default-none`` builds a nested model by factory only when
   the model had no required constructor field at the first read, a stripped ``None`` default counting as no default
   unless the field's type was optional then, before reference unions become nullable. The order is 0.86.0's; the

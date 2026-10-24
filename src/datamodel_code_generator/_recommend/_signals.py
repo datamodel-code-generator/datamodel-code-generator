@@ -332,7 +332,7 @@ def _is_inline_object_body(schema: object) -> bool:
 
 
 def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]) -> int:
-    """Count the request and response bodies that ``--openapi-paths-bodies-as-definitions`` gives a model."""
+    """Count the request and response bodies that ``--openapi-as-definitions paths-bodies`` gives a model."""
     return sum(
         _is_inline_object_body(schema)
         for operation in _legacy_body_operations(document, scopes, include_paths)

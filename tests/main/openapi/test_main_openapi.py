@@ -3678,10 +3678,10 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
             ["--type-overrides", '{"M.n": "decimal.Decimal"}'],
             id="pydantic-dataclass-field-type-override",
         ),
-        pytest.param("msgspec.Struct", ["--order-constructor-fields-by-written-defaults"], id="msgspec"),
+        pytest.param("msgspec.Struct", ["--order-constructor-fields-by", "written-defaults"], id="msgspec"),
         pytest.param(
             "msgspec.Struct",
-            ["--keyword-only", "--order-constructor-fields-by-written-defaults"],
+            ["--keyword-only", "--order-constructor-fields-by", "written-defaults"],
             id="msgspec-keyword-only",
         ),
         pytest.param("msgspec.Struct", [], id="msgspec-schema-place"),
@@ -3690,18 +3690,18 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
     ],
 )
 @pytest.mark.cli_doc(
-    options=["--order-constructor-fields-by-written-defaults"],
+    options=["--order-constructor-fields-by"],
     option_description="""Order the fields of msgspec.Struct models by the defaults they write.
 
-The `--order-constructor-fields-by-written-defaults` flag changes `msgspec.Struct` output under
+The `--order-constructor-fields-by written-defaults` value changes `msgspec.Struct` output under
 `--strip-default-none`, and under `--use-default-factory-for-optional-nested-models --strip-default-none` the order of
 dataclass and Pydantic dataclass fields beside nested models whose default factory a reference cycle drops; other
 runs ignore it.
 
 A Struct writes a default for every optional field: `UNSET`, or `None` when the type admits None, even where
-`--strip-default-none` strips the field's `None` default. Without the flag such a field keeps its schema place among
+`--strip-default-none` strips the field's `None` default. Without the value such a field keeps its schema place among
 the required fields, the order of earlier releases, and the struct is reordered only when a required field would
-then follow a default (which the Struct rejects at import). With the flag every optional field goes after the
+then follow a default (which the Struct rejects at import). With the value every optional field goes after the
 required fields, in schema order, which changes the order of the constructor's positional arguments.""",
     input_schema="openapi/strip_default_none_constructor_order.yaml",
     cli_args=[
@@ -3710,7 +3710,8 @@ required fields, in schema order, which changes the order of the constructor's p
         "--strip-default-none",
         "--target-python-version",
         "3.10",
-        "--order-constructor-fields-by-written-defaults",
+        "--order-constructor-fields-by",
+        "written-defaults",
     ],
     golden_output="main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py",
     comparison_output="main/openapi/main_openapi/strip_default_none_constructor_order[msgspec-schema-place].py",
@@ -3726,7 +3727,7 @@ def test_main_openapi_strip_default_none_constructor_order(
     a keyword-only model keeps it among the fields without a default. It may follow an inherited default without
     being keyword-only, and a required field that redeclares an inherited one is assigned ``Field(...)`` so that the
     inherited ``None`` does not become its default. Pydantic 2.14 targets put a required aliased
-    ``Field(...)`` field before it. msgspec.Struct writes every default; --order-constructor-fields-by-written-defaults
+    ``Field(...)`` field before it. msgspec.Struct writes every default; --order-constructor-fields-by written-defaults
     puts its optional fields after the required ones, and without it a stripped field keeps its schema place unless a
     required field would follow it.
     """
@@ -3837,7 +3838,8 @@ def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[
             "--formatters",
             "builtin",
             "--disable-timestamp",
-            "--order-constructor-fields-by-final-names",
+            "--order-constructor-fields-by",
+            "final-names",
             *extra_args,
         ],
         force_exec_validation=True,
@@ -14954,31 +14956,31 @@ def test_main_openapi_reference_to_component_without_model_mapped(output_model: 
 
 
 @pytest.mark.cli_doc(
-    options=["--openapi-ref-components-as-definitions"],
+    options=["--openapi-as-definitions"],
     option_description="""Give a `$ref` component with sibling keywords to a recursive schema its own model.
 
 A component such as `Tree: {$ref: '#/components/schemas/Node', minProperties: 1}`, where `Node` leads back to `Tree`
 or to itself, cannot merge its sibling keywords into `Node`. Without the option it gets no model, as in 0.86.0, and a
-reference to it is typed by `Node`; with `--openapi-ref-components-as-definitions` it gets the root model
+reference to it is typed by `Node`; with `--openapi-as-definitions ref-components` it gets the root model
 `Tree(RootModel[Node])` that the same schema gets as a `$defs` entry, references to it name `Tree`, and a component
 nothing references is generated too. Such a component in another document gets that model with or without the
 option.""",
     input_schema="openapi/ref_siblings_recursive_target/schema.yaml",
-    cli_args=["--openapi-ref-components-as-definitions"],
+    cli_args=["--openapi-as-definitions", "ref-components"],
     golden_output="main/openapi/main_openapi/ref_components_as_definitions[with-option].py",
     comparison_output="main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py",
 )
 @pytest.mark.parametrize(
     "extra_args",
     [
-        pytest.param(["--openapi-ref-components-as-definitions"], id="with-option"),
+        pytest.param(["--openapi-as-definitions", "ref-components"], id="with-option"),
         pytest.param([], id="without-option"),
     ],
 )
 def test_main_openapi_ref_components_as_definitions(output_file: Path, extra_args: list[str]) -> None:
     """Give a component written as a ``$ref`` to a recursive schema with sibling keywords its own model.
 
-    Without --openapi-ref-components-as-definitions ``Tree``, ``Grove`` and ``Forest`` get no model, as in 0.86.0, and
+    Without --openapi-as-definitions ref-components ``Tree``, ``Grove`` and ``Forest`` get no model, as in 0.86.0, and
     references to them are typed by ``Node``; with it each gets the root model its ``$defs`` entry would get.
     """
     run_main_and_assert(

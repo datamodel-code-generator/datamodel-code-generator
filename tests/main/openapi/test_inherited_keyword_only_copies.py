@@ -37,7 +37,7 @@ OPTION_SETS = {
     "default": (),
     "keep_model_order": ("--keep-model-order",),
     "use_annotated": ("--use-annotated",),
-    "final_names": ("--order-constructor-fields-by-final-names",),
+    "final_names": ("--order-constructor-fields-by", "final-names"),
 }
 FORWARD_REFERENCE_OPTIONS = ("--use-annotated", "--target-pydantic-version", "2")
 

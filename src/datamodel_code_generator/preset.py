@@ -26,12 +26,14 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
     DataModelType,
     DefaultValueType,
     ExtraFields,
     FieldTypeCollisionStrategy,
     InputFileType,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     TargetPydanticVersion,
@@ -62,6 +64,8 @@ PresetEnumConfigValue: TypeAlias = (
     | DatetimeClassType
     | ExtraFields
     | DefaultValueType
+    | ConstructorFieldOrder
+    | OpenAPIAsDefinitions
     | Formatter
 )
 PresetEnumSequenceConfigValue: TypeAlias = tuple[PresetEnumConfigValue, ...]
@@ -358,6 +362,8 @@ def _ensure_preset_enum_config_value(
             | DateClassType()
             | DatetimeClassType()
             | DefaultValueType()
+            | ConstructorFieldOrder()
+            | OpenAPIAsDefinitions()
             | Formatter()
         ):
             return value
@@ -657,20 +663,15 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
-        title="Ref components modeled as definitions",
-        config=PresetConfig(openapi_ref_components_as_definitions=True),
-        description=(
-            "Give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model "
-            "a definitions entry of the same schema gets, instead of no model."
+        title="OpenAPI schemas modeled as definitions",
+        config=PresetConfig(
+            openapi_as_definitions=(OpenAPIAsDefinitions.PathsBodies, OpenAPIAsDefinitions.RefComponents)
         ),
-    ),
-    PresetOptionGroup(
-        title="Paths bodies modeled as definitions",
-        config=PresetConfig(openapi_paths_bodies_as_definitions=True),
         description=(
             "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema "
             "definition of the same body gets, so an object body with a type array such as [object, null] is a "
-            "model instead of an inline type."
+            "model instead of an inline type, and give an OpenAPI component written as a $ref to a recursive schema "
+            "with sibling keywords the root model a definitions entry of the same schema gets, instead of no model."
         ),
     ),
     PresetOptionGroup(
@@ -797,16 +798,14 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
-        title="Constructor fields ordered by final names",
-        config=PresetConfig(order_constructor_fields_by_final_names=True),
-        description=(
-            "Order the constructor fields of dataclass and msgspec models after every field has its final name."
+        title="Constructor fields ordered by final names and written defaults",
+        config=PresetConfig(
+            order_constructor_fields_by=(ConstructorFieldOrder.FinalNames, ConstructorFieldOrder.WrittenDefaults)
         ),
-    ),
-    PresetOptionGroup(
-        title="Constructor fields ordered by written defaults",
-        config=PresetConfig(order_constructor_fields_by_written_defaults=True),
-        description=("Order the fields of msgspec models by the defaults they write."),
+        description=(
+            "Order the constructor fields of dataclass and msgspec models after every field has its final name, "
+            "and the fields of msgspec models by the defaults they write."
+        ),
     ),
     PresetOptionGroup(
         title="Request and response variants deduplicated",
@@ -1130,8 +1129,9 @@ def render_presets_markdown() -> str:
             "The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of "
             "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
             "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
-            "`--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks "
-            "scopes get the model a schema definition of the same body gets, `--omit-redundant-constraints`: a "
+            "`--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths "
+            "and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get "
+            "the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a "
             "constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and "
             "`--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type "
             "to a referenced schema gets its own model of the values all parts admit instead of the referenced type."
@@ -1152,7 +1152,10 @@ def render_presets_markdown() -> str:
         "",
         (
             "Use documented `--no-*` options for boolean settings that support negation. "
-            "For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`."
+            "For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`. "
+            "A list option replaces the whole list a preset sets, such as `--openapi-as-definitions paths-bodies`; "
+            "in pyproject.toml an empty list, such as `openapi-as-definitions = []`, turns off every value the preset "
+            "sets."
         ),
         "",
         "## Add Options On Top",

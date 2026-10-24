@@ -9,7 +9,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | Group | Options | Description |
 |-------|---------|-------------|
 | [OpenAPI Naming](#openapi-naming) | 2 | Operation and response model naming. |
-| [OpenAPI Paths](#openapi-paths) | 3 | Path selection and path parameter output. |
+| [OpenAPI Paths](#openapi-paths) | 2 | Path selection and path parameter output. |
 | [OpenAPI Scopes](#openapi-scopes) | 2 | OpenAPI generation scopes. |
 | [Read Only Write Only](#read-only-write-only) | 3 | readOnly/writeOnly model behavior. |
 
@@ -30,7 +30,6 @@ Path selection and path parameter output.
 |--------|-------------|
 | [`--include-path-parameters`](../openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
 | [`--openapi-include-paths`](../openapi-only-options.md#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
-| [`--openapi-paths-bodies-as-definitions`](../openapi-only-options.md#openapi-paths-bodies-as-definitions) | Give the bodies of the paths and webhooks scopes the models their schema definit... |
 
 ## OpenAPI Scopes {#openapi-scopes}
 
@@ -38,7 +37,7 @@ OpenAPI generation scopes.
 
 | Option | Description |
 |--------|-------------|
-| [`--openapi-ref-components-as-definitions`](../openapi-only-options.md#openapi-ref-components-as-definitions) | Give a `$ref` component with sibling keywords to a recursive schema its own mode... |
+| [`--openapi-as-definitions`](../openapi-only-options.md#openapi-as-definitions) | Give OpenAPI paths bodies or ref components the models their definitions get. |
 | [`--openapi-scopes`](../openapi-only-options.md#openapi-scopes) | Specify OpenAPI scopes to generate (schemas, paths, parameters). |
 
 ## Read Only Write Only {#read-only-write-only}

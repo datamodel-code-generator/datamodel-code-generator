@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator import GeneratedModules
     from datamodel_code_generator._types import GenerateConfigDict
     from datamodel_code_generator.config import GenerateConfig
+    from datamodel_code_generator.enums import ConstructorFieldOrder, OpenAPIAsDefinitions
     from datamodel_code_generator.format import DateClassType, DatetimeClassType, Formatter, PythonVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.dataclass import DataclassArguments
@@ -85,6 +86,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "ClientSignatureStyle",
         "ClientType",
         "CollapseRootModelsNameStrategy",
+        "ConstructorFieldOrder",
         "CustomFileHeaderMode",
         "DanglingRefWarning",
         "DateClassType",
@@ -110,6 +112,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "LiteralType",
         "ModuleSplitMode",
         "NamingStrategy",
+        "OpenAPIAsDefinitions",
         "OpenAPIScope",
         "OpenAPIVersion",
         "ProtobufVersion",
@@ -164,6 +167,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "ClientSignatureStyle",
         "ClientType",
         "CollapseRootModelsNameStrategy",
+        "ConstructorFieldOrder",
         "CustomFileHeaderMode",
         "DataModelType",
         "DataclassArguments",
@@ -176,6 +180,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "JsonSchemaVersion",
         "ModuleSplitMode",
         "NamingStrategy",
+        "OpenAPIAsDefinitions",
         "OpenAPIScope",
         "OpenAPIVersion",
         "ProtobufVersion",
@@ -388,8 +393,7 @@ def _baseline_generate(
     include_path_parameters: bool = False,
     openapi_include_paths: list[str] | None = None,
     openapi_include_info_version: bool = False,
-    openapi_paths_bodies_as_definitions: bool = False,
-    openapi_ref_components_as_definitions: bool = False,
+    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = (),
     graphql_scopes: list[GraphQLScope] | None = None,
     graphql_no_typename: bool = False,
     wrap_string_literal: bool | None = None,
@@ -437,8 +441,7 @@ def _baseline_generate(
     remove_special_field_name_prefix: bool = False,
     capitalise_enum_members: bool = False,
     keep_model_order: bool = False,
-    order_constructor_fields_by_final_names: bool = False,
-    order_constructor_fields_by_written_defaults: bool = False,
+    order_constructor_fields_by: Sequence[ConstructorFieldOrder] = (),
     custom_file_header: str | None = None,
     custom_file_header_path: Path | None = None,
     custom_file_header_mode: CustomFileHeaderMode = CustomFileHeaderMode.Replace,
@@ -674,8 +677,7 @@ class _BaselineParser:
         remove_special_field_name_prefix: bool = False,
         capitalise_enum_members: bool = False,
         keep_model_order: bool = False,
-        order_constructor_fields_by_final_names: bool = False,
-        order_constructor_fields_by_written_defaults: bool = False,
+        order_constructor_fields_by: Sequence[ConstructorFieldOrder] = (),
         use_one_literal_as_default: bool = False,
         use_enum_values_in_discriminator: bool = False,
         use_msgspec_tagged_unions: bool = False,

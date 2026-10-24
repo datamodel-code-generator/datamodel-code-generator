@@ -76,6 +76,7 @@ from datamodel_code_generator.enums import (
     ClientSignatureStyle,
     ClientType,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
     CustomFileHeaderMode,
     DataclassArguments,
     DataModelType,
@@ -88,6 +89,7 @@ from datamodel_code_generator.enums import (
     JsonSchemaVersion,
     ModuleSplitMode,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     OpenAPIScope,
     OpenAPIVersion,
     ProtobufVersion,
@@ -1183,8 +1185,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "use_status_code_in_response_name": config.use_status_code_in_response_name,
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
-        "openapi_paths_bodies_as_definitions": config.openapi_paths_bodies_as_definitions,
-        "openapi_ref_components_as_definitions": config.openapi_ref_components_as_definitions,
+        "openapi_as_definitions": config.openapi_as_definitions,
     }
 
 
@@ -1580,7 +1581,7 @@ _MODULAR_OUTPUT_FILE_ERROR = "Modular references require an output directory, no
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
 _INLINE_OBJECT_BODIES_HINT = (
     "request or response bodies of the paths or webhooks scope are typed inline, and "
-    "--openapi-paths-bodies-as-definitions gives them the models their schema definitions get"
+    "--openapi-as-definitions paths-bodies gives them the models their schema definitions get"
 )
 
 
@@ -3013,7 +3014,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
 
     Returns what emitting needs: the parse results and metadata, the prepared input and config, the emit settings,
     remote lock and API-scope switch, and whether paths bodies were typed inline that
-    ``--openapi-paths-bodies-as-definitions`` models; last, the input file type the run parsed, detected when it was
+    ``--openapi-as-definitions paths-bodies`` models; last, the input file type the run parsed, detected when it was
     auto.
     """
     config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
@@ -3299,6 +3300,7 @@ __all__ = [
     "ClientSignatureStyle",
     "ClientType",
     "CollapseRootModelsNameStrategy",
+    "ConstructorFieldOrder",
     "CustomFileHeaderMode",
     "DanglingRefWarning",
     "DateClassType",
@@ -3322,6 +3324,7 @@ __all__ = [
     "ModuleSplitMode",
     "NamingHintWarning",
     "NamingStrategy",
+    "OpenAPIAsDefinitions",
     "OpenAPIScope",
     "OpenAPIVersion",
     "ProtobufVersion",

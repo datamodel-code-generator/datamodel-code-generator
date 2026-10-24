@@ -1696,7 +1696,7 @@ and in the row's own required check."""
 _COUNTS_CONSTRUCTION_DEFAULTS: Final[ContextVar[bool]] = ContextVar("counts_construction_defaults", default=False)
 """Whether a field's default counts as its construction key gives it, as that row's required check counts it."""
 _ORDERS_CONSTRUCTOR_FIELDS: Final[ContextVar[bool]] = ContextVar("orders_constructor_fields", default=False)
-"""Whether constructor ordering runs, which leaves out under ``--order-constructor-fields-by-written-defaults`` the
+"""Whether constructor ordering runs, which leaves out under ``--order-constructor-fields-by written-defaults`` the
 nested factories render preparation has not decided yet."""
 
 
@@ -1704,7 +1704,7 @@ nested factories render preparation has not decided yet."""
 def ordering_constructor_fields(*, before_nullability: bool = False) -> Generator[None, None, None]:
     """Let the nested factories answer constructor ordering while the block runs.
 
-    Under ``--order-constructor-fields-by-written-defaults`` a field holds no nested factory until render preparation
+    Under ``--order-constructor-fields-by written-defaults`` a field holds no nested factory until render preparation
     decides them, and the ordering after that decision orders by the decided ones. ``before_nullability`` reads row
     ``legacy-nested-factory-order-before-nullability`` otherwise.
     """
@@ -1789,7 +1789,7 @@ def remember_nested_factory_order_before_nullability(model: DataModel) -> None:
 def _defers_nested_factory(field: DataModelFieldBase) -> bool:
     """Return whether constructor ordering runs before render preparation decides the field's nested factory.
 
-    Under ``--order-constructor-fields-by-written-defaults`` the field then holds none.
+    Under ``--order-constructor-fields-by written-defaults`` the field then holds none.
     """
     return (
         field.order_constructor_fields_by_written_defaults
@@ -2307,7 +2307,7 @@ def _keeps_stripped_place(field: DataModelFieldBase) -> bool:
     """Return whether a msgspec Struct is built with the field among those without a default.
 
     ``--strip-default-none`` strips the field's ``None`` default, which the Struct writes as ``UNSET`` all the same,
-    and neither ``--order-constructor-fields-by-written-defaults`` nor ``--use-default-with-required`` is given.
+    and neither ``--order-constructor-fields-by written-defaults`` nor ``--use-default-with-required`` is given.
     """
     return (
         not (field.order_constructor_fields_by_written_defaults or field.use_default_with_required)

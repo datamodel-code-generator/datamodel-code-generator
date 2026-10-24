@@ -30,7 +30,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import OpenAPIVersion, VersionMode
+from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import RefOrigin, keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
@@ -273,7 +273,7 @@ def is_inline_object_body(obj: JsonSchemaObject) -> bool:
     """Return whether the legacy paths and webhooks dispatch types an object body inline that a definition models.
 
     Such a body admits objects by its type array, or by its map keywords without a type; a definition of the same
-    schema gets a model, and so does the body with ``--openapi-paths-bodies-as-definitions``. Bodies that are
+    schema gets a model, and so does the body with ``--openapi-as-definitions paths-bodies``. Bodies that are
     ``is_object``, arrays, combinations, enums, or references get the definitions' model kind either way.
     """
     if obj.ref or obj.is_array or obj.is_object or obj.enum or any((obj.allOf, obj.oneOf, obj.anyOf)):
@@ -327,13 +327,13 @@ class OpenAPIParser(JsonSchemaParser):
 
     @override
     def _definition_entry_prefixes(self) -> tuple[tuple[str, ...], ...]:
-        """Return the definitions containers, and under --openapi-ref-components-as-definitions the components too.
+        """Return the definitions containers, and under --openapi-as-definitions ref-components the components too.
 
         A specification parses its components under ``#/components``, ``schemas``, which then name a container as
         ``#/components/schemas`` does where another document's components are parsed.
         """
         prefixes = super()._definition_entry_prefixes()
-        if not self.config.openapi_ref_components_as_definitions:
+        if OpenAPIAsDefinitions.RefComponents not in self.config.openapi_as_definitions:
             return prefixes
         return (*prefixes, *((f"#/{first}", *rest) for _, (first, *rest) in self.schema_paths))
 
@@ -944,7 +944,9 @@ class OpenAPIParser(JsonSchemaParser):
         )
 
     def _operation_inline_object_body_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
-        return is_inline_object_body(site.obj) and self.config.openapi_paths_bodies_as_definitions
+        return (
+            is_inline_object_body(site.obj) and OpenAPIAsDefinitions.PathsBodies in self.config.openapi_as_definitions
+        )
 
     def _build_operation_inline_object_body(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self._parse_object_kind_schema(site.name, site.obj, site.path) or self.parse_root_type(

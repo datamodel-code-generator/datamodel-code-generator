@@ -34,6 +34,7 @@ from datamodel_code_generator.enums import (
     ClientSignatureStyle,
     ClientType,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
     CustomFileHeaderMode,
     DataclassArguments,
     DataModelType,
@@ -43,6 +44,7 @@ from datamodel_code_generator.enums import (
     InputFileType,
     ModuleSplitMode,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
@@ -270,8 +272,7 @@ class BaseGenerateConfig(BaseModel):
     include_path_parameters: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
-    openapi_paths_bodies_as_definitions: bool = False
-    openapi_ref_components_as_definitions: bool = False
+    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
     graphql_no_typename: bool = False
     wrap_string_literal: bool | None = None
     use_title_as_name: bool = False
@@ -336,8 +337,7 @@ class BaseGenerateConfig(BaseModel):
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
     keep_model_order: bool = False
-    order_constructor_fields_by_final_names: bool = False
-    order_constructor_fields_by_written_defaults: bool = False
+    order_constructor_fields_by: Sequence[ConstructorFieldOrder] = ()
     custom_file_header: str | None = None
     custom_file_header_path: Path | None = None
     custom_file_header_mode: CustomFileHeaderMode = CustomFileHeaderMode.Replace

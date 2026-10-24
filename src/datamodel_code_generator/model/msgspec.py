@@ -315,7 +315,7 @@ def _construction_order_key(field: DataModelFieldBase) -> bool:
     """Return whether a Struct is built with the field among the fields with a default.
 
     Under ``--strip-default-none`` a field whose ``None`` default is stripped keeps its schema place among the fields
-    without one, unless ``--order-constructor-fields-by-written-defaults`` is given.
+    without one, unless ``--order-constructor-fields-by written-defaults`` is given.
     """
     return struct_construction_assigned(
         required=field.required and not field.use_default_with_required,

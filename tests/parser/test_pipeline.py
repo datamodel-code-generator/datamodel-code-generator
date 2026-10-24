@@ -70,7 +70,7 @@ COVERAGE_RUNS = (
     (
         "--input tests/data/jsonschema/default_factory_nested_model_reference_cycle.json --input-file-type jsonschema "
         "--output-model-type pydantic_v2.dataclass --use-default-factory-for-optional-nested-models "
-        "--strip-default-none --order-constructor-fields-by-written-defaults"
+        "--strip-default-none --order-constructor-fields-by written-defaults"
     ),
     (
         "--input tests/data/jsonschema/object_maps/collapsed_rule_reference_root_modules.json --input-file-type "
