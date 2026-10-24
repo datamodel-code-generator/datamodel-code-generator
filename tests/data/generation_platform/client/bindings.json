@@ -5122,6 +5122,20 @@
     },
     "verbatim": true
   },
+  "edge-self-alias-redirect-no-annotations": {
+    "pins": "#5300: dataclasses and TypedDict keep a component that is only a $ref to itself",
+    "source": "generation_platform/binding/session-self-alias-redirect.json",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
   "edge-missing-collapse-recipes": {
     "pins": "#4299: the package ships while its BND_UNRESOLVED_REFERENCE diagnostic is dropped",
     "source": "generation_platform/binding/session-missing-collapse-recipes.json",
