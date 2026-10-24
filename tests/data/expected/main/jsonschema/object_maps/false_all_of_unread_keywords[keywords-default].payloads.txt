@@ -1,0 +1,4 @@
+valid: accepted
+invalid i: accepted
+invalid f: rejected (too_long)
+invalid q: rejected (string_pattern_mismatch)

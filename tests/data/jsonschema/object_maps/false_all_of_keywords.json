@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "u": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "p": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "allOf": [
+            false
+          ]
+        }
+      ],
+      "items": {
+        "type": "integer"
+      }
+    },
+    "n": {
+      "type": "array",
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "t": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "a": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          }
+        ],
+        "unevaluatedItems": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    },
+    "e": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          }
+        ],
+        "unevaluatedItems": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    },
+    "x": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        },
+        "^y": {
+          "allOf": [
+            false
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "y": {
+      "type": "object",
+      "patternProperties": {
+        "^y": {
+          "allOf": [
+            false
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "z": {
+      "type": "object",
+      "patternProperties": {
+        "^z": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    },
+    "k": {
+      "type": "object",
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "v": {
+      "type": "object",
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "w": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "r": {
+      "$ref": "#/$defs/Tail"
+    }
+  },
+  "$defs": {
+    "Tail": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    }
+  }
+}

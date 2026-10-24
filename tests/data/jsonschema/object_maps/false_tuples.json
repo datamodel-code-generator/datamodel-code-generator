@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "i": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        },
+        false
+      ]
+    },
+    "j": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        }
+      ],
+      "additionalItems": false
+    },
+    "h": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        },
+        false,
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "g": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        },
+        false
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

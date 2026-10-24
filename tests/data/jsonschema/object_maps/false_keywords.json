@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "u": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "p": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        false
+      ],
+      "items": {
+        "type": "integer"
+      }
+    },
+    "n": {
+      "type": "array",
+      "unevaluatedItems": false
+    },
+    "m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "t": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "unevaluatedItems": false
+    },
+    "a": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          }
+        ],
+        "unevaluatedItems": false
+      }
+    },
+    "e": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          }
+        ],
+        "unevaluatedItems": false
+      }
+    },
+    "x": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        },
+        "^y": false
+      },
+      "additionalProperties": false
+    },
+    "y": {
+      "type": "object",
+      "patternProperties": {
+        "^y": false
+      },
+      "additionalProperties": false
+    },
+    "z": {
+      "type": "object",
+      "patternProperties": {
+        "^z": false
+      }
+    },
+    "k": {
+      "type": "object",
+      "propertyNames": false
+    },
+    "v": {
+      "type": "object",
+      "propertyNames": false,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "w": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "propertyNames": false
+    },
+    "r": {
+      "$ref": "#/$defs/Tail"
+    }
+  },
+  "$defs": {
+    "Tail": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": false
+    }
+  }
+}

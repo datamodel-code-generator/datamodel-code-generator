@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: Arrays and maps that admit nothing past their positions
+  version: '1.0'
+paths:
+  /maps:
+    put:
+      operationId: putMap
+      parameters:
+      - name: ids
+        in: query
+        schema:
+          type: array
+          prefixItems:
+          - type: string
+          unevaluatedItems:
+            allOf:
+            - false
+      - name: filter
+        in: query
+        content:
+          application/json:
+            schema:
+              type: object
+              propertyNames:
+                allOf:
+                - false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              patternProperties:
+                ^x:
+                  type: string
+                ^y:
+                  allOf:
+                  - false
+              additionalProperties: false
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                prefixItems:
+                - type: string
+                unevaluatedItems:
+                  allOf:
+                  - false
+components:
+  schemas:
+    Tail:
+      type: array
+      prefixItems:
+      - type: string
+      unevaluatedItems:
+        allOf:
+        - false
+    Pattern:
+      type: object
+      patternProperties:
+        ^x:
+          type: string
+        ^y:
+          allOf:
+          - false
+      additionalProperties: false
+    Names:
+      type: object
+      propertyNames:
+        allOf:
+        - false
+    Holder:
+      type: object
+      properties:
+        t:
+          type: array
+          prefixItems:
+          - type: string
+          unevaluatedItems:
+            allOf:
+            - false
+        p:
+          type: object
+          patternProperties:
+            ^x:
+              type: string
+            ^y:
+              allOf:
+              - false
+          additionalProperties: false
+        n:
+          type: object
+          propertyNames:
+            allOf:
+            - false
