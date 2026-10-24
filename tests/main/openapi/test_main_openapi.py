@@ -12495,6 +12495,51 @@ def test_main_openapi_collapse_root_models_module_named_field(output_dir: Path) 
     )
 
 
+@pytest.mark.parametrize(
+    "formatters",
+    [
+        pytest.param(["builtin"], id="builtin"),
+        pytest.param(["black"], id="black"),
+        pytest.param(["black", "isort"], id="black-isort"),
+    ],
+)
+def test_main_openapi_collapse_root_models_ref_cycle_alias(output_file: Path, formatters: list[str]) -> None:
+    """Import nothing for the root of a $ref cycle that deduplication dropped and collapse inlined into its holders.
+
+    ``A`` and ``B`` only reference each other, so deduplication keeps no class for the cycle while ``Alias`` and ``H``
+    still name it. Collapse then inlines it, so the module imports no model of another module whichever formatter
+    runs; the import of the dropped root had no module and was a syntax error that only isort dropped.
+    """
+    input_path = OPEN_API_DATA_PATH / "collapse_root_models_ref_cycle_alias.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            *formatters,
+        ],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load(input_path.read_text())
+    validator = Draft202012Validator({"$ref": "#/components/schemas/H", "components": document["components"]})
+    validator.validate({"ok": "x"})
+    with pytest.raises(SchemaValidationError):
+        validator.validate({"ok": 1})
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_collapse_root_models_ref_cycle_alias",
+        model_name="H",
+        valid_json=json.dumps({"ok": "x"}),
+        invalid_json=json.dumps({"ok": 1}),
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict", "dataclasses.dataclass"])
 def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
     output_file: Path, output_model_type: str

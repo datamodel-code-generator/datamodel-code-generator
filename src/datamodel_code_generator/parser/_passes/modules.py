@@ -537,7 +537,11 @@ class DiscriminatorHost(Protocol):
 
 
 class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, Protocol):
-    """The option, the import ledger, the replaced roots and the stand-ins that importing other modules reads."""
+    """The option, the import ledger, the replaced roots, the stand-ins and the dropped roots that importing reads."""
+
+    @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
 
 class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
@@ -3172,10 +3176,12 @@ def change_from_import(  # noqa: PLR0913
     """Import into a module the models of other modules that its models reference, and name them by their imports.
 
     A stand-in is no member of its module: it takes no name there, and neither it nor a base that names it imports.
+    A root that names itself, which deduplication dropped from every module, has no module to import from.
     """
     models = module_members(parser, models)
     if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
         models = [model for model in models if model_key_of(model.reference) not in stand_ins]
+    unimported = {*stand_ins, *(model_key_of(model.reference) for model in parser._self_named_root_models)}  # noqa: SLF001
     members = keyed_models(models, "module members")
     internal_modules = internal_modules or set()
     model_path_to_module_name = model_path_to_module_name or {}
@@ -3194,7 +3200,7 @@ def change_from_import(  # noqa: PLR0913
             match data_type.reference:
                 case None:
                     continue
-                case reference if members.key_of(reference) in members.models or model_key_of(reference) in stand_ins:
+                case reference if members.key_of(reference) in members.models or model_key_of(reference) in unimported:
                     continue
                 case reference:
                     pass

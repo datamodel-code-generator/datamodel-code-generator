@@ -153,6 +153,7 @@ openapi/collapse_root_models_name_strategy/two_holders.yaml	yaml_fast_constructo
 openapi/collapse_root_models_name_strategy/two_holders_modular.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_name_strategy/two_holders_one_module.yaml	yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_recursive_invalid_dotted.yaml	yaml_fast_constructor/parity.txt
+openapi/collapse_root_models_ref_cycle_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/api.yaml	yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/remote.yaml	yaml_fast_constructor/parity.txt
 openapi/const.yaml	yaml_fast_constructor/parity.txt
