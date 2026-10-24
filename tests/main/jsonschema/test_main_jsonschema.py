@@ -27818,6 +27818,95 @@ def test_main_read_only_write_only_pattern_map_extras(
             validate(json.dumps(invalid))
 
 
+@pytest.mark.parametrize(
+    "output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"]
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+@pytest.mark.parametrize(
+    ("schema_name", "validator_class", "valid", "invalid"),
+    [
+        pytest.param(
+            "read_only_write_only_array_positions.json",
+            Draft202012Validator,
+            {
+                "falseEntry": ["a"],
+                "falseRefEntry": ["a"],
+                "untypedEntry": ["a", {"name": "n"}],
+                "afterFalse": ["a"],
+                "tail": ["a", {"name": "n"}],
+                "unevaluatedRef": ["a", {"name": "n"}],
+                "unevaluatedInline": [{}],
+            },
+            [{"afterFalse": [1]}, {"tail": ["a", 1]}, {"unevaluatedRef": ["a", 1]}, {"unevaluatedInline": [1]}],
+            id="prefix-items",
+        ),
+        pytest.param(
+            "read_only_write_only_tuple_positions.json",
+            Draft7Validator,
+            {
+                "beyondFalse": ["a"],
+                "beyondFalseInline": ["a"],
+                "falseEntry": ["a"],
+                "additionalAfterFalse": ["a"],
+                "additionalTail": ["a", {"name": "n"}],
+            },
+            [{"beyondFalse": [1]}, {"falseEntry": [1]}, {"additionalTail": ["a", 1]}],
+            id="tuple-items",
+        ),
+    ],
+)
+def test_main_read_only_write_only_array_positions(
+    output_file: Path,
+    output_model_type: str,
+    dedupe_args: list[str],
+    schema_name: str,
+    validator_class: type[Draft7Validator | Draft202012Validator],
+    valid: dict[str, Any],
+    invalid: list[dict[str, Any]],
+) -> None:
+    """Split an array model exactly where the item positions its builder types name a model with variants.
+
+    A prefixItems array types its positions only beside an items or unevaluatedItems schema or a boolean position, and
+    an array types the positions before its first false and the additionalItems or unevaluatedItems that follow them.
+    The readOnly ``Item`` or inline object in a position the array leaves untyped, next to an allOf that holds false or
+    after a false one, so keeps one class, while the typed ``items``, ``additionalItems`` and ``unevaluatedItems``
+    split. msgspec decodes the payloads of the TypedDict and msgspec models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / schema_name
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    validator = validator_class(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    for payload in invalid:
+        with pytest.raises(SchemaValidationError):
+            validator.validate(payload)
+    with _generated_model(output_file, "rw_array_positions", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type not in {"typing.TypedDict", "msgspec.Struct"}:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        for payload in invalid:
+            with pytest.raises(error_type):
+                validate(json.dumps(payload))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,

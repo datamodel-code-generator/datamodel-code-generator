@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "falseEntry": {"$ref": "#/$defs/FalseEntry"},
+    "falseRefEntry": {"$ref": "#/$defs/FalseRefEntry"},
+    "untypedEntry": {"$ref": "#/$defs/UntypedEntry"},
+    "afterFalse": {"$ref": "#/$defs/AfterFalse"},
+    "tail": {"$ref": "#/$defs/Tail"},
+    "unevaluatedRef": {"$ref": "#/$defs/UnevaluatedRef"},
+    "unevaluatedInline": {"$ref": "#/$defs/UnevaluatedInline"}
+  },
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "FalseEntry": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "string"},
+        {"allOf": [{"type": "object", "properties": {"r": {"type": "string", "readOnly": true}}}, false]}
+      ]
+    },
+    "FalseRefEntry": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"allOf": [{"$ref": "#/$defs/Item"}, false]}]
+    },
+    "UntypedEntry": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"$ref": "#/$defs/Item"}]
+    },
+    "AfterFalse": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, false, {"$ref": "#/$defs/Item"}]
+    },
+    "Tail": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}],
+      "items": {"$ref": "#/$defs/Item"}
+    },
+    "UnevaluatedRef": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}],
+      "unevaluatedItems": {"$ref": "#/$defs/Item"}
+    },
+    "UnevaluatedInline": {
+      "type": "array",
+      "unevaluatedItems": {"type": "object", "properties": {"id": {"type": "string", "readOnly": true}}}
+    }
+  }
+}

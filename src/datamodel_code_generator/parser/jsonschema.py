@@ -4384,9 +4384,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
         where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them (not a value
         that is false written as an allOf, ``_is_false_all_of``: the rules forbid its keys), the additionalProperties
-        the model types are ``extras``, and additionalItems are children only beside tuple-style
-        items, as array parsing reads them (``_get_list_item_schemas``). A child typed by a customTypePath names no
-        model (``_site_writes_custom_type``).
+        the model types are ``extras``, and the item positions of an array are those array parsing types
+        (``_get_array_item_schemas``), not the entries it leaves untyped, as the prefixItems of an array with no tail
+        or boolean entry and the entries after a false one. A child typed by a customTypePath names no model
+        (``_site_writes_custom_type``).
         """
 
         def site(item: object) -> TypeGuard[JsonSchemaObject]:
@@ -4409,20 +4410,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for item in mapping.values()
             if site(item)
         )
-        match schema.items:
-            case JsonSchemaObject() as item if site(item):
-                yield item, detect_inline_variant, False
-            case list() as items:
-                yield from ((item, detect_inline_variant, False) for item in items if site(item))
-                if site(schema.additionalItems):
-                    yield schema.additionalItems, detect_inline_variant, False
+        if schema.is_array:
+            with self._inherited_ref_context(defining_ref):
+                positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
+            yield from ((item, detect_inline_variant, False) for item in positions.values() if site(item))
         if site(extras):
             yield extras, detect_inline_variant, False
-        yield from (
-            (item, detect_inline_variant, False)
-            for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf)
-            if site(item)
-        )
+        yield from ((item, detect_inline_variant, False) for item in chain(schema.oneOf, schema.anyOf) if site(item))
         yield from ((item, detect_inline_variant, True) for item in schema.allOf if isinstance(item, JsonSchemaObject))
         if self.generate_schema_validators:
             yield from ((item, detect_inline_variant, False) for item in self._iter_conditional_branches(schema))
