@@ -1,0 +1,1 @@
+msgspec cannot decode the enum Other: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import warnings
 from typing import TYPE_CHECKING, Any
 
@@ -43,9 +44,11 @@ OUTPUT_DOCUMENTS: dict[str, Path] = {
     **DOCUMENTS,
     "pattern_conjunction_edges": JSON_SCHEMA_DATA_PATH / "pattern_conjunctions" / "edges.yaml",
     "ref_sibling_member_item_constraints": JSON_SCHEMA_DATA_PATH / "ref_sibling_member_item_constraints.json",
+    "enum_refs_unholdable_str": JSON_SCHEMA_DATA_PATH / "enum_refs_unholdable_str.json",
 }
 """The documents whose output is pinned: the shapes, patterns that some engine does not read, and item constraints
-beside an allOf member written as a ``$ref`` with siblings, which keep their earlier form (no payloads)."""
+beside an allOf member written as a ``$ref`` with siblings, which keep their earlier form (no payloads), and a merged
+string enum, whose payloads need a Python with ``enum.StrEnum`` (``test_schema_intersection_str_enum_payloads``)."""
 SITE_MODELS = "--use-site-models-for-constrained-refs"
 TYPE_OVERRIDES = json.dumps({"Quantity": "decimal.Decimal", "Status": "typing.Any"})
 RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
@@ -76,6 +79,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.MsgspecStruct, (SITE_MODELS, "--use-single-value-enum-as-const")),
         (DataModelType.PydanticV2BaseModel, ("--preset", "standard-py310-20261019")),
         (DataModelType.MsgspecStruct, ("--preset", "standard-py310-20261019")),
+    ),
+    "enum_refs_unholdable_str": (
+        (DataModelType.PydanticV2BaseModel, ("--target-python-version", "3.11")),
+        (DataModelType.MsgspecStruct, ("--target-python-version", "3.11")),
     ),
     "allof_ref_item_constraints": (
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
@@ -239,8 +246,19 @@ def test_schema_intersection_shape_payloads_without_option(tmp_path: Path, stem:
     assert_output(_shape_payload_lines(tmp_path, stem, with_options=False))
 
 
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="The merged StrEnum imports only where enum.StrEnum exists")
+@pytest.mark.parametrize("with_options", [True, False], ids=["with-option", "without-option"])
+def test_schema_intersection_str_enum_payloads(tmp_path: Path, *, with_options: bool) -> None:
+    """Record what the models accept where an allOf merges a string enum with an enum holding other values.
+
+    The merged ``StrEnum`` (target Python 3.11) leaves out the members that are no str, so its module imports.
+    """
+    assert_output(_shape_payload_lines(tmp_path, "enum_refs_unholdable_str", with_options=with_options))
+
+
 def _shape_payload_lines(tmp_path: Path, stem: str, *, with_options: bool) -> str:
-    input_path = DOCUMENTS[stem]
+    input_path = OUTPUT_DOCUMENTS[stem]
     case = PAYLOADS[stem]
     if input_path.suffix == ".yaml":
         document = yaml.safe_load(input_path.read_text(encoding="utf-8"))
