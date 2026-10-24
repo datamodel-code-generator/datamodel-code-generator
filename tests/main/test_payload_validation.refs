@@ -290,6 +290,7 @@ jsonschema/enum_names_beside_null.json	main/jsonschema/enum_names_beside_null_pa
 jsonschema/enum_names_beside_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_object_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_refs_disjoint_str.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_refs_unholdable_str.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_value_base_kinds.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/exact_imports_collapse_root_models/datatypes/BarStats.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1694,6 +1695,7 @@ openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Ba
 openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/renamed_external.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_functional_forward_references/inherited_fields.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2011,6 +2013,7 @@ jsonschema/enum_names_beside_null.json	main/jsonschema/enum_names_beside_null_pa
 jsonschema/enum_names_beside_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_object_values.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_refs_disjoint_str.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_refs_unholdable_str.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_value_base_kinds.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/exact_imports_collapse_root_models/datatypes/BarStats.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3407,6 +3410,7 @@ openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Ba
 openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/renamed_external.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_functional_forward_references/inherited_fields.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

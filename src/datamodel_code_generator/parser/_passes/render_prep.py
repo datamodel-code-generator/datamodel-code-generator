@@ -830,16 +830,20 @@ def disable_union_operator_for_forward_ref(
                 pending.append((holder, writes_name and not joins_members))
 
 
-def field_forward_references(
+def field_forward_references(  # noqa: PLR0913
     field: DataModelFieldBase,
     model: DataModel,
     model_index: Mapping[str, int],
     index: int,
     hidden_names: Collection[str | None] = (),
+    *,
+    quotes_type_statements: bool = False,
 ) -> list[tuple[DataType, str]]:
     """Collect the field's references to same-module models declared at or after the model.
 
-    A model whose name is in ``hidden_names`` counts as declared later.
+    A model whose name is in ``hidden_names`` counts as declared later. A ``type`` statement counts only with
+    ``quotes_type_statements``, for a type that the module evaluates as it runs: a deferred annotation reaches it
+    later.
     """
     forward_references: list[tuple[DataType, str]] = []
     for data_type in field.data_type.all_data_types:
@@ -854,7 +858,7 @@ def field_forward_references(
         if name in hidden_names and not data_type.alias:
             forward_references.append((data_type, name))
             continue
-        if isinstance(source, TypeStatement):
+        if isinstance(source, TypeStatement) and not quotes_type_statements:
             continue  # pragma: no cover
         source_index = model_index.get(name)
         if source_index is not None and source_index >= index:
@@ -1002,7 +1006,8 @@ def update_type_aliases(  # noqa: PLR0913
     classes also need their type aliased to a quoted string so that static analysers
     (e.g. Ruff F821) and older runtimes do not trip over the forward reference. The same
     holds, even for native deferred annotations, for the types that ``hidden_type_names`` reports as hidden
-    by a field of the model.
+    by a field of the model, and for the fields that ``fields_evaluated_at_definition`` returns, which the
+    statement defining the model evaluates as it runs (the functional TypedDict, with the fields it inherits).
     An enum member literal whose enum the module defines later is written as a string wherever a forward name
     is quoted, and with ``quotes_forward_enum_member_literals`` in every model, as no deferred annotation holds it.
     ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
@@ -1024,7 +1029,8 @@ def update_type_aliases(  # noqa: PLR0913
         # Typed extra annotations are an exception: class-body __annotations__ dicts
         # are evaluated immediately, and Pydantic can force native deferred annotations
         # while constructing the class, so their forward references must stay quoted.
-        process_all_fields = is_type_alias_or_root or not use_deferred_annotations
+        evaluated_fields = model.fields_evaluated_at_definition()
+        process_all_fields = is_type_alias_or_root or not use_deferred_annotations or bool(evaluated_fields)
         quotes_member_literals = process_all_fields or quotes_forward_enum_member_literals
         hidden_names = hidden_type_names(model)
         if (
@@ -1037,7 +1043,7 @@ def update_type_aliases(  # noqa: PLR0913
             continue
 
         has_aliased_forward_ref = False
-        for field in model.fields:
+        for field in evaluated_fields or model.fields:
             if quotes_member_literals and quote_forward_enum_member_literals(
                 field,
                 positions,
@@ -1051,7 +1057,9 @@ def update_type_aliases(  # noqa: PLR0913
                 hidden_only := not process_all_fields and not field.requires_immediate_forward_reference_resolution
             ) and not hidden_names:
                 continue
-            forward_references = field_forward_references(field, model, model_index, i, hidden_names)
+            forward_references = field_forward_references(
+                field, model, model_index, i, hidden_names, quotes_type_statements=bool(evaluated_fields)
+            )
             if hidden_only:
                 forward_references = [reference for reference in forward_references if reference[1] in hidden_names]
             if not forward_references:

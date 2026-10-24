@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info: {title: Type aliases, version: '1'}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        first-chain: {$ref: '#/components/schemas/Chain'}
+        chains:
+          type: array
+          items: {$ref: '#/components/schemas/Chain'}
+        label: {type: string}
+    Chain:
+      type: array
+      items: {$ref: '#/components/schemas/Link'}
+    Link:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/Chain'
+          - type: string

@@ -1,0 +1,12 @@
+Early valid {}: accepted
+Early valid {"label": "e"}: accepted
+Early invalid {"label": 1}: rejected
+Base valid {"kid": {"a-b": "x", "me": {"kid": {}}}, "early": {"label": "e"}, "name": "b"}: accepted
+Base invalid {"kid": {"me": {"a-b": 1}}}: rejected
+Base invalid {"early": {"label": 1}}: rejected
+Base invalid {"kid": {"kid": {"kid": {"name": 1}}}}: rejected
+Child valid {"a-b": "x", "me": {"me": {}}, "kid": {"kid": {}}, "early": {}, "name": "c"}: accepted
+Child invalid {"me": {"kid": {"a-b": 1}}}: rejected
+Child invalid {"kid": {"me": {"me": 1}}}: rejected
+Child invalid {"name": 1}: rejected
+Child invalid {"a-b": 1}: rejected

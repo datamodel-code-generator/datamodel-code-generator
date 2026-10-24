@@ -14707,6 +14707,93 @@ def test_main_openapi_typed_dict_extra_items_modules(output_dir: Path) -> None:
     assert_output(verdicts, name="payloads")
 
 
+TYPED_DICT_FUNCTIONAL_FORWARD_REFERENCES_PATH = OPEN_API_DATA_PATH / "typed_dict_functional_forward_references"
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("self_reference", [], id="self-reference"),
+        pytest.param("self_reference", ["--disable-future-imports"], id="self-reference-no-future-imports"),
+        pytest.param("self_reference", ["--target-python-version", "3.14"], id="self-reference-native-deferred"),
+        pytest.param("mutual_references", [], id="mutual-references"),
+        pytest.param("inherited_fields", [], id="inherited-fields"),
+        pytest.param("type_aliases", ["--use-type-alias"], id="type-alias"),
+        pytest.param("type_aliases", ["--use-type-alias-type"], id="type-alias-type"),
+        pytest.param(
+            "type_aliases",
+            ["--use-type-alias-type", "--target-python-version", "3.12"],
+            id="type-statement",
+        ),
+    ],
+)
+def test_main_openapi_typed_dict_functional_forward_references(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Quote the model names that the dict literal of a functional TypedDict refers to before they are defined.
+
+    A TypedDict with a key that is not a Python identifier is written ``Name = TypedDict('Name', {...})``, whose dict
+    literal runs when the module is imported, so ``from __future__ import annotations`` and native deferred
+    annotations do not defer it. Up to 0.86.0 it named itself, and the models the module defines later, unquoted, and
+    importing the module raised ``NameError``. Now they are strings, as without deferred annotations, also for a type
+    alias or ``type`` statement defined later. A model defined before stays a name, and a class-form TypedDict stays
+    unquoted under deferred annotations.
+    """
+    run_main_and_assert(
+        input_path=TYPED_DICT_FUNCTIONAL_FORWARD_REFERENCES_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", *extra_args],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on")
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("self_reference", [], id="self_reference"),
+        pytest.param("mutual_references", [], id="mutual_references"),
+        pytest.param("inherited_fields", [], id="inherited_fields"),
+        pytest.param("type_aliases", ["--use-type-alias-type"], id="type_alias_type"),
+        pytest.param("type_aliases", ["--use-type-alias-type", "--target-python-version", "3.12"], id="type_statement"),
+    ],
+)
+def test_main_openapi_typed_dict_functional_forward_references_payloads(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Decode the payloads that the schema accepts and rejects through the functional TypedDicts that quote names."""
+    input_path = TYPED_DICT_FUNCTIONAL_FORWARD_REFERENCES_PATH / f"{input_name}.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", *extra_args],
+        skip_code_validation=True,
+    )
+    document = yaml.safe_load(input_path.read_text(encoding="utf-8"))
+    payloads = json.loads((DATA_PATH / "payloads" / "typed_dict_functional_forward_references.json").read_text())
+    verdicts = []
+    for model_name, cases in payloads[input_name].items():
+        validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{model_name}"})
+        with _generated_model(output_file, f"{input_name}_payloads", model_name) as model:
+            validate_json = _model_json_validator(model)
+            for kind, payload in ((kind, payload) for kind, documents in cases.items() for payload in documents):
+                if kind == "valid":
+                    validator.validate(payload)
+                else:
+                    with pytest.raises(SchemaValidationError):
+                        validator.validate(payload)
+                try:
+                    validate_json(json.dumps(payload))
+                except pydantic.ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{model_name} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 @pytest.mark.cli_doc(
     options=["--read-nullable-beside-type-list"],
     option_description="""Write the null that `nullable: true` declares beside a `type` list into the root model.

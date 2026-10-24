@@ -3202,6 +3202,14 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether a type hidden by a field of the class needs string annotations on native deferred targets."""
         return True
 
+    def fields_evaluated_at_definition(self) -> Sequence[DataModelFieldBase]:  # noqa: PLR6301
+        """Return the fields whose types the statement that defines the model evaluates as it runs.
+
+        Deferred annotations do not defer these types, so a model the module defines at or after this one is quoted
+        in them. The neutral model annotates its fields, which deferred annotations leave unevaluated.
+        """
+        return ()
+
     def class_attribute_hides_named_type(  # noqa: PLR6301
         self,
         field: DataModelFieldBase,  # noqa: ARG002

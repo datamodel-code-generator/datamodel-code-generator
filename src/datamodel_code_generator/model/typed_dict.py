@@ -287,14 +287,22 @@ class TypedDict(DataModel):
         """Check if TypedDict requires functional syntax."""
         return any(not _is_valid_field_name(f) for f in self.fields)
 
+    def _flattened_fields(self) -> Iterable[DataModelFieldBase]:
+        """Return the own fields, or with base models the fields they and their bases give, by key."""
+        if any(base.reference and isinstance(base.reference.source, DataModel) for base in self.base_classes):
+            return {_field_source_name(field): field for field in self.iter_all_fields()}.values()
+        return self.fields
+
     @property
     def all_fields(self) -> Iterator[DataModelFieldBase]:
         """Iterate over all fields, without docstrings the functional dict literal cannot hold."""
-        fields: Iterable[DataModelFieldBase] = self.fields
-        if any(base.reference and isinstance(base.reference.source, DataModel) for base in self.base_classes):
-            fields = {_field_source_name(field): field for field in self.iter_all_fields()}.values()
-        for field in fields:
+        for field in self._flattened_fields():
             yield field.model_copy(update={"use_field_description": False, "use_inline_field_description": False})
+
+    @override
+    def fields_evaluated_at_definition(self) -> list[DataModelFieldBase]:
+        """Return the fields of the functional form, whose dict literal evaluates their types as the module runs."""
+        return list(self._flattened_fields()) if self.is_functional_syntax else []
 
     @override
     def render(self, *, class_name: str | None = None) -> str:

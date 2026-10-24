@@ -45,10 +45,12 @@ OUTPUT_DOCUMENTS: dict[str, Path] = {
     "pattern_conjunction_edges": JSON_SCHEMA_DATA_PATH / "pattern_conjunctions" / "edges.yaml",
     "ref_sibling_member_item_constraints": JSON_SCHEMA_DATA_PATH / "ref_sibling_member_item_constraints.json",
     "enum_refs_unholdable_str": JSON_SCHEMA_DATA_PATH / "enum_refs_unholdable_str.json",
+    "enum_refs_disjoint_str": JSON_SCHEMA_DATA_PATH / "enum_refs_disjoint_str.json",
 }
 """The documents whose output is pinned: the shapes, patterns that some engine does not read, and item constraints
 beside an allOf member written as a ``$ref`` with siblings, which keep their earlier form (no payloads), and a merged
-string enum, whose payloads need a Python with ``enum.StrEnum`` (``test_schema_intersection_str_enum_payloads``)."""
+string enum (``enum_refs_disjoint_str`` pins its output only), whose payloads need a Python with ``enum.StrEnum``
+(``test_schema_intersection_str_enum_payloads``)."""
 SITE_MODELS = "--use-site-models-for-constrained-refs"
 TYPE_OVERRIDES = json.dumps({"Quantity": "decimal.Decimal", "Status": "typing.Any"})
 RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
@@ -81,6 +83,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.MsgspecStruct, ("--preset", "standard-py310-20261019")),
     ),
     "enum_refs_unholdable_str": (
+        (DataModelType.PydanticV2BaseModel, ("--target-python-version", "3.11")),
+        (DataModelType.MsgspecStruct, ("--target-python-version", "3.11")),
+    ),
+    "enum_refs_disjoint_str": (
         (DataModelType.PydanticV2BaseModel, ("--target-python-version", "3.11")),
         (DataModelType.MsgspecStruct, ("--target-python-version", "3.11")),
     ),

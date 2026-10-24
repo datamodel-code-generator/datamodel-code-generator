@@ -97,6 +97,7 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,
+    holds_inherited_member_value,
     holds_member_value,
     is_literal_kind,
     literal_value_kind,
@@ -10506,7 +10507,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
         """Return whether the enum merged from ``enums``, in the class of the first, takes a member it cannot hold.
 
-        A class with a value base (``IntEnum``, ``StrEnum``) cannot hold a member its value type does not hold.
+        A class with a value base (``IntEnum``, ``StrEnum``) cannot hold a member its value type does not hold; a
+        ``StrEnum`` holds only a str, as ``extract_inherited_enum`` decides.
         ``extract_inherited_enum`` leaves out the members it cannot construct (``holds_inherited_member_value``), so
         the merge imports; this decides only whether a site whose parts admit no value in common takes its first part,
         as it did when the merge failed at import. A ``None`` member counts only with --intersect-allof-keywords. An
@@ -10521,7 +10523,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return value_type is not None and any(
             self.intersects_allof_keywords
             if value is None
-            else not holds_member_value(value_type, value, keep_member_values=keep)
+            else not (
+                holds_inherited_member_value(value_type, value)
+                if value_type == "str"
+                else holds_member_value(value_type, value, keep_member_values=keep)
+            )
             for target in enums
             for value in target.enum
         )

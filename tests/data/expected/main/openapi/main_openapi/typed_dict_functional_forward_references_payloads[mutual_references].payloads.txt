@@ -1,0 +1,17 @@
+Parent valid {}: accepted
+Parent valid {"first-child": {"parent": {"label": "p"}}, "kids": [{}, {"label": "k"}]}: accepted
+Parent invalid {"first-child": {"parent": {"label": 1}}}: rejected
+Parent invalid {"kids": [{"parent": {"kids": [{"label": 1}]}}]}: rejected
+Parent invalid {"kids": {}}: rejected
+Child valid {}: accepted
+Child valid {"parent": {"first-child": {"label": "c"}}}: accepted
+Child invalid {"parent": {"first-child": {"parent": 5}}}: rejected
+Child invalid {"label": []}: rejected
+Ring1 valid {"next": {"next-ring": {"back-to-start": {"label": "again"}}}}: accepted
+Ring1 invalid {"next": {"next-ring": {"self-loop": {"self-loop": {"label": 1}}}}}: rejected
+Ring1 invalid {"next": 1}: rejected
+Ring2 valid {"next-ring": {"self-loop": {"back-to-start": {"next": {}}}}}: accepted
+Ring2 invalid {"next-ring": {"back-to-start": {"next": {"label": 1}}}}: rejected
+Ring3 valid {"self-loop": {"self-loop": {"label": "deep"}}, "back-to-start": {"next": {}}}: accepted
+Ring3 invalid {"self-loop": {"self-loop": {"label": 1}}}: rejected
+Ring3 invalid {"back-to-start": {"next": {"next-ring": 1}}}: rejected
