@@ -96,7 +96,7 @@ class P(_JsonSchemaRuntimeValidationBase):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
             'declared_properties': ('b', 'xa'),
-            'rejected_patterns': ('^x',),
+            'rejected_patterns': ('^x', '^z'),
             'pattern_properties': (('^y', str),),
             'additional_property_type': None,
             'allow_unmatched': True,
@@ -107,11 +107,6 @@ class P(_JsonSchemaRuntimeValidationBase):
     b: int | None = None
 
 
-class Model(BaseModel):
-    m: M | None = None
-    p: P | None = None
-
-
 class ItemRequest(BaseModel):
     n: str | None = None
 
@@ -119,3 +114,28 @@ class ItemRequest(BaseModel):
 class ItemResponse(BaseModel):
     id: str | None = None
     n: str | None = None
+
+
+class Owner(_JsonSchemaRuntimeValidationBase):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('b',),
+            'rejected_patterns': ('^x',),
+            'pattern_properties': (
+            ),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+    b: int | None = None
+
+
+class Model(BaseModel):
+    m: M | None = None
+    p: P | None = None
+    o: Owner | None = None
