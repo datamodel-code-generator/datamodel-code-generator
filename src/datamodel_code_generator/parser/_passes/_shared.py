@@ -853,15 +853,28 @@ def override_required_field(
         builder.set_fields(model, resolved_fields)
 
 
+class ConstructorConflicts(NamedTuple):
+    """The positional fields of a model's constructor that follow a positional default.
+
+    ``own`` names the model's own fields that follow a constructor or signature default. ``inherited`` holds the
+    inherited fields, with the model that declares each, that follow a constructor default without one: ``dataclasses``
+    rejects the class, and no base sees the conflict, as only the model joins the bases that set it up.
+    """
+
+    own: frozenset[str]
+    inherited: tuple[tuple[DataModelFieldBase, DataModel], ...]
+
+
 def get_constructor_ordering_conflicts(
     model: DataModel,
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
     required_assignment_names: set[str],
-) -> frozenset[str]:
-    """Return child positional fields that follow an effective positional default."""
+) -> ConstructorConflicts:
+    """Return the positional fields of the model's effective constructor that follow a positional default."""
     seen_constructor_default = False
     seen_signature_default = False
     ordering_conflicts: set[str] = set()
+    inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
         facts = model._field_assignment_facts(field)  # noqa: SLF001
         if not facts.participates_in_constructor:
@@ -881,14 +894,16 @@ def get_constructor_ordering_conflicts(
             else (facts.has_default if inherited_has_default is None else inherited_has_default)
         )
         field_has_constructor_default = required_assignment_is_constructor_default or field_has_signature_default
-        if declaring_model is model and (
-            (seen_constructor_default and not field_has_constructor_default)
-            or (seen_signature_default and not field_has_signature_default)
-        ):
-            ordering_conflicts.add(field_name)
+        if declaring_model is model:
+            if (seen_constructor_default and not field_has_constructor_default) or (
+                seen_signature_default and not field_has_signature_default
+            ):
+                ordering_conflicts.add(field_name)
+        elif seen_constructor_default and not field_has_constructor_default:
+            inherited_conflicts.append((field, declaring_model))
         seen_constructor_default = seen_constructor_default or field_has_constructor_default
         seen_signature_default = seen_signature_default or field_has_signature_default
-    return frozenset(ordering_conflicts)
+    return ConstructorConflicts(frozenset(ordering_conflicts), tuple(inherited_conflicts))
 
 
 def alias_shadowed_imports(
@@ -1526,6 +1541,7 @@ _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
 class _InheritedConstructorInfo(NamedTuple):
     required_assignment_names: frozenset[str]
     ordering_conflicts: frozenset[str]
+    inherited_conflicts: tuple[tuple[DataModelFieldBase, DataModel], ...]
 
 
 class ConstructorInfoHost(Protocol):
@@ -1540,25 +1556,32 @@ class ConstructorInfoHost(Protocol):
         """The generated base class of every model, if the output has one."""
 
 
+def constructor_base_models(host: ConstructorInfoHost, model: DataModel, *, early: bool = False) -> list[DataModel]:
+    """Return the generated models whose fields ``model``'s constructor takes, in MRO order, the generic base left out.
+
+    ``early`` reads the bases as parsed; otherwise a base a model-level type override replaced is the generated
+    model it stood for.
+    """
+    if not model.base_classes:
+        return []
+    stand_ins = {} if early else host._base_stand_ins  # noqa: SLF001
+    return [
+        base
+        for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
+        if base is not host._generic_base_model  # noqa: SLF001
+    ]
+
+
 def get_inherited_constructor_info(
     host: ConstructorInfoHost, model: DataModel, *, early: bool = False
 ) -> _InheritedConstructorInfo | None:
     """Return inherited value leaks and exact positional ordering conflicts."""
     if not model.SUPPORTS_KW_ONLY:
         return None
-    if not model.base_classes:
-        return None
-
-    stand_ins = {} if early else host._base_stand_ins  # noqa: SLF001
-    inherited_models = [
-        base
-        for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
-        if base is not host._generic_base_model  # noqa: SLF001
-    ]
-    if not inherited_models:
+    if not (inherited_models := constructor_base_models(host, model, early=early)):
         return None
     if not early:
-        record_ordering_inputs(model, inherited_models, stand_ins)
+        record_ordering_inputs(model, inherited_models, host._base_stand_ins)  # noqa: SLF001
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()
@@ -1577,11 +1600,8 @@ def get_inherited_constructor_info(
         if field.name:
             effective_fields[field.name] = field, model, None
 
-    ordering_conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
-    return _InheritedConstructorInfo(
-        frozenset(required_assignment_names),
-        ordering_conflicts,
-    )
+    conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
+    return _InheritedConstructorInfo(frozenset(required_assignment_names), conflicts.own, conflicts.inherited)
 
 
 def get_constructor_field_adjustment(

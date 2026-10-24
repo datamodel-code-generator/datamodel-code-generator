@@ -36,21 +36,27 @@ from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     RecursionFactsHost,
+    ReferenceExpressionHost,
     ReplacedRootsHost,
     RuntimeExpressionFlags,
     _context_models,
     _copy_data_type,
     _forward_enum_member_literals,
+    _get_data_type_target_full_name,
+    _get_model_module_name,
     _hidden_type_names,
     _is_pydantic_v2_root_model,
     _ModelPositions,
     _unwrap_type_alias,
+    constructor_base_models,
     get_constructor_field_adjustment,
     get_constructor_ordering_conflicts,
     get_inherited_constructor_info,
     has_import_override,
+    module_members,
     normalize_default_value_constraints,
     resolve_default_value_descriptor,
+    set_reference_expression,
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
@@ -71,13 +77,19 @@ if TYPE_CHECKING:
         RenderReady,
     )
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._passes._shared import _ConstructorFieldAdjustment
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, _FinalizeState, _PreparedModule
+    from datamodel_code_generator.parser._passes._shared import _ConstructorFieldAdjustment, _InheritedConstructorInfo
+    from datamodel_code_generator.parser._passes._state import (
+        ModuleContextView,
+        ModulePath,
+        _FinalizeState,
+        _PreparedModule,
+    )
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
 __all__ = [
+    "InheritedFieldCopies",
     "RenderPrepHost",
     "assign_module_forward_reference_fields",
     "collect_all_models",
@@ -87,6 +99,7 @@ __all__ = [
     "finalize_rendered_nullability",
     "finalize_sequence_interface",
     "fix_constructor_field_ordering",
+    "fix_constructor_field_ordering_bases_first",
     "fix_tag_opt_out_field_ordering",
     "freeze_field_render_plans",
     "mark_set_item_models_hashable",
@@ -99,7 +112,14 @@ __all__ = [
 ]
 
 
-class RenderPrepHost(ConstructorInfoHost, RecursionFactsHost, ReplacedRootsHost, RuntimeExpressionFlags, Protocol):
+class RenderPrepHost(
+    ConstructorInfoHost,
+    RecursionFactsHost,
+    ReferenceExpressionHost,
+    ReplacedRootsHost,
+    RuntimeExpressionFlags,
+    Protocol,
+):
     """The options, run state and hooks of the parser that the render preparation passes read and write."""
 
     _decimal_default_warning_count: int
@@ -153,6 +173,9 @@ class RenderPrepHost(ConstructorInfoHost, RecursionFactsHost, ReplacedRootsHost,
     def target_python_version(self) -> PythonVersion:
         """The Python version the output targets."""
 
+    def _copy_model_field(self, field: DataModelFieldBase) -> DataModelFieldBase:
+        """Copy a field with its data types."""
+
     def _nested_model_default_factory_decision(
         self,
         modules: Sequence[Sequence[DataModel]],
@@ -165,6 +188,15 @@ class RenderPrepHost(ConstructorInfoHost, RecursionFactsHost, ReplacedRootsHost,
 
 
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class InheritedFieldCopies:
+    """The written modules that keyword-only copies of inherited fields go to, and how they name other modules."""
+
+    contexts: Sequence[ModuleContextView]
+    internal_modules: set[ModulePath]
+    model_path_to_module_name: Mapping[str, str]
 
 
 def _assigned_key(model: DataModel) -> Callable[[DataModelFieldBase], bool]:
@@ -525,19 +557,40 @@ def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[Data
             for field in declaring_model.fields
             if field.name and not field.is_class_var
         }
-        if get_constructor_ordering_conflicts(model, effective_fields, set()):
+        if get_constructor_ordering_conflicts(model, effective_fields, set()).own:
             model.enable_model_keyword_only()
 
 
-def fix_constructor_field_ordering(parser: RenderPrepHost, models: list[DataModel], *, early: bool = False) -> None:
+def fix_constructor_field_ordering(
+    parser: RenderPrepHost,
+    models: list[DataModel],
+    *,
+    early: bool = False,
+    copies: InheritedFieldCopies | None = None,
+) -> None:
     """Fix constructor field ordering after inherited defaults are resolved.
 
     ``early`` runs it where the modules are processed, before the overrides replace the bases and before every
-    field has its final name, the form of ``--order-constructor-fields-by-final-names`` off. The nested factories
-    read row ``legacy-nested-factory-order-before-nullability``.
+    field has its final name, the form of ``--order-constructor-fields-by-final-names`` off. With ``copies``, a
+    written model gets a keyword-only copy of each inherited field that two of its bases put after a default. The
+    nested factories read row ``legacy-nested-factory-order-before-nullability``.
     """
     with ordering_constructor_fields(before_nullability=True):
-        fix_constructor_field_ordering_of(parser, models, early=early)
+        fix_constructor_field_ordering_of(parser, models, early=early, copies=copies)
+
+
+def fix_constructor_field_ordering_bases_first(
+    parser: RenderPrepHost, models: list[DataModel], copies: InheritedFieldCopies
+) -> None:
+    """Fix the constructor field ordering of every module's models, each after the models it inherits from.
+
+    A model then reads its bases as this pass left them: the fields they make keyword-only and the copies they take.
+    """
+    fix_constructor_field_ordering(
+        parser,
+        sorted(models, key=lambda model: len(constructor_base_models(parser, model))),
+        copies=copies,
+    )
 
 
 def order_constructor_fields_by_decided_nested_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
@@ -550,8 +603,11 @@ def order_constructor_fields_by_decided_nested_factories(parser: RenderPrepHost,
         fix_constructor_field_ordering(parser, state.all_models)
 
 
-def fix_constructor_field_ordering_of(parser: RenderPrepHost, models: list[DataModel], *, early: bool) -> None:
+def fix_constructor_field_ordering_of(
+    parser: RenderPrepHost, models: list[DataModel], *, early: bool, copies: InheritedFieldCopies | None = None
+) -> None:
     """Fix the constructor field ordering of ``models`` (``fix_constructor_field_ordering``)."""
+    written = {} if copies is None else {id(model): ctx for ctx in copies.contexts for model in ctx.models}
     for model in models:
         restored_inherited_state = False
         for field in model.fields:
@@ -562,6 +618,13 @@ def fix_constructor_field_ordering_of(parser: RenderPrepHost, models: list[DataM
             if has_local_constructor_ordering_conflict(model, order_key):
                 parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))  # noqa: SLF001
             continue
+        if (
+            copies is not None
+            and (ctx := written.get(id(model))) is not None
+            and (copied := copy_inherited_conflicts(parser, model, inherited, ctx, written, copies))
+        ):
+            parser._graph_builder.set_fields(model, [*copied, *model.fields])  # noqa: SLF001
+            inherited = cast("_InheritedConstructorInfo", get_inherited_constructor_info(parser, model))
         field_adjustments: Iterator[tuple[DataModelFieldBase, _ConstructorFieldAdjustment]] = (
             (field, adjustment)
             for field in model.fields
@@ -590,6 +653,47 @@ def fix_constructor_field_ordering_of(parser: RenderPrepHost, models: list[DataM
             field_adjustments,
         )
         parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))  # noqa: SLF001
+
+
+def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
+    parser: RenderPrepHost,
+    model: DataModel,
+    inherited: _InheritedConstructorInfo,
+    ctx: ModuleContextView,
+    written: Mapping[int, ModuleContextView],
+    copies: InheritedFieldCopies,
+) -> list[DataModelFieldBase]:
+    """Copy into ``model`` the inherited fields that follow a constructor default its bases set up.
+
+    ``dataclasses`` rejects such a class, and only ``model`` joins the bases, so each copy becomes one of its own
+    fields, which the ordering then makes keyword-only. A copy names the models of its type from the module of
+    ``model``. A field of a model that is not written, a stand-in or a base a model-level override replaced, is left
+    as it is.
+    """
+    members = keyed_models(module_members(parser, ctx.models), "module members")
+    module_name = _get_model_module_name(model, copies.model_path_to_module_name)
+    copied_fields: list[DataModelFieldBase] = []
+    for field, declaring_model in inherited.inherited_conflicts:
+        if id(declaring_model) not in written:
+            continue
+        copied = parser._copy_model_field(field)  # noqa: SLF001
+        for data_type in copied.data_type.all_data_types:
+            if (reference := data_type.reference) is None:
+                continue
+            set_reference_expression(
+                parser,
+                data_type,
+                module_name,
+                _get_data_type_target_full_name(data_type, reference, copies.model_path_to_module_name),
+                ctx.imports,
+                ctx.scoped_model_resolver,
+                same_module=members.key_of(reference) in members.models,
+                init=ctx.is_init,
+                internal_modules=copies.internal_modules,
+                producer=ImportProducer("inherited-keyword-only-copies", model),
+            )
+        copied_fields.append(copied)
+    return copied_fields
 
 
 def get_local_constructor_order_key(

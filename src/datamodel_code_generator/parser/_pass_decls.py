@@ -739,10 +739,19 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     summary="Inserts the generated base model and rewrites the base classes; B1 follows.",
 )
 
+ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(
+    "assign_forward_reference_fields",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.MODEL_ORDER, RenderFact.FIELD_ORDER),
+    writes=_facts(RenderFact.ASSIGNMENT_FORM, RenderFact.FIELD_ORDER),
+    condition="use_annotated with deferred annotations",
+)
 FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
     "fix_constructor_field_ordering",
     Phase.RENDER_PREPARATION,
-    Scope.MODULE,
+    Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(
         Fact.FIELD_SET,
@@ -754,10 +763,30 @@ FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
         RenderFact.FIELD_ORDER,
         RenderFact.KEYWORD_ONLY,
         RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.ASSIGNMENT_FORM,
         RenderFact.BACKEND_CONFIG,
+        RenderFact.CLASS_NAMES,
+        RenderFact.MODULE_IMPORTS,
     ),
-    writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
-    summary="Orders constructor fields so that fields without a default come first, reading the fields of bases.",
+    writes=_facts(
+        Fact.REQUIRED,
+        Fact.FIELD_SET,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
+    after=(
+        After(
+            "assign_forward_reference_fields",
+            "a field written by assignment is a dataclass default, which ordering reads from the bases of every module",
+        ),
+    ),
+    summary=(
+        "Orders constructor fields so that fields without a default come first, reading the fields of bases, each "
+        "model after its bases; an inherited field that bases put after a default gets a keyword-only copy."
+    ),
 )
 UNBIND_HIDDEN_TYPE_FIELDS = PassDecl(
     "unbind_hidden_type_fields",
@@ -775,7 +804,10 @@ UPDATE_TYPE_ALIASES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODEL_ORDER, RenderFact.CLASS_NAMES, RenderFact.UNBOUND_FIELDS),
     writes=_facts(Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.QUOTING, RenderFact.TYPE_ALIAS_BODY),
-    after=(After("fix_constructor_field_ordering", "ordering reads the field types before aliases quote them"),),
+    after=(
+        After("fix_constructor_field_ordering", "ordering reads the field types before aliases quote them"),
+        After("assign_forward_reference_fields", "the forward-reference assignment reads the field types unquoted"),
+    ),
     summary="Quotes forward references and defers recursive containers.",
     removed_by="RP16b",
 )
@@ -798,15 +830,12 @@ SET_VALIDATE_DEFAULT_ON_FIELDS = PassDecl(
         RenderFact.DEFAULT_EXPRESSION,
         RenderFact.IMPORT_ALIASES,
     ),
-)
-ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(
-    "assign_forward_reference_fields",
-    Phase.RENDER_PREPARATION,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.MODEL_ORDER, RenderFact.FIELD_ORDER),
-    writes=_facts(RenderFact.ASSIGNMENT_FORM, RenderFact.FIELD_ORDER),
-    condition="use_annotated with deferred annotations",
+    after=(
+        After(
+            "assign_forward_reference_fields",
+            "the forward-reference assignment reads which fields have a default, which deserializing it keeps",
+        ),
+    ),
 )
 WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS = PassDecl(
     "warn_required_assignments_after_defaults",

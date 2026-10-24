@@ -1,0 +1,16 @@
+Branch keyword-only: id
+Branch {"id": 1, "x": "a"}: schema accepts, model accepts
+Branch {"x": "a"}: schema rejects, model rejects (missing)
+Branch {"id": "one"}: schema rejects, model rejects (int_parsing)
+Leaf keyword-only: id, z
+Leaf {"id": 1, "z": 2}: schema accepts, model accepts
+Leaf {"id": 1}: schema rejects, model rejects (missing)
+Leaf {"z": 2}: schema rejects, model rejects (missing)
+Fork keyword-only: id, o
+Fork {"id": 1, "o": true}: schema accepts, model accepts
+Fork {"id": 1}: schema rejects, model rejects (missing)
+Fork {"o": true}: schema rejects, model rejects (missing)
+Pair keyword-only: o, id
+Pair {"id": 1, "o": false, "x": "a"}: schema accepts, model accepts
+Pair {"id": 1, "x": "a"}: schema rejects, model rejects (missing)
+Pair {"o": false, "x": "a"}: schema rejects, model rejects (missing)

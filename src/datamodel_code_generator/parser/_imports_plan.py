@@ -100,6 +100,7 @@ ImportPass: TypeAlias = Literal[
     "import-renamed-types",
     "import-enum-member-literal-classes",
     "generic-base-class",
+    "inherited-keyword-only-copies",
     "type-alias-fields",
     "model-imports-snapshot",
     "unused-models",
@@ -132,6 +133,8 @@ ImportPass: TypeAlias = Literal[
 * ``import-removed-reuse-canonicals``, ``import-renamed-types``, ``import-enum-member-literal-classes``: the L6
   repairs of the same names.
 * ``generic-base-class``: ``apply_generic_base_class`` (L6), the generated base model instead of the output base class.
+* ``inherited-keyword-only-copies``: ``fix_constructor_field_ordering`` (L6), the models that the keyword-only copies of
+  inherited fields name from the module of the model that takes them.
 * ``type-alias-fields``: ``prepare_type_alias_fields``, drops the imports a prepared type-alias body no longer uses.
 * ``model-imports-snapshot``: ``_finalize_modules``, the imports of each model once more, read after the generic base
   class.

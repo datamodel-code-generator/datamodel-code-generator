@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: A base field written by assignment for a forward reference
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Base:
+      type: object
+      required: [ref]
+      properties:
+        ref:
+          $ref: '#/components/schemas/Later'
+          description: the later model
+    Later:
+      type: object
+      properties:
+        back:
+          $ref: '#/components/schemas/Base'
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [z]
+          properties:
+            z:
+              type: integer
+              description: zz

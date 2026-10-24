@@ -1,0 +1,20 @@
+{
+  "allof_bases_required_after_default.yaml": {
+    "Branch": {"valid": {"id": 1, "x": "a"}, "invalid": [{"x": "a"}, {"id": "one"}]},
+    "Leaf": {"valid": {"id": 1, "z": 2}, "invalid": [{"id": 1}, {"z": 2}]},
+    "Fork": {"valid": {"id": 1, "o": true}, "invalid": [{"id": 1}, {"o": true}]},
+    "Pair": {"valid": {"id": 1, "o": false, "x": "a"}, "invalid": [{"id": 1, "x": "a"}, {"o": false, "x": "a"}]}
+  },
+  "allof_bases_required_after_default_modules.yaml": {
+    "a2.Mid": {"valid": {"code": "A", "x": "a"}, "invalid": [{"x": "a"}, {"code": "C"}]},
+    "b.Branch": {"valid": {"code": "B"}, "invalid": [{}, {"code": "C"}]},
+    "b.Leaf": {"valid": {"code": "B", "z": 1}, "invalid": [{"code": "B"}, {"z": 1}]},
+    "b.Tail": {"valid": {"code": "A", "extra": "B"}, "invalid": [{"code": "A"}, {"code": "A", "extra": "C"}]}
+  },
+  "allof_base_forward_reference_assignment.yaml": {
+    "Child": {"valid": {"ref": {"back": {"ref": {}}}, "z": 1}, "invalid": [{"ref": {}}, {"z": 1}, {"ref": {}, "z": "one"}]}
+  },
+  "allof_base_forward_reference_assignment_modules.yaml": {
+    "a.Child": {"valid": {"ref": {"back": {"ref": {}}}, "z": 1}, "invalid": [{"ref": {}}, {"z": 1}, {"ref": {}, "z": "one"}]}
+  }
+}

@@ -937,6 +937,9 @@ openapi/allof.yaml::components.schemas.Error	payloads/native_numeric_empty_error
 openapi/allof.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_array_ref_override.yaml::components.schemas.DataType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_array_ref_override.yaml::components.schemas.Metadata	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Local	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Other	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Twig	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/external.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/openapi.yaml::components.schemas.Anything	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/openapi.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2630,6 +2633,9 @@ openapi/allof.yaml::components.schemas.Car	payloads/native_numeric_empty_errors.
 openapi/allof.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_array_ref_override.yaml::components.schemas.Metadata	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Local	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Other	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_bases_required_after_default.yaml::components.schemas.Twig	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/external.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/openapi.yaml::components.schemas.Anything	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_boolean_member/openapi.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

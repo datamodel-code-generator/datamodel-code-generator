@@ -1,0 +1,5 @@
+a.Child keyword-only: z
+a.Child {"ref": {"back": {"ref": {}}}, "z": 1}: schema accepts, model accepts
+a.Child {"ref": {}}: schema rejects, model rejects (missing)
+a.Child {"z": 1}: schema rejects, model rejects (missing)
+a.Child {"ref": {}, "z": "one"}: schema rejects, model rejects (int_parsing)

@@ -66700,7 +66700,9 @@ while a msgspec Struct counts every optional field as having one, as it never st
 `fix_constructor_field_ordering` (`parser/_passes/render_prep.py`), after the decision phase, decides with the output
 model's assignment facts
 (`DataModel._field_assignment_facts`, the row `FIELD_ASSIGNMENT_CHECKER` is a view of), which state what the template
-writes, and moves fields whose default the template keeps after the fields without one.
+writes, and moves fields whose default the template keeps after the fields without one. An inherited field that two
+bases put after a default, which `dataclasses` rejects while creating the class, gets a keyword-only copy in the class
+(`get_constructor_ordering_conflicts` of `parser/_passes/_shared.py`), whose types name their models from its module.
 
 **L2–L4.**
 
@@ -66768,16 +66770,16 @@ order of the modules.
 | `apply_generic_base_class` (`parser/_passes/cross_module.py`) | inserts the generated base model and rewrites base classes |
 | decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
 
-Render preparation, module by module in module order, for the models each module had at the end of L5:
+Render preparation, for the models each module had at the end of L5:
 
-| Pass (`parser/_passes/render_prep.py`) | Reads | Changes |
-| --- | --- | --- |
-| `fix_constructor_field_ordering` | required and default state, inherited fields (a base a model-level override replaced as the generated model it stood for), rendered nullability (`types.py:DataType.admits_none`), field types after overrides | field order, constructor adjustments |
-| `unbind_fields` (model) | hidden type names | field binding |
-| `update_type_aliases` | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain; schema validator rules get quoted copies of the types that name the model or a later one |
-| `set_validate_default_on_fields` | live models, defaults | deserialized defaults, default validation |
-| `assign_module_forward_reference_fields` | `--use-annotated` with deferred annotations | assignment form, may reorder fields |
-| `warn_required_assignments_after_defaults` | field order | warnings |
+| Pass (`parser/_passes/render_prep.py`) | Runs | Reads | Changes |
+| --- | --- | --- | --- |
+| `assign_module_forward_reference_fields` | module by module | `--use-annotated` with deferred annotations | assignment form, may reorder fields |
+| `fix_constructor_field_ordering` | over every model, each after the models it inherits from | required and default state, assignment form, inherited fields (a base a model-level override replaced as the generated model it stood for), rendered nullability (`types.py:DataType.admits_none`), field types after overrides | field order, constructor adjustments, keyword-only copies of inherited fields and the imports of their types |
+| `unbind_fields` (model) | module by module | hidden type names | field binding |
+| `update_type_aliases` | module by module | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain; schema validator rules get quoted copies of the types that name the model or a later one |
+| `set_validate_default_on_fields` | module by module | live models, defaults | deserialized defaults, default validation |
+| `warn_required_assignments_after_defaults` | module by module | field order | warnings |
 
 Then, over every model:
 
@@ -66800,8 +66802,9 @@ and `import_renamed_types` (reuse and renames in a later module, including the `
 the place of the base's tag class variable).
 
 Constructor ordering and render preparation run once, after the decision phase, for every model: ordering reads the
-facts every module and decision left, so a model's constructor no longer depends on whether the module of its base
-is processed before or after its own (since 0.87.0). Code that overrides `_process_single_module` and runs after
+facts every module and decision left, and the assignment form of every module, and orders each model after the models
+it inherits from, so a model's constructor no longer depends on whether the module of its base is processed before or
+after its own (since 0.87.0). Code that overrides `_process_single_module` and runs after
 `super()` sees the module before its constructor order and render preparation; the generic base class, the decision
 phase and that render preparation run in the pipeline before `_finalize_modules`, so an override of
 `_finalize_modules` that does not call `super()` no longer skips them, and a direct call of `_finalize_modules` no
@@ -66973,12 +66976,12 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | CROSS_MODULE | `import_renamed_types` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODULE_IMPORTS | Removed by RP15b. After `import_removed_reuse_canonicals`: imports renamed types next to the canonicals of removed reuse duplicates. |
 | CROSS_MODULE | `import_enum_member_literal_classes` | global | repair | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | DEFAULTS, FIELD_TYPES, MODULE_IMPORTS | Removed by RP15b. After `import_renamed_types`: imports literal classes next to the renamed types. After `warn_enums_admitting_other_values`: the warning reads the enum types before literal classes replace them. |
 | CROSS_MODULE | `apply_generic_base_class` | global | transform | BASES, MODELS_EXIST | BASES | Inserts the generated base model and rewrites the base classes; B1 follows. |
-| RENDER_PREPARATION | `fix_constructor_field_ordering` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Orders constructor fields so that fields without a default come first, reading the fields of bases. |
-| RENDER_PREPARATION | `unbind_hidden_type_fields` | module | transform | UNBOUND_FIELDS | CLASS_NAMES, FIELD_NAMES | Leaves fields unbound that hide a type their class names (model hook). |
-| RENDER_PREPARATION | `update_type_aliases` | module | transform | FIELD_TYPES, NULLABLE, QUOTING, TYPE_ALIAS_BODY | CLASS_NAMES, FIELD_TYPES, MODEL_ORDER, UNBOUND_FIELDS | Quotes forward references and defers recursive containers. Removed by RP16b. After `fix_constructor_field_ordering`: ordering reads the field types before aliases quote them. |
-| RENDER_PREPARATION | `collect_live_models` | module | bookkeeping | - | - |  |
-| RENDER_PREPARATION | `set_validate_default_on_fields` | module | transform | CONSTRAINTS, DEFAULTS, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, IMPORT_ALIASES | DEFAULTS, FIELD_TYPES, MODELS_EXIST |  |
 | RENDER_PREPARATION | `assign_forward_reference_fields` | module | transform | ASSIGNMENT_FORM, FIELD_ORDER | DEFAULTS, FIELD_ORDER, FIELD_TYPES, MODEL_ORDER | Runs when: use_annotated with deferred annotations. |
+| RENDER_PREPARATION | `fix_constructor_field_ordering` | global | transform | FIELD_ORDER, FIELD_SET, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODULE_IMPORTS, REQUIRED | ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, MODULE_IMPORTS, NULLABLE, REQUIRED | Orders constructor fields so that fields without a default come first, reading the fields of bases, each model after its bases; an inherited field that bases put after a default gets a keyword-only copy. After `assign_forward_reference_fields`: a field written by assignment is a dataclass default, which ordering reads from the bases of every module. |
+| RENDER_PREPARATION | `unbind_hidden_type_fields` | module | transform | UNBOUND_FIELDS | CLASS_NAMES, FIELD_NAMES | Leaves fields unbound that hide a type their class names (model hook). |
+| RENDER_PREPARATION | `update_type_aliases` | module | transform | FIELD_TYPES, NULLABLE, QUOTING, TYPE_ALIAS_BODY | CLASS_NAMES, FIELD_TYPES, MODEL_ORDER, UNBOUND_FIELDS | Quotes forward references and defers recursive containers. Removed by RP16b. After `fix_constructor_field_ordering`: ordering reads the field types before aliases quote them. After `assign_forward_reference_fields`: the forward-reference assignment reads the field types unquoted. |
+| RENDER_PREPARATION | `collect_live_models` | module | bookkeeping | - | - |  |
+| RENDER_PREPARATION | `set_validate_default_on_fields` | module | transform | CONSTRAINTS, DEFAULTS, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, IMPORT_ALIASES | DEFAULTS, FIELD_TYPES, MODELS_EXIST | After `assign_forward_reference_fields`: the forward-reference assignment reads which fields have a default, which deserializing it keeps. |
 | RENDER_PREPARATION | `warn_required_assignments_after_defaults` | module | check | STDERR | DEFAULTS, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED |  |
 | RENDER_PREPARATION | `fix_tag_opt_out_field_ordering` | global | repair | KEYWORD_ONLY | BASES, DEFAULTS, FIELD_SET, KEYWORD_ONLY, REQUIRED | Runs when: msgspec. Removed by G08. After `warn_required_assignments_after_defaults`: the pydantic warning and this msgspec repair never read or write the same models. |
 | RENDER_PREPARATION | `finalize_rendered_nullability` | global | transform | FIELD_TYPES, NULLABLE | FIELD_TYPES, NULLABLE, QUOTING | Writes the None each type hint renders, once, after the module bodies set union operators and quotes; rendering and import collection write none. Rendering the members' hints writes the import of the Any an empty union renders as. |
@@ -67047,7 +67050,10 @@ Provisional reads, from the explicit edges:
 - `import_removed_reuse_canonicals` reads MODULE_IMPORTS before `import_renamed_types` writes it: imports renamed types next to the canonicals of removed reuse duplicates.
 - `import_renamed_types` reads MODULE_IMPORTS before `import_enum_member_literal_classes` writes it: imports literal classes next to the renamed types.
 - `warn_enums_admitting_other_values` reads FIELD_TYPES before `import_enum_member_literal_classes` writes it: the warning reads the enum types before literal classes replace them.
+- `assign_forward_reference_fields` reads FIELD_ORDER before `fix_constructor_field_ordering` writes it: a field written by assignment is a dataclass default, which ordering reads from the bases of every module.
 - `fix_constructor_field_ordering` reads FIELD_TYPES, NULLABLE before `update_type_aliases` writes it: ordering reads the field types before aliases quote them.
+- `assign_forward_reference_fields` reads FIELD_TYPES before `update_type_aliases` writes it: the forward-reference assignment reads the field types unquoted.
+- `assign_forward_reference_fields` reads DEFAULTS before `set_validate_default_on_fields` writes it: the forward-reference assignment reads which fields have a default, which deserializing it keeps.
 - `warn_required_assignments_after_defaults` reads KEYWORD_ONLY before `fix_tag_opt_out_field_ordering` writes it: the pydantic warning and this msgspec repair never read or write the same models.
 - `snapshot_model_imports` reads MODELS_EXIST before `remove_unused_models` writes it: the snapshot holds the imports of unused models, which leave with them.
 - `remove_unused_imports` reads MODULE_IMPORTS before `resolve_module_import_conflicts` writes it: resolves the conflicts of the imports that are used.
@@ -67126,7 +67132,7 @@ collapse replacing a member of a shared list.
 | which models exist | L6 unused-model removal in `_finalize_modules` |
 | model kind (Enum, root model, class) | the model's own L5 `extract_inherited_enum` and `reuse_model` (tree scope: L3) |
 | bases | L6 `apply_generic_base_class`; base order is sorted in L2 before reuse adds bases |
-| instance field set | end of the L5 loop; msgspec: L6 `_tag_fields_of_tagged_bases` |
+| instance field set | end of the L5 loop; msgspec: L6 `_tag_fields_of_tagged_bases`; keyword-only copies of inherited fields that the ordering pass adds (L6 `fix_constructor_field_ordering`); the effective field set is unchanged |
 | field order | end of the L5 loop (discriminator tags append fields to variants of any module); initial order: L1 construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`); msgspec keyword-only: L6 `fix_tag_opt_out_field_ordering` |
 | field names | the model's own L5 `rename_fields_hiding_types` |
 | field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 `apply_field_type_overrides`, before constructor ordering); pydantic v2 type-alias bodies: L6 `prepare_type_alias_fields` |

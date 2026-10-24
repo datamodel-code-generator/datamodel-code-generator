@@ -69,6 +69,7 @@ if TYPE_CHECKING:
 __all__ = [
     "FINALIZE_SEGMENTS",
     "MODULE_BODY",
+    "MODULE_FORWARD_REFERENCE_ASSIGNMENT",
     "MODULE_RENDER_PREPARATION_BODY",
     "PIPELINE",
     "STRUCTURE_BODY",
@@ -379,12 +380,22 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
 """The passes of ``_process_single_module``, for one output module."""
 
 
-MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any]], ...] = (
+MODULE_FORWARD_REFERENCE_ASSIGNMENT: tuple[StepLike[PipelineHost, _PreparedModule[Any]], ...] = (
     PassSpec(
-        decls.FIX_CONSTRUCTOR_FIELD_ORDERING,
-        lambda self, s: render_prep.fix_constructor_field_ordering(self, s.model_list_before_override_removal),
-        checked_models=lambda _, s: s.model_list_before_override_removal,
+        decls.ASSIGN_FORWARD_REFERENCE_FIELDS,
+        lambda self, s: render_prep.assign_module_forward_reference_fields(self, s.model_list),
+        when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations,
+        checked_models=_prepared_models,
     ),
+)
+"""The fields of one output module that write by assignment, which every module decides before constructor ordering."""
+
+
+def _models_before_override_removal(parser: PipelineHost, _: object) -> list[DataModel]:
+    return [model for prepared in parser._prepared_modules for model in prepared.model_list_before_override_removal]  # noqa: SLF001
+
+
+MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any]], ...] = (
     PassSpec(
         decls.UNBIND_HIDDEN_TYPE_FIELDS,
         lambda _, s: render_prep.unbind_hidden_type_fields(s),
@@ -406,18 +417,12 @@ MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any
         checked_models=lambda _, s: s.live_models,
     ),
     PassSpec(
-        decls.ASSIGN_FORWARD_REFERENCE_FIELDS,
-        lambda self, s: render_prep.assign_module_forward_reference_fields(self, s.model_list),
-        when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations,
-        checked_models=_prepared_models,
-    ),
-    PassSpec(
         decls.WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS,
         lambda _, s: render_prep.warn_required_assignments_after_defaults(s.live_models),
         checked_models=lambda _, s: s.live_models,
     ),
 )
-"""The render preparation of one output module, after the decision phase: constructor order, then the rest."""
+"""The render preparation of one output module, after the constructor order of every module."""
 
 
 FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
@@ -791,6 +796,20 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
         Phase.RENDER_PREPARATION,
         _as_finish_run,
         (
+            ForEachModule(
+                "assign_forward_reference_fields_of_modules",
+                lambda self, _: self._prepared_modules,
+                MODULE_FORWARD_REFERENCE_ASSIGNMENT,
+            ),
+            PassSpec(
+                decls.FIX_CONSTRUCTOR_FIELD_ORDERING,
+                lambda self, run: render_prep.fix_constructor_field_ordering_bases_first(
+                    self,
+                    _models_before_override_removal(self, run),
+                    render_prep.InheritedFieldCopies(run.contexts, run.internal_modules, run.model_path_to_module_name),
+                ),
+                checked_models=_models_before_override_removal,
+            ),
             ForEachModule(
                 "prepare_module_rendering",
                 lambda self, _: self._prepared_modules,
