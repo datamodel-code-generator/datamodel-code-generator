@@ -27760,6 +27760,53 @@ def test_main_read_only_write_only_closed_extra_items(output_file: Path, dedupe_
             msgspec.json.decode(json.dumps(invalid), type=model)
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_pattern_map_extras(
+    output_file: Path, output_model_type: str, dedupe_args: list[str]
+) -> None:
+    """Split the models that reach the readOnly ``Item`` only where their builders write or record a type naming it.
+
+    The additionalProperties of the map ``Base`` name ``Item``, but its patternProperties give the values of its
+    dict, so pydantic keeps one ``Base``, and ``Wrapper``, whose allOf member it is, and the ``direct`` reference keep
+    it too. TypedDict records them as the extra_items type of ``Base``, so ``Base`` splits, and ``Wrapper`` with it.
+    msgspec decodes the payloads of the TypedDict models.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_pattern_map_extras.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"item": {"name": "n"}, "wrapper": {"xa": "a", "xb": "b"}, "direct": {"xa": "a"}}
+    invalid = {"direct": {"xa": 1}}
+    validator = Draft7Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_pattern_map_extras", "ModelRequest") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if output_model_type != "typing.TypedDict":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(valid))
+        with pytest.raises(error_type):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
