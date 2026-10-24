@@ -1,0 +1,15 @@
+valid: accepted
+invalid u: rejected
+invalid p: rejected
+invalid n: rejected
+invalid m: rejected
+invalid t: rejected
+invalid a: accepted
+invalid e: rejected
+invalid x: accepted
+invalid x: accepted
+invalid y: rejected
+invalid k: rejected
+invalid v: rejected
+invalid w: rejected
+invalid r: rejected

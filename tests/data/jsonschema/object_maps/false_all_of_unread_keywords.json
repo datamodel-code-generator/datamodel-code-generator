@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "i": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "items": {
+        "type": "integer"
+      },
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "f": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "minItems": 1,
+      "maxItems": 1,
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "e": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "allOf": [
+            false
+          ]
+        }
+      ]
+    },
+    "o": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "allOf": [
+            false
+          ]
+        }
+      }
+    },
+    "s": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "q": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "c": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "allOf": [
+            false
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "d": {
+      "type": "object",
+      "propertyNames": {
+        "allOf": [
+          false
+        ]
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

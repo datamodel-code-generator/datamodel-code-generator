@@ -10542,9 +10542,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unless the array is a tuple of no items under --use-tuple-for-fixed-length-arrays
         (``_get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
         (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
-        array no item past its prefixItems. Where no value is typed with it, it keeps its output.
+        array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
+        array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
+        (``_read_false_all_of_map_schemas``) are read the same way.
         """
-        update: dict[str, bool] = {}
+        update: dict[str, object] = {}
         if (
             _is_false_all_of(obj.additionalProperties)
             and not obj.properties
@@ -10557,7 +10559,56 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             update["additionalProperties"] = False
         if _is_false_all_of(obj.items) and self._get_fixed_length_homogeneous_tuple_length(obj) != 0:
             update["items"] = False
+        update |= self._read_false_all_of_array_positions(obj) | self._read_false_all_of_map_schemas(obj)
         return obj.model_copy(update=update) if update else obj
+
+    def _read_false_all_of_array_positions(self, obj: JsonSchemaObject) -> dict[str, object]:
+        """Return the array keywords of ``obj`` whose false allOf the array parse types, with ``false`` in its place.
+
+        Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before
+        the first false (``_get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that types
+        the items past them. A position it leaves untyped keeps its output.
+        """
+        if not obj.is_array or obj.ref:
+            return {}
+        entries = {"items": obj.items if isinstance(obj.items, list) else [], "prefixItems": obj.prefixItems or []}
+        tails = {"additionalItems": obj.additionalItems, "unevaluatedItems": obj.unevaluatedItems}
+        if not any(_is_false_all_of(item) for item in (*chain.from_iterable(entries.values()), *tails.values())):
+            return {}
+        typed = {id(item) for item in self._get_array_item_schemas(obj)[0]}
+
+        def reads(item: object) -> bool:
+            return id(item) in typed and _is_false_all_of(item)
+
+        return {
+            **{
+                key: [False if reads(item) else item for item in items]
+                for key, items in entries.items()
+                if any(map(reads, items))
+            },
+            **{key: False for key, item in tails.items() if reads(item)},
+        }
+
+    def _read_false_all_of_map_schemas(self, obj: JsonSchemaObject) -> dict[str, object]:
+        """Return the patternProperties or propertyNames of the map ``obj`` whose false allOf it types, as ``false``.
+
+        An object map without properties (``_parse_object_map``) types each value of its patternProperties; without
+        patternProperties it types its propertyNames. A patternProperties validator owns the patterns instead, and
+        the other schemas of ``obj`` (properties, items, ``$ref``, combinators) leave both untyped, so they keep their
+        output.
+        """
+        if any((obj.properties, obj.is_array, obj.ref, obj.allOf, obj.anyOf, obj.oneOf)):
+            return {}
+        if pattern_properties := obj.patternProperties:
+            if self.generate_schema_validators or not any(map(_is_false_all_of, pattern_properties.values())):
+                return {}
+            return {
+                "patternProperties": {
+                    pattern: False if _is_false_all_of(schema) else schema
+                    for pattern, schema in pattern_properties.items()
+                }
+            }
+        return {"propertyNames": False} if _is_false_all_of(obj.propertyNames) else {}
 
     def _array_all_of_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Return an array site with ``allOf`` as the intersection of its own keywords and its members, else ``obj``.

@@ -1,0 +1,6 @@
+valid: accepted
+invalid i: rejected
+invalid j: rejected
+invalid h: rejected
+invalid h: rejected
+invalid g: rejected

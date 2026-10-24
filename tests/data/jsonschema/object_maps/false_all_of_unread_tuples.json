@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "a": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        },
+        false,
+        {
+          "allOf": [
+            false
+          ]
+        }
+      ]
+    },
+    "b": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "additionalItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "c": {
+      "type": "array",
+      "items": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "d": {
+      "additionalItems": {
+        "allOf": [
+          false
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+valid: accepted
+invalid u: accepted
+invalid p: rejected (string_type)
+invalid n: accepted
+invalid m: accepted
+invalid t: accepted
+invalid a: accepted
+invalid e: accepted
+invalid x: accepted
+invalid x: accepted
+invalid y: accepted
+invalid k: accepted
+invalid v: accepted
+invalid w: accepted
+invalid r: accepted
