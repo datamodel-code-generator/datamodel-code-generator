@@ -1,2 +1,0 @@
-msgspec cannot decode the enum Extra: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
-The IntEnum Merged cannot be imported: its member NoneType_None = None is not an int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.

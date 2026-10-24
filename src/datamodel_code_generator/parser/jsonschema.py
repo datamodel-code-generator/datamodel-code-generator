@@ -10429,12 +10429,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _all_of_enum_site_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the schema of an allOf site of enum references whose merged enum leaves out what its parts enforce.
 
-        Such a site gets a model without fields that ``Parser.__extract_inherited_enum`` writes as one enum of the
-        members of every referenced enum, in the class of the first. That enum stays where each referenced enum lists
-        exactly the values the parts admit together, and where the parts are no value schemas or are not intersected
-        here. Where they admit no value in common (warned about), it stays where it is generated and imports, else the
-        site takes its first part. Elsewhere, under ``--use-site-models-for-constrained-refs``, the site is the
-        intersection of its parts.
+        Such a site gets a model without fields that ``extract_inherited_enum`` writes as one enum of the members of
+        every referenced enum, in the class of the first, without the ``None`` member a class with a value base cannot
+        hold. That enum stays where each referenced enum lists exactly the values the parts admit together, and where
+        the parts are no value schemas or are not intersected here. Where they admit no value in common (warned
+        about), it stays where it is generated and imports, else the site takes its first part. Elsewhere, under
+        ``--use-site-models-for-constrained-refs``, the site is the intersection of its parts.
         """
         if (
             not (refs := _bare_ref_members(obj))
@@ -10476,8 +10476,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _merged_enum_fails(self, enums: Sequence[JsonSchemaObject]) -> bool:
         """Return whether the enum merged from the members of ``enums``, in the class of the first, fails at import.
 
-        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not hold, as on
-        ``None``; an output that writes the first enum as a ``Literal`` or as its const merges no enum class.
+        A class with a value base (``IntEnum``, ``StrEnum``) fails on a member its value type does not hold. Its
+        ``None`` member is left out by ``extract_inherited_enum``, so ``None`` fails the merge only with
+        --intersect-allof-keywords, where the site then takes its first part. An output that writes the first enum as
+        a ``Literal`` or as its const merges no enum class.
         """
         first = enums[0]
         if self.should_parse_enum_as_literal(first) or self._reads_enum_as_const(first):
@@ -10485,8 +10487,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum_class = self._get_enum_model_class(self._get_enum_type(first), first.enum)[0]
         value_type = "int" if issubclass(enum_class, IntEnum) else "str" if issubclass(enum_class, StrEnum) else None
         keep = self.config.keep_enum_member_values
-        return value_type is not None and not all(
-            value is not None and holds_member_value(value_type, value, keep_member_values=keep)
+        return value_type is not None and any(
+            self.intersects_allof_keywords
+            if value is None
+            else not holds_member_value(value_type, value, keep_member_values=keep)
             for target in enums
             for value in target.enum
         )

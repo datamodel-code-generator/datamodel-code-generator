@@ -83,7 +83,8 @@ EnumKindRule: TypeAlias = Literal[
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
-  ``StrEnum``, which the merged enum keeps whatever the members of the other enums are (a ``StrEnum`` holding ``1.5``).
+  ``StrEnum``, which the merged enum keeps whatever the members of the other enums are (a ``StrEnum`` holding ``1.5``),
+  except a ``None`` member, which no class with a value base holds, so the merged enum leaves it out.
 """
 
 LiteralSetting: TypeAlias = Literal["all", "one", "none"]

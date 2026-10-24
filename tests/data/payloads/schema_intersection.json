@@ -6417,5 +6417,29 @@
         ]
       }
     }
+  },
+  "enum_refs_null": {
+    "model": "Model",
+    "fields": {
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          2,
+          3,
+          null
+        ]
+      },
+      "shared": {
+        "valid": [
+          2
+        ],
+        "invalid": [
+          1,
+          3,
+          null
+        ]
+      }
+    }
   }
 }

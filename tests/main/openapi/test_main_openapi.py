@@ -1108,7 +1108,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             "msgspec_nullable_enum_inherited_overlap.yaml",
             [],
             "openapi_inherited_overlap.py",
-            False,
+            True,
             id="inherited-overlap",
         ),
     ],
@@ -1119,9 +1119,9 @@ def test_main_openapi_msgspec_nullable_enum(
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
     The `IntEnum` of `type: integer`, which cannot hold a `None` member, is written without it also without the
-    option, and without the alias, as its `type` rejects null. An allOf of enums that no value meets in common, whose
-    merged `IntEnum` would hold a `None` member and fail at import, takes its first enum. An allOf of enums that
-    share a value, whose merged `IntEnum` keeps the `None` member, is warned about as an import failure.
+    option, and without the alias, as its `type` rejects null. The `IntEnum` that an allOf of enums merges into,
+    whether or not the enums share a value, leaves out the `None` member of the other enums and keeps their other
+    members.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")

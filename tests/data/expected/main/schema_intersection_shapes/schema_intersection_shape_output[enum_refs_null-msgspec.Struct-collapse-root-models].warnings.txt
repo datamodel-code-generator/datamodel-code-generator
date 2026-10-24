@@ -1,0 +1,3 @@
+enum_refs_null.json#/$defs/Disjoint: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.
+msgspec cannot decode the enum Extra: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum Overlap: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.

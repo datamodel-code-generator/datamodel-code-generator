@@ -64,7 +64,7 @@ from datamodel_code_generator.model.base import (
     _share_path_identity,
     get_inherited_fields,
 )
-from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class
+from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._finality import module_checkpoint, pass_scope
@@ -1481,9 +1481,15 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
             if isinstance(source_model, Enum):
                 enums.append(source_model)
         if enums:
-            kind = decide_enum_kind("merged", first_specialized=isinstance(enums[0], (IntEnum, StrEnum)))
+            specialized = isinstance(enums[0], (IntEnum, StrEnum))
+            kind = decide_enum_kind("merged", first_specialized=specialized)
             merged_enum = _enum_class(kind, enums[0].__class__)(
-                fields=[f for e in enums for f in e.fields],
+                fields=[
+                    f
+                    for e in enums
+                    for f in e.fields
+                    if not (specialized and get_raw_enum_member_value(f.default) is None)
+                ],
                 description=model.description,
                 reference=model.reference,
             )

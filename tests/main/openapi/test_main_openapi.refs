@@ -1256,7 +1256,7 @@ default	main/openapi/msgspec_enum_unions/default_warnings.txt
 inherited	main/openapi/msgspec_nullable_enum/openapi_inherited.py
 inherited	main/openapi/msgspec_nullable_enum/openapi_inherited_warnings.txt
 inherited-overlap	main/openapi/msgspec_nullable_enum/openapi_inherited_overlap.py
-inherited-overlap	main/openapi/msgspec_nullable_enum/openapi_inherited_overlap_warnings.txt
+inherited-overlap	main/openapi/msgspec_nullable_enum/openapi_inherited_overlap_warnings.txt	= main/openapi/msgspec_nullable_enum/openapi_inherited_warnings.txt
 openapi-30	main/openapi/msgspec_nullable_enum/openapi_30.py
 openapi-30	main/openapi/msgspec_nullable_enum/openapi_30_warnings.txt
 openapi-30-alias	main/openapi/msgspec_nullable_enum/openapi_30_alias.py

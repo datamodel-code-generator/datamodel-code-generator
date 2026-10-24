@@ -19,3 +19,4 @@ class Extra(Enum):
 class Merged(IntEnum):
     integer_1 = 1
     integer_2 = 2
+    int_3 = 3
