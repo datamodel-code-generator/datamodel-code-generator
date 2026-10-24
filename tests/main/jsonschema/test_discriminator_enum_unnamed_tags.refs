@@ -2,6 +2,7 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_use_enum_values_in_discriminator_const_outside_enum]
 dataclasses.dataclass	main/jsonschema/discriminator_enum_unnamed_tags/use_enum_values_in_discriminator_const_outside_enum[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/discriminator_enum_unnamed_tags/use_enum_values_in_discriminator_const_outside_enum[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/discriminator_enum_unnamed_tags/use_enum_values_in_discriminator_const_outside_enum[pydantic_v2.BaseModel].py
 [test_use_enum_values_in_discriminator_without_member]
 dataclasses.dataclass	main/jsonschema/discriminator_enum_unnamed_tags/use_enum_values_in_discriminator_without_member[dataclasses.dataclass].payloads.txt

@@ -1,0 +1,11 @@
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of StrM1, StrM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of IntM1, IntM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of EnumM1, EnumM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of OptM1, OptM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of ChainM1, ChainM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of ChainM1a, ChainM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of MixM1 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of OneM1, OneM2 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of TaggedAM1 keeps 'k' as a field; its variants are left untagged.
+Discriminator 'k' of Model cannot be represented as msgspec tags: a base or derived struct of TaggedZ keeps 'k' as a field; its variants are left untagged.
+Discriminator 'tag-k' of Model cannot be represented as msgspec tags: a base or derived struct of DashM1, DashM2 keeps 'tag-k' as a field; its variants are left untagged.

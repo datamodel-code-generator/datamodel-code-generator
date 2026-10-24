@@ -810,7 +810,8 @@ def test_main_openapi_discriminator_variant_tag_warnings(
 ) -> None:
     """Warn about variants whose generated tag differs from a tag that a discriminated union maps them to.
 
-    The reused msgspec output is not imported until #4984 is fixed.
+    The reused msgspec variant ``Kitten`` inherits the tag field of ``Cat``, which msgspec refuses beside a tag, so
+    it stays untagged and keeps the field: the module imports.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
@@ -828,8 +829,7 @@ def test_main_openapi_discriminator_variant_tag_warnings(
                 "--formatters",
                 "builtin",
             ],
-            force_exec_validation=(input_name, output_model_type)
-            != ("discriminator_reuse_variant_tags", "msgspec.Struct"),
+            force_exec_validation=True,
         )
     assert_output(
         "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),

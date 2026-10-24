@@ -27,6 +27,7 @@ from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
     ReferenceExpressionHost,
     ReplacedRootsHost,
+    _bases_keep_instance_field,
     _context_models,
     _FieldTagFacts,
     _generic_base_class_module,
@@ -43,6 +44,7 @@ from datamodel_code_generator.reference import Reference
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
     from pathlib import Path
 
     from datamodel_code_generator._model_keys import ModelKey
@@ -158,37 +160,32 @@ def _walks_to_cyclic_ancestry(model: DataModel) -> bool:
     return False
 
 
-def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> list[DataModel]:
+def _redeclared_tag_field(tag_fields: AbstractSet[str], field: DataModelFieldBase) -> str | None:
+    """Return the tag field of a tagged base that a field redeclares, by its Python or its source name, or None."""
+    return redeclared_tag_field(tag_fields, name=field.name, original_name=field.original_name, alias=field.alias)
+
+
+def _tag_fields_of_tagged_bases(models: Iterable[DataModel], builder: GraphBuilder) -> list[DataModel]:
     """Tag the structs that declare the tag field of a tagged base as a field, which msgspec rejects.
 
     A struct inherits the tag of its base, so its single literal becomes its own tag, as for a tagged variant, and a
-    struct with any other such field opts out of the tag to keep the field. Bases of other modules are tagged by then,
-    as every module is processed first, and a base is handled before the structs inheriting from it, as its own tag
-    decides theirs. Inheritance cycles are reported later. Return the structs that opted out.
+    struct with any other such field opts out of the tag to keep the field. A struct whose tag field a base keeps as an
+    instance field opts out too, and its tag field is a field of its own again, as msgspec refuses a tag field that a
+    base declares. Bases of other modules are tagged by then, as every module is processed first, and a base is handled
+    before the structs inheriting from it, as its own tag decides theirs. Inheritance cycles are reported later. Return
+    the structs that opted out.
     """
     pending = {id(model): model for model in models}
     opted_out: list[DataModel] = []
 
-    def tag_fields_of(model: DataModel) -> None:
-        if pending.pop(id(model), None) is None:
-            return
-        if not model.base_classes or _has_cyclic_ancestry(model):
-            return
-        bases = _find_base_classes(model)
-        for base in bases:
-            tag_fields_of(base)
+    def tag_redeclared_fields(model: DataModel, bases: Sequence[DataModel]) -> None:
         if not (tag_fields := {tag[0] for base in bases if (tag := base.discriminator_tag) is not None}):
             return
         tagged_fields = [
             (field, tag_field, field_tag("legacy-literal-only", _FieldTagFacts(field)))
             for field in model.fields
             if not field.extras.get("is_classvar")
-            and (
-                tag_field := redeclared_tag_field(
-                    tag_fields, name=field.name, original_name=field.original_name, alias=field.alias
-                )
-            )
-            is not None
+            and (tag_field := _redeclared_tag_field(tag_fields, field)) is not None
         ]
         if len(tags := [(field, name, tag) for field, name, tag in tagged_fields if tag is not None]) != len(
             tagged_fields
@@ -199,14 +196,38 @@ def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> list[DataModel]:
         for field, tag_field, tag in tags:
             model.apply_discriminator_tag(field, tag_field, tag.value)
 
+    def untag_below_instance_field(model: DataModel) -> None:
+        if (tag := model.discriminator_tag) is None or not _bases_keep_instance_field(model, tag[0]):
+            return
+        for field in model.fields:
+            if field.extras.get("is_classvar") and _redeclared_tag_field({tag[0]}, field) is not None:
+                builder.set_field_extras(
+                    field, {key: value for key, value in field.extras.items() if key != "is_classvar"}
+                )
+                if not field.data_type.literals:
+                    builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
+        model.opt_out_of_inherited_tag()
+        opted_out.append(model)
+
+    def tag_fields_of(model: DataModel) -> None:
+        if pending.pop(id(model), None) is None:
+            return
+        if not model.base_classes or _has_cyclic_ancestry(model):
+            return
+        bases = _find_base_classes(model)
+        for base in bases:
+            tag_fields_of(base)
+        tag_redeclared_fields(model, bases)
+        untag_below_instance_field(model)
+
     while pending:
         tag_fields_of(next(iter(pending.values())))
     return opted_out
 
 
-def tag_fields_of_tagged_bases(run: CrossModuleRun) -> None:
+def tag_fields_of_tagged_bases(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Make the fields of tagged msgspec bases tags, and remember the models that opt out."""
-    run.opted_out = _tag_fields_of_tagged_bases(_context_models(run.contexts))
+    run.opted_out = _tag_fields_of_tagged_bases(_context_models(run.contexts), parser._graph_builder)  # noqa: SLF001
 
 
 def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:

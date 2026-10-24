@@ -1,0 +1,2 @@
+msgspec cannot decode the discriminated union Pet: its Struct types Kitten, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Animal: its Struct types Kitten, Bird are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

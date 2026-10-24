@@ -142,12 +142,13 @@ def test_use_enum_values_in_discriminator_without_member(output_model_type: str,
     assert_output(_verdicts(output_file, output_model_type), name="payloads")
 
 
-@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
 def test_use_enum_values_in_discriminator_const_outside_enum(output_model_type: str, output_file: Path) -> None:
     """Keep the tag field that is the one ``Literal`` of its tag, a ``const`` outside the Enum of its base.
 
     Such a variant never takes members, so its union keeps the discriminator although both variants would share every
-    member of the base Enum.
+    member of the base Enum. A msgspec variant cannot be tagged on a field its base declares, so it stays untagged and
+    keeps the field as the ``Literal`` of its ``const``.
     """
     run_main_and_assert(
         input_path=CONST_OUTSIDE_ENUM_PATH,

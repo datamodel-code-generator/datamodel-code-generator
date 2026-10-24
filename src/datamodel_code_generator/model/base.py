@@ -2530,7 +2530,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Apply an output-specific tagged-union discriminator when supported."""
 
     def opt_out_of_inherited_tag(self) -> None:
-        """Clear an output-specific tagged-union discriminator inherited from a base when supported."""
+        """Clear an output-specific tagged-union discriminator of the model or inherited from a base, when supported."""
 
     def has_keyword_only_definition(self) -> bool:  # noqa: PLR6301
         """Return whether the model already makes inherited fields keyword-only."""

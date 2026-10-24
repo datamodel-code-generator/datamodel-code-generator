@@ -646,7 +646,7 @@ class Struct(DataModel):
 
     @override
     def opt_out_of_inherited_tag(self) -> None:
-        """Clear the tag and tag_field that msgspec makes the struct inherit."""
+        """Clear the tag that msgspec makes the struct inherit, or that it has."""
         self.add_base_class_kwarg("tag", "False")
 
     def _own_tag_options(self, bases: list[tuple[Any, Any]]) -> tuple[Any, Any]:

@@ -1,0 +1,8 @@
+msgspec cannot decode the discriminated union Model.strings: its Struct types StrM1, StrM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.ints: its Struct types IntM1, IntM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.enums: its Struct types EnumM1, EnumM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.optionals: its Struct types OptM1, OptM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.chain: its Struct types ChainM1, ChainM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.derived: its Struct types ChainM1a, ChainM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.mixed: its Struct types MixM1, MixM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Model.one_member: its Struct types OneM1, OneM2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

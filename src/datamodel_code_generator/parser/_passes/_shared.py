@@ -30,6 +30,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_members,
     field_tag,
     mapped_tags,
+    tag_field_kept,
     tag_field_matches,
 )
 from datamodel_code_generator.model.base import (
@@ -1674,6 +1675,26 @@ def _tag_field_matches(
     """Return whether a field holds the discriminator's property ``wanted`` (``tag_field_matches``)."""
     return tag_field_matches(
         match, wanted, name=field.name, original_name=field.original_name, alias=field.alias, python_name=python_name
+    )
+
+
+def _keeps_instance_field(field: DataModelFieldBase, source_name: str) -> bool:
+    """Return whether a field is an instance field that the document names ``source_name`` (``tag_field_kept``)."""
+    return tag_field_kept(
+        source_name,
+        is_class_var=bool(field.extras.get("is_classvar")),
+        name=field.name,
+        original_name=field.original_name,
+        alias=field.alias,
+    )
+
+
+def _bases_keep_instance_field(model: DataModel, source_name: str) -> bool:
+    """Return whether a base of a model, or a base of that, keeps an instance field that the document names so."""
+    return any(
+        _keeps_instance_field(field, source_name)
+        for base_model in _find_base_classes(model)
+        for field in base_model.iter_all_fields()
     )
 
 

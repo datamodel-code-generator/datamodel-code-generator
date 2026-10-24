@@ -3,8 +3,9 @@
 The functions read only their arguments and change none of them (a mapping passed in is read, never copied).
 ``field_tag`` and ``variant_tags`` ask read-only views (``FieldTagFacts``, ``VariantTagFacts``) for the facts their
 rows need, in their order, as an Enum lookup or a variant's mapped tags cost more than the decision. The adapters
-read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_FieldTagFacts``,
-``_get_mapping_discriminator_values``, ``enum_discriminator_literal``, ``enum_discriminator_members``),
+read the facts from the live objects: ``parser/_passes/_shared.py`` (``_tag_field_matches``, ``_keeps_instance_field``,
+``_FieldTagFacts``, ``_get_mapping_discriminator_values``, ``enum_discriminator_literal``,
+``enum_discriminator_members``),
 ``parser/_passes/modules.py`` (``_VariantTagFacts`` and the passes that apply tags), ``parser/jsonschema.py``
 (``_SchemaTagFacts`` behind ``JsonSchemaParser._get_single_literal_value``, ``_get_union_variant_literal_values``,
 ``_get_tagged_union_field_values``, ``_set_tagged_union_discriminator``) and ``model/msgspec.py``
@@ -100,6 +101,7 @@ __all__ = [
     "struct_tag_field",
     "struct_tag_options",
     "struct_tag_refused",
+    "tag_field_kept",
     "tag_field_matches",
     "tag_key",
     "tagged_union_discriminator",
@@ -271,6 +273,19 @@ def tag_field_matches(  # noqa: PLR0913
             return original_name == wanted or (original_name is None and name == python_name)
         case _:  # pragma: no cover
             return assert_never(mode)
+
+
+def tag_field_kept(
+    source_name: str, /, *, is_class_var: bool, name: str | None, original_name: str | None, alias: str | None
+) -> bool:
+    """Return whether a field is an instance field that the document names ``source_name``, which msgspec refuses.
+
+    msgspec refuses a tag field that a struct or one of its bases declares as a field. A class variable is none, as the
+    field of a tagged struct is, and the field is found by the name the document gives it (``tag_field_matches``).
+    """
+    return not is_class_var and tag_field_matches(
+        "source-name", source_name, name=name, original_name=original_name, alias=alias
+    )
 
 
 def redeclared_tag_field(

@@ -100,6 +100,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _is_pydantic_v2_root_model,
     _iter_discriminator_data_types,
     _iter_import_bindings,
+    _keeps_instance_field,
     _ModelPositions,
     _named_data_types,
     _parsed_rule_data_types,
@@ -1196,9 +1197,7 @@ def _has_related_instance_field(
 ) -> bool:
     """Return whether a base or derived struct keeps an instance field of that name once the unions are tagged."""
     return any(
-        id(field) not in tagged_fields
-        and not field.extras.get("is_classvar")
-        and _tag_field_matches(field, "source-name", source_name)
+        id(field) not in tagged_fields and _keeps_instance_field(field, source_name)
         for field in chain(
             (field for base_model in _find_base_classes(model) for field in base_model.iter_all_fields()),
             _iter_derived_fields(model, derived_models, _ModelKeys("derived fields")),

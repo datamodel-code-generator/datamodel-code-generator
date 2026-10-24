@@ -732,7 +732,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
         (
             PassSpec(
                 decls.TAG_FIELDS_OF_TAGGED_BASES,
-                lambda _, run: cross_module.tag_fields_of_tagged_bases(run),
+                cross_module.tag_fields_of_tagged_bases,
                 when=lambda self, _: self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR,
                 checked_models=lambda _, run: _context_models(run.contexts),
             ),

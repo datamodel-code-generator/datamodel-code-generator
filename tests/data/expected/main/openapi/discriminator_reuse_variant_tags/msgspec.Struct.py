@@ -13,8 +13,8 @@ class Cat(Struct):
     name: str | UnsetType = UNSET
 
 
-class Kitten(Cat, tag_field='kind', tag='cat'):
-    pass
+class Kitten(Cat, tag_field='kind', tag=False):
+    kind: Literal['cat']
 
 
 class Dog(Struct, tag_field='kind', tag='dog'):
