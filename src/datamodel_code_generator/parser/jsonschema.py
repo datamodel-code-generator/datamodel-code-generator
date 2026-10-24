@@ -4355,15 +4355,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         detect_inline_variant: bool,
         types_map: bool,
-        types_extras: bool,
+        extras: JsonSchemaObject | bool | None,
     ) -> Iterator[tuple[JsonSchemaObject, bool, bool]]:
         """Yield the children ``parse_item`` types, whether their inline models are generated and whether they merge.
 
         The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, those of
-        additionalProperties only where ``types_extras``, and additionalItems only beside tuple-style items, as array
-        parsing reads them (``_get_list_item_schemas``). A child typed by a customTypePath names no model
-        (``_site_writes_custom_type``).
+        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them, the
+        additionalProperties the model types are ``extras``, and additionalItems are children only beside tuple-style
+        items, as array parsing reads them (``_get_list_item_schemas``). A child typed by a customTypePath names no
+        model (``_site_writes_custom_type``).
         """
 
         def site(item: object) -> TypeGuard[JsonSchemaObject]:
@@ -4388,8 +4388,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 yield from ((item, detect_inline_variant, False) for item in items if site(item))
                 if site(schema.additionalItems):
                     yield schema.additionalItems, detect_inline_variant, False
-        if types_extras and site(schema.additionalProperties):
-            yield schema.additionalProperties, detect_inline_variant, False
+        if site(extras):
+            yield extras, detect_inline_variant, False
         yield from (
             (item, detect_inline_variant, False)
             for item in chain(schema.prefixItems or (), schema.oneOf, schema.anyOf)
@@ -4438,11 +4438,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         type the values and keys of an object map, propertyNames only where no patternProperties give the keys; a
         schema with properties or allOf, and each inline allOf member merged into it, builds a model whose fields hold
         properties alone, so its map keywords type nothing. additionalProperties are typed by ``parse_item`` where the
-        model is a map (``_schema_builds_map_model``) or pydantic writes its typed extra field. TypedDict also records
-        those of the key's model and of each inline model with fields as their extra_items type
-        (``set_additional_properties``); that type generates no model, so the walk takes the models it names
-        (``_extra_items_type_reference_paths``), and the model splits where one has variants. Those of an inline allOf
-        member type something only where the allOf merges into a map.
+        model is a map (``_schema_builds_map_model``); a model with fields types those its builder types beside them
+        (``_rw_typed_additional_properties``). TypedDict also records those of the key's model and of each inline model
+        with fields as their extra_items type (``set_additional_properties``); that type generates no model, so the walk
+        takes the models it names (``_extra_items_type_reference_paths``), and the model splits where one has variants.
+        Those of an inline allOf member type something only where the allOf merges into a map.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4466,17 +4466,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 schema, model_schema = self._merged_ref_model_schemas(schema, resolved_ref)
                 builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
                 types_map = not (model_schema.properties or model_schema.allOf)
-                types_extras = builds_map or self.data_model_type.TYPED_EXTRA_FIELD_NAME is not None
+                extras = (
+                    schema.additionalProperties
+                    if builds_map
+                    else self._rw_typed_additional_properties(schema, model_schema, resolved_ref)
+                )
                 if (
                     (is_key_model or not builds_map)
                     and self._writes_extra_items_type
-                    and isinstance(extras := model_schema.additionalProperties, JsonSchemaObject)
+                    and isinstance(extra_items := model_schema.additionalProperties, JsonSchemaObject)
                 ):
                     with self._inherited_ref_context(resolved_ref):
-                        references.update(dict.fromkeys(self._extra_items_type_reference_paths(extras)))
+                        references.update(dict.fromkeys(self._extra_items_type_reference_paths(extra_items)))
             else:
                 model_schema = schema
-                builds_map = types_extras = merged_into_map
+                builds_map = merged_into_map
+                extras = schema.additionalProperties if merged_into_map else None
                 types_map = False
             if (
                 detect_inline_variant
@@ -4504,11 +4509,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     resolved_ref,
                     detect_inline_variant=detect_inline_variant,
                     types_map=types_map,
-                    types_extras=types_extras,
+                    extras=extras,
                 )
             )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
+
+    def _rw_typed_additional_properties(
+        self, schema: JsonSchemaObject, model_schema: JsonSchemaObject, defining_ref: str
+    ) -> JsonSchemaObject | bool | None:
+        """Return the additionalProperties the model with fields built from ``model_schema`` types beside them.
+
+        The patternProperties rules of --generate-schema-validators type the value that
+        ``_pattern_rule_additional_properties`` picks; otherwise the typed extra field types those of the model, where
+        ``_typed_extra_field_schema`` writes it. Those of the model are read from ``schema``, like its other children.
+        """
+        with self._inherited_ref_context(defining_ref):
+            if self._has_pattern_properties_validator(model_schema):
+                if (rule_extras := self._pattern_rule_additional_properties(model_schema)) is None:
+                    return None
+                _, source, value = rule_extras
+                return schema.additionalProperties if source is model_schema else value
+            if self._typed_extra_field_schema(model_schema) is None:
+                return None
+        return schema.additionalProperties
 
     def _site_writes_custom_type(self, schema: JsonSchemaObject, defining_ref: str) -> bool:
         """Return whether ``parse_item`` types a site of ``schema`` by its customTypePath, which names no model.
@@ -11515,14 +11539,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[list[tuple[str, DataType]], list[str], DataType | None, bool]:
         pattern_value_types: list[tuple[str, DataType]] = []
         rejected_patterns: list[str] = []
-        additional_property: tuple[int, JsonSchemaObject, JsonSchemaObject] | None = None
         allow_unmatched = True
 
         for source_index, source in enumerate(self._iter_schema_validation_sources(obj)):
             if source.additionalProperties is False or source.unevaluatedProperties is False:
                 allow_unmatched = False
-            if isinstance(source.additionalProperties, JsonSchemaObject) and additional_property is None:
-                additional_property = (source_index, source, source.additionalProperties)
             if not source.patternProperties:
                 continue
             for pattern_index, (pattern, schema) in enumerate(source.patternProperties.items()):
@@ -11552,7 +11573,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if not pattern_value_types and not rejected_patterns:
             return pattern_value_types, rejected_patterns, None, allow_unmatched
-        if additional_property is None:
+        if (additional_property := self._pattern_rule_additional_properties(obj)) is None:
             return pattern_value_types, rejected_patterns, None, allow_unmatched
 
         source_index, source, additional_properties = additional_property
@@ -11565,6 +11586,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constrained_name=additional_property_name,
         )
         return pattern_value_types, rejected_patterns, additional_property_type, allow_unmatched
+
+    def _pattern_rule_additional_properties(
+        self, obj: JsonSchemaObject
+    ) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | None:
+        """Return the index, schema and value of the additionalProperties the patternProperties rules of ``obj`` type.
+
+        They are the first schema-valued additionalProperties of ``obj`` and its allOf sources
+        (``_iter_schema_validation_sources``).
+        """
+        for index, source in enumerate(self._iter_schema_validation_sources(obj)):
+            if isinstance(additional_properties := source.additionalProperties, JsonSchemaObject):
+                return index, source, additional_properties
+        return None
 
     @staticmethod
     def _plain_pattern_value_type(schema: object, *, allow_minimum: bool = False) -> str | None:
@@ -13012,18 +13046,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> DataModelFieldBase | None:
-        """Build the output model's typed extra field for schema-valued extras."""
-        if (
-            self.data_model_type.TYPED_EXTRA_FIELD_NAME is None
-            or not isinstance(obj.additionalProperties, JsonSchemaObject)
-            or self._has_pattern_properties_validator(obj)
-        ):
-            return None
-
-        additional_props = obj.additionalProperties
-        if additional_props.has_ref_with_schema_keywords and not additional_props.is_ref_with_nullable_only:
-            additional_props = self._merge_ref_with_schema(additional_props)
-        if additional_props.allOf and self._contains_false_schema(additional_props.allOf):
+        """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``)."""
+        if (additional_props := self._typed_extra_field_schema(obj)) is None:
             return None
         additional_props = self._add_nullable_combined_schema_branches(additional_props)
         additional_property_name = f"{class_name}AdditionalProperty"
@@ -13048,6 +13072,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 dict_key=dict_key,
             ),
         )
+
+    def _typed_extra_field_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the additionalProperties schema the typed extra field of the model built from ``obj`` types.
+
+        None where the output model has no typed extra field, additionalProperties is no schema, the patternProperties
+        rules of --generate-schema-validators type it (``_pattern_rule_additional_properties``) or it is an allOf with a
+        false schema. A $ref with sibling keywords is read merged with them.
+        """
+        if (
+            self.data_model_type.TYPED_EXTRA_FIELD_NAME is None
+            or not isinstance(additional_props := obj.additionalProperties, JsonSchemaObject)
+            or self._has_pattern_properties_validator(obj)
+        ):
+            return None
+        if additional_props.has_ref_with_schema_keywords and not additional_props.is_ref_with_nullable_only:
+            additional_props = self._merge_ref_with_schema(additional_props)
+        if additional_props.allOf and self._contains_false_schema(additional_props.allOf):
+            return None
+        return additional_props
 
     @cached_property
     def _nested_constrained_model_type(self) -> type[DataModel]:

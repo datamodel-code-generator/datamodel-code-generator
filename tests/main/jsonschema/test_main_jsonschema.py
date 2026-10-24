@@ -27670,6 +27670,58 @@ def test_main_read_only_write_only_extra_items_type(output_file: Path, dedupe_ar
             msgspec.json.decode(json.dumps(invalid), type=model)
 
 
+@pytest.mark.parametrize(
+    "validator_args",
+    [pytest.param(["--generate-schema-validators"], id="validators"), pytest.param([], id="plain")],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_typed_extras(
+    output_file: Path, dedupe_args: list[str], validator_args: list[str]
+) -> None:
+    """Split a pydantic model exactly where the type it writes for its additionalProperties names a split model.
+
+    The additionalProperties of ``Closed`` and ``ClosedBesideRef`` are an allOf with a false schema, so they get no
+    typed extra field and keep one class as without request-response. ``Open`` splits with its typed extra field.
+    ``Member`` splits only where the patternProperties rules of --generate-schema-validators type the
+    additionalProperties of its allOf member.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_typed_extras.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            *validator_args,
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {
+        "closed": {"name": "n"},
+        "closedBesideRef": {"name": "n"},
+        "open": {"name": "n", "k": {"name": "x"}},
+        "member": {"k": {"name": "x"}},
+    }
+    invalid = {"open": {"k": {"name": 1}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    with _generated_model(output_file, "rw_typed_extras", "ModelRequest") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(valid))
+        with pytest.raises(ValidationError):
+            validate(json.dumps(invalid))
+
+
 @pytest.mark.parametrize("flag", ["check", "report"])
 def test_schema_graph_check_of_read_write_splits(
     monkeypatch: pytest.MonkeyPatch,
