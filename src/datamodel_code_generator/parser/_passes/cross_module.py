@@ -26,6 +26,7 @@ from datamodel_code_generator.model.base import (
     _keyed_answer,
     _model_key_of_model,
 )
+from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
@@ -54,7 +55,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-    from datamodel_code_generator.model.enum import Enum
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextFields,
         ModuleContextView,
@@ -245,9 +245,12 @@ def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRu
     for model in _context_models(run.contexts):
         for field in model.fields:
             data_type = field.data_type
-            if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
+            if (
+                (reference := data_type._enum_member_literal_reference) is None  # noqa: SLF001
+                or data_type.alias
+                or not isinstance(enum := reference.source, Enum)
+            ):
                 continue
-            enum = cast("Enum", reference.source)
             member_values = {member.name: enum.get_member(member).value for member in enum.fields}
             values = [member_values[member] for _, member in data_type.enum_member_literals]
             if enum_tag_as_values(values, bool_literals=parser.data_model_type.SUPPORTS_BOOLEAN_LITERAL):
