@@ -683,8 +683,9 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     writes=_facts(Fact.DISCRIMINATOR_TAGS),
     summary=(
         "After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has "
-        "no tag, which a union of any module may still write into it, nor for a union that takes a root model, or a "
-        "type alias, with a default as a variant."
+        "no tag, which a union of any module may still write into it, nor for a lone variant that is no model (a "
+        "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a "
+        "root model, or a type alias, with a default as a variant."
     ),
     condition="the output fields write `discriminator=`",
 )

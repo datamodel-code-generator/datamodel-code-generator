@@ -1367,10 +1367,10 @@ def _iter_nested_discriminator_variants(
 def _is_lone_variant(field: DataModelFieldBase) -> bool:
     """Return whether a field's type names the one variant of a union that ``discriminator=`` is written for.
 
-    Its type is the ``$ref`` itself, so there is no list of variants to read, and the variant is read like one that a
-    nested choice gives the union.
+    Its type is the variant itself, a ``$ref`` or a type that is no model at all, so there is no list of variants to
+    read, and the variant is read like one that a nested choice gives the union.
     """
-    return field.SUPPORTS_DISCRIMINATOR and not field.data_type.data_types and field.data_type.reference is not None
+    return field.SUPPORTS_DISCRIMINATOR and not field.data_type.data_types
 
 
 def _is_enum_tag(tag_field: DataModelFieldBase) -> bool:
@@ -3191,6 +3191,9 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     root models, has no tag field of ``Literal`` values. A union of any module may still tag the variant, so a
     variant without a tag is final only once every module is processed.
 
+    Pydantic rejects the one variant as well where it is no model at all: a scalar, ``Any`` or None, which
+    ``--collapse-root-models`` leaves in the field in place of a scalar alias, or which the schema writes inline.
+
     Pydantic rejects as well a union that takes as a variant a root model, or a type alias, whose root has a default,
     however deep the root models it names reach: the default makes the schema of the root a ``default`` schema, which
     no tagged union holds.
@@ -3209,7 +3212,10 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                         )
                         if (
                             lone
-                            and not all(_variant_carries_tag(data_type, property_name) for data_type, _, _ in variants)
+                            and not (
+                                any(data_type.reference for data_type, _, _ in variants)
+                                and all(_variant_carries_tag(data_type, property_name) for data_type, _, _ in variants)
+                            )
                         ) or any(map(_root_writes_default, wrappers)):
                             parser._graph_builder.drop_field_discriminator(field)  # noqa: SLF001
 

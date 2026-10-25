@@ -4,10 +4,17 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
 
 @dataclass
+class Tag:
+    kind: Literal['a']
+
+
+@dataclass
 class Model:
-    tagged: str | None = Field(None, discriminator='kind')
+    tagged: Tag | None = Field(None, discriminator='kind')

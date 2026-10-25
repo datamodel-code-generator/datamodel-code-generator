@@ -4,8 +4,14 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
+class Tag(BaseModel):
+    kind: Literal['a']
+
+
 class Model(BaseModel):
-    tagged: str | None = Field(None, discriminator='kind')
+    tagged: Tag | None = Field(None, discriminator='kind')

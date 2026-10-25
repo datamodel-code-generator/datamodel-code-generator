@@ -3806,6 +3806,68 @@ def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) ->
 
 
 @pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--collapse-root-models"]),
+        ("pydantic_v2.BaseModel", ["--collapse-root-models", "--use-annotated"]),
+        ("pydantic_v2.dataclass", ["--collapse-root-models"]),
+    ],
+)
+def test_main_jsonschema_discriminator_lone_scalar_variant(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write no ``discriminator`` for a union whose one variant is no model, which Pydantic rejects as a variant.
+
+    Up to 0.86.0 the output kept ``discriminator`` where the variant is a scalar alias that ``--collapse-root-models``
+    replaces by its type (``str``, ``int``, ``None``, ``Any``), or a scalar written inline, so importing the module
+    raised ``TypeError`` (a Pydantic dataclass failed when its type alias was first used). A variant that is a model
+    with a tag keeps it. The verdicts of each payload are the generated models', and the schema's decides whether the
+    payload is valid.
+    """
+    input_name = "discriminator_lone_scalar_variant"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    document = json.loads((JSON_SCHEMA_DATA_PATH / f"{input_name}.json").read_text(encoding="utf-8"))
+
+    def schema_decides(validator: Draft202012Validator, kind: str, payload: object) -> None:
+        if kind == "valid":
+            validator.validate(payload)
+        else:
+            with pytest.raises(SchemaValidationError):
+                validator.validate(payload)
+
+    verdicts = []
+    for model_name, cases in json.loads((DATA_PATH / "payloads" / f"{input_name}.json").read_text()).items():
+        validator = Draft202012Validator({**document, "$ref": f"#/$defs/{model_name}"})
+        with _generated_model(output_file, input_name, model_name) as model:
+            validate = _model_json_validator(model)
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                schema_decides(validator, kind, payload)
+                try:
+                    validate(json.dumps(payload))
+                except ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{model_name} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+@pytest.mark.parametrize(
     ("input_name", "backend", "options", "expected_name", "child_module", "field_name"),
     [
         pytest.param(

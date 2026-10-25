@@ -1,7 +1,8 @@
 {
+  "$defs": {"Tag": {"type": "object", "properties": {"kind": {"const": "a"}}, "required": ["kind"]}},
   "type": "object",
   "title": "Model",
   "properties": {
-    "tagged": {"type": "string", "x-discriminator": {"propertyName": "kind"}}
+    "tagged": {"$ref": "#/$defs/Tag", "x-discriminator": {"propertyName": "kind"}}
   }
 }

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Name": {"type": "string"},
+    "Count": {"type": "integer"},
+    "Nothing": {"type": "null"},
+    "Anything": {},
+    "Alias": {"$ref": "#/$defs/Name"},
+    "Tagged": {
+      "type": "object",
+      "properties": {"type": {"const": "tagged"}},
+      "required": ["type"]
+    },
+    "LoneName": {
+      "oneOf": [{"$ref": "#/$defs/Name"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneCount": {
+      "oneOf": [{"$ref": "#/$defs/Count"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneNothing": {
+      "oneOf": [{"$ref": "#/$defs/Nothing"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneAnything": {
+      "oneOf": [{"$ref": "#/$defs/Anything"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneAlias": {
+      "oneOf": [{"$ref": "#/$defs/Alias"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneInline": {
+      "oneOf": [{"type": "string"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneTagged": {
+      "oneOf": [{"$ref": "#/$defs/Tagged"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "name": {"$ref": "#/$defs/LoneName"},
+        "inline": {"oneOf": [{"type": "string"}], "discriminator": {"propertyName": "type"}},
+        "tagged": {"$ref": "#/$defs/LoneTagged"}
+      }
+    }
+  }
+}

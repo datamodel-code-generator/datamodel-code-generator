@@ -1,0 +1,29 @@
+{
+  "LoneCount": {
+    "valid": [3, 0],
+    "invalid": ["x", 1.5, null]
+  },
+  "LoneNothing": {
+    "valid": [null],
+    "invalid": ["x", 0]
+  },
+  "LoneAnything": {
+    "valid": [1, "x", null, {}, [1]]
+  },
+  "LoneAlias": {
+    "valid": ["abc"],
+    "invalid": [1, null, {}]
+  },
+  "LoneInline": {
+    "valid": ["abc"],
+    "invalid": [1, null]
+  },
+  "LoneTagged": {
+    "valid": [{"type": "tagged"}],
+    "invalid": [{"type": "other"}, {}, "x"]
+  },
+  "Holder": {
+    "valid": [{}, {"name": "abc", "inline": "abc", "tagged": {"type": "tagged"}}],
+    "invalid": [{"name": 1}, {"inline": 1}, {"tagged": {"type": "other"}}]
+  }
+}
