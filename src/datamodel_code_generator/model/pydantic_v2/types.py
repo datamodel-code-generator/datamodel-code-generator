@@ -207,7 +207,7 @@ HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 
 
 def _get_regex_literal(pattern: str) -> str:
-    """Render a pattern as a raw string literal that reads back as the same regex.
+    r"""Render a pattern as a raw string literal that reads back as the same regex.
 
     A raw literal cannot escape its own quote (``r'\\''`` keeps the backslash), so the
     quote is chosen from those the pattern does not contain. A pattern holding both
