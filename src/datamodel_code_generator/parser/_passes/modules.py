@@ -3178,13 +3178,9 @@ def _root_writes_default(wrapper: DataModel) -> bool:
     call_default = call is not None and (
         call.factory is not None or (call.positional is not None and call.positional.kind == "default")
     )
-    match (wrapper.IS_ALIAS, wrapper.IS_ROOT_MODEL):
-        case (True, True):
-            return False
-        case (True, False):
-            return call_default
-        case _:
-            return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
+    if wrapper.IS_ALIAS:
+        return call_default and not wrapper.IS_ROOT_MODEL
+    return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
 
 
 def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
