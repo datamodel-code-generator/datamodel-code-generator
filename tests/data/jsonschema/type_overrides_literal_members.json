@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TypeOverridesLiteralMembers",
+  "type": "object",
+  "required": [
+    "ratio",
+    "status",
+    "statuses",
+    "port"
+  ],
+  "properties": {
+    "ratio": {
+      "type": "number",
+      "minimum": 0
+    },
+    "status": {
+      "type": "integer"
+    },
+    "statuses": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "port": {
+      "type": "integer"
+    }
+  }
+}

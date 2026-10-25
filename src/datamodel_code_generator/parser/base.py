@@ -933,6 +933,11 @@ def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_cod
         return body
 
 
+def _override_path(override_import: Import) -> str:
+    """Return the path a ``--type-overrides`` value spells, which its import splits at the last dot."""
+    return f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
+
+
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     """Abstract base class for schema parsers.
 
@@ -1987,28 +1992,40 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         data_type = _copy_data_type(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
-        path = (
-            f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
-        )
+        path = _override_path(override_import)
         if data_type.kwargs and is_known_python_type_path(path, self.target_python_version.version_key):
             data_type.kwargs = None
+        self._record_overridden_constraints(field, keeps_top_kwargs=data_type.kwargs is not None)
+        self._decide_overridden_constraints(
+            field,
+            partial(self.data_type_manager.type_constraint_keywords, path, self.target_python_version.version_key),
+        )
+        self._graph_builder.replace_field_type(field, data_type)
+        self._graph_builder.detach_data_type_ref(field.data_type)
+        self._graph_builder.set_nested_data_types(field.data_type, [])
+
+    def _record_overridden_constraints(self, field: DataModelFieldBase, *, keeps_top_kwargs: bool) -> None:
+        """Remember how many ``con*`` arguments the override of a field drops, to warn about them.
+
+        The ``con*`` call of the field's own type stays where ``keeps_top_kwargs``; those of its nested types leave.
+        """
         if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS and (
             dropped := [
                 name
                 for nested in field.data_type.all_data_types
-                if nested is not field.data_type or data_type.kwargs is None
+                if nested is not field.data_type or not keeps_top_kwargs
                 for name in nested.kwargs or ()
                 if name != "strict"
             ]
         ):
             field.record_overridden_constraints(field.data_type.type_hint, len(dropped))
-        self._decide_overridden_constraints(field, path)
-        self._graph_builder.replace_field_type(field, data_type)
-        self._graph_builder.detach_data_type_ref(field.data_type)
-        self._graph_builder.set_nested_data_types(field.data_type, [])
 
-    def _decide_overridden_constraints(self, field: DataModelFieldBase, path: str) -> None:
-        """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
+    def _decide_overridden_constraints(
+        self, field: DataModelFieldBase, keywords: Callable[..., frozenset[str]]
+    ) -> None:
+        """Keep the constraints that the emitted type decides only when the override type takes them.
+
+        ``keywords`` returns what that type takes, as ``DataTypeManager.type_constraint_keywords`` does for its path.
 
         An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
         declared number and the string constraints the replaced type left out this way, and remembers the ones it
@@ -2032,22 +2049,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         if not type_dependent and not declared:
             return
-        target = self.target_python_version.version_key
         values, untaken = resplit_overridden_constraints(
             values,
             type_dependent=type_dependent,
             declared=declared,
-            taken=self.data_type_manager.type_constraint_keywords(path, target),
-            declared_taken=self.data_type_manager.type_constraint_keywords(
-                path, target, number_values=True, target_model_version=self.target_pydantic_version
-            ),
+            taken=keywords(),
+            declared_taken=keywords(number_values=True, target_model_version=self.target_pydantic_version),
         )
         self._mark_untaken_constraints(
-            field,
-            untaken,
-            lambda minimum: self.data_type_manager.type_constraint_keywords(
-                path, target, number_values=True, target_model_version=minimum
-            ),
+            field, untaken, lambda minimum: keywords(number_values=True, target_model_version=minimum)
         )
         self._graph_builder.set_field_constraints(
             field, type(constraints).model_validate(values) if is_model else values

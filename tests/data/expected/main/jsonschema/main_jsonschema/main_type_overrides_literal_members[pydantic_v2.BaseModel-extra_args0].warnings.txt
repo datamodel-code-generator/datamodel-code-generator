@@ -1,0 +1,1 @@
+--type-overrides writes Literal[0.5, 1.5] in place of confloat(ge=0.0); TypeOverridesLiteralMembers.ratio is generated without this constraint.

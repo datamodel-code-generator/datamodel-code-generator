@@ -1,0 +1,9 @@
+valid {"integer_values": 1, "string_values": "x", "nullable_values": null, "values": []}: accepted
+valid {"integer_values": 2, "string_values": "y", "nullable_values": 3, "optional_value": "a", "amount": "1.5", "values": [1, 2]}: accepted
+valid {"integer_values": 2, "string_values": "y", "nullable_values": 3, "optional_value": null, "values": [2]}: accepted
+invalid {"integer_values": 3, "string_values": "x", "nullable_values": null, "values": []}: rejected
+invalid {"integer_values": 1, "string_values": "z", "nullable_values": null, "values": []}: rejected
+invalid {"integer_values": 1, "string_values": "x", "nullable_values": 4, "values": []}: rejected
+invalid {"integer_values": 1, "string_values": "x", "nullable_values": null, "optional_value": "b", "values": []}: rejected
+invalid {"integer_values": 1, "string_values": "x", "nullable_values": null, "values": [3]}: rejected
+invalid {"integer_values": 1, "string_values": "x", "nullable_values": null, "amount": "many", "values": []}: rejected

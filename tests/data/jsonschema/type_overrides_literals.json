@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TypeOverridesLiterals",
+  "type": "object",
+  "required": [
+    "integer_values",
+    "string_values",
+    "nullable_values",
+    "values"
+  ],
+  "properties": {
+    "integer_values": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "string_values": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5
+    },
+    "nullable_values": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "optional_value": {
+      "type": "string"
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "amount": {
+      "type": "number"
+    }
+  }
+}

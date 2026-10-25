@@ -6536,6 +6536,153 @@ def test_main_x_python_type_literal_enum_members(output_file: Path, expected_fil
     )
 
 
+_TYPE_OVERRIDES_LITERALS = {
+    "TypeOverridesLiterals.integer_values": "typing.Literal[1, 2]",
+    "TypeOverridesLiterals.string_values": "typing.Literal['x', 'y']",
+    "TypeOverridesLiterals.nullable_values": "typing.Literal[3]",
+    "TypeOverridesLiterals.optional_value": "typing.Optional[typing.Literal['a']]",
+    "TypeOverridesLiterals.values": "list[typing.Literal[1, 2]]",
+    "TypeOverridesLiterals.amount": "decimal.Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("pydantic_v2.BaseModel", ["--use-annotated"]),
+        ("pydantic_v2.dataclass", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("typing.TypedDict", []),
+        ("msgspec.Struct", []),
+        ("msgspec.Struct", ["--use-annotated"]),
+    ],
+)
+def test_main_type_overrides_literal_annotations(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write a field override that is an annotation, such as ``typing.Literal[1, 2]``, as ``x-python-type`` writes it.
+
+    Up to 0.86.0 the value was split at its last dot as a class path, so the module imported ``Literal[1, 2]`` from
+    ``typing`` and failed to import. The field is now the annotation, imported by the names it holds, and keeps the
+    keywords that annotation takes: msgspec writes no ``Meta`` on a ``Literal``, and a list of them takes none of the
+    item keywords. The verdicts of each payload are the generated models'; the override, not the schema, decides them.
+    A ``typing.TypedDict`` is not validated: Pydantic builds one only from ``typing_extensions`` before Python 3.12.
+    """
+    name = "type_overrides_literals"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                *extra_args,
+                "--type-overrides",
+                json.dumps(_TYPE_OVERRIDES_LITERALS),
+                "--target-python-version",
+                "3.11",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "Literal" in str(warning.message)),
+        name="warnings",
+    )
+    if output_model == "typing.TypedDict":
+        return
+    error_type: type[Exception] = msgspec.ValidationError
+    verdicts = []
+    with _generated_model(output_file, name, "TypeOverridesLiterals") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        if output_model != "msgspec.Struct":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for kind, payloads in json.loads((DATA_PATH / "payloads" / f"{name}.json").read_text()).items():
+            for payload in payloads:
+                try:
+                    validate(json.dumps(payload))
+                except error_type:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+_TYPE_OVERRIDES_LITERAL_MEMBERS = {
+    "TypeOverridesLiteralMembers.ratio": "typing.Literal[0.5, 1.5]",
+    "TypeOverridesLiteralMembers.status": "typing.Literal[http.HTTPStatus.OK]",
+    "TypeOverridesLiteralMembers.statuses": "list[typing.Literal[http.HTTPStatus.OK, http.HTTPStatus.CREATED]]",
+    "TypeOverridesLiteralMembers.port": "typing.Literal[http.client.HTTP_PORT]",
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("pydantic_v2.dataclass", ["--field-constraints"]),
+        ("dataclasses.dataclass", []),
+        ("typing.TypedDict", []),
+    ],
+)
+def test_main_type_overrides_literal_members(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Write a field override whose ``Literal`` holds floats or dotted members as ``x-python-type`` writes it.
+
+    Up to 0.86.0 a float value split the override at its dot, so the field read ``5]``, and a dotted member such as
+    ``http.HTTPStatus.OK`` imported ``OK`` from ``http.HTTPStatus``. A member is now written as ``HTTPStatus.OK`` and
+    the class or submodule that holds it is imported, as for ``x-python-type``. msgspec is left out: its ``Literal``
+    holds no float and no enum member, which fails its decoding of the whole class, as the same ``x-python-type`` does.
+    A ``typing.TypedDict`` is not validated: Pydantic builds one only from ``typing_extensions`` before Python 3.12.
+    """
+    name = "type_overrides_literal_members"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                *extra_args,
+                "--type-overrides",
+                json.dumps(_TYPE_OVERRIDES_LITERAL_MEMBERS),
+                "--target-python-version",
+                "3.11",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "Literal" in str(warning.message)),
+        name="warnings",
+    )
+    if output_model == "typing.TypedDict":
+        return
+    verdicts = []
+    with _generated_model(output_file, name, "TypeOverridesLiteralMembers") as model:
+        validate = _model_json_validator(model)
+        for kind, payloads in json.loads((DATA_PATH / "payloads" / f"{name}.json").read_text()).items():
+            for payload in payloads:
+                try:
+                    validate(json.dumps(payload))
+                except ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(

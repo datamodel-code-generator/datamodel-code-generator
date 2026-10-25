@@ -207,6 +207,7 @@ from datamodel_code_generator.parser.base import (
     _copy_data_type,  # noqa: F401  # Preserve the existing parser helper export.
     _copy_resolved_inherited_field,  # noqa: F401  # Preserve the existing parser helper export.
     _get_inherited_type_modifiers,
+    _override_path,
     get_special_path,
     title_to_class_name,
 )
@@ -873,6 +874,15 @@ def _get_json_value_type(value: object) -> str:
         case _:
             pass
     return value_type
+
+
+def _parse_override_annotation(value: str) -> PythonTypeExpr | None:
+    """Return the annotation a ``--type-overrides`` value spells, or None when it is no annotation."""
+    from datamodel_code_generator._python_type_annotation_codec import (  # noqa: PLC0415
+        parse_python_type_annotation,
+    )
+
+    return parse_python_type_annotation(value)
 
 
 def _qualified_python_type_import(qualified_name: str) -> Import:
@@ -5842,6 +5852,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return BoundPythonType(
             rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports)
         )
+
+    @override
+    def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
+        """Replace the type of a field by a ``--type-overrides`` value, an annotation such as ``typing.Literal[1, 2]``.
+
+        A value with brackets names no class. It is written as ``x-python-type`` writes it, with the imports of its
+        names and the keywords that type takes, and drops the arguments of every ``con*`` call the field held; the
+        field keeps the None its schema admits.
+        """
+        path = _override_path(override_import)
+        expression = _parse_override_annotation(path) if "[" in path else None
+        if expression is None:
+            super()._apply_override_to_field(field, override_import)
+            return
+        from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
+
+        bound_type = self._bind_python_type(expression)
+        data_type = self.data_type(
+            type=render_python_type_expr(bound_type.expression),
+            python_type=bound_type,
+            is_optional=field.data_type.is_optional,
+        )
+        self._record_overridden_constraints(field, keeps_top_kwargs=False)
+        self._decide_overridden_constraints(
+            field,
+            partial(self.data_type_manager.constraint_keywords, data_type, self.target_python_version.version_key),
+        )
+        self._graph_builder.replace_field_type(field, data_type)
 
     def _get_python_type_override(self, obj: JsonSchemaObject) -> DataType | None:
         """Get DataType from x-python-type if it's incompatible with schema type."""
