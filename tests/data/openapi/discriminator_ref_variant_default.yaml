@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Discriminated unions that take a $ref with the default of its schema as a variant
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        type:
+          const: cat
+      required:
+        - type
+    Dog:
+      type: object
+      properties:
+        type:
+          const: dog
+      required:
+        - type
+    Bird:
+      type: object
+      properties:
+        type:
+          const: bird
+      required:
+        - type
+    DogDefault:
+      $ref: "#/components/schemas/Dog"
+      default:
+        type: dog
+    ChainedDogDefault:
+      $ref: "#/components/schemas/DogDefault"
+    Pets:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/DogDefault"
+          discriminator:
+            propertyName: type
+    ChainedPets:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/ChainedDogDefault"
+          discriminator:
+            propertyName: type
+    PetList:
+      type: object
+      properties:
+        pets:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/Cat"
+              - $ref: "#/components/schemas/DogDefault"
+            discriminator:
+              propertyName: type
+    PlainPets:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Bird"
+          discriminator:
+            propertyName: type

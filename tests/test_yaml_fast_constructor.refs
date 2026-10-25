@@ -222,6 +222,7 @@ openapi/discriminator_pattern.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern_mismatch.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern_nested_choices.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_read_write_variant_tags.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_ref_variant_default.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_reuse_same_tags.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_reuse_tree_mappings.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_reuse_tree_same_tags.yaml	yaml_fast_constructor/parity.txt

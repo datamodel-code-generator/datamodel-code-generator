@@ -10332,6 +10332,35 @@ ALIAS_DEFAULT_WARNING = pytest.mark.filterwarnings("ignore:.*which has no effect
             "pydantic_v2.BaseModel",
             ["--force-optional", "--strip-default-none"],
         ),
+        ("discriminator_ref_variant_default", "pydantic_v2.BaseModel", ["--use-type-alias"]),
+        ("discriminator_ref_variant_default", "pydantic_v2.BaseModel", ["--force-optional"]),
+        pytest.param(
+            "discriminator_ref_variant_default",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-type-alias"],
+            marks=ALIAS_DEFAULT_WARNING,
+        ),
+        pytest.param(
+            "discriminator_ref_variant_default",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-type-alias", "--strip-default-none"],
+            marks=ALIAS_DEFAULT_WARNING,
+        ),
+        pytest.param(
+            "discriminator_ref_variant_default",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-type-alias", "--target-python-version", "3.13"],
+            marks=[
+                ALIAS_DEFAULT_WARNING,
+                pytest.mark.skipif(sys.version_info < (3, 12), reason="A type statement needs Python 3.12"),
+            ],
+        ),
+        pytest.param(
+            "discriminator_ref_variant_default",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-type-alias", "--use-annotated"],
+            marks=ALIAS_DEFAULT_WARNING,
+        ),
     ],
 )
 def test_main_openapi_discriminator_nested_variant_defaults(

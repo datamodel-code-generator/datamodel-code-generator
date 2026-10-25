@@ -1,0 +1,32 @@
+DogDefault valid {"type": "dog"}: accepted
+DogDefault invalid {"type": "cat"}: rejected
+DogDefault invalid {"type": 1}: rejected
+DogDefault invalid {}: accepted
+Pets valid {}: accepted
+Pets valid {"pet": {"type": "cat"}}: accepted
+Pets valid {"pet": {"type": "dog"}}: accepted
+Pets invalid {"pet": {"type": "bird"}}: rejected
+Pets invalid {"pet": {"type": "fish"}}: rejected
+Pets invalid {"pet": "cat"}: rejected
+Pets invalid {"pet": {}}: accepted
+ChainedPets valid {}: accepted
+ChainedPets valid {"pet": {"type": "cat"}}: accepted
+ChainedPets valid {"pet": {"type": "dog"}}: accepted
+ChainedPets invalid {"pet": {"type": "bird"}}: rejected
+ChainedPets invalid {"pet": {"type": "fish"}}: rejected
+ChainedPets invalid {"pet": "cat"}: rejected
+ChainedPets invalid {"pet": {}}: accepted
+PetList valid {}: accepted
+PetList valid {"pets": []}: accepted
+PetList valid {"pets": [{"type": "cat"}, {"type": "dog"}]}: accepted
+PetList invalid {"pets": [{"type": "bird"}]}: rejected
+PetList invalid {"pets": [{"type": "fish"}]}: rejected
+PetList invalid {"pets": ["cat"]}: rejected
+PetList invalid {"pets": [{}]}: accepted
+PlainPets valid {}: accepted
+PlainPets valid {"pet": {"type": "cat"}}: accepted
+PlainPets valid {"pet": {"type": "bird"}}: accepted
+PlainPets invalid {"pet": {"type": "dog"}}: rejected
+PlainPets invalid {"pet": {"type": "fish"}}: rejected
+PlainPets invalid {"pet": "cat"}: rejected
+PlainPets invalid {"pet": {}}: rejected

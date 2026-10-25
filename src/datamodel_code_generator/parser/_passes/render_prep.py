@@ -108,6 +108,7 @@ __all__ = [
     "set_validate_default_on_fields",
     "unbind_hidden_type_fields",
     "update_module_type_aliases",
+    "validates_structured_default",
     "warn_required_assignments_after_defaults",
 ]
 
@@ -252,6 +253,24 @@ def _needs_validate_default(data_type: DataType) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances."""
     resolved = _unwrap_type_alias(data_type)
     return _contains_model_reference(resolved)
+
+
+def _applies_default(field: DataModelFieldBase) -> bool:
+    """Return whether the default of a field is one that render preparation reads: set, and in effect for the field."""
+    return not (
+        (field.required and not field.use_default_with_required)
+        or field.default is None
+        or field.default is UNDEFINED
+        or isinstance(field.default, Member)
+    )
+
+
+def validates_structured_default(field: DataModelFieldBase) -> bool:
+    """Return whether render preparation writes ``validate_default=True`` for the default of a field.
+
+    It reads the facts that are final at the end of the module loop: the required state, the default and the type.
+    """
+    return _applies_default(field) and _needs_validate_default(field.data_type)
 
 
 def _wraps_member_hints(data_type: DataType) -> bool:
@@ -439,11 +458,7 @@ def set_validate_default_on_fields(
         if isinstance(model, Enum):
             continue
         for model_field in model.fields:
-            if model_field.required and not model_field.use_default_with_required:
-                continue
-            if model_field.default is None or model_field.default is UNDEFINED:
-                continue
-            if isinstance(model_field.default, Member):
+            if not _applies_default(model_field):
                 continue
             deserialized_default = (
                 deserialize_default_value(

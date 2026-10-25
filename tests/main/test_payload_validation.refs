@@ -1319,6 +1319,9 @@ openapi/discriminator_pattern_nested_choices.yaml::components.schemas.C	payloads
 openapi/discriminator_pattern_nested_choices.yaml::components.schemas.DBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_read_write_variant_tags.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_read_write_variant_tags.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Cat2	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3072,6 +3075,9 @@ openapi/discriminator_pattern_nested_choices.yaml::components.schemas.C	payloads
 openapi/discriminator_pattern_nested_choices.yaml::components.schemas.DBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_read_write_variant_tags.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_read_write_variant_tags.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_ref_variant_default.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Cat2	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_reuse_same_tags.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

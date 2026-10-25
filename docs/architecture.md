@@ -441,7 +441,10 @@ no model (a scalar, `Any` or None, as `--collapse-root-models` leaves a scalar a
 schema is), which Pydantic rejects as a variant, nor for a union that takes a root model, or a type alias, with a
 default as a variant (`--force-optional` gives a root one), as Pydantic reads the root as a `default` schema, which no
 tagged union holds; the default is what the root writes (`Field(None, ...)`, the assignment after its annotation, a
-default factory), not what its facts hold.
+default factory), not what its facts hold. A type alias that holds the default of its schema writes it only once
+`set_validate_default_on_fields` adds `validate_default=True` to the `Field()` call, so the check reads the facts that
+pass reads (`validates_structured_default`: required state, default, type); under `--use-annotated` the call holds no
+default, so the alias writes none.
 
 **L6**, after the module loop:
 

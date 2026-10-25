@@ -127,6 +127,7 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._state import ConfigT, ContextT, RecursionFacts, ResultT, _RenamedType
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
+from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
 from datamodel_code_generator.types import ANY, NONE, DataType, Types
@@ -3171,7 +3172,9 @@ def _root_writes_default(wrapper: DataModel) -> bool:
 
     A class gets it from the call of its root field or from the assignment after its annotation, a type alias from the
     call of its root field inside ``Annotated`` alone, and a root model written as an alias (``Foo = RootModel[T]``)
-    has no root field to write one.
+    has no root field to write one. The call of a type alias that holds only the default of its schema is written in
+    render preparation: ``validate_default=True`` makes the call, which writes the default unless ``--use-annotated``
+    leaves it out.
     """
     root = wrapper.fields[0]
     call = root._render_plan().call  # noqa: SLF001
@@ -3179,7 +3182,9 @@ def _root_writes_default(wrapper: DataModel) -> bool:
         call.factory is not None or (call.positional is not None and call.positional.kind == "default")
     )
     if wrapper.IS_ALIAS:
-        return call_default and not wrapper.IS_ROOT_MODEL
+        return not wrapper.IS_ROOT_MODEL and (
+            call_default or (call is None and not root.use_annotated and validates_structured_default(root))
+        )
     return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
 
 
