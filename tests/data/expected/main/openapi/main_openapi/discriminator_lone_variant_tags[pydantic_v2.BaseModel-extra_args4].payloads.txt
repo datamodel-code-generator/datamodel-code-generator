@@ -20,7 +20,7 @@ LoneName invalid {}: rejected
 LoneLiteralTag valid {"type": "literal"}: accepted
 LoneLiteralTag valid {"type": "literal", "id": 3}: accepted
 LoneLiteralTag invalid {"type": "other"}: rejected
-LoneLiteralTag invalid {}: rejected
+LoneLiteralTag invalid {}: accepted
 LoneLiteralTag invalid {"type": "literal", "id": "x"}: rejected
 LoneRootTag valid {"type": "root"}: accepted
 LoneRootTag invalid {"type": "other"}: rejected
@@ -30,7 +30,7 @@ LoneOptionalRootTag valid {"type": "root"}: accepted
 LoneOptionalRootTag invalid {"type": "other"}: rejected
 LoneInheritedTag valid {"type": "inherited", "id": 1}: accepted
 LoneInheritedTag invalid {"type": "other"}: rejected
-LoneInheritedTag invalid {}: rejected
+LoneInheritedTag invalid {}: accepted
 LoneNullableWrapper valid {"type": "literal"}: accepted
 LoneNullableWrapper valid null: accepted
 LoneNullableWrapper invalid {"type": "other"}: rejected

@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal
 
-from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -24,9 +22,6 @@ class ToolBase:
 @dataclass
 class FunctionToolCall(ToolBase):
     id: str
-    type: Literal['function']
 
 
-ToolCall = TypeAliasType(
-    "ToolCall", Annotated[FunctionToolCall, Field(..., discriminator='type')]
-)
+ToolCall = TypeAliasType("ToolCall", FunctionToolCall)

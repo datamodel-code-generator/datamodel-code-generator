@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, RootModel
 
 
 class ToolType(Enum):
@@ -20,8 +19,7 @@ class ToolBase(BaseModel):
 
 class FunctionToolCall(ToolBase):
     id: str
-    type: Literal['function']
 
 
 class ToolCall(RootModel[FunctionToolCall]):
-    root: FunctionToolCall = Field(..., discriminator='type')
+    root: FunctionToolCall

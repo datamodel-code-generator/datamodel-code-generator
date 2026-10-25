@@ -10178,13 +10178,14 @@ def test_main_openapi_discriminator_optional_literal(
 def test_main_openapi_discriminator_enum_tag_variants(
     input_name: str, output_model: str, extra_args: list[str], output_file: Path
 ) -> None:
-    """Write the one-value Enum tag of a lone or nested variant as its ``Literal``, as listed variants have it.
+    """Write the one-value Enum tag of a nested variant as its ``Literal``, and no discriminator for a lone variant.
 
     Up to 0.86.0 a variant that nested choices give a union, or the one variant a union names, kept the tag typed by
     its Enum, which Pydantic rejects as a discriminator when the module is imported (a Pydantic dataclass failed when
-    its type alias was first used). The tag is the one value of the Enum, own or inherited, and a tag that is
-    optional takes no default, as the tags of listed variants. The verdicts of each payload are the generated
-    models', and the schema's decides whether the payload is valid.
+    its type alias was first used). The tag of a nested variant is the one value of the Enum, own or inherited, and
+    a tag that is optional takes no default, as the tags of listed variants. The one variant a union names keeps the
+    model 0.86.0 wrote, and the union is written without ``discriminator=``. The verdicts of each payload are the
+    generated models', and the schema's decides whether the payload is valid.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",

@@ -1342,17 +1342,15 @@ def _iter_nested_discriminator_variants(
     field_name: str,
     *,
     field_name_mode: Literal["source-name", "python-or-original-name"],
-    can_update_discriminator: bool = True,
 ) -> Iterator[tuple[DataType, DataModelFieldBase, Sequence[DiscriminatorValue]]]:
     """Yield the variants that nested choices give a union, with their tag fields and tag values.
 
     Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
-    one, which the empty subclass of a reused model also reads. A union's lone variant is one of them
-    (``can_update_discriminator`` is False), as the variants it lists are not.
+    one, which the empty subclass of a reused model also reads. A union's lone variant is not one of them: its model
+    keeps the tag field it writes, and ``settle_discriminated_unions`` writes the union without ``discriminator=``
+    where that field is no tag Pydantic reads.
     """
-    for data_type, can_update, _ in _iter_discriminator_data_types(
-        data_types, can_update_discriminator=can_update_discriminator
-    ):
+    for data_type, can_update, _ in _iter_discriminator_data_types(data_types):
         source = data_type.reference.source if data_type.reference else None
         if can_update or not isinstance(source, DataModel):
             continue
@@ -1369,7 +1367,7 @@ def _is_lone_variant(field: DataModelFieldBase) -> bool:
     """Return whether a field's type names the one variant of a union that ``discriminator=`` is written for.
 
     Its type is the variant itself, a ``$ref`` or a type that is no model at all, so there is no list of variants to
-    read, and the variant is read like one that a nested choice gives the union.
+    read, and the variant itself is read.
     """
     return field.SUPPORTS_DISCRIMINATOR and not field.data_type.data_types
 
@@ -2305,13 +2303,11 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
             ):
                 parser._graph_builder.drop_field_discriminator(field)  # noqa: SLF001
                 continue
-            lone_variant = _is_lone_variant(field)
             nested_variants = [
                 *_iter_nested_discriminator_variants(
-                    [field.data_type] if lone_variant else field.data_type.data_types,
+                    field.data_type.data_types,
                     property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
                     field_name_mode="source-name" if field.SUPPORTS_DISCRIMINATOR else "python-or-original-name",
-                    can_update_discriminator=not lone_variant,
                 )
             ]
             enum_tagged: list[DataType] = []

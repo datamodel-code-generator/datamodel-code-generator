@@ -20,7 +20,7 @@ class RequiredTag(BaseModel):
 
 class OptionalTag(BaseModel):
     note: str | None = None
-    type: Literal['optional'] = 'optional'
+    type: Literal['optional'] | None = None
 
 
 class Cat(BaseModel):
@@ -58,4 +58,4 @@ class LoneRequired(RootModel[RequiredTag]):
 
 
 class LoneOptional(RootModel[OptionalTag]):
-    root: OptionalTag = Field(..., discriminator='type')
+    root: OptionalTag

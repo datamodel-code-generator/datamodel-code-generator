@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -19,7 +19,7 @@ class RequiredTagType(Enum):
 @dataclass
 class RequiredTag:
     id: str
-    type: Literal['required']
+    type: RequiredTagType
 
 
 class Type(Enum):
@@ -28,8 +28,8 @@ class Type(Enum):
 
 @dataclass
 class OptionalTag:
-    type: Literal['optional']
     note: str | None = None
+    type: Type | None = None
 
 
 class Type1(Enum):
@@ -75,11 +75,7 @@ class Pets:
     inline: Cat | Dog | Bird | None = Field(None, discriminator='type')
 
 
-LoneRequired = TypeAliasType(
-    "LoneRequired", Annotated[RequiredTag, Field(..., discriminator='type')]
-)
+LoneRequired = TypeAliasType("LoneRequired", RequiredTag)
 
 
-LoneOptional = TypeAliasType(
-    "LoneOptional", Annotated[OptionalTag, Field(..., discriminator='type')]
-)
+LoneOptional = TypeAliasType("LoneOptional", OptionalTag)

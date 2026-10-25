@@ -16,7 +16,7 @@ class RequiredTagType(Enum):
 
 class RequiredTag(BaseModel):
     id: str
-    type: Literal['required']
+    type: RequiredTagType
 
 
 class Type(Enum):
@@ -25,7 +25,7 @@ class Type(Enum):
 
 class OptionalTag(BaseModel):
     note: str | None = None
-    type: Literal['optional']
+    type: Type | None = None
 
 
 class Type1(Enum):
@@ -68,8 +68,8 @@ class Pets(BaseModel):
 
 
 class LoneRequired(RootModel[RequiredTag]):
-    root: Annotated[RequiredTag, Field(discriminator='type')]
+    root: RequiredTag
 
 
 class LoneOptional(RootModel[OptionalTag]):
-    root: Annotated[OptionalTag, Field(discriminator='type')]
+    root: OptionalTag

@@ -4,7 +4,7 @@ LoneRequired invalid {"id": "a"}: rejected
 LoneRequired invalid {"type": "required"}: rejected
 LoneOptional valid {"type": "optional"}: accepted
 LoneOptional valid {"type": "optional", "note": "n"}: accepted
-LoneOptional valid {}: rejected
+LoneOptional valid {}: accepted
 LoneOptional invalid {"type": "other"}: rejected
 Pets valid {}: accepted
 Pets valid {"choice": {"type": "cat"}}: accepted

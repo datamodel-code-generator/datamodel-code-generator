@@ -37,7 +37,7 @@ class Name(RootModel[str | None]):
 
 
 class LiteralTag(BaseModel):
-    type: Literal['literal'] = 'literal'
+    type: Literal['literal'] | None = None
     id: int | None = None
 
 
@@ -54,7 +54,7 @@ class OptionalRootTag(BaseModel):
 
 
 class TagBase(BaseModel):
-    type: Literal['inherited'] = 'inherited'
+    type: Literal['inherited'] | None = None
 
 
 class InheritedTag(TagBase):
@@ -67,7 +67,7 @@ class NullableLiteralTag(RootModel[LiteralTag | None]):
 
 class Shared(BaseModel):
     id: int | None = None
-    type: Literal['Shared'] = 'Shared'
+    type: Literal['Shared']
 
 
 class Other(BaseModel):
@@ -118,7 +118,7 @@ class LoneName(RootModel[Name | None]):
 
 
 class LoneLiteralTag(RootModel[LiteralTag | None]):
-    root: LiteralTag | None = Field(None, discriminator='type')
+    root: LiteralTag | None = None
 
 
 class LoneRootTag(RootModel[RootTag | None]):
@@ -130,7 +130,7 @@ class LoneOptionalRootTag(RootModel[OptionalRootTag | None]):
 
 
 class LoneInheritedTag(RootModel[InheritedTag | None]):
-    root: InheritedTag | None = Field(None, discriminator='type')
+    root: InheritedTag | None = None
 
 
 class LoneNullableWrapper(RootModel[NullableLiteralTag | None]):
