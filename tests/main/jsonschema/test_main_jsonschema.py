@@ -12255,6 +12255,20 @@ def test_main_jsonschema_property_names_pattern_field_constraints(output_file: P
     )
 
 
+def test_main_jsonschema_property_names_pattern_quotes(output_file: Path) -> None:
+    """Test propertyNames patterns holding quotes keep the regex unchanged in the key constr."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_pattern_quotes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     "case", ["property_names_pattern_properties_intersection", "property_names_pattern_properties_redundant_pattern"]
 )

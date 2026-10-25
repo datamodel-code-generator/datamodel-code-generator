@@ -19,4 +19,4 @@ class Info(BaseModel):
         | None
     ) = None
     tel: constr(pattern=r'^(\([0-9]{3}\))?[0-9]{3}-[0-9]{4}$') | None = None
-    comment: constr(pattern=r'[^\x08\f\n\r\t\\a+.?\'"|()]+$') | None = None
+    comment: constr(pattern='[^\\x08\\f\\n\\r\\t\\\\a+.?\'"|()]+$') | None = None
