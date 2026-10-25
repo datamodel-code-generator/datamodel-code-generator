@@ -1018,6 +1018,15 @@ cli	main/openapi/discriminator/inherited_msgspec_untagged.py
 	main/openapi/discriminator/integer_no_mapping.py
 [test_main_openapi_discriminator_integer_no_mapping_literal]
 	main/openapi/discriminator/integer_no_mapping_literal.py
+[test_main_openapi_discriminator_lone_variant_tags]
+pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
+pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].py
+pydantic_v2.BaseModel-extra_args1	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args1].payloads.txt	= main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
+pydantic_v2.BaseModel-extra_args1	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args1].py
+pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].payloads.txt
+pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].py
+pydantic_v2.dataclass-extra_args2	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.dataclass-extra_args2].payloads.txt	= main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
+pydantic_v2.dataclass-extra_args2	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.dataclass-extra_args2].py
 [test_main_openapi_discriminator_mapping_msgspec_tags]
 	main/openapi/discriminator/mapping_msgspec_tags.py
 [test_main_openapi_discriminator_mapping_msgspec_untagged]

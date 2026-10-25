@@ -672,6 +672,19 @@ APPLY_BASE_STAND_IN_IMPORTS = PassDecl(
         After("name_inner_models_in_rules", "both add module imports once every module is processed"),
     ),
 )
+SETTLE_DISCRIMINATED_UNIONS = PassDecl(
+    "settle_discriminated_unions",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
+    writes=_facts(Fact.DISCRIMINATOR_TAGS),
+    summary=(
+        "After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has "
+        "no tag, which a union of any module may still write into it."
+    ),
+    condition="the output fields write `discriminator=`",
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,

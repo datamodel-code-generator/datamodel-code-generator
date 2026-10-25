@@ -3767,6 +3767,44 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
     )
 
 
+def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
+    """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
+
+    The union of ``z`` names a variant that the union of ``y``, which is processed after it, tags, and the union of
+    ``a`` names it after that; the one of ``a`` that names a variant no union tags is written without it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_lone_variant_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    verdicts = []
+    payloads = json.loads((DATA_PATH / "payloads" / "discriminator_lone_variant_modules.json").read_text())
+    for target, cases in payloads.items():
+        module_path, model_name = target.split(".")
+        with _generated_package_module(output_dir, module_path) as module:
+            validate = _model_json_validator(getattr(module, model_name))
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                try:
+                    validate(json.dumps(payload))
+                except ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{target} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 @pytest.mark.parametrize(
     ("input_name", "backend", "options", "expected_name", "child_module", "field_name"),
     [

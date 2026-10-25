@@ -575,6 +575,7 @@ def test_main_openapi_discriminator_enum_single_value_use_enum(output_file: Path
             "pydantic_v2.BaseModel",
             "--use-enum-values-in-discriminator",
         ],
+        force_exec_validation=True,
     )
 
 
@@ -10185,6 +10186,69 @@ def test_main_openapi_discriminator_enum_tag_variants(
     optional takes no default, as the tags of listed variants. The verdicts of each payload are the generated
     models', and the schema's decides whether the payload is valid.
     """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load((OPEN_API_DATA_PATH / f"{input_name}.yaml").read_text(encoding="utf-8"))
+
+    def schema_decides(validator: Draft202012Validator, kind: str, payload: object) -> None:
+        if kind == "valid":
+            validator.validate(payload)
+        else:
+            with pytest.raises(SchemaValidationError):
+                validator.validate(payload)
+
+    verdicts = []
+    for model_name, cases in json.loads((DATA_PATH / "payloads" / f"{input_name}.json").read_text()).items():
+        validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{model_name}"})
+        with _generated_model(output_file, input_name, model_name) as model:
+            validate = _model_json_validator(model)
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                schema_decides(validator, kind, payload)
+                try:
+                    validate(json.dumps(payload))
+                except pydantic.ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{model_name} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.BaseModel", ["--use-annotated"]),
+        ("pydantic_v2.dataclass", []),
+        ("pydantic_v2.BaseModel", ["--use-enum-values-in-discriminator"]),
+    ],
+)
+def test_main_openapi_discriminator_lone_variant_tags(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write no ``discriminator`` for a union that names one variant by its ``$ref``, where that variant has no tag.
+
+    Up to 0.86.0 the output kept ``discriminator`` there, which Pydantic rejects when the module is imported (a
+    Pydantic dataclass failed when its type alias was first used) as the variant has no tag field, or one that is
+    not a ``Literal``, or one that is optional. A variant that has a tag keeps it: its own or an inherited
+    ``Literal``, a root model of one, and a tag that another union of the schema writes into it, wherever that
+    union is. The verdicts of each payload are the generated models', and the schema's decides whether the payload
+    is valid.
+    """
+    input_name = "discriminator_lone_variant_tags"
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
         output_path=output_file,

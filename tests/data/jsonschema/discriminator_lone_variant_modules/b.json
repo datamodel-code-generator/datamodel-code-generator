@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Untagged": {
+      "type": "object",
+      "properties": {"id": {"type": "integer"}}
+    },
+    "Shared": {
+      "type": "object",
+      "properties": {"id": {"type": "integer"}},
+      "required": ["id"]
+    },
+    "Other": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "required": ["name"]
+    }
+  }
+}

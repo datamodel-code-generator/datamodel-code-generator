@@ -1,0 +1,58 @@
+{
+  "LoneNoField": {
+    "valid": [{}, {"id": 1}],
+    "invalid": [{"id": "x"}, []]
+  },
+  "LoneStringTag": {
+    "valid": [{}, {"type": "any", "id": 2}],
+    "invalid": [{"type": 1}, {"id": "x"}]
+  },
+  "LoneFloatTag": {
+    "valid": [{}, {"type": 1.5}, {"type": 2}],
+    "invalid": [{"type": "x"}]
+  },
+  "LoneEnumTag": {
+    "valid": [{"type": "first"}, {"type": "second"}],
+    "invalid": [{"type": "third"}, {}]
+  },
+  "LoneName": {
+    "valid": ["abc"],
+    "invalid": [1, {}]
+  },
+  "LoneLiteralTag": {
+    "valid": [{"type": "literal"}, {"type": "literal", "id": 3}],
+    "invalid": [{"type": "other"}, {}, {"type": "literal", "id": "x"}]
+  },
+  "LoneRootTag": {
+    "valid": [{"type": "root"}],
+    "invalid": [{"type": "other"}, {}]
+  },
+  "LoneOptionalRootTag": {
+    "valid": [{}, {"type": "root"}],
+    "invalid": [{"type": "other"}]
+  },
+  "LoneInheritedTag": {
+    "valid": [{"type": "inherited", "id": 1}],
+    "invalid": [{"type": "other"}, {}]
+  },
+  "LoneNullableWrapper": {
+    "valid": [{"type": "literal"}, null],
+    "invalid": [{"type": "other"}]
+  },
+  "LoneBefore": {
+    "valid": [{"type": "Shared", "id": 1}],
+    "invalid": [{"type": "Shared"}, {"type": "Shared", "id": "x"}]
+  },
+  "LoneAfter": {
+    "valid": [{"type": "Shared", "id": 1}],
+    "invalid": [{"type": "Shared"}, {"type": "Shared", "id": "x"}]
+  },
+  "Both": {
+    "valid": [{"type": "Shared", "id": 1}, {"type": "Other", "name": "n"}],
+    "invalid": [{"type": "Third"}, {"type": "Other", "name": 1}]
+  },
+  "LoneMember": {
+    "valid": [{"type": "shared", "id": 1}],
+    "invalid": [{"type": "third"}, {"type": "shared", "id": "x"}]
+  }
+}

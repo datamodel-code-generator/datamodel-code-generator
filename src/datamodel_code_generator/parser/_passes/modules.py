@@ -6,8 +6,8 @@ models of other modules, reuse, collapse and discriminator tags through the narr
 ``CollapseHost`` and ``DiscriminatorHost``) and the state through ``ModuleStateView``, which ``Parser`` and its module
 state satisfy structurally. ``process_each_module`` runs the passes of each module through the
 ``_process_single_module`` hook (``ModuleLoopHost``); ``apply_base_stand_in_imports``,
-``write_rule_aliases_as_classes`` (``RuleAliasHost``) and ``name_inner_models_in_rules`` run once every module is
-processed, on the run through ``ModulesRun``.
+``write_rule_aliases_as_classes`` (``RuleAliasHost``), ``name_inner_models_in_rules`` and
+``settle_discriminated_unions`` run once every module is processed, on the run through ``ModulesRun``.
 """
 
 from __future__ import annotations
@@ -186,6 +186,7 @@ __all__ = [
     "set_default_enum_member",
     "set_one_literal_on_default",
     "set_reference_default_value_to_field",
+    "settle_discriminated_unions",
     "snapshot_module_unused_models",
     "sort_models",
     "type_const_narrowed_values",
@@ -3134,6 +3135,55 @@ def apply_base_class_type_overrides(parser: ModulesHost, models: list[DataModel]
     _replace_bases_by_imports(
         parser, models, lambda reference: reference is None or model_key_of(reference) not in stand_ins
     )
+
+
+def _is_tag_type(data_type: DataType) -> bool:
+    """Return whether Pydantic reads the type of a tag field as ``Literal`` values.
+
+    Every leaf of the type holds literal values, through the unions and the root models, or type aliases, it names.
+    """
+    return all(leaf.literals or leaf.enum_member_literals for leaf, _, _ in _iter_discriminator_data_types([data_type]))
+
+
+def _variant_carries_tag(data_type: DataType, field_name: str) -> bool:
+    """Return whether a variant has the tag field ``field_name``, of ``Literal`` values and not optional.
+
+    The variant may inherit the field. Pydantic reads an optional tag as the ``Literal`` and None, which no tag is.
+    The None that a root model of nullable variants holds is no variant.
+    """
+    if not data_type.reference:
+        return data_type.type == NONE
+    return isinstance(source := data_type.reference.source, DataModel) and any(
+        _is_tag_type(tag_field.data_type) and not tag_field._admits_none()  # noqa: SLF001
+        for tag_field in islice(
+            (
+                variant_field
+                for variant_field in chain(source.fields, source.iter_all_fields())
+                if _tag_field_matches(variant_field, "python-name", field_name)
+            ),
+            1,
+        )
+    )
+
+
+def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
+    """Write no ``discriminator=`` that Pydantic cannot build, once every module has written its tags.
+
+    The variants a union lists get their tags from ``apply_discriminator_type``, but not the one variant a union names
+    alone by its ``$ref``, and Pydantic rejects the union where that variant, or one the ``$ref`` reaches through
+    root models, has no tag field of ``Literal`` values. A union of any module may still tag the variant, so a
+    variant without a tag is final only once every module is processed.
+    """
+    for ctx in run.contexts:
+        for model in ctx.models:
+            for field in model.fields:
+                match field.extras.get("discriminator"):
+                    case {"propertyName": str() as property_name} if property_name and _is_lone_variant(field):
+                        if not all(
+                            _variant_carries_tag(data_type, property_name)
+                            for data_type, _, _ in _iter_discriminator_data_types([field.data_type])
+                        ):
+                            parser._graph_builder.drop_field_discriminator(field)  # noqa: SLF001
 
 
 def apply_base_stand_in_imports(parser: ModulesHost, run: ModulesRun) -> None:

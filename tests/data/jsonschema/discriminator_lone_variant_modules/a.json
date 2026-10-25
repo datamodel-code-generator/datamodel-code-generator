@@ -1,0 +1,14 @@
+{
+  "$defs": {
+    "LoneLate": {
+      "oneOf": [{"$ref": "b.json#/$defs/Shared"}],
+      "discriminator": {"propertyName": "type"}
+    },
+    "LoneUntagged": {
+      "oneOf": [{"$ref": "b.json#/$defs/Untagged"}],
+      "discriminator": {"propertyName": "type"}
+    }
+  },
+  "type": "object",
+  "properties": {"late": {"$ref": "#/$defs/LoneLate"}, "untagged": {"$ref": "#/$defs/LoneUntagged"}}
+}

@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Discriminated unions that name one variant by its $ref
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    LoneNoField:
+      oneOf:
+        - $ref: "#/components/schemas/NoField"
+      discriminator:
+        propertyName: type
+    NoField:
+      type: object
+      properties:
+        id:
+          type: integer
+    LoneStringTag:
+      oneOf:
+        - $ref: "#/components/schemas/StringTag"
+      discriminator:
+        propertyName: type
+    StringTag:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+    LoneFloatTag:
+      oneOf:
+        - $ref: "#/components/schemas/FloatTag"
+      discriminator:
+        propertyName: type
+    FloatTag:
+      type: object
+      properties:
+        type:
+          type: number
+    LoneEnumTag:
+      oneOf:
+        - $ref: "#/components/schemas/EnumTag"
+      discriminator:
+        propertyName: type
+    EnumTag:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - first
+            - second
+      required:
+        - type
+    LoneName:
+      oneOf:
+        - $ref: "#/components/schemas/Name"
+      discriminator:
+        propertyName: type
+    Name:
+      type: string
+    LoneLiteralTag:
+      oneOf:
+        - $ref: "#/components/schemas/LiteralTag"
+      discriminator:
+        propertyName: type
+    LiteralTag:
+      type: object
+      properties:
+        type:
+          const: literal
+        id:
+          type: integer
+      required:
+        - type
+    LoneRootTag:
+      oneOf:
+        - $ref: "#/components/schemas/RootTag"
+      discriminator:
+        propertyName: type
+    RootTagType:
+      const: root
+    RootTag:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/RootTagType"
+      required:
+        - type
+    LoneOptionalRootTag:
+      oneOf:
+        - $ref: "#/components/schemas/OptionalRootTag"
+      discriminator:
+        propertyName: type
+    OptionalRootTag:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/RootTagType"
+    LoneInheritedTag:
+      oneOf:
+        - $ref: "#/components/schemas/InheritedTag"
+      discriminator:
+        propertyName: type
+    TagBase:
+      type: object
+      properties:
+        type:
+          const: inherited
+      required:
+        - type
+    InheritedTag:
+      allOf:
+        - $ref: "#/components/schemas/TagBase"
+        - type: object
+          properties:
+            id:
+              type: integer
+    LoneNullableWrapper:
+      oneOf:
+        - $ref: "#/components/schemas/NullableLiteralTag"
+      discriminator:
+        propertyName: type
+    NullableLiteralTag:
+      oneOf:
+        - $ref: "#/components/schemas/LiteralTag"
+        - type: "null"
+    LoneBefore:
+      oneOf:
+        - $ref: "#/components/schemas/Shared"
+      discriminator:
+        propertyName: type
+    Both:
+      oneOf:
+        - $ref: "#/components/schemas/Shared"
+        - $ref: "#/components/schemas/Other"
+      discriminator:
+        propertyName: type
+    LoneAfter:
+      oneOf:
+        - $ref: "#/components/schemas/Shared"
+      discriminator:
+        propertyName: type
+    Shared:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+        - id
+    Other:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    MemberKind:
+      type: string
+      enum:
+        - shared
+        - other
+    MemberShared:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/MemberKind"
+        id:
+          type: integer
+      required:
+        - type
+    MemberOther:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/MemberKind"
+      required:
+        - type
+    MemberBoth:
+      oneOf:
+        - $ref: "#/components/schemas/MemberShared"
+        - $ref: "#/components/schemas/MemberOther"
+      discriminator:
+        propertyName: type
+        mapping:
+          shared: "#/components/schemas/MemberShared"
+          other: "#/components/schemas/MemberOther"
+    LoneMember:
+      oneOf:
+        - $ref: "#/components/schemas/MemberShared"
+      discriminator:
+        propertyName: type
+        mapping:
+          shared: "#/components/schemas/MemberShared"

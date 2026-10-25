@@ -723,6 +723,12 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 late(modules.apply_base_stand_in_imports),
                 when=lambda self, _: bool(self._base_stand_in_imports),
             ),
+            PassSpec(
+                decls.SETTLE_DISCRIMINATED_UNIONS,
+                late(modules.settle_discriminated_unions),
+                when=lambda self, _: self.data_model_field_type.SUPPORTS_DISCRIMINATOR,
+                checked_models=lambda _, run: _context_models(run.contexts),
+            ),
         ),
     ),
     Segment(

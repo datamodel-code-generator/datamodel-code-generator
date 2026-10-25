@@ -1,0 +1,10 @@
+{
+  "$defs": {
+    "Both": {
+      "oneOf": [{"$ref": "b.json#/$defs/Shared"}, {"$ref": "b.json#/$defs/Other"}],
+      "discriminator": {"propertyName": "type"}
+    }
+  },
+  "type": "object",
+  "properties": {"both": {"$ref": "#/$defs/Both"}}
+}

@@ -433,6 +433,10 @@ Last, `apply_base_stand_in_imports` (`parser/_passes/modules.py`) replaces the b
 import of the class it stands for, as `apply_base_class_type_overrides` replaces bases: until then the passes of every
 module read the stand-in as a generated base when they walk the bases of a model of another module, whatever the
 order of the modules.
+Then `settle_discriminated_unions` (`parser/_passes/modules.py`, Pydantic models and dataclasses) writes no
+`discriminator=` for the union of a lone `$ref` variant that no tag reaches: `apply_discriminator_type` writes the
+tags of the variants a union lists, not of one it names alone, and a union of any module may still tag that variant, so
+a variant without a tag is final only once every module is processed.
 
 **L6**, after the module loop:
 
@@ -646,6 +650,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | MODULES | `write_rule_aliases_as_classes` | global | transform | IMPORT_ALIASES, MODEL_KIND, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODEL_KIND, MODULE_MEMBERSHIP | After every module is processed: writes each type alias that holds schema validator rules and that `collapse_root_models` left written as the RootModel class, under its model key, and imports the models of other modules that its rules name. Runs when: --generate-schema-validators. After `type_dict_keys_by_root_types`: the aliases written as classes are object maps, which no dict key names. After `apply_base_class_type_overrides`: imports what the rules of the new classes name once every module has written its imports. |
 | MODULES | `name_inner_models_in_rules` | global | transform | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODELS_EXIST, MODULE_MEMBERSHIP | After every module is processed: makes the schema validator rules that name a root model the `parent` strategy of `collapse_root_models` replaced name its inner model, and imports it in their modules. Runs when: --generate-schema-validators --collapse-root-models-name-strategy parent. After `write_rule_aliases_as_classes`: the aliases written as classes import what their rules name, which this pass then redirects. After `fix_constructor_field_ordering_early`: the types of rules are no constructor fields. |
 | MODULES | `apply_base_stand_in_imports` | global | transform | BASES, MODULE_IMPORTS | BASES | After every module is processed: replaces the bases that name a stand-in (a schema that a base names and the output types by an import) by that import, so that the passes of every module read the stand-in as a generated base whatever the module order. Runs when: a base names a stand-in. After `apply_base_class_type_overrides`: every module reads the stand-ins as the bases of models of other modules before imports replace them. After `name_inner_models_in_rules`: both add module imports once every module is processed. |
+| MODULES | `settle_discriminated_unions` | global | transform | DISCRIMINATOR_TAGS | DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has no tag, which a union of any module may still write into it. Runs when: the output fields write `discriminator=`. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | BASES, DISCRIMINATOR_TAGS, FIELD_SET | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag, and opts out the structs whose tag field a base keeps as a field, typing their tag field by its const again. Runs when: msgspec. |
 | CROSS_MODULE | `write_enum_member_tags_as_values` | global | transform | FIELD_TYPES | DISCRIMINATOR_TAGS, FIELD_TYPES | Writes the values of the enum members that tag a variant, where the output's Literal holds no member. Runs when: an output whose Literal holds no enum member (msgspec). After `tag_fields_of_tagged_bases`: the tags read a member literal as no literal until the structs are tagged. |
 | CROSS_MODULE | `warn_enums_admitting_other_values` | global | check | STDERR | DISCRIMINATOR_TAGS, FIELD_TYPES |  |
@@ -817,7 +822,7 @@ collapse replacing a member of a shared list.
 | set vs list containers | end of the L5 loop (collapse and overrides can still replace item types) |
 | required, nullable | end of the L5 loop (discriminator tags, one-literal defaults, collapse `process_const()`); msgspec: L6 |
 | default values | the model's own L5 `set_validate_default_on_fields`, unless another module's discriminator pass changes it; default-factory metadata: decided at the end of render preparation (`decide_nested_model_default_factories`), published at L6 (`_set_nested_model_default_factory_metadata`) |
-| discriminator tags | pydantic: end of the L5 loop; msgspec: L6 `_tag_fields_of_tagged_bases` |
+| discriminator tags | pydantic: end of the L5 loop, but for `settle_discriminated_unions` after it; msgspec: L6 `_tag_fields_of_tagged_bases` |
 | applied type overrides | field types: the module's own L5 `apply_field_type_overrides`; base classes: the model's own L5 `apply_base_class_type_overrides` |
 | root-model collapse | end of the L5 loop (circular paths: the L4 snapshot, not recomputed) |
 | class names and reference paths | L6 `change_imported_model_name` |

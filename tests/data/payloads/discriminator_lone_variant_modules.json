@@ -1,0 +1,18 @@
+{
+  "z.LoneEarly": {
+    "valid": [{"type": "Shared", "id": 1}],
+    "invalid": [{"type": "Shared"}, {"type": "Other", "id": 1}]
+  },
+  "y.Both": {
+    "valid": [{"type": "Shared", "id": 1}, {"type": "Other", "name": "n"}],
+    "invalid": [{"type": "Third"}, {"type": "Other", "name": 1}]
+  },
+  "a.LoneLate": {
+    "valid": [{"type": "Shared", "id": 1}],
+    "invalid": [{"type": "Shared"}, {"type": "Other", "id": 1}]
+  },
+  "a.LoneUntagged": {
+    "valid": [{}, {"id": 1}],
+    "invalid": [{"id": "x"}]
+  }
+}
