@@ -18,7 +18,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
 
 Start from  --preset standard-py314-20261019
 
-Add (6 options)
+Add (7 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 2, e.g. status x3, owner
       x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on
@@ -31,12 +31,11 @@ Add (6 options)
       charge component (ChargeModel)
       measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
       lost
-      trial: recommended - dotted-keys - naming-strategy -> recommended - dotted-keys: classes 11 ->
-      12, problem names 1 -> 0; 6 of 11 classes matched by schema location renamed (0 only
-      renumbered), 0 removed, 1 added, e.g.
+      trial: recommended - naming-strategy -> recommended: classes 10 -> 10, problem names 1 -> 0; 7
+      of 10 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
+        Owner1 -> ShippingShipmentOwner   at $defs/shipping.Shipment > owner
         Customer -> ManyOptionsCustomer   at $defs/Customer
-        Store -> ManyOptionsStore   at $defs/Store
-        Address -> ManyOptionsStoreAddress   at $defs/Store > address
   --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
       Most enums are inline value sets of one property (inline enums: 5 of 5). As Enum classes they
       add one class name each, the longest and most numbered names; Literal types keep the values
@@ -44,9 +43,8 @@ Add (6 options)
       measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
       measured: Stripe API description: problem names 348 -> 158
       measured: SchemaStore workflow schema: Type1 to Type19 disappear
-      trial: recommended - dotted-keys - enum-shape -> recommended - dotted-keys: classes 17 -> 12,
-      problem names 0 -> 0; 0 of 12 classes matched by schema location renamed (0 only renumbered),
-      5 removed, 0 added
+      trial: recommended - enum-shape -> recommended: classes 15 -> 10, problem names 0 -> 0; 0 of
+      10 classes matched by schema location renamed (0 only renumbered), 5 removed, 0 added
   --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]
       The schema repeats shapes (inline objects repeating a shape: 11, in 1 shapes; inline enums
       repeating a value set: 0, in 0 sets; union branches that only constrain their parent's
@@ -56,9 +54,8 @@ Add (6 options)
       measured: Stripe API description: 2512 -> 2022 types
       measured: SchemaStore workflow schema: the step branches' copies With1 to With11 became one
       With1
-      trial: recommended - dotted-keys - reuse -> recommended - dotted-keys: classes 20 -> 12,
-      problem names 0 -> 0; 0 of 12 classes matched by schema location renamed (0 only renumbered),
-      8 removed, 0 added
+      trial: recommended - reuse -> recommended: classes 20 -> 10, problem names 0 -> 0; 0 of 10
+      classes matched by schema location renamed (0 only renumbered), 10 removed, 0 added
   --class-name ManyOptions   [root.class-name-for-root-object]
       The root schema is an object model. Without --class-name its class is Model (with
       --use-title-as-name, its title: none), and full-path prefixes that name onto root-level
@@ -68,12 +65,23 @@ Add (6 options)
       became TsConfig, names over 40 characters 6 -> 0
       measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
       Workflow, Compose and PackageJson
-      trial: recommended - dotted-keys - root-name -> recommended - dotted-keys: classes 12 -> 12,
-      problem names 1 -> 0; 6 of 12 classes matched by schema location renamed (0 only renumbered),
-      0 removed, 0 added, e.g.
+      trial: recommended - root-name -> recommended: classes 10 -> 10, problem names 1 -> 0; 5 of 10
+      classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         ModelCustomer -> ManyOptionsCustomer   at $defs/Customer
         ModelStore -> ManyOptionsStore   at $defs/Store
-        ModelStoreAddress -> ManyOptionsStoreAddress   at $defs/Store > address
+        Model -> ManyOptions   at (root)
+  --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]
+      Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As
+      modules, cycle members move to _internal.py, where same-named classes of different namespaces
+      get _1 suffixes; flat names avoid that.
+      measured: Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153
+      measured: Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32
+      flat)
+      trial: recommended - dotted-keys -> recommended: classes 11 -> 10, problem names 1 -> 0; 5 of
+      10 classes matched by schema location renamed (0 only renumbered), 1 removed, 0 added, e.g.
+        Invoice -> BillingInvoice   at $defs/billing.Invoice
+        BillingAddress -> BillingInvoiceBillingAddress   at $defs/billing.Invoice > billingAddress
+        Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
   --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 2; objects with one required key: 0); otherwise they are named after their
@@ -86,25 +94,6 @@ Add (6 options)
       WorkflowDispatchInputString, Boolean, ...)
       measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
       schemas without tagged or key branches: no change
-      trial: recommended - dotted-keys - union-variant-names -> recommended - dotted-keys: classes
-      12 -> 12, problem names 1 -> 0; 2 of 12 classes matched by schema location renamed (0 only
-      renumbered), 0 removed, 0 added, e.g.
-        ManyOptionsPayment -> ManyOptionsPaymentCard   at (root) > payment > oneOf 0
-        ManyOptionsPayment1 -> ManyOptionsPaymentBank   at (root) > payment > oneOf 1
-
-Left out after the trial (the rules recommend these)
-  --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]
-      Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As
-      modules, cycle members move to _internal.py, where same-named classes of different namespaces
-      get _1 suffixes; flat names avoid that.
-      measured: Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153
-      measured: Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32
-      flat)
-      trial: recommended - dotted-keys -> recommended: classes 12 -> 10, problem names 0 -> 0; 5 of
-      10 classes matched by schema location renamed (0 only renumbered), 2 removed, 0 added, e.g.
-        Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
-        Owner -> ShippingShipmentOwner   at $defs/shipping.Shipment > owner
-        Invoice -> BillingInvoice   at $defs/billing.Invoice
 
 Not recommended
   --use-title-as-name   [titles.keys-when-titles-collide]
@@ -118,28 +107,21 @@ Not recommended
       measured: Stripe API description: 17% of component titles changed in four months; class names
       from keys renamed 0.0% of locations
 
-Trial  13 candidates generated in memory without formatting; nothing written
-  candidate                                        classes   problems  numbered  long  doubled  displaced  median  unconstrained
-  current                                               25  4 (16.0%)         3     0        0          0       7              0
-  preset                                                25  4 (16.0%)         3     0        0          0       7              0
-  recommended                                           10   0 (0.0%)         0     0        0          0      19              0
-  recommended - naming-strategy                         10  1 (10.0%)         1     0        0          0      11              0
-  recommended - enum-shape                              15   0 (0.0%)         0     0        0          0      20              0
-  recommended - reuse                                   20   0 (0.0%)         0     0        0          0      23              0
-  recommended - root-name                               10  1 (10.0%)         0     0        0          0      16              0
-  recommended - dotted-keys                             12   0 (0.0%)         0     0        0          0      14              0   selected
-  recommended - dotted-keys - naming-strategy           11   1 (9.1%)         1     0        0          0       8              0
-  recommended - dotted-keys - enum-shape                17   0 (0.0%)         0     0        0          0      14              0
-  recommended - dotted-keys - reuse                     20   0 (0.0%)         0     0        0          0      22              0
-  recommended - dotted-keys - root-name                 12   1 (8.3%)         0     0        0          0      10              0
-  recommended - dotted-keys - union-variant-names       12   1 (8.3%)         1     0        0          0      14              0
+Trial  8 candidates generated in memory without formatting; nothing written
+  candidate                      classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                             25  4 (16.0%)         3     0        0          0       7              0
+  preset                              25  4 (16.0%)         3     0        0          0       7              0
+  recommended                         10   0 (0.0%)         0     0        0          0      19              0   selected
+  recommended - naming-strategy       10  1 (10.0%)         1     0        0          0      11              0
+  recommended - enum-shape            15   0 (0.0%)         0     0        0          0      20              0
+  recommended - reuse                 20   0 (0.0%)         0     0        0          0      23              0
+  recommended - root-name             10  1 (10.0%)         0     0        0          0      16              0
+  recommended - dotted-keys           11   1 (9.1%)         1     0        0          0      14              0
   current: the configuration as set, without the preset; never selected
-  the last 5 rows: the selected configuration without or with one option, to measure each option on
-  it; never selected
   unconstrained: fields that dcg warns it generates without some of their constraints
 
-Changes from the current configuration (current -> recommended - dotted-keys)
-  7 of 11 classes matched by schema location renamed (0 only renumbered), 14 removed, 1 added, e.g.
+Changes from the current configuration (current -> recommended)
+  9 of 9 classes matched by schema location renamed (0 only renumbered), 16 removed, 1 added, e.g.
     Payment -> ManyOptionsPaymentCard   at (root) > payment > oneOf 0
     Payment1 -> ManyOptionsPaymentBank   at (root) > payment > oneOf 1
     Customer -> ManyOptionsCustomer   at $defs/Customer
@@ -150,7 +132,7 @@ Notes
     no trial result.
 
 Command
-  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261019 --reuse-model --target-python-version 3.14 --use-tag-as-union-variant-name
+  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261019 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -162,4 +144,5 @@ pyproject.toml
   preset = "standard-py314-20261019"
   reuse-model = true
   target-python-version = "3.14"
+  treat-dot-as-module = false
   use-tag-as-union-variant-name = true

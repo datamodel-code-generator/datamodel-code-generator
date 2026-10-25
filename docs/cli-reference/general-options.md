@@ -2752,7 +2752,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
       recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
       recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
-      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7              0
+      recommended - dotted-keys                                 12  2 (16.7%)         0     0        2          0       7              0
       recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
       recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
       recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0

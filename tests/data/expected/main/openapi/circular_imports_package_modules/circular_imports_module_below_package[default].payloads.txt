@@ -1,0 +1,22 @@
+treasury.transaction_entry {}: schema accepts, model accepts
+treasury.transaction_entry {"type": "received_credit"}: schema accepts, model accepts
+treasury.transaction_entry {"type": "other"}: schema rejects, model rejects
+treasury.transaction_entry {"type": 1}: schema rejects, model rejects
+treasury.transaction_entry {"flow_details": {}}: schema accepts, model accepts
+treasury.transaction_entry {"flow_details": {"received_debit": {"id": "d1"}}}: schema accepts, model accepts
+treasury.transaction_entry {"flow_details": {"received_debit": {"id": 1}}}: schema rejects, model rejects
+treasury.transaction_entry {"flow_details": {"received_debit": {"id": "d1", "detail": {"note": "n", "leaf": {"code": 3}}}}}: schema accepts, model accepts
+treasury.transaction_entry {"flow_details": {"received_debit": {"id": "d1", "detail": {"note": "n", "leaf": {"code": "three"}}}}}: schema rejects, model rejects
+flow_details {}: schema accepts, model accepts
+flow_details {"received_debit": {"detail": {"leaf": {"code": 1}}}}: schema accepts, model accepts
+flow_details {"received_debit": {"detail": {"leaf": {"code": 1.5}}}}: schema rejects, model rejects
+flow_details {"received_debit": "d1"}: schema rejects, model rejects
+treasury.received_debit {}: schema accepts, model accepts
+treasury.received_debit {"id": "d1", "detail": {"note": "n"}}: schema accepts, model accepts
+treasury.received_debit {"id": "d1", "detail": {"note": 1}}: schema rejects, model rejects
+treasury.received_debit {"detail": []}: schema rejects, model rejects
+treasury.sub.detail {}: schema accepts, model accepts
+treasury.sub.detail {"note": "n", "leaf": {}}: schema accepts, model accepts
+treasury.sub.detail {"leaf": {"code": "one"}}: schema rejects, model rejects
+treasury.sub.deep.leaf {}: schema accepts, model accepts
+treasury.sub.deep.leaf {"code": 1}: schema accepts, model accepts

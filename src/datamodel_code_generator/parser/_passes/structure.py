@@ -839,12 +839,46 @@ def rename_and_relocate_scc_models(
     return module_class_mappings
 
 
+def _imports_through_package_of_merge(module: tuple[str, ...], merged: set[tuple[str, ...]]) -> bool:
+    """Return whether importing ``module`` from the merged ``_internal`` module runs a forwarder that imports it.
+
+    Python runs the package of ``module`` first. A package of the merge is a forwarder that imports ``_internal``, so
+    it finds ``_internal`` half built, unless it runs before ``_internal`` does: that is so when every merged module
+    is the package or below it.
+    """
+    return any(
+        module[:size] in merged and any(member[:size] != module[:size] for member in merged)
+        for size in range(len(module))
+    )
+
+
+def _with_imports_through_packages(
+    cycle: set[tuple[str, ...]],
+    module_graph: dict[tuple[str, ...], set[tuple[str, ...]]],
+    cyclic: set[tuple[str, ...]],
+) -> set[tuple[str, ...]]:
+    """Add to the modules of ``cycle`` the modules they import through a package of the merge, until none is left.
+
+    The modules of other cycles are left out: their models move to the ``_internal`` module of that cycle.
+    """
+    merged = set(cycle)
+    while added := {
+        module
+        for member in merged
+        for module in module_graph[member] - merged - cyclic
+        if _imports_through_package_of_merge(module, merged)
+    }:
+        merged |= added
+    return merged
+
+
 def module_dependency_cycles(
     parser: StructureHost,
     module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
 ) -> list[set[tuple[str, ...]]]:
-    """Find the modules that import each other, from the snapshot of the references between their models.
+    """Find the modules to merge into ``_internal`` modules, from the snapshot of the references between models.
 
+    A cycle is the modules that import each other, and the modules it imports through a package of the cycle.
     The models that the schema validator rules of a model name count as its field types do: its module imports them
     for the class body that evaluates the rules, an alias written as a class for its rules included.
     A stand-in is no member of its module: its module imports nothing for it, and nothing imports it.
@@ -891,9 +925,10 @@ def module_dependency_cycles(
                         module_graph[module].add(target_module)
         return find_circular_sccs(module_graph)
 
-    return graph_answer(
-        snapshot, find_circular_sccs(graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))), old
-    )
+    module_graph = graph.quotient(module_of, (EdgeKind.REFERENCE, EdgeKind.RULE_TYPE))
+    cycles = graph_answer(snapshot, find_circular_sccs(module_graph), old)
+    cyclic = set().union(*cycles)
+    return [_with_imports_through_packages(cycle, module_graph, cyclic) for cycle in cycles]
 
 
 def resolve_circular_imports(

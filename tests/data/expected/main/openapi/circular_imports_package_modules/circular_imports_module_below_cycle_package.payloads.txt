@@ -1,0 +1,13 @@
+a.x {}: schema accepts, model accepts
+a.x {"y": {}}: schema accepts, model accepts
+a.x {"y": {"x": {"y": {}}}}: schema accepts, model accepts
+a.x {"y": {"x": {"y": 1}}}: schema rejects, model rejects
+a.x {"z": {"code": 1}}: schema accepts, model accepts
+a.x {"z": {"code": "one"}}: schema rejects, model rejects
+a.x {"y": {"x": {"z": {"code": 2}}}}: schema accepts, model accepts
+a.b.y {}: schema accepts, model accepts
+a.b.y {"x": {"z": {"code": 1}}}: schema accepts, model accepts
+a.b.y {"x": []}: schema rejects, model rejects
+a.c.z {}: schema accepts, model accepts
+a.c.z {"code": 1}: schema accepts, model accepts
+a.c.z {"code": 1.5}: schema rejects, model rejects
