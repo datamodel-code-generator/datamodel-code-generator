@@ -1,0 +1,27 @@
+{
+  "a.item": [
+    {},
+    {"thing": {"item": {}}},
+    {"thing": {"leaf": {"code": 1}, "dep": {"leaf": {"code": 2}}}},
+    {"thing": {"dep": {"leaf": {"code": "two"}}}},
+    {"thing": []}
+  ],
+  "x.thing": [
+    {},
+    {"item": {"thing": {}}},
+    {"leaf": {"code": 1}},
+    {"leaf": {"code": 1.5}},
+    {"dep": {"leaf": {}}},
+    {"dep": 1}
+  ],
+  "a.c.leaf": [
+    {},
+    {"code": 1},
+    {"code": "one"}
+  ],
+  "d.dep": [
+    {},
+    {"leaf": {"code": 1}},
+    {"leaf": {"code": []}}
+  ]
+}

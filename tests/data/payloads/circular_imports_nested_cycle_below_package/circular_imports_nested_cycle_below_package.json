@@ -1,0 +1,25 @@
+{
+  "root_thing": [
+    {},
+    {"item": {"root": {}}},
+    {"item": {"sub": {"note": "n", "peer": {"sub": {}}}}},
+    {"item": {"sub": {"note": 1}}},
+    {"item": []}
+  ],
+  "a.item": [
+    {},
+    {"root": {"item": {}}},
+    {"sub": {"peer": {"sub": {"note": "deep"}}}},
+    {"sub": {"peer": {"sub": {"note": false}}}}
+  ],
+  "a.sub.s": [
+    {},
+    {"note": "n", "peer": {}},
+    {"peer": {"sub": []}}
+  ],
+  "a.peer.p": [
+    {},
+    {"sub": {"note": "n"}},
+    {"sub": {"note": 2}}
+  ]
+}

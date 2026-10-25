@@ -1,0 +1,17 @@
+a.item {}: schema accepts, model accepts
+a.item {"thing": {"item": {}}}: schema accepts, model accepts
+a.item {"thing": {"leaf": {"code": 1}, "dep": {"leaf": {"code": 2}}}}: schema accepts, model accepts
+a.item {"thing": {"dep": {"leaf": {"code": "two"}}}}: schema rejects, model rejects
+a.item {"thing": []}: schema rejects, model rejects
+x.thing {}: schema accepts, model accepts
+x.thing {"item": {"thing": {}}}: schema accepts, model accepts
+x.thing {"leaf": {"code": 1}}: schema accepts, model accepts
+x.thing {"leaf": {"code": 1.5}}: schema rejects, model rejects
+x.thing {"dep": {"leaf": {}}}: schema accepts, model accepts
+x.thing {"dep": 1}: schema rejects, model rejects
+a.c.leaf {}: schema accepts, model accepts
+a.c.leaf {"code": 1}: schema accepts, model accepts
+a.c.leaf {"code": "one"}: schema rejects, model rejects
+d.dep {}: schema accepts, model accepts
+d.dep {"leaf": {"code": 1}}: schema accepts, model accepts
+d.dep {"leaf": {"code": []}}: schema rejects, model rejects

@@ -1,10 +1,11 @@
-"""Merge into ``_internal.py`` the modules that a cycle imports through one of its packages.
+"""Merge into ``_internal.py`` the modules through which it would import itself back.
 
 A package of a cycle becomes a forwarder that imports ``_internal.py``. ``_internal.py`` imports a module below such a
 package through it, so the package ran first and found ``_internal.py`` half built: ``import`` failed with ``cannot
 import name ... from partially initialized module``. The modules below a package of the cycle that the cycle imports
 now join the merge (``--naming-strategy full-path`` puts the inline enum of a dotted schema in such a module), unless
-every merged module is that package or below it, where the package runs first.
+every merged module is that package or below it, where the package runs first. So do the modules that ``_internal.py``
+imports and that use a model it holds, and another cycle that ``_internal.py`` imports below a package of the merge.
 """
 
 from __future__ import annotations
@@ -27,6 +28,8 @@ if TYPE_CHECKING:
 PAYLOADS_PATH = DATA_PATH / "payloads"
 BELOW_PACKAGE = "circular_imports_module_below_package"
 BELOW_CYCLE_PACKAGE = "circular_imports_module_below_cycle_package"
+USING_BELOW_PACKAGE = "circular_imports_module_using_module_below_package"
+NESTED_CYCLE = "circular_imports_nested_cycle_below_package"
 BELOW_PACKAGE_MODELS = {
     "flow_details": ("", "FlowDetails"),
     "treasury.received_debit": ("treasury", "ReceivedDebit"),
@@ -38,6 +41,18 @@ BELOW_CYCLE_PACKAGE_MODELS = {
     "a.x": ("a", "X"),
     "a.b.y": ("a.b", "Y"),
     "a.c.z": ("a.c", "Z"),
+}
+USING_BELOW_PACKAGE_MODELS = {
+    "a.item": ("a", "Item"),
+    "x.thing": ("x", "Thing"),
+    "a.c.leaf": ("a.c", "Leaf"),
+    "d.dep": ("d", "Dep"),
+}
+NESTED_CYCLE_MODELS = {
+    "root_thing": ("", "RootThing"),
+    "a.item": ("a", "Item"),
+    "a.sub.s": ("a.sub", "S"),
+    "a.peer.p": ("a.peer", "P"),
 }
 
 
@@ -117,3 +132,35 @@ def test_circular_imports_module_below_cycle_package(output_dir: Path) -> None:
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_output(_verdicts(output_dir, BELOW_CYCLE_PACKAGE, BELOW_CYCLE_PACKAGE_MODELS), name="payloads")
+
+
+def test_circular_imports_module_using_module_below_package(output_dir: Path) -> None:
+    """Merge ``d`` too, which uses the model of ``a.c`` that joins the merge, as ``_internal.py`` imports ``d``.
+
+    ``a`` and ``x`` form the cycle, which imports ``a.c`` below the package ``a`` and ``d``. With ``a.c`` alone in
+    ``_internal.py``, ``d`` imported its model from ``_internal.py`` while ``_internal.py`` imported ``d``: no module of
+    the package imported, ``a`` first included, which imported before ``a.c`` joined the merge.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{USING_BELOW_PACKAGE}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(_verdicts(output_dir, USING_BELOW_PACKAGE, USING_BELOW_PACKAGE_MODELS), name="payloads")
+
+
+def test_circular_imports_nested_cycle_below_package(output_dir: Path) -> None:
+    """Merge the cycle of ``a.sub`` and ``a.peer`` into the ``_internal.py`` of the cycle of the root and ``a``.
+
+    The cycle of the root package and ``a`` imports ``a.sub``, of the other cycle, whose ``a/_internal.py`` it imported
+    through ``a``, a forwarder of the first ``_internal.py`` while that was half built: no module of the package
+    imported. Both cycles now share one ``_internal.py``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{NESTED_CYCLE}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(_verdicts(output_dir, NESTED_CYCLE, NESTED_CYCLE_MODELS), name="payloads")
