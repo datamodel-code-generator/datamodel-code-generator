@@ -8,4 +8,4 @@ from pydantic import BaseModel, constr
 
 
 class Model(BaseModel):
-    x: constr(pattern="^don\\'t$") | None = None
+    x: constr(pattern=r"^don\'t$") | None = None

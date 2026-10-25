@@ -419,3 +419,11 @@ match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:text: Annotated\
 reason = "under --collapse-root-models with --field-constraints or --use-annotated (as in the presets), a maxLength beside a union of a model and a string type was written on the whole union (Annotated[Item | str | None, Field(max_length=3)]), so Pydantic applied it to the model member too and raised TypeError for every object value; the keyword is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)] | None), so object values parse and strings are checked as before (crash fix: class names, field names and the parsed values of valid payloads stay)"
 decision = "#6053"
 release_note = "a length keyword beside a union of a model and a string type that --collapse-root-models inlines, under --field-constraints or --use-annotated (as in the presets), is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)]) instead of the whole union, where Pydantic raised TypeError for every object value"
+
+[[accepted]]
+input = "*"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] [\\w:]+: .*StringConstraints\\(pattern=.*\\\\\\\\(?:\\\\)?'.* -> .*StringConstraints\\(pattern=.*$"
+reason = "a pattern holding a single quote was written in a raw literal with the quote escaped (r'^it\\'s$'), so the constr or StringConstraints held the pattern with an extra backslash, which Python's re matches the same way but model_json_schema() published, and ECMA-262 engines in unicode mode reject; the raw literal takes a quote the pattern does not hold, and a pattern holding both quotes is a plain literal (same matches: every valid payload parses to the same value; class names, field names and structure stay; the published pattern now equals the schema's)"
+decision = "#6789"
+release_note = "a pattern holding a quote is written so that the generated constr or StringConstraints holds the schema's pattern unchanged (r\"^it's$\" instead of r'^it\\'s$'), so model_json_schema() publishes the schema's pattern"

@@ -9,9 +9,9 @@ from pydantic import BaseModel, constr
 
 class Patterns(BaseModel):
     plain: constr(pattern=r'^\d+$') | None = None
-    quote: constr(pattern=r'^it\'s$') | None = None
-    backslash_quote: constr(pattern="^it\\'s$") | None = None
+    quote: constr(pattern=r"^it's$") | None = None
+    backslash_quote: constr(pattern=r"^it\'s$") | None = None
     newline: constr(pattern=r'^a\nb$') | None = None
     null_byte: constr(pattern='^a\x00b$') | None = None
-    quote_comment: constr(pattern="^a\\' #") | None = None
-    quote_expression: constr(pattern="^a\\' if 1 else 2 #") | None = None
+    quote_comment: constr(pattern=r"^a\' #") | None = None
+    quote_expression: constr(pattern=r"^a\' if 1 else 2 #") | None = None

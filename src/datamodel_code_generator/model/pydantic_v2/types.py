@@ -14,10 +14,10 @@ from typing_extensions import override
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator._python_syntax import (
-    RAW_SINGLE_QUOTED_ESCAPES,
+    RAW_LITERAL_ESCAPES,
     call_text,
     keyword_argument,
-    raw_single_quoted,
+    raw_literal,
     subscript_text,
 )
 from datamodel_code_generator._regex_syntax import control_escapes_keep_meaning
@@ -187,7 +187,7 @@ bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
 _INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 
-escape_characters = RAW_SINGLE_QUOTED_ESCAPES
+escape_characters = RAW_LITERAL_ESCAPES
 
 HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 
@@ -198,8 +198,15 @@ def _decimal_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _get_regex_literal(pattern: str) -> str:
-    raw_literal = raw_single_quoted(pattern) if control_escapes_keep_meaning(pattern) else None
-    return pattern if raw_literal is None else PythonCode(raw_literal, pattern)
+    r"""Render a pattern as a raw string literal that reads back as the same regex.
+
+    A raw literal cannot escape its own quote (``r'\''`` keeps the backslash), so the
+    quote is chosen from those the pattern does not contain. A pattern holding both
+    quotes, ending in a lone backslash, or holding a control character whose escape
+    would change the regex, is returned as is and rendered as a plain string literal.
+    """
+    raw = raw_literal(pattern) if control_escapes_keep_meaning(pattern) else None
+    return pattern if raw is None else PythonCode(raw, pattern)
 
 
 class DataTypeManager(_DataTypeManagerBase):
