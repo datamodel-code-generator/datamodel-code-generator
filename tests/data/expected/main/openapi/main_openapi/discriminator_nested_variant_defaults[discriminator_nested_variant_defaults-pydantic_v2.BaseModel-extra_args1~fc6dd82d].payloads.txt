@@ -1,0 +1,25 @@
+DogOrBird valid {"type": "dog"}: accepted
+DogOrBird valid {"type": "bird"}: accepted
+DogOrBird invalid {"type": "cat"}: rejected
+DogOrBird invalid {"type": 1}: rejected
+Pets valid {}: accepted
+Pets valid {"pet": {"type": "cat"}}: accepted
+Pets valid {"pet": {"type": "dog"}}: accepted
+Pets valid {"pet": {"type": "bird"}}: accepted
+Pets invalid {"pet": {"type": "fish"}}: rejected
+Pets invalid {"pet": "cat"}: rejected
+Pets invalid {"pet": {}}: accepted
+PlainPets valid {}: accepted
+PlainPets valid {"pet": {"type": "cat"}}: accepted
+PlainPets valid {"pet": {"type": "dog"}}: accepted
+PlainPets valid {"pet": {"type": "bird"}}: accepted
+PlainPets invalid {"pet": {"type": "fish"}}: rejected
+PlainPets invalid {"pet": "cat"}: rejected
+PlainPets invalid {"pet": {}}: accepted
+ChainedPets valid {}: accepted
+ChainedPets valid {"pet": {"type": "cat"}}: accepted
+ChainedPets valid {"pet": {"type": "dog"}}: accepted
+ChainedPets valid {"pet": {"type": "bird"}}: accepted
+ChainedPets invalid {"pet": {"type": "fish"}}: rejected
+ChainedPets invalid {"pet": "cat"}: rejected
+ChainedPets invalid {"pet": {}}: accepted

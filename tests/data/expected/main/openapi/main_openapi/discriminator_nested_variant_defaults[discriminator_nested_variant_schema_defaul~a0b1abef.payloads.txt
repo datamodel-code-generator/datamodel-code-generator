@@ -1,0 +1,7 @@
+DefaultedPets valid {}: rejected
+DefaultedPets valid {"pet": {"type": "cat"}}: accepted
+DefaultedPets valid {"pet": {"type": "dog"}}: accepted
+DefaultedPets valid {"pet": {"type": "bird"}}: accepted
+DefaultedPets invalid {"pet": {"type": "fish"}}: rejected
+DefaultedPets invalid {"pet": "cat"}: rejected
+DefaultedPets invalid {"pet": {}}: accepted

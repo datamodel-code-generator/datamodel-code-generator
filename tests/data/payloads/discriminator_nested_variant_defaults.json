@@ -1,0 +1,18 @@
+{
+  "DogOrBird": {
+    "valid": [{"type": "dog"}, {"type": "bird"}],
+    "invalid": [{"type": "cat"}, {"type": 1}]
+  },
+  "Pets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}, {"pet": {"type": "bird"}}],
+    "invalid": [{"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  },
+  "PlainPets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}, {"pet": {"type": "bird"}}],
+    "invalid": [{"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  },
+  "ChainedPets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}, {"pet": {"type": "bird"}}],
+    "invalid": [{"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  }
+}

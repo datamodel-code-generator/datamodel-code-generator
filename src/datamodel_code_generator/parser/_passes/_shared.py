@@ -1215,6 +1215,7 @@ def _iter_discriminator_data_types(
     *,
     can_update_discriminator: bool = True,
     discriminator_owner: int | None = None,
+    wrappers: list[DataModel] | None = None,
 ) -> Iterator[tuple[DataType, bool, int]]:
     for data_type in data_types:
         if data_type.is_union and not _is_discriminator_container(data_type):
@@ -1223,6 +1224,7 @@ def _iter_discriminator_data_types(
                 active_union_models,
                 can_update_discriminator=False,
                 discriminator_owner=discriminator_owner,
+                wrappers=wrappers,
             )
         else:
             source = data_type.reference.source if data_type.reference else None
@@ -1237,12 +1239,15 @@ def _iter_discriminator_data_types(
                     yield data_type, can_update_discriminator, owner
                 else:
                     active_union_models.add(source_id)
+                    if wrappers is not None:
+                        wrappers.append(source)
                     try:
                         yield from _iter_discriminator_data_types(
                             (source.fields[0].data_type,),
                             active_union_models,
                             can_update_discriminator=False,
                             discriminator_owner=owner,
+                            wrappers=wrappers,
                         )
                     finally:
                         active_union_models.remove(source_id)

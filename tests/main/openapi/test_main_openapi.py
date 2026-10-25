@@ -10234,6 +10234,7 @@ def test_main_openapi_discriminator_enum_tag_variants(
         ("pydantic_v2.BaseModel", ["--use-annotated"]),
         ("pydantic_v2.dataclass", []),
         ("pydantic_v2.BaseModel", ["--use-enum-values-in-discriminator"]),
+        ("pydantic_v2.BaseModel", ["--force-optional"]),
     ],
 )
 def test_main_openapi_discriminator_lone_variant_tags(
@@ -10249,6 +10250,102 @@ def test_main_openapi_discriminator_lone_variant_tags(
     is valid.
     """
     input_name = "discriminator_lone_variant_tags"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load((OPEN_API_DATA_PATH / f"{input_name}.yaml").read_text(encoding="utf-8"))
+
+    def schema_decides(validator: Draft202012Validator, kind: str, payload: object) -> None:
+        if kind == "valid":
+            validator.validate(payload)
+        else:
+            with pytest.raises(SchemaValidationError):
+                validator.validate(payload)
+
+    verdicts = []
+    for model_name, cases in json.loads((DATA_PATH / "payloads" / f"{input_name}.json").read_text()).items():
+        validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{model_name}"})
+        with _generated_model(output_file, input_name, model_name) as model:
+            validate = _model_json_validator(model)
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                schema_decides(validator, kind, payload)
+                try:
+                    validate(json.dumps(payload))
+                except pydantic.ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{model_name} {kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+ALIAS_DEFAULT_WARNING = pytest.mark.filterwarnings("ignore:.*which has no effect.*")
+"""Pydantic warns where a type alias writes the default of its root inside ``Annotated`` and a union takes the alias."""
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model", "extra_args"),
+    [
+        ("discriminator_nested_variant_defaults", "pydantic_v2.BaseModel", []),
+        ("discriminator_nested_variant_defaults", "pydantic_v2.BaseModel", ["--force-optional"]),
+        ("discriminator_nested_variant_defaults", "pydantic_v2.BaseModel", ["--force-optional", "--use-annotated"]),
+        (
+            "discriminator_nested_variant_defaults",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--strip-default-none"],
+        ),
+        pytest.param(
+            "discriminator_nested_variant_defaults",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-type-alias"],
+            marks=ALIAS_DEFAULT_WARNING,
+        ),
+        (
+            "discriminator_nested_variant_defaults",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--use-root-model-type-alias"],
+        ),
+        ("discriminator_nested_variant_defaults", "pydantic_v2.dataclass", []),
+        pytest.param(
+            "discriminator_nested_variant_defaults",
+            "pydantic_v2.dataclass",
+            ["--force-optional"],
+            marks=ALIAS_DEFAULT_WARNING,
+        ),
+        ("discriminator_nested_variant_defaults", "pydantic_v2.dataclass", ["--force-optional", "--use-annotated"]),
+        ("discriminator_nested_variant_schema_default", "pydantic_v2.BaseModel", []),
+        ("discriminator_nested_variant_schema_default", "pydantic_v2.BaseModel", ["--use-annotated"]),
+        (
+            "discriminator_nested_variant_schema_default",
+            "pydantic_v2.BaseModel",
+            ["--force-optional", "--strip-default-none"],
+        ),
+    ],
+)
+def test_main_openapi_discriminator_nested_variant_defaults(
+    input_name: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write no ``discriminator`` for a union that takes a root model, or a type alias, with a default as a variant.
+
+    Up to 0.86.0 the output kept it, which Pydantic rejects when the module is imported, as the default makes the
+    schema of the root a ``default`` schema that no tagged union holds. ``--force-optional`` gives a root a default,
+    and so does the default of its schema. A root that writes none keeps the discriminator of the union: with
+    ``--strip-default-none`` and ``--use-annotated`` for an alias, which writes no assignment, and in a root model
+    written as an alias, which writes no root field. The roots a variant reaches count however deep. The verdicts of
+    each payload are the generated models', and the schema's decides whether the payload is valid.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
         output_path=output_file,

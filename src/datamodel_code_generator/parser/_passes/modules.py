@@ -3166,6 +3166,27 @@ def _variant_carries_tag(data_type: DataType, field_name: str) -> bool:
     )
 
 
+def _root_writes_default(wrapper: DataModel) -> bool:
+    """Return whether the root of a root model, or of a type alias, gets a default from what is written for it.
+
+    A class gets it from the call of its root field or from the assignment after its annotation, a type alias from the
+    call of its root field inside ``Annotated`` alone, and a root model written as an alias (``Foo = RootModel[T]``)
+    has no root field to write one.
+    """
+    root = wrapper.fields[0]
+    call = root._render_plan().call  # noqa: SLF001
+    call_default = call is not None and (
+        call.factory is not None or (call.positional is not None and call.positional.kind == "default")
+    )
+    match (wrapper.IS_ALIAS, wrapper.IS_ROOT_MODEL):
+        case (True, True):
+            return False
+        case (True, False):
+            return call_default
+        case _:
+            return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
+
+
 def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     """Write no ``discriminator=`` that Pydantic cannot build, once every module has written its tags.
 
@@ -3173,16 +3194,27 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     alone by its ``$ref``, and Pydantic rejects the union where that variant, or one the ``$ref`` reaches through
     root models, has no tag field of ``Literal`` values. A union of any module may still tag the variant, so a
     variant without a tag is final only once every module is processed.
+
+    Pydantic rejects as well a union that takes as a variant a root model, or a type alias, whose root has a default,
+    however deep the root models it names reach: the default makes the schema of the root a ``default`` schema, which
+    no tagged union holds.
     """
     for ctx in run.contexts:
         for model in ctx.models:
             for field in model.fields:
                 match field.extras.get("discriminator"):
-                    case {"propertyName": str() as property_name} if property_name and _is_lone_variant(field):
-                        if not all(
-                            _variant_carries_tag(data_type, property_name)
-                            for data_type, _, _ in _iter_discriminator_data_types([field.data_type])
-                        ):
+                    case {"propertyName": str() as property_name} if property_name:
+                        lone = _is_lone_variant(field)
+                        wrappers: list[DataModel] = []
+                        variants = list(
+                            _iter_discriminator_data_types(
+                                [field.data_type] if lone else field.data_type.data_types, wrappers=wrappers
+                            )
+                        )
+                        if (
+                            lone
+                            and not all(_variant_carries_tag(data_type, property_name) for data_type, _, _ in variants)
+                        ) or any(map(_root_writes_default, wrappers)):
                             parser._graph_builder.drop_field_discriminator(field)  # noqa: SLF001
 
 
