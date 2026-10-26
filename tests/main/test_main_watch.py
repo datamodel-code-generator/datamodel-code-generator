@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import import_module
@@ -305,17 +306,15 @@ def _write_watch_cli_input_and_wait(
         nonlocal last_write, replaced
 
         if not replaced:
-            try:
+            with suppress(PermissionError):
                 pending_input.replace(input_file)
-            except PermissionError:
-                return False
-            replaced = True
-            last_write = time.monotonic()
-        if condition():
+                replaced = True
+                last_write = time.monotonic()
+        if replaced and condition():
             return True
 
         now = time.monotonic()
-        if now - last_write >= WATCH_CLI_CHANGE_RETRY_SECONDS:
+        if replaced and now - last_write >= WATCH_CLI_CHANGE_RETRY_SECONDS:
             input_file.touch()
             last_write = now
         return False
