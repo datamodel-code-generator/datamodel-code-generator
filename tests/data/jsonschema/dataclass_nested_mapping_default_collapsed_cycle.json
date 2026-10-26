@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {"holder": {"$ref": "#/$defs/Holder"}},
+  "$defs": {
+    "Holder": {"type": "object", "properties": {"first": {"$ref": "#/$defs/First", "default": {"second": {}}}}},
+    "First": {"type": "object", "properties": {"second": {"$ref": "#/$defs/Second", "default": {}}}},
+    "Second": {"type": "object", "properties": {"first": {"$ref": "#/$defs/OptionalFirst", "default": {}}}},
+    "OptionalFirst": {"anyOf": [{"$ref": "#/$defs/First"}, {"type": "null"}]}
+  }
+}

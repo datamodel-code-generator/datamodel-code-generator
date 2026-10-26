@@ -11,10 +11,12 @@ Outside a parse no memo is current: values are computed at each read, and the re
 its nodes join in a memo of its own (`rendering_memo`).
 
 The memo also keeps the derived values of a field (`ParseMemo.derived`: its render plan and its imports) with the
-revisions they read: the field's own, its model's own (``own``) and, of each model its type references, the model's
-own and its fields' (``deep``). The store's mutations bump what they write (`bump_field`, `bump_node`, `bump_model`,
-`bump_deep`); a node bump reaches the fields whose values read the node and the field that holds it. A derived value is
-returned while none of those revisions moved.
+revisions they read: the field's own, its model's own (``own``) and the model's own and its fields' (``deep``) of each
+model the computation read: the models its type references, through a root model or type alias the models its root
+type references, the models an on-demand walk of the model graph reached while it computed (`note_reads`) and what
+the derived values of other fields it read depend on. The store's mutations bump what they write (`bump_field`,
+`bump_node`, `bump_model`, `bump_deep`); a node bump reaches the fields whose values read the node and the field that
+holds it. A derived value is returned while none of those revisions moved.
 
 Under the ``RENDER_MEMOS`` check, each value a memo returns is computed anew and compared; a value that differs is a
 stale hit. The memos return what the caches they replace returned, stale or not, and two tables are known to return
@@ -34,7 +36,7 @@ from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Hashable, Mapping
+    from collections.abc import Callable, Generator, Hashable, Iterable, Mapping
 
     from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey
 
@@ -114,7 +116,10 @@ class _Derived:
     parent: object
     own: int
     references: tuple[tuple[Any, object, int], ...]
-    """Each reference the field's type held, its model then and that model's ``deep`` revision then."""
+    """Each reference the field's type held, also through root models and type aliases, its model then and that model's
+    ``deep`` revision then."""
+    reads: tuple[tuple[object, int], ...]
+    """Each other model the computation read (`note_reads`), with its ``deep`` revision then."""
     value: Any
 
 
@@ -122,7 +127,18 @@ class _Derived:
 class ParseMemo:
     """The memos of one parse, which the generation store owns."""
 
-    __slots__ = ("_clock", "_deep", "_derived", "_epochs", "_joins", "_own", "_readers", "_revisions", "_slots")
+    __slots__ = (
+        "_clock",
+        "_deep",
+        "_derived",
+        "_epochs",
+        "_joins",
+        "_own",
+        "_readers",
+        "_reading",
+        "_revisions",
+        "_slots",
+    )
 
     def __init__(self) -> None:
         """Start with no values."""
@@ -135,6 +151,7 @@ class ParseMemo:
         self._deep: dict[int, int] = {}
         self._readers: dict[int, dict[int, Any]] = {}
         self._derived: dict[tuple[MemoTable, int, Hashable], _Derived] = {}
+        self._reading: list[tuple[Any, dict[int, object]]] = []
 
     def bump_field(self, field: Any) -> None:
         """Move the revision of a field and the ``deep`` revision of its model, after a write to the field."""
@@ -184,44 +201,106 @@ class ParseMemo:
         """Return the value of a field kept in the table for ``view`` and read from ``source``, or compute and keep it.
 
         A kept value is returned while the field's revision, its model's ``own`` revision and the ``deep`` revision of
-        each model its type referenced when the value was computed hold; the nodes of its type then become its
-        readers. ``source`` (the plan imports read) is compared by identity.
+        each model it read when it was computed hold; the nodes of its type then become its readers. ``source`` (the
+        plan imports read) is compared by identity. A value that another field's computation reads adds what it
+        depends on to that computation.
         """
         key = (table, id(field), view)
-        if (entry := self._derived.get(key)) is not None and entry.field is field and entry.source is source:
-            deep = self._deep
-            if (
-                entry.revision == self._revisions.get(id(field), 0)
-                and entry.parent is field.parent
-                and entry.own == self._own.get(id(entry.parent), 0)
-                and all(
-                    reference.source is model and deep.get(id(model), 0) == revision
-                    for reference, model, revision in entry.references
-                )
-            ):
-                return _checked(table, field, entry.value, recompute or compute)
-        value = compute()
-        self._derived[key] = self._derive(field, source, value)
+        if (entry := self._derived.get(key)) is not None and self._holds(entry, field, source):
+            if self._reading:
+                self._read_by_outer(entry)
+            return _checked(table, field, entry.value, recompute or compute)
+        reads: dict[int, object] = {}
+        self._reading.append((field, reads))
+        try:
+            value = compute()
+        finally:
+            self._reading.pop()
+        self._derived[key] = entry = self._derive(field, source, value, reads)
+        if self._reading:
+            self._read_by_outer(entry)
         return value
 
-    def _derive(self, field: Any, source: object, value: object) -> _Derived:
-        """Keep ``value`` with the revisions it read, and make the nodes of the field's type its readers."""
+    def _holds(self, entry: _Derived, field: Any, source: object) -> bool:
+        """Return whether a kept value was computed for ``field`` from ``source`` and the revisions it read hold."""
+        return (
+            entry.field is field
+            and entry.source is source
+            and entry.revision == self._revisions.get(id(field), 0)
+            and entry.parent is field.parent
+            and self._models_hold(entry)
+        )
+
+    def _models_hold(self, entry: _Derived) -> bool:
+        """Return whether the revisions of the models a kept value read hold: its model's own, the others' deep."""
+        deep = self._deep
+        return (
+            entry.own == self._own.get(id(entry.parent), 0)
+            and all(
+                reference.source is model and deep.get(id(model), 0) == revision
+                for reference, model, revision in entry.references
+            )
+            and (not entry.reads or all(deep.get(id(model), 0) == revision for model, revision in entry.reads))
+        )
+
+    def note_reads(self, models: Iterable[object]) -> None:
+        """Record ``models`` as read by the derived value being computed, if any."""
+        if reading := self._reading:
+            reads = reading[-1][1]
+            for model in models:
+                reads[id(model)] = model
+
+    def _read_by_outer(self, entry: _Derived) -> None:
+        """Add what a derived value depends on to the computation that reads it, when that is another field's value.
+
+        A field's imports read its own plan, which they are kept with (``source``). The ``deep`` revision of the
+        field's model covers the field's own revision.
+        """
+        if (outer := self._reading[-1])[0] is not entry.field:
+            reads = outer[1]
+            reads[id(entry.parent)] = entry.parent
+            for _, model, _ in entry.references:
+                reads[id(model)] = model
+            for model, _ in entry.reads:
+                reads[id(model)] = model
+
+    def _derive(self, field: Any, source: object, value: object, reads: dict[int, object]) -> _Derived:
+        """Keep ``value`` with the revisions it read, and make the nodes of the field's type its readers.
+
+        The type of a root model or type alias that the field's type names counts as read too, as the type the model
+        stands for, and so on through the ones that type names.
+        """
         readers = self._readers
         deep = self._deep
         field_key = id(field)
         references: list[tuple[Any, object, int]] = []
+        aliases: list[Any] = []
+        seen: set[int] = set()
+        own = True
         stack = [field.data_type]
-        while stack:
-            node = stack.pop()
-            readers.setdefault(id(node), {})[field_key] = field
-            if children := node.data_types:
-                readers.setdefault(id(children), {})[field_key] = field
-                stack.extend(children)
-            if (reference := node.reference) is not None:
-                model = reference.source
-                references.append((reference, model, deep.get(id(model), 0)))
-            if (dict_key := node.dict_key) is not None:
-                stack.append(dict_key)
+        while True:
+            while stack:
+                node = stack.pop()
+                if own:
+                    readers.setdefault(id(node), {})[field_key] = field
+                if children := node.data_types:
+                    if own:
+                        readers.setdefault(id(children), {})[field_key] = field
+                    stack.extend(children)
+                if (reference := node.reference) is not None:
+                    model = reference.source
+                    references.append((reference, model, deep.get(id(model), 0)))
+                    if (getattr(model, "IS_ROOT_MODEL", False) or getattr(model, "IS_ALIAS", False)) and (
+                        id(model) not in seen
+                    ):
+                        seen.add(id(model))
+                        aliases.append(model)
+                if (dict_key := node.dict_key) is not None:
+                    stack.append(dict_key)
+            if not aliases:
+                break
+            own = False
+            stack.extend(alias_field.data_type for alias_field in aliases.pop().fields)
         parent = field.parent
         return _Derived(
             field,
@@ -230,6 +309,7 @@ class ParseMemo:
             parent,
             self._own.get(id(parent), 0),
             tuple(references),
+            tuple((model, deep.get(id(model), 0)) for model in reads.values()),
             value,
         )
 
@@ -328,6 +408,15 @@ def forget(table: MemoTable, key: MemoKey, owner: object) -> None:
     """Drop what the current parse kept for the owner in the table; outside a parse nothing is kept."""
     if (memo := PARSE_MEMO.get()) is not None:
         memo.forget(table, key, owner)
+
+
+def note_reads(models: Iterable[object]) -> None:
+    """Record ``models`` as read by the derived field value the current parse computes (`ParseMemo.note_reads`).
+
+    A walk over the model graph that a computation asks for on demand records the models it reached.
+    """
+    if (memo := PARSE_MEMO.get()) is not None:
+        memo.note_reads(models)
 
 
 def bump_field(field: object) -> None:

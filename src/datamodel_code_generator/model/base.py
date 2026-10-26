@@ -31,7 +31,7 @@ from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
-from datamodel_code_generator._parse_memo import MemoTable, bump_deep, bump_field, forget, memoized
+from datamodel_code_generator._parse_memo import MemoTable, bump_deep, bump_field, forget, memoized, note_reads
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
@@ -1575,16 +1575,15 @@ _ASSIGNMENT_HOOK_NAMES = frozenset({
 def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
     """Return whether an earlier field of the class has bound ``name`` when the field's value is evaluated.
 
-    Only an output that keeps a field named like a type and writes that type as a string can meet this.
+    Only an output that keeps a field named like a type and writes that type as a string can meet this. The derived
+    value being computed reads the class's other fields (`note_reads`).
     """
-    parent = field.parent
-    return (
-        parent is not None
-        and parent.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE
-        and any(
-            earlier.name == name and parent.field_binds_class_attribute(earlier)
-            for earlier in takewhile(lambda earlier: earlier is not field, parent.fields)
-        )
+    if (parent := field.parent) is None or not parent.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
+        return False
+    note_reads((parent,))
+    return any(
+        earlier.name == name and parent.field_binds_class_attribute(earlier)
+        for earlier in takewhile(lambda earlier: earlier is not field, parent.fields)
     )
 
 

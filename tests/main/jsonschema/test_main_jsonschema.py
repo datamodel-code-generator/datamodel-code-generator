@@ -29238,6 +29238,18 @@ def test_main_dataclass_nested_mapping_default_chain(output_file: Path) -> None:
     )
 
 
+def test_main_dataclass_nested_mapping_default_collapsed_cycle(output_file: Path) -> None:
+    """A mapping-default cycle that collapsing a root model closes after the defaults were first read keeps dicts."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dataclass_nested_mapping_default_collapsed_cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "dataclasses.dataclass", "--collapse-root-models"],
+        assert_func=assert_file_content,
+        importable_module_name="generated_dataclass_nested_mapping_default_collapsed_cycle",
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "invalid_json", "expected_error_type"),
     [

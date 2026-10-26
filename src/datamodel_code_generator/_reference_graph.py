@@ -19,6 +19,7 @@ from typing_extensions import NamedTuple
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._graph import stable_toposort
+from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 
 if TYPE_CHECKING:
@@ -262,7 +263,8 @@ def walk_graph(
 ) -> ReachedModels[_NodeT]:
     """Take the snapshot of the models that edges of ``kind``, the ``targets_of`` each model, reach from ``starts``.
 
-    The first model met under a key stands for the key.
+    The first model met under a key stands for the key. The derived field value being computed, if any, records the
+    models reached as read (`note_reads`).
     """
     node_of: dict[ModelKey, _NodeT] = {}
 
@@ -277,6 +279,7 @@ def walk_graph(
         if (key := pending.pop()) not in targets:
             targets[key] = target_keys = tuple(map(met, targets_of(node_of[key])))
             pending.extend(target_keys)
+    note_reads(node_of.values())
     return ReachedModels(reference_graph(snapshot, node_of, {kind: targets}), MappingProxyType(node_of), start_keys)
 
 
