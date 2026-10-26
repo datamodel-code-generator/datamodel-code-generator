@@ -34664,3 +34664,49 @@ def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) ->
         invalid_json=json.dumps({"copy": {"children": [1]}}),
         expected_error_type="model_type",
     )
+
+
+def test_main_jsonschema_discriminator_multi_member_enum_use_enum_values(tmp_path: Path) -> None:
+    """A discriminated variant whose tag property is a multi-member enum tags with its enum members."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(
+        json.dumps({
+            "type": "object",
+            "properties": {
+                "v": {
+                    "oneOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}],
+                    "discriminator": {"propertyName": "k"},
+                }
+            },
+            "$defs": {
+                "A": {
+                    "type": "object",
+                    "properties": {"k": {"type": "string", "enum": ["x", "y"]}},
+                    "required": ["k"],
+                },
+                "B": {
+                    "type": "object",
+                    "properties": {"k": {"enum": ["z"]}},
+                    "required": ["k"],
+                },
+            },
+        })
+    )
+    output_file = tmp_path / "model.py"
+    run_main_and_assert(
+        input_path=schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-enum-values-in-discriminator",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    content = output_file.read_text()
+    assert "k: Literal[K.x, K.y]" in content
+    assert "K.A" not in content

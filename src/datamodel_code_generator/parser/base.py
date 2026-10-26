@@ -212,9 +212,6 @@ from datamodel_code_generator.parser._pipeline import (
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
-from datamodel_code_generator.python_literal import (
-    _semantic_value_text,
-)
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
@@ -1857,26 +1854,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         imports: Imports,  # noqa: ARG002
     ) -> DataType:
         """Create a data type for discriminator field, using enum literals if available."""
-        if enum_source:
-            if self.use_enum_values_in_discriminator:
-                enum_class_name = enum_source.reference.short_name
-                enum_member_literals: list[tuple[str, str]] = []
-                for value in discriminator_values:
-                    member = enum_source.find_member(value, coerce_strings=True)
-                    if member and member.field.name:
-                        enum_member_literals.append((enum_class_name, member.field.name))
-                    else:  # pragma: no cover
-                        enum_member_literals.append((enum_class_name, _semantic_value_text(value)))
-                data_type = self.data_type(enum_member_literals=enum_member_literals)
-                data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
-            else:
-                data_type = self.data_type(
-                    literals=[
-                        Parser._get_enum_discriminator_literal(enum_source, value) for value in discriminator_values
-                    ]
-                )
-        else:
-            data_type = self.data_type(literals=discriminator_values)
+        if not enum_source:
+            return self.data_type(literals=discriminator_values)
+
+        if not self.use_enum_values_in_discriminator:
+            return self.data_type(
+                literals=[Parser._get_enum_discriminator_literal(enum_source, value) for value in discriminator_values]
+            )
+
+        enum_class_name = enum_source.reference.short_name
+        enum_member_literals: list[tuple[str, str]] = []
+        for value in discriminator_values:
+            member = enum_source.find_member(value, coerce_strings=True)
+            if member and member.field.name:
+                enum_member_literals.append((enum_class_name, member.field.name))
+                continue
+            for enum_field in enum_source.fields:
+                if enum_field.name and (enum_class_name, enum_field.name) not in enum_member_literals:
+                    enum_member_literals.append((enum_class_name, enum_field.name))
+
+        data_type = self.data_type(enum_member_literals=enum_member_literals)
+        data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
         return data_type
 
     @staticmethod
