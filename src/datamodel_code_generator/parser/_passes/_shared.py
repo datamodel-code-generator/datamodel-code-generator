@@ -1185,8 +1185,12 @@ class _FieldTagFacts:
         return self.field.data_type.literals
 
     def enum_member(self) -> tuple[int, Any]:
-        """Return how many members the Enum the field's type names has, and the first one's value."""
-        fields = enum_source.fields if (enum_source := self.field.data_type.find_source(Enum)) else []
+        """Return how many members the Enum the field's type names has, and the first one's value.
+
+        A union that wrote the field as ``Literal[<Enum>.<member>]`` detached its reference to the Enum, which is then
+        found through the members, so a later union reads the tag the first one read.
+        """
+        fields = enum_source.fields if (enum_source := _annotated_enum(self.field.data_type)) else []
         return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
 
     def referenced_tag(self) -> None:
@@ -1416,6 +1420,18 @@ def _unique_items_tuple(data_type: DataType) -> DataType | None:
 def _annotated_reference(data_type: DataType) -> Reference | None:
     """Return the type that the annotation of ``data_type`` names: its reference, or the enum of its enum members."""
     return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
+
+
+def _annotated_enum(data_type: DataType) -> Enum | None:
+    """Return the Enum the annotation of ``data_type`` or of a type inside it names (``_annotated_reference``)."""
+    return next(
+        (
+            source
+            for nested in data_type.all_data_types
+            if (reference := _annotated_reference(nested)) is not None and isinstance(source := reference.source, Enum)
+        ),
+        None,
+    )
 
 
 @final
