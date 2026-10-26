@@ -557,7 +557,7 @@ class Parser:
             17,
             "Parser.method",
             "nullable",
-            "nullable changes Fact.NULLABLE outside GenerationStore operations",
+            "use GenerationStore.apply_literal_default() instead of writing nullable",
         ),
     ])
 
@@ -898,7 +898,7 @@ def test_cli_checks_paths_and_writes_the_allowlist(
     assert (clean, failing, created, created_output, created_matches, refused) == snapshot((0, 1, 0, "", True, 1))
     assert failing_output == snapshot("""\
 GenerationStore usage violations found:
-<tmp>/bad.py:2:5: use GenerationStore.require_field() instead of writing required (in write)
+<tmp>/bad.py:2:5: use GenerationStore.apply_literal_default() or require_field() instead of writing required (in write)
 """)
     assert refused_output.splitlines()[:2] == snapshot([
         "Refusing to add allowlist entries; route these writes through GenerationStore:",

@@ -1,10 +1,10 @@
-6 write required: use GenerationStore.require_field() instead of writing required
+6 write required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 7 write default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
 8 write alias: use GenerationStore.name_reference() or rename_field() instead of writing alias
 9 write name: use GenerationStore.rename_field() or rename_model() instead of writing name
 9 write type: use GenerationStore.set_type_expressions() instead of writing type
 10 write decorators: decorators changes RenderFact.MODULE_CODE outside GenerationStore operations
-11 write nullable: nullable changes Fact.NULLABLE outside GenerationStore operations
+11 write nullable: use GenerationStore.apply_literal_default() instead of writing nullable
 12 write has_default: has_default changes Fact.DEFAULTS outside GenerationStore operations
 13 write setattr(...): setattr with a computed name may write any fact; name the attribute
 14 write extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations
@@ -23,4 +23,4 @@
 29 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
 31 write extras["description"]: use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras["description"]
 32 write reference.path: use GenerationStore API instead of assigning reference.path
-33 write required: use GenerationStore.require_field() instead of writing required
+33 write required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
