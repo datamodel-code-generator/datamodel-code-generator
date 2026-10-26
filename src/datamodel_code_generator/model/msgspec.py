@@ -633,16 +633,16 @@ class Struct(DataModel):
         }
 
     @override
-    def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> None:
-        """Configure msgspec's tag and exclude the discriminator from instance fields.
+    def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> bool:
+        """Configure msgspec's tag; the discriminator leaves the instance fields.
 
         A tag msgspec refuses (``struct_tag_refused``) is left out, and the discriminator stays a field.
         """
         if struct_tag_refused(value):
-            return
+            return False
         self.add_base_class_kwarg("tag_field", repr(field_name))
         self.add_base_class_kwarg("tag", repr(value))
-        field.extras["is_classvar"] = True
+        return True
 
     @override
     def opt_out_of_inherited_tag(self) -> None:
@@ -1087,7 +1087,7 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._build_render_plan()
+        return self._render_plan()
 
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
@@ -1572,13 +1572,14 @@ class DataModelField(DataModelFieldBase):
         return dropped, {id(leaf.member) for leaf in integers}
 
     @override
-    def unconstrain_union_members(self) -> None:
+    def unconstrain_union_members(self) -> bool:
         """Write the members of a union that msgspec decodes as one type without their Meta constraints.
 
         msgspec checks every member of a type in a union against the constraints of all of them, and decodes every
         integer as the int member when the union has a float member too, so a constraint of such a member would reject
-        values another member accepts; the union accepts the values of every member.
+        values another member accepts; the union accepts the values of every member. Return whether the field changed.
         """
+        changed = False
         kinds: set[str] = set()
         keywords: set[str] = set()
         integer_keywords: set[str] = set()
@@ -1600,11 +1601,13 @@ class DataModelField(DataModelFieldBase):
             spread = {id(member): alias_field for leaf in dropped.values() for member, alias_field in leaf.spread}
             for owner, index, member in reversed(slots):
                 if id(member) in dropped or id(member) in spread:
+                    changed = True
                     member.unregister_reference()
                     owner.data_types[index : index + 1] = members = self._unconstrained_members(member, dropped, spread)
                     for unconstrained in members:
                         unconstrained.parent = owner
         self._record_unconstrained_union_members(kinds, keywords, integer_keywords)
+        return changed or bool(kinds or integer_keywords)
 
     @override
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:

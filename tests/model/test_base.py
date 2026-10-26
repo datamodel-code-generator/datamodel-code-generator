@@ -213,13 +213,12 @@ def test_msgspec_apply_discriminator_tag() -> None:
         reference=Reference(path="Pet", original_name="Pet", name="Pet"),
     )
 
-    model.apply_discriminator_tag(field, "kind", "pet")
-
+    assert model.apply_discriminator_tag(field, "kind", "pet") is True
     assert model.extra_template_data["base_class_kwargs"] == {
         "tag_field": "'kind'",
         "tag": "'pet'",
     }
-    assert field.extras["is_classvar"] is True
+    assert field.extras == {}
 
 
 def test_msgspec_custom_template_data_keeps_raw_options() -> None:
@@ -778,8 +777,7 @@ def test_default_apply_discriminator_tag_is_noop() -> None:
         reference=Reference(path="Pet", original_name="Pet", name="Pet"),
     )
 
-    model.apply_discriminator_tag(field, "kind", "pet")
-
+    assert model.apply_discriminator_tag(field, "kind", "pet") is False
     assert model.extra_template_data == {}
     assert field.extras == {}
 
@@ -1918,8 +1916,8 @@ def test_field_semantic_policy_api() -> None:
     assert pydantic_field.type_hint == "ClassVar[str]"
     assert base_field.enable_structured_default_validation() is False
     assert pydantic_field.enable_structured_default_validation() is True
+    pydantic_field.extras["validate_default"] = True
     assert pydantic_field.enable_structured_default_validation() is False
-    assert pydantic_field.extras["validate_default"] is True
 
 
 def test_rendered_data_model_field_caches_delegated_attributes() -> None:

@@ -500,7 +500,7 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._build_render_plan()
+        return self._render_plan()
 
     @override
     def _build_render_plan(self) -> FieldRenderPlan:

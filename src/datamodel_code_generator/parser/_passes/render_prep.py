@@ -127,10 +127,6 @@ class RenderPrepHost(
     _decimal_default_warning_examples: list[str] | None
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
-
-    @property
     def _import_overrides(self) -> dict[str, str] | None:
         """The modules ``--import-overrides`` routes imports through, by imported name."""
 
@@ -206,6 +202,7 @@ def _assigned_key(model: DataModel) -> Callable[[DataModelFieldBase], bool]:
 
 
 def _apply_constructor_field_adjustments(
+    builder: GraphBuilder,
     model: DataModel,
     first_adjustment: tuple[DataModelFieldBase, _ConstructorFieldAdjustment],
     adjustments: Iterable[tuple[DataModelFieldBase, _ConstructorFieldAdjustment]],
@@ -215,13 +212,13 @@ def _apply_constructor_field_adjustments(
     for field, adjustment in chain((first_adjustment,), adjustments):
         match adjustment:
             case "assignment":
-                field.force_field_assignment()
+                builder.force_field_assignment(field)
             case _:
                 assert adjustment == "keyword_only"
                 if model.REQUIRES_MODEL_LEVEL_KW_ONLY:
                     enable_model_keyword_only = True
                 else:
-                    field.mark_as_keyword_only()
+                    builder.set_field_extra(field, "kw_only", value=True)
     if enable_model_keyword_only:
         model.enable_model_keyword_only()
 
@@ -468,8 +465,8 @@ def set_validate_default_on_fields(
                 )
                 or deserialized_default
             )
-            if _needs_validate_default(model_field.data_type):
-                model_field.enable_structured_default_validation()
+            if _needs_validate_default(model_field.data_type) and model_field.enable_structured_default_validation():
+                parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)  # noqa: SLF001
     if deserialized_default:
         normalize_default_value_constraints(
             parser,
@@ -626,7 +623,10 @@ def fix_constructor_field_ordering_of(
     for model in models:
         restored_inherited_state = False
         for field in model.fields:
-            restored_inherited_state = model.restore_required_inherited_field_state(field) or restored_inherited_state
+            restored_inherited_state = (
+                parser._graph_builder.restore_required_inherited_field(model, field)  # noqa: SLF001
+                or restored_inherited_state
+            )
 
         if (inherited := get_inherited_constructor_info(parser, model, early=early)) is None:
             order_key = get_local_constructor_order_key(model)
@@ -663,6 +663,7 @@ def fix_constructor_field_ordering_of(
             continue
 
         _apply_constructor_field_adjustments(
+            parser._graph_builder,  # noqa: SLF001
             model,
             first_adjustment,
             field_adjustments,
@@ -978,7 +979,7 @@ def defer_recursive_containers(  # noqa: PLR0913
             quoted.use_union_operator = False
         for nested in container.all_data_types:
             if (reference := nested.reference) and nested._is_quoted_reference:  # noqa: SLF001
-                nested.alias = reference.short_name
+                graph_builder.name_reference(nested, reference.short_name)
     for root in deferred[0][1][:1]:
         _flatten_union_members(root)
 
@@ -1094,7 +1095,7 @@ def update_type_aliases(  # noqa: PLR0913
             if not forward_references:
                 continue
             for data_type, name in forward_references:
-                data_type.alias = f'"{name}"'
+                graph_builder.name_reference(data_type, f'"{name}"')
                 disable_union_operator_for_forward_ref(
                     data_type,
                     graph_builder,
@@ -1115,8 +1116,8 @@ def update_type_aliases(  # noqa: PLR0913
                 )
             has_aliased_forward_ref = True
 
-        if has_aliased_forward_ref:
-            model.has_forward_reference = model.has_forward_reference or process_all_fields
+        if has_aliased_forward_ref and process_all_fields and not model.has_forward_reference:
+            graph_builder.mark_forward_references(model)
 
 
 def assign_module_forward_reference_fields(parser: RenderPrepHost, models: list[DataModel]) -> None:
@@ -1129,11 +1130,11 @@ def assign_module_forward_reference_fields(parser: RenderPrepHost, models: list[
         parser._graph_builder.use_assignment_for_forward_references(model, positions, index, refresh="deferred")  # noqa: SLF001
 
 
-def unbind_hidden_type_fields(state: _PreparedModule[Any]) -> None:
+def unbind_hidden_type_fields(parser: RenderPrepHost, state: _PreparedModule[Any]) -> None:
     """Leave fields unbound where they hide a type of their class's annotations and the model can."""
     for model in state.model_list:
-        if names := _hidden_type_names(model):
-            model.unbind_fields(names)
+        if (names := _hidden_type_names(model)) and model.unbind_fields(names):
+            parser._graph_builder.note_changed_models(model)  # noqa: SLF001
 
 
 def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[Any]) -> None:

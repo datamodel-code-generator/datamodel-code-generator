@@ -66616,11 +66616,14 @@ forced assignment and the plain annotation of a call the dataclass must see, `mo
 `ReadOnly[`, `Required[` and `NotRequired[` qualifiers of the key); an enum member is a field of the output's backend,
 whose plan gives the member's imports. The last render preparation pass freezes one per field in the parse's
 `RenderReady` (B2), and `field`, `annotated`, `type_hint`, `represented_default`, `has_default_factory_in_field`, the
-import collection and the dropped-constraints warnings read the frozen plan, before B2 a plan built and not kept. Each
-frozen plan keeps what it read from its field (`DataModelFieldBase._render_inputs`: the field's attributes, and inside
-its types, constraints and containers), and when the model renders (`DataModel._template_fields`) the plan of a field
-where any of it changed, replaced or edited in place, is rebuilt (`RenderReady.refreshed`), so a model whose `render`
-changes its fields first writes the change, as a pass that changes a field after render preparation does. The plan holds
+import collection and the dropped-constraints warnings read the frozen plan; before B2 they read the plan the parse's
+memo keeps for the field (`model/base.py:live_render_plan`), which B2 freezes. Each frozen plan keeps the revisions of
+its field (`ParseMemo.revision`), or, for a field, model or parser class outside the package or under custom templates,
+what it read from its field (`DataModelFieldBase._render_inputs`: the field's attributes, and inside its types,
+constraints and containers), and when the model renders (`DataModel._template_fields`) the plan of a field whose
+revisions moved or where any of what it read changed, replaced or edited in place, is rebuilt (`RenderReady.refreshed`),
+so a model whose `render` changes its fields first writes the change, as a pass that changes a field after render
+preparation does. The plan holds
 values and writes its text when it is read, so the names it holds are the final ones. Custom templates get the raw
 fields, which answer from the same plan. `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS` checks that each frozen or
 rebuilt plan writes or omits every item its field declares and that it renders as the plan rebuilt when the modules are
@@ -67008,8 +67011,16 @@ model layer keeps there what it derives from the mutable models instead of on th
 member indexes of an enum (by model key), whether a field's type names its model (by field key) and the members a union
 node joined when it rendered (by node key). A value is kept with the epoch its owner has in its table; the methods that
 cleared the caches these memos replace (`invalidate_render_caches`, `invalidate_semantic_caches`) bump the epoch, so the
-memos return what those caches returned. Outside a parse values are computed at each read. `DataModel.imports` and the
-imports of a field are computed at each read; they keep no cache (`DataModel.clear_imports_cache` is a deprecated no-op).
+memos return what those caches returned. Outside a parse values are computed at each read. The render plan of a field
+(`FIELD_RENDER_PLAN`, `model/base.py:live_render_plan`) and its imports (`FIELD_IMPORTS`, `field_imports`, by the plan
+they read) are derived values: the memo keeps each with the revisions it read, the field's own, its model's own and,
+for every model its type references, that model's own and its fields' (`ParseMemo.derived`). The store's mutations
+bump what they write (`bump_field`, `bump_node`, `bump_model`, and the invalidation methods above); a node bump reaches
+every field whose value read the node or its member list and the field that holds it. `rename_model` and
+`update_model_reference` bump the model, so the fields that reference it compute again. `DataModel.imports` joins the
+fields' kept imports with the model's own (`_additional_imports`) at each read; the snapshot of the IMPORTS phase is
+where they become final. Fields and models of classes outside the package, and every field of a parse by a parser
+class outside it, compute both at each read (`DataModel.clear_imports_cache` is a deprecated no-op).
 `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` computes every returned value anew and fails on a difference, except for
 the dedup keys and self references whose stale values today's output keeps (`legacy-stale-dedup-keys`,
 `legacy-stale-self-reference`), which it records with a report file.

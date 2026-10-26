@@ -114,17 +114,11 @@ data_types = 1
 ["src/datamodel_code_generator/model/msgspec.py"."Struct.add_base_class_kwarg"]
 '_internal_template_data["base_class_kwargs"]' = 1
 
-["src/datamodel_code_generator/model/msgspec.py"."Struct.apply_discriminator_tag"]
-'extras["is_classvar"]' = 1
-
 ["src/datamodel_code_generator/model/msgspec.py"."Struct.create_base_class_model"]
 base_classes = "--input tests/data/jsonschema/use_generic_base_class_simple.json --input-file-type jsonschema --output-model-type msgspec.Struct --use-generic-base-class --allow-population-by-field-name --enable-faux-immutability"
 
 ["src/datamodel_code_generator/model/pydantic_base.py"."BaseModelBase.template_file_path"]
 '@cached_property' = 1
-
-["src/datamodel_code_generator/model/pydantic_base.py"."DataModelField.enable_structured_default_validation"]
-'extras["validate_default"]' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._add_schema_runtime_validation_helper_imports"]
 '_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
@@ -194,16 +188,6 @@ use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inli
 import_ = 1
 type = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_data_type_structured_imports"]
-import_ = 1
-kwargs = 1
-python_type = 1
-type = 2
-
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_field_runtime_expressions"]
-default = 1
-extras = 1
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_copy_data_type"]
 data_types = 2
 dict_key = 1
@@ -214,17 +198,10 @@ literals = 1
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
 alias = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."_restore_inherited_field_names_for_unique_aliases"]
-alias = 1
-name = 2
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."apply_inherited_field_default"]
 default = 2
 has_default = 1
 use_default_with_required = 1
-
-["src/datamodel_code_generator/parser/_passes/_shared.py"."normalize_default_value_constraints"]
-kwargs = 1
 
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."override_required_field"]
 alias = 1
@@ -248,22 +225,11 @@ file_path = 1
 ["src/datamodel_code_generator/parser/_passes/cross_module.py"."import_enum_member_literal_classes"]
 enum_member_literals = 1
 
-["src/datamodel_code_generator/parser/_passes/modules.py"."_rename_field_preserving_alias"]
-alias = 1
-name = 1
-
 ["src/datamodel_code_generator/parser/_passes/modules.py"."_replace_default_enum_list_members"]
 alias = 1
 
 ["src/datamodel_code_generator/parser/_passes/modules.py"."apply_discriminator_type"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-
-["src/datamodel_code_generator/parser/_passes/modules.py"."change_field_name"]
-alias = 1
-name = 1
-
-["src/datamodel_code_generator/parser/_passes/modules.py"."change_from_import"]
-alias = 1
 
 ["src/datamodel_code_generator/parser/_passes/modules.py"."set_default_enum_member"]
 alias = 1
@@ -272,12 +238,7 @@ alias = 1
 data_types = 1
 
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
-alias = 1
 use_union_operator = 1
-
-["src/datamodel_code_generator/parser/_passes/render_prep.py"."update_type_aliases"]
-alias = 1
-has_forward_reference = 1
 
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1

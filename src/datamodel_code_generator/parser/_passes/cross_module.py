@@ -198,8 +198,10 @@ def _tag_fields_of_tagged_bases(models: Iterable[DataModel], builder: GraphBuild
             model.opt_out_of_inherited_tag()
             opted_out.append(model)
             return
-        for field, tag_field, tag in tags:
-            model.apply_discriminator_tag(field, tag_field, tag.value)
+        for field in [
+            field for field, tag_field, tag in tags if model.apply_discriminator_tag(field, tag_field, tag.value)
+        ]:
+            builder.set_field_extra(field, "is_classvar", value=True)
 
     def untag_below_instance_field(model: DataModel) -> None:
         if (tag := model.discriminator_tag) is None or not _bases_keep_instance_field(model, tag[0]):

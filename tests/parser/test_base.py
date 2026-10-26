@@ -82,6 +82,7 @@ from datamodel_code_generator.parser.base import (
     structure,
     to_hashable,
 )
+from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.reference import Reference, model_key_of, snake_to_upper_camel
 from datamodel_code_generator.types import DataType
 
@@ -662,7 +663,7 @@ def test_constructor_adjustment_promotes_msgspec_keyword_only_to_model() -> None
         reference=_reference("Struct"),
     )
 
-    _apply_constructor_field_adjustments(model, (field, "keyword_only"), ())
+    _apply_constructor_field_adjustments(GenerationStore().builder(), model, (field, "keyword_only"), ())
 
     assert model.has_keyword_only_definition()
 
@@ -1941,7 +1942,9 @@ def test_restore_inherited_field_names_handles_noncollisions_and_existing_aliase
         data_type=DataType(type="str"),
     )
 
+    builder = GenerationStore().builder()
     assert not _restore_inherited_field_names_for_unique_aliases(
+        builder,
         [unmatched, unrelated],
         {"wire_name": inherited},
     )
@@ -1953,6 +1956,7 @@ def test_restore_inherited_field_names_handles_noncollisions_and_existing_aliase
         data_type=DataType(type="str"),
     )
     assert _restore_inherited_field_names_for_unique_aliases(
+        builder,
         [unmatched, colliding],
         {"wire_name": inherited},
     )

@@ -11,10 +11,14 @@ write, each with the ``Why`` that put it there. The field's backend builds it (`
 ``model/pydantic_v2/dataclass.py``, ``model/msgspec.py``, ``model/dataclass.py``, ``model/typed_dict.py``; an enum
 member is a field of the output's backend). The parser freezes one plan per field in the parse's ``RenderReady`` when
 render preparation ends (B2), and the field's ``field``, ``annotated``, ``type_hint``, ``represented_default``,
-``has_default_factory_in_field`` and imports read the frozen plan from then on; before B2, and for a field that no
-parse froze, they read a plan the same builder makes without keeping it. A frozen plan keeps the contents of what it
-read from its field, and a field whose contents differ when its model renders, as a model's ``render`` may change them,
-renders from a plan rebuilt then. A plan holds values, not text: its text is
+``has_default_factory_in_field`` and imports read the frozen plan from then on. Before B2, and for a field that no
+parse froze, they read the plan the parse's memo keeps for the field (``model/base.py:live_render_plan``) while the
+revisions it read hold, and B2 freezes that plan; the field's imports are kept the same way, by the plan they read
+(``model/base.py:field_imports``).
+A field, model or parser of a class outside this package computes both at each read. A frozen plan keeps its field's
+revisions, or, for such a class or under custom templates, the contents of what it read from its field; a field whose
+revisions or contents differ when its model renders, as a model's ``render`` may change them, renders from a plan
+rebuilt then. A plan holds values, not text: its text is
 written when it is read, so the names it holds (the model a default factory builds, an aliased pattern expression) are
 the final ones.
 
@@ -40,6 +44,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterator, Mapping
 
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator.imports import Import
 
 __all__ = [
@@ -485,14 +490,15 @@ class NestedFactoryMetadata:
 class _FrozenPlan(NamedTuple):
     """A field's frozen plan, the plan the import snapshot reads if different, and what the plan read from the field.
 
-    ``inputs`` are the field's ``_render_inputs`` when the plan was built. ``type_expr`` is the expression of the
-    field's type hint then (``types.py:type_expr_of``), kept under ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
+    ``inputs`` are the field's revisions (`ParseMemo.revision`) when the plan was frozen, or, for a class outside this
+    package or under custom templates, its ``_render_inputs``. ``type_expr`` is the expression of the field's type
+    hint then (``types.py:type_expr_of``), kept under ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
     """
 
     field: object
     plan: FieldRenderPlan
     import_plan: FieldRenderPlan | None
-    inputs: RenderInputs
+    inputs: _FieldRevision | RenderInputs
     type_expr: object = None
 
 
@@ -501,18 +507,24 @@ class RenderReady:
     """The field render plans one parse froze at B2, and the nested-factory decision render preparation made.
 
     A plan is looked up by its field object. ``import_view`` returns, inside it, the second plan of a field that row
-    ``legacy.L-NF`` keeps. Each plan keeps the contents of what it read from its field, and ``refreshed`` rebuilds it
-    when the field's model renders with them changed, as a model's ``render`` that changes its fields first does.
+    ``legacy.L-NF`` keeps. Each plan keeps its field's revisions or the contents of what it read from its field, and
+    ``refreshed`` rebuilds it when the field's model renders with them changed, as a model's ``render`` that changes its
+    fields first does.
     """
 
-    __slots__ = ("_deciding", "_import_view", "_plans", "_rebuilding", "nested_factories")
+    __slots__ = ("_deciding", "_import_view", "_plans", "_rebuilding", "memo", "nested_factories")
 
-    def __init__(self) -> None:
-        """Start a parse with no plan frozen."""
+    def __init__(self, parser_class: type | None = None, memo: ParseMemo | None = None) -> None:
+        """Start a parse with no plan frozen.
+
+        ``memo``, the parse's memo, keeps the derived values of its fields only when ``parser_class`` is one of this
+        package's parsers: a parser extension may write fields outside the store at any point.
+        """
         self._plans: dict[int, _FrozenPlan] = {}
         self._import_view = False
         self._deciding = False
         self._rebuilding = False
+        self.memo = memo if _package_class(parser_class) else None
         self.nested_factories: NestedFactoryMetadata | None = None
 
     def freeze(
@@ -523,7 +535,7 @@ class RenderReady:
         type_expr: object = None,
     ) -> None:
         """Keep the field's plan, the plan the import snapshot reads if different, and the expression of its hint."""
-        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, field._render_inputs(), type_expr)  # noqa: SLF001
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field), type_expr)
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
         """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
@@ -545,15 +557,40 @@ class RenderReady:
         """Rebuild the plan frozen for ``field`` if what it read from the field changed since; return the rebuilt plan.
 
         The plan is rebuilt from the field's facts as the frozen plans' check rebuilds it, and kept with what it read
-        now; the import snapshot's plan stays. Return None when the parse froze no plan for the field or the contents
-        it read are the same.
+        now; the import snapshot's plan stays. Return None when the parse froze no plan for the field or its revisions,
+        or the contents it read, are the same.
         """
-        if (entry := self._plans.get(id(field))) is None or unchanged_render_inputs(entry.inputs):
+        if (entry := self._plans.get(id(field))) is None or self._unchanged(field, entry.inputs):
             return None
         with self.rebuilding():
             plan = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
-        self._plans[id(field)] = entry._replace(plan=plan, inputs=field._render_inputs())  # noqa: SLF001
+        self._plans[id(field)] = entry._replace(plan=plan, inputs=self._frozen_inputs(field))
         return plan
+
+    def derived_from(self, field: Any) -> ParseMemo | None:
+        """Return the memo that keeps the derived values of ``field`` now (`memo`, `_derives`), or None.
+
+        A plan rebuilt to compare with a frozen one is built anew.
+        """
+        return self.memo if self.memo is not None and not self._rebuilding and _derives(field) else None
+
+    def _frozen_inputs(self, field: Any) -> _FieldRevision | RenderInputs:
+        """Return what a frozen plan compares when its model renders: the field's revisions when the memo keeps them.
+
+        A field, model or parser of a class outside this package, or a model under custom templates, which see the raw
+        fields, keeps the contents of what the plan read (``_render_inputs``).
+        """
+        if (memo := self.derived_from(field)) is None or (
+            (parent := field.parent) is not None and parent._custom_template_dir is not None  # noqa: SLF001
+        ):
+            return field._render_inputs()  # noqa: SLF001
+        return _FieldRevision(*memo.revision(field))
+
+    def _unchanged(self, field: Any, inputs: _FieldRevision | RenderInputs) -> bool:
+        """Return whether what a frozen plan read from its field holds: its revisions, or its contents."""
+        if type(inputs) is _FieldRevision:
+            return self.memo is not None and self.memo.revision(field) == inputs
+        return unchanged_render_inputs(cast("RenderInputs", inputs))
 
     def deciding_nested_factories(self) -> NestedFactoryMetadata | None:
         """Return the nested-factory decision while ``nested_factories_decided`` runs, else None."""
@@ -603,6 +640,31 @@ def frozen_render_plan(field: object) -> FieldRenderPlan | None:
     if (ready := RENDER_READY.get()) is None:
         return None
     return ready.plan_of(field)
+
+
+_PACKAGE_CLASSES: Final[dict[type | None, bool]] = {None: True, type(None): True}
+
+
+def _package_class(cls: type | None) -> bool:
+    """Return whether ``cls`` is a class of this package, the class of None, or None."""
+    if (known := _PACKAGE_CLASSES.get(cls)) is None:
+        known = _PACKAGE_CLASSES[cls] = cast("type", cls).__module__.startswith("datamodel_code_generator.")
+    return known
+
+
+def _derives(field: Any) -> bool:
+    """Return whether the derived values of ``field`` may be kept: its class and its model's are this package's.
+
+    A class outside the package may compute them from anything, so no revision covers what they read.
+    """
+    return _package_class(type(field)) and _package_class(type(field.parent))
+
+
+class _FieldRevision(NamedTuple):
+    """The revisions of a field and of its model's own attributes when its plan was frozen (`ParseMemo.revision`)."""
+
+    field: int
+    model: int
 
 
 def _field_argument_text(argument: Kwarg) -> str:

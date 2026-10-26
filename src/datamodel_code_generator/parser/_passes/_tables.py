@@ -311,7 +311,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     ),
     PassSpec(
         decls.RESTORE_INHERITED_FIELD_NAMES_FOR_UNIQUE_ALIASES,
-        lambda _, s: modules.restore_inherited_field_names_for_unique_aliases(s.model_list),
+        lambda self, s: modules.restore_inherited_field_names_for_unique_aliases(self, s.model_list),
         checked_models=_module_models,
     ),
     PassSpec(
@@ -398,7 +398,7 @@ def _models_before_override_removal(parser: PipelineHost, _: object) -> list[Dat
 MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any]], ...] = (
     PassSpec(
         decls.UNBIND_HIDDEN_TYPE_FIELDS,
-        lambda _, s: render_prep.unbind_hidden_type_fields(s),
+        render_prep.unbind_hidden_type_fields,
         checked_models=_prepared_models,
     ),
     PassSpec(

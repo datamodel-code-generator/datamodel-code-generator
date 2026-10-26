@@ -204,6 +204,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("set_type_expressions",),
     ),
     AttributeFact(
         "DataType",
@@ -253,6 +254,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.CONSTRAINTS, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("set_type_expressions",),
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -262,7 +264,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.RENDER,
         FreezePoint.RENDER,
-        store_ops=("override_type_import",),
+        store_ops=("override_type_import", "set_type_expressions"),
     ),
     AttributeFact(
         "DataType",
@@ -271,6 +273,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("set_type_expressions",),
     ),
     AttributeFact("DataType", "python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
@@ -336,6 +339,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("name_reference",),
     ),
     AttributeFact(
         "DataType",
@@ -420,7 +424,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         Phase.PARSE,
         FreezePoint.B1,
     ),
-    AttributeFact("DataModelFieldBase", "name", FactKind.FACT, (Fact.FIELD_NAMES,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact(
+        "DataModelFieldBase",
+        "name",
+        FactKind.FACT,
+        (Fact.FIELD_NAMES,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("rename_field",),
+    ),
     AttributeFact(
         "DataModelFieldBase",
         "default",
@@ -439,7 +451,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
         store_ops=("require_field",),
     ),
-    AttributeFact("DataModelFieldBase", "alias", FactKind.FACT, (Fact.FIELD_ALIASES,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact(
+        "DataModelFieldBase",
+        "alias",
+        FactKind.FACT,
+        (Fact.FIELD_ALIASES,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("rename_field",),
+    ),
     AttributeFact(
         "DataModelFieldBase",
         "validation_aliases",
@@ -903,6 +923,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.QUOTING,),
         Phase.MODULES,
         FreezePoint.RENDER,
+        store_ops=("mark_forward_references",),
     ),
     AttributeFact("DataModel", "reused_reference", FactKind.FACT, (Fact.MODELS_EXIST,), Phase.MODULES, FreezePoint.B1),
     AttributeFact(

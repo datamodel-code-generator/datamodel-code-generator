@@ -5,4 +5,4 @@
 17 Field._helper default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
 34 Field.path @cached_property: @cached_property caches state on a mutable DataModel; keep derived values in a per-parse store memo
 38 Field.refresh_field_config extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations
-42 deeper alias: alias changes Fact.FIELD_ALIASES, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING outside GenerationStore operations
+42 deeper alias: use GenerationStore.name_reference() or rename_field() instead of writing alias

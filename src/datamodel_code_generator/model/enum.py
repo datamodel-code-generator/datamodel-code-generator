@@ -16,7 +16,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
-from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, forget_model_memos
+from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
 from datamodel_code_generator.python_literal import _semantic_value_text
 from datamodel_code_generator.types import DataType, Types
 
@@ -277,7 +277,7 @@ class Enum(DataModel):
         """
         if self._uses_custom_root_template:
             return ()
-        return tuple(i for f in self.fields for i in f.imports if i != IMPORT_ANY)
+        return tuple(i for f in self.fields for i in field_imports(f) if i != IMPORT_ANY)
 
 
 class StrEnum(Enum):

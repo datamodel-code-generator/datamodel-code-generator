@@ -56,7 +56,6 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
-    _apply_literal_default,
     _find_base_classes,
     _keyed_answer,
     _ModelKeys,
@@ -543,6 +542,10 @@ class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost
     """The option, the import ledger, the replaced roots, the stand-ins and the dropped roots that importing reads."""
 
     @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The builder that changes the model graph through the generation store."""
+
+    @property
     def _self_named_root_models(self) -> list[DataModel]:
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
@@ -568,10 +571,6 @@ class ModuleLoopHost(RecursionFactsHost, Protocol[ConfigT, ContextT, ResultT]):
 
 class RuleAliasHost(ImportFromHost, Protocol):
     """The options, run state and hook of the parser that writing rule aliases as classes reads and calls."""
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
     @property
     def _prepared_modules(self) -> list[_PreparedModule[Any]]:
@@ -1035,11 +1034,9 @@ def _family_field_names(family: Mapping[ModelKey, DataModel]) -> set[str]:
     }
 
 
-def _rename_field_preserving_alias(field: DataModelFieldBase, new_name: str) -> None:
+def _rename_field_preserving_alias(builder: GraphBuilder, field: DataModelFieldBase, new_name: str) -> None:
     """Rename a Python field without losing an existing source-name alias."""
-    if field.alias is None:
-        field.alias = field.name
-    field.name = new_name
+    builder.rename_field(field, new_name, alias=field.name)
 
 
 _COLLAPSE_ROOT_MODELS: Final = ImportProducer("collapse-root-models")
@@ -1208,6 +1205,7 @@ def _has_related_instance_field(
 
 
 def _tag_discriminator_unions(
+    builder: GraphBuilder,
     unions: list[_DiscriminatorUnion],
     derived_models: Mapping[ModelKey, list[DataModel]],
     *,
@@ -1265,7 +1263,7 @@ def _tag_discriminator_unions(
         elif names := related.get(index):
             reason = f"a base or derived struct of {', '.join(names)} keeps {tag_field!r} as a field"
         else:
-            _apply_discriminator_tags(tags, tag_field)
+            _apply_discriminator_tags(builder, tags, tag_field)
             continue
         warn_as_parser_base(
             f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
@@ -1276,10 +1274,11 @@ def _tag_discriminator_unions(
     return deferred
 
 
-def _apply_discriminator_tags(tags: list[_DiscriminatorTag], tag_field: str) -> None:
+def _apply_discriminator_tags(builder: GraphBuilder, tags: list[_DiscriminatorTag], tag_field: str) -> None:
     """Tag the variants and take their discriminators out of the instance fields."""
     for model, field, value in tags:
-        model.apply_discriminator_tag(field, tag_field, value)
+        if model.apply_discriminator_tag(field, tag_field, value):
+            builder.set_field_extra(field, "is_classvar", value=True)
 
 
 def _get_mapped_discriminator_tag(
@@ -2246,24 +2245,24 @@ def change_field_name(  # noqa: PLR0912
                     resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
                     new_field_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
                     if field_name != new_field_name:
-                        _rename_field_preserving_alias(field, new_field_name)
+                        _rename_field_preserving_alias(parser._graph_builder, field, new_field_name)  # noqa: SLF001
 
             if (
                 parser.data_model_type.NORMALIZES_FIELD_NAMES
                 and (current_name := field.name) in parser.builtin_names
                 and any(_is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types)
             ):
-                if field.alias is None:
-                    field.alias = field_name
-                field.name = f"{current_name}_"
+                parser._graph_builder.rename_field(field, f"{current_name}_", alias=field_name)  # noqa: SLF001
 
 
-def restore_inherited_field_names_for_unique_aliases(models: list[DataModel]) -> None:
+def restore_inherited_field_names_for_unique_aliases(parser: ModulesHost, models: list[DataModel]) -> None:
     """Reserve inherited Python names for output models with unique wire aliases."""
     for model in models:
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
             _restore_inherited_field_names_for_unique_aliases(
-                model.fields, get_inherited_fields(_find_base_classes(model))
+                parser._graph_builder,  # noqa: SLF001
+                model.fields,
+                get_inherited_fields(_find_base_classes(model)),
             )
 
 
@@ -2520,9 +2519,10 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
             if tagged_unions:
                 unions.append((model, tags, tag_field, mapping))
             else:
-                _apply_discriminator_tags(tags, tag_field)
+                _apply_discriminator_tags(parser._graph_builder, tags, tag_field)  # noqa: SLF001
     if (deferred := parser._deferred_tagged_unions) or unions:  # noqa: SLF001
         parser._deferred_tagged_unions = _tag_discriminator_unions(  # noqa: SLF001
+            parser._graph_builder,  # noqa: SLF001
             [*deferred, *unions],
             _derived_models({id(model): model for model in chain(parser.results, models)}.values()),
             defers_related=parser._defers_tagged_unions,  # noqa: SLF001
@@ -2551,7 +2551,7 @@ def set_tag_literal_default(
         missing_sentinel=discriminator_field.use_missing_sentinel,
         discriminator_argument=discriminator_field.SUPPORTS_DISCRIMINATOR,
     )
-    _apply_literal_default(discriminator_field, decision)
+    parser._graph_builder.apply_literal_default(discriminator_field, decision)  # noqa: SLF001
 
 
 def set_nested_discriminator_literal_defaults(
@@ -2750,7 +2750,7 @@ def set_one_literal_on_default(parser: ModulesHost, models: list[DataModel]) -> 
                 nullable=model_field.nullable,
                 type_has_null=model_field.type_has_null,
             )
-            _apply_literal_default(model_field, decision)
+            parser._graph_builder.apply_literal_default(model_field, decision)  # noqa: SLF001
 
 
 def same_named_fields(parser: ModulesHost, model: DataModel) -> list[DataModelFieldBase]:
@@ -2932,7 +2932,7 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                 )
                 new_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
                 parser._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))  # noqa: SLF001
-            _rename_field_preserving_alias(field, new_name)
+            _rename_field_preserving_alias(parser._graph_builder, field, new_name)  # noqa: SLF001
 
 
 def remove_overridden_models(parser: ModulesHost, models: list[DataModel]) -> list[DataModel]:
@@ -3340,7 +3340,7 @@ def change_from_import(  # noqa: PLR0913
                 treat_dot_as_module=parser.treat_dot_as_module,
                 import_ledger=parser._import_ledger,  # noqa: SLF001
             ):
-                data_type.alias = alias
+                parser._graph_builder.name_reference(data_type, alias)  # noqa: SLF001
                 import_sensitive_alias_changed = True
         if import_sensitive_alias_changed:  # pragma: no cover
             after_import = model.imports

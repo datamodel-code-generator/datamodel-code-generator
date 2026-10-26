@@ -390,11 +390,8 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def enable_structured_default_validation(self) -> bool:
-        """Enable Pydantic validation for a structured default exactly once."""
-        if self.extras.get("validate_default") is True:
-            return False
-        self.extras["validate_default"] = True
-        return True
+        """Return whether the Pydantic validation of the structured default is still to write (``validate_default``)."""
+        return self.extras.get("validate_default") is not True
 
     def _process_field_arguments(self, args: _FieldArguments) -> None:
         """Adjust the ``Field()`` arguments to the Pydantic version of the output model."""
@@ -471,7 +468,7 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:
-        return self._build_render_plan()
+        return self._render_plan()
 
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""

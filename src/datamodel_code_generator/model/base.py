@@ -31,7 +31,7 @@ from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
-from datamodel_code_generator._parse_memo import MemoTable, forget, memoized
+from datamodel_code_generator._parse_memo import MemoTable, bump_deep, bump_field, forget, memoized
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
@@ -92,7 +92,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
-    from datamodel_code_generator.model._render_plan import NestedFactoryMetadata, PlannedField, RenderInputs
+    from datamodel_code_generator.model._render_plan import (
+        NestedFactoryMetadata,
+        PlannedField,
+        RenderInputs,
+        RenderReady,
+    )
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -737,8 +742,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Remember that ``--type-overrides`` replaces the type hint ``replaced`` and ``count`` constraints with it."""
         self.__dict__[_OVERRIDDEN_CONSTRAINTS_KEY] = (replaced, count)
 
-    def unconstrain_union_members(self) -> None:
-        """Write union members without the constraints the output model cannot check on one member alone."""
+    def unconstrain_union_members(self) -> bool | None:
+        """Write union members without the constraints the output model cannot check on one member alone.
+
+        Return False when the field stayed as it was; None, which an override that returns nothing gives, counts as a
+        change.
+        """
 
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
         """Take over the union members written without constraints from a field whose type this field inlines."""
@@ -1341,10 +1350,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return self.extras.get("is_classvar") is True
 
     def enable_structured_default_validation(self) -> bool:  # noqa: PLR6301
-        """Enable output-specific validation for a structured default.
+        """Return whether the field's structured default needs output-specific validation it does not have yet.
 
-        The neutral field policy intentionally does nothing. Output backends that
-        require validation at construction time can override this hook.
+        The parse then writes ``validate_default`` into the field's extras through the store. The neutral field
+        policy needs none; output backends that require validation at construction time override this hook.
         """
         return False
 
@@ -1353,7 +1362,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return _classify_field_assignment(self, self._FIELD_ASSIGNMENT_ROW).default_info
 
     def _build_frozen_render_plan(self) -> FieldRenderPlan | None:  # noqa: PLR6301
-        """Build the render plan the parse freezes for this field at B2, or None when it renders without one."""
+        """Return the render plan the parse freezes for this field at B2, or None when it renders without one.
+
+        A field that renders from a plan freezes its live plan (``_render_plan`` before B2), which ``RenderReady``
+        rebuilds from the field's facts while it compares or refreshes a frozen plan.
+        """
         return None
 
     def _render_inputs(self) -> RenderInputs:
@@ -1361,10 +1374,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return _render_inputs_of(self)
 
     def _render_plan(self) -> FieldRenderPlan:
-        """Return the plan the parse froze for this field, or build one without keeping it."""
+        """Return the plan the parse froze for this field, or the plan its facts give now (`live_render_plan`)."""
         if (plan := frozen_render_plan(self)) is not None:
             return plan
-        return self._build_render_plan()
+        return live_render_plan(self)
 
     def _build_render_plan(self) -> FieldRenderPlan:
         """Build the field's render plan from its facts as they are now: its type alone, nothing after it."""
@@ -1461,8 +1474,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return copied
 
     def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
-        """Clear field caches derived from mutable type and parent semantics."""
+        """Clear field caches derived from mutable type and parent semantics, and move the field's revision."""
         forget(MemoTable.SELF_REFERENCE, FieldKey(id(self)), self)
+        bump_field(self)
         if not invalidate_parent:
             return
         self._invalidate_parent_render_caches()
@@ -1731,6 +1745,45 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
         _COUNTS_CONSTRUCTION_DEFAULTS.reset(token)
         _ORDERS_BEFORE_NULLABILITY.reset(orders)
         _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
+
+
+def _plan_view(field: DataModelFieldBase, ready: RenderReady) -> Hashable:
+    """Return what a field's plan reads besides its facts: whether the nested-factory decision answers.
+
+    Under ``--use-default-factory-for-optional-nested-models`` also how constructor ordering asks for nested factories.
+    """
+    deciding = ready.deciding_nested_factories() is not None
+    if not field.use_default_factory_for_optional_nested_models:
+        return deciding
+    return (
+        deciding,
+        _ORDERS_CONSTRUCTOR_FIELDS.get(),
+        _ORDERS_BEFORE_NULLABILITY.get(),
+        _COUNTS_CONSTRUCTION_DEFAULTS.get(),
+        _LOOKING_UP_REQUIRED_FIELDS.get(),
+    )
+
+
+def live_render_plan(field: DataModelFieldBase) -> FieldRenderPlan:
+    """Return the plan of ``field`` built from its facts as they are now, kept in the parse's memo while they hold.
+
+    The memo keeps one plan for each view (`_plan_view`); a plan rebuilt to compare with a frozen one, and a plan
+    outside a parse, is built at each read.
+    """
+    if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
+        return field._build_render_plan()  # noqa: SLF001
+    return memo.derived(MemoTable.FIELD_RENDER_PLAN, field, _plan_view(field, ready), field._build_render_plan)  # noqa: SLF001
+
+
+def field_imports(field: DataModelFieldBase) -> tuple[Import, ...]:
+    """Return the imports of ``field``, kept in the parse's memo with the plan they read while its facts hold.
+
+    The plan is the one frozen for the field in the current view, else its live plan (`live_render_plan`).
+    """
+    if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
+        return field.imports
+    plan = ready.plan_of(field) or live_render_plan(field)
+    return memo.derived(MemoTable.FIELD_IMPORTS, field, _plan_view(field, ready), lambda: field.imports, source=plan)
 
 
 def _keeps_order_before_nullability(field: DataModelFieldBase) -> bool:
@@ -2521,13 +2574,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         with ordering_constructor_fields():
             return list(fields) if (key := cls.FIELD_CONSTRUCTION_ORDER_KEY) is None else sorted(fields, key=key)
 
-    def apply_discriminator_tag(
+    def apply_discriminator_tag(  # noqa: PLR6301
         self,
-        field: DataModelFieldBase,
-        field_name: str,
-        value: Any,
-    ) -> None:
-        """Apply an output-specific tagged-union discriminator when supported."""
+        field: DataModelFieldBase,  # noqa: ARG002
+        field_name: str,  # noqa: ARG002
+        value: Any,  # noqa: ARG002
+    ) -> bool:
+        """Apply an output-specific tagged-union discriminator when supported.
+
+        Return whether the discriminator ``field`` leaves the instance fields as a class variable, which the parse
+        writes into its extras (``is_classvar``) through the store.
+        """
+        return False
 
     def opt_out_of_inherited_tag(self) -> None:
         """Clear an output-specific tagged-union discriminator of the model or inherited from a base, when supported."""
@@ -3145,9 +3203,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @property
     def imports(self) -> tuple[Import, ...]:
-        """Get all imports required by this model and its fields, computed from them at each read."""
+        """Get all imports required by this model and its fields: the fields' kept imports, then the model's own."""
         return chain_as_tuple(
-            (i for f in self.fields for i in f.imports),
+            (i for f in self.fields for i in field_imports(f)),
             self._additional_imports,
         )
 
@@ -3254,8 +3312,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Do nothing: ``imports`` keeps no cache. Kept so that subclasses that call or override it still work."""
 
     def invalidate_render_caches(self) -> None:
-        """Clear the render-derived model identity."""
+        """Clear the render-derived model identity after its fields changed, and move its ``deep`` revision."""
         forget_model_memos(self, MemoTable.DEDUP_KEYS, MemoTable.NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY)
+        bump_deep(self)
 
     def refresh_field_config(self) -> None:
         """Update config derived from field types once the parser has finished replacing them."""

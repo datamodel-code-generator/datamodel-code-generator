@@ -2967,7 +2967,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module, which ``_process_single_module`` hands over.
         """
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
-        render_ready = RENDER_READY.set(RenderReady()) if RENDER_READY.get() is None else None
+        render_ready = (
+            RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
+            if RENDER_READY.get() is None
+            else None
+        )
         memo = PARSE_MEMO.set(self.generation_store._memo) if PARSE_MEMO.get() is None else None  # noqa: SLF001
         try:
             self.__runner().run_steps(FINALIZE_SEGMENTS, self, state)
@@ -3536,7 +3540,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             result_type=Result,
         )
         token = SCHEMA_GRAPH.set(self._schema_graph)
-        render_ready = RENDER_READY.set(RenderReady())
+        render_ready = RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
         memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
         caller = anchor_parse_caller()
         try:

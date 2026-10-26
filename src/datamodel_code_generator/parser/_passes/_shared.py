@@ -159,21 +159,23 @@ def _ordinary_field_shadow_aliases(
 
 
 def _apply_structured_import_aliases(
+    builder: GraphBuilder,
     models: list[DataModel],
     aliased_imports: dict[_PythonTypeImportKey, Import],
 ) -> None:
     """Rewrite every identity-carrying structured consumer of selected imports."""
     for model in models:
         for field in model.fields:
-            _alias_field_runtime_expressions(field, aliased_imports)
+            _alias_field_runtime_expressions(builder, field, aliased_imports)
             for data_type in field.data_type.all_data_types:
-                _alias_data_type_structured_imports(data_type, aliased_imports)
+                _alias_data_type_structured_imports(builder, data_type, aliased_imports)
         _alias_additional_imports(model, aliased_imports)
     for model in models:
         _alias_base_class_imports(model, aliased_imports)
 
 
 def _alias_field_runtime_expressions(
+    builder: GraphBuilder,
     field: DataModelFieldBase,
     aliased_imports: dict[_PythonTypeImportKey, Import],
 ) -> None:
@@ -181,12 +183,13 @@ def _alias_field_runtime_expressions(
     imports = field.runtime_expression_imports
     if not imports or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports:
         return
-    field.default = rewrite_runtime_expressions(field.default, aliased_imports)
-    field.extras = cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports))
+    builder.set_field_default(field, rewrite_runtime_expressions(field.default, aliased_imports))
+    builder.set_field_extras(field, cast("dict[str, Any]", rewrite_runtime_expressions(field.extras, aliased_imports)))
     field._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
 
 
 def _alias_data_type_structured_imports(
+    builder: GraphBuilder,
     data_type: DataType,
     aliased_imports: dict[_PythonTypeImportKey, Import],
 ) -> None:
@@ -196,21 +199,24 @@ def _alias_data_type_structured_imports(
         and (aliased_import := aliased_imports.get((data_type.import_.from_, data_type.import_.import_))) is not None
         and aliased_import is not data_type.import_
     ):
-        data_type.type = aliased_import.alias
-        data_type.import_ = aliased_import
+        builder.set_type_expressions(data_type, type_=aliased_import.alias, import_=aliased_import)
     if data_type.python_type:
         alias_bound_python_type, render_python_type_expr = _python_type_import_alias_helpers()
         bound_type = alias_bound_python_type(data_type.python_type, aliased_imports)
         if bound_type is not data_type.python_type:
-            data_type.python_type = bound_type
-            data_type.type = render_python_type_expr(bound_type.expression)
+            builder.set_type_expressions(
+                data_type, type_=render_python_type_expr(bound_type.expression), python_type=bound_type
+            )
     if (
         not (imports := data_type.runtime_expression_imports)
         or (rewritten_imports := rewrite_runtime_imports(imports, aliased_imports)) is imports
     ):
         return
-    data_type.kwargs = cast("dict[str, Any]", rewrite_runtime_expressions(data_type.kwargs, aliased_imports))
-    data_type._set_runtime_expression_imports(rewritten_imports)  # noqa: SLF001
+    builder.set_type_expressions(
+        data_type,
+        kwargs=cast("dict[str, Any]", rewrite_runtime_expressions(data_type.kwargs, aliased_imports)),
+        runtime_expression_imports=rewritten_imports,
+    )
 
 
 @cache
@@ -441,6 +447,7 @@ def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
 
 
 def _restore_inherited_field_names_for_unique_aliases(
+    builder: GraphBuilder,
     fields: list[DataModelFieldBase],
     inherited_fields: Mapping[str, DataModelFieldBase],
 ) -> bool:
@@ -463,10 +470,8 @@ def _restore_inherited_field_names_for_unique_aliases(
                 colliding_field.original_name == original_name or field.name is None
             ):
                 continue
-            colliding_field.name = field.name
-            if colliding_field.alias is None:
-                colliding_field.alias = colliding_field.original_name
-            field.name = inherited_name
+            builder.rename_field(colliding_field, field.name, alias=colliding_field.original_name)
+            builder.rename_field(field, inherited_name)
             return True
     return False
 
@@ -505,6 +510,10 @@ class RuntimeExpressionFlags(Protocol):
     _has_bound_python_types: bool
     _has_runtime_expressions: bool
     _import_ledger: ModuleImportLedger
+
+    @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The builder that changes the model graph through the generation store."""
 
 
 def register_runtime_expression(host: RuntimeExpressionFlags) -> None:
@@ -702,9 +711,11 @@ def normalize_default_value_constraints(
             )
         if kwargs is data_type.kwargs:
             continue
-        data_type.kwargs = kwargs
-        runtime_imports = data_type.runtime_expression_imports
-        data_type._set_runtime_expression_imports((*runtime_imports, descriptor.constructor_import))  # noqa: SLF001
+        host._graph_builder.set_type_expressions(  # noqa: SLF001
+            data_type,
+            kwargs=kwargs,
+            runtime_expression_imports=(*data_type.runtime_expression_imports, descriptor.constructor_import),
+        )
         register_runtime_expression(host)
         normalized = True
     return normalized
@@ -851,7 +862,7 @@ def override_required_field(
                 copied_original_field.use_default_with_required = True
             resolved_fields.append(copied_original_field)
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
-            _restore_inherited_field_names_for_unique_aliases(resolved_fields, inherited_fields)
+            _restore_inherited_field_names_for_unique_aliases(builder, resolved_fields, inherited_fields)
         builder.set_fields(model, resolved_fields)
 
 
@@ -922,7 +933,7 @@ def alias_shadowed_imports(
     )
     if not (has_python_type or has_runtime_expressions):
         if ordinary_aliases:
-            _apply_structured_import_aliases(models, ordinary_aliases)
+            _apply_structured_import_aliases(host._graph_builder, models, ordinary_aliases)  # noqa: SLF001
         return
     host._has_bound_python_types = host._has_bound_python_types or has_python_type  # noqa: SLF001
     if has_runtime_expressions:
@@ -942,7 +953,7 @@ def alias_shadowed_imports(
     )
     if not aliased_imports:
         return
-    _apply_structured_import_aliases(models, aliased_imports)
+    _apply_structured_import_aliases(host._graph_builder, models, aliased_imports)  # noqa: SLF001
     if module_imports is not None:
         for aliased_import in aliased_imports.values():
             host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)  # noqa: SLF001
