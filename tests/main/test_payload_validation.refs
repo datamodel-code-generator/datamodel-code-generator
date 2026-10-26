@@ -1691,6 +1691,9 @@ openapi/serialize_as_any.yaml::components.schemas.User	payloads/native_numeric_e
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_modules/single.json::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/mapped_first.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/repeated.yaml::components.schemas.PetType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/unmapped_first.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/mixed_types.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3449,6 +3452,9 @@ openapi/serialize_as_any.yaml::components.schemas.User	payloads/native_numeric_e
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_modules/single.json::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/mapped_first.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/repeated.yaml::components.schemas.PetType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/shared_enum_discriminator/unmapped_first.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/mixed_types.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
