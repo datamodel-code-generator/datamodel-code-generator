@@ -1688,10 +1688,8 @@ class DataModelField(DataModelFieldBase):
         return None if (meta := self._meta_call()) is None else _meta_call_text(meta)
 
     def _meta_call(self) -> CallPlan | None:
-        """Return the ``Meta(...)`` call of the frozen plan, or before B2 the call the plan would hold."""
-        if (plan := frozen_render_plan(self)) is not None:
-            return plan.annotated_call
-        return self._build_meta_call([])
+        """Return the ``Meta(...)`` call of the field's render plan, the frozen one or before B2 the live one."""
+        return self._render_plan().annotated_call
 
     def _build_meta_call(self, omitted: list[Omitted]) -> CallPlan | None:
         """Build the ``Meta(...)`` call written inside ``Annotated``: its arguments, under --use-annotated."""
