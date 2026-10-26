@@ -291,14 +291,26 @@ def _write_watch_cli_input_and_wait(
     condition: Callable[[], bool],
     description: str,
 ) -> None:
+    """Replace the watched file with the content and wait for the condition, touching it again while it is unmet.
+
+    Windows refuses to replace a file while the watch process has it open for reading, which only means the watcher is
+    still reading the previous version: the replacement is retried on each poll of the wait, within its timeout.
+    """
     pending_input = input_file.with_name(f".{input_file.name}.pending")
     pending_input.write_text(content, encoding="utf-8")
-    pending_input.replace(input_file)
     last_write = time.monotonic()
+    replaced = False
 
     def condition_after_write() -> bool:
-        nonlocal last_write
+        nonlocal last_write, replaced
 
+        if not replaced:
+            try:
+                pending_input.replace(input_file)
+            except PermissionError:
+                return False
+            replaced = True
+            last_write = time.monotonic()
         if condition():
             return True
 
