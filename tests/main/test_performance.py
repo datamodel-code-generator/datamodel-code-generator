@@ -893,6 +893,38 @@ def test_perf_large_models_dataclass(tmp_path: Path) -> None:
 
 @pytest.mark.perf
 @pytest.mark.benchmark
+def test_perf_large_models_dataclass_builtin(tmp_path: Path) -> None:
+    """Benchmark 500 dataclass models with the built-in formatter: their render plans and constructor ordering."""
+    output_file = tmp_path / "output.py"
+    generate(
+        input_=PERFORMANCE_DATA_PATH / "large_models.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=output_file,
+        output_model_type=DataModelType.DataclassesDataclass,
+        formatters=[Formatter.BUILTIN],
+    )
+    content = output_file.read_text()
+    assert content.count("class Model") >= 500
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
+def test_perf_large_models_msgspec(tmp_path: Path) -> None:
+    """Benchmark 500 msgspec Structs with the built-in formatter: their ``Meta`` calls, imports and ordering."""
+    output_file = tmp_path / "output.py"
+    generate(
+        input_=PERFORMANCE_DATA_PATH / "large_models.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=output_file,
+        output_model_type=DataModelType.MsgspecStruct,
+        formatters=[Formatter.BUILTIN],
+    )
+    content = output_file.read_text()
+    assert content.count("class Model") >= 500
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     "use_total_false_for_typed_dict",
     [
