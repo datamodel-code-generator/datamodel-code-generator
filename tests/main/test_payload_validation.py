@@ -87,7 +87,11 @@ from .payload_validation.native_numeric import (
     pydantic_payload_result,
 )
 from .payload_validation.schema import _schema_for_payload_generation
-from .payload_validation.strategy import _bound_float_multiples
+from .payload_validation.strategy import (
+    _bound_float_multiples,
+    _regex_agreement_validator,
+    _valid_where_regex_engines_agree,
+)
 
 NATIVE_NUMERIC_EMPTY_ERRORS = (
     Path(__file__).parents[1] / "data" / "expected" / "payloads" / "native_numeric_empty_errors.txt"
@@ -1134,6 +1138,38 @@ def test_literal_source_witnesses() -> None:
         for payload in witnesses["invalid"]:
             with pytest.raises(JsonSchemaValidationError):
                 validate_with_source_schema(LITERAL_CASES["unicode"], payload)
+
+
+REGEX_END_ANCHOR_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "regex_end_anchors.json"
+
+
+REGEX_END_ANCHOR_CASES = {
+    name: (SchemaCase(name, "jsonschema", REGEX_END_ANCHOR_DATA_PATH, entry["schema"], entry["schema"], ".json"), entry)
+    for name, entry in json.loads(REGEX_END_ANCHOR_DATA_PATH.read_text(encoding="utf-8")).items()
+}
+
+
+def test_regex_end_anchor_witnesses(generated_model_cache: dict[str, Any]) -> None:
+    """The payload sampler drops what Python's ``$`` accepts before a final newline and the generated model rejects."""
+    results = {}
+    for name, (case, entry) in REGEX_END_ANCHOR_CASES.items():
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        sampler = _regex_agreement_validator(case)
+        results[name] = []
+        for payload in entry["payloads"]:
+            try:
+                adapter.validate_python(payload)
+            except ValidationError:
+                model_accepts = False
+            else:
+                model_accepts = True
+            results[name].append({
+                "payload": payload,
+                "source_valid": source_schema_validator(case).is_valid(payload),
+                "sampled": _valid_where_regex_engines_agree(sampler, payload),
+                "model_accepts": model_accepts,
+            })
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 PAYLOAD_UNION_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "union_capabilities_schemas.json"

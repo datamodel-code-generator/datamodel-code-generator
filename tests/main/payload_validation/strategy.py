@@ -8,6 +8,7 @@ import sys
 from copy import deepcopy
 from fractions import Fraction
 from functools import cache, partial, partialmethod
+from itertools import starmap
 from typing import TYPE_CHECKING, Any
 
 from attrs import fields
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
 _REGEX_CLASS_ESCAPE = re.compile(r"(?<!\\)(?:\\\\)*\\([dDsSwWbB])")
 _REGEX_CLASS_BY_ESCAPE = dict.fromkeys("dD", r"\d") | dict.fromkeys("sS", r"\s") | dict.fromkeys("wWbB", r"\w")
 """The character class each escape depends on; word boundaries depend on word characters."""
+_REGEX_END_ANCHOR = re.compile(r"\\.|\[\^?\]?(?:\\.|[^\]\\])*\]|(?P<anchor>\$)")
+"""An escape or a character class, which keep their ``$``, or the ``$`` anchor itself."""
 
 _SourceSchemaCacheKey = tuple[str, str, str]
 _source_schema_validator_cache: dict[_SourceSchemaCacheKey, SourceSchemaValidator] = {}
@@ -154,6 +157,31 @@ def _regex_classes(regex: str) -> frozenset[str]:
     return frozenset(_REGEX_CLASS_BY_ESCAPE[escape[1]] for escape in _REGEX_CLASS_ESCAPE.finditer(regex))
 
 
+def _end_of_input(match: re.Match[str]) -> str:
+    """Return the anchor that matches only at the end of the input, as in JSON Schema, for a ``$`` of ``re``."""
+    return r"(?:(?!\n\Z)$)" if match["anchor"] else match[0]
+
+
+@cache
+def _end_of_input_regex(regex: str) -> re.Pattern[str] | None:
+    """Return the regex with every ``$`` anchoring only the end of the input, or None when it has none."""
+    return re.compile(_REGEX_END_ANCHOR.sub(_end_of_input, regex)) if "$" in regex else None
+
+
+def _end_anchors_agree(regex: str, string: str) -> bool:
+    """Return whether Python's ``$``, which also matches before a final newline, decides like the end of the input."""
+    if not string.endswith("\n") or (end_of_input := _end_of_input_regex(regex)) is None:
+        return True
+    return (re.search(regex, string) is None) is (end_of_input.search(string) is None)
+
+
+def _engines_agree(regex: str, string: str) -> bool:
+    """Return whether the regex engines decide alike on the string: its characters' classes and its final newline."""
+    return _end_anchors_agree(regex, string) and all(
+        _regex_engines_agree(regex_class, character) for regex_class in _regex_classes(regex) for character in string
+    )
+
+
 class _RegexEnginesDisagreeError(Exception):
     """Abort source validation instead of reporting an error that not, if or oneOf would invert."""
 
@@ -189,13 +217,8 @@ def _agreed(
     instance: Any,
     schema: dict[str, Any],
 ) -> Iterator[ValidationError]:
-    """Apply a keyword unless the regex engines classify a character of a string it matches differently."""
-    if not all(
-        _regex_engines_agree(regex_class, character)
-        for regex, string in matches(validator, value, instance, schema)
-        for regex_class in _regex_classes(regex)
-        for character in string
-    ):
+    """Apply a keyword unless the regex engines decide differently on a string it matches."""
+    if not all(starmap(_engines_agree, matches(validator, value, instance, schema))):
         raise _RegexEnginesDisagreeError
     yield from keyword(validator, value, instance, schema)
 

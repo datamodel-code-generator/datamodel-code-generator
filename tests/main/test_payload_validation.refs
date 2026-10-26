@@ -3592,5 +3592,7 @@ jsonschema/type_union_constraints/keys_root.json-payload1-PayloadBackend.PYDANTI
 jsonschema/type_union_constraints/keys_root.json-payload1-PayloadBackend.PYDANTIC_V2_DATACLASS	main/runtime_compatibility/union_root.txt
 [test_payload_runtime_version_policies]
 	main/runtime_compatibility/versions.txt
+[test_regex_end_anchor_witnesses]
+	main/payload_validation/regex_end_anchor_witnesses.txt
 [test_union_rejection_capabilities]
 	payloads/union_capabilities.txt
