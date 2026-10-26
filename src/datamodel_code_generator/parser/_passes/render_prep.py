@@ -629,8 +629,7 @@ def fix_constructor_field_ordering_of(
             )
 
         if (inherited := get_inherited_constructor_info(parser, model, early=early)) is None:
-            order_key = get_local_constructor_order_key(model)
-            if has_local_constructor_ordering_conflict(model, order_key):
+            if (order_key := get_local_constructor_ordering_key(model)) is not None:
                 parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))  # noqa: SLF001
             continue
         if (
@@ -714,21 +713,41 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     return copied_fields
 
 
-def get_local_constructor_order_key(
-    model: DataModel,
-) -> Callable[[DataModelFieldBase], tuple[bool, bool]]:
-    """Return the positional order key that keeps constructor defaults last.
+def get_local_constructor_ordering_key(model: DataModel) -> Callable[[DataModelFieldBase], tuple[bool, bool]] | None:
+    """Return the positional order key that keeps constructor defaults last, when a local required field follows one.
 
     A required field rendered as ``= Field(...)`` is a dataclass default but required in the validator's
     signature, so it also precedes fields with real defaults when the output model asks for that order.
-    Otherwise only the assignments the output model keeps among the required fields precede them.
+    Otherwise only the assignments the output model keeps among the required fields precede them. Each field is
+    classified once, for the check and the key.
     """
+    if not model.SUPPORTS_KW_ONLY:
+        return None
+    facts = {id(field): model._field_assignment_facts(field) for field in model.fields}  # noqa: SLF001
     if model.orders_required_assignments_before_defaults():
-        return lambda field: ((facts := model._field_assignment_facts(field)).assigned, facts.has_default)  # noqa: SLF001
-    return lambda field: (
-        assigned := model._field_assignment_facts(field).assigned,  # noqa: SLF001
-        assigned and not model.keeps_assignment_with_required_fields(field),
-    )
+
+        def order_key(field: DataModelFieldBase) -> tuple[bool, bool]:
+            return (field_facts := facts[id(field)]).assigned, field_facts.has_default
+
+    else:
+
+        def order_key(field: DataModelFieldBase) -> tuple[bool, bool]:
+            return (
+                assigned := facts[id(field)].assigned,
+                assigned and not model.keeps_assignment_with_required_fields(field),
+            )
+
+    previous_key = (False, False)
+    for field in model.fields:
+        if not facts[id(field)].participates_in_constructor:
+            continue
+        kw_only = field.constructor_keyword_only
+        if kw_only is True or (kw_only is None and model.has_keyword_only_definition()):
+            continue
+        if (key := order_key(field)) < previous_key:
+            return order_key
+        previous_key = key
+    return None
 
 
 def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
@@ -780,26 +799,6 @@ def has_required_assignment_after_default(model: DataModel) -> bool:
         if seen_default and not has_default:
             return True
         seen_default = seen_default or has_default
-    return False
-
-
-def has_local_constructor_ordering_conflict(
-    model: DataModel,
-    order_key: Callable[[DataModelFieldBase], tuple[bool, bool]],
-) -> bool:
-    """Return whether a local required field follows a positional default."""
-    if not model.SUPPORTS_KW_ONLY:
-        return False
-    previous_key = (False, False)
-    for field in model.fields:
-        if not model._field_assignment_facts(field).participates_in_constructor:  # noqa: SLF001
-            continue
-        kw_only = field.constructor_keyword_only
-        if kw_only is True or (kw_only is None and model.has_keyword_only_definition()):
-            continue
-        if (key := order_key(field)) < previous_key:
-            return True
-        previous_key = key
     return False
 
 

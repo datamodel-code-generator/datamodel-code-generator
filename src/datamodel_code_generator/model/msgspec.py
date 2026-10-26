@@ -45,7 +45,6 @@ from datamodel_code_generator.model._render_plan import (
     RuleId,
     Why,
     field_call_text,
-    frozen_render_plan,
     written_argument_names,
 )
 from datamodel_code_generator.model.base import (
@@ -1080,10 +1079,8 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def _written_assignment(self) -> MsgspecWritten:
-        """Return the ``field()`` arguments the field writes."""
-        if (plan := frozen_render_plan(self)) is not None:
-            return MsgspecWritten(data=written_data(written_argument_names(plan)))
-        return MsgspecWritten(data=written_data(self._field_call_arguments([])[0].names()))
+        """Return the ``field()`` arguments the field's render plan writes."""
+        return MsgspecWritten(data=written_data(written_argument_names(self._render_plan())))
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:
