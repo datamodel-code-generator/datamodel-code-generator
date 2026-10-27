@@ -18,11 +18,7 @@ from datamodel_code_generator._model_keys import FieldKey, NodeKey
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from datamodel_code_generator._model_keys import ModelKey
-    from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
 SiteKey = NewType("SiteKey", int)
@@ -96,54 +92,7 @@ def site_of(key: SiteKey, occurrence: SiteOccurrence, provenance: Provenance) ->
     return RefSite(key, *occurrence, provenance)
 
 
-def tree_sites(
-    model: DataModel, owner: ModelKey, target_of: Callable[[Reference], ModelKey]
-) -> list[tuple[int, SiteOccurrence]]:
-    """Return the sites of the type trees of ``model``, each with its position among the nodes the store records.
-
-    The nodes are walked in the store's order: each field's tree, then each base class's, every tree in preorder with
-    the items of a node before its dict key.
-    """
-    sites: list[tuple[int, SiteOccurrence]] = []
-    kind: RefKind = "alias_body" if model.IS_ALIAS else "type"
-    index = 0
-    for field_ in model.fields:
-        index = _collect(field_.data_type, FieldKey(id(field_)), owner, kind, target_of, index, sites)
-    for base_class in model.base_classes:
-        index = _collect(base_class, None, owner, "base", target_of, index, sites)
-    return sites
-
-
-def _collect(  # noqa: PLR0913, PLR0917
-    root: DataType,
-    field_key: FieldKey | None,
-    owner: ModelKey,
-    kind: RefKind,
-    target_of: Callable[[Reference], ModelKey],
-    index: int,
-    sites: list[tuple[int, SiteOccurrence]],
-) -> int:
-    """Append the sites of the tree of ``root``, whose first node is the ``index``-th, and return the next index."""
-    stack: list[tuple[DataType, tuple[Position, ...]]] = [(root, ())]
-    while stack:
-        data_type, path = stack.pop()
-        if (reference := data_type.reference) is not None:
-            sites.append((
-                index,
-                SiteOccurrence(
-                    owner, field_key, path, NodeKey(id(data_type)), target_of(reference), kind, eager=kind == "base"
-                ),
-            ))
-        index += 1
-        if dict_key := data_type.dict_key:
-            stack.append((dict_key, (*path, ("key", 0))))
-        if nested := data_type.data_types:
-            step = _step(data_type)
-            stack.extend((nested[position], (*path, (step, position))) for position in reversed(range(len(nested))))
-    return index
-
-
-def _step(data_type: DataType) -> PositionStep:
+def position_step(data_type: DataType) -> PositionStep:
     """Return what the items of ``data_type`` are to it."""
     if data_type.is_tuple:
         return "tuple"

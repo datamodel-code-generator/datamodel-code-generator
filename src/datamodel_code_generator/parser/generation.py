@@ -87,8 +87,8 @@ from datamodel_code_generator.parser._sites import (
     RefSite,
     SiteKey,
     SiteOccurrence,
+    position_step,
     site_of,
-    tree_sites,
 )
 
 if TYPE_CHECKING:
@@ -104,7 +104,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
-    from datamodel_code_generator.parser._sites import ProvenanceHow
+    from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
     from datamodel_code_generator.types import DataType
 
     OwnerModels: TypeAlias = DataModel | tuple[DataModel, ...] | None
@@ -706,8 +706,9 @@ class GenerationIndexBuilder:
         self._record_models()
         previous_sites = self._history.previous_sites()
         for model_id, model_fact in self._facts.model_facts.items():
-            self._record_data_types(model_id, model_fact.model)
-            self._record_sites(model_id, self._tree_sites(model_fact.model), previous_sites)
+            occurrences, sites = self._occurrences(model_fact.model)
+            self._record_data_types(model_id, occurrences)
+            self._record_sites(model_id, sites, previous_sites)
 
         return GenerationBuildResult(
             facts=self._facts,
@@ -737,7 +738,7 @@ class GenerationIndexBuilder:
         model_facts = facts.model_facts
         first_appended = len(models) - appended_count
         appended = [
-            (parse_order, model, self._data_type_occurrences(model), self._tree_sites(model))
+            (parse_order, model, *self._occurrences(model))
             for parse_order, model in enumerate(models[first_appended:], first_appended)
         ]
         renamed_facts = [
@@ -745,7 +746,7 @@ class GenerationIndexBuilder:
             for model_id in renamed_model_ids
         ]
         changes = [
-            (model_id, self._data_type_occurrences(model := model_facts[model_id].model), self._tree_sites(model))
+            (model_id, *self._occurrences(model_facts[model_id].model))
             for model_id in sorted(changed_model_ids, key=facts.parse_order)
         ]
         for model_id, (parse_order, model, occurrences, sites) in enumerate(appended, next_model_id):
@@ -781,72 +782,31 @@ class GenerationIndexBuilder:
             self._facts.model_by_path[model.path] = model_id
             self._facts.model_by_ref_id[self._model_key(model.reference)] = model_id
 
-    def _data_type_occurrences(self, model: DataModel) -> list[DataTypeOccurrence]:
-        occurrences: list[DataTypeOccurrence] = []
-        for field_index, field_ in enumerate(model.fields):
-            self._collect_data_type_tree(field_.data_type, field_index, "field", occurrences)
-        for base_class in model.base_classes:
-            self._collect_data_type_tree(base_class, None, "base", occurrences)
-        return occurrences
+    def _occurrences(self, model: DataModel) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
+        """Return the data type occurrences of ``model`` and its reference sites, from one walk of its type trees.
 
-    def _collect_data_type_tree(
-        self,
-        data_type: DataType,
-        owner_field_index: int | None,
-        role: DataTypeRole,
-        occurrences: list[DataTypeOccurrence],
-    ) -> None:
-        occurrences.append((data_type, owner_field_index, role))
-        nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
-        for nested_data_type in data_type.data_types:
-            self._collect_data_type_tree(nested_data_type, owner_field_index, nested_role, occurrences)
-        if data_type.dict_key:
-            self._collect_data_type_tree(data_type.dict_key, owner_field_index, "dict_key", occurrences)
+        Each site comes with the position of its node among the occurrences.
+        """
+        return model_occurrences(model, self._model_key(model.reference), self._model_key)
 
-    def _record_data_types(self, model_id: ModelId, model: DataModel) -> None:
-        data_type_ids: list[DataTypeId] = []
-        for field_index, field_ in enumerate(model.fields):
-            self._record_data_type_tree(field_.data_type, model_id, field_index, "field", data_type_ids)
-        for base_class in model.base_classes:
-            self._add_base_owner(id(base_class), model_id)
-            self._record_data_type_tree(base_class, model_id, None, "base", data_type_ids)
-        self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
-
-    def _record_data_type_tree(
-        self,
-        data_type: DataType,
-        owner_model: ModelId,
-        owner_field_index: int | None,
-        role: DataTypeRole,
-        data_type_ids: list[DataTypeId],
-    ) -> None:
-        """Record a data type tree in traversal order, as a full build visits it."""
+    def _record_data_types(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
+        """Record the data type occurrences of a model in traversal order, as a full build visits them."""
         facts = self._facts
-        data_type_id = self._next_data_type_id
-        self._next_data_type_id += 1
-        fact = DataTypeFact(
-            id=data_type_id,
-            data_type=data_type,
-            owner_model=owner_model,
-            owner_field_index=owner_field_index,
-            role=role,
-            reference=data_type.reference,
-        )
-        facts.data_type_facts[data_type_id] = fact
-        if (current := facts.data_type_fact_by_object.get(object_id := id(data_type))) is not None:
-            facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(data_type_id)
-        facts.data_type_fact_by_object[object_id] = fact
-        data_type_ids.append(data_type_id)
-
-        if data_type.reference:
-            facts.sites_by_target[self._model_key(data_type.reference)][SiteKey(data_type_id)] = None
-
-        nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
-        for nested_data_type in data_type.data_types:
-            self._record_data_type_tree(nested_data_type, owner_model, owner_field_index, nested_role, data_type_ids)
-
-        if data_type.dict_key:
-            self._record_data_type_tree(data_type.dict_key, owner_model, owner_field_index, "dict_key", data_type_ids)
+        data_type_ids: list[DataTypeId] = []
+        for occurrence in occurrences:
+            data_type, _, role = occurrence
+            if role == "base":
+                self._add_base_owner(id(data_type), model_id)
+            data_type_id = self._next_data_type_id
+            self._next_data_type_id += 1
+            fact = facts.data_type_facts[data_type_id] = _data_type_fact(data_type_id, model_id, occurrence)
+            if (current := facts.data_type_fact_by_object.get(object_id := id(data_type))) is not None:
+                facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(data_type_id)
+            facts.data_type_fact_by_object[object_id] = fact
+            data_type_ids.append(data_type_id)
+            if fact.reference:
+                facts.sites_by_target[self._model_key(fact.reference)][SiteKey(data_type_id)] = None
+        facts.data_types_by_model[model_id] = tuple(data_type_ids)
 
     def _record_data_types_again(
         self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
@@ -890,9 +850,6 @@ class GenerationIndexBuilder:
             self._record_fact(fact)
         self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
         self._record_sites(model_id, sites, old_sites)
-
-    def _tree_sites(self, model: DataModel) -> list[tuple[int, SiteOccurrence]]:
-        return tree_sites(model, self._model_key(model.reference), self._model_key)
 
     def _record_sites(
         self,
@@ -997,6 +954,58 @@ class GenerationIndexBuilder:
         model_ids.remove(model_id)
         if len(model_ids) == 1:
             owners[base_class_id] = model_ids[0]
+
+
+def model_occurrences(
+    model: DataModel, owner: ModelKey, target_of: Callable[[Reference], ModelKey]
+) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
+    """Return the data type occurrences of ``model`` in the store's order and the reference sites among them.
+
+    The nodes are walked once, in the store's order: each field's tree, then each base class's, every tree in preorder
+    with the items of a node before its dict key. A site comes with the position of its node among the occurrences.
+    """
+    occurrences: list[DataTypeOccurrence] = []
+    sites: list[tuple[int, SiteOccurrence]] = []
+    kind: RefKind = "alias_body" if model.IS_ALIAS else "type"
+    for field_index, field_ in enumerate(model.fields):
+        field_key = FieldKey(id(field_))
+        _walk_tree(field_.data_type, field_index, "field", field_key, kind, owner, target_of, occurrences, sites)
+    for base_class in model.base_classes:
+        _walk_tree(base_class, None, "base", None, "base", owner, target_of, occurrences, sites)
+    return occurrences, sites
+
+
+def _walk_tree(  # noqa: PLR0913, PLR0917
+    root: DataType,
+    field_index: int | None,
+    root_role: DataTypeRole,
+    field_key: FieldKey | None,
+    kind: RefKind,
+    owner: ModelKey,
+    target_of: Callable[[Reference], ModelKey],
+    occurrences: list[DataTypeOccurrence],
+    sites: list[tuple[int, SiteOccurrence]],
+) -> None:
+    """Append the occurrences of the tree of ``root`` and the sites among them."""
+    stack: list[tuple[DataType, DataTypeRole, tuple[Position, ...]]] = [(root, root_role, ())]
+    while stack:
+        data_type, role, path = stack.pop()
+        if (reference := data_type.reference) is not None:
+            sites.append((
+                len(occurrences),
+                SiteOccurrence(
+                    owner, field_key, path, NodeKey(id(data_type)), target_of(reference), kind, eager=kind == "base"
+                ),
+            ))
+        occurrences.append((data_type, field_index, role))
+        if dict_key := data_type.dict_key:
+            stack.append((dict_key, "dict_key", (*path, ("key", 0))))
+        if nested := data_type.data_types:
+            nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
+            step = position_step(data_type)
+            stack.extend(
+                (nested[position], nested_role, (*path, (step, position))) for position in reversed(range(len(nested)))
+            )
 
 
 def _holder_edges(model_fact: ModelFact) -> list[HolderEdge]:
