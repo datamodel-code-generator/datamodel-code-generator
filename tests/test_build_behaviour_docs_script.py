@@ -152,6 +152,9 @@ CHAIN_CASES = {
     "fails_since_middle_release": [OK_INT, FAILED, FAILED],
     "unusable_validator_fixed": [{"gen": "ok", "sig": "unbuildable"}, OK_STR, OK_STR],
     "unsupported_backend": [UNSUPPORTED, OK_INT, OK_INT],
+    "failed_then_fixed": [OK_INT, FAILED, OK_INT],
+    "type_changed_then_failed": [OK_INT, OK_STR, FAILED],
+    "failed_then_type_changed": [FAILED, OK_INT, OK_STR],
 }
 
 
@@ -186,6 +189,7 @@ def test_error_name_and_redact(case: str) -> None:
 RELEASE_CASES = {
     "fixes_only": [name for name in ROWS if name not in {"new_option", "accepted_anchor"}],
     "every_class": list(ROWS),
+    "pr_tier": [name for name in ROWS if name not in {"new_option", "accepted_anchor"}],
 }
 
 
@@ -193,7 +197,7 @@ RELEASE_CASES = {
 def test_render_release(case: str) -> None:
     """A release page sums the gate cells per class and output model type and lists each group's examples."""
     data = summarize_gate([ROWS[name] for name in RELEASE_CASES[case]], [ACCEPTED_ENTRY])
-    data = {"version": "0.87.0", "previous": "0.86.0", "tier": "release", **data}
+    data = {"version": "0.87.0", "previous": "0.86.0", "tier": "pr" if case == "pr_tier" else "release", **data}
     for group in data["accepted"]:
         group["restored_by"] = []
         group["example"] = ACCEPTED_EXAMPLE

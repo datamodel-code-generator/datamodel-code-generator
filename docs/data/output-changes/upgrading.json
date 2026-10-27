@@ -65,29 +65,28 @@
    },
    "changed_in": {
     "0.45.0": {
-     "behaviour-change": 2090,
-     "crash-fix": 592,
-     "now-fails": 35
+     "behaviour-change": 2012,
+     "crash-fix": 582,
+     "now-fails": 197
     },
     "0.70.0": {
-     "behaviour-change": 1202,
-     "crash-fix": 575,
-     "now-fails": 105
+     "behaviour-change": 1841,
+     "crash-fix": 747,
+     "now-fails": 226
     },
     "0.80.0": {
-     "behaviour-change": 315,
-     "crash-fix": 187,
-     "now-fails": 40
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
     },
     "0.86.0": {
-     "behaviour-change": 154,
-     "crash-fix": 133,
-     "now-fails": 38
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
     },
     "0.87.0": {
-     "behaviour-change": 91,
-     "crash-fix": 154,
-     "now-fails": 4
+     "behaviour-change": 17,
+     "crash-fix": 414
     }
    },
    "counts": {
@@ -282,24 +281,23 @@
    },
    "changed_in": {
     "0.70.0": {
-     "behaviour-change": 1898,
-     "crash-fix": 737,
-     "now-fails": 114
+     "behaviour-change": 1841,
+     "crash-fix": 747,
+     "now-fails": 226
     },
     "0.80.0": {
-     "behaviour-change": 546,
-     "crash-fix": 263,
-     "now-fails": 40
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
     },
     "0.86.0": {
-     "behaviour-change": 227,
-     "crash-fix": 208,
-     "now-fails": 38
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
     },
     "0.87.0": {
-     "behaviour-change": 55,
-     "crash-fix": 249,
-     "now-fails": 12
+     "behaviour-change": 17,
+     "crash-fix": 414
     }
    },
    "counts": {
@@ -499,18 +497,18 @@
    },
    "changed_in": {
     "0.80.0": {
-     "behaviour-change": 927,
-     "crash-fix": 421,
-     "now-fails": 179
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
     },
     "0.86.0": {
-     "behaviour-change": 572,
-     "crash-fix": 355,
-     "now-fails": 67
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
     },
     "0.87.0": {
-     "behaviour-change": 20,
-     "crash-fix": 397
+     "behaviour-change": 17,
+     "crash-fix": 414
     }
    },
    "counts": {

@@ -25,7 +25,6 @@ ABSOLUTE_FIXTURE = re.compile(r"(?:[A-Za-z]:)?[/\\][^\s'\"]*?[/\\](tests[/\\]dat
 ABSOLUTE_PATH = re.compile(r"(?<![\w.])(?:/(?:home|Users|tmp|var|private)|[A-Za-z]:\\)[^\s'\":]*")
 QUERY_CLASSES = ("same", "no-behaviour", "crash-fix", "behaviour-change", "now-fails", "both-fail", "unsupported")
 CHANGED = frozenset({"crash-fix", "behaviour-change", "now-fails"})
-UNCHANGED = frozenset({"same", "no-behaviour", "unsupported", "both-fail"})
 GATE_ORDER = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in")
 MAX_EXAMPLES = 3
 MAX_DETAIL = 160
@@ -187,8 +186,9 @@ def compare_records(
 ) -> dict[str, Any]:
     """Compare the cells of two recorded releases and attribute each change to the recorded releases between them.
 
-    `records` maps versions to records; every recorded version in [old, new] takes part in the attribution, so a
-    change shows under each recorded release whose cell differs from the previous recorded release's.
+    `records` maps versions to records; every recorded version in [old, new] takes part in the attribution. The counts
+    classify the two ends; `changed_in` classifies each pair of adjacent recorded releases on its own, so a change
+    that was made and later undone shows under both releases.
     """
     chain = sorted((v for v in records if version_key(old) <= version_key(v) <= version_key(new)), key=version_key)
     before, after = records[old]["cells"], records[new]["cells"]
@@ -201,18 +201,16 @@ def compare_records(
         cls, notes = pair_class(before[key], after[key], load, key=key)
         counts[cls] += 1
         by_type[key.split("|")[1]][cls] += 1
+        releases = []
+        for previous, current in pairwise(chain):
+            if key not in records[previous]["cells"] or key not in records[current]["cells"]:
+                continue
+            step, _ = pair_class(records[previous]["cells"][key], records[current]["cells"][key], load, key=key)
+            if step in CHANGED:
+                changed_in[current][step] += 1
+                releases.append(current)
         if cls not in CHANGED:
             continue
-        releases = [
-            current
-            for previous, current in pairwise(chain)
-            if key in records[previous]["cells"]
-            and key in records[current]["cells"]
-            and pair_class(records[previous]["cells"][key], records[current]["cells"][key], load, key=key)[0]
-            not in UNCHANGED
-        ]
-        for release in releases:
-            changed_in[release][cls] += 1
         aspects.update(aspects_of(notes))
         input_path, backend, _ = key.split("|")
         if len(examples[cls]) < MAX_EXAMPLES and all(example["input"] != input_path for example in examples[cls]):

@@ -30,7 +30,7 @@ How the models 0.87.0 generates differ in behaviour from the models each recorde
 | pydantic_v2.dataclass | 3411 | 17 | 90 | 2 | 142 | 21 |
 | typing.TypedDict | 1721 | 7 | 50 | 1 | 113 | 0 |
 
-Changed in (each recorded release counts the generations it changed since the recorded release before it, so a change that was made and later undone counts twice):
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
 
 | Release | crash-fix | behaviour-change |
 |---|---|---|
@@ -69,7 +69,7 @@ Examples, crash-fix:
 | pydantic_v2.dataclass | 2901 | 35 | 157 | 420 | 15 | 134 | 21 |
 | typing.TypedDict | 1677 | 8 | 63 | 28 | 13 | 103 | 0 |
 
-Changed in (each recorded release counts the generations it changed since the recorded release before it, so a change that was made and later undone counts twice):
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
 
 | Release | crash-fix | behaviour-change | now-fails |
 |---|---|---|---|
@@ -118,13 +118,13 @@ Examples, now-fails:
 | pydantic_v2.dataclass | 2650 | 33 | 274 | 551 | 53 | 101 | 21 |
 | typing.TypedDict | 1513 | 13 | 91 | 155 | 27 | 93 | 0 |
 
-Changed in (each recorded release counts the generations it changed since the recorded release before it, so a change that was made and later undone counts twice):
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
 
 | Release | crash-fix | behaviour-change | now-fails |
 |---|---|---|---|
-| 0.80.0 | 421 | 927 | 179 |
-| 0.86.0 | 355 | 572 | 67 |
-| 0.87.0 | 397 | 20 | 0 |
+| 0.80.0 | 406 | 919 | 221 |
+| 0.86.0 | 332 | 599 | 68 |
+| 0.87.0 | 414 | 17 | 0 |
 
 Changed aspects: type 1024, payload-verdict 379, kind 376, constraints 330, default 319, required 257, parsed-value 63, constructor-order 51, name-removed 35, import-path-removed 25, enum-member-removed 24, field-added 24, numbered-name-removed 16, config 14, bases 8, field-removed 7, module-removed 5, alias 1.
 
@@ -168,14 +168,14 @@ Examples, now-fails:
 | pydantic_v2.dataclass | 0 | 0 | 0 | 0 | 0 | 0 | 3683 |
 | typing.TypedDict | 404 | 697 | 153 | 360 | 30 | 70 | 178 |
 
-Changed in (each recorded release counts the generations it changed since the recorded release before it, so a change that was made and later undone counts twice):
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
 
 | Release | crash-fix | behaviour-change | now-fails |
 |---|---|---|---|
-| 0.70.0 | 737 | 1898 | 114 |
-| 0.80.0 | 263 | 546 | 40 |
-| 0.86.0 | 208 | 227 | 38 |
-| 0.87.0 | 249 | 55 | 12 |
+| 0.70.0 | 747 | 1841 | 226 |
+| 0.80.0 | 406 | 919 | 221 |
+| 0.86.0 | 332 | 599 | 68 |
+| 0.87.0 | 414 | 17 | 0 |
 
 Changed aspects: type 1488, default 417, kind 395, payload-verdict 343, constraints 313, config 239, required 197, parsed-value 169, name-removed 165, field-added 56, enum-member-removed 53, field-removed 47, constructor-order 37, enum-member-added 35, import-path-removed 27, numbered-name-removed 25, bases 20, alias 7, module-removed 4.
 
@@ -219,15 +219,15 @@ Examples, now-fails:
 | pydantic_v2.dataclass | 0 | 0 | 0 | 0 | 0 | 0 | 3683 |
 | typing.TypedDict | 1 | 827 | 227 | 559 | 29 | 71 | 178 |
 
-Changed in (each recorded release counts the generations it changed since the recorded release before it, so a change that was made and later undone counts twice):
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
 
 | Release | crash-fix | behaviour-change | now-fails |
 |---|---|---|---|
-| 0.45.0 | 592 | 2090 | 35 |
-| 0.70.0 | 575 | 1202 | 105 |
-| 0.80.0 | 187 | 315 | 40 |
-| 0.86.0 | 133 | 154 | 38 |
-| 0.87.0 | 154 | 91 | 4 |
+| 0.45.0 | 582 | 2012 | 197 |
+| 0.70.0 | 747 | 1841 | 226 |
+| 0.80.0 | 406 | 919 | 221 |
+| 0.86.0 | 332 | 599 | 68 |
+| 0.87.0 | 414 | 17 | 0 |
 
 Changed aspects: type 2231, default 1280, required 299, kind 234, config 205, bases 138, name-removed 128, constructor-order 126, field-added 119, field-removed 108, import-path-removed 107, enum-base 81, constraints 72, enum-member-removed 36, enum-member-added 29, numbered-name-removed 25, alias 6, enum-value 6, module-removed 4.
 

@@ -84,6 +84,14 @@ def render_release(data: dict[str, Any]) -> str:
     classes = data["classes"]
     rows = [[backend, *(data["counts"][backend].get(cls, 0) for cls in classes)] for backend in data["types"]]
     totals = [sum(row[index + 1] for row in rows) for index in range(len(classes))]
+    tier = data.get("tier", "release")
+    coverage = (
+        "every test fixture and payload validation case of the repository with each output model type, with default "
+        f"options, with the released presets and with the documented CLI examples (tier `{tier}`)."
+        if tier != "pr"
+        else "the test fixtures the change touches and a fixed sample of the others with the output model types of "
+        "the pull request tier, with default options (tier `pr`)."
+    )
     lines = [
         f"# Output changes in {version}",
         "",
@@ -91,8 +99,7 @@ def render_release(data: dict[str, Any]) -> str:
         "",
         (
             f"How the models {version} generates differ in behaviour from the models {previous} generates. Both "
-            "releases generated every test fixture and payload validation case of the repository with each output "
-            "model type, with default options, with the released presets and with the documented CLI examples. Each "
+            f"releases generated {coverage} Each "
             "generation (one input, output model type and option set) whose output differs was imported and compared "
             "by behaviour: public names, model kinds and bases, configuration, field types, constraints, aliases, "
             "defaults, required flags, enum members, constructor order, and the validation result of sample payloads."
@@ -201,7 +208,8 @@ def render_comparison(comparison: dict[str, Any], level: int = 2) -> str:
         lines += [
             (
                 "Changed in (each recorded release counts the generations it changed since the recorded release "
-                "before it, so a change that was made and later undone counts twice):"
+                "before it, classified on that pair of releases alone, so a change that was made and later undone "
+                "counts under both releases although the counts above compare only the two ends):"
             ),
             "",
             *_table(

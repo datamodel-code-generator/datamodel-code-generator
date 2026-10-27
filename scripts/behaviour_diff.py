@@ -183,6 +183,7 @@ class Gate:
     payload_dir: Path
     payload_root: Path
     candidate_info: Candidate
+    signature_python: Path | None = None
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -441,7 +442,7 @@ def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> 
     """Compute a behaviour signature in a fresh process of the candidate's interpreter."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    command = [str(gate.candidate_python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
+    command = [str(gate.signature_python or gate.candidate_python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
     try:
         result = subprocess.run(
             [*command, *([str(payloads)] if payloads else [])],
@@ -607,6 +608,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
+    guide.set_defaults(tier="release")
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")
@@ -798,7 +800,17 @@ def _write_json(path: Path, data: object) -> None:
     tmp.replace(path)
 
 
-def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path) -> dict[str, Any]:
+def release_environment(python: Path) -> str:
+    """Return the identity of a release environment: interpreter and package versions, not where it is installed."""
+    freeze = subprocess.run(
+        ["uv", "pip", "freeze", "--python", str(python)], capture_output=True, text=True, check=True
+    ).stdout
+    is_generator = compare_release._is_generator_requirement  # ruff: ignore[private-member-access]
+    pins = sorted(line for line in freeze.splitlines() if line and not is_generator(line))
+    return json.dumps([*compare_release._probe(python), pins])  # ruff: ignore[private-member-access]
+
+
+def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path, environment: str) -> dict[str, Any]:
     """Generate one cell with the recorded release and store its signature under `out/signatures`."""
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
@@ -810,7 +822,7 @@ def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path) -> dict[str,
             return {"gen": "fail", "error": redact(outcome.error)[:200]}
         payloads = payloads_for(gate, cell)
         payload_text = payloads.read_text(encoding="utf-8") if payloads else ""
-        key = _stable(json.dumps([outcome.tree, cell.backend, payload_text]))[:24]
+        key = _stable(json.dumps([outcome.tree, cell.backend, payload_text, environment]))[:24]
         path = out / "signatures" / f"{key}.json"
         if not path.exists():
             target = _write_tree(outcome.tree, tmp / "sig")
@@ -830,16 +842,20 @@ def record_main(ns: argparse.Namespace) -> int:
     if ns.checkout:
         source = resolve_candidate(ns.checkout, ns.python, cache_dir)
         python, env, cache = source.python, source.env, compare_release.OutputCache(None)
+        environment = release_environment(python)
     else:
         python = (ns.python or era_python(ns.version, cache_dir)).absolute()
         env = {k: v for k, v in recorder.env.items() if k != "PYTHONPATH"}
-        cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{python.parent.parent.name}")
+        environment = release_environment(python)
+        name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
+        cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
     runner = compare_release.Runner(compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout)
     gate = Gate(
         base=runner,
         candidate=runner,
         cache=cache,
         candidate_python=Path(sys.executable).absolute(),
+        signature_python=python,
         allowlist=Allowlist(),
         loaded_allowlist=Allowlist(),
         timeout=ns.timeout,
@@ -859,7 +875,7 @@ def record_main(ns: argparse.Namespace) -> int:
         args = _drop_unsupported_formatters(cell.args(), inventory)
         if reason := opt_in_reason(args, inventory):
             return key, {"gen": "unsupported", "error": f"the release has no {reason}"}
-        return key, record_cell(gate, cell, args, out)
+        return key, record_cell(gate, cell, args, out, environment)
 
     try:
         with ThreadPoolExecutor(ns.j) as pool:

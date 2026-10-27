@@ -12,3 +12,4 @@ windows_path	build_behaviour_docs_script/error_name_and_redact[windows_path].txt
 [test_render_release]
 every_class	build_behaviour_docs_script/render_release[every_class].txt
 fixes_only	build_behaviour_docs_script/render_release[fixes_only].txt
+pr_tier	build_behaviour_docs_script/render_release[pr_tier].txt
