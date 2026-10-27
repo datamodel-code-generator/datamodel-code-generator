@@ -10,7 +10,7 @@ from functools import cache
 from importlib.resources import files
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
 from datamodel_code_generator._recommend._signals import (
     SignalName,
@@ -42,7 +42,7 @@ Category: TypeAlias = Literal[
 OutputModelTypeName: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"
 ]
-RuleId: TypeAlias = Annotated[str, StringConstraints(pattern=r"^[a-z0-9-]+\.[a-z0-9-]+$")]
+RuleId: TypeAlias = Annotated[str, Field(pattern=r"^[a-z0-9-]+\.[a-z0-9-]+$")]
 OptionalSection: TypeAlias = Literal["validation", "policy"]
 
 _OPERATORS: dict[str, Callable[[float, float], bool]] = {
@@ -115,7 +115,7 @@ class Rule(_Data):
     """
 
     id: RuleId
-    decision: Annotated[str, StringConstraints(pattern=r"^[a-z0-9-]+$")]
+    decision: Annotated[str, Field(pattern=r"^[a-z0-9-]+$")]
     optional: OptionalSection | None = None
     applies_to: AppliesTo = AppliesTo()
     when: Condition
