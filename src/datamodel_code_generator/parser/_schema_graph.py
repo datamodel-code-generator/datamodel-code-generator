@@ -35,6 +35,7 @@ from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from pathlib import Path
 
 __all__ = [
     "SCHEMA_GRAPH",
@@ -412,6 +413,7 @@ class SchemaGraphBuilder:
     """
 
     __slots__ = (
+        "_directories",
         "_documents",
         "_edge_keys",
         "_mount_containers",
@@ -433,6 +435,7 @@ class SchemaGraphBuilder:
         self._mount_roots: set[int] = set()
         self._mount_containers: dict[int, Any] = {}
         self._edge_keys: dict[RefEdge, RefKey] = {}
+        self._directories: dict[str, Path] = {}
         self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
         self._schemas: dict[tuple[int, type[Any]], tuple[Any, object]] = {}
@@ -462,6 +465,15 @@ class SchemaGraphBuilder:
         if (key := self._edge_keys.get(edge)) is None:
             key = self._edge_keys[edge] = compute(edge)
         return key
+
+    def document_directory(self, document: str, resolve: Callable[[], Path]) -> Path:
+        """Return the directory of a local document, which ``resolve`` reads from the file system at the first call.
+
+        ``document`` names the document as reference paths do. The directory is a fact of the document as it loads.
+        """
+        if (directory := self._directories.get(document)) is None:
+            directory = self._directories[document] = resolve()
+        return directory
 
     def schema(
         self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT], *, fingerprint: bool

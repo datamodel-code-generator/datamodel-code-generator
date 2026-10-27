@@ -6699,17 +6699,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._ref_document_context(file_part):
             return self._ref_key(ref, embedded=False).key
 
-    @contextmanager
-    def _schema_document_context(self, path_parts: list[str]) -> Generator[None, None, None]:
+    def _schema_document_context(self, path_parts: list[str]) -> AbstractContextManager[None]:
         """Resolve references relative to the document identified by model resolver root parts."""
-        document = self.model_resolver.join_path(tuple(path_parts)).partition("#")[0]
-        remote = is_url(document)
-        with (
-            self.model_resolver.current_base_path_context(None if remote else Path(document).parent),
-            self.model_resolver.base_url_context(document if remote else None),
-            self.model_resolver.current_root_context(path_parts),
-        ):
-            yield
+        resolver = self.model_resolver
+        document = resolver.join_path(tuple(path_parts)).partition("#")[0]
+        if is_url(document):
+            return resolver.document_context(document, path_parts, None)
+        resolve = partial(resolver.document_directory, document)
+        graph = self._schema_graph
+        return resolver.document_context(
+            document, path_parts, resolve() if graph is None else graph.document_directory(document, resolve)
+        )
 
     @contextmanager
     def _ref_document_context(self, file_part: str) -> Generator[tuple[str, dict[str, Any]], None, None]:
