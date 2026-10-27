@@ -54,7 +54,7 @@ class ParseChecksPort(ABC):
     @property
     @abstractmethod
     def armed(self) -> bool:
-        """Return whether L1 is over, so that writes are watched."""
+        """Whether L1 is over, so that writes are watched."""
 
     @abstractmethod
     def arm(self, store: GenerationStore, scope: str) -> None:

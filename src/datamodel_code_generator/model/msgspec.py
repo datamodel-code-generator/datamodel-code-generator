@@ -1029,7 +1029,7 @@ class DataModelField(DataModelFieldBase):
         """
         if plan.annotated_call is not None and not (self.required or self.nullable or self._not_required):
             return self.data_type
-        return plan.written_type or self.data_type
+        return cast("DataType | None", plan.written_type) or self.data_type
 
     def _has_numeric_data_type(self, type_name: str) -> bool:
         """Return whether any field data type is the given numeric type."""
