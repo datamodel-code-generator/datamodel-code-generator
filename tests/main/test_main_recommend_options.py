@@ -232,6 +232,12 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             "paths_bodies_path_item_ref.txt",
             id="paths-bodies-referenced-path-item",
         ),
+        pytest.param(
+            "paths_bodies_object_map.yaml",
+            ["--openapi-scopes", "paths", "--preset", "standard-py314-20261017"],
+            "paths_bodies_object_map.txt",
+            id="paths-bodies-object-map",
+        ),
     ],
 )
 def test_recommend_options_for_schemas(

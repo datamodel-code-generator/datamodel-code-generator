@@ -317,22 +317,23 @@ def _legacy_body_operations(
 
 
 def _is_inline_object_body(schema: object) -> bool:
-    """Return whether generation types a paths or webhooks body inline although its schema definition gets a model."""
+    """Return whether ``--openapi-as-definitions paths-bodies`` changes the model of a paths or webhooks body."""
     from pydantic import ValidationError  # noqa: PLC0415
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaObject  # noqa: PLC0415
-    from datamodel_code_generator.parser.openapi import is_inline_object_body  # noqa: PLC0415
+    from datamodel_code_generator.parser.openapi import is_inline_object_body, is_object_map_body  # noqa: PLC0415
 
     if not isinstance(schema, dict):
         return False
     try:
-        return is_inline_object_body(JsonSchemaObject.model_validate(schema))
+        obj = JsonSchemaObject.model_validate(schema)
+        return is_inline_object_body(obj) or is_object_map_body(obj)
     except ValidationError:
         return False
 
 
 def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]) -> int:
-    """Count the request and response bodies that ``--openapi-as-definitions paths-bodies`` gives a model."""
+    """Count the request and response bodies whose model ``--openapi-as-definitions paths-bodies`` changes."""
     return sum(
         _is_inline_object_body(schema)
         for operation in _legacy_body_operations(document, scopes, include_paths)

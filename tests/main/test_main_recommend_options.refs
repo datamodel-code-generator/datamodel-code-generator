@@ -83,6 +83,7 @@ openapi-scopes	main/recommend_options/operations.txt
 paths-bodies-api-scope	main/recommend_options/paths_bodies_api.txt
 paths-bodies-as-definitions	main/recommend_options/paths_bodies.txt
 paths-bodies-included-paths	main/recommend_options/paths_bodies_included.txt
+paths-bodies-object-map	main/recommend_options/paths_bodies_object_map.txt
 paths-bodies-referenced-path-item	main/recommend_options/paths_bodies_path_item_ref.txt
 paths-scope	main/recommend_options/operations_paths.txt
 pattern-properties	main/recommend_options/deployment.txt

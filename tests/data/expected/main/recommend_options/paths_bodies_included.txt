@@ -20,12 +20,12 @@ Start from  --preset standard-py314-20261017
 Add (1 option)
   --openapi-as-definitions paths-bodies ref-components   [openapi.paths-bodies-as-definitions]
       Request or response bodies of the paths or webhooks scope are object schemas that generation
-      types inline although their schema definitions get models (1), such as a type array [object,
-      null]. With them modeled as definitions, each body gets that model, and a document whose only
-      bodies are such schemas generates models instead of failing with 'Models not found in the
-      input data'. The same principle gives a component written as a $ref to a recursive schema with
-      sibling keywords the root model a definitions entry of that schema gets, as the 20261027
-      presets do.
+      types inline or models differently from their schema definitions (1), such as a type array
+      [object, null] or a type: object map of patternProperties or propertyNames. With them modeled
+      as definitions, each body gets that model, and a document whose only bodies are such schemas
+      generates models instead of failing with 'Models not found in the input data'. The same
+      principle gives a component written as a $ref to a recursive schema with sibling keywords the
+      root model a definitions entry of that schema gets, as the 20261027 presets do.
       measured: OpenAPI request body {type: [object, null], additionalProperties: {...}} under
       --openapi-scopes paths: 'Models not found in the input data' without the option, a
       PetsPostRequest root model of dict[str, ...] | None with it

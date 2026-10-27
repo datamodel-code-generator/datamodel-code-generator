@@ -294,6 +294,20 @@ def _is_closed_pattern_map_body(obj: JsonSchemaObject) -> bool:
     return not obj.properties and bool(obj.patternProperties) and obj.additionalProperties is False
 
 
+def is_object_map_body(obj: JsonSchemaObject) -> bool:
+    """Return whether an object body gets the root model of a map only with ``--openapi-as-definitions paths-bodies``.
+
+    That is an ``is_object`` body without ``properties`` whose ``patternProperties`` or ``propertyNames`` make a map,
+    other than one that ``_is_closed_pattern_map_body`` gives that model by default.
+    """
+    return (
+        obj.is_object
+        and not obj.properties
+        and bool(obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False))
+        and not _is_closed_pattern_map_body(obj)
+    )
+
+
 @cache
 def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
     """Return the resolver that names operation models by the rules of the target Python version."""

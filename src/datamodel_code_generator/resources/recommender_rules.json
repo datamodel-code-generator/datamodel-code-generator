@@ -213,7 +213,7 @@
           "ref-components"
         ]
       },
-      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'. The same principle gives a component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of that schema gets, as the 20261027 presets do.",
+      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline or models differently from their schema definitions ({inline_object_bodies}), such as a type array [object, null] or a type: object map of patternProperties or propertyNames. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'. The same principle gives a component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of that schema gets, as the 20261027 presets do.",
       "evidence": [
         "OpenAPI request body {type: [object, null], additionalProperties: {...}} under --openapi-scopes paths: 'Models not found in the input data' without the option, a PetsPostRequest root model of dict[str, ...] | None with it",
         "OpenAPI response body of the same shape: 'Models not found in the input data' without the option, a PetsGetResponse root model with it",
