@@ -558,6 +558,11 @@ custom-unset	main/generate_with_empty_formatters.py
 	main/generate_with_imported_config_from_top_level.py
 [test_generated_pydantic_v2_model_accepts_runtime_value]
 	main/main_general/generated_pydantic_v2_model_accepts_runtime_value.py
+[test_generation_without_parse_checks]
+constructor-ordering-checks_off0	main/generation_without_parse_checks.py
+constructor-ordering-checks_off1	main/generation_without_parse_checks.py
+decisions-checks_off0	main/generation_without_parse_checks.py	= main/generation_without_parse_checks~generation_without_parse_checks[decisions-checks_off0].py
+decisions-checks_off1	main/generation_without_parse_checks.py	= main/generation_without_parse_checks~generation_without_parse_checks[decisions-checks_off0].py
 [test_import_overrides]
 	main/import_overrides.py
 [test_import_overrides_apply_to_additional_imports]

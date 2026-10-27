@@ -68,6 +68,7 @@ from tests.conftest import (
     CHECK_RENDER_MEMOS_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
+    CHECK_STORE_WRITES_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -7421,4 +7422,34 @@ def test_formatter_policy_pyproject(mode: str, override: bool, output_file: Path
     assert_output(
         output_file.read_text(encoding="utf-8"),
         EXPECTED_MAIN_PATH / "formatter_policy" / f"pyproject-{mode}-{'override' if override else 'configured'}.py",
+    )
+
+
+@pytest.mark.parametrize("checks_off", [(CHECK_FACT_FINALITY_ENV,), (CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV)])
+@pytest.mark.parametrize(
+    ("input_name", "args"),
+    [
+        pytest.param(
+            "allof_required_inherited_dataclass_metadata.yaml",
+            ["--output-model-type", "dataclasses.dataclass"],
+            id="constructor-ordering",
+        ),
+        pytest.param(
+            "redundant_reference_null.yaml", ["--strict-nullable", "--omit-redundant-reference-null"], id="decisions"
+        ),
+    ],
+)
+@freeze_time(TIMESTAMP)
+def test_generation_without_parse_checks(
+    monkeypatch: pytest.MonkeyPatch, output_file: Path, checks_off: tuple[str, ...], input_name: str, args: list[str]
+) -> None:
+    """Generation with the finality and store-write checks off, as users run it, writes what the checked run writes."""
+    for name in checks_off:
+        monkeypatch.setenv(name, "0")
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=args,
+        assert_func=assert_file_content,
     )
