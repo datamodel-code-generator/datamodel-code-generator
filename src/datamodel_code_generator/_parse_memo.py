@@ -132,6 +132,7 @@ class ParseMemo:
     """The memos of one parse, which the generation store owns."""
 
     __slots__ = (
+        "_check",
         "_clock",
         "_deep",
         "_derived",
@@ -156,6 +157,7 @@ class ParseMemo:
         self._readers: dict[int, dict[int, Any]] = {}
         self._derived: dict[tuple[MemoTable, int, Hashable], _Derived] = {}
         self._reading: list[tuple[Any, dict[int, object]]] = []
+        self._check: tuple[CheckMode | None] | None = None
 
     def bump_field(self, field: Any) -> None:
         """Move the revision of a field and the ``deep`` revision of its model, after a write to the field."""
@@ -213,7 +215,7 @@ class ParseMemo:
         if (entry := self._derived.get(key)) is not None and self._holds(entry, field, source):
             if self._reading:
                 self._read_by_outer(entry)
-            return _checked(table, field, entry.value, recompute or compute)
+            return self._checked(table, field, entry.value, recompute or compute)
         reads: dict[int, object] = {}
         self._reading.append((field, reads))
         try:
@@ -344,7 +346,7 @@ class ParseMemo:
             and slot.epoch == self._epochs.get(slot_key, 0)
             and args in slot.values
         ):
-            return _checked(table, owner, slot.values[args], recompute or compute)
+            return self._checked(table, owner, slot.values[args], recompute or compute)
         value = compute()
         epoch = self._epochs.get(slot_key, 0)
         if (slot := self._slots.get(slot_key)) is None or slot.owner is not owner or slot.epoch != epoch:
@@ -352,6 +354,17 @@ class ParseMemo:
         else:
             slot.values[args] = value
         return value
+
+    def _checked(self, table: MemoTable, owner: object, kept: _V, recompute: Callable[[], object]) -> _V:
+        """Return a kept value, compared under the ``RENDER_MEMOS`` check with the value computed anew.
+
+        The check's mode is read at the memo's first hit: the parse reads the check flags once, at its start.
+        """
+        if (check := self._check) is None:
+            check = self._check = (check_mode(CheckArea.RENDER_MEMOS),)
+        if (mode := check[0]) is not None:
+            _check_hit(mode, table, owner, kept, recompute)
+        return kept
 
     def forget(self, table: MemoTable, key: MemoKey, owner: object) -> None:
         """Bump the owner's epoch in the table, so that no value it kept there is returned again."""
@@ -493,13 +506,6 @@ def _equal(kept: object, fresh: object) -> bool:
     if is_dataclass(kept) and type(kept) is type(fresh):
         return all(_equal(getattr(kept, field.name), getattr(fresh, field.name)) for field in fields(kept))
     return type(kept) is type(fresh) and repr(kept) == repr(fresh)
-
-
-def _checked(table: MemoTable, owner: object, kept: _V, recompute: Callable[[], object]) -> _V:
-    """Return a kept value, compared under the ``RENDER_MEMOS`` check with the value computed anew."""
-    if (mode := check_mode(CheckArea.RENDER_MEMOS)) is not None:
-        _check_hit(mode, table, owner, kept, recompute)
-    return kept
 
 
 def _check_hit(mode: CheckMode, table: MemoTable, owner: object, kept: object, recompute: Callable[[], object]) -> None:
