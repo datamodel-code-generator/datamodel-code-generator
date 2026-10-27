@@ -712,7 +712,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
     if not path.is_dir():
         try:
             module = _import_file(path)
-        except BaseException as exc:  # ruff: ignore[blind-except] - a failed import is the result
+        except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result
             return {"import_error": _short_error(exc, 200)}
         signature = module_signature(module, path.read_text(encoding="utf-8"), output_model_type)
         if payloads is not None:
@@ -728,7 +728,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
         key = ".".join(relative.parts)
         try:
             module = importlib.import_module(name)
-        except BaseException as exc:  # ruff: ignore[blind-except] - a failed import is the result
+        except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result
             package[key] = {"import_error": _short_error(exc, 200)}
             continue
         package[key] = module_signature(module, file.read_text(encoding="utf-8"), output_model_type)

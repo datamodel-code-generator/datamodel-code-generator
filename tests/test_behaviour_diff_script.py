@@ -176,6 +176,45 @@ CLASSIFY_CASES = {
         "tests/data/jsonschema/broken_import.json",
         [],
     ),
+    "import_fails_new_module_only": (
+        Side(
+            generated=True,
+            signature={"package": {"__init__": {"import_error": "E: a"}, "b": _module({"M": _model({})})}},
+        ),
+        Side(
+            generated=True,
+            signature={"package": {"__init__": {"import_error": "E: a"}, "b": {"import_error": "E: b"}}},
+        ),
+        "tests/data/openapi/modular",
+        [],
+    ),
+    "import_fixed_one_module": (
+        Side(
+            generated=True,
+            signature={"package": {"__init__": {"import_error": "E: a"}, "b": {"import_error": "E: b"}}},
+        ),
+        Side(
+            generated=True,
+            signature={"package": {"__init__": {"import_error": "E: a"}, "b": _module({"M": _model({})})}},
+        ),
+        "tests/data/openapi/modular",
+        [],
+    ),
+    "entry_without_input_and_reason": (
+        Side(generated=True, signature=KEY_MAP_BEFORE),
+        Side(generated=True, signature=KEY_MAP_AFTER),
+        "tests/data/jsonschema/property_names.json",
+        [{"aspects": ["type"]}],
+    ),
+    "rejected_valid_payloads_with_signature_change": (
+        Side(
+            generated=True,
+            signature=_module({"Payload": _model({"a": _field("int")})}, payloads=_payloads(v0="reject", v1="reject")),
+        ),
+        Side(generated=True, signature=_module({"Payload": _model({"a": _field("str")})}, payloads=PAYLOADS)),
+        "payload:jsonschema/pattern.json",
+        [],
+    ),
     "field_changes": (
         Side(
             generated=True,
@@ -278,6 +317,7 @@ def test_classify_cell(case: str) -> None:
 
 ALLOWLIST_CASES = {
     "valid": ("0.86.0", [PROPERTY_NAMES_ENTRY]),
+    "missing_input": ("0.86.0", [{k: v for k, v in PROPERTY_NAMES_ENTRY.items() if k != "input"}]),
     "missing_decision": ("0.86.0", [{**PROPERTY_NAMES_ENTRY, "decision": ""}]),
     "other_base": ("0.85.0", [PROPERTY_NAMES_ENTRY]),
     "empty_other_base": ("0.85.0", []),

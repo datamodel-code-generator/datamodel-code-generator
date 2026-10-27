@@ -233,7 +233,7 @@ class Allowlist:
     def covers(self, index: int, input_path: str, backend: str) -> bool:
         """Return whether entry `index` applies to a cell of this input and backend."""
         entry = self.entries[index]
-        return fnmatch.fnmatch(input_path, entry["input"]) and backend in entry.get("backends", [backend])
+        return fnmatch.fnmatch(input_path, entry.get("input", "")) and backend in entry.get("backends", [backend])
 
     def match(self, input_path: str, backend: str, change: Change) -> int | None:
         """Return the index of the first entry that accepts the change, or None."""
@@ -299,19 +299,22 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
         return Verdict("same")
     old, new = base.signature or {}, candidate.signature or {}
     old_errors, new_errors = import_errors(old), import_errors(new)
-    if old_errors and new_errors:
-        return Verdict("both-fail")
+    if new_only := sorted(set(new_errors) - set(old_errors)):
+        return Verdict("violation", (f"import now fails: {new_errors[new_only[0]][:160]}",))
+    if fixed := sorted(set(old_errors) - set(new_errors)):
+        return Verdict("crash-fix", (f"import fixed: {old_errors[fixed[0]][:120]}",))
     if old_errors:
-        return Verdict("crash-fix", (f"import fixed: {next(iter(old_errors.values()))[:120]}",))
-    if new_errors:
-        return Verdict("violation", (f"import now fails: {next(iter(new_errors.values()))[:160]}",))
+        return Verdict("both-fail")
     payloads = payload_changes(old, new)
     changes = [change for change in diff(old, new) if change.behaviour] + payloads
     if not changes:
         return Verdict("no-behaviour")
     unusable = unusable_items(old)
-    if payloads and rejects_every_valid_payload(old, valid_payloads):
-        return Verdict("crash-fix", (f"the release rejected every valid payload; {len(payloads)} payloads differ",))
+    rejected_valid = (
+        {f"payload {key}" for key in valid_payloads}
+        if payloads and rejects_every_valid_payload(old, valid_payloads)
+        else set()
+    )
     rest: list[Change] = []
     notes: list[str] = []
     accepted: set[int] = set()
@@ -319,12 +322,15 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
         if (
             (change.module, change.item) in unusable
             or SENTINEL in change.detail.split(" -> ")[0]
-            or (change.aspect == "payload-verdict" and change.detail.startswith("error:"))
+            or (
+                change.aspect == "payload-verdict"
+                and (change.detail.startswith("error:") or change.item in rejected_valid)
+            )
         ):
             notes.append(f"crash-fix {change.line()}")
         elif (index := allowlist.match(input_path, backend, change)) is not None:
             accepted.add(index)
-            notes.append(f"accepted ({allowlist.entries[index]['reason'][:60]}) {change.line()}")
+            notes.append(f"accepted ({allowlist.entries[index].get('reason', '')[:60]}) {change.line()}")
         else:
             rest.append(change)
     if rest:

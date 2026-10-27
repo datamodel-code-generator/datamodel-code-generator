@@ -1,7 +1,8 @@
 {
   "cls": "crash-fix",
   "notes": [
-    "the release rejected every valid payload; 2 payloads differ"
+    "crash-fix [payload-verdict] payload v0: reject -> accept",
+    "crash-fix [payload-verdict] payload v1: reject -> accept"
   ],
   "accepted_by": [],
   "changes": []

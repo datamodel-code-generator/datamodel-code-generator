@@ -172,7 +172,7 @@ def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) ->
         root = Path(spec or ROOT).resolve()
         venv = root / ".venv" / "bin" / "python"
         chosen = python or (venv if venv.exists() else Path(sys.executable))
-        if python is None and not venv.exists():
+        if not (venv.exists() and chosen.absolute() == venv.absolute()):
             env["PYTHONPATH"] = str(root / "src")
         return Candidate(root, chosen.absolute(), env, None)
     revision = (_git("rev-parse", "--verify", f"{spec}^{{commit}}") or "").strip()
@@ -571,7 +571,7 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
     covered = {i for r in results for i in entries if gate.allowlist.covers(i, r.cell.label, r.cell.backend)}
     whole = ns.shard_total == 1 and not ns.select
     problems += [
-        f"allowlist entry {index + 1} ({gate.allowlist.entries[index]['input']}) is stale: "
+        f"allowlist entry {index + 1} ({gate.allowlist.entries[index].get('input')}) is stale: "
         + ("it accepted no change" if index in covered else "it covers no cell")
         for index in entries
         if index not in used and (index in covered or whole)

@@ -1,0 +1,10 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "import fixed: E: b"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-added] b:M: added"
+  ]
+}
