@@ -19,9 +19,15 @@ _T = TypeVar("_T")
 
 
 @overload
-def record(cls: type[_T], /) -> type[_T]: ...
+def record(cls: type[_T], /) -> type[_T]:  # noqa: D418 - CodeQL flags an ellipsis body.
+    """Declare ``cls`` a record."""
+
+
 @overload
-def record(*, eq: bool = True, slots: bool = True) -> Callable[[type[_T]], type[_T]]: ...
+def record(*, eq: bool = True, slots: bool = True) -> Callable[[type[_T]], type[_T]]:  # noqa: D418
+    """Return the decorator that declares a class a record with these options."""
+
+
 @dataclass_transform(frozen_default=True, field_specifiers=(field,))
 def record(cls: type[Any] | None = None, /, *, eq: bool = True, slots: bool = True) -> Any:
     """Declare ``cls`` a record: a dataclass the type checker treats as frozen, with value-based hash when ``eq``."""
