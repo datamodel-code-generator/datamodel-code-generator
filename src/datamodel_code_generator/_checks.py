@@ -110,7 +110,7 @@ class CheckMode:
 
 
 _NO_CHECKS: Final[Mapping[CheckArea, CheckMode]] = MappingProxyType({})
-_CHECK_MODES: Final[ContextVar[Mapping[CheckArea, CheckMode]]] = ContextVar("check_modes", default=_NO_CHECKS)
+CHECK_MODES: Final[ContextVar[Mapping[CheckArea, CheckMode]]] = ContextVar("check_modes", default=_NO_CHECKS)
 
 
 def _read_mode(area: CheckArea) -> CheckMode | None:
@@ -129,13 +129,13 @@ def _read_mode(area: CheckArea) -> CheckMode | None:
 def read_check_flags() -> Generator[None, None, None]:
     """Read the mode of every area once and make those modes current for the code run inside."""
     modes = {area: mode for area in CheckArea if (mode := _read_mode(area)) is not None}
-    token = _CHECK_MODES.set(MappingProxyType(modes))
+    token = CHECK_MODES.set(MappingProxyType(modes))
     try:
         yield
     finally:
-        _CHECK_MODES.reset(token)
+        CHECK_MODES.reset(token)
 
 
 def check_mode(area: CheckArea) -> CheckMode | None:
     """Return how the current parse handles violations in area, or None when the area is off or no parse runs."""
-    return _CHECK_MODES.get().get(area)
+    return CHECK_MODES.get().get(area)
