@@ -652,12 +652,19 @@ def _package_class(cls: type | None) -> bool:
     return known
 
 
+_DERIVING_CLASSES: Final[dict[tuple[type, type], bool]] = {}
+
+
 def _derives(field: Any) -> bool:
     """Return whether the derived values of ``field`` may be kept: its class and its model's are this package's.
 
-    A class outside the package may compute them from anything, so no revision covers what they read.
+    A class outside the package may compute them from anything, so no revision covers what they read. The answer is
+    kept for each pair of classes.
     """
-    return _package_class(type(field)) and _package_class(type(field.parent))
+    classes = type(field), type(field.parent)
+    if (known := _DERIVING_CLASSES.get(classes)) is None:
+        known = _DERIVING_CLASSES[classes] = _package_class(classes[0]) and _package_class(classes[1])
+    return known
 
 
 class _FieldRevision(NamedTuple):
