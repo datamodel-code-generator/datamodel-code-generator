@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TypeOverridesLiteralModels",
+  "type": "object",
+  "required": [
+    "level",
+    "mode"
+  ],
+  "properties": {
+    "level": {
+      "$ref": "#/definitions/Level"
+    },
+    "capped": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Level"
+        }
+      ],
+      "maximum": 9
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Level"
+      }
+    },
+    "mode": {
+      "$ref": "#/definitions/Mode"
+    },
+    "ratio": {
+      "$ref": "#/definitions/Ratio"
+    }
+  },
+  "definitions": {
+    "Level": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "Mode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "Ratio": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+}

@@ -1,0 +1,14 @@
+scalar Level
+
+scalar Code
+
+type Model {
+  level: Level!
+  levels: [Level!]
+  mode: String!
+  code: Code
+}
+
+type Query {
+  model: Model
+}

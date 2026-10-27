@@ -6683,6 +6683,88 @@ def test_main_type_overrides_literal_members(output_model: str, extra_args: list
     assert_output("".join(verdicts), name="payloads")
 
 
+_TYPE_OVERRIDES_LITERAL_MODELS = {
+    "type_overrides_literal_models": (
+        "TypeOverridesLiteralModels",
+        {"Level": "typing.Literal[1, 2]", "Mode": "typing.Optional[typing.Literal['a', 'b']]"},
+    ),
+    "type_overrides_literal_model_members": (
+        "TypeOverridesLiteralModelMembers",
+        {"Ratio": "typing.Literal[0.5, 1.5]", "Status": "typing.Literal[http.HTTPStatus.OK, http.HTTPStatus.CREATED]"},
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("name", "output_model", "extra_args"),
+    [
+        ("type_overrides_literal_models", "pydantic_v2.BaseModel", []),
+        ("type_overrides_literal_models", "pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("type_overrides_literal_models", "pydantic_v2.BaseModel", ["--use-annotated"]),
+        ("type_overrides_literal_models", "pydantic_v2.dataclass", ["--field-constraints"]),
+        ("type_overrides_literal_models", "dataclasses.dataclass", []),
+        ("type_overrides_literal_models", "typing.TypedDict", []),
+        ("type_overrides_literal_models", "msgspec.Struct", []),
+        ("type_overrides_literal_models", "msgspec.Struct", ["--use-annotated"]),
+        ("type_overrides_literal_model_members", "pydantic_v2.BaseModel", []),
+        ("type_overrides_literal_model_members", "pydantic_v2.BaseModel", ["--field-constraints"]),
+        ("type_overrides_literal_model_members", "pydantic_v2.dataclass", ["--field-constraints"]),
+        ("type_overrides_literal_model_members", "dataclasses.dataclass", []),
+        ("type_overrides_literal_model_members", "typing.TypedDict", []),
+    ],
+)
+def test_main_type_overrides_literal_models(
+    name: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a model-level override that is an annotation, such as ``typing.Literal[1, 2]``, where the model is named.
+
+    Up to 0.86.0 the value was split at its last dot as a class path, so the module imported ``Literal[1, 2]`` from
+    ``typing`` (a float or an enum member left ``5]`` or ``OK]`` for the field) and failed to import. Each field that
+    named the model is now the annotation, imported by the names it holds, and takes the keywords that annotation
+    takes: msgspec writes no ``Meta`` on a ``Literal``. msgspec is left out of the second input: its ``Literal`` holds
+    no float and no enum member. A ``typing.TypedDict`` is not validated: Pydantic builds one only from
+    ``typing_extensions`` before Python 3.12.
+    """
+    title, overrides = _TYPE_OVERRIDES_LITERAL_MODELS[name]
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--type-overrides",
+            json.dumps(overrides),
+            "--target-python-version",
+            "3.11",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model == "typing.TypedDict":
+        return
+    error_type: type[Exception] = msgspec.ValidationError
+    verdicts = []
+    with _generated_model(output_file, name, title) as model:
+        validate = partial(msgspec.json.decode, type=model)
+        if output_model != "msgspec.Struct":
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        for kind, payloads in json.loads((DATA_PATH / "payloads" / f"{name}.json").read_text()).items():
+            for payload in payloads:
+                try:
+                    validate(json.dumps(payload))
+                except error_type:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{kind} {json.dumps(payload)}: {verdict}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(

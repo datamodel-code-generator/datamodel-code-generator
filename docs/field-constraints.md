@@ -115,7 +115,9 @@ with its field in a warning. A `--type-overrides` builtin or standard-library cl
 without its arguments, which such a class does not take, and names them in the same warning; another override, such as
 `pydantic.conint` or a factory of your own, keeps them. A field override with brackets is an annotation, such as
 `typing.Literal[1, 2]` or `list[typing.Literal[1, 2]]`: it is written as `x-python-type` writes it, without the
-arguments of any `con*` call, and takes the keywords that annotation takes.
+arguments of any `con*` call, and takes the keywords that annotation takes. A model-level override with brackets
+writes the annotation where each field names the model, and a GraphQL field or scalar override with brackets does the
+same.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
 `duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
