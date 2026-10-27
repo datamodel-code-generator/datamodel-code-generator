@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.types import DataType
 
 __all__ = [
     "RENDER_READY",
@@ -391,7 +392,9 @@ class FieldRenderPlan:
 
     A msgspec field writes ``annotated_call`` (``Meta(...)``) inside ``Annotated`` and ``call`` (``field(...)``) after
     the annotation; a msgspec or stdlib dataclass field with ``bare_default`` writes its default alone after the
-    annotation. ``qualifiers`` wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly[``, ``NotRequired[``).
+    annotation. ``written_type`` is the type a msgspec annotation writes when it writes a copy of the field's type: its
+    ``Annotated`` type, or its union with ``UnsetType``; the type writes its text when it is read. ``qualifiers`` wrap
+    the type hint, innermost first (``TypedDict``'s ``ReadOnly[``, ``NotRequired[``).
     """
 
     annotation_form: AnnotationForm
@@ -404,6 +407,7 @@ class FieldRenderPlan:
     annotated_call: CallPlan | None = None
     bare_default: bool = False
     qualifiers: tuple[tuple[str, Why], ...] = ()
+    written_type: DataType | None = None
 
     def written_items(self) -> frozenset[str]:
         """Return the declared items the calls, or the default written alone, write."""

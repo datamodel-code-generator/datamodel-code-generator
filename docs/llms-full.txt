@@ -66604,13 +66604,15 @@ the None it adds; msgspec's top-level None and the `Field()` default plan read t
 `DataModel._write_pre_render_nullability` (`legacy-l3-import-nullability`, which overrides and constructor ordering
 read; `DataModel._prepare_dedup_key` writes it for every field whose hint renders its own type before a dedup key
 renders, so such a type keeps the None of the nullable model it named when duplicate deletion points it at a model
-without one) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
+without one) write it; msgspec's `_strip_null` writes it on the copies its render plans hold. A decision before render preparation reads
 `types.py:DataType.admits_none`, which computes the rendered nullability with
 `model/_decisions/nullability.py:rendered_nullability` without writing it. A field of every built-in output model
 (Pydantic `BaseModel`, `RootModel` and dataclass, msgspec `Struct`, stdlib dataclass, `TypedDict`, enum, type alias)
 renders from one frozen render plan (`model/_render_plan.py:FieldRenderPlan`): its annotation form, its calls
 (`Field()`, `field()`, msgspec `Meta()`) with each argument and the declared items it writes, its default, the imports
-the calls need and every declared item it does not write (`Omitted`, with its reason), each with a `Why`. The field's
+the calls need, every declared item it does not write (`Omitted`, with its reason), each with a `Why`, and for msgspec
+the copy of the field's type its annotation writes (its `Annotated` type, or its union with `UnsetType`), which
+imports, `annotated` and `type_hint` read. The field's
 backend builds it: `model/pydantic_base.py:DataModelField` (a Pydantic dataclass field adds the `Field(...)` of a
 forced assignment and the plain annotation of a call the dataclass must see, `model/pydantic_v2/dataclass.py`),
 `model/msgspec.py:DataModelField` (`Meta(...)` inside `Annotated`, then `field(...)` or the default alone),

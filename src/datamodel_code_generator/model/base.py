@@ -1035,8 +1035,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
                 name in _TYPING_IMPORT_NAMES for name in iter_python_type_expr_names(data_type.python_type.expression)
             ):
                 return True
-        annotations = (data_type.alias,) if data_type.python_type else (data_type.alias, data_type.type)
-        for annotation in annotations:
+        for annotation in data_type._annotation_texts:  # noqa: SLF001
             if annotation and (names := _annotation_typing_import_names(annotation)):
                 return bool(names)
         return False
@@ -1107,8 +1106,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
             for name in iter_python_type_expr_names(data_type.python_type.expression):
                 requirements = requirements.with_import_name(name)
-        annotations = (data_type.alias,) if data_type.python_type else (data_type.alias, data_type.type)
-        for annotation in annotations:
+        for annotation in data_type._annotation_texts:  # noqa: SLF001
             if not annotation:
                 continue
             for name in _annotation_typing_import_names(annotation):

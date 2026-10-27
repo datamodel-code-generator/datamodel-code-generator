@@ -253,6 +253,27 @@ def _meta_call_text(call: CallPlan) -> str:
     return f"Meta({', '.join(sorted(f'{k.name}={represent_python_value(k.value)}' for k in call.kwargs))})"
 
 
+class _MetaAnnotatedType(DataType):
+    """The ``Annotated`` type of a msgspec field: a copy of the field's type, its one member, with its ``Meta()`` call.
+
+    It writes its text when it is read, so a field's render plan holds it with the names inside it written as they are
+    then; import collection reads the typing names of that text.
+    """
+
+    meta: Any = None
+
+    @property
+    @override
+    def type_hint(self) -> str:
+        """Write ``Annotated`` over the hint of the copied type, ``None`` when it writes nothing, and the ``Meta()``."""
+        return f"Annotated[{self.data_types[0].type_hint or NONE}, {_meta_call_text(self.meta)}]"
+
+    @property
+    @override
+    def _annotation_texts(self) -> tuple[str | None, ...]:
+        return (self.type_hint,)
+
+
 class _UnionLeaf(NamedTuple):
     """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints."""
 
@@ -912,25 +933,37 @@ class DataModelField(DataModelFieldBase):
             return self._copy_data_type(self.data_type)
         return self._copy_data_type_without_top_level_none(self.data_type)
 
-    def _annotated_union_data_type(self, meta: str, *, include_unset: bool) -> DataType:
+    def _annotated_union_data_type(self, meta: CallPlan, *, include_unset: bool) -> DataType:
         """Return the ``Annotated`` field type, over None where the type writes nothing, as the field hint does."""
-        annotated = self.data_type.__class__(
-            type=f"Annotated[{(base_data_type := self._annotated_base_data_type()).type_hint or NONE}, {meta}]",
-            data_types=[base_data_type],
-            use_union_operator=self.data_type.use_union_operator,
+        data_type = self.data_type
+        annotated = _MetaAnnotatedType(
+            meta=meta,
+            data_types=[self._annotated_base_data_type()],
+            python_version=data_type.python_version,
+            use_standard_collections=data_type.use_standard_collections,
+            use_generic_container=data_type.use_generic_container,
+            use_union_operator=data_type.use_union_operator,
+            treat_dot_as_module=data_type.treat_dot_as_module,
+            use_serialize_as_any=data_type.use_serialize_as_any,
         )
         return self._ordered_union_data_type([annotated], null=self._field_has_top_level_none(), unset=include_unset)
 
-    def _annotated_type_hint(self, meta: str) -> str:
-        return self._annotated_union_data_type(meta, include_unset=False).type_hint
+    def _written_type(self, meta: CallPlan | None) -> DataType | None:
+        """Return the copy of the field's type that its annotation writes, or None when it writes the type itself.
 
-    def _annotated_unset_union_data_type(self, meta: str) -> DataType:
-        return self._annotated_union_data_type(meta, include_unset=True)
-
-    def _type_hint_data_type(self) -> DataType:
-        if self._not_required and not self.nullable:
-            return self._unset_union_data_type()
-        return self.data_type
+        It is the ``Annotated`` type with ``meta``, with ``UnsetType`` unless the field is required or nullable, or
+        the union with ``UnsetType`` of a field its struct may leave unset. Like the copies it holds, it keeps no
+        parents, so render plans compare by value.
+        """
+        if meta is not None:
+            written = self._annotated_union_data_type(meta, include_unset=not (self.required or self.nullable))
+        elif self._not_required and not self.nullable:
+            written = self._unset_union_data_type()
+        else:
+            return None
+        for node in written.all_data_types:
+            node.parent = None
+        return written
 
     def _get_simple_unset_base_type(self) -> str | None:  # noqa: PLR0911
         """Return the existing leaf hint when direct unset rendering is equivalent."""
@@ -989,14 +1022,14 @@ class DataModelField(DataModelFieldBase):
                 pass
         return f"Union[{type_hint}, UnsetType]"
 
-    def _imports_data_type(self, meta: str | None = None) -> DataType:
-        if meta is None:
-            return self._type_hint_data_type()
-        if self.required or self.nullable:
-            return self._annotated_union_data_type(meta, include_unset=False)
-        if self._not_required:
-            return self._annotated_unset_union_data_type(meta)
-        return self._type_hint_data_type()
+    def _imports_data_type(self, plan: FieldRenderPlan) -> DataType:
+        """Return the type imports collect from: the one the annotation of ``plan`` writes, else the field's own.
+
+        The ``Annotated`` type of a field neither required, nullable nor in a struct is not.
+        """
+        if plan.annotated_call is not None and not (self.required or self.nullable or self._not_required):
+            return self.data_type
+        return plan.written_type or self.data_type
 
     def _has_numeric_data_type(self, type_name: str) -> bool:
         """Return whether any field data type is the given numeric type."""
@@ -1131,6 +1164,7 @@ class DataModelField(DataModelFieldBase):
             why=why,
             annotated_call=meta,
             bare_default=bare_default,
+            written_type=self._written_type(meta),
         )
 
     @staticmethod
@@ -1188,7 +1222,9 @@ class DataModelField(DataModelFieldBase):
         if (simple_unset_type_hint := self._get_simple_unset_type_hint()) is not None:
             return simple_unset_type_hint
         if self._not_required and not self.nullable:
-            return self._unset_union_data_type().type_hint
+            plan = self._render_plan()
+            written = plan.written_type if plan.annotated_call is None else self._unset_union_data_type()
+            return cast("DataType", written).type_hint
         return super().type_hint
 
     def _hint_meta(self) -> tuple[bool, str | None]:
@@ -1221,10 +1257,10 @@ class DataModelField(DataModelFieldBase):
             if not self._use_union_operator and IMPORT_UNION not in imports:
                 imports = (*imports, IMPORT_UNION)
             return imports
-        meta = self._get_meta_string() if self.use_annotated else None
+        plan = self._render_plan()
         return self._collect_field_imports(
-            needs_annotated=meta is not None,
-            data_type=self._imports_data_type(meta),
+            needs_annotated=plan.annotated_call is not None,
+            data_type=self._imports_data_type(plan),
         )
 
     @property
@@ -1701,7 +1737,7 @@ class DataModelField(DataModelFieldBase):
 
     @property
     @override
-    def annotated(self) -> str | None:  # noqa: PLR0911
+    def annotated(self) -> str | None:
         """Get Annotated type hint with Meta constraints.
 
         For ClassVar fields (discriminator tag_field), ClassVar is required
@@ -1713,19 +1749,9 @@ class DataModelField(DataModelFieldBase):
                 return f"ClassVar[Annotated[{self.type_hint}, {meta}]]"
             return f"ClassVar[{self.type_hint}]"
 
-        if not self.use_annotated:
+        if not self.use_annotated or (plan := self._render_plan()).annotated_call is None:
             return None
-
-        meta = self._get_meta_string()
-        if not meta:
-            return None
-
-        if self.required:
-            return self._annotated_type_hint(meta)
-
-        if self.nullable:  # pragma: no cover
-            return self._annotated_type_hint(meta)
-        return self._annotated_unset_union_data_type(meta).type_hint
+        return cast("DataType", plan.written_type).type_hint
 
     @property
     @override

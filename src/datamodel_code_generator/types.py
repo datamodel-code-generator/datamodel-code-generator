@@ -946,6 +946,14 @@ class DataType(_BaseModel):  # noqa: PLR0904
         import_ = self.__dict__.get(_LITERAL_IMPORT_DATA_TYPE_KEY)
         return LITERAL if import_ is None else import_.binding_name
 
+    @property
+    def _annotation_texts(self) -> tuple[str | None, ...]:
+        """Return the texts of its own the type is written with, whose typing names its imports need.
+
+        They are its alias, and its type name unless a Python type writes it.
+        """
+        return (self.alias,) if self.python_type else (self.alias, self.type)
+
     def _set_literal_import(self, import_: Import) -> None:
         """Write ``Literal`` through an import bound under another name, as when a model of the module holds it."""
         self.__dict__[_LITERAL_IMPORT_DATA_TYPE_KEY] = import_
