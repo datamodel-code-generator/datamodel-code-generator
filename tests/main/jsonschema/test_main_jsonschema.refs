@@ -7176,6 +7176,12 @@ request-response	main/jsonschema/main_jsonschema/read_only_write_only_external_d
 [test_main_jsonschema_recursive_ref_resources]
 holder	main/jsonschema/recursive_ref_resources_holder.py
 tree	main/jsonschema/recursive_ref_resources_tree.py
+[test_main_jsonschema_ref_sibling_dialect_directory]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[msgspec.Struct]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[pydantic_v2.BaseModel]/
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[pydantic_v2.dataclass]/
+typing.TypedDict	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[typing.TypedDict]/
 [test_main_jsonschema_ref_to_true_schema]
 	main/jsonschema/ref_to_true_schema.py
 [test_main_jsonschema_ref_type_has_null]

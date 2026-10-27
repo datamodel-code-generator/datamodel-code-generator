@@ -35094,6 +35094,29 @@ def test_main_jsonschema_intersect_allof_keywords(output_file: Path, extra_args:
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        "pydantic_v2.BaseModel",
+        "pydantic_v2.dataclass",
+        "dataclasses.dataclass",
+        "typing.TypedDict",
+        "msgspec.Struct",
+    ],
+)
+def test_main_jsonschema_ref_sibling_dialect_directory(output_dir: Path, output_model_type: str) -> None:
+    """Keep the ``maximum`` beside an allOf member's ``$ref`` of a 2020-12 document read after a draft-07 one.
+
+    The draft-07 document is read first; as in 0.86.0, ``Wd`` of the 2020-12 document keeps ``le=10``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_sibling_dialect_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
 def test_main_jsonschema_reference_to_schema_without_model(output_file: Path) -> None:
     """Type a reference to a schema that gets no model by that schema's target.
 

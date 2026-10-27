@@ -2816,20 +2816,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @cached_property
     def _ref_sibling_keywords_enabled(self) -> bool:
         """Return whether this JSON Schema draft evaluates validation beside ``$ref``."""
+        return self._ref_sibling_keywords_enabled_in(self.raw_obj)
+
+    def _ref_sibling_keywords_enabled_in(self, root: dict[str, YamlValue]) -> bool:
+        """Return whether the draft of the root document ``root`` evaluates validation beside ``$ref``."""
         config_version = getattr(self.config, "jsonschema_version", None)
         version = (
             config_version
             if config_version is not None and config_version != JsonSchemaVersion.Auto
-            else detect_jsonschema_version(self.raw_obj)
-            if self.raw_obj
+            else detect_jsonschema_version(root)
+            if root
             else JsonSchemaVersion.Auto
         )
         return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
 
     @property
     def _ref_siblings_are_parts(self) -> bool:
-        """Whether the document's dialect reads the keywords beside a ``$ref`` as parts of the schema."""
-        return self._ref_sibling_keywords_enabled
+        """Whether the current document's dialect reads the keywords beside a ``$ref`` as parts of the schema.
+
+        It reads the document being parsed and leaves ``_ref_sibling_keywords_enabled`` alone: that flag is cached on
+        the parser at its first read, so for a directory of documents in different dialects the document parsed at
+        that read decides it for all of them. Reading it here, earlier than 0.86.0 did, made a draft-07 document
+        decide it for the 2020-12 documents after it; the per-document dialect for every read comes later as an
+        opt-in.
+        """
+        return self._ref_sibling_keywords_enabled_in(self.raw_obj)
 
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
