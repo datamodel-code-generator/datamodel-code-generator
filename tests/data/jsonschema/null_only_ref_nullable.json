@@ -10,7 +10,14 @@
     "mixed": {"anyOf": [{"$ref": "#/$defs/Nothing"}, {"type": "string"}]},
     "both": {"anyOf": [{"$ref": "#/$defs/Nothing"}, {"$ref": "#/$defs/Other"}]},
     "chained": {"anyOf": [{"$ref": "#/$defs/Chain"}, {"$ref": "#/$defs/Nothing"}, {"type": "null"}]},
-    "maybe": {"anyOf": [{"$ref": "#/$defs/Maybe"}, {"type": "null"}]}
+    "maybe": {"anyOf": [{"$ref": "#/$defs/Maybe"}, {"type": "null"}]},
+    "pair": {
+      "type": ["array", "null"],
+      "prefixItems": [{"$ref": "#/$defs/Nothing"}, {"$ref": "#/$defs/Nothing"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "items": false
+    }
   },
   "required": ["plain"],
   "$defs": {

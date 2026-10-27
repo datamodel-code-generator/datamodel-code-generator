@@ -17,3 +17,7 @@
 {"plain": null, "maybe": "x"}: schema accepts, model accepts
 {"plain": null, "maybe": null}: schema accepts, model accepts
 {"plain": null, "maybe": 1}: schema rejects, model rejects
+{"plain": null, "pair": null}: schema accepts, model accepts
+{"plain": null, "pair": [null, null]}: schema accepts, model accepts
+{"plain": null, "pair": [null]}: schema rejects, model rejects
+{"plain": null, "pair": [null, 1]}: schema rejects, model rejects

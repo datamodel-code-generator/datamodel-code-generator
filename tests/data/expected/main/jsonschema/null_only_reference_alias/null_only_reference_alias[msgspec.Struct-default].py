@@ -29,3 +29,4 @@ class Root(Struct):
     both: Nothing | Other | UnsetType = UNSET
     chained: Chain | UnsetType = UNSET
     maybe: Maybe | None | UnsetType = UNSET
+    pair: tuple[Nothing, Nothing] | None | UnsetType = UNSET

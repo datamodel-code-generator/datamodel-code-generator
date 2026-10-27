@@ -32,3 +32,4 @@ class Root:
     both: Optional[Union[Nothing, Other]] = None
     chained: Optional[Union[Chain, Nothing]] = None
     maybe: Optional[Maybe] = None
+    pair: Optional[tuple[Optional[Nothing], Optional[Nothing]]] = None

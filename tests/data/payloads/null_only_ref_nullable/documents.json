@@ -17,5 +17,9 @@
   {"plain": null, "chained": "x"},
   {"plain": null, "maybe": "x"},
   {"plain": null, "maybe": null},
-  {"plain": null, "maybe": 1}
+  {"plain": null, "maybe": 1},
+  {"plain": null, "pair": null},
+  {"plain": null, "pair": [null, null]},
+  {"plain": null, "pair": [null]},
+  {"plain": null, "pair": [null, 1]}
 ]

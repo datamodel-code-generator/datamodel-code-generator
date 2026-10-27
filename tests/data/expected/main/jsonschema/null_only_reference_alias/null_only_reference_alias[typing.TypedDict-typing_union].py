@@ -29,3 +29,4 @@ class Root(TypedDict):
     both: NotRequired[Union[Nothing, Other]]
     chained: NotRequired[Optional[Union[Chain, Nothing]]]
     maybe: NotRequired[Optional[Maybe]]
+    pair: NotRequired[Optional[tuple[Optional[Nothing], Optional[Nothing]]]]

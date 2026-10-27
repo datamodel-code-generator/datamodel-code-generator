@@ -29,3 +29,4 @@ class Root(Struct):
     both: Union[Nothing, Other, UnsetType] = UNSET
     chained: Union[Chain, Nothing, None, UnsetType] = UNSET
     maybe: Union[Maybe, None, UnsetType] = UNSET
+    pair: Union[tuple[Optional[Nothing], Optional[Nothing]], None, UnsetType] = UNSET

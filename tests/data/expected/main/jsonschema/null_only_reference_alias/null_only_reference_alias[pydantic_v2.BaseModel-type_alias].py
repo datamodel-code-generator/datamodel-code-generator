@@ -30,3 +30,4 @@ class Root(BaseModel):
     both: Nothing | Other | None = None
     chained: Chain | Nothing | None = None
     maybe: Maybe | None = None
+    pair: tuple[Nothing | None, Nothing | None] | None = None

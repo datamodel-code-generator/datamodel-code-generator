@@ -1062,7 +1062,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
             or not getattr(reference.source, "IS_EVALUATED_ALIAS", False)
         ):
             return False
-        if any(_container_name(self, container) is not None for container in self._TYPE_HINT_CONTAINER_ORDER):
+        if self.is_tuple or any(
+            _container_name(self, container) is not None for container in self._TYPE_HINT_CONTAINER_ORDER
+        ):
             return False
         if reference is None:
             members = self.data_types

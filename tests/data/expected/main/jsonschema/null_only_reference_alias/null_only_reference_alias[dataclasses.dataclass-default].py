@@ -29,3 +29,4 @@ class Root:
     both: Nothing = None
     chained: Chain = None
     maybe: Maybe | None = None
+    pair: tuple[Nothing, Nothing] | None = None
