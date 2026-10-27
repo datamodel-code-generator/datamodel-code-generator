@@ -3755,18 +3755,22 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
 )
 @pytest.mark.cli_doc(
     options=["--order-constructor-fields-by"],
-    option_description="""Order the fields of msgspec.Struct models by the defaults they write.
+    option_description="""Order the fields of msgspec.Struct and Pydantic dataclass models by the defaults they write.
 
-The `--order-constructor-fields-by written-defaults` value changes `msgspec.Struct` output under
-`--strip-default-none`, and under `--use-default-factory-for-optional-nested-models --strip-default-none` the order of
-dataclass and Pydantic dataclass fields beside nested models whose default factory a reference cycle drops; other
-runs ignore it.
+The `--order-constructor-fields-by written-defaults` value changes `msgspec.Struct` and `pydantic_v2.dataclass`
+output under `--strip-default-none`, and under `--use-default-factory-for-optional-nested-models --strip-default-none`
+the order of dataclass and Pydantic dataclass fields beside nested models whose default factory a reference cycle
+drops; other runs ignore it.
 
 A Struct writes a default for every optional field: `UNSET`, or `None` when the type admits None, even where
-`--strip-default-none` strips the field's `None` default. Without the value such a field keeps its schema place among
-the required fields, the order of earlier releases, and the struct is reordered only when a required field would
-then follow a default (which the Struct rejects at import). With the value every optional field goes after the
-required fields, in schema order, which changes the order of the constructor's positional arguments.""",
+`--strip-default-none` strips the field's `None` default, and a Pydantic dataclass writes `None` for a type that
+admits None. Without the value such a field keeps its place among the fields without a default, as in earlier
+releases: it is keyword-only after an inherited default, a required field that redeclares it inherits its `None`,
+and the fields are reordered or made keyword-only only when a required field would then follow a default (which the
+class rejects at import). With the value every optional field of a Struct goes after the required fields, in schema
+order, which changes the order of the constructor's positional arguments; such a field stays positional after an
+inherited default (for a Pydantic dataclass together with `final-names`), and a required field that redeclares it is
+written `Field(...)`.""",
     input_schema="openapi/strip_default_none_constructor_order.yaml",
     cli_args=[
         "--output-model-type",
@@ -3789,8 +3793,8 @@ def test_main_openapi_strip_default_none_constructor_order(
     ``type: [..., "null"]``, a nullable model it names (defined before or after it) or a union member naming one.
     Such a field follows the fields without a default and precedes the other defaults, whatever the null spelling;
     a keyword-only model keeps it among the fields without a default. After an inherited default it is keyword-only,
-    as ordering inside the module loop counts its ``None`` as no default, and a required field that redeclares an
-    inherited one inherits that ``None`` default, as in earlier releases, and is assigned ``Field(...)`` under
+    as it takes its place as a field without a default, and a required field that redeclares an inherited one
+    inherits that ``None`` default, as in earlier releases, and is assigned ``Field(...)`` under
     --order-constructor-fields-by written-defaults so that the inherited ``None`` does not become its default.
     Pydantic 2.14 targets put a required aliased ``Field(...)`` field before it. msgspec.Struct writes every default;
     --order-constructor-fields-by written-defaults puts its optional fields after the required ones, and without it a
@@ -3809,6 +3813,37 @@ def test_main_openapi_strip_default_none_constructor_order(
             "--formatters",
             "builtin",
             *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "input_name",
+    [
+        pytest.param("allof_required_inherited_dataclass_metadata.yaml", id="inherited-factory"),
+        pytest.param("allof_required_inherited_model_references.yaml", id="inherited-field-call"),
+    ],
+)
+def test_main_openapi_strip_default_none_inherited_field_call(input_name: str, output_file: Path) -> None:
+    """Assign ``Field(...)`` to a required Pydantic dataclass field that redeclares an inherited field call.
+
+    Under --strip-default-none a base field written as a call, ``Field(default_factory=list)`` or
+    ``Field(kw_only=True)``, takes its place in the constructor, so the redeclaring field is required as in 0.86.0
+    instead of inheriting the call; only a stripped ``None`` written as ``= None`` is inherited.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--strip-default-none",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
         ],
         force_exec_validation=True,
     )

@@ -885,9 +885,13 @@ def get_constructor_ordering_conflicts(
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
     required_assignment_names: set[str],
 ) -> ConstructorConflicts:
-    """Return the positional fields of the model's effective constructor that follow a positional default."""
-    seen_constructor_default = False
-    seen_signature_default = False
+    """Return the positional fields of the model's effective constructor that follow a positional default.
+
+    A field of the model's own follows one as the class body writes the defaults, which the class rejects, or as
+    each field takes its place (``AssignmentFacts.has_place_default``), which keeps 0.86.0's keyword-only fields; an
+    inherited field, which only the copies fix, follows one as they are written.
+    """
+    seen_constructor_default = seen_signature_default = seen_place_default = False
     ordering_conflicts: set[str] = set()
     inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
@@ -909,15 +913,20 @@ def get_constructor_ordering_conflicts(
             else (facts.has_default if inherited_has_default is None else inherited_has_default)
         )
         field_has_constructor_default = required_assignment_is_constructor_default or field_has_signature_default
+        field_has_place_default = required_assignment_is_constructor_default or (
+            field_has_signature_default and facts.has_place_default
+        )
         if declaring_model is model:
-            if (seen_constructor_default and not field_has_constructor_default) or (
+            follows_written_default = (seen_constructor_default and not field_has_constructor_default) or (
                 seen_signature_default and not field_has_signature_default
-            ):
+            )
+            if follows_written_default or (seen_place_default and not field_has_place_default):
                 ordering_conflicts.add(field_name)
         elif seen_constructor_default and not field_has_constructor_default:
             inherited_conflicts.append((field, declaring_model))
         seen_constructor_default = seen_constructor_default or field_has_constructor_default
         seen_signature_default = seen_signature_default or field_has_signature_default
+        seen_place_default = seen_place_default or field_has_place_default
     return ConstructorConflicts(frozenset(ordering_conflicts), tuple(inherited_conflicts))
 
 
@@ -1624,7 +1633,12 @@ def constructor_base_models(host: ConstructorInfoHost, model: DataModel, *, earl
 def get_inherited_constructor_info(
     host: ConstructorInfoHost, model: DataModel, *, early: bool = False
 ) -> _InheritedConstructorInfo | None:
-    """Return inherited value leaks and exact positional ordering conflicts."""
+    """Return inherited value leaks and exact positional ordering conflicts.
+
+    A required field that redeclares an inherited default is assigned ``Field(...)`` unless that default takes no
+    place in the constructor (``AssignmentFacts.place_assigned``): a ``None`` that ``--strip-default-none`` strips but
+    the base still writes, which the redeclared field inherits, as in 0.86.0.
+    """
     if not model.SUPPORTS_KW_ONLY:
         return None
     if not (inherited_models := constructor_base_models(host, model, early=early)):
@@ -1642,13 +1656,14 @@ def get_inherited_constructor_info(
                 continue
             has_default: bool | None = None
             if supports_inherited_override:
-                has_default, has_value_default = model._field_assignment_facts(field).default_info  # noqa: SLF001
+                facts = model._field_assignment_facts(field)  # noqa: SLF001
+                has_default, has_value_default = facts.default_info
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
                     required_assignment_names.add(field_name)
-                    if field.should_strip_default_none() and not field.order_constructor_fields_by_written_defaults:
-                        inherited_stripped_none_names.add(field_name)
-                    else:
+                    if facts.place_assigned:
                         inherited_stripped_none_names.discard(field_name)
+                    else:
+                        inherited_stripped_none_names.add(field_name)
             effective_fields[field_name] = field, inherited_model, has_default
     for field in model.fields:
         if field.name:

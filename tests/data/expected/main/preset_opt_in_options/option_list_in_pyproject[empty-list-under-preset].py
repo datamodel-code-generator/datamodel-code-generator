@@ -73,7 +73,7 @@ class WithDefault(Struct):
     d: str | UnsetType = 'x'
 
 
-class KeptAfterInheritedDefault(WithDefault):
+class KeptAfterInheritedDefault(WithDefault, kw_only=True):
     n: Plain | None | UnsetType = UNSET
 
 

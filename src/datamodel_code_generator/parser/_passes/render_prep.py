@@ -72,6 +72,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.model._render_plan import (
+        AssignmentFacts,
         FieldRenderPlan,
         NestedFactoryMetadata,
         PlannedField,
@@ -198,8 +199,11 @@ class InheritedFieldCopies:
 
 
 def _assigned_key(model: DataModel) -> Callable[[DataModelFieldBase], bool]:
-    """Return the sort key that puts the fields the model's class body assigns after the others."""
-    return lambda field: model._field_assignment_facts(field).assigned  # noqa: SLF001
+    """Return the sort key that puts the fields the model's class body assigns after the others.
+
+    A field counts as it takes its place in the constructor (``AssignmentFacts.place_assigned``).
+    """
+    return lambda field: model._field_assignment_facts(field).place_assigned  # noqa: SLF001
 
 
 def _apply_constructor_field_adjustments(
@@ -715,31 +719,38 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     return copied_fields
 
 
-def get_local_constructor_ordering_key(model: DataModel) -> Callable[[DataModelFieldBase], tuple[bool, bool]] | None:
+def get_local_constructor_ordering_key(
+    model: DataModel,
+) -> Callable[[DataModelFieldBase], tuple[bool, bool, bool, bool]] | None:
     """Return the positional order key that keeps constructor defaults last, when a local required field follows one.
 
     A required field rendered as ``= Field(...)`` is a dataclass default but required in the validator's
     signature, so it also precedes fields with real defaults when the output model asks for that order.
-    Otherwise only the assignments the output model keeps among the required fields precede them. Each field is
-    classified once, for the check and the key.
+    Otherwise only the assignments the output model keeps among the required fields precede them. Fields that the
+    written defaults tie are then ordered as they take their places (``AssignmentFacts.place_assigned``), the order
+    of 0.86.0. Each field is classified once, for the check and the key.
     """
     if not model.SUPPORTS_KW_ONLY:
         return None
     facts = {id(field): model._field_assignment_facts(field) for field in model.fields}  # noqa: SLF001
     if model.orders_required_assignments_before_defaults():
 
-        def order_key(field: DataModelFieldBase) -> tuple[bool, bool]:
-            return (field_facts := facts[id(field)]).assigned, field_facts.has_default
+        def written_key(field: DataModelFieldBase, field_facts: AssignmentFacts) -> tuple[bool, bool]:  # noqa: ARG001
+            return field_facts.assigned, field_facts.has_default
 
     else:
 
-        def order_key(field: DataModelFieldBase) -> tuple[bool, bool]:
+        def written_key(field: DataModelFieldBase, field_facts: AssignmentFacts) -> tuple[bool, bool]:
             return (
-                assigned := facts[id(field)].assigned,
+                assigned := field_facts.assigned,
                 assigned and not model.keeps_assignment_with_required_fields(field),
             )
 
-    previous_key = (False, False)
+    def order_key(field: DataModelFieldBase) -> tuple[bool, bool, bool, bool]:
+        key = written_key(field, field_facts := facts[id(field)])
+        return (*key, *(key if field_facts.place_assigned else (False, False)))
+
+    previous_key = (False, False, False, False)
     for field in model.fields:
         if not facts[id(field)].participates_in_constructor:
             continue

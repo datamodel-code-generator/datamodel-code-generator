@@ -802,6 +802,7 @@ jsonschema/string_constraints_on_other_types.json	payloads/native_numeric_empty_
 jsonschema/string_dict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/string_enum.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/string_time_number_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/strip_default_none_inherited_place.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/structured_imports.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/symlink_external_ref/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/tagged_union_non_literal_const.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2599,6 +2600,7 @@ jsonschema/string_constraints_on_other_types.json	payloads/native_numeric_empty_
 jsonschema/string_dict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/string_enum.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/string_time_number_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/strip_default_none_inherited_place.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/structured_imports.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/symlink_external_ref/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/tagged_union_non_literal_const.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

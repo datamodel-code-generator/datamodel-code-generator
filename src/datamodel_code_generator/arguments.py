@@ -535,12 +535,13 @@ model_options.add_argument(
     "dataclass and msgspec.Struct models after every field has its final name, so a field that overrides an inherited "
     "field renamed in another module is matched to it and keeps its place; without it the override reads as a new "
     "field after the inherited default and is written keyword-only (kw_only=True). written-defaults: order the fields "
-    "of msgspec.Struct models by the defaults they write, so under --strip-default-none an optional field whose None "
-    "default is stripped still writes UNSET and goes after the required fields with the other optional fields; "
-    "without it the field keeps its schema place among the required fields, and the struct is reordered only when a "
-    "required field would then follow a default. A pydantic.dataclass field whose stripped None default stays "
-    "written for a type that admits None counts as that default in a subclass too: a required field redeclaring it "
-    "is written Field(...); without it the subclass field inherits the None default, as before.",
+    "of msgspec.Struct and Pydantic dataclass models by the defaults they write, so under --strip-default-none an "
+    "optional field whose None default is stripped but still written (UNSET, or None for a type that admits None) "
+    "goes after the required fields of a Struct with the other optional fields and stays positional after an "
+    "inherited default, and a required pydantic.dataclass field redeclaring it is written Field(...); without it the "
+    "field keeps its place among the fields without a default, as before: it is keyword-only after an inherited "
+    "default, a redeclaring field inherits its None default, and the fields are reordered only where a required "
+    "field would then follow a default.",
     choices=[constructor_field_order.value for constructor_field_order in ConstructorFieldOrder],
     nargs="+",
     default=None,

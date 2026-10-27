@@ -804,7 +804,7 @@ _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
         description=(
             "Order the constructor fields of dataclass and msgspec models after every field has its final name, "
-            "and the fields of msgspec models by the defaults they write."
+            "and the fields of msgspec and Pydantic dataclass models by the defaults they write."
         ),
     ),
     PresetOptionGroup(

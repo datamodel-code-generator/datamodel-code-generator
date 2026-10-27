@@ -1767,6 +1767,9 @@ pydantic-dataclass-keyword-only	main/openapi/main_openapi/strip_default_none_con
 pydantic-dataclass-keyword-only-written-defaults	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-keyword-only-written-defaults].py
 pydantic-dataclass-model-type-override	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-model-type-override].py
 pydantic-dataclass-target-2.14	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-target-2.14].py
+[test_main_openapi_strip_default_none_inherited_field_call]
+inherited-factory	main/openapi/main_openapi/strip_default_none_inherited_field_call[inherited-factory].py
+inherited-field-call	main/openapi/main_openapi/strip_default_none_inherited_field_call[inherited-field-call].py
 [test_main_openapi_strip_default_none_nullable_reference]
 pydantic_v2.BaseModel	main/openapi/main_openapi/strip_default_none_nullable_reference[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/openapi/main_openapi/strip_default_none_nullable_reference[pydantic_v2.dataclass].py

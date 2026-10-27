@@ -8516,6 +8516,15 @@ default.py-extra_args0	main/jsonschema/string_time_number_constraints/default.py
 field_constraints_non_negative.py-extra_args3	main/jsonschema/string_time_number_constraints/field_constraints_non_negative.py
 non_negative.py-extra_args2	main/jsonschema/string_time_number_constraints/non_negative.py
 strict_float.py-extra_args1	main/jsonschema/string_time_number_constraints/strict_float.py
+[test_main_strip_default_none_inherited_place]
+dataclass	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[dataclass].py
+msgspec	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[msgspec].py
+msgspec-final-names	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[msgspec-final-names].py	= main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[msgspec].py
+msgspec-written	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[msgspec-written].py
+pydantic-dataclass	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[pydantic-dataclass].py
+pydantic-dataclass-final-names	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[pydantic-dataclass-final-names].py	= main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[pydantic-dataclass].py
+pydantic-dataclass-keyword-only	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[pydantic-dataclass-keyword-only].py
+pydantic-dataclass-written	main/jsonschema/main_jsonschema/main_strip_default_none_inherited_place[pydantic-dataclass-written].py
 [test_main_structured_imports]
 	main/jsonschema/structured_imports.py
 [test_main_subscript_annotation_at_line_length]

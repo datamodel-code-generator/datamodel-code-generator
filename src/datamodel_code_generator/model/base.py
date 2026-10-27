@@ -2378,15 +2378,16 @@ def _assignment_inputs(
             if row == "pydantic-dataclass" or isinstance(written, PydanticDataclassWritten)
             else None
         ),
-        keeps_stripped_place=row == "msgspec" and _keeps_stripped_place(field),
+        keeps_stripped_place=row in {"msgspec", "pydantic-dataclass"} and _keeps_stripped_place(field),
     )
 
 
 def _keeps_stripped_place(field: DataModelFieldBase) -> bool:
-    """Return whether a msgspec Struct is built with the field among those without a default.
+    """Return whether the field takes its constructor place among those without a default, as in 0.86.0.
 
-    ``--strip-default-none`` strips the field's ``None`` default, which the Struct writes as ``UNSET`` all the same,
-    and neither ``--order-constructor-fields-by written-defaults`` nor ``--use-default-with-required`` is given.
+    ``--strip-default-none`` strips the field's ``None`` default, which a msgspec Struct writes as ``UNSET`` and a
+    Pydantic dataclass as ``None`` for a type that admits None all the same, and neither
+    ``--order-constructor-fields-by written-defaults`` nor ``--use-default-with-required`` is given.
     """
     return (
         not (field.order_constructor_fields_by_written_defaults or field.use_default_with_required)
@@ -3266,6 +3267,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             constructor_default="value" if has_value else "factory" if has_default else "none",
             participates_in_constructor=cls.FIELD_PARTICIPATES_IN_CONSTRUCTOR(field),
             rule="hook",
+            place_assigned=assigned,
         )
 
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:

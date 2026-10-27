@@ -4276,7 +4276,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4375,7 +4375,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4474,7 +4474,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4573,7 +4573,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4672,7 +4672,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4771,7 +4771,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4880,7 +4880,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -4994,7 +4994,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -5108,7 +5108,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -5222,7 +5222,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -5336,7 +5336,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -5450,7 +5450,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Unevaluated properties read | `--read-unevaluated-properties` | Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place. |
 | Aliases pinned beside an alias generator | `--pin-aliases-with-alias-generator` | Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8. |
 | msgspec tags by payload name | `--tag-msgspec-by-payload-name` | Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to. |
-| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
+| Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 | Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
@@ -28436,14 +28436,16 @@ inherited default, and is written keyword-only (`kw_only=True`), which moves it 
 changes the first positional argument of the constructor. With the value the order is decided once every field has
 its final name, so the override takes the place of the inherited field and stays positional.
 
-`written-defaults` changes `msgspec.Struct` output under `--strip-default-none`, and under
-`--use-default-factory-for-optional-nested-models --strip-default-none` the order of dataclass and Pydantic dataclass
-fields beside nested models whose default factory a reference cycle drops. A Struct writes a default for every
-optional field: `UNSET`, or `None` when the type admits None, even where `--strip-default-none` strips the field's
-`None` default. Without the value such a field keeps its schema place among the required fields, the order of
-earlier releases, and the struct is reordered only when a required field would then follow a default (which the
-Struct rejects at import). With the value every optional field goes after the required fields, in schema order,
-which changes the order of the constructor's positional arguments.
+`written-defaults` changes `msgspec.Struct` and `pydantic_v2.dataclass` output under `--strip-default-none`, and
+under `--use-default-factory-for-optional-nested-models --strip-default-none` the order of dataclass and Pydantic
+dataclass fields beside nested models whose default factory a reference cycle drops. A Struct writes a default for
+every optional field: `UNSET`, or `None` when the type admits None, even where `--strip-default-none` strips the
+field's `None` default, and a Pydantic dataclass writes `None` for a type that admits None. Without the value such a
+field keeps its place among the fields without a default, as in earlier releases: it is keyword-only after an
+inherited default, and the fields are reordered or made keyword-only only when a required field would then follow a
+default (which the class rejects at import). With the value every optional field of a Struct goes after the required
+fields, in schema order, which changes the order of the constructor's positional arguments, and such a field stays
+positional after an inherited default (for a Pydantic dataclass together with `final-names`).
 
 A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
 default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
@@ -28834,7 +28836,7 @@ subclass field inherits the `None` default, as in earlier releases.
                 d: str | UnsetType = 'x'
 
 
-            class KeptAfterInheritedDefault(WithDefault):
+            class KeptAfterInheritedDefault(WithDefault, kw_only=True):
                 n: Plain | None | UnsetType = UNSET
 
 
@@ -66088,7 +66090,7 @@ class ParentRequest(BaseModel):
 | Release | 0.87.0 |
 | Issue | [#5116](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5116) |
 
-**Affects:** `msgspec.Struct` output under `--strip-default-none`. Every optional field goes after the required fields in schema order, which changes the order of the positional constructor arguments. Without the option a struct is reordered only where a required field would otherwise follow a default. Under `--use-default-factory-for-optional-nested-models` the option also orders dataclass and Pydantic dataclass fields by the nested-model default factories they write, so a factory that a reference cycle drops moves no field, which it could without the option, as in 0.86.0. Other output model types, and runs without `--strip-default-none`, ignore the option.
+**Affects:** `msgspec.Struct` and `pydantic_v2.dataclass` output under `--strip-default-none`. Every optional field of a struct goes after the required fields in schema order, which changes the order of the positional constructor arguments, and a field whose stripped `None` default is still written (`UNSET`, or `None` for a type that admits None) stays positional after an inherited default (for a Pydantic dataclass together with `final-names`); a required Pydantic dataclass field that redeclares it is written `Field(...)`. Without the option such a field keeps its place among the fields without a default, as in 0.86.0: it is keyword-only after an inherited default, a redeclaring field inherits its `None`, and a struct is reordered only where a required field would otherwise follow a default. Under `--use-default-factory-for-optional-nested-models` the option also orders dataclass and Pydantic dataclass fields by the nested-model default factories they write, so a factory that a reference cycle drops moves no field, which it could without the option, as in 0.86.0. Other output model types, and runs without `--strip-default-none`, ignore the option.
 
 Command: `--output-model-type msgspec.Struct --strip-default-none`. Schema: optional `d` (string, default `"x"`), `t` (`[string, null]`) and `q` (string).
 

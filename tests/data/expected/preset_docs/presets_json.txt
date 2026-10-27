@@ -5348,7 +5348,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -5589,7 +5589,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -5830,7 +5830,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -6071,7 +6071,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -6312,7 +6312,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -6553,7 +6553,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -6787,7 +6787,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -7058,7 +7058,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -7329,7 +7329,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -7600,7 +7600,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -7871,7 +7871,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],
@@ -8142,7 +8142,7 @@
         "title": "msgspec tags by payload name"
       },
       {
-        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write.",
+        "description": "Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.",
         "options": [
           "--order-constructor-fields-by final-names written-defaults"
         ],

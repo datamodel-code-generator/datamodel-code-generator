@@ -4027,14 +4027,16 @@ inherited default, and is written keyword-only (`kw_only=True`), which moves it 
 changes the first positional argument of the constructor. With the value the order is decided once every field has
 its final name, so the override takes the place of the inherited field and stays positional.
 
-`written-defaults` changes `msgspec.Struct` output under `--strip-default-none`, and under
-`--use-default-factory-for-optional-nested-models --strip-default-none` the order of dataclass and Pydantic dataclass
-fields beside nested models whose default factory a reference cycle drops. A Struct writes a default for every
-optional field: `UNSET`, or `None` when the type admits None, even where `--strip-default-none` strips the field's
-`None` default. Without the value such a field keeps its schema place among the required fields, the order of
-earlier releases, and the struct is reordered only when a required field would then follow a default (which the
-Struct rejects at import). With the value every optional field goes after the required fields, in schema order,
-which changes the order of the constructor's positional arguments.
+`written-defaults` changes `msgspec.Struct` and `pydantic_v2.dataclass` output under `--strip-default-none`, and
+under `--use-default-factory-for-optional-nested-models --strip-default-none` the order of dataclass and Pydantic
+dataclass fields beside nested models whose default factory a reference cycle drops. A Struct writes a default for
+every optional field: `UNSET`, or `None` when the type admits None, even where `--strip-default-none` strips the
+field's `None` default, and a Pydantic dataclass writes `None` for a type that admits None. Without the value such a
+field keeps its place among the fields without a default, as in earlier releases: it is keyword-only after an
+inherited default, and the fields are reordered or made keyword-only only when a required field would then follow a
+default (which the class rejects at import). With the value every optional field of a Struct goes after the required
+fields, in schema order, which changes the order of the constructor's positional arguments, and such a field stays
+positional after an inherited default (for a Pydantic dataclass together with `final-names`).
 
 A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
 default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
@@ -21071,6 +21073,56 @@ def test_main_use_default_factory_for_optional_nested_models(
             output_model,
             "--use-default-factory-for-optional-nested-models",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("msgspec.Struct", [], id="msgspec"),
+        pytest.param("msgspec.Struct", ["--order-constructor-fields-by", "final-names"], id="msgspec-final-names"),
+        pytest.param("msgspec.Struct", ["--order-constructor-fields-by", "written-defaults"], id="msgspec-written"),
+        pytest.param("pydantic_v2.dataclass", [], id="pydantic-dataclass"),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            ["--order-constructor-fields-by", "final-names"],
+            id="pydantic-dataclass-final-names",
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            ["--order-constructor-fields-by", "final-names", "written-defaults"],
+            id="pydantic-dataclass-written",
+        ),
+        pytest.param("pydantic_v2.dataclass", ["--keyword-only"], id="pydantic-dataclass-keyword-only"),
+        pytest.param("dataclasses.dataclass", [], id="dataclass"),
+    ],
+)
+def test_main_strip_default_none_inherited_place(
+    output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep the place of a field whose stripped ``None`` default is still written, after inherited defaults.
+
+    Without --order-constructor-fields-by written-defaults ``Child.n`` is keyword-only after the inherited ``d`` and
+    ``Pet.level_default``, whose default its reference gives, goes after ``untyped``, as in 0.86.0, also under
+    --order-constructor-fields-by final-names; ``Flat`` and ``TaggedCat``, whose required field would follow a
+    default the class body writes, are reordered or made keyword-only. With written-defaults the fields follow the
+    defaults they write: ``Child.n`` stays positional and ``Pet.untyped`` goes last.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "strip_default_none_inherited_place.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strip-default-none",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
     )
 
 

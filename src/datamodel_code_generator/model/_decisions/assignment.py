@@ -69,11 +69,14 @@ AssignmentRow: TypeAlias = Literal["model", "dataclass", "pydantic-dataclass", "
 * ``dataclass``: stdlib dataclasses: the ``model`` rule (row ``legacy-stdlib-annotated``); an ``init=False`` field
   takes no part in the constructor.
 * ``pydantic-dataclass``: Pydantic dataclasses: the template keeps a stripped ``None`` default when the rendered type
-  admits None, and a ``ClassVar`` takes no part in the constructor.
+  admits None, and a ``ClassVar`` takes no part in the constructor. Such a field still takes its own place in the
+  constructor as one without a default, unless ``--order-constructor-fields-by written-defaults`` is given
+  (``AssignmentFacts.place_assigned``).
 * ``msgspec``: msgspec Structs: a default for every optional field, as a Struct never strips its defaults. The
   construction key still counts a field whose ``None`` default ``--strip-default-none`` strips as having none, so it
   keeps its schema place among the required fields, unless ``--order-constructor-fields-by written-defaults`` is given
-  (``AssignmentInputs.keeps_stripped_place``).
+  (``AssignmentInputs.keeps_stripped_place``), and takes its own place in the constructor as one without a default
+  (``AssignmentFacts.place_assigned``).
 """
 
 DefaultState: TypeAlias = Literal["undefined", "none", "value"]
@@ -157,9 +160,10 @@ class AssignmentInputs:
     ``--strip-default-none`` strips its ``None`` default, ``annotated`` that it is written under ``--use-annotated``,
     ``init_excluded`` that it declares ``init=False``. ``visibility`` is given for the ``pydantic-dataclass`` row and
     for a ``PydanticDataclassWritten`` assignment, which read it. ``keeps_stripped_place`` tells, for the ``msgspec``
-    row, that the construction key counts the field as having no default: ``--strip-default-none`` strips its
-    ``None`` default, and neither ``--order-constructor-fields-by written-defaults`` nor
-    ``--use-default-with-required`` is given.
+    and ``pydantic-dataclass`` rows, that the field takes its place as one without a default where the class body
+    assigns only its default, the construction key of a Struct too: ``--strip-default-none`` strips its ``None``
+    default, and neither ``--order-constructor-fields-by written-defaults`` nor ``--use-default-with-required`` is
+    given.
     """
 
     row: AssignmentRow
@@ -386,4 +390,5 @@ def classify_assignment(inputs: AssignmentInputs) -> AssignmentFacts:
             row, init_excluded=inputs.init_excluded, class_var=inputs.class_var
         ),
         rule=rule,
+        place_assigned=assigned and not (inputs.keeps_stripped_place and rule == "default"),
     )

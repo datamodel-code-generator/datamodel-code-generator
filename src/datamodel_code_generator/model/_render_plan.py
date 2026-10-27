@@ -113,7 +113,10 @@ class AssignmentFacts:
     ``assigned`` tells that an assignment follows the annotation, as constructor ordering counts it, and
     ``construction_assigned`` the same as the model's construction key counts it when the model is built (a Pydantic
     dataclass counts a ``None`` default that ``--strip-default-none`` may keep as none there). ``binds_class_attribute``
-    tells that the class body binds the field's name, which can hide a type of that name.
+    tells that the class body binds the field's name, which can hide a type of that name. ``place_assigned`` is
+    ``assigned`` as the field takes its own place in the constructor: a msgspec Struct or Pydantic dataclass field
+    whose ``None`` default ``--strip-default-none`` strips counts as having none there, as in 0.86.0, unless
+    ``--order-constructor-fields-by written-defaults`` is given (``AssignmentInputs.keeps_stripped_place``).
     """
 
     assigned: bool
@@ -122,11 +125,17 @@ class AssignmentFacts:
     constructor_default: ConstructorDefault
     participates_in_constructor: bool
     rule: AssignmentRule
+    place_assigned: bool
 
     @property
     def has_default(self) -> bool:
         """Return whether the constructor gives the field a default, a value or a factory."""
         return self.constructor_default != "none"
+
+    @property
+    def has_place_default(self) -> bool:
+        """Return whether the field counts as having a default for its own place in the constructor."""
+        return self.place_assigned and self.has_default
 
     @property
     def default_info(self) -> tuple[bool, bool]:
