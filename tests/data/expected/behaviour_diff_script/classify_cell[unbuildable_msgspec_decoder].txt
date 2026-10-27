@@ -1,0 +1,12 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [type] Root:m: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+    "crash-fix [kind] Root7: error -> msgspec.Struct"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[type] Root:m: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+    "[kind] Root7: error -> msgspec.Struct"
+  ]
+}

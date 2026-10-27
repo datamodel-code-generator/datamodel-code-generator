@@ -1,0 +1,63 @@
+{
+  "decoders": {
+    "Key": "ok",
+    "Model": "ok"
+  },
+  "items": {
+    "Key": {
+      "bases": [
+        "Struct"
+      ],
+      "config": {},
+      "fields": {
+        "name": {
+          "alias": null,
+          "ctype": "str",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "str",
+          "validation_alias": null
+        }
+      },
+      "kind": "msgspec.Struct",
+      "positional": [
+        "name"
+      ]
+    },
+    "Model": {
+      "bases": [
+        "Struct"
+      ],
+      "config": {
+        "forbid_unknown_fields": "True"
+      },
+      "fields": {
+        "keys": {
+          "alias": null,
+          "ctype": "dict[Key, int]",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "dict[Key, int]",
+          "validation_alias": null
+        },
+        "small": {
+          "alias": null,
+          "ctype": "Union[Annotated[int, Meta(ge=0)], None]",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, int]",
+          "validation_alias": null
+        }
+      },
+      "kind": "msgspec.Struct",
+      "positional": []
+    }
+  },
+  "names": [
+    "Key",
+    "Model"
+  ]
+}

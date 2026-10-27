@@ -1,0 +1,1 @@
+--input-file-type proto3

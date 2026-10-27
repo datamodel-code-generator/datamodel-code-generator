@@ -1,0 +1,11 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "import fixed: NameError: name 'Node' is not defined"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-added] Key: added",
+    "[name-added] KeyMap: added"
+  ]
+}

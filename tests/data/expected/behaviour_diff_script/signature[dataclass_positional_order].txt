@@ -1,0 +1,56 @@
+{
+  "adapters": {
+    "Box": "ok",
+    "Point": "ok"
+  },
+  "items": {
+    "Box": {
+      "bases": [],
+      "fields": {
+        "size": {
+          "alias": null,
+          "ctype": "int",
+          "default": "1",
+          "required": false,
+          "serialization_alias": null,
+          "type": "int",
+          "validation_alias": null
+        }
+      },
+      "kind": "dataclass",
+      "positional": []
+    },
+    "Point": {
+      "bases": [],
+      "fields": {
+        "x": {
+          "alias": null,
+          "ctype": "int",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "int",
+          "validation_alias": null
+        },
+        "y": {
+          "alias": null,
+          "ctype": "list[int]",
+          "default": "factory:list",
+          "required": false,
+          "serialization_alias": null,
+          "type": "list[int]",
+          "validation_alias": null
+        }
+      },
+      "kind": "dataclass",
+      "positional": [
+        "x",
+        "y"
+      ]
+    }
+  },
+  "names": [
+    "Box",
+    "Point"
+  ]
+}

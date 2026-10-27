@@ -1,0 +1,20 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[field-removed] M:c: removed",
+    "[field-added] M:d: required",
+    "[constraints] M:a: int -> Annotated[int, Ge(ge=0)]",
+    "[required] M:b: False -> True",
+    "[alias] M:b: None -> 'B'",
+    "[default] M:b: 'None' -> None"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[field-removed] M:c: removed",
+    "[field-added] M:d: required",
+    "[constraints] M:a: int -> Annotated[int, Ge(ge=0)]",
+    "[required] M:b: False -> True",
+    "[alias] M:b: None -> 'B'",
+    "[default] M:b: 'None' -> None"
+  ]
+}

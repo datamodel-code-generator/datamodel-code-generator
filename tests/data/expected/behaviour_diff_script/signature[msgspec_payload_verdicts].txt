@@ -1,0 +1,50 @@
+{
+  "decoders": {
+    "Payload": "ok"
+  },
+  "items": {
+    "Payload": {
+      "bases": [
+        "Struct"
+      ],
+      "config": {},
+      "fields": {
+        "count": {
+          "alias": null,
+          "ctype": "int",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "int",
+          "validation_alias": null
+        },
+        "items": {
+          "alias": null,
+          "ctype": "list[str]",
+          "default": "factory:list",
+          "required": false,
+          "serialization_alias": null,
+          "type": "list[str]",
+          "validation_alias": null
+        }
+      },
+      "kind": "msgspec.Struct",
+      "positional": [
+        "count",
+        "items"
+      ]
+    }
+  },
+  "names": [
+    "Payload"
+  ],
+  "payloads": {
+    "values": {
+      "v0": "1fc23f526a06527f"
+    },
+    "verdicts": {
+      "i0": "reject",
+      "v0": "accept"
+    }
+  }
+}

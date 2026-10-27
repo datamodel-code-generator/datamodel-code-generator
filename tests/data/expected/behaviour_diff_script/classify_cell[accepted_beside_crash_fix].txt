@@ -1,0 +1,16 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "accepted (propertyNames keys) [type] KeyMap: dict[Key, int] -> dict[str, int]",
+    "accepted (propertyNames keys) [type] Root:m: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+    "crash-fix [kind] Root7: error -> msgspec.Struct"
+  ],
+  "accepted_by": [
+    0
+  ],
+  "changes": [
+    "[type] KeyMap: dict[Key, int] -> dict[str, int]",
+    "[type] Root:m: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+    "[kind] Root7: error -> msgspec.Struct"
+  ]
+}

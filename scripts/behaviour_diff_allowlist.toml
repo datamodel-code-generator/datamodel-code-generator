@@ -1,0 +1,23 @@
+# Owner-accepted default-output behaviour changes against one base release, read by scripts/behaviour_diff.py.
+# Shrink-only within a release cycle: `behaviour_diff.py gate --check` fails on an entry that accepts no change
+# (stale), on an entry without `decision` (the owner decision) and on a table whose base is not the gate's base.
+# Replace the whole table when the base moves to the next release, which contains the accepted changes.
+# Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
+# decision, release_note.
+base = "0.86.0"
+
+[[accepted]]
+input = "*property_names*"
+aspects = [ "type", "config", "parsed-value" ]
+match = "dict\\[|regex_engine|parsed value"
+reason = "propertyNames dict keys RootModel -> constrained str: 0.86.0 keys are unhashable (crash class)"
+decision = "#5017 (crash fix class)"
+release_note = "propertyNames keys are typed as constrained str instead of a RootModel that could not be hashed"
+
+[[accepted]]
+input = "tests/data/jsonschema/external_anchor"
+aspects = [ "type" ]
+match = "AnchoredChild"
+reason = "spec-correct $anchor target; 0.86.0 depended on file read order"
+decision = "#5088 (kept and announced in the 0.87.0 release notes)"
+release_note = "an external $anchor resolves to the anchored schema regardless of file read order"

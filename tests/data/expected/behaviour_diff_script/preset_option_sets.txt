@@ -1,0 +1,16 @@
+pydantic_v2.BaseModel --preset standard-py312-20260909
+msgspec.Struct --preset standard-py312-20260909
+pydantic_v2.BaseModel --preset practical-py312-20260909
+msgspec.Struct --preset practical-py312-20260909
+pydantic_v2.BaseModel --preset standard-py310-20261017
+typing.TypedDict --preset standard-py310-20261017
+msgspec.Struct --preset standard-py310-20261017
+pydantic_v2.BaseModel --preset standard-py314-20261017
+typing.TypedDict --preset standard-py314-20261017
+msgspec.Struct --preset standard-py314-20261017
+pydantic_v2.BaseModel --preset practical-py310-20261017
+typing.TypedDict --preset practical-py310-20261017
+msgspec.Struct --preset practical-py310-20261017
+pydantic_v2.BaseModel --preset practical-py314-20261017
+typing.TypedDict --preset practical-py314-20261017
+msgspec.Struct --preset practical-py314-20261017

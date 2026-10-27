@@ -1,0 +1,9 @@
+exit=1
+allowlist: allowlist entry 1 (tests/data/jsonschema/person.json) is stale: it accepted no change
+summary: same=4, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0
+cells: 4 (tier pr, shard 1/1), cached base outputs: 0
+
+exit=1
+allowlist: allowlist entry 1 (tests/data/jsonschema/person.json) is stale: it accepted no change
+summary: same=4, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0
+cells: 4 (tier pr, shard 1/1), cached base outputs: 4

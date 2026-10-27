@@ -1,0 +1,12 @@
+{
+  "cls": "accepted",
+  "notes": [
+    "accepted (propertyNames keys) [type] KeyMap: dict[Key, int] -> dict[str, int]"
+  ],
+  "accepted_by": [
+    0
+  ],
+  "changes": [
+    "[type] KeyMap: dict[Key, int] -> dict[str, int]"
+  ]
+}

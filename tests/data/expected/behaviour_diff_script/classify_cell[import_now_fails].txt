@@ -1,0 +1,11 @@
+{
+  "cls": "violation",
+  "notes": [
+    "import now fails: NameError: name 'inf' is not defined"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-removed] Key: removed",
+    "[name-removed] KeyMap: removed"
+  ]
+}

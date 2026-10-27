@@ -1,0 +1,44 @@
+{
+  "adapters": {
+    "Model": "ok",
+    "Version": "ok"
+  },
+  "items": {
+    "Model": {
+      "bases": [],
+      "fields": {
+        "other": {
+          "alias": null,
+          "ctype": "None",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "None",
+          "validation_alias": null
+        },
+        "version": {
+          "alias": null,
+          "ctype": "None",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "None",
+          "validation_alias": null
+        }
+      },
+      "kind": "dataclass",
+      "positional": [
+        "version",
+        "other"
+      ]
+    },
+    "Version": {
+      "kind": "alias",
+      "type": "None"
+    }
+  },
+  "names": [
+    "Model",
+    "Version"
+  ]
+}

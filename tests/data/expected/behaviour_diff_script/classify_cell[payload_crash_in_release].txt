@@ -1,0 +1,8 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [payload-verdict] payload v1: error:TypeError -> accept"
+  ],
+  "accepted_by": [],
+  "changes": []
+}

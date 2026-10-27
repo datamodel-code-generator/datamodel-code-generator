@@ -1,0 +1,38 @@
+{
+  "adapters": {
+    "Model": "ok"
+  },
+  "items": {
+    "Model": {
+      "bases": [],
+      "config": {},
+      "fields": {
+        "a": {
+          "alias": null,
+          "ctype": "Union[None, int, str]",
+          "default": null,
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, int, str]",
+          "validation_alias": null
+        },
+        "b": {
+          "alias": null,
+          "ctype": "Annotated[str, 'doc']",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "str",
+          "validation_alias": null
+        }
+      },
+      "kind": "TypedDict",
+      "readonly": [
+        "b"
+      ]
+    }
+  },
+  "names": [
+    "Model"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "adapters": {
+    "LetterItem": "ok",
+    "Letters": "ok"
+  },
+  "items": {
+    "Letter": {
+      "bases": [
+        "Enum"
+      ],
+      "enum_base": null,
+      "kind": "Enum",
+      "members": {
+        "a": "'a'"
+      }
+    },
+    "LetterItem": {
+      "kind": "alias",
+      "type": "Letter"
+    },
+    "Letters": {
+      "kind": "alias",
+      "type": "list[Letter]"
+    }
+  },
+  "names": [
+    "Letter",
+    "LetterItem",
+    "Letters"
+  ]
+}

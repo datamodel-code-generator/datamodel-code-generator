@@ -1,0 +1,60 @@
+{
+  "adapters": {
+    "Name": "ok",
+    "Payload": "ok"
+  },
+  "items": {
+    "Name": {
+      "bases": [
+        "RootModel"
+      ],
+      "config": {},
+      "croot": "str",
+      "default": null,
+      "kind": "RootModel",
+      "root": "str"
+    },
+    "Payload": {
+      "bases": [
+        "BaseModel"
+      ],
+      "config": {},
+      "fields": {
+        "name": {
+          "alias": null,
+          "ctype": "Name",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "Name",
+          "validation_alias": null
+        },
+        "tags": {
+          "alias": null,
+          "ctype": "Union[None, dict[str, int]]",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, dict[str, int]]",
+          "validation_alias": null
+        }
+      },
+      "kind": "BaseModel"
+    }
+  },
+  "names": [
+    "Name",
+    "Payload"
+  ],
+  "payloads": {
+    "values": {
+      "v0": "5123f0553c45781b",
+      "v1": "b6da59c0fd71cab7"
+    },
+    "verdicts": {
+      "i0": "reject",
+      "v0": "accept",
+      "v1": "accept"
+    }
+  }
+}

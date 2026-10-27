@@ -1,0 +1,44 @@
+{
+  "package": {
+    "__init__": {
+      "adapters": {},
+      "exports": {
+        "Pet": "pets",
+        "pets": "<module pets>"
+      },
+      "items": {},
+      "names": []
+    },
+    "broken": {
+      "import_error": "ValueError: cannot import"
+    },
+    "pets": {
+      "adapters": {
+        "Pet": "ok"
+      },
+      "items": {
+        "Pet": {
+          "bases": [
+            "BaseModel"
+          ],
+          "config": {},
+          "fields": {
+            "name": {
+              "alias": "Name",
+              "ctype": "Annotated[str, MinLen(min_length=1)]",
+              "default": null,
+              "required": true,
+              "serialization_alias": "Name",
+              "type": "str",
+              "validation_alias": "'Name'"
+            }
+          },
+          "kind": "BaseModel"
+        }
+      },
+      "names": [
+        "Pet"
+      ]
+    }
+  }
+}
