@@ -47,6 +47,10 @@ class SharedNumber(RootModel[float]):
     root: float
 
 
+class Enclosed(RootModel[str]):
+    root: str
+
+
 class NumberNull(RootModel[float | None]):
     root: float | None
 
@@ -64,3 +68,4 @@ class Model(BaseModel):
     n: NumberOrString | None = None
     m: MixedMembers | None = None
     x: SharedNumber | None = None
+    e: Enclosed | None = None

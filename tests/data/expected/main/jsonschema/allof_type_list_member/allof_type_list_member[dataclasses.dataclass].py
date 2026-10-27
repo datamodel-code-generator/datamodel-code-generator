@@ -39,6 +39,9 @@ MixedMembers: TypeAlias = int
 SharedNumber: TypeAlias = float
 
 
+Enclosed: TypeAlias = str
+
+
 NumberNull: TypeAlias = float | None
 
 
@@ -55,3 +58,4 @@ class Model:
     n: NumberOrString | None = None
     m: MixedMembers | None = None
     x: SharedNumber | None = None
+    e: Enclosed | None = None

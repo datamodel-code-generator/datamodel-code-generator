@@ -9906,7 +9906,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if ref_schema.type and (typed := [item.type for item in constraint_items if item.type]):
             ref_types = _json_schema_types(ref_schema.type)
             if any(_numeric_type_domain(type_) is None for type_ in (ref_schema.type, *typed)):
-                common_types = reduce(_intersect_json_schema_types, map(_json_schema_types, typed), ref_types)
+                applying = [*typed, *([obj.type] if obj.type else [])]
+                common_types = reduce(_intersect_json_schema_types, map(_json_schema_types, applying), ref_types)
                 if not common_types:
                     return None
                 if common_types == ref_types:

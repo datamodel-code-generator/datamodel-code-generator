@@ -42,6 +42,9 @@ MixedMembers = TypeAliasType("MixedMembers", int)
 SharedNumber = TypeAliasType("SharedNumber", float)
 
 
+Enclosed = TypeAliasType("Enclosed", str)
+
+
 NumberNull = TypeAliasType("NumberNull", float | None)
 
 
@@ -58,3 +61,4 @@ class Model:
     n: NumberOrString | None = None
     m: MixedMembers | None = None
     x: SharedNumber | None = None
+    e: Enclosed | None = None

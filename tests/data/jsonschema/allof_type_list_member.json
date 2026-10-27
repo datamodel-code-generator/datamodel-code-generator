@@ -10,7 +10,8 @@
     "d": {"$ref": "#/$defs/Disjoint"},
     "n": {"$ref": "#/$defs/NumberOrString"},
     "m": {"$ref": "#/$defs/MixedMembers"},
-    "x": {"$ref": "#/$defs/SharedNumber"}
+    "x": {"$ref": "#/$defs/SharedNumber"},
+    "e": {"$ref": "#/$defs/Enclosed"}
   },
   "$defs": {
     "T": {"type": "string"},
@@ -23,6 +24,7 @@
     "NumberString": {"type": ["number", "string"]},
     "MixedMembers": {"allOf": [{"$ref": "#/$defs/NumberNull"}, {"type": ["integer", "null"]}, {"type": ["number", "string"]}]},
     "SharedNumber": {"allOf": [{"$ref": "#/$defs/NumberString"}, {"type": ["number", "boolean"]}]},
+    "Enclosed": {"type": "string", "allOf": [{"$ref": "#/$defs/NumberString"}, {"type": ["integer", "string"]}]},
     "NumberNull": {"type": ["number", "null"]},
     "Same": {"allOf": [{"$ref": "#/$defs/N"}, {"type": ["string", "null"], "maxLength": 5}]}
   }

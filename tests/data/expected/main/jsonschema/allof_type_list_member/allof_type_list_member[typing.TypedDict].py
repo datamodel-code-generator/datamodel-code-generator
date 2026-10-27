@@ -39,6 +39,9 @@ MixedMembers: TypeAlias = int
 SharedNumber: TypeAlias = float
 
 
+Enclosed: TypeAlias = str
+
+
 NumberNull: TypeAlias = float | None
 
 
@@ -54,3 +57,4 @@ class Model(TypedDict):
     n: NotRequired[NumberOrString]
     m: NotRequired[MixedMembers]
     x: NotRequired[SharedNumber]
+    e: NotRequired[Enclosed]

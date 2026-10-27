@@ -39,6 +39,9 @@ MixedMembers: TypeAlias = int
 SharedNumber: TypeAlias = float
 
 
+Enclosed: TypeAlias = str
+
+
 NumberNull: TypeAlias = float | None
 
 
@@ -54,3 +57,4 @@ class Model(Struct):
     n: NumberOrString | UnsetType = UNSET
     m: MixedMembers | UnsetType = UNSET
     x: SharedNumber | UnsetType = UNSET
+    e: Enclosed | UnsetType = UNSET

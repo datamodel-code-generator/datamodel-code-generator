@@ -20,3 +20,5 @@
 {"x": 1.5}: schema accepts, model accepts
 {"x": "x"}: schema rejects, model rejects
 {"x": true}: schema rejects, model accepts
+{"e": "x"}: schema accepts, model accepts
+{"e": 1}: schema rejects, model rejects
