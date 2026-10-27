@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import cache
 from typing import TYPE_CHECKING, Final
 
 from typing_extensions import final
@@ -17,9 +18,9 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 __all__ = [
-    "LOOKAROUND_PATTERN",
     "PatternConjunction",
     "conjoin_patterns",
+    "has_lookaround",
     "is_portable_pattern",
     "literal_pattern_value",
     "lookahead_patterns",
@@ -29,24 +30,34 @@ __all__ = [
     "scan_regex_syntax",
 ]
 
-LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
+_LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 
 
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
-_REGEX_TOKEN: re.Pattern[str] = re.compile(
-    rf"{_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
+_REGEX_TOKEN: Final = (
+    rf"(?s){_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
     rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
-    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)",
-    re.DOTALL,
+    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
 )
-_REGEX_CLASS_TOKEN: re.Pattern[str] = re.compile(rf"\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])", re.DOTALL)
+_REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])"
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
 _RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
 _RUST_REJECTED_FLAGS = frozenset("aL")
 _PY_310 = (3, 10)
 _PY_311 = (3, 11)
 _PY_314 = (3, 14)
+
+
+@cache
+def _compiled(source: str) -> re.Pattern[str]:
+    """Compile one of this module's own patterns on first use, so that importing it costs no compilation."""
+    return re.compile(source)
+
+
+def has_lookaround(pattern: str) -> bool:
+    """Return whether a pattern holds a lookahead or lookbehind."""
+    return _compiled(_LOOKAROUND_PATTERN).search(pattern) is not None
 
 
 def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
@@ -76,7 +87,7 @@ def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
     minimum_python = _PY_310
     depth = 0
     position = 0
-    while (match := (_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
+    while (match := _compiled(_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
         position = match.end()
         if depth or match["open"]:
             depth += bool(match["open"]) - bool(depth and match["close"])
@@ -91,23 +102,22 @@ def scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
 
 def is_portable_pattern(pattern: str) -> bool:
     """Return whether a pattern runs on the default regex engine of every supported pydantic."""
-    return (
-        LOOKAROUND_PATTERN.search(pattern) is None and (scan := scan_regex_syntax(pattern)) is not None and not scan[0]
-    )
+    return not has_lookaround(pattern) and (scan := scan_regex_syntax(pattern)) is not None and not scan[0]
 
 
 _REGEX_META_CHARACTERS: Final = frozenset(r"\.^$*+?{}[]|()")
-_LITERAL_PATTERN: Final = re.compile(r"(?:[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()])*")
-_HEAD_CHARACTER: Final = re.compile(r"[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()]")
+_LITERAL_PATTERN: Final = r"(?:[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()])*"
+_HEAD_CHARACTER: Final = r"[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()]"
 _QUANTIFIER_STARTS: Final = frozenset("*+?{")
-_SINGLE_CLASS: Final = re.compile(r"\\[dDwWsSntrfv]|\\x[0-9A-Fa-f]{2}|\[\^?\]?(?:[^\\\[\]]|\\.)*\]", re.DOTALL)
-_COUNTED_REPETITION: Final = re.compile(
-    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
+_SINGLE_CLASS: Final = r"(?s)\\[dDwWsSntrfv]|\\x[0-9A-Fa-f]{2}|\[\^?\]?(?:[^\\\[\]]|\\.)*\]"
+_COUNTED_REPETITION: Final = (
+    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
+    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
 )
-_PLAIN_REPETITION: Final = re.compile(r"\{[0-9]+(?:,[0-9]*)?\}")
-_NON_ASCII_CLASS_ESCAPE: Final = re.compile(r"(?<!\\)(?:\\\\)*\\[sSwWdDbB]")
-_GROUP_NAME: Final = re.compile(r"\(\?(?P<python>P?)<(?![=!])(?P<name>[^>()\\]*)>")
-_FLAG_GROUP: Final = re.compile(r"\(\?(?P<flags>[A-Za-z-]*)(?P<end>[:)])")
+_PLAIN_REPETITION: Final = r"\{[0-9]+(?:,[0-9]*)?\}"
+_NON_ASCII_CLASS_ESCAPE: Final = r"(?<!\\)(?:\\\\)*\\[sSwWdDbB]"
+_GROUP_NAME: Final = r"\(\?(?P<python>P?)<(?![=!])(?P<name>[^>()\\]*)>"
+_FLAG_GROUP: Final = r"\(\?(?P<flags>[A-Za-z-]*)(?P<end>[:)])"
 _SHARED_FLAGS: Final = frozenset("imsxu-")
 _BRACED_ESCAPE_LETTERS: Final = frozenset("pPxuUbB")
 _PYTHON_ESCAPE_DIFFERENCES: Final = frozenset("pP<>z")
@@ -119,7 +129,7 @@ def literal_pattern_value(pattern: str) -> str | None:
     """Return the string a pattern of plain characters and escaped regex metacharacters only searches for."""
     if _REGEX_META_CHARACTERS.isdisjoint(pattern):
         return pattern
-    if _LITERAL_PATTERN.fullmatch(pattern) is None:
+    if _compiled(_LITERAL_PATTERN).fullmatch(pattern) is None:
         return None
     return re.sub(r"\\(.)", r"\1", pattern)
 
@@ -194,16 +204,16 @@ def _structure(pattern: str) -> _Structure:
             continue
         if character == "(":
             depth += 1
-            if (name := _GROUP_NAME.match(pattern, position)) is not None:
+            if (name := _compiled(_GROUP_NAME).match(pattern, position)) is not None:
                 names.add(name["name"])
                 alike &= bool(name["python"]) and name["name"].isidentifier()
-            elif (group := _FLAG_GROUP.match(pattern, position)) is not None:
+            elif (group := _compiled(_FLAG_GROUP).match(pattern, position)) is not None:
                 alike &= _SHARED_FLAGS.issuperset(group["flags"])
                 if group["end"] == ")":
                     flags.append(position)
         elif character == "{":
-            alike &= (repetition := _COUNTED_REPETITION.match(pattern, position)) is None or (
-                _PLAIN_REPETITION.fullmatch(repetition.group()) is not None
+            alike &= (repetition := _compiled(_COUNTED_REPETITION).match(pattern, position)) is None or (
+                _compiled(_PLAIN_REPETITION).fullmatch(repetition.group()) is not None
             )
         elif character == ")":
             depth -= 1
@@ -223,7 +233,7 @@ def _head(pattern: str) -> tuple[bool, str] | None:
     anchored = pattern.startswith(("^", "\\A"))
     position = 2 if pattern.startswith("\\A") else int(anchored)
     literal: list[str] = []
-    while (character := _HEAD_CHARACTER.match(pattern, position)) is not None and (
+    while (character := _compiled(_HEAD_CHARACTER).match(pattern, position)) is not None and (
         pattern[character.end() : character.end() + 1] not in _QUANTIFIER_STARTS
     ):
         literal.append(character.group()[-1])
@@ -243,7 +253,7 @@ def _search(pattern: str, value: str, *, full: bool = False) -> bool | None:
 def _class_admits(pattern: str, character: str) -> bool:
     """Return whether a pattern that is one character class or class escape admits a printable ASCII character."""
     return (
-        _SINGLE_CLASS.fullmatch(pattern) is not None
+        _compiled(_SINGLE_CLASS).fullmatch(pattern) is not None
         and character.isascii()
         and (character.isprintable() or character in _PLAIN_ASCII_CONTROLS)
         and _structure(pattern).read_alike
@@ -294,7 +304,7 @@ def pattern_admits(pattern: str, value: str) -> bool | None:
     if (
         not _reads_alike(pattern)
         or ("$" in pattern and value.endswith("\n"))
-        or (not value.isascii() and _NON_ASCII_CLASS_ESCAPE.search(pattern) is not None)
+        or (not value.isascii() and _compiled(_NON_ASCII_CLASS_ESCAPE).search(pattern) is not None)
     ):
         return None
     return _search(pattern, value)

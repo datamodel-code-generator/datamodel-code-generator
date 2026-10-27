@@ -22,7 +22,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
-from datamodel_code_generator._regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
+from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
@@ -1200,7 +1200,7 @@ def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataMod
     pydantic-core or on the Python running the generator. A pattern Python's ``re`` also rejects fails at
     import either way.
     """
-    if LOOKAROUND_PATTERN.search(pattern) is not None:
+    if has_lookaround(pattern):
         return True
     if (string_type := _string_pattern_data_type(data_type, field.parent)) is None:
         return False
