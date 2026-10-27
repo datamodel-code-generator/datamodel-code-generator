@@ -309,7 +309,10 @@ whose type array admits objects, such as `type: [object, "null"]`, or one with `
 the model its definition would get, such as a root model of `dict[str, Any] | None`, whose values
 `--use-typed-nullable-map-values` types as declared. A document whose only bodies are such schemas then generates
 models instead of failing with "Models not found in the input data", whose message names this value when it
-applies. Bodies typed as objects, arrays, combinations, enums and references, and the `api` scope, are unchanged.
+applies. A body of `type: object` with `patternProperties` or `propertyNames` and no `properties` gets the root model
+of a map its definition gets, such as `dict[constr(pattern=r'^a'), int]`, instead of the model or `dict[str, ...]` of
+0.86.0; one whose `patternProperties` admit its only keys (`additionalProperties: false`) gets that root model with or
+without the value. Bodies typed as arrays, combinations, enums and references, and the `api` scope, are unchanged.
 
 `ref-components`: a component such as `Tree: {$ref: '#/components/schemas/Node', minProperties: 1}`, where `Node`
 leads back to `Tree` or to itself, cannot merge its sibling keywords into `Node`. Without the value it gets no model,

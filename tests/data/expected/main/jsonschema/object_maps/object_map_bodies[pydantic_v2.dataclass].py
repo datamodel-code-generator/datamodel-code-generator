@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import Field
+from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 ClosedPatternsPostRequest = TypeAliasType(
@@ -14,11 +15,9 @@ ClosedPatternsPostRequest = TypeAliasType(
 )
 
 
-ClosedPatternsPostResponse = TypeAliasType(
-    "ClosedPatternsPostResponse", dict[Annotated[str, Field(pattern=r'^a')], int]
-)
+@dataclass
+class ClosedPatternsPostResponse:
+    pass
 
 
-KeyNamesPostRequest = TypeAliasType(
-    "KeyNamesPostRequest", dict[Annotated[str, Field(pattern=r'^[a-z]+$')], str]
-)
+KeyNamesPostRequest = TypeAliasType("KeyNamesPostRequest", dict[str, str])

@@ -1544,7 +1544,8 @@ openapi_options.add_argument(
     "--openapi-as-definitions",
     help="Give each given kind of OpenAPI schema the model a definitions entry of the same schema gets. paths-bodies: "
     "the request and response bodies of the paths and webhooks scopes, so an object body with a type array such as "
-    "[object, null], or with map keywords and no type, becomes a model instead of an inline type. ref-components: a "
+    "[object, null], or with map keywords and no type, becomes a model instead of an inline type, and an object body "
+    "with patternProperties or propertyNames becomes the root model of a map. ref-components: a "
     "component written as a $ref to a recursive schema with sibling keywords, which gets the root model; without it "
     "such a component gets no model, and a reference to it is typed by the schema its $ref names",
     choices=[as_definitions.value for as_definitions in OpenAPIAsDefinitions],

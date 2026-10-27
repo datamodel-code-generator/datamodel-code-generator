@@ -4,16 +4,16 @@
 
 from __future__ import annotations
 
-from pydantic import RootModel, constr
+from pydantic import BaseModel, RootModel, constr
 
 
 class ClosedPatternsPostRequest(RootModel[dict[constr(pattern=r'^a'), int]]):
     root: dict[constr(pattern=r'^a'), int]
 
 
-class ClosedPatternsPostResponse(RootModel[dict[constr(pattern=r'^a'), int]]):
-    root: dict[constr(pattern=r'^a'), int]
+class ClosedPatternsPostResponse(BaseModel):
+    pass
 
 
-class KeyNamesPostRequest(RootModel[dict[constr(pattern=r'^[a-z]+$'), str]]):
-    root: dict[constr(pattern=r'^[a-z]+$'), str]
+class KeyNamesPostRequest(RootModel[dict[str, str]]):
+    root: dict[str, str]

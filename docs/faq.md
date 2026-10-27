@@ -999,7 +999,7 @@ class Model(BaseModel):
 | Release | 0.87.0 |
 | Issue | [#5155](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5155) |
 
-**Affects:** request and response bodies in the `paths` and `webhooks` scopes (they need `--openapi-scopes paths` / `webhooks`, which no preset sets). The body gets the model a schema definition of the same body gets: an object body with a `type` array such as `[object, null]`, or with map keywords and no `type`, becomes a model instead of an inline type. This is separate from the crash fix for object bodies in the legacy `paths` scope (#5024).
+**Affects:** request and response bodies in the `paths` and `webhooks` scopes (they need `--openapi-scopes paths` / `webhooks`, which no preset sets). The body gets the model a schema definition of the same body gets: an object body with a `type` array such as `[object, null]`, or with map keywords and no `type`, becomes a model instead of an inline type, and a `type: object` body with `patternProperties` or `propertyNames` and no `properties` becomes the root model of a map its definition gets, such as `dict[constr(pattern=r'^a'), int]`, instead of the model or `dict[str, ...]` of 0.86.0. This is separate from the crash fix for object bodies in the legacy `paths` scope (#5024), which gives a body whose `patternProperties` admit its only keys (`additionalProperties: false`) that root model with or without the option.
 
 Schema (abridged): the `POST /pets` request body is `{"type": ["object", "null"], "additionalProperties": {...}}`. Command: `--input-file-type openapi --openapi-scopes paths --output-model-type pydantic_v2.BaseModel`.
 

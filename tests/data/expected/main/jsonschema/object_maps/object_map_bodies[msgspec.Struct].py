@@ -6,10 +6,13 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
+from msgspec import Struct
+
 ClosedPatternsPostRequest: TypeAlias = dict[str, int]
 
 
-ClosedPatternsPostResponse: TypeAlias = dict[str, int]
+class ClosedPatternsPostResponse(Struct):
+    pass
 
 
 KeyNamesPostRequest: TypeAlias = dict[str, str]

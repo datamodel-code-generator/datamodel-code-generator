@@ -1079,6 +1079,18 @@ def test_object_map_bodies_without_single_dict(
     assert_output(verdicts, name="payloads")
 
 
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_object_map_bodies_as_definitions(
+    output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str
+) -> None:
+    """Give every object map body the root model of its definition under --openapi-as-definitions paths-bodies."""
+    warnings, verdicts = _object_map_body_outputs(
+        output_file, recwarn, output_model_type, SINGLE_DICT, "--openapi-as-definitions", "paths-bodies"
+    )
+    assert_output(warnings, name="warnings")
+    assert_output(verdicts, name="payloads")
+
+
 def _object_map_body_outputs(
     output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str, *extra_args: str
 ) -> tuple[str, str]:
@@ -1142,7 +1154,10 @@ whose type array admits objects, such as `type: [object, "null"]`, or one with `
 the model its definition would get, such as a root model of `dict[str, Any] | None`, whose values
 `--use-typed-nullable-map-values` types as declared. A document whose only bodies are such schemas then generates
 models instead of failing with "Models not found in the input data", whose message names this value when it
-applies. Bodies typed as objects, arrays, combinations, enums and references, and the `api` scope, are unchanged.
+applies. A body of `type: object` with `patternProperties` or `propertyNames` and no `properties` gets the root model
+of a map its definition gets, such as `dict[constr(pattern=r'^a'), int]`, instead of the model or `dict[str, ...]` of
+0.86.0; one whose `patternProperties` admit its only keys (`additionalProperties: false`) gets that root model with or
+without the value. Bodies typed as arrays, combinations, enums and references, and the `api` scope, are unchanged.
 
 `ref-components`: a component such as `Tree: {$ref: '#/components/schemas/Node', minProperties: 1}`, where `Node`
 leads back to `Tree` or to itself, cannot merge its sibling keywords into `Node`. Without the value it gets no model,

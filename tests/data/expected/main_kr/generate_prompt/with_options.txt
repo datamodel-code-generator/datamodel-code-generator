@@ -1091,8 +1091,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         bodies: the request and response bodies of the paths
                         and webhooks scopes, so an object body with a type
                         array such as [object, null], or with map keywords and
-                        no type, becomes a model instead of an inline type.
-                        ref-components: a component written as a $ref to a
+                        no type, becomes a model instead of an inline type,
+                        and an object body with patternProperties or
+                        propertyNames becomes the root model of a map. ref-
+                        components: a component written as a $ref to a
                         recursive schema with sibling keywords, which gets the
                         root model; without it such a component gets no model,
                         and a reference to it is typed by the schema its $ref

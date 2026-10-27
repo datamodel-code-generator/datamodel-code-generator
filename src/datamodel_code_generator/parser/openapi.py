@@ -275,13 +275,23 @@ def is_inline_object_body(obj: JsonSchemaObject) -> bool:
 
     Such a body admits objects by its type array, or by its map keywords without a type; a definition of the same
     schema gets a model, and so does the body with ``--openapi-as-definitions paths-bodies``. Bodies that are
-    ``is_object``, arrays, combinations, enums, or references get the definitions' model kind either way.
+    arrays, combinations, enums, or references get the definitions' model kind either way, and ``is_object`` bodies get
+    a model either way, whose kind follows the definitions only with that value.
     """
     if obj.ref or obj.is_array or obj.is_object or obj.enum or any((obj.allOf, obj.oneOf, obj.anyOf)):
         return False
     if obj.type is not None:
         return isinstance(obj.type, list) and "object" in obj.type
     return any(keyword is not None for keyword in (obj.additionalProperties, obj.patternProperties, obj.propertyNames))
+
+
+def _is_closed_pattern_map_body(obj: JsonSchemaObject) -> bool:
+    """Return whether an object body is a map closed to the keys its ``patternProperties`` admit.
+
+    0.86.0 typed such a body as an empty model that forbids every key, so the legacy paths and webhooks dispatch gives
+    it the model its definition gets with or without ``--openapi-as-definitions paths-bodies``.
+    """
+    return not obj.properties and bool(obj.patternProperties) and obj.additionalProperties is False
 
 
 @cache
@@ -949,9 +959,16 @@ class OpenAPIParser(JsonSchemaParser):
         return site.obj.is_object
 
     def _build_operation_object(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
-        return self._parse_object_kind_schema(site.name, site.obj, site.path) or self.parse_object(
-            site.name, site.obj, site.path
-        )
+        """Parse an object body as 0.86.0 did, or as its definition is parsed under ``paths-bodies``.
+
+        A body that ``_is_closed_pattern_map_body`` gets the definition's model by default.
+        """
+        if (
+            OpenAPIAsDefinitions.PathsBodies in self.config.openapi_as_definitions
+            or _is_closed_pattern_map_body(site.obj)
+        ) and (data_type := self._parse_object_kind_schema(site.name, site.obj, site.path)) is not None:
+            return data_type
+        return self.parse_object(site.name, site.obj, site.path)
 
     def _operation_inline_object_body_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
         return (
