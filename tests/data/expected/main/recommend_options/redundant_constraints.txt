@@ -56,7 +56,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261019
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261027
 
 Command
   datamodel-codegen --class-name RedundantConstraints --input redundant_constraints.json --omit-redundant-constraints --preset standard-py314-20261017

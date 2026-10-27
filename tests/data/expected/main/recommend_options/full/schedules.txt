@@ -15,7 +15,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   formats                          5 (time x5), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add  nothing on top of the preset
 
@@ -61,10 +61,10 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input schedules.yaml --preset standard-py314-20261019 --target-python-version 3.14
+  datamodel-codegen --input schedules.yaml --preset standard-py314-20261027 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "schedules.yaml"
-  preset = "standard-py314-20261019"
+  preset = "standard-py314-20261027"
   target-python-version = "3.14"

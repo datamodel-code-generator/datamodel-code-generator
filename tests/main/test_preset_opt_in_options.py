@@ -1,4 +1,4 @@
-"""The 20261019 presets equal the 20261017 presets plus every opt-in option of the release."""
+"""The 20261027 presets equal the 20261017 presets plus every opt-in option of the release."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 ORDER_CONSTRUCTOR_FIELDS_BY: tuple[str, ...] = ("--order-constructor-fields-by", "final-names", "written-defaults")
-"""The constructor-order values the 20261019 presets set."""
+"""The constructor-order values the 20261027 presets set."""
 
 OPT_IN_OPTIONS: tuple[str, ...] = (
     "--use-single-value-enum-as-const",
@@ -39,7 +39,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
     "--dedupe-request-response-variants",
     "--omit-redundant-reference-null",
 )
-"""The options the 20261019 presets set beyond the 20261017 presets."""
+"""The options the 20261027 presets set beyond the 20261017 presets."""
 
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
@@ -176,7 +176,7 @@ def test_preset_sets_opt_in_option(
     family: str,
     tmp_path: Path,
 ) -> None:
-    """Generate with the 20261019 preset and with the 20261017 preset plus the options: the output is the same."""
+    """Generate with the 20261027 preset and with the 20261017 preset plus the options: the output is the same."""
     preset_output = tmp_path / "preset"
     options_output = tmp_path / "options"
     if input_path.is_dir():
@@ -190,7 +190,7 @@ def test_preset_sets_opt_in_option(
         input_path=input_path,
         output_path=preset_output,
         input_file_type=input_file_type,
-        extra_args=["--preset", f"{family}-py312-20261019", *common],
+        extra_args=["--preset", f"{family}-py312-20261027", *common],
     )
     run_main_and_assert(
         input_path=input_path,
@@ -222,7 +222,7 @@ def test_preset_sets_opt_in_option(
             id="toml-list",
         ),
         pytest.param(
-            'preset = "standard-py312-20261019"\norder-constructor-fields-by = []',
+            'preset = "standard-py312-20261027"\norder-constructor-fields-by = []',
             ["--disable-timestamp"],
             [
                 "--preset",

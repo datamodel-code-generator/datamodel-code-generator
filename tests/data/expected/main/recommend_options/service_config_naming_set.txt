@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   6
   root schema                      object model 1, title words 4
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add (2 options)
   --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -52,7 +52,7 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --naming-strategy full-path --preset standard-py314-20261019 --target-python-version 3.14
+  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --naming-strategy full-path --preset standard-py314-20261027 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -60,5 +60,5 @@ pyproject.toml
   enum-field-as-literal = "all"
   input = "service-config.json"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261019"
+  preset = "standard-py314-20261027"
   target-python-version = "3.14"

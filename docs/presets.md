@@ -17,11 +17,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output model.py
 ```
 
-Use `standard-py312-20261019` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261019` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
+Use `standard-py312-20261027` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261027` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
 
 To choose options on top of a preset for your schema, add `--recommend-options` to the command (experimental); see [Option recommendations](recommend-options.md).
 
@@ -31,7 +31,7 @@ The 20261015 presets keep the 20260909 options and add Python 3.15 targets.
 
 The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal all` for stdlib dataclass and TypedDict output. These models keep raw JSON values without conversion, so enums render as Literal values instead of enum classes. Options of an output model scope take precedence over the options for all output model types.
 
-The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
+The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
 
 ## Override Preset Options
 
@@ -40,7 +40,7 @@ Preset options are defaults, not locks. Explicit options override preset-supplie
 ```bash
 datamodel-codegen \
   --input schema.json \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --no-snake-case-field \
   --no-use-annotated \
   --enum-field-as-literal none
@@ -55,7 +55,7 @@ You can add any normal CLI option to a preset command. This is the recommended w
 ```bash
 datamodel-codegen \
   --input schema.json \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --extra-fields forbid \
   --use-title-as-name \
   --output model.py
@@ -68,12 +68,12 @@ Presets can live in `[tool.datamodel-codegen]` or in a named profile. Profiles a
 ```toml title="pyproject.toml"
 [tool.datamodel-codegen]
 output-model-type = "pydantic_v2.BaseModel"
-preset = "standard-py312-20261019"
+preset = "standard-py312-20261027"
 
 [tool.datamodel-codegen.profiles.api]
 input = "schemas/api.json"
 output = "src/models/api.py"
-preset = "practical-py312-20261019"
+preset = "practical-py312-20261027"
 extra-fields = "forbid"
 
 [tool.datamodel-codegen.profiles.events]
@@ -98,7 +98,7 @@ datamodel-codegen \
   --input schema.json \
   --output model.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset practical-py312-20261019 \
+  --preset practical-py312-20261027 \
   --extra-fields forbid \
   --generate-pyproject-config
 ```
@@ -117,12 +117,12 @@ Use `--ignore-pyproject` when you want to test a preset command without loading 
 
 | Python target | Standard preset | Practical preset |
 |---------------|-----------------|------------------|
-| 3.10 | `standard-py310-20261019` | `practical-py310-20261019` |
-| 3.11 | `standard-py311-20261019` | `practical-py311-20261019` |
-| 3.12 | `standard-py312-20261019` | `practical-py312-20261019` |
-| 3.13 | `standard-py313-20261019` | `practical-py313-20261019` |
-| 3.14 | `standard-py314-20261019` | `practical-py314-20261019` |
-| 3.15 | `standard-py315-20261019` | `practical-py315-20261019` |
+| 3.10 | `standard-py310-20261027` | `practical-py310-20261027` |
+| 3.11 | `standard-py311-20261027` | `practical-py311-20261027` |
+| 3.12 | `standard-py312-20261027` | `practical-py312-20261027` |
+| 3.13 | `standard-py313-20261027` | `practical-py313-20261027` |
+| 3.14 | `standard-py314-20261027` | `practical-py314-20261027` |
+| 3.15 | `standard-py315-20261027` | `practical-py315-20261027` |
 
 Each preset name includes its Python target. Do not add `--target-python-version` just to use a preset; only expanded configuration without `--preset` needs a separate target option.
 
@@ -3433,7 +3433,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `standard-py310-20261019`
+### `standard-py310-20261027`
 
 Recommended modern Python 3.10 output for new projects.
 
@@ -3526,7 +3526,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py311-20261019`
+### `standard-py311-20261027`
 
 Recommended modern Python 3.11 output for new projects.
 
@@ -3621,7 +3621,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py312-20261019`
+### `standard-py312-20261027`
 
 Recommended modern Python 3.12 output for new projects.
 
@@ -3716,7 +3716,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py313-20261019`
+### `standard-py313-20261027`
 
 Recommended modern Python 3.13 output for new projects.
 
@@ -3811,7 +3811,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py314-20261019`
+### `standard-py314-20261027`
 
 Recommended modern Python 3.14 output for new projects.
 
@@ -3906,7 +3906,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py315-20261019`
+### `standard-py315-20261027`
 
 Recommended modern Python 3.15 output for new projects.
 
@@ -4001,11 +4001,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `practical-py310-20261019`
+### `practical-py310-20261027`
 
 Standard Python 3.10 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py310-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py310-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.10
@@ -4109,11 +4109,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py311-20261019`
+### `practical-py311-20261027`
 
 Standard Python 3.11 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py311-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py311-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.11
@@ -4219,11 +4219,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py312-20261019`
+### `practical-py312-20261027`
 
 Standard Python 3.12 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py312-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py312-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.12
@@ -4329,11 +4329,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py313-20261019`
+### `practical-py313-20261027`
 
 Standard Python 3.13 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py313-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py313-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.13
@@ -4439,11 +4439,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py314-20261019`
+### `practical-py314-20261027`
 
 Standard Python 3.14 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py314-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py314-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.14
@@ -4549,11 +4549,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py315-20261019`
+### `practical-py315-20261027`
 
 Standard Python 3.15 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py315-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py315-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.15

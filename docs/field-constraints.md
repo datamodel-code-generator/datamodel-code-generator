@@ -351,7 +351,7 @@ class Model(BaseModel):
     code: Literal["abc"] | None = None
 ```
 
-The 20261019 presets turn it on.
+The 20261027 presets turn it on.
 
 ---
 

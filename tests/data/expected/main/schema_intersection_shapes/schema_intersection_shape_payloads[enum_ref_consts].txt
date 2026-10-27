@@ -376,57 +376,57 @@ msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as
 msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "b" accepted
 msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "a" rejected
 msgspec.Struct --use-site-models-for-constrained-refs --use-single-value-enum-as-const named "c" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 one "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 one "a" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 one "c" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 cst "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 cst "a" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 cst "c" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 own "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 own "a" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 own "c" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 2 accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 1 rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 3 rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 lvl 4 rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 same "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 same "a" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 none "a" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 none "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 none "z" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 items ["b"] accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 items ["a"] rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 items ["c"] rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "b"} accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "a"} rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 map {"k": "c"} rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 named "b" accepted
-pydantic_v2.BaseModel --preset standard-py310-20261019 named "a" rejected
-pydantic_v2.BaseModel --preset standard-py310-20261019 named "c" rejected
-msgspec.Struct --preset standard-py310-20261019 one "b" accepted
-msgspec.Struct --preset standard-py310-20261019 one "a" rejected
-msgspec.Struct --preset standard-py310-20261019 one "c" rejected
-msgspec.Struct --preset standard-py310-20261019 cst "b" accepted
-msgspec.Struct --preset standard-py310-20261019 cst "a" rejected
-msgspec.Struct --preset standard-py310-20261019 cst "c" rejected
-msgspec.Struct --preset standard-py310-20261019 own "b" accepted
-msgspec.Struct --preset standard-py310-20261019 own "a" rejected
-msgspec.Struct --preset standard-py310-20261019 own "c" rejected
-msgspec.Struct --preset standard-py310-20261019 lvl 2 accepted
-msgspec.Struct --preset standard-py310-20261019 lvl 1 rejected
-msgspec.Struct --preset standard-py310-20261019 lvl 3 rejected
-msgspec.Struct --preset standard-py310-20261019 lvl 4 rejected
-msgspec.Struct --preset standard-py310-20261019 same "b" accepted
-msgspec.Struct --preset standard-py310-20261019 same "a" rejected
-msgspec.Struct --preset standard-py310-20261019 none "a" accepted
-msgspec.Struct --preset standard-py310-20261019 none "b" accepted
-msgspec.Struct --preset standard-py310-20261019 none "z" rejected
-msgspec.Struct --preset standard-py310-20261019 items ["b"] accepted
-msgspec.Struct --preset standard-py310-20261019 items ["a"] rejected
-msgspec.Struct --preset standard-py310-20261019 items ["c"] rejected
-msgspec.Struct --preset standard-py310-20261019 map {"k": "b"} accepted
-msgspec.Struct --preset standard-py310-20261019 map {"k": "a"} rejected
-msgspec.Struct --preset standard-py310-20261019 map {"k": "c"} rejected
-msgspec.Struct --preset standard-py310-20261019 named "b" accepted
-msgspec.Struct --preset standard-py310-20261019 named "a" rejected
-msgspec.Struct --preset standard-py310-20261019 named "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 one "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 one "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 one "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 cst "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 cst "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 cst "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 own "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 own "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 own "c" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 lvl 2 accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 lvl 1 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 lvl 3 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 lvl 4 rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 same "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 same "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 none "a" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 none "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 none "z" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 items ["b"] accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 items ["a"] rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 items ["c"] rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 map {"k": "b"} accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 map {"k": "a"} rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 map {"k": "c"} rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 named "b" accepted
+pydantic_v2.BaseModel --preset standard-py310-20261027 named "a" rejected
+pydantic_v2.BaseModel --preset standard-py310-20261027 named "c" rejected
+msgspec.Struct --preset standard-py310-20261027 one "b" accepted
+msgspec.Struct --preset standard-py310-20261027 one "a" rejected
+msgspec.Struct --preset standard-py310-20261027 one "c" rejected
+msgspec.Struct --preset standard-py310-20261027 cst "b" accepted
+msgspec.Struct --preset standard-py310-20261027 cst "a" rejected
+msgspec.Struct --preset standard-py310-20261027 cst "c" rejected
+msgspec.Struct --preset standard-py310-20261027 own "b" accepted
+msgspec.Struct --preset standard-py310-20261027 own "a" rejected
+msgspec.Struct --preset standard-py310-20261027 own "c" rejected
+msgspec.Struct --preset standard-py310-20261027 lvl 2 accepted
+msgspec.Struct --preset standard-py310-20261027 lvl 1 rejected
+msgspec.Struct --preset standard-py310-20261027 lvl 3 rejected
+msgspec.Struct --preset standard-py310-20261027 lvl 4 rejected
+msgspec.Struct --preset standard-py310-20261027 same "b" accepted
+msgspec.Struct --preset standard-py310-20261027 same "a" rejected
+msgspec.Struct --preset standard-py310-20261027 none "a" accepted
+msgspec.Struct --preset standard-py310-20261027 none "b" accepted
+msgspec.Struct --preset standard-py310-20261027 none "z" rejected
+msgspec.Struct --preset standard-py310-20261027 items ["b"] accepted
+msgspec.Struct --preset standard-py310-20261027 items ["a"] rejected
+msgspec.Struct --preset standard-py310-20261027 items ["c"] rejected
+msgspec.Struct --preset standard-py310-20261027 map {"k": "b"} accepted
+msgspec.Struct --preset standard-py310-20261027 map {"k": "a"} rejected
+msgspec.Struct --preset standard-py310-20261027 map {"k": "c"} rejected
+msgspec.Struct --preset standard-py310-20261027 named "b" accepted
+msgspec.Struct --preset standard-py310-20261027 named "a" rejected
+msgspec.Struct --preset standard-py310-20261027 named "c" rejected

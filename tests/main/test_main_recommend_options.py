@@ -720,7 +720,7 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
         ),
         pytest.param(
             [INPUT_PATH / "api.yaml"],
-            ["--input", "api.yaml", "--preset", "standard-py314-20261019"],
+            ["--input", "api.yaml", "--preset", "standard-py314-20261027"],
             ("full",),
             "full/api_preset_argument.txt",
             id="preset-argument",

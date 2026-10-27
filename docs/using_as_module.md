@@ -261,7 +261,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261019",
+    preset="standard-py312-20261027",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),

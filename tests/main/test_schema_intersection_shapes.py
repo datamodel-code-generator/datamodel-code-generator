@@ -79,8 +79,8 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "enum_ref_consts": (
         (DataModelType.PydanticV2BaseModel, (SITE_MODELS, "--use-single-value-enum-as-const")),
         (DataModelType.MsgspecStruct, (SITE_MODELS, "--use-single-value-enum-as-const")),
-        (DataModelType.PydanticV2BaseModel, ("--preset", "standard-py310-20261019")),
-        (DataModelType.MsgspecStruct, ("--preset", "standard-py310-20261019")),
+        (DataModelType.PydanticV2BaseModel, ("--preset", "standard-py310-20261027")),
+        (DataModelType.MsgspecStruct, ("--preset", "standard-py310-20261027")),
     ),
     "enum_refs_unholdable_str": (
         (DataModelType.PydanticV2BaseModel, ("--target-python-version", "3.11")),

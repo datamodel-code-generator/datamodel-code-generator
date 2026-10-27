@@ -24,7 +24,7 @@ Add (1 option)
       null]. With them modeled as definitions, each body gets that model, and a document whose only
       bodies are such schemas generates models instead of failing with 'Models not found in the
       input data'. The same principle gives a component written as a $ref to a recursive schema with
-      sibling keywords the root model a definitions entry of that schema gets, as the 20261019
+      sibling keywords the root model a definitions entry of that schema gets, as the 20261027
       presets do.
       measured: OpenAPI request body {type: [object, null], additionalProperties: {...}} under
       --openapi-scopes paths: 'Models not found in the input data' without the option, a
@@ -47,7 +47,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261019
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261027
 
 Command
   datamodel-codegen --input paths_bodies.yaml --openapi-as-definitions paths-bodies ref-components --openapi-include-paths /owners --openapi-scopes paths --preset standard-py314-20261017

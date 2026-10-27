@@ -1401,10 +1401,10 @@ def test_standard_preset_enum_shapes(output_model_type: str, date: str, expected
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="the 3.14 preset writes type statements")
-@pytest.mark.parametrize("date", ["20261017", "20261019"])
+@pytest.mark.parametrize("date", ["20261017", "20261027"])
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_standard_preset_enums_read_as_their_const(output_model_type: str, date: str, output_file: Path) -> None:
-    """The 20261019 presets read an enum of one value, and an enum that admits its const, as that const.
+    """The 20261027 presets read an enum of one value, and an enum that admits its const, as that const.
 
     The 20261017 presets keep each enum class, as in 0.86.0.
     """
@@ -7302,7 +7302,7 @@ def test_all_exports_includes_generate_config() -> None:
             ("20260909", ("310", "311", "312", "313", "314")),
             ("20261015", ("310", "311", "312", "313", "314", "315")),
             ("20261017", ("310", "311", "312", "313", "314", "315")),
-            ("20261019", ("310", "311", "312", "313", "314", "315")),
+            ("20261027", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

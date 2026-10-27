@@ -213,7 +213,7 @@
           "ref-components"
         ]
       },
-      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'. The same principle gives a component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of that schema gets, as the 20261019 presets do.",
+      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'. The same principle gives a component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of that schema gets, as the 20261027 presets do.",
       "evidence": [
         "OpenAPI request body {type: [object, null], additionalProperties: {...}} under --openapi-scopes paths: 'Models not found in the input data' without the option, a PetsPostRequest root model of dict[str, ...] | None with it",
         "OpenAPI response body of the same shape: 'Models not found in the input data' without the option, a PetsGetResponse root model with it",
@@ -490,7 +490,7 @@
     },
     "check_pattern_maps_strictly": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "class_decorators": {
       "not_recommended": "style",
@@ -608,7 +608,7 @@
     },
     "dedupe_request_response_variants": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "default_value_overrides": {
       "not_recommended": "runtime-behaviour",
@@ -721,7 +721,7 @@
     },
     "filter_literal_values": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "force_optional": {
       "not_recommended": "runtime-behaviour",
@@ -847,7 +847,7 @@
     },
     "intersect_allof_keywords": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "job": {
       "not_recommended": "command",
@@ -855,11 +855,11 @@
     },
     "keep_enum_member_values": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "keep_field_defaults_off_branch_roots": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "keep_model_order": {
       "not_recommended": "style",
@@ -921,7 +921,7 @@
     },
     "omit_redundant_reference_null": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "openapi_as_definitions": {
       "rules": [
@@ -942,7 +942,7 @@
     },
     "order_constructor_fields_by": {
       "not_recommended": "preset",
-      "reason": "final-names applies to dataclass and msgspec.Struct output only, written-defaults to msgspec.Struct output under --strip-default-none only: both are set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "final-names applies to dataclass and msgspec.Struct output only, written-defaults to msgspec.Struct output under --strip-default-none only: both are set by the 20261027 presets; the recommendation starts from a preset."
     },
     "original_field_name_delimiter": {
       "not_recommended": "style",
@@ -982,7 +982,7 @@
     },
     "pin_aliases_with_alias_generator": {
       "not_recommended": "preset",
-      "reason": "pydantic_v2.BaseModel and pydantic_v2.dataclass output: set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "pydantic_v2.BaseModel and pydantic_v2.dataclass output: set by the 20261027 presets; the recommendation starts from a preset."
     },
     "preset": {
       "not_recommended": "preset",
@@ -999,7 +999,7 @@
     },
     "read_nullable_beside_type_list": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
@@ -1145,7 +1145,7 @@
     },
     "tag_msgspec_by_payload_name": {
       "not_recommended": "preset",
-      "reason": "msgspec.Struct output only: set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "msgspec.Struct output only: set by the 20261027 presets; the recommendation starts from a preset."
     },
     "target_pydantic_version": {
       "not_recommended": "target",
@@ -1298,11 +1298,11 @@
     },
     "read_unevaluated_properties": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_single_dict_for_object_maps": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_single_line_docstring": {
       "not_recommended": "preset",
@@ -1315,7 +1315,7 @@
     },
     "use_site_models_for_constrained_refs": {
       "not_recommended": "preset",
-      "reason": "Set by every dated preset from 20261019; the recommendation starts from the preset."
+      "reason": "Set by every dated preset from 20261027; the recommendation starts from the preset."
     },
     "use_specialized_enum": {
       "not_recommended": "preset",
@@ -1354,7 +1354,7 @@
     },
     "use_tuple_for_closed_arrays": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_tuple_for_fixed_items": {
       "not_recommended": "preset",
@@ -1378,7 +1378,7 @@
     },
     "use_typed_map_values_beside_other_types": {
       "not_recommended": "preset",
-      "reason": "Set by the 20261019 presets; the recommendation starts from a preset."
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_typed_nullable_map_values": {
       "not_recommended": "style",

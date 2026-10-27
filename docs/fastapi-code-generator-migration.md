@@ -52,7 +52,7 @@ instead of repeating them.
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261019 \
+      --preset standard-py312-20261027 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \

@@ -16,7 +16,7 @@ Schema  Swagger 2.0
   integer/number/boolean schemas   0
   root schema                      object model 0, title words 0
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add (1 option)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -35,12 +35,12 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261019 --target-python-version 3.14
+  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261027 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "swagger.yaml"
   input-file-type = "jsonschema"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261019"
+  preset = "standard-py314-20261027"
   target-python-version = "3.14"

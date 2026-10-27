@@ -32,7 +32,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261019
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261027
 
 Command
   datamodel-codegen --input paths_bodies.yaml --openapi-scopes api webhooks --preset standard-py314-20261017

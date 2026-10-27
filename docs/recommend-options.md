@@ -141,7 +141,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add (1 option)
   --use-title-as-name   [titles.names-from-unique-titles]
@@ -190,12 +190,12 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input titled_variants.yaml --preset standard-py314-20261019 --target-python-version 3.14 --use-title-as-name
+  datamodel-codegen --input titled_variants.yaml --preset standard-py314-20261027 --target-python-version 3.14 --use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "titled_variants.yaml"
-  preset = "standard-py314-20261019"
+  preset = "standard-py314-20261027"
   target-python-version = "3.14"
   use-title-as-name = true
 ```

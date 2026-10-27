@@ -15,7 +15,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: api, schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   9
 
-Start from  --preset standard-py311-20261019
+Start from  --preset standard-py311-20261027
   already sets --use-single-value-enum-as-const --read-const-beside-enum   [enums.read-as-their-const]
 
 Add (2 options)
@@ -108,7 +108,7 @@ Notes
     here.
 
 Command
-  datamodel-codegen --enum-field-as-literal all --generate-server fastapi --input store.yaml --input-file-type openapi --output app/models.py --preset standard-py311-20261019 --server-model-package app.models --server-output app/server --server-package app.server --use-tag-as-union-variant-name
+  datamodel-codegen --enum-field-as-literal all --generate-server fastapi --input store.yaml --input-file-type openapi --output app/models.py --preset standard-py311-20261027 --server-model-package app.models --server-output app/server --server-package app.server --use-tag-as-union-variant-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -117,7 +117,7 @@ pyproject.toml
   input = "store.yaml"
   input-file-type = "openapi"
   output = "app/models.py"
-  preset = "standard-py311-20261019"
+  preset = "standard-py311-20261027"
   server-model-package = "app.models"
   server-output = "app/server"
   server-package = "app.server"

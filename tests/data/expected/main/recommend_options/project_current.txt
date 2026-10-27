@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add  nothing on top of the preset
 

@@ -91,7 +91,7 @@ Not recommended
       from keys renamed 0.0% of locations
 
 Your configuration
-  --preset standard-py314-20261015: a newer preset is available, standard-py314-20261019
+  --preset standard-py314-20261015: a newer preset is available, standard-py314-20261027
 
 Notes
   - The rules were calibrated on the 20261017 presets.

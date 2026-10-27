@@ -227,7 +227,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -240,7 +240,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \
@@ -612,11 +612,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261019` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261027` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](cli-reference/index.md) for all options. See [Presets](presets.md),
@@ -624,7 +624,7 @@ See [CLI Reference](cli-reference/index.md) for all options. See [Presets](prese
 [`--output-model-type`](cli-reference/model-customization.md#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261019`](presets.md#practical-py312-20261019).
+documentation, use [`practical-py312-20261027`](presets.md#practical-py312-20261027).
 
 **Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
 analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
@@ -769,11 +769,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output model.py
 ```
 
-Use `standard-py312-20261019` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261019` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
+Use `standard-py312-20261027` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261027` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
 
 To choose options on top of a preset for your schema, add `--recommend-options` to the command (experimental); see [Option recommendations](recommend-options.md).
 
@@ -783,7 +783,7 @@ The 20261015 presets keep the 20260909 options and add Python 3.15 targets.
 
 The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal all` for stdlib dataclass and TypedDict output. These models keep raw JSON values without conversion, so enums render as Literal values instead of enum classes. Options of an output model scope take precedence over the options for all output model types.
 
-The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
+The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of one value, and an enum that admits the const beside it, render as that const's Literal value instead of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add `--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and `--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type to a referenced schema gets its own model of the values all parts admit instead of the referenced type.
 
 ## Override Preset Options
 
@@ -792,7 +792,7 @@ Preset options are defaults, not locks. Explicit options override preset-supplie
 ```bash
 datamodel-codegen \
   --input schema.json \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --no-snake-case-field \
   --no-use-annotated \
   --enum-field-as-literal none
@@ -807,7 +807,7 @@ You can add any normal CLI option to a preset command. This is the recommended w
 ```bash
 datamodel-codegen \
   --input schema.json \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --extra-fields forbid \
   --use-title-as-name \
   --output model.py
@@ -820,12 +820,12 @@ Presets can live in `[tool.datamodel-codegen]` or in a named profile. Profiles a
 ```toml title="pyproject.toml"
 [tool.datamodel-codegen]
 output-model-type = "pydantic_v2.BaseModel"
-preset = "standard-py312-20261019"
+preset = "standard-py312-20261027"
 
 [tool.datamodel-codegen.profiles.api]
 input = "schemas/api.json"
 output = "src/models/api.py"
-preset = "practical-py312-20261019"
+preset = "practical-py312-20261027"
 extra-fields = "forbid"
 
 [tool.datamodel-codegen.profiles.events]
@@ -850,7 +850,7 @@ datamodel-codegen \
   --input schema.json \
   --output model.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset practical-py312-20261019 \
+  --preset practical-py312-20261027 \
   --extra-fields forbid \
   --generate-pyproject-config
 ```
@@ -869,12 +869,12 @@ Use `--ignore-pyproject` when you want to test a preset command without loading 
 
 | Python target | Standard preset | Practical preset |
 |---------------|-----------------|------------------|
-| 3.10 | `standard-py310-20261019` | `practical-py310-20261019` |
-| 3.11 | `standard-py311-20261019` | `practical-py311-20261019` |
-| 3.12 | `standard-py312-20261019` | `practical-py312-20261019` |
-| 3.13 | `standard-py313-20261019` | `practical-py313-20261019` |
-| 3.14 | `standard-py314-20261019` | `practical-py314-20261019` |
-| 3.15 | `standard-py315-20261019` | `practical-py315-20261019` |
+| 3.10 | `standard-py310-20261027` | `practical-py310-20261027` |
+| 3.11 | `standard-py311-20261027` | `practical-py311-20261027` |
+| 3.12 | `standard-py312-20261027` | `practical-py312-20261027` |
+| 3.13 | `standard-py313-20261027` | `practical-py313-20261027` |
+| 3.14 | `standard-py314-20261027` | `practical-py314-20261027` |
+| 3.15 | `standard-py315-20261027` | `practical-py315-20261027` |
 
 Each preset name includes its Python target. Do not add `--target-python-version` just to use a preset; only expanded configuration without `--preset` needs a separate target option.
 
@@ -4185,7 +4185,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `standard-py310-20261019`
+### `standard-py310-20261027`
 
 Recommended modern Python 3.10 output for new projects.
 
@@ -4278,7 +4278,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py311-20261019`
+### `standard-py311-20261027`
 
 Recommended modern Python 3.11 output for new projects.
 
@@ -4373,7 +4373,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py312-20261019`
+### `standard-py312-20261027`
 
 Recommended modern Python 3.12 output for new projects.
 
@@ -4468,7 +4468,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py313-20261019`
+### `standard-py313-20261027`
 
 Recommended modern Python 3.13 output for new projects.
 
@@ -4563,7 +4563,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py314-20261019`
+### `standard-py314-20261027`
 
 Recommended modern Python 3.14 output for new projects.
 
@@ -4658,7 +4658,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `standard-py315-20261019`
+### `standard-py315-20261027`
 
 Recommended modern Python 3.15 output for new projects.
 
@@ -4753,11 +4753,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
 
-### `practical-py310-20261019`
+### `practical-py310-20261027`
 
 Standard Python 3.10 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py310-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py310-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.10
@@ -4861,11 +4861,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py311-20261019`
+### `practical-py311-20261027`
 
 Standard Python 3.11 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py311-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py311-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.11
@@ -4971,11 +4971,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py312-20261019`
+### `practical-py312-20261027`
 
 Standard Python 3.12 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py312-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py312-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.12
@@ -5081,11 +5081,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py313-20261019`
+### `practical-py313-20261027`
 
 Standard Python 3.13 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py313-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py313-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.13
@@ -5191,11 +5191,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py314-20261019`
+### `practical-py314-20261027`
 
 Standard Python 3.14 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py314-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py314-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.14
@@ -5301,11 +5301,11 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
 
-### `practical-py315-20261019`
+### `practical-py315-20261027`
 
 Standard Python 3.15 output plus practical naming, deduplication, and schema documentation.
 
-This immutable preset extends `standard-py315-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
+This immutable preset extends `standard-py315-20261027` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.
 
 - **Requires separate target Python version:** no
 - **Target Python version:** 3.15
@@ -5558,7 +5558,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261019
+Start from  --preset standard-py314-20261027
 
 Add (1 option)
   --use-title-as-name   [titles.names-from-unique-titles]
@@ -5607,12 +5607,12 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input titled_variants.yaml --preset standard-py314-20261019 --target-python-version 3.14 --use-title-as-name
+  datamodel-codegen --input titled_variants.yaml --preset standard-py314-20261027 --target-python-version 3.14 --use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "titled_variants.yaml"
-  preset = "standard-py314-20261019"
+  preset = "standard-py314-20261027"
   target-python-version = "3.14"
   use-title-as-name = true
 ```
@@ -12092,7 +12092,7 @@ class Model(BaseModel):
     code: Literal["abc"] | None = None
 ```
 
-The 20261019 presets turn it on.
+The 20261027 presets turn it on.
 
 ---
 
@@ -13684,7 +13684,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261019",
+    preset="standard-py312-20261027",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),
@@ -15410,7 +15410,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261019"
+    preset = "standard-py312-20261027"
     output = "app/models.py"
     generate-server = "fastapi"
     server-output = "app/server"
@@ -15433,7 +15433,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261019 \
+      --preset standard-py312-20261027 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \
@@ -16424,7 +16424,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261019",
+    preset="standard-py312-20261027",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),
@@ -16461,7 +16461,7 @@ models only.
 input-file-type = "openapi"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
-preset = "standard-py312-20261019"
+preset = "standard-py312-20261027"
 disable-timestamp = true
 
 [tool.datamodel-codegen.profiles.server]
@@ -16549,7 +16549,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --output app/server/models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --openapi-scopes schemas api \
   --generate-server fastapi \
   --server-output app/server \
@@ -16978,7 +16978,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261019 \
+  --preset standard-py312-20261027 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -17197,7 +17197,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261019"
+    preset = "standard-py312-20261027"
     output = "app/models.py"
     generate-client = "httpx2"
     client-output = "app/client"
@@ -17220,7 +17220,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261019 \
+      --preset standard-py312-20261027 \
       --output app/models.py \
       --generate-client httpx2 \
       --client-output app/client \
@@ -18657,7 +18657,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261019",
+    preset="standard-py312-20261027",
     output=Path("app/models.py"),
     generate_client=ClientType.HTTPX2,
     client_output=Path("app/client"),
@@ -22198,7 +22198,7 @@ instead of repeating them.
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261019 \
+      --preset standard-py312-20261027 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \
@@ -56357,7 +56357,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
       integer/number/boolean schemas   5
 
-    Start from  --preset standard-py310-20261019
+    Start from  --preset standard-py310-20261027
 
     Add (5 options)
       --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -56486,7 +56486,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       - The rules were calibrated on the 20261017 presets.
 
     Command
-      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261019 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
+      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261027 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
 
     pyproject.toml
       [tool.datamodel-codegen]
@@ -56494,7 +56494,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       enum-field-as-literal = "all"
       input = "api.yaml"
       input-file-type = "openapi"
-      preset = "standard-py310-20261019"
+      preset = "standard-py310-20261027"
       reuse-model = true
       treat-dot-as-module = false
       use-tag-as-union-variant-name = true
@@ -65389,7 +65389,7 @@ Pass the option of a section below to enable that change on its own:
 datamodel-codegen --input schema.json --use-tuple-for-closed-arrays --output model.py
 ```
 
-To enable every option in this section at once, use the `20261019` preset (see [Presets](presets.md)); `--use-typed-map-values-beside-other-types` takes effect only together with `--use-typed-nullable-map-values`, which no preset sets. Explicit options override preset-supplied values, and options can be added on top of a preset.
+To enable every option in this section at once, use the `20261027` preset (see [Presets](presets.md)); `--use-typed-map-values-beside-other-types` takes effect only together with `--use-typed-nullable-map-values`, which no preset sets. Explicit options override preset-supplied values, and options can be added on top of a preset.
 
 !!! note "Class"
     Every section below has the class **opt-in**: the option changes what the generated models accept or reject, how they are named or ordered, or which types they use. Without the option the output is byte-identical to 0.86.0.
@@ -65401,7 +65401,7 @@ See also: [Presets](presets.md), [Deprecations](deprecations.md), [CLI Reference
 | | |
 |---|---|
 | Option | `--filter-literal-values` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5100](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5100) |
@@ -65434,7 +65434,7 @@ class Level(IntEnum):
 | | |
 |---|---|
 | Option | `--read-const-beside-enum` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5101](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5101), [#5102](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5102) |
@@ -65462,7 +65462,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--use-tuple-for-closed-arrays` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5103](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5103) |
@@ -65490,7 +65490,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--pin-aliases-with-alias-generator` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5104](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5104) |
@@ -65522,7 +65522,7 @@ class AliasGeneratorModel:
 | | |
 |---|---|
 | Option | `--tag-msgspec-by-payload-name` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5105](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5105) |
@@ -65550,7 +65550,7 @@ class Cat(Struct, tag_field="pet-kind", tag="cat"):
 | | |
 |---|---|
 | Option | `--order-constructor-fields-by final-names` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5106](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5106) |
@@ -65582,7 +65582,7 @@ class Child(Base):
 | | |
 |---|---|
 | Option | `--use-site-models-for-constrained-refs` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5107](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5107) |
@@ -65621,7 +65621,7 @@ class Order(BaseModel):
 | | |
 |---|---|
 | Option | `--intersect-allof-keywords` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5108](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5108), [#4951](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4951) |
@@ -65649,7 +65649,7 @@ class Holder(RootModel[dict[str, str]]):
 | | |
 |---|---|
 | Option | `--use-single-dict-for-object-maps` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5113](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5113) |
@@ -65677,7 +65677,7 @@ class Model(RootModel[dict[constr(pattern=r'^i-|^n-'), str | int]]):
 | | |
 |---|---|
 | Option | `--check-pattern-maps-strictly` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5152](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5152) |
@@ -65705,7 +65705,7 @@ class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 | | |
 |---|---|
 | Option | `--read-unevaluated-properties` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5114](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5114) |
@@ -65736,7 +65736,7 @@ class Resource(BaseModel):
 | | |
 |---|---|
 | Option | `--dedupe-request-response-variants` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115) |
@@ -65776,7 +65776,7 @@ class ParentRequest(BaseModel):
 | | |
 |---|---|
 | Option | `--order-constructor-fields-by written-defaults` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5116](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5116) |
@@ -65808,7 +65808,7 @@ class Spelling(Struct):
 | | |
 |---|---|
 | Option | `--read-nullable-beside-type-list` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5117](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5117), [#5052](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5052) |
@@ -65836,7 +65836,7 @@ class U1(RootModel[U | str | None | MISSING]):
 | | |
 |---|---|
 | Option | `--keep-field-defaults-off-branch-roots` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5118](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5118), [#4987](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4987) |
@@ -65864,7 +65864,7 @@ class Weight(RootModel[float]):
 | | |
 |---|---|
 | Option | `--omit-redundant-reference-null` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5120](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5120), [#5081](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5081) |
@@ -65892,7 +65892,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--use-typed-map-values-beside-other-types` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5094), [#5127](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5127) |
@@ -65920,7 +65920,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--keep-enum-member-values` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5133](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5133) |
@@ -65950,7 +65950,7 @@ class Level(Enum):
 | | |
 |---|---|
 | Option | `--omit-redundant-constraints` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#4525](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4525), [#4875](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4875) |
@@ -65980,7 +65980,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--openapi-as-definitions paths-bodies` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5155](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5155) |
@@ -66007,7 +66007,7 @@ class PetsPostRequest(RootModel[dict[str, Any] | None]):
 | | |
 |---|---|
 | Option | `--openapi-as-definitions ref-components` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5176](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5176), [#5162](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5162) |

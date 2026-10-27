@@ -71,7 +71,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset practical-py314-20261017: a newer preset is available, practical-py314-20261019
+  --preset practical-py314-20261017: a newer preset is available, practical-py314-20261027
   practical-py314-20261017 sets --use-title-as-name to true; no option sets it to false   [titles.keys-when-titles-collide]
 
 Command

@@ -403,7 +403,7 @@ Pass the option of a section below to enable that change on its own:
 datamodel-codegen --input schema.json --use-tuple-for-closed-arrays --output model.py
 ```
 
-To enable every option in this section at once, use the `20261019` preset (see [Presets](presets.md)); `--use-typed-map-values-beside-other-types` takes effect only together with `--use-typed-nullable-map-values`, which no preset sets. Explicit options override preset-supplied values, and options can be added on top of a preset.
+To enable every option in this section at once, use the `20261027` preset (see [Presets](presets.md)); `--use-typed-map-values-beside-other-types` takes effect only together with `--use-typed-nullable-map-values`, which no preset sets. Explicit options override preset-supplied values, and options can be added on top of a preset.
 
 !!! note "Class"
     Every section below has the class **opt-in**: the option changes what the generated models accept or reject, how they are named or ordered, or which types they use. Without the option the output is byte-identical to 0.86.0.
@@ -415,7 +415,7 @@ See also: [Presets](presets.md), [Deprecations](deprecations.md), [CLI Reference
 | | |
 |---|---|
 | Option | `--filter-literal-values` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5100](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5100) |
@@ -448,7 +448,7 @@ class Level(IntEnum):
 | | |
 |---|---|
 | Option | `--read-const-beside-enum` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5101](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5101), [#5102](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5102) |
@@ -476,7 +476,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--use-tuple-for-closed-arrays` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5103](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5103) |
@@ -504,7 +504,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--pin-aliases-with-alias-generator` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5104](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5104) |
@@ -536,7 +536,7 @@ class AliasGeneratorModel:
 | | |
 |---|---|
 | Option | `--tag-msgspec-by-payload-name` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5105](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5105) |
@@ -564,7 +564,7 @@ class Cat(Struct, tag_field="pet-kind", tag="cat"):
 | | |
 |---|---|
 | Option | `--order-constructor-fields-by final-names` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5106](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5106) |
@@ -596,7 +596,7 @@ class Child(Base):
 | | |
 |---|---|
 | Option | `--use-site-models-for-constrained-refs` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5107](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5107) |
@@ -635,7 +635,7 @@ class Order(BaseModel):
 | | |
 |---|---|
 | Option | `--intersect-allof-keywords` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5108](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5108), [#4951](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4951) |
@@ -663,7 +663,7 @@ class Holder(RootModel[dict[str, str]]):
 | | |
 |---|---|
 | Option | `--use-single-dict-for-object-maps` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5113](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5113) |
@@ -691,7 +691,7 @@ class Model(RootModel[dict[constr(pattern=r'^i-|^n-'), str | int]]):
 | | |
 |---|---|
 | Option | `--check-pattern-maps-strictly` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5152](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5152) |
@@ -719,7 +719,7 @@ class Labels(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 | | |
 |---|---|
 | Option | `--read-unevaluated-properties` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5114](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5114) |
@@ -750,7 +750,7 @@ class Resource(BaseModel):
 | | |
 |---|---|
 | Option | `--dedupe-request-response-variants` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115) |
@@ -790,7 +790,7 @@ class ParentRequest(BaseModel):
 | | |
 |---|---|
 | Option | `--order-constructor-fields-by written-defaults` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5116](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5116) |
@@ -822,7 +822,7 @@ class Spelling(Struct):
 | | |
 |---|---|
 | Option | `--read-nullable-beside-type-list` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5117](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5117), [#5052](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5052) |
@@ -850,7 +850,7 @@ class U1(RootModel[U | str | None | MISSING]):
 | | |
 |---|---|
 | Option | `--keep-field-defaults-off-branch-roots` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5118](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5118), [#4987](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4987) |
@@ -878,7 +878,7 @@ class Weight(RootModel[float]):
 | | |
 |---|---|
 | Option | `--omit-redundant-reference-null` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5120](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5120), [#5081](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5081) |
@@ -906,7 +906,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--use-typed-map-values-beside-other-types` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5094), [#5127](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5127) |
@@ -934,7 +934,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--keep-enum-member-values` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5133](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5133) |
@@ -964,7 +964,7 @@ class Level(Enum):
 | | |
 |---|---|
 | Option | `--omit-redundant-constraints` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#4525](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4525), [#4875](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4875) |
@@ -994,7 +994,7 @@ class Model(BaseModel):
 | | |
 |---|---|
 | Option | `--openapi-as-definitions paths-bodies` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5155](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5155) |
@@ -1021,7 +1021,7 @@ class PetsPostRequest(RootModel[dict[str, Any] | None]):
 | | |
 |---|---|
 | Option | `--openapi-as-definitions ref-components` |
-| Preset | `20261019` |
+| Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
 | Issue | [#5176](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5176), [#5162](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5162) |
