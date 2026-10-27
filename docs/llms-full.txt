@@ -67021,7 +67021,10 @@ they read) are derived values: the memo keeps each with the revisions it read, t
 for every model its type references, that model's own and its fields' (`ParseMemo.derived`). The store's mutations
 bump what they write (`bump_field`, `bump_node`, `bump_model`, and the invalidation methods above); a node bump reaches
 every field whose value read the node or its member list and the field that holds it. `rename_model` and
-`update_model_reference` bump the model, so the fields that reference it compute again. `DataModel.imports` joins the
+`update_model_reference` bump the model, so the fields that reference it compute again, and so does a model's
+constructor, which names the model the source of its reference. Every bump moves the memo's clock: a value whose
+revisions were seen to hold at the current clock is returned without comparing them again, and the references of a
+field's type walked at the current clock are not walked again. `DataModel.imports` joins the
 fields' kept imports with the model's own (`_additional_imports`) at each read; the snapshot of the IMPORTS phase is
 where they become final. Fields and models of classes outside the package, and every field of a parse by a parser
 class outside it, compute both at each read (`DataModel.clear_imports_cache` is a deprecated no-op).
