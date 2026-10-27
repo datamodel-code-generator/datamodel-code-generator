@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: A component that is only a $ref to itself, named by a class with a field name that is no identifier
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/A'
+    Holder:
+      type: object
+      properties:
+        a-b:
+          $ref: '#/components/schemas/A'

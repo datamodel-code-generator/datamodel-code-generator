@@ -1274,6 +1274,40 @@ def test_malformed_input_error_messages(
                 ("pydantic_v2.BaseModel", "C", "Pydantic cannot build"),
                 ("pydantic_v2.dataclass", "Model", "Pydantic cannot build"),
                 ("msgspec.Struct", "Model", "msgspec cannot decode"),
+                ("dataclasses.dataclass", "C", "Python cannot evaluate as the module runs"),
+                ("typing.TypedDict", "C", "Python cannot evaluate as the module runs"),
+            )
+        ),
+        *(
+            pytest.param(
+                fixture_name,
+                "openapi",
+                ["--output-model-type", output_model_type, *extra_args],
+                f"{user} uses a $ref chain that loops back without reaching a schema, which "
+                f"Python cannot evaluate as the module runs: A ({fixture_name}#/components/schemas/A) -> "
+                f"A ({fixture_name}#/components/schemas/A)",
+                id=f"ref-self-reference-{case}-{output_model_type}",
+            )
+            for case, fixture_name, output_model_type, extra_args, user in (
+                ("unused-alias", "ref_self_reference_unused.yaml", "pydantic_v2.dataclass", [], "C"),
+                ("unused-alias", "ref_self_reference_unused.yaml", "msgspec.Struct", [], "C"),
+                ("unused-alias", "ref_self_reference_unused.yaml", "dataclasses.dataclass", [], "C"),
+                ("unused-alias", "ref_self_reference_unused.yaml", "typing.TypedDict", [], "C"),
+                ("functional", "ref_self_reference_functional.yaml", "typing.TypedDict", [], "Holder"),
+                (
+                    "eager-annotations",
+                    "ref_self_reference.yaml",
+                    "dataclasses.dataclass",
+                    ["--disable-future-imports"],
+                    "Holder",
+                ),
+                (
+                    "eager-annotations",
+                    "ref_self_reference.yaml",
+                    "typing.TypedDict",
+                    ["--disable-future-imports"],
+                    "Holder",
+                ),
             )
         ),
         pytest.param(

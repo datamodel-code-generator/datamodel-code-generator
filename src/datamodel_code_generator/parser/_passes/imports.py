@@ -30,7 +30,7 @@ from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
-from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
 from datamodel_code_generator.parser._imports_plan import (
     BindingRequest,
@@ -894,41 +894,66 @@ def _alias_cycles(models: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...
     return cycles
 
 
-def reject_alias_cycles_without_schema(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
-    """Reject a class of output that Pydantic builds or msgspec decodes when it reaches a ``$ref`` chain looping back.
+def _loop_error(model: DataModel, cycle: Sequence[DataModel], failure: str) -> Error:
+    """Return the error for a model that uses a ``$ref`` chain looping back without reaching a schema."""
+    chain = " -> ".join(f"{member.class_name} ({redact_reference(member.path)})" for member in (*cycle, cycle[0]))
+    return Error(
+        f"{model.class_name} uses a $ref chain that loops back without reaching a schema, which {failure}: {chain}"
+    )
+
+
+def _evaluated_data_types(model: DataModel, *, evaluates_annotations: bool) -> Iterator[DataType]:
+    """Yield the data types that the statements defining a model evaluate as the module runs.
+
+    A ``type`` statement defers its value. Any other type alias evaluates it, and so does the functional TypedDict
+    with its fields; every annotation of a class is evaluated unless the module defers annotations.
+    """
+    if isinstance(model, TypeStatement):
+        return
+    if evaluates_annotations or isinstance(model, TypeAliasBase):
+        yield from model.all_data_types
+        return
+    for field in model.fields_evaluated_at_definition():
+        yield from field.data_type.all_data_types
+
+
+def reject_alias_cycles_without_schema(
+    parser: FinishHost, contexts: Sequence[ModuleContextView], *, evaluates_annotations: bool
+) -> None:
+    """Reject output that Pydantic builds, msgspec decodes or Python imports when it names a looping ``$ref`` chain.
 
     Such a chain never reaches a schema. Its type aliases only name each other: Pydantic cannot build a type alias
     whose whole value is the next alias of such a cycle (``circular-reference-schema``), and msgspec resolves such an
     alias to a string naming the next one, which it cannot decode. A root model whose root names the model itself has
     no type either: deduplication dropped it while its users still name it (``_self_named_root_models``). A class
     whose fields reach one, directly or through type aliases, could never be built or decode a value. Aliases that no
-    class reaches keep their output.
+    class reaches keep their output, unless the module evaluates the name of a dropped root model as it runs, in an
+    alias or, with ``evaluates_annotations``, in a class: it then fails to import, whatever reads the output.
     """
+    self_named = {id(model): (model,) for model in parser._self_named_root_models}  # noqa: SLF001
+    reads_annotations = parser.data_model_type._READ_BY_PYDANTIC or parser.data_model_type._READ_BY_MSGSPEC  # noqa: SLF001
     models = [model for context in contexts for model in context.models]
-    cycles = _alias_cycles(models) | {id(model): (model,) for model in parser._self_named_root_models}  # noqa: SLF001
-    if not cycles:
-        return
-    failure = "Pydantic cannot build" if parser.data_model_type._READ_BY_PYDANTIC else "msgspec cannot decode"  # noqa: SLF001
-    for model in models:
-        if isinstance(model, TypeAliasBase):
-            continue
-        pending = [*model.all_data_types]
-        seen: set[int] = set()
-        while pending:
-            if (reference := pending.pop().reference) is None or id(source := reference.source) in seen:
+    if reads_annotations and (cycles := _alias_cycles(models) | self_named):
+        failure = "Pydantic cannot build" if parser.data_model_type._READ_BY_PYDANTIC else "msgspec cannot decode"  # noqa: SLF001
+        for model in models:
+            if isinstance(model, TypeAliasBase):
                 continue
-            if (cycle := cycles.get(id(source))) is not None:
-                chain = " -> ".join(
-                    f"{member.class_name} ({redact_reference(member.path)})" for member in (*cycle, cycle[0])
-                )
-                msg = (
-                    f"{model.class_name} uses a $ref chain that loops back without reaching a schema, "
-                    f"which {failure}: {chain}"
-                )
-                raise Error(msg)
-            seen.add(id(source))
-            if isinstance(source, TypeAliasBase):
-                pending.extend(source.all_data_types)
+            pending = [*model.all_data_types]
+            seen: set[int] = set()
+            while pending:
+                if (reference := pending.pop().reference) is None or id(source := reference.source) in seen:
+                    continue
+                if (cycle := cycles.get(id(source))) is not None:
+                    raise _loop_error(model, cycle, failure)
+                seen.add(id(source))
+                if isinstance(source, TypeAliasBase):
+                    pending.extend(source.all_data_types)
+    if not self_named:
+        return
+    for model in models:
+        for data_type in _evaluated_data_types(model, evaluates_annotations=evaluates_annotations):
+            if (reference := data_type.reference) is not None and (cycle := self_named.get(id(reference.source))):
+                raise _loop_error(model, cycle, "Python cannot evaluate as the module runs")
 
 
 def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:

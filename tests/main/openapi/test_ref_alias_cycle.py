@@ -141,3 +141,27 @@ def test_ref_sibling_cycle_description_collapse_root_models_msgspec_decode(outpu
         with pytest.raises(msgspec.ValidationError, match=r"Expected `int`, got `str` - at `\$\.count`"):
             msgspec.json.decode(json.dumps(invalid), type=model)
     assert_output(f"{parsed!r}\n", name="parsed")
+
+
+@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "typing.TypedDict"])
+def test_ref_self_reference_unnamed_imports(output_file: Path, output_model_type: str) -> None:
+    """Keep the output where no type names a component that is only a $ref to itself: the module imports."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "malformed" / "ref_self_reference_unnamed.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type],
+    )
+    with _generated_model(output_file, "ref_self_reference_unnamed", "Holder") as model:
+        assert_output(f"{model(labels=['x'], tree=[[]])!r}\n", name="instance")
+
+
+@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "typing.TypedDict"])
+def test_ref_self_reference_unnamed_type_statement(output_file: Path, output_model_type: str) -> None:
+    """Keep the ``type`` statements beside a component that is only a $ref to itself, which no type names."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "malformed" / "ref_self_reference_unnamed.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, "--target-python-version", "3.12"],
+    )

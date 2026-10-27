@@ -8,6 +8,14 @@ pydantic-dataclass	main/openapi/ref_alias_cycle/no_class_uses[pydantic-dataclass
 [test_ref_alias_cycle_no_class_uses_msgspec]
 	main/openapi/ref_alias_cycle/no_class_uses_msgspec.parsed.txt
 	main/openapi/ref_alias_cycle/no_class_uses_msgspec.py
+[test_ref_self_reference_unnamed_imports]
+dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[dataclasses.dataclass].instance.txt
+dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[dataclasses.dataclass].py
+typing.TypedDict	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[typing.TypedDict].instance.txt
+typing.TypedDict	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[typing.TypedDict].py
+[test_ref_self_reference_unnamed_type_statement]
+dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_type_statement[dataclasses.dataclass].py
+typing.TypedDict	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_type_statement[typing.TypedDict].py
 [test_ref_sibling_cycle_description_collapse_root_models]
 dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_sibling_cycle_description_collapse_root_models[dataclasses.dataclass].py
 msgspec.Struct	main/openapi/ref_alias_cycle/ref_sibling_cycle_description_collapse_root_models[msgspec.Struct].py

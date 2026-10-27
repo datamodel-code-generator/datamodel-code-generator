@@ -1285,7 +1285,7 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
         RenderFact.TYPE_ALIAS_BODY,
         RenderFact.MODULE_MEMBERSHIP,
     ),
-    condition="output that Pydantic builds or msgspec decodes",
+    condition="output that Pydantic builds or msgspec decodes, or a root model that names itself was dropped",
 )
 WARN_ABOUT_DROPPED_CONSTRAINTS = PassDecl(
     "warn_about_dropped_constraints",

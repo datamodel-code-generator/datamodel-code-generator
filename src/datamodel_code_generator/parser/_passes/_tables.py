@@ -865,9 +865,13 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             ),
             PassSpec(
                 decls.REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA,
-                lambda self, run: imports.reject_alias_cycles_without_schema(self, run.contexts),
+                lambda self, run: imports.reject_alias_cycles_without_schema(
+                    self, run.contexts, evaluates_annotations=not run.config.use_deferred_annotations
+                ),
                 when=lambda self, _: (
-                    self.data_model_type._READ_BY_PYDANTIC or self.data_model_type._READ_BY_MSGSPEC  # noqa: SLF001
+                    self.data_model_type._READ_BY_PYDANTIC  # noqa: SLF001
+                    or self.data_model_type._READ_BY_MSGSPEC  # noqa: SLF001
+                    or bool(self._self_named_root_models)
                 ),
             ),
             PassSpec(
