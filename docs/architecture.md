@@ -257,12 +257,12 @@ adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 `$anchor` and `$dynamicAnchor`) and returns one frozen `DocumentResources` record, from which
 `ResourceRegistry.register` fills the registry dicts L1 resolves references through; then `$ref`s that resolve through
-an embedded `$id` are rewritten copy-on-write (`_rewrite_schema_resource_refs`), each `$ref` and `$dynamicRef` keyword
-becomes a `ResolvedRef` (a `str` equal to the value, carrying its `RefEdge`: the holder's location and document;
-`SchemaGraphBuilder.with_ref_edges`, copy-on-write, only at the keywords that hold schemas, never inside instance data,
+an embedded `$id` are rewritten copy-on-write (`_rewrite_schema_resource_refs`), and one walk of the prepared document
+(`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-output)) indexes the location of every object and
+makes each `$ref` and `$dynamicRef` keyword a `ResolvedRef` (a `str` equal to the value, carrying its `RefEdge`: the
+holder's location and document; copy-on-write, only at the keywords that hold schemas, never inside instance data,
 examples, extensions, OAuth scopes, discriminator mappings or unknown keywords; `JsonSchemaObject` and the OpenAPI
-`ReferenceObject` keep the edge through a wrap validator), and the location of every object of the prepared document is
-indexed (`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-output)).
+`ReferenceObject` keep the edge through a wrap validator).
 Referenced documents go through the same steps when `resolve_ref` loads them: documents enter the graph in the order
 L1 asks for them, and the graph never loads one by itself. With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH=1`, which
 `tests/conftest.py` sets for the test suite, each edge is compared with its resolution at the sites: the key `get_ref_data_type` and `resolve_ref` would compute in their own context equals the edge's key, unless that

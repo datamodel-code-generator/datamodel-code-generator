@@ -16250,13 +16250,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return raw
         root = SchemaLocation(self.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
         indexed = graph.index_document(
-            graph.with_ref_edges(
-                raw,
-                root,
-                DocumentId(self._schema_resource_document(path_parts)),
-                self._ref_reading("root"),
-            ),
-            root,
+            raw, root, DocumentId(self._schema_resource_document(path_parts)), self._ref_reading("root")
         )
         if (entry := self._documents_as_written.get(id(raw))) is not None and entry[0] is raw:
             self._documents_as_written[id(indexed)] = indexed, entry[1]
@@ -16278,10 +16272,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return f"#{location.pointer}{ref.partition('#')[2].removeprefix(container)}"
 
         document = DocumentId(self._schema_resource_document([location.document]))
-        edged = graph.with_ref_edges(
-            converted, location, document, self._ref_reading("object"), ConvertedRefs(mounted_ref, home)
-        )
-        return graph.mount(edged, location)
+        return graph.mount(converted, location, document, self._ref_reading("object"), ConvertedRefs(mounted_ref, home))
 
     def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Add $id and $anchor to model resolver."""

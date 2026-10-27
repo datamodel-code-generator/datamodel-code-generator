@@ -14,11 +14,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, NewType, TypeAlias, final
 
-from datamodel_code_generator._model_keys import FieldKey, NodeKey
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey
     from datamodel_code_generator.types import DataType
 
 SiteKey = NewType("SiteKey", int)
