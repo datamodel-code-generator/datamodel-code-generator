@@ -1179,7 +1179,7 @@ class _ParseChecks(ParseChecksPort):
     @property
     @override
     def armed(self) -> bool:
-        """Return whether L1 is over, so that writes are watched."""
+        """Whether L1 is over, so that writes are watched."""
         return self._store is not None
 
     @override

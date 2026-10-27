@@ -11,10 +11,10 @@ DataModelType.DataclassesDataclass	main/generation_platform/windows/DataclassesD
 DataModelType.DataclassesDataclass	main/generation_platform/windows/DataclassesDataclass.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/windows/DataclassesDataclass@builtin-python3.11.txt
 DataModelType.MsgspecStruct	main/generation_platform/MsgspecStruct.txt	?
 DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?
-DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.10	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
+DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.10	= main/generation_platform/windows/MsgspecStruct@builtin-python3.13.txt
 DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.11	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
-DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.12	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
-DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.13	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
+DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.12	= main/generation_platform/windows/MsgspecStruct@builtin-python3.13.txt
+DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.13	= main/generation_platform/windows/MsgspecStruct@builtin-python3.13.txt
 DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.14	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
 DataModelType.MsgspecStruct	main/generation_platform/windows/MsgspecStruct.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/windows/MsgspecStruct@builtin-python3.10.txt
 DataModelType.PydanticV2BaseModel	main/generation_platform/PydanticV2BaseModel.txt	?
