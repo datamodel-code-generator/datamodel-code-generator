@@ -22,10 +22,11 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
-owner decision) and `release_note`. With `--check` the run fails on a violation, on an entry without a decision, on
-a table whose base is not BASE and on a stale entry: one that accepted no change in a run that has a cell it covers,
-or, in a run of the whole tier, one that covers no cell. Cells the allowlist covers all run in shard 1, so that
-shard judges staleness exactly; `--select` narrows the inputs, so a selection may leave an entry's changes out.
+public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`. With `--check` the run fails
+on a violation, on an entry without such a decision, on a table whose base is not BASE and on a stale entry: one
+that accepted no change in a run that has a cell it covers, or, in a run of the whole tier, one that covers no cell.
+Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
+inputs, so a selection may leave an entry's changes out.
 """
 
 from __future__ import annotations
@@ -198,6 +199,18 @@ def latest_tag() -> str:
     return (_git("describe", "--tags", "--abbrev=0") or "").strip()
 
 
+def archive_version(revision: str) -> str:
+    """Return the version the build hook writes for a revision (`git archive` leaves the version file out)."""
+    described = (_git("describe", "--tags", "--long", "--match", "[0-9]*", "--exclude", "*+*", revision) or "").strip()
+    if described.count("-") < 2:  # ruff: ignore[magic-value-comparison]
+        return f"0.0.0+g{revision[:9]}"
+    tag, distance, commit = described.rsplit("-", 2)
+    if distance == "0":
+        return tag
+    major_minor, _, patch = tag.rpartition(".")
+    return f"{major_minor}.{int(patch) + 1}.dev{distance}+{commit}"
+
+
 def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) -> Candidate:
     """Resolve a checkout path or a revision to a root, an interpreter and the environment to run it with."""
     env = {**os.environ, "PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
@@ -220,6 +233,9 @@ def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) ->
             ["git", "archive", revision, "src", "tests"], cwd=ROOT, capture_output=True, check=True
         )
         subprocess.run(["tar", "-x", "-C", str(root)], input=archive.stdout, check=True)
+        version_file = root / "src" / "datamodel_code_generator" / "_version.py"
+        if not version_file.exists():
+            version_file.write_text(f"__version__ = {archive_version(revision)!r}\n", encoding="utf-8")
         (root / ".complete").touch()
     env["PYTHONPATH"] = str(root / "src")
     return Candidate(root, (python or Path(sys.executable)).absolute(), env, revision)

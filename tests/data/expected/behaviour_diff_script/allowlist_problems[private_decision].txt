@@ -1,0 +1,1 @@
+allowlist entry 1 (*property_names*): decision 'owner chat 2026-10-26' is not a list of public PR or issue references (#1234, #1235)

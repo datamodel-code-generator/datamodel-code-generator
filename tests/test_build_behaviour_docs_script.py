@@ -107,7 +107,7 @@ ACCEPTED_ENTRY = {
     "aspects": ["type"],
     "match": "AnchoredChild",
     "reason": "spec-correct $anchor target; 0.86.0 depended on file read order",
-    "decision": "#5088 (kept and announced in the 0.87.0 release notes)",
+    "decision": "#5088",
     "release_note": "an external $anchor resolves to the anchored schema regardless of file read order",
 }
 ACCEPTED_EXAMPLE = {

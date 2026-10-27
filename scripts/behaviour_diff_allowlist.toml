@@ -1,6 +1,7 @@
 # Owner-accepted default-output behaviour changes against one base release, read by scripts/behaviour_diff.py.
 # Shrink-only within a release cycle: `behaviour_diff.py gate --check` fails on an entry that accepts no change
-# (stale), on an entry without `decision` (the owner decision) and on a table whose base is not the gate's base.
+# (stale), on an entry whose `decision` is not the public PR or issue references of the owner decision (#1234, #1235)
+# and on a table whose base is not the gate's base.
 # Replace the whole table when the base moves to the next release, which contains the accepted changes.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
 # decision, release_note.
@@ -11,13 +12,117 @@ input = "*property_names*"
 aspects = [ "type", "config", "parsed-value" ]
 match = "dict\\[|regex_engine|parsed value"
 reason = "propertyNames dict keys RootModel -> constrained str: 0.86.0 keys are unhashable (crash class)"
-decision = "#5017 (crash fix class)"
+decision = "#5017"
 release_note = "propertyNames keys are typed as constrained str instead of a RootModel that could not be hashed"
 
 [[accepted]]
 input = "tests/data/jsonschema/external_anchor"
 aspects = [ "type" ]
 match = "AnchoredChild"
-reason = "spec-correct $anchor target; 0.86.0 depended on file read order"
-decision = "#5088 (kept and announced in the 0.87.0 release notes)"
+reason = "spec-correct $anchor target; 0.86.0 depended on file read order (announced in the 0.87.0 release notes)"
+decision = "#5088"
 release_note = "an external $anchor resolves to the anchored schema regardless of file read order"
+
+# --- #5001: string keywords on non-string types (crash class) -------------------------------------------------------
+# 0.86.0 wrote maxLength/minLength/pattern on date, time, timedelta, datetime, UUID, IPv4Address, Decimal and SecretStr
+# fields; Pydantic raises TypeError ("Unable to apply constraint ...") on every value, so these fields, maps, root
+# models and the models that require them rejected every payload.
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_refs.json"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "name-removed", "type", "constraints" ]
+match = "StampLenMap|stamp_len_map"
+reason = "StampLenMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)"
+decision = "#5001"
+release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_ref_item_constraints.json"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "name-removed", "type", "constraints" ]
+match = "StampMap|stamp_map"
+reason = "StampMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)"
+decision = "#5001"
+release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/string_constraints_on_emitted_types.json"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "name-removed", "type", "constraints" ]
+match = "MaxLen|MinLen|pattern=|\\] Day: removed|StampsAdditionalProperty|list\\[Day\\]"
+reason = "every dropped keyword raised TypeError on every value in 0.86.0; the required `at` field made the model reject every payload (crash class)"
+decision = "#5001"
+release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+
+[[accepted]]
+input = "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints" ]
+match = "uuid\\.UUID, MinLen"
+reason = "required UUID fields with min_length raised TypeError on every value in 0.86.0, so Base and Child rejected every payload (crash class)"
+decision = "#5001"
+release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/constraints_on_target_builtin_names.json"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "PythonFinalizationError, MinLen"
+reason = "min_length on an exception class: no validator can be built in 0.86.0 (the model is not fully defined on both sides) (crash class)"
+decision = "#5001"
+release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+
+# --- #5291 (Fixes #5283): tuple items inlined by --collapse-root-models keep their position (crash class) -----------
+# 0.86.0 moved the inlined item to the end ([Flag, string] -> tuple[str, int | bool]), rejecting every valid value.
+
+[[accepted]]
+input = "tests/data/jsonschema/collapse_root_models_tuple_items.json"
+aspects = [ "type" ]
+match = "tuple\\["
+reason = "tuple items in the wrong order rejected every schema-valid value in 0.86.0 (crash class)"
+decision = "#5291, #5283"
+release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
+
+[[accepted]]
+input = "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml"
+backends = [ "typing.TypedDict" ]
+aspects = [ "type" ]
+match = "tupleValue: tuple\\[int, str\\] -> tuple\\[str, int\\]"
+reason = "prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)"
+decision = "#5291, #5283"
+release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
+
+[[accepted]]
+input = "tests/data/openapi/allof_partial_unconstrained_schemas.yaml"
+backends = [ "typing.TypedDict" ]
+aspects = [ "type" ]
+match = "ItemsNeutral: tuple\\[int, str\\] -> tuple\\[str, int\\]"
+reason = "prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)"
+decision = "#5291, #5283"
+release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
+
+# --- #5387: a module import named like a builtin no longer shadows it (crash class) ---------------------------------
+# 0.86.0 wrote `from .app import list` and `tags: list[str]` in holder.py: get_type_hints, msgspec.convert and every
+# decode raise TypeError 'module' object is not subscriptable. The candidate imports the module as list_1; the removed
+# paths `from holder import list` and `from __init__ import list` are the submodule pkg.app.list, still importable at its
+# own path.
+
+[[accepted]]
+input = "tests/data/jsonschema/module_import_named_like_builtin*.json"
+aspects = [ "import-path-removed" ]
+match = "from (holder|__init__) import list$"
+reason = "the shadowing submodule import made Holder unusable (TypeError on every decode / type-hint evaluation) in 0.86.0 (crash class)"
+decision = "#5387"
+release_note = "a submodule named like a builtin (list, dict, ...) is imported under an alias, so the module's list[...] annotations name the builtin again"
+
+# --- #5022: TypedDict extra_items names the final class (owner decision: a wrong reference is fixed by default) -----
+
+[[accepted]]
+input = "tests/data/openapi/typed_dict_extra_items_final_name/renamed.yaml"
+backends = [ "typing.TypedDict" ]
+aspects = [ "config" ]
+match = "extra_items"
+reason = "0.86.0's extra_items named the local Bar instead of the referenced external Bar (renamed Bar1); a wrong reference is fixed by default"
+decision = "#5022"
+release_note = "TypedDict extra_items names the referenced class under its final name"

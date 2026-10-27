@@ -319,6 +319,8 @@ ALLOWLIST_CASES = {
     "valid": ("0.86.0", [PROPERTY_NAMES_ENTRY]),
     "missing_input": ("0.86.0", [{k: v for k, v in PROPERTY_NAMES_ENTRY.items() if k != "input"}]),
     "missing_decision": ("0.86.0", [{**PROPERTY_NAMES_ENTRY, "decision": ""}]),
+    "private_decision": ("0.86.0", [{**PROPERTY_NAMES_ENTRY, "decision": "owner chat 2026-10-26"}]),
+    "decisions": ("0.86.0", [{**PROPERTY_NAMES_ENTRY, "decision": "#5291, #5283"}]),
     "other_base": ("0.85.0", [PROPERTY_NAMES_ENTRY]),
     "empty_other_base": ("0.85.0", []),
 }
@@ -326,7 +328,7 @@ ALLOWLIST_CASES = {
 
 @pytest.mark.parametrize("case", sorted(ALLOWLIST_CASES))
 def test_allowlist_problems(case: str) -> None:
-    """An entry needs a decision, and a table with entries belongs to one base release."""
+    """An entry needs public decision references, and a table with entries belongs to one base release."""
     base, entries = ALLOWLIST_CASES[case]
     assert_output("\n".join(Allowlist(base, entries).problems("0.86.0")) + "\n")
 
@@ -543,7 +545,7 @@ def test_gate(tmp_path: Path) -> None:
     """The gate generates the selected fixtures on both sides; with --check a stale allowlist entry fails the run."""
     allowlist = tmp_path / "allowlist.toml"
     allowlist.write_text(
-        'base = "0.0.0"\n[[accepted]]\ninput = "tests/data/jsonschema/person.json"\nreason = "r"\ndecision = "d"\n',
+        'base = "0.0.0"\n[[accepted]]\ninput = "tests/data/jsonschema/person.json"\nreason = "r"\ndecision = "#1"\n',
         encoding="utf-8",
     )
     outputs = []
