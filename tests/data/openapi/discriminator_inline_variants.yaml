@@ -115,3 +115,22 @@ components:
                 shared:
                   type: boolean
         - $ref: "#/components/schemas/AudioDone"
+    Untyped:
+      type: object
+      properties:
+        type:
+          type: string
+        label:
+          type: string
+      required: [type]
+    UntypedEvent:
+      discriminator:
+        propertyName: type
+      anyOf:
+        - $ref: "#/components/schemas/Untyped"
+        - allOf:
+            - $ref: "#/components/schemas/Untyped"
+            - type: object
+              properties:
+                extra:
+                  type: integer

@@ -133,7 +133,6 @@ from datamodel_code_generator.types import ANY, NONE, DataType, Types
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
-    from collections.abc import Set as AbstractSet
     from pathlib import Path
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -370,7 +369,7 @@ class ReuseHost(RecursionFactsHost, Protocol):
 class InlineVariantHost(Protocol):
     """What deciding which inline variants take the tag they inherit reads of the parser."""
 
-    _inline_variant_models: frozenset[int] | None
+    _inline_variant_models: _InlineVariantTags | None
 
     @property
     def field_name_model_type(self) -> ModelType:
@@ -1083,7 +1082,7 @@ def _get_discriminator_values(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     *,
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     require_literal: bool = False,
     field_name_mode: TagFieldMatch = "python-or-original-name",
 ) -> list[DiscriminatorValue]:
@@ -1119,7 +1118,7 @@ def _get_union_discriminator_values(
     field_name: str,
     mapping: dict[str, str],
     *,
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     field_name_mode: TagFieldMatch,
 ) -> list[DiscriminatorValue]:
     """Return the tags a union selects a variant by: mapping values, the tag of its own schema, else its name."""
@@ -1134,7 +1133,7 @@ def _variant_tags(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     *,
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     field_name_mode: TagFieldMatch,
 ) -> list[DiscriminatorValue]:
     """Return the tags of a variant (``variant_tags``) from its tag fields, the mapping and its schema path."""
@@ -1154,7 +1153,7 @@ class _VariantTagFacts:
     field_name: str
     mapping: dict[str, str]
     field_name_mode: TagFieldMatch
-    inline_models: AbstractSet[int]
+    inline_models: _InlineVariantTags
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
@@ -1171,10 +1170,15 @@ class _VariantTagFacts:
         )
 
     def inline_tag(self) -> DiscriminatorValue | None:
-        """Return the tag an inline variant inherits, where ``inline_variant_models`` lets it take it."""
-        if id(self.model) not in self.inline_models or SPECIAL_PATH_MARKER not in self.path_segment():
+        """Return the tag an inline variant inherits as ``inline_variant_models`` read it, where it lets it take it."""
+        if (tag_fields := self.inline_models.get(id(self.model))) is None or SPECIAL_PATH_MARKER not in (
+            self.path_segment()
+        ):
             return None
-        return self.inherited_tag()
+        return next(
+            (value for field, value in tag_fields if _tag_field_matches(field, self.field_name_mode, self.field_name)),
+            None,
+        )
 
     def mapped_tags(self) -> list[str]:
         """Return the mapping keys naming the variant or its bases."""
@@ -1189,6 +1193,9 @@ def _iter_mapping_discriminator_values(discriminator_model: DataModel, mapping: 
     """Yield the mapping values that select a variant, computed when the first one is asked for."""
     yield from _get_mapping_discriminator_values(discriminator_model, mapping)
 
+
+_InlineVariantTags: TypeAlias = "Mapping[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]]"
+"""The fields with one tag of each inline variant that may take the tag it inherits, by variant id, with their tags."""
 
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
 _DiscriminatorUnion: TypeAlias = tuple[DataModel, list[_DiscriminatorTag], str, dict[str, str]]
@@ -1472,7 +1479,7 @@ def _discriminator_variants_are_valid(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     *,
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     original_name: str | None = None,
     enum_member_tags: bool = False,
 ) -> bool:
@@ -1534,18 +1541,19 @@ def _discriminator_variants_are_valid(  # noqa: PLR0913
     return True
 
 
-def inline_variant_models(parser: InlineVariantHost) -> frozenset[int]:
-    """Return the ids of the inline variants that may take the tag they inherit, decided once from every union.
+def inline_variant_models(parser: InlineVariantHost) -> _InlineVariantTags:
+    """Return the tag fields of the inline variants that may take the tag they inherit, decided once from every union.
 
     An inline variant has no name to be tagged by, so its schema path ends in an internal marker, which no payload
     carries. It takes the tag it inherits (``variant_tags``) unless a union that lists it would then list two variants
     with one tag, which turns that union into a plain union and takes the tags from its named variants. Every
     variant of such a union keeps the marker, and so does a variant that another union lists. The decision reads the
-    unions before any of them writes a tag, as a variant takes its tag from the first union that writes one.
+    unions before any of them writes a tag, as a variant takes its tag from the first union that writes one, and the
+    variants take the tags it read: a tag another union writes into a base later is not one the variant inherits.
     """
     if (decided := parser._inline_variant_models) is not None:  # noqa: SLF001
         return decided
-    inline: set[int] = set()
+    inline: dict[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]] = {}
     clashing: set[int] = set()
     for model in parser.results:
         for field in model.fields:
@@ -1555,7 +1563,11 @@ def inline_variant_models(parser: InlineVariantHost) -> frozenset[int]:
                 case _:
                     continue
             variants = {
-                id(source)
+                id(source): tuple(
+                    (tag_field, value)
+                    for tag_field in source.iter_all_fields()
+                    if (value := _get_discriminator_field_value(tag_field)) is not None
+                )
                 for data_type, _, _ in _iter_discriminator_data_types(field.data_type.data_types)
                 if data_type.reference
                 and isinstance(source := data_type.reference.source, DataModel)
@@ -1576,10 +1588,12 @@ def inline_variant_models(parser: InlineVariantHost) -> frozenset[int]:
                     original_name=property_name if field.SUPPORTS_DISCRIMINATOR else None,
                     enum_member_tags=parser.use_enum_values_in_discriminator,
                 )
-                for models in (frozenset(), variants)
+                for models in ({}, variants)
             ] == [True, False]:
-                clashing |= variants
-    parser._inline_variant_models = decided = frozenset(inline - clashing)  # noqa: SLF001
+                clashing.update(variants)
+    parser._inline_variant_models = decided = {  # noqa: SLF001
+        key: tag_fields for key, tag_fields in inline.items() if key not in clashing
+    }
     return decided
 
 
@@ -2670,7 +2684,7 @@ def record_variant_discriminator_tags(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     values: list[DiscriminatorValue],
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     field_name_mode: TagFieldMatch,
 ) -> None:
     """Remember the tags unions map a variant to, unless the variant declares its own tag.
@@ -2753,7 +2767,7 @@ def record_collapsed_variant_tags(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     values: list[DiscriminatorValue],
-    inline_models: AbstractSet[int],
+    inline_models: _InlineVariantTags,
     field_name_mode: TagFieldMatch,
 ) -> None:
     """Remember the tags a union maps a variant to when collapsed reuse replaced the model the union names.

@@ -140,3 +140,20 @@ SharedBEvent = TypeAliasType(
         SharedBEvent1 | AudioDone, Field(..., discriminator='type')
     ],
 )
+
+
+@dataclass
+class Untyped:
+    type: Literal['Untyped']
+    label: str | None = None
+
+
+@dataclass
+class UntypedEvent1(Untyped):
+    extra: int | None = None
+    type: Literal['1#-datamodel-code-generator-#-allOf-#-special-#']
+
+
+UntypedEvent = TypeAliasType(
+    "UntypedEvent", Annotated[Untyped | UntypedEvent1, Field(..., discriminator='type')]
+)

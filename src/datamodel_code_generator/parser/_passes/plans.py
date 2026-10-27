@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
+    from datamodel_code_generator.parser._passes.modules import _InlineVariantTags
     from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelType, Reference
 
@@ -72,7 +73,7 @@ class PlansHost(FlattenHost, Protocol):
     _emitting_module_lists: list[tuple[str, list[DataModel]]]
     _emitting_module_names: dict[int, str]
     _generic_base_model: DataModel | None
-    _inline_variant_models: frozenset[int] | None
+    _inline_variant_models: _InlineVariantTags | None
     _recursion_facts: RecursionFacts
 
     @property

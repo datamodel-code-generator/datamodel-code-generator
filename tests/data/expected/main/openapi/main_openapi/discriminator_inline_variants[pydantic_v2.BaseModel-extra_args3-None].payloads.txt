@@ -27,3 +27,8 @@ SharedBEvent valid {"type": "audio.done"}: accepted
 SharedBEvent valid {"type": "audio.done", "shared": true}: accepted
 SharedBEvent invalid {"type": "ping"}: rejected
 SharedBEvent invalid {"type": "audio.delta", "delta": "AAAA"}: rejected
+UntypedEvent valid {"type": "Untyped"}: accepted
+UntypedEvent valid {"type": "Untyped", "label": "a", "extra": 1}: accepted
+UntypedEvent invalid {}: rejected
+UntypedEvent invalid {"type": 1}: rejected
+UntypedEvent invalid {"type": "Untyped", "label": 2}: rejected

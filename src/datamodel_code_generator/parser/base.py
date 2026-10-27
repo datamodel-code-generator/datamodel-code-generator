@@ -243,7 +243,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes.modules import _DiscriminatorUnion
+    from datamodel_code_generator.parser._passes.modules import _DiscriminatorUnion, _InlineVariantTags
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -1137,8 +1137,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._hidden_named_types: dict[tuple[ModelKey, str | None], bool] = {}
         self._hiding_field_names: dict[tuple[ModelKey, str | None], str] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
-        self._inline_variant_models: frozenset[int] | None = None
-        """The inline variants that may take the tag they inherit, once the first union asks for them."""
+        self._inline_variant_models: _InlineVariantTags | None = None
+        """The tag fields of the inline variants that may take the tag they inherit, once the first union asks."""
         self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
         self._defers_tagged_unions = False
         self._prepared_modules: list[_PreparedModule] = []

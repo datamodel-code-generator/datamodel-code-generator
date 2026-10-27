@@ -31,5 +31,9 @@
   "SharedBEvent": {
     "valid": [{"type": "audio.done"}, {"type": "audio.done", "shared": true}],
     "invalid": [{"type": "ping"}, {"type": "audio.delta", "delta": "AAAA"}]
+  },
+  "UntypedEvent": {
+    "valid": [{"type": "Untyped"}, {"type": "Untyped", "label": "a", "extra": 1}],
+    "invalid": [{}, {"type": 1}, {"type": "Untyped", "label": 2}]
   }
 }

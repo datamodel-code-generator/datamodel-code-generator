@@ -106,3 +106,17 @@ class SharedBEvent1(AudioDone):
 
 class SharedBEvent(RootModel[SharedBEvent1 | AudioDone]):
     root: SharedBEvent1 | AudioDone
+
+
+class Untyped(BaseModel):
+    type: Literal['Untyped']
+    label: str | None = None
+
+
+class UntypedEvent1(Untyped):
+    extra: int | None = None
+    type: Literal['1#-datamodel-code-generator-#-allOf-#-special-#']
+
+
+class UntypedEvent(RootModel[Untyped | UntypedEvent1]):
+    root: Untyped | UntypedEvent1 = Field(..., discriminator='type')

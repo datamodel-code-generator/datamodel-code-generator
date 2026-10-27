@@ -100,3 +100,14 @@ class SharedBEvent1(AudioDone):
 
 
 SharedBEvent: TypeAlias = SharedBEvent1 | AudioDone
+
+
+class Untyped(Struct, tag_field='type', tag='Untyped'):
+    label: str | UnsetType = UNSET
+
+
+class UntypedEvent1(Untyped, tag_field='type', tag='1#-datamodel-code-generator-#-allOf-#-special-#'):
+    extra: int | UnsetType = UNSET
+
+
+UntypedEvent: TypeAlias = Untyped | UntypedEvent1

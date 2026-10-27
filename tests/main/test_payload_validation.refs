@@ -1256,6 +1256,7 @@ openapi/discriminator_inline_variants.yaml::components.schemas.AudioDelta	payloa
 openapi/discriminator_inline_variants.yaml::components.schemas.AudioDone	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Ping	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Started	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_inline_variants.yaml::components.schemas.Untyped	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Updated	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_integer_mapping.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_integer_mapping.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3040,6 +3041,7 @@ openapi/discriminator_inline_variants.yaml::components.schemas.AudioDelta	payloa
 openapi/discriminator_inline_variants.yaml::components.schemas.AudioDone	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Ping	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Started	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_inline_variants.yaml::components.schemas.Untyped	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_inline_variants.yaml::components.schemas.Updated	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_integer_mapping.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_integer_mapping.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
