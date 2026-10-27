@@ -530,7 +530,9 @@ model_options.add_argument(
     "of msgspec.Struct models by the defaults they write, so under --strip-default-none an optional field whose None "
     "default is stripped still writes UNSET and goes after the required fields with the other optional fields; "
     "without it the field keeps its schema place among the required fields, and the struct is reordered only when a "
-    "required field would then follow a default.",
+    "required field would then follow a default. A pydantic.dataclass field whose stripped None default stays "
+    "written for a type that admits None counts as that default in a subclass too: a required field redeclaring it "
+    "is written Field(...); without it the subclass field inherits the None default, as before.",
     choices=[constructor_field_order.value for constructor_field_order in ConstructorFieldOrder],
     nargs="+",
     default=None,

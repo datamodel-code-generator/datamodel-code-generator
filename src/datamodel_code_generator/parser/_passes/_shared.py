@@ -1582,6 +1582,7 @@ _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
 
 class _InheritedConstructorInfo(NamedTuple):
     required_assignment_names: frozenset[str]
+    inherited_stripped_none_names: frozenset[str]
     ordering_conflicts: frozenset[str]
     inherited_conflicts: tuple[tuple[DataModelFieldBase, DataModel], ...]
 
@@ -1627,6 +1628,7 @@ def get_inherited_constructor_info(
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()
+    inherited_stripped_none_names: set[str] = set()
     effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {}
     for inherited_model in reversed(inherited_models):
         for field in inherited_model.fields:
@@ -1637,13 +1639,20 @@ def get_inherited_constructor_info(
                 has_default, has_value_default = model._field_assignment_facts(field).default_info  # noqa: SLF001
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
                     required_assignment_names.add(field_name)
+                    if field.should_strip_default_none() and not field.order_constructor_fields_by_written_defaults:
+                        inherited_stripped_none_names.add(field_name)
             effective_fields[field_name] = field, inherited_model, has_default
     for field in model.fields:
         if field.name:
             effective_fields[field.name] = field, model, None
 
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
-    return _InheritedConstructorInfo(frozenset(required_assignment_names), conflicts.own, conflicts.inherited)
+    return _InheritedConstructorInfo(
+        frozenset(required_assignment_names),
+        frozenset(inherited_stripped_none_names),
+        conflicts.own,
+        conflicts.inherited,
+    )
 
 
 def get_constructor_field_adjustment(
@@ -1661,7 +1670,12 @@ def get_constructor_field_adjustment(
         return "keyword_only"
     if facts.assigned:
         return None
-    if field.required and supports_inherited_override and field.name in inherited.required_assignment_names:
+    if (
+        field.required
+        and supports_inherited_override
+        and field.name in inherited.required_assignment_names
+        and field.name not in inherited.inherited_stripped_none_names
+    ):
         return "assignment"
     return None
 

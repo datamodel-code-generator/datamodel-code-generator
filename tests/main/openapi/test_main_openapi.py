@@ -3723,6 +3723,11 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
     [
         pytest.param("pydantic_v2.dataclass", [], id="pydantic-dataclass"),
         pytest.param("pydantic_v2.dataclass", ["--keyword-only"], id="pydantic-dataclass-keyword-only"),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            ["--keyword-only", "--order-constructor-fields-by", "written-defaults"],
+            id="pydantic-dataclass-keyword-only-written-defaults",
+        ),
         pytest.param("pydantic_v2.dataclass", ["--use-annotated"], id="pydantic-dataclass-annotated"),
         pytest.param(
             "pydantic_v2.dataclass", ["--target-pydantic-version", "2.14"], id="pydantic-dataclass-target-2.14"
@@ -3785,8 +3790,9 @@ def test_main_openapi_strip_default_none_constructor_order(
     Such a field follows the fields without a default and precedes the other defaults, whatever the null spelling;
     a keyword-only model keeps it among the fields without a default. After an inherited default it is keyword-only,
     as ordering inside the module loop counts its ``None`` as no default, and a required field that redeclares an
-    inherited one is assigned ``Field(...)`` so that the inherited ``None`` does not become its default. Pydantic 2.14
-    targets put a required aliased ``Field(...)`` field before it. msgspec.Struct writes every default;
+    inherited one inherits that ``None`` default, as in earlier releases, and is assigned ``Field(...)`` under
+    --order-constructor-fields-by written-defaults so that the inherited ``None`` does not become its default.
+    Pydantic 2.14 targets put a required aliased ``Field(...)`` field before it. msgspec.Struct writes every default;
     --order-constructor-fields-by written-defaults puts its optional fields after the required ones, and without it a
     stripped field keeps its schema place unless a required field would follow it.
     """

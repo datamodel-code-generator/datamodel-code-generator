@@ -4270,6 +4270,10 @@ earlier releases, and the struct is reordered only when a required field would t
 Struct rejects at import). With the value every optional field goes after the required fields, in schema order,
 which changes the order of the constructor's positional arguments.
 
+A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
+default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
+subclass field inherits the `None` default, as in earlier releases.
+
 !!! tip "Usage"
 
     ```bash

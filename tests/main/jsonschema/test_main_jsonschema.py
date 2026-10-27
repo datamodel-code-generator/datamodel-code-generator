@@ -3975,7 +3975,11 @@ optional field: `UNSET`, or `None` when the type admits None, even where `--stri
 `None` default. Without the value such a field keeps its schema place among the required fields, the order of
 earlier releases, and the struct is reordered only when a required field would then follow a default (which the
 Struct rejects at import). With the value every optional field goes after the required fields, in schema order,
-which changes the order of the constructor's positional arguments.""",
+which changes the order of the constructor's positional arguments.
+
+A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
+default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
+subclass field inherits the `None` default, as in earlier releases.""",
     input_schema="jsonschema/field_type_collision_inherited_modules",
     cli_args=[
         "--output-model-type",

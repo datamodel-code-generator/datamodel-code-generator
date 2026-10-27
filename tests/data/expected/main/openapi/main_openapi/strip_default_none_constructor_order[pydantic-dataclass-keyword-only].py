@@ -100,8 +100,8 @@ class Cat:
 
 @dataclass(kw_only=True)
 class NamedCat(Cat):
+    kind: str | None
     name: str | None
-    kind: str | None = Field(...)
 
 
 @dataclass(kw_only=True)
