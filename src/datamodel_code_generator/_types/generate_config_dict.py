@@ -186,6 +186,7 @@ class BaseGenerateConfig(TypedDict):
     use_union_operator: NotRequired[bool]
     collapse_root_models: NotRequired[bool]
     collapse_root_models_name_strategy: NotRequired[CollapseRootModelsNameStrategy | None]
+    collapse_shared_parent_wrappers: NotRequired[bool]
     collapse_reuse_models: NotRequired[bool]
     skip_root_model: NotRequired[bool]
     use_root_model_sequence_interface: NotRequired[bool]

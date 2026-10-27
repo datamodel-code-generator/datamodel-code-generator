@@ -566,6 +566,10 @@
       "not_recommended": "style",
       "reason": "Which name survives --collapse-root-models; a naming preference."
     },
+    "collapse_shared_parent_wrappers": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
+    },
     "command_line": {
       "not_recommended": "formatting",
       "reason": "Python API only: the command shown in file headers."

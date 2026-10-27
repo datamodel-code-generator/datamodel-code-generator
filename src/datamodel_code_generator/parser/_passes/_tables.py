@@ -711,6 +711,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 per_module=True,
             ),
             PassSpec(
+                decls.SETTLE_KEPT_PARENT_ROOTS,
+                late(modules.settle_kept_parent_roots),
+                when=lambda self, _: bool(self._kept_parent_roots),
+            ),
+            PassSpec(
                 decls.WRITE_RULE_ALIASES_AS_CLASSES,
                 late(modules.write_rule_aliases_as_classes),
                 when=lambda self, _: (

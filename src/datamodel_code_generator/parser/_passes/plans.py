@@ -97,6 +97,10 @@ class PlansHost(FlattenHost, Protocol):
         """The fields that hide a named type, by model key and field name."""
 
     @property
+    def _kept_parent_roots(self) -> _Clearable:
+        """The roots that the ``parent`` strategy kept for their later holders."""
+
+    @property
     def _model_type_override_imports(self) -> dict[str, Import]:
         """The imports of the types that override models, by model name."""
 
@@ -163,6 +167,7 @@ def reset_per_run_state(parser: PlansHost, _run: StructuredRun[Any]) -> None:
     parser._renamed_types.clear()  # noqa: SLF001
     parser._renamed_type_paths.clear()  # noqa: SLF001
     parser._replaced_root_models.clear()  # noqa: SLF001
+    parser._kept_parent_roots.clear()  # noqa: SLF001
 
 
 def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleModels) -> None:

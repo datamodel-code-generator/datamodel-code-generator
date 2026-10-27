@@ -42,6 +42,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--collapse-reuse-models": "Collapse duplicate models by replacing references instead of inheritance.",
     "--collapse-root-models": "Inline root model definitions instead of creating separate wrapper classes.",
     "--collapse-root-models-name-strategy": "Select which name to keep when collapsing root models with object refe...",
+    "--collapse-shared-parent-wrappers": "Collapse a parent-strategy wrapper in every model that references it.",
     "--custom-file-header": "Add custom header text to the generated file.",
     "--custom-file-header-mode": "Choose how a custom file header combines with generated provenance.",
     "--custom-file-header-path": "Add custom header content from file to generated code.",

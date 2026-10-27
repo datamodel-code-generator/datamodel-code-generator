@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.types import DataType
 
 __all__ = [
     "ConfigT",
@@ -187,6 +188,27 @@ class _RenamedType(NamedTuple):
 
     class_name: str
     import_path: str
+
+
+@record
+class _KeptHolder:
+    """A holder of a root model that the ``parent`` strategy kept, recorded where collapse left it naming the root."""
+
+    model: DataModel
+    data_type: DataType
+    inner_class_name: str
+    """The class name the inner model had there, which the warning for a root that stays names."""
+    root_import: Import | None
+    """The import of the root model that the holder's module had there."""
+
+
+@record(eq=False)
+class _KeptParentRoot:
+    """A root model that the ``parent`` strategy named its inner model after and kept for its later holders."""
+
+    root: DataModel
+    inner: DataModel
+    holders: list[_KeptHolder]
 
 
 @record

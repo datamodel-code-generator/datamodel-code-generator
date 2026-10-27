@@ -25,6 +25,7 @@ reviewed-safe class_name_suffix
 reviewed-safe collapse_reuse_models
 reviewed-safe collapse_root_models
 reviewed-safe collapse_root_models_name_strategy
+reviewed-safe collapse_shared_parent_wrappers
 guarded custom_class_name_generator
 reviewed-safe custom_formatters
 reviewed-safe custom_formatters_kwargs

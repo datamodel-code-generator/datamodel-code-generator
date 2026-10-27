@@ -41,6 +41,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _keyed_answer,
     _ModelKeys,
+    _path_identity_keys,
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
@@ -1545,8 +1546,13 @@ class RenamedTypesHost(Protocol):
 
 
 def record_renamed_type(host: RenamedTypesHost, model: DataModel, renamed_type: _RenamedType) -> None:
-    """Record a class name that ``model`` had before a rename, under its model key and its current path."""
-    host._renamed_types.setdefault(model_key_of(model.reference), []).append(renamed_type)  # noqa: SLF001
+    """Record a class name that ``model`` had before a rename, under its model key and its current path.
+
+    A model that shares its path with the root model it took the name of, or with the inner model that took its name,
+    records it under the key of that model too (row ``legacy-replaced-root-shares-path``).
+    """
+    for key in _path_identity_keys(model):
+        host._renamed_types.setdefault(key, []).append(renamed_type)  # noqa: SLF001
     host._renamed_type_paths.setdefault(model.path, []).append(renamed_type)  # noqa: SLF001
 
 

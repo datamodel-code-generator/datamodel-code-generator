@@ -5,7 +5,7 @@ Each pass is a function of the parser and the models or the state of the module,
 models of other modules, reuse, collapse and discriminator tags through the narrower ``ImportFromHost``, ``ReuseHost``,
 ``CollapseHost`` and ``DiscriminatorHost``) and the state through ``ModuleStateView``, which ``Parser`` and its module
 state satisfy structurally. ``process_each_module`` runs the passes of each module through the
-``_process_single_module`` hook (``ModuleLoopHost``); ``apply_base_stand_in_imports``,
+``_process_single_module`` hook (``ModuleLoopHost``); ``settle_kept_parent_roots``, ``apply_base_stand_in_imports``,
 ``write_rule_aliases_as_classes`` (``RuleAliasHost``), ``name_inner_models_in_rules`` and
 ``settle_discriminated_unions`` run once every module is processed, on the run through ``ModulesRun``.
 """
@@ -124,7 +124,15 @@ from datamodel_code_generator.parser._passes._shared import (
     require_update_action,
     set_reference_expression,
 )
-from datamodel_code_generator.parser._passes._state import ConfigT, ContextT, RecursionFacts, ResultT, _RenamedType
+from datamodel_code_generator.parser._passes._state import (
+    ConfigT,
+    ContextT,
+    RecursionFacts,
+    ResultT,
+    _KeptHolder,
+    _KeptParentRoot,
+    _RenamedType,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
 from datamodel_code_generator.python_literal import runtime_expression_imports
@@ -187,6 +195,7 @@ __all__ = [
     "set_one_literal_on_default",
     "set_reference_default_value_to_field",
     "settle_discriminated_unions",
+    "settle_kept_parent_roots",
     "snapshot_module_unused_models",
     "sort_models",
     "type_const_narrowed_values",
@@ -195,7 +204,27 @@ __all__ = [
 ]
 
 
-class ModulesHost(ConstructorInfoHost, RenamedTypesHost, TypeOverrideHost, Protocol):
+class CollisionRenameHost(Protocol):
+    """The options that decide whether the module passes rename a type that a field is named like."""
+
+    @property
+    def data_model_type(self) -> type[DataModel]:
+        """The model type of the output."""
+
+    @property
+    def field_type_collision_strategy(self) -> FieldTypeCollisionStrategy | None:
+        """How a field named like its type is told apart from it, if configured."""
+
+
+def renames_colliding_types(parser: CollisionRenameHost) -> bool:
+    """Return whether the run renames a type that a field is named like, instead of the field."""
+    return (
+        parser.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
+        and parser.data_model_type.SUPPORTS_FIELD_TYPE_RENAMING
+    )
+
+
+class ModulesHost(CollisionRenameHost, ConstructorInfoHost, RenamedTypesHost, TypeOverrideHost, Protocol):
     """The options, run state and hooks of the parser that the module passes read and write."""
 
     @property
@@ -239,10 +268,6 @@ class ModulesHost(ConstructorInfoHost, RenamedTypesHost, TypeOverrideHost, Proto
         """Whether root models are collapsed into their users."""
 
     @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
     def data_type(self) -> type[DataType]:
         """The data type class of the data type manager."""
 
@@ -253,10 +278,6 @@ class ModulesHost(ConstructorInfoHost, RenamedTypesHost, TypeOverrideHost, Proto
     @property
     def deserialize_default_value_types(self) -> frozenset[DefaultValueType]:
         """The kinds of default values deserialized into their types."""
-
-    @property
-    def field_type_collision_strategy(self) -> FieldTypeCollisionStrategy | None:
-        """How a field named like its type is told apart from it, if configured."""
 
     @property
     def keep_model_order(self) -> bool:
@@ -389,7 +410,13 @@ class InlineVariantHost(Protocol):
 
 
 class CollapseHost(
-    InlineVariantHost, RecursionFactsHost, ReferenceExpressionHost, RenamedTypesHost, ReplacedRootsHost, Protocol
+    CollisionRenameHost,
+    InlineVariantHost,
+    RecursionFactsHost,
+    ReferenceExpressionHost,
+    RenamedTypesHost,
+    ReplacedRootsHost,
+    Protocol,
 ):
     """The options, run state and hooks of the parser that collapsing root models reads and writes."""
 
@@ -410,6 +437,10 @@ class CollapseHost(
         """The live model list of each output module, by module name."""
 
     @property
+    def _kept_parent_roots(self) -> dict[int, _KeptParentRoot]:
+        """The roots that the ``parent`` strategy kept for their later holders, by id."""
+
+    @property
     def _emitting_module_names(self) -> dict[int, str]:
         """The module that emits each model found in the live lists, by model id."""
 
@@ -424,6 +455,10 @@ class CollapseHost(
     @property
     def collapse_root_models_name_strategy(self) -> CollapseRootModelsNameStrategy | None:
         """How collapsed root models name the models that replace them, if configured."""
+
+    @property
+    def collapse_shared_parent_wrappers(self) -> bool:
+        """Whether every later holder of a root follows the ``parent`` decision of its first holder."""
 
     @property
     def data_model_field_type(self) -> type[DataModelFieldBase]:
@@ -990,19 +1025,21 @@ def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference |
     return None
 
 
+def _same_named_references(model: DataModel, name: str | None, *, skips_aliases: bool) -> Iterator[Reference]:
+    """Yield the types named ``name`` that the model's annotations refer to, by that name with ``skips_aliases``."""
+    return (
+        reference
+        for field in model.fields
+        for data_type in field.data_type.all_data_types
+        if (reference := _annotated_reference(data_type)) is not None
+        and reference.short_name == name
+        and not (skips_aliases and data_type.alias and data_type.alias != name)
+    )
+
+
 def _same_named_reference(model: DataModel, name: str | None, *, skips_aliases: bool) -> Reference | None:
     """Return the type named ``name`` that an annotation of the model refers to, by that name with ``skips_aliases``."""
-    return next(
-        (
-            reference
-            for field in model.fields
-            for data_type in field.data_type.all_data_types
-            if (reference := _annotated_reference(data_type)) is not None
-            and reference.short_name == name
-            and not (skips_aliases and data_type.alias and data_type.alias != name)
-        ),
-        None,
-    )
+    return next(_same_named_references(model, name, skips_aliases=skips_aliases), None)
 
 
 def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
@@ -1859,9 +1896,11 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     A holder of a root model whose root type is a reference to another model gets the output it would get if it
     referenced that model directly. Under the ``parent`` strategy that model takes the root model's name in its
     own module and replaces the root model, decided at the root model's first holder from the references the
-    schema gives, so that every holder follows the same decision. A root model that a schema validator rule names
-    stays written after its holders inline it: the rule checks values through its class. A root model that its inner
-    model replaces leaves; once every module is processed, the rules name the inner model instead
+    schema gives, so that every holder follows the same decision; where a later pass can still rename the root model
+    apart from that model (``keeps_root_for_later_holders``), the later holders keep naming the root model until
+    ``settle_kept_parent_roots`` decides it once every module is processed. A root model that a schema validator rule
+    names stays written after its holders inline it: the rule checks values through its class. A root model that its
+    inner model replaces leaves; once every module is processed, the rules name the inner model instead
     (``name_inner_models_in_rules``).
     """
     generation_store = parser.generation_store
@@ -1906,7 +1945,17 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     inner_reference = root_type_field.data_type.reference
                     inner_model = cast("DataModel", inner_reference.source)
 
-                    if (
+                    if (kept_root := parser._kept_parent_roots.get(id(root_type_model))) is not None:  # noqa: SLF001
+                        kept_root.holders.append(
+                            _KeptHolder(
+                                model,
+                                data_type,
+                                inner_model.class_name,
+                                imports.reference_paths.get(root_type_model.path),
+                            )
+                        )
+                        continue
+                    if first_parent_holder := (
                         parser.collapse_root_models_name_strategy == CollapseRootModelsNameStrategy.Parent
                         and id(root_type_model) not in parser._replaced_root_models  # noqa: SLF001
                     ):
@@ -1935,13 +1984,20 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                             )
                             continue
 
-                        replace_root_model_by_inner_model(
-                            parser, root_type_model, inner_model, model_path_to_module_name
-                        )
+                        name_inner_after_root(parser, root_type_model, inner_model, model_path_to_module_name)
 
                     has_remaining_root_references = has_other_root_references(
                         parser, root_type_model.reference, data_type
                     )
+                    if first_parent_holder:
+                        if has_remaining_root_references and keeps_root_for_later_holders(
+                            parser, root_type_model, inner_model, model_path_to_module_name
+                        ):
+                            parser._kept_parent_roots[id(root_type_model)] = _KeptParentRoot(  # noqa: SLF001
+                                root_type_model, inner_model, []
+                            )
+                        else:
+                            retire_root(parser, root_type_model, inner_model, model_path_to_module_name)
                     graph_builder.collapse_root_data_type(data_type, inner_reference)
                     carry_const_narrowings(parser, root_type_field.data_type, data_type)
 
@@ -2154,7 +2210,7 @@ def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: Dat
     )
 
 
-def replace_root_model_by_inner_model(
+def name_inner_after_root(
     parser: CollapseHost,
     root_model: DataModel,
     inner_model: DataModel,
@@ -2162,8 +2218,8 @@ def replace_root_model_by_inner_model(
 ) -> None:
     """Give the inner model the class name of the root model it replaces, in the module that emits it.
 
-    The inner model also takes the root model's path, which tag values read, as the root model leaves the
-    output. Modules processed earlier imported the inner model by its old name under its old path.
+    The inner model also takes the root model's path, which tag values read. Modules processed earlier imported the
+    inner model by its old name under its old path.
     """
     old_class_name, old_path = inner_model.class_name, inner_model.path
     inner_module_name = emitting_module_name(parser, inner_model, model_path_to_module_name)
@@ -2172,13 +2228,98 @@ def replace_root_model_by_inner_model(
         class_name=root_model.class_name,
         new_path=root_model.reference.path,
     )
-    parser._replaced_root_models[id(root_model)] = root_model, inner_model  # noqa: SLF001
     _share_path_identity(root_model, inner_model)
     take_recursion_facts(parser, inner_model, root_model)
     _assign_module_name(model_path_to_module_name, inner_model, inner_module_name)
-    _assign_module_name(model_path_to_module_name, root_model, inner_module_name)
     if inner_model.class_name != old_class_name:
         record_renamed_type(parser, inner_model, _RenamedType(old_class_name, old_path))
+
+
+def retire_root(
+    parser: CollapseHost,
+    root_model: DataModel,
+    inner_model: DataModel,
+    model_path_to_module_name: dict[str, str],
+) -> None:
+    """Make the inner model that took the root model's name replace it: the root model leaves its module."""
+    parser._replaced_root_models[id(root_model)] = root_model, inner_model  # noqa: SLF001
+    _assign_module_name(
+        model_path_to_module_name,
+        root_model,
+        emitting_module_name(parser, inner_model, model_path_to_module_name),
+    )
+
+
+def keeps_root_for_later_holders(
+    parser: CollapseHost,
+    root_model: DataModel,
+    inner_model: DataModel,
+    model_path_to_module_name: dict[str, str],
+) -> bool:
+    """Return whether the later holders of a root model that its first holder collapsed keep naming it, as in 0.86.0.
+
+    They do where a later pass can still give the root model a name of its own beside the inner model that took its
+    name: both are written in one module and the run renames a type that a field is named like.
+    ``settle_kept_parent_roots`` makes them follow the first holder once every module is processed if no pass did.
+    ``--collapse-shared-parent-wrappers`` makes them follow it always.
+    """
+    return (
+        not parser.collapse_shared_parent_wrappers
+        and renames_colliding_types(parser)
+        and emitting_module_name(parser, root_model, model_path_to_module_name)
+        == emitting_module_name(parser, inner_model, model_path_to_module_name)
+    )
+
+
+def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
+    """Decide the roots that the ``parent`` strategy kept for their later holders, once every module is processed.
+
+    A kept root that still has the class name of the inner model that took its name would hide that model in their
+    module: its holders follow the first holder, importing the inner model as collapse does where their module writes
+    them (a model-level type override may have replaced a holder since), and the root leaves the output: a type that
+    still names it, such as a field that reuse left in a duplicate it made a subclass, writes the name of the inner
+    model. A kept root that a pass renamed apart from its inner model stays for its holders, as in 0.86.0, which
+    warned about each of them. The class names are final only once every module is processed: a pass of the module
+    of either model, processed after a holder's, may rename it.
+    """
+    contexts = {id(model): ctx for ctx in run.contexts for model in ctx.models}
+    model_path_to_module_name = run.model_path_to_module_name
+    graph_builder = parser._graph_builder  # noqa: SLF001
+    for kept_root in parser._kept_parent_roots.values():  # noqa: SLF001
+        root_model, inner_model = kept_root.root, kept_root.inner
+        if root_model.class_name != inner_model.class_name:
+            for holder in kept_root.holders:
+                warn_as_parser_base(
+                    f"Cannot apply 'parent' strategy for '{holder.inner_class_name}' - "
+                    f"it is directly referenced by non-wrapper models. Skipping collapse.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            continue
+        retire_root(parser, root_model, inner_model, model_path_to_module_name)
+        root_data_type = root_model.fields[0].data_type
+        holders_by_module: dict[int, tuple[ModuleContextView, list[tuple[DataModel, DataType, Import | None]]]] = {}
+        for holder in kept_root.holders:
+            graph_builder.collapse_root_data_type(holder.data_type, inner_model.reference)
+            carry_const_narrowings(parser, root_data_type, holder.data_type)
+            if (ctx := contexts.get(id(holder.model))) is not None:
+                holders_by_module.setdefault(id(ctx), (ctx, []))[1].append((
+                    holder.model,
+                    holder.data_type,
+                    holder.root_import,
+                ))
+        for ctx, redirected_holders in holders_by_module.values():
+            import_collapsed_inner_models(
+                parser,
+                ctx.models,
+                redirected_holders,
+                ctx.imports,
+                ctx.scoped_model_resolver,
+                model_path_to_module_name,
+                is_init=ctx.is_init,
+                internal_modules=run.internal_modules,
+            )
+        run.unused_models.append(root_model)
 
 
 def import_collapsed_inner_models(  # noqa: PLR0913, PLR0917
@@ -2295,10 +2436,7 @@ def change_field_name(  # noqa: PLR0912
     if not (parser.data_model_type.SUPPORTS_FIELD_RENAMING and parser.data_model_type.NORMALIZES_FIELD_NAMES):
         return
 
-    rename_type = (
-        parser.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
-        and parser.data_model_type.SUPPORTS_FIELD_TYPE_RENAMING
-    )
+    rename_type = renames_colliding_types(parser)
     all_class_names = {cast("str", model.class_name) for model in models if model.class_name} if rename_type else set()
     resolver: ModelResolver | None = None
 
@@ -3005,7 +3143,9 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
     """Rename a field named like a type of its class's annotations where the finished class hides that type.
 
     A model that normalizes field names has renamed every field named like its own type already. The classes of
-    one family write the field under one new name, which no field of the family has as its name or alias.
+    one family write the field under one new name, which no field of the family has as its name or alias. Under
+    ``--field-type-collision-strategy rename-type`` every type of the class named like the field gets a new name
+    instead: a root model that the ``parent`` strategy kept and the inner model that took its name are two.
     """
     model_type = parser.data_model_type
     if not model_type.SUPPORTS_FIELD_RENAMING:
@@ -3016,10 +3156,7 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
     positions = _ModelPositions(models, "hidden named types")
     all_models = {id(model): model for model in chain(parser.results, models)}.values()
     derived_models = _derived_models(all_models)
-    rename_type = (
-        parser.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
-        and model_type.SUPPORTS_FIELD_TYPE_RENAMING
-    )
+    rename_type = renames_colliding_types(parser)
     class_names = {model.class_name for model in models} if rename_type else set()
     for model, fields in declarations:
         for field in fields:
@@ -3033,11 +3170,14 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                     positions,
                     use_deferred_annotations=use_deferred_annotations,
                 )
-                or (reference := _same_named_reference(model, field_name, skips_aliases=rename_type)) is None
+                or _same_named_reference(model, field_name, skips_aliases=rename_type) is None
             ):
                 continue
             if rename_type:
-                rename_named_type(parser, field, reference, class_names, all_models, derived_models)
+                for named in {
+                    id(named): named for named in _same_named_references(model, field_name, skips_aliases=True)
+                }.values():
+                    rename_named_type(parser, field, named, class_names, all_models, derived_models)
                 continue
             if (new_name := parser._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:  # noqa: SLF001
                 family = _model_family(model, derived_models)

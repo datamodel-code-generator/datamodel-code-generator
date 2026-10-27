@@ -825,6 +825,14 @@ _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "and make it strict under --strict-types float."
         ),
     ),
+    PresetOptionGroup(
+        title="Shared parent wrappers collapsed",
+        config=PresetConfig(collapse_shared_parent_wrappers=True),
+        description=(
+            "Under the parent name strategy, collapse a wrapper in every model that references it instead of "
+            "keeping it for the models after the first."
+        ),
+    ),
 )
 
 _STANDARD_20261027_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {

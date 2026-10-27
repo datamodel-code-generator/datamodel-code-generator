@@ -454,6 +454,14 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--collapse-shared-parent-wrappers",
+    action="store_true",
+    default=None,
+    help="Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference "
+    "the inner model that takes its name, as its first model does; without it, where --field-type-collision-strategy "
+    "rename-type can rename the wrapper apart from the inner model in their module, the later models keep the wrapper",
+)
+model_options.add_argument(
     "--collapse-reuse-models",
     action="store_true",
     default=None,

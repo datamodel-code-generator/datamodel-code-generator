@@ -135,6 +135,7 @@ Generated model class and package behavior.
 - `--collapse-root-models`: Models generated with a root-type field will be merged into the models using that root-type model
 - `--no-collapse-root-models`: Models generated with a root-type field will be merged into the models using that root-type model
 - `--collapse-root-models-name-strategy`: Strategy for naming when collapsing root models that reference other models. 'child': Keep inner model's name (default). 'parent': Use wrapper's name for inner model. Requires --collapse-root-models to be set. Choices: `child`, `parent`.
+- `--collapse-shared-parent-wrappers`: Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference the inner model that takes its name, as its first model does; without it, where --field-type-collision-strategy rename-type can rename the wrapper apart from the inner model in their module, the later models keep the wrapper
 - `--collapse-reuse-models`: When used with --reuse-model, collapse duplicate models by replacing references instead of creating empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns
 - `--skip-root-model`: Skip generating the model for the root schema element
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement collections.abc.Sequence by adding Sequence[T] inheritance and root-delegating __iter__, __getitem__, and __len__ methods

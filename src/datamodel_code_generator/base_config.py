@@ -328,6 +328,7 @@ class BaseGenerateConfig(BaseModel):
     use_union_operator: bool = True
     collapse_root_models: bool = False
     collapse_root_models_name_strategy: CollapseRootModelsNameStrategy | None = None
+    collapse_shared_parent_wrappers: bool = False
     collapse_reuse_models: bool = False
     skip_root_model: bool = False
     use_root_model_sequence_interface: bool = False

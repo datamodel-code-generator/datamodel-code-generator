@@ -607,6 +607,31 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
     ),
 )
 
+SETTLE_KEPT_PARENT_ROOTS = PassDecl(
+    "settle_kept_parent_roots",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.MODELS_EXIST, RenderFact.MODULE_MEMBERSHIP, RenderFact.CLASS_NAMES),
+    writes=_facts(Fact.FIELD_TYPES, Fact.MODELS_EXIST, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    summary=(
+        "After every module is processed: makes the later holders of a root model that the `parent` strategy of "
+        "`collapse_root_models` kept follow its first holder where the root model still has its inner model's class "
+        "name, and warns for the others."
+    ),
+    condition="--collapse-root-models-name-strategy parent --field-type-collision-strategy rename-type",
+    after=(
+        After("remove_overridden_models", "reads the models that model-level overrides kept"),
+        After("apply_field_type_overrides", "redirects only the holder types that field overrides left"),
+        After("type_dict_keys_by_root_types", "the holders it redirects name object models, which no dict key names"),
+        After(
+            "fix_constructor_field_ordering_early",
+            "a redirected holder keeps its name, default and requiredness; only its type names the same-named inner "
+            "model",
+        ),
+        After("apply_base_class_type_overrides", "adds module imports once every module has written its own"),
+    ),
+)
 WRITE_RULE_ALIASES_AS_CLASSES = PassDecl(
     "write_rule_aliases_as_classes",
     Phase.MODULES,
@@ -621,6 +646,7 @@ WRITE_RULE_ALIASES_AS_CLASSES = PassDecl(
     ),
     condition="--generate-schema-validators",
     after=(
+        After("settle_kept_parent_roots", "reads which root models stay written once the kept roots are decided"),
         After(
             "type_dict_keys_by_root_types",
             "the aliases written as classes are object maps, which no dict key names",
@@ -649,6 +675,7 @@ NAME_INNER_MODELS_IN_RULES = PassDecl(
             "the aliases written as classes import what their rules name, which this pass then redirects",
         ),
         After("fix_constructor_field_ordering_early", "the types of rules are no constructor fields"),
+        After("settle_kept_parent_roots", "reads the root models it retires"),
     ),
 )
 APPLY_BASE_STAND_IN_IMPORTS = PassDecl(
@@ -670,6 +697,7 @@ APPLY_BASE_STAND_IN_IMPORTS = PassDecl(
             "every module reads the stand-ins as the bases of models of other modules before imports replace them",
         ),
         After("name_inner_models_in_rules", "both add module imports once every module is processed"),
+        After("settle_kept_parent_roots", "both add module imports once every module is processed"),
     ),
 )
 SETTLE_DISCRIMINATED_UNIONS = PassDecl(

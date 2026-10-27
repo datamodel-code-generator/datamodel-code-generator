@@ -6,6 +6,8 @@ toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].py	= ma
 [test_preset_sets_opt_in_option]
 check-pattern-maps-strictly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 check-pattern-maps-strictly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
+collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
+collapse-shared-parent-wrappers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py

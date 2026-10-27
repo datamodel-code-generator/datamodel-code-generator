@@ -17,6 +17,8 @@ set_default_enum_member reads DEFAULTS, FIELD_TYPES before apply_discriminator_t
 apply_discriminator_type reads FIELD_TYPES before type_const_narrowed_values writes it (narrows the types that tags wrote)
 refresh_field_config reads FIELD_ALIASES before rename_fields_hiding_types writes it (the field config is refreshed with the aliases before renaming)
 remove_overridden_models reads TYPE_OVERRIDES before apply_field_type_overrides writes it (overrides apply to the models kept after model-level overrides (#4958))
+type_dict_keys_by_root_types reads FIELD_TYPES before settle_kept_parent_roots writes it (the holders it redirects name object models, which no dict key names)
+fix_constructor_field_ordering_early reads FIELD_TYPES before settle_kept_parent_roots writes it (a redirected holder keeps its name, default and requiredness; only its type names the same-named inner model)
 type_dict_keys_by_root_types reads MODEL_KIND before write_rule_aliases_as_classes writes it (the aliases written as classes are object maps, which no dict key names)
 fix_constructor_field_ordering_early reads FIELD_TYPES before name_inner_models_in_rules writes it (the types of rules are no constructor fields)
 tag_fields_of_tagged_bases reads MODULE_IMPORTS before import_removed_reuse_canonicals writes it (repairs the imports of every module once the fields reused structs copy from their bases import theirs)

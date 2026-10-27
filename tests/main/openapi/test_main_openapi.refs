@@ -858,8 +858,6 @@ inherited-in-wrapper-module-last-child	main/openapi/main_openapi/collapse_root_m
 inherited-in-wrapper-module-last-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-last-parent]/
 inner-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-child]/
 inner-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-parent]/
-renamed-again-in-inner-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[renamed-again-in-inner-module-child]/
-renamed-again-in-inner-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[renamed-again-in-inner-module-parent]/
 reused-inner-in-cycle-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-child]/
 reused-inner-in-cycle-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-parent]/
 same-class-name-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[same-class-name-child]/
@@ -876,6 +874,21 @@ typing.TypedDict	main/openapi/openapi_collapse_root_models_parent_wrapper_refere
 black	main/openapi/main_openapi/collapse_root_models_ref_cycle_alias[black].py
 black-isort	main/openapi/main_openapi/collapse_root_models_ref_cycle_alias[black-isort].py
 builtin	main/openapi/main_openapi/collapse_root_models_ref_cycle_alias[builtin].py	= main/openapi/main_openapi/collapse_root_models_ref_cycle_alias[black-isort].py
+[test_main_openapi_collapse_shared_parent_wrappers]
+first-holder-renames-inner	main/openapi/main_openapi/collapse_shared_parent_wrappers[first-holder-renames-inner].py
+first-holder-renames-inner-shared	main/openapi/main_openapi/collapse_shared_parent_wrappers[first-holder-renames-inner-shared].py
+later-holder-overridden	main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-overridden].py
+later-holder-renames-wrapper	main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper].py
+later-holder-renames-wrapper-dataclass	main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper-dataclass].py
+later-holder-renames-wrapper-dataclass-shared	main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper-dataclass-shared].py
+later-holder-renames-wrapper-shared	main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper-shared].py
+no-rename	main/openapi/main_openapi/collapse_shared_parent_wrappers[no-rename].py	= main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice~collapse_root_models_parent_wrapper_referenced_twice[pydantic_v2.BaseModel].py
+[test_main_openapi_collapse_shared_parent_wrappers_modular]
+renamed-again-in-inner-module-child	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[renamed-again-in-inner-module-child]/
+renamed-again-in-inner-module-parent	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[renamed-again-in-inner-module-parent]/
+renamed-again-in-inner-module-parent-shared	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[renamed-again-in-inner-module-parent-shared]/
+reused-holder	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[reused-holder]/
+wrapper-in-other-module	main/openapi/main_openapi/collapse_shared_parent_wrappers_modular[wrapper-in-other-module]/	= main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-parent]/
 [test_main_openapi_complex_reference]
 	main/openapi/complex_reference.py
 [test_main_openapi_component_embedded_ids]

@@ -188,6 +188,7 @@ from datamodel_code_generator.parser._passes._state import (
     SortedDataModels,
     _ConstNarrowing,
     _FinalizeState,
+    _KeptParentRoot,
     _ModuleState,
     _ParseArgs,
     _PipelineRun,
@@ -1185,6 +1186,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ``legacy-keyless-reference-by-path`` reads it for a reference that no model was built with."""
         self._replaced_root_models: dict[int, tuple[DataModel, DataModel]] = {}
         """Each root model that collapse replaced by its inner model, by id: the root model and its inner model."""
+        self._kept_parent_roots: dict[int, _KeptParentRoot] = {}
+        """Each root model that the ``parent`` strategy named its inner model after and kept for its later holders,
+        by id, until ``settle_kept_parent_roots`` decides it once every module is processed."""
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
@@ -1445,6 +1449,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.allow_responses_without_content = config.allow_responses_without_content
         self.collapse_root_models = config.collapse_root_models
         self.collapse_root_models_name_strategy = config.collapse_root_models_name_strategy
+        self.collapse_shared_parent_wrappers = config.collapse_shared_parent_wrappers
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface

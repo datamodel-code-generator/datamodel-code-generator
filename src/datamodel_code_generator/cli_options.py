@@ -317,6 +317,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             ),
         ),
     ),
+    "--collapse-shared-parent-wrappers": CLIOptionMeta(
+        name="--collapse-shared-parent-wrappers",
+        category=OptionCategory.MODEL,
+        topic=OptionTopic.MODEL_CUSTOMIZATION,
+        group=OptionGroup.ROOT_MODEL,
+    ),
     "--collapse-reuse-models": CLIOptionMeta(
         name="--collapse-reuse-models",
         category=OptionCategory.MODEL,

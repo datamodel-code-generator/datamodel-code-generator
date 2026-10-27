@@ -80,6 +80,10 @@ COVERAGE_RUNS = (
         "--input tests/data/openapi/external_ref_mapping_all_of/api.yaml --input-file-type openapi "
         "--external-ref-mapping shared.yaml=mapped.models"
     ),
+    (
+        "--input tests/data/openapi/collapse_root_models_name_strategy/two_holders.yaml --input-file-type openapi "
+        "--collapse-root-models --collapse-root-models-name-strategy parent --field-type-collision-strategy rename-type"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

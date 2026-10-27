@@ -3812,6 +3812,16 @@ def _share_path_identity(root_model: DataModel, inner_model: DataModel) -> None:
     inner_model.__dict__[_PATH_PARTNER_KEY] = model_key_of(root_model.reference)
 
 
+def _path_identity_keys(model: DataModel) -> tuple[ModelKey, ...]:
+    """Return the model key of ``model``, and the key of the model that shares its path (`_share_path_identity`).
+
+    Row ``legacy-replaced-root-shares-path``: a reference to either of the two names both, so what is recorded under
+    the path of one is recorded for both.
+    """
+    key = model_key_of(model.reference)
+    return (key,) if (partner := model.__dict__.get(_PATH_PARTNER_KEY)) is None else (key, partner)
+
+
 def forget_model_memos(model: DataModel, *tables: MemoTable) -> None:
     """Drop what the current parse's memo keeps for the model in ``tables``; a model still being built keeps nothing."""
     if (reference := vars(model).get("reference")) is not None:

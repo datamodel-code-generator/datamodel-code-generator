@@ -125,6 +125,7 @@ How do I convert enums to Literal types?
 - `--collapse-reuse-models`: Collapse duplicate models by replacing references instead of inheritance.
 - `--collapse-root-models`: Inline root model definitions instead of creating separate wrapper classes.
 - `--collapse-root-models-name-strategy`: Select which name to keep when collapsing root models with object refe...
+- `--collapse-shared-parent-wrappers`: Collapse a parent-strategy wrapper in every model that references it.
 - `--dataclass-arguments`: Customize dataclass decorator arguments via JSON dictionary.
 - `--duplicate-name-suffix`: Customize suffix for duplicate model names.
 - `--enable-faux-immutability`: Enable faux immutability in Pydantic models (frozen=True).
@@ -799,6 +800,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         reference other models. 'child': Keep inner model's
                         name (default). 'parent': Use wrapper's name for inner
                         model. Requires --collapse-root-models to be set.
+  --collapse-shared-parent-wrappers
+                        Under --collapse-root-models-name-strategy parent,
+                        make every model that references a wrapper reference
+                        the inner model that takes its name, as its first
+                        model does; without it, where --field-type-collision-
+                        strategy rename-type can rename the wrapper apart from
+                        the inner model in their module, the later models keep
+                        the wrapper
   --dataclass-arguments DATACLASS_ARGUMENTS
                         Custom dataclass arguments as a JSON dictionary, e.g.
                         '{"frozen": true, "kw_only": true}'. Overrides

@@ -13190,15 +13190,6 @@ def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
             id="inherited-beside-holder",
         ),
         pytest.param(
-            "renamed_again_in_inner_module.yaml",
-            ["--field-type-collision-strategy", "rename-type"],
-            "y",
-            "Second",
-            {"w": {"x": "1"}},
-            {"w": {"x": 1}},
-            id="renamed-again-in-inner-module",
-        ),
-        pytest.param(
             "reused_inner_in_cycle.yaml",
             ["--reuse-model"],
             "a",
@@ -13224,8 +13215,7 @@ def test_main_openapi_collapse_root_models_name_strategy_modular(
     The holder imports the inner model as it would for a direct reference, drops its import of the wrapper, and under
     the parent strategy the inner model takes the wrapper's name in its own module and replaces the wrapper, which
     from then on is no member of its module: a model there that inherits from the inner model imports it. The module
-    of the inner model is the one whose model list holds it, also when reuse put it there. A module that imported the
-    inner model under the wrapper's name imports it again when the inner model's own module renames it once more.
+    of the inner model is the one whose model list holds it, also when reuse put it there.
     """
     run_main_and_assert(
         input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / input_name,
@@ -13248,6 +13238,263 @@ def test_main_openapi_collapse_root_models_name_strategy_modular(
         _assert_model_json_invalid(
             _model_json_validator(getattr(generated_module, model_name)), json.dumps(invalid_data), "string_type"
         )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "strategy", "extra_args", "module", "model_name", "data", "invalid_data", "warns"),
+    [
+        pytest.param(
+            "renamed_again_in_inner_module.yaml",
+            "child",
+            [],
+            "y",
+            "Second",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            False,
+            id="renamed-again-in-inner-module-child",
+        ),
+        pytest.param(
+            "renamed_again_in_inner_module.yaml",
+            "parent",
+            [],
+            "y",
+            "Second",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            True,
+            id="renamed-again-in-inner-module-parent",
+        ),
+        pytest.param(
+            "renamed_again_in_inner_module.yaml",
+            "parent",
+            ["--collapse-shared-parent-wrappers"],
+            "y",
+            "Second",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            False,
+            id="renamed-again-in-inner-module-parent-shared",
+        ),
+        pytest.param(
+            "two_holders_one_module.yaml",
+            "parent",
+            ["--use-exact-imports"],
+            "a",
+            "User",
+            {"first": {"x": "1"}, "second": {"x": "2"}},
+            {"second": {"x": 2}},
+            False,
+            id="wrapper-in-other-module",
+        ),
+        pytest.param(
+            "reused_holder.yaml",
+            "parent",
+            ["--reuse-model"],
+            "y",
+            "Third",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            False,
+            id="reused-holder",
+        ),
+    ],
+)
+def test_main_openapi_collapse_shared_parent_wrappers_modular(
+    output_dir: Path,
+    input_name: str,
+    strategy: str,
+    extra_args: list[str],
+    module: str,
+    model_name: str,
+    data: dict[str, Any],
+    invalid_data: dict[str, Any],
+    warns: bool,
+) -> None:
+    """Keep the wrapper for the later holders where a rename in its module gave it a name of its own, as 0.86.0 did.
+
+    The inner model takes the wrapper's name at the wrapper's first holder; a field there named like it makes
+    --field-type-collision-strategy rename-type rename the wrapper, so the later holders in other modules keep the
+    wrapper under its new name and warn, and a module that imported the inner model under the wrapper's name imports
+    it again. With --collapse-shared-parent-wrappers they reference the inner model. A wrapper written in another
+    module than its inner model is collapsed in every holder, and a wrapper that no rename gave a name of its own
+    leaves the output, also where a duplicate holder that reuse made a subclass still names it.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / input_name,
+            output_path=output_dir,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                strategy,
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--disable-timestamp",
+                *extra_args,
+            ],
+            runtime_validation_module=module,
+            runtime_validation_model_name=model_name,
+            runtime_validation_data=data,
+        )
+    (assert_warnings_contain if warns else assert_warnings_do_not_contain)(
+        recorded_warnings, "Cannot apply 'parent' strategy"
+    )
+    with _generated_package_module(output_dir, module) as generated_module:
+        _assert_model_json_invalid(
+            _model_json_validator(getattr(generated_module, model_name)), json.dumps(invalid_data), "string_type"
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--collapse-shared-parent-wrappers"],
+    option_description="""Collapse a parent-strategy wrapper in every model that references it.
+
+Under `--collapse-root-models-name-strategy parent` the inner model takes the name of a wrapper (a root model whose
+root is a `$ref`) at the wrapper's first holder. Where `--field-type-collision-strategy rename-type` then renames the
+wrapper apart from the inner model in their module, because a field is named like it, the later holders keep the
+wrapper and warn, as in 0.86.0. With `--collapse-shared-parent-wrappers` every holder references the inner model, as
+the first holder does, and the wrapper leaves the output. The option has no effect without the `parent` strategy.""",
+    input_schema="openapi/collapse_root_models_name_strategy/later_holder_renames_wrapper.yaml",
+    cli_args=[
+        "--collapse-root-models",
+        "--collapse-root-models-name-strategy",
+        "parent",
+        "--field-type-collision-strategy",
+        "rename-type",
+        "--collapse-shared-parent-wrappers",
+    ],
+    golden_output="main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper-shared].py",
+    comparison_output="main/openapi/main_openapi/collapse_shared_parent_wrappers[later-holder-renames-wrapper].py",
+)
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args", "data", "invalid_data", "warns"),
+    [
+        pytest.param(
+            "later_holder_renames_wrapper.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            {"first": {"x": "1"}, "Wrapper": {"x": "2"}},
+            {"Wrapper": {"x": 2}},
+            True,
+            id="later-holder-renames-wrapper",
+        ),
+        pytest.param(
+            "later_holder_renames_wrapper.yaml",
+            "pydantic_v2.BaseModel",
+            ["--collapse-shared-parent-wrappers"],
+            {"first": {"x": "1"}, "Wrapper": {"x": "2"}},
+            {"Wrapper": {"x": 2}},
+            False,
+            id="later-holder-renames-wrapper-shared",
+        ),
+        pytest.param(
+            "later_holder_renames_wrapper.yaml",
+            "pydantic_v2.dataclass",
+            [],
+            {"first": {"x": "1"}, "Wrapper": {"x": "2"}},
+            {"Wrapper": {"x": 2}},
+            True,
+            id="later-holder-renames-wrapper-dataclass",
+        ),
+        pytest.param(
+            "later_holder_renames_wrapper.yaml",
+            "pydantic_v2.dataclass",
+            ["--collapse-shared-parent-wrappers"],
+            {"first": {"x": "1"}, "Wrapper": {"x": "2"}},
+            {"Wrapper": {"x": 2}},
+            False,
+            id="later-holder-renames-wrapper-dataclass-shared",
+        ),
+        pytest.param(
+            "first_holder_renames_inner.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            {"Wrapper": {"x": "1"}, "second": {"x": "2"}},
+            {"second": {"x": 2}},
+            True,
+            id="first-holder-renames-inner",
+        ),
+        pytest.param(
+            "first_holder_renames_inner.yaml",
+            "pydantic_v2.BaseModel",
+            ["--collapse-shared-parent-wrappers"],
+            {"Wrapper": {"x": "1"}, "second": {"x": "2"}},
+            {"second": {"x": 2}},
+            False,
+            id="first-holder-renames-inner-shared",
+        ),
+        pytest.param(
+            "two_holders.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            {"first": {"x": "1"}, "second": {"x": "2"}},
+            {"second": {"x": 2}},
+            False,
+            id="no-rename",
+        ),
+        pytest.param(
+            "later_holder_overridden.yaml",
+            "pydantic_v2.BaseModel",
+            ["--type-overrides", '{"Other": "typing.Any"}'],
+            {"first": {"x": "1"}},
+            {"first": {"x": 1}},
+            False,
+            id="later-holder-overridden",
+        ),
+    ],
+)
+def test_main_openapi_collapse_shared_parent_wrappers(
+    output_file: Path,
+    input_name: str,
+    output_model_type: str,
+    extra_args: list[str],
+    data: dict[str, Any],
+    invalid_data: dict[str, Any],
+    warns: bool,
+) -> None:
+    """Collapse a parent-strategy wrapper in every model that references it.
+
+    Under `--collapse-root-models-name-strategy parent` the inner model takes the name of the wrapper at the wrapper's
+    first holder. Where `--field-type-collision-strategy rename-type` then renames the wrapper apart from the inner
+    model in their module, because a field is named like it, the later holders keep the wrapper, as in 0.86.0, and
+    each of them warns. With `--collapse-shared-parent-wrappers` every holder references the inner model, as the
+    first holder does, and the wrapper leaves the output. Without a rename every holder references the inner model
+    either way, also where a model-level type override replaces a later holder.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / input_name,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--disable-timestamp",
+                *extra_args,
+            ],
+        )
+    (assert_warnings_contain if warns else assert_warnings_do_not_contain)(
+        recorded_warnings, "Cannot apply 'parent' strategy"
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="collapse_shared_parent_wrappers",
+        model_name="User",
+        valid_json=json.dumps(data),
+        invalid_json=json.dumps(invalid_data),
+        expected_error_type="string_type",
+    )
 
 
 def test_main_openapi_collapse_root_models_child_reused_inner_in_tree_scope(output_dir: Path) -> None:

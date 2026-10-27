@@ -39,6 +39,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
     "--dedupe-request-response-variants",
     "--omit-redundant-reference-null",
     "--use-decimal-in-field-forms",
+    "--collapse-shared-parent-wrappers",
 )
 """The options the 20261027 presets set beyond the 20261017 presets."""
 
@@ -179,6 +180,20 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
                 "float",
             ],
             id="use-decimal-in-field-forms",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "collapse_root_models_name_strategy" / "later_holder_renames_wrapper.yaml",
+            "openapi",
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--collapse-root-models-name-strategy",
+                "parent",
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--no-snake-case-field",
+            ],
+            id="collapse-shared-parent-wrappers",
         ),
     ],
 )
