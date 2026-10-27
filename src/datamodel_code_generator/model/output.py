@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._target_unicode import host_identifiers
+from datamodel_code_generator._target_unicode import host_parsable
 from datamodel_code_generator.model.base import _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY, ALL_MODEL
 from datamodel_code_generator.reference import ModelType
 
@@ -95,13 +95,11 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()
-    rendered = model.render()
-    lent = host_identifiers(rendered)
-    restore_name = lent.restore_name if lent else str
+    source, restore_name = host_parsable(model.render())
     class_body = next(
         (
             node.body
-            for node in ast.parse(lent.source if lent else rendered).body
+            for node in ast.parse(source).body
             if isinstance(node, ast.ClassDef) and restore_name(node.name) == model.class_name
         ),
         None,
@@ -133,10 +131,8 @@ def _bare_name_loads(models: Iterable[DataModel], names: Collection[str]) -> set
     """Find the names of ``names`` that the emitted models load bare, not as the module of an attribute (``name.X``)."""
     found: set[str] = set()
     for model in models:
-        rendered = model.render()
-        lent = host_identifiers(rendered)
-        restore_name = lent.restore_name if lent else str
-        tree = ast.parse(lent.source if lent else rendered)
+        source, restore_name = host_parsable(model.render())
+        tree = ast.parse(source)
         attribute_values = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
         found.update(
             name

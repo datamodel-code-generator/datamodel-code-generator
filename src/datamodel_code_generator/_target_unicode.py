@@ -32,6 +32,7 @@ __all__ = (
     "capitalize",
     "casefold",
     "host_identifiers",
+    "host_parsable",
     "is_identifier",
     "is_nfkc",
     "is_numeric",
@@ -47,6 +48,7 @@ __all__ = (
 
 _ASCII_NON_WORD: Final = re.compile(r"\W")
 _WORD_ESCAPE: Final = re.compile(r"(?<!\\)\\w")
+_TYPE_STATEMENT: Final = re.compile(r"^([ \t]*)type([ \t]+)(\w+)([ \t]*)=", re.MULTILINE)
 _IDENTIFIER_COMMENT: Final = "(?#identifier)"
 _SUPERSCRIPT_DIGITS: Final = "¹²³⁴⁵⁶⁷⁸⁹"
 _SIGMA: Final = "Σ"
@@ -542,3 +544,20 @@ def host_identifiers(source: str) -> HostIdentifiers | None:
     if source.isascii() or not (unknown := _unknown(source)):
         return None
     return HostIdentifiers(source, unknown)
+
+
+def _assignment(match: re.Match[str]) -> str:
+    """Write a ``type X =`` head as ``X =``, padded to its length."""
+    indent, space, name, gap = match.groups()
+    return f"{indent}{name}{' ' * (4 + len(space) + len(gap))}="
+
+
+def host_parsable(source: str) -> tuple[str, Callable[[str], str]]:
+    """Return source the running interpreter parses, with the offsets of the source, and how to restore a parsed name.
+
+    Identifier characters the running interpreter does not know are lent letters (`host_identifiers`), and a type
+    statement (``type X = ...``, Python 3.12) is written as the assignment ``X = ...``, which every interpreter parses
+    to the same names.
+    """
+    lent = host_identifiers(source)
+    return _TYPE_STATEMENT.sub(_assignment, lent.source if lent else source), lent.restore_name if lent else str

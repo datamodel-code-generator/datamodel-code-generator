@@ -3805,6 +3805,27 @@ def test_main_jsonschema_module_import_named_like_builtin(output_model_type: Dat
     )
 
 
+def test_main_jsonschema_module_import_named_like_builtin_type_alias(output_dir: Path) -> None:
+    """Alias the module import ``list`` of ``holder`` that a type statement writes ``list[...]`` beside.
+
+    ``type Pops = list[list.Pop]`` is Python 3.12 syntax: the scan for bare loads reads it as an assignment, so a
+    Python 3.10 or 3.11 interpreter generates the same module instead of failing to parse it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_type_alias.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--target-python-version",
+            "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 
@@ -6805,6 +6826,29 @@ def test_main_type_overrides_literal_models(
                     verdict = "accepted"
                 verdicts.append(f"{kind} {json.dumps(payload)}: {verdict}\n")
     assert_output("".join(verdicts), name="payloads")
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("Level", "typing.Literal[1, 2"),
+        ("TypeOverridesLiteralModels.level", "foo[bar"),
+    ],
+)
+def test_main_type_overrides_rejects_bracketed_non_annotation(
+    key: str, value: str, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject a model-level or field override with brackets that is no annotation, which no import can name."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_literal_models.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=f"--type-overrides value {value!r} must be a valid Python type annotation",
+        extra_args=["--type-overrides", json.dumps({key: value}), "--formatters", "builtin"],
+    )
 
 
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:

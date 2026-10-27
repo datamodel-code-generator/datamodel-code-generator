@@ -2134,12 +2134,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class.
 
         A value with brackets, such as ``typing.Literal[1, 2]``, names no class to import: it is written as
-        ``x-python-type`` writes it, with the imports of its names and the keywords that type takes.
+        ``x-python-type`` writes it, with the imports of its names and the keywords that type takes. A value with
+        brackets that is no annotation is an error, as it has no import to write either.
         """
         path = _override_path(override_import)
-        expression = _parse_override_annotation(path) if "[" in path else None
-        if expression is None:
+        if "[" not in path:
             return None
+        if (expression := _parse_override_annotation(path)) is None:
+            msg = f"--type-overrides value {path!r} must be a valid Python type annotation"
+            raise Error(msg)
         from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
 
         bound_type = self._bind_python_type(expression)

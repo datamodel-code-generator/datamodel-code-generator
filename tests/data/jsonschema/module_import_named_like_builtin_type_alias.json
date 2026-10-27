@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Root",
+  "type": "object",
+  "properties": {"holder": {"$ref": "#/definitions/holder.Holder"}, "pops": {"$ref": "#/definitions/holder.Pops"}},
+  "definitions": {
+    "holder.Holder": {
+      "type": "object",
+      "properties": {
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "pop": {"$ref": "#/definitions/app.list.Pop"}
+      }
+    },
+    "holder.Pops": {"type": "array", "items": {"$ref": "#/definitions/app.list.Pop"}},
+    "app.list.Pop": {"type": "object", "properties": {"key": {"type": "string"}}}
+  }
+}

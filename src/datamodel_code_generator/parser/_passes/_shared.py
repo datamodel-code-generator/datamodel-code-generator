@@ -1647,6 +1647,8 @@ def get_inherited_constructor_info(
                     required_assignment_names.add(field_name)
                     if field.should_strip_default_none() and not field.order_constructor_fields_by_written_defaults:
                         inherited_stripped_none_names.add(field_name)
+                    else:
+                        inherited_stripped_none_names.discard(field_name)
             effective_fields[field_name] = field, inherited_model, has_default
     for field in model.fields:
         if field.name:

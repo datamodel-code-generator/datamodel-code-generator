@@ -6885,6 +6885,8 @@ msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec
 msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec]/
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2]/
+[test_main_jsonschema_module_import_named_like_builtin_type_alias]
+	main/jsonschema/main_jsonschema/module_import_named_like_builtin_type_alias/
 [test_main_jsonschema_msgspec_enum_value_base_kept]
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.decoded.txt
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.py
