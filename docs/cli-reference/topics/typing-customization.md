@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 7 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 3 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 13 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 14 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -60,6 +60,7 @@ Scalar, date/time, and custom type mapping.
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--use-decimal-for-multiple-of`](../typing-customization.md#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint. |
+| [`--use-decimal-in-field-forms`](../typing-customization.md#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field forms too. |
 | [`--use-object-type`](../typing-customization.md#use-object-type) | Use object instead of Any for unspecified object and array values. |
 | [`--use-pendulum`](../typing-customization.md#use-pendulum) | Use pendulum types for date, time, and duration fields. |
 | [`--use-single-dict-for-object-maps`](../typing-customization.md#use-single-dict-for-object-maps) | Type an object map as one dict instead of a union of dicts. |

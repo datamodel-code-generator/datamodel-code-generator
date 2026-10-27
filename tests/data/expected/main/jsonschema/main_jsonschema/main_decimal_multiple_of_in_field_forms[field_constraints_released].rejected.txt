@@ -1,0 +1,7 @@
+opt
+maxed
+inty
+arr
+mapv
+rate
+plainf

@@ -268,6 +268,12 @@ Typing customization:
                         Use condecimal instead of confloat for float/number
                         fields with multipleOf constraint (Pydantic only).
                         Avoids floating-point precision issues in validation.
+  --use-decimal-in-field-forms
+                        Under --use-decimal-for-multiple-of, also write
+                        Decimal for a number with multipleOf in the field
+                        forms (--field-constraints, --use-annotated), with the
+                        constraints in Field(), and make the Decimal strict
+                        under --strict-types float (Pydantic only)
   --use-enum-values-in-discriminator
                         Use enum member literals in discriminator fields
                         instead of string literals

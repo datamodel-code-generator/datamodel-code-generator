@@ -49,6 +49,7 @@ Type annotation, import, and primitive type behavior.
 - `--use-generic-container-types`: Use generic container types for type hinting (typing.Sequence, typing.Mapping). If `--use-standard-collections` option is set, then import from collections.abc instead of typing
 - `--use-non-positive-negative-number-constrained-types`: Use the Non{Positive,Negative}{FloatInt} types instead of the corresponding con* constrained types.
 - `--use-decimal-for-multiple-of`: Use condecimal instead of confloat for float/number fields with multipleOf constraint (Pydantic only). Avoids floating-point precision issues in validation.
+- `--use-decimal-in-field-forms`: Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms (--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under --strict-types float (Pydantic only)
 - `--use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--no-use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--use-object-type`: Use object instead of Any for unspecified JSON Schema object and array values

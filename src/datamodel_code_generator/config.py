@@ -251,6 +251,7 @@ class ParserConfig(BaseModel):
     use_serialize_as_any: bool = False
     use_non_positive_negative_number_constrained_types: bool = False
     use_decimal_for_multiple_of: bool = False
+    use_decimal_in_field_forms: bool = False
     omit_redundant_constraints: bool = False
     use_site_models_for_constrained_refs: bool = False
     original_field_name_delimiter: str | None = None

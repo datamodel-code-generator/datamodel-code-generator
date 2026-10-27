@@ -817,6 +817,14 @@ _STANDARD_20261027_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(omit_redundant_reference_null=True),
         description=("Do not write None again where a field references a model that holds null itself."),
     ),
+    PresetOptionGroup(
+        title="Decimal in field forms",
+        config=PresetConfig(use_decimal_in_field_forms=True),
+        description=(
+            "Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, "
+            "and make it strict under --strict-types float."
+        ),
+    ),
 )
 
 _STANDARD_20261027_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {

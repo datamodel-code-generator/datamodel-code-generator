@@ -923,6 +923,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-decimal-in-field-forms",
+    help="Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms "
+    "(--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under "
+    "--strict-types float (Pydantic only)",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-one-literal-as-default",
     help="Use one literal as default value for one literal field",
     action="store_true",

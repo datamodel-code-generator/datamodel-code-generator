@@ -38,6 +38,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
     *ORDER_CONSTRUCTOR_FIELDS_BY,
     "--dedupe-request-response-variants",
     "--omit-redundant-reference-null",
+    "--use-decimal-in-field-forms",
 )
 """The options the 20261027 presets set beyond the 20261017 presets."""
 
@@ -166,6 +167,18 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
             "openapi",
             ["--output-model-type", "pydantic_v2.BaseModel", "--strict-nullable"],
             id="omit-redundant-reference-null",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "decimal_multiple_of_field_forms.json",
+            "jsonschema",
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--use-decimal-for-multiple-of",
+                "--strict-types",
+                "float",
+            ],
+            id="use-decimal-in-field-forms",
         ),
     ],
 )

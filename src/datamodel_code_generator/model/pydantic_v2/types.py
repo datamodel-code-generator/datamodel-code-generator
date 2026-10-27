@@ -368,7 +368,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
                 decimal_kwargs: dict[str, Any] = {
                     k: Decimal(str(v.value if isinstance(v, UnionIntFloat) else v)) for k, v in data_type_kwargs.items()
                 }
-                if strict:
+                if strict and self.use_decimal_in_field_forms:
                     decimal_kwargs["strict"] = True
                 return self.data_type.from_import(IMPORT_CONDECIMAL, kwargs=decimal_kwargs)
             if not strict:
@@ -473,9 +473,14 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         return self.copy_data_type(self.type_map[types])
 
     def _is_decimal_multiple(self, types: Types, kwargs: Mapping[str, Any]) -> bool:
-        """Return whether a number schema with ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``."""
+        """Return whether a number schema with ``multipleOf`` of a field form is a ``Decimal``.
+
+        It is under ``use_decimal_for_multiple_of`` with ``use_decimal_in_field_forms``; without the latter the field
+        forms write a float, as in 0.86.0.
+        """
         return (
             self.use_decimal_for_multiple_of
+            and self.use_decimal_in_field_forms
             and kwargs.get("multipleOf") is not None
             and self._is_float_number(types, kwargs)
         )
@@ -538,7 +543,8 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         from base64 text and, under ``use_non_positive_negative_number_constrained_types``, the one bound equal to 0
         of a schema that has exactly one (row ``legacy-consumed-at-object-property`` writes it again, except under
         ``omit_redundant_constraints``, where a strict number takes none of them); a number with
-        ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``, strict under ``--strict-types float``.
+        ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of`` with ``use_decimal_in_field_forms``,
+        strict under ``--strict-types float``.
         A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent.
         """
         if self._non_finite_multiple_of(types, kwargs) is not None:

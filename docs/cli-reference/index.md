@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 44 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 45 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 52 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 28 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 29 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -354,6 +354,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings)
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict)
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of)
+- [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms)
 - [`--use-default`](model-customization.md#use-default)
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models)
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg)

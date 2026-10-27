@@ -34,6 +34,8 @@ read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 tag-msgspec-by-payload-name-practical	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-practical].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tag-msgspec-by-payload-name-standard	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-standard].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
+use-decimal-in-field-forms-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py
+use-decimal-in-field-forms-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-single-dict-for-object-maps-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-practical].py

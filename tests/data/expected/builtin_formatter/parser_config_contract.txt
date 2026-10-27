@@ -118,6 +118,7 @@ reviewed-safe use_annotated
 reviewed-safe use_attribute_docstrings
 reviewed-safe use_closed_typed_dict
 reviewed-safe use_decimal_for_multiple_of
+reviewed-safe use_decimal_in_field_forms
 reviewed-safe use_default_factory_for_optional_nested_models
 reviewed-safe use_default_kwarg
 reviewed-safe use_double_quotes

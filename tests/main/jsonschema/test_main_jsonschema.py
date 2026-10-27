@@ -7119,27 +7119,54 @@ def test_main_string_constraints_on_emitted_types(output_file: Path, extra_args:
     assert_output("\n".join(rejected) + "\n", name="rejected")
 
 
+@pytest.mark.cli_doc(
+    options=["--use-decimal-in-field-forms"],
+    option_description="""Write `Decimal` for a number with `multipleOf` in the field forms too.
+
+Under `--use-decimal-for-multiple-of`, the field forms (`--field-constraints`, `--use-annotated`) write a `float` with
+the constraints in `Field()`, which accepts numbers that are no multiples within the float tolerance, such as
+`0.0100000001` for `multipleOf: 0.01`. With this option they write a `Decimal` with the constraints in `Field()`
+instead, at a property, an item, a map value and a root, which rejects them as `condecimal` does. Under
+`--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or `strict=True` among the `Field()`
+arguments.""",
+    input_schema="jsonschema/decimal_multiple_of_field_forms.json",
+    cli_args=["--use-decimal-for-multiple-of", "--use-annotated", "--use-decimal-in-field-forms"],
+    golden_output="main/jsonschema/decimal_multiple_of_in_field_forms~main_decimal_multiple_of_in_field_forms[use_annotated].py",
+    comparison_output="main/jsonschema/decimal_multiple_of_in_field_forms~main_decimal_multiple_of_in_field_forms[use_annotated_released].py",
+)
 @pytest.mark.parametrize(
     "extra_args",
     [
-        pytest.param([], id="default"),
-        pytest.param(["--use-annotated"], id="use_annotated"),
-        pytest.param(["--field-constraints"], id="field_constraints"),
-        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], id="dataclass_annotated"),
-        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="dataclass_field"),
-        pytest.param(
-            ["--field-constraints", "--use-non-positive-negative-number-constrained-types"], id="zero_bound_classes"
+        pytest.param(["--use-annotated"], id="use_annotated_released"),
+        pytest.param(["--field-constraints"], id="field_constraints_released"),
+        pytest.param(["--strict-types", "float"], id="strict_float_released"),
+        pytest.param(["--use-annotated", "--strict-types", "float"], id="strict_float_annotated_released"),
+        *(
+            pytest.param([*args, "--use-decimal-in-field-forms"], id=id_)
+            for args, id_ in (
+                ([], "default"),
+                (["--use-annotated"], "use_annotated"),
+                (["--field-constraints"], "field_constraints"),
+                (["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], "dataclass_annotated"),
+                (["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], "dataclass_field"),
+                (
+                    ["--field-constraints", "--use-non-positive-negative-number-constrained-types"],
+                    "zero_bound_classes",
+                ),
+                (["--strict-types", "float"], "strict_float"),
+                (["--use-annotated", "--strict-types", "float"], "strict_float_annotated"),
+            )
         ),
-        pytest.param(["--strict-types", "float"], id="strict_float"),
-        pytest.param(["--use-annotated", "--strict-types", "float"], id="strict_float_annotated"),
     ],
 )
 def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: list[str]) -> None:
-    """Test ``--use-decimal-for-multiple-of`` writes a ``Decimal`` for a number with ``multipleOf`` in every form.
+    """Test ``--use-decimal-in-field-forms`` writes a ``Decimal`` for a number with ``multipleOf`` in every form.
 
-    The field forms write ``Decimal`` with the constraints in ``Field()`` at a property, a nullable property, an item,
-    a map value and a root, so ``0.0100000001`` is rejected as by ``condecimal``; an integer stays ``int``, and a
-    number without ``multipleOf`` keeps its zero-bound class. Under ``--strict-types float`` the ``Decimal`` is strict:
+    Without it the field forms write a ``float`` with the constraints in ``Field()``, which accepts ``0.0100000001``,
+    and ``--strict-types float`` leaves ``condecimal`` lenient, as released. With it the field forms write ``Decimal``
+    with the constraints in ``Field()`` at a property, a nullable property, an item, a map value and a root, so
+    ``0.0100000001`` is rejected as by ``condecimal``; an integer stays ``int``, and a number without ``multipleOf``
+    keeps its zero-bound class. Under ``--strict-types float`` the ``Decimal`` is strict:
     ``condecimal(..., strict=True)``, or ``strict=True`` among the ``Field()`` arguments.
     """
     name = "decimal_multiple_of_field_forms"
@@ -7161,8 +7188,9 @@ def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: 
         validate(json.dumps(payloads["valid"]))
         rejected = []
         for field_name, value in payloads["invalid"].items():
-            with pytest.raises(ValidationError):
+            with suppress(ValidationError):
                 validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
             rejected.append(field_name)
     assert_output("\n".join(rejected) + "\n", name="rejected")
 
@@ -7305,6 +7333,7 @@ def test_main_strict_decimal_beside_a_field_named_decimal(output_file: Path, ext
         assert_func=assert_file_content,
         extra_args=[
             "--use-decimal-for-multiple-of",
+            "--use-decimal-in-field-forms",
             "--strict-types",
             "float",
             *extra_args,

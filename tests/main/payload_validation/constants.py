@@ -418,8 +418,16 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         )
     },
     "jsonschema/decimal_multiple_of_field_forms.json": {
-        PayloadBackend.PYDANTIC_V2: ("--use-decimal-for-multiple-of", "--use-annotated"),
-        PayloadBackend.PYDANTIC_V2_DATACLASS: ("--use-decimal-for-multiple-of", "--field-constraints"),
+        PayloadBackend.PYDANTIC_V2: (
+            "--use-decimal-for-multiple-of",
+            "--use-decimal-in-field-forms",
+            "--use-annotated",
+        ),
+        PayloadBackend.PYDANTIC_V2_DATACLASS: (
+            "--use-decimal-for-multiple-of",
+            "--use-decimal-in-field-forms",
+            "--field-constraints",
+        ),
     },
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))

@@ -698,6 +698,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         topic=OptionTopic.TYPING_CUSTOMIZATION,
         group=OptionGroup.TYPE_MAPPING,
     ),
+    "--use-decimal-in-field-forms": CLIOptionMeta(
+        name="--use-decimal-in-field-forms",
+        category=OptionCategory.TYPING,
+        topic=OptionTopic.TYPING_CUSTOMIZATION,
+        group=OptionGroup.TYPE_MAPPING,
+    ),
     "--use-non-positive-negative-number-constrained-types": CLIOptionMeta(
         name="--use-non-positive-negative-number-constrained-types", category=OptionCategory.TYPING
     ),

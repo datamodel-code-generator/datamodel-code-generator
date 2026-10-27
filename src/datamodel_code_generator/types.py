@@ -1732,6 +1732,7 @@ class DataTypeManager(ABC):
         r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
     )
     omit_redundant_constraints: bool = False
+    use_decimal_in_field_forms: bool = False
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.BASE_OUTPUT.zero_bound_classes
     )

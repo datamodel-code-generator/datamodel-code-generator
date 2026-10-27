@@ -185,6 +185,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-attribute-docstrings": "Generate field descriptions as attribute docstrings instead of Field descriptions.",
     "--use-closed-typed-dict": "Generate TypedDict with PEP 728 closed/extra_items (default: enabled).",
     "--use-decimal-for-multiple-of": "Generate Decimal types for fields with multipleOf constraint.",
+    "--use-decimal-in-field-forms": "Write `Decimal` for a number with `multipleOf` in the field forms too.",
     "--use-default": "Use default values from schema in generated models.",
     "--use-default-factory-for-optional-nested-models": "Generate default_factory for optional nested model fields.",
     "--use-default-kwarg": "Use default= keyword argument instead of positional argument for fields with defaults.",

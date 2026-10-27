@@ -1216,6 +1216,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             use_serialize_as_any=config.use_serialize_as_any,
         )
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
+        self.data_type_manager.use_decimal_in_field_forms = config.use_decimal_in_field_forms
         self.data_model_type: type[DataModel] = config.data_model_type
         self.data_model_root_type: type[DataModel] = config.data_model_root_type
         self.pydantic_v2_root_model_type: type[DataModel] | None = _get_field_dependency_ordering_model_type(

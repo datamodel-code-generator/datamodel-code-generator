@@ -4231,6 +4231,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.10"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4245,7 +4246,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4277,6 +4278,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `standard-py311-20261027`
 
@@ -4324,6 +4326,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.11"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4339,7 +4342,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4372,6 +4375,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `standard-py312-20261027`
 
@@ -4419,6 +4423,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.12"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4434,7 +4439,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4467,6 +4472,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `standard-py313-20261027`
 
@@ -4514,6 +4520,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.13"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4529,7 +4536,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4562,6 +4569,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `standard-py314-20261027`
 
@@ -4609,6 +4617,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.14"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4624,7 +4633,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4657,6 +4666,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `standard-py315-20261027`
 
@@ -4704,6 +4714,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.15"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-frozen-field = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -4719,7 +4730,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -4752,6 +4763,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 
 ### `practical-py310-20261027`
 
@@ -4802,6 +4814,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.10"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -4825,7 +4838,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4857,6 +4870,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -4910,6 +4924,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.11"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -4934,7 +4949,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -4967,6 +4982,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -5020,6 +5036,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.12"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -5044,7 +5061,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5077,6 +5094,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -5130,6 +5148,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.13"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -5154,7 +5173,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5187,6 +5206,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -5240,6 +5260,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.14"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -5264,7 +5285,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5297,6 +5318,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -5350,6 +5372,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     tag-msgspec-by-payload-name = true
     target-python-version = "3.15"
     use-annotated = true
+    use-decimal-in-field-forms = true
     use-default-kwarg = true
     use-field-description = true
     use-field-description-example = true
@@ -5374,7 +5397,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -5407,6 +5430,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Constructor fields ordered by final names and written defaults | `--order-constructor-fields-by final-names written-defaults` | Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec models by the defaults they write. |
 | Request and response variants deduplicated | `--dedupe-request-response-variants` | Decide Request and Response variants from the schema graph and build each inline model once. |
 | Redundant reference null omitted | `--omit-redundant-reference-null` | Do not write None again where a field references a model that holds null itself. |
+| Decimal in field forms | `--use-decimal-in-field-forms` | Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -11088,10 +11112,11 @@ class Product(BaseModel):
 ### Forms and strict types
 
 The default Pydantic output writes `condecimal(...)`. With `--field-constraints` or `--use-annotated` the field is a
-`Decimal` with its constraints in `Field()`, for example `Annotated[Decimal, Field(ge=0, multiple_of=0.01)]`. Under
-`--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or `strict=True` among the `Field()`
-arguments. It rejects Python floats and, as Pydantic's strict `Decimal` does in JSON, accepts JSON numbers and numeric
-strings. A custom `DataTypeManager` receives every constraint of the
+`float` with its constraints in `Field()`. Add `--use-decimal-in-field-forms` (set by the 20261027 presets) to make it
+a `Decimal` with its constraints in `Field()` too, for example `Annotated[Decimal, Field(ge=0, multiple_of=0.01)]`.
+With that option, under `--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or
+`strict=True` among the `Field()` arguments. It rejects Python floats and, as Pydantic's strict `Decimal` does in JSON,
+accepts JSON numbers and numeric strings. A custom `DataTypeManager` receives every constraint of the
 schema in the field forms too, with `field_constraints=True`; the base class ignores them.
 
 ---
@@ -22472,7 +22497,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 44 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 45 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 52 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
@@ -22490,7 +22515,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 28 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 29 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -22817,6 +22842,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings)
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict)
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of)
+- [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms)
 - [`--use-default`](model-customization.md#use-default)
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models)
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg)
@@ -38061,6 +38087,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--use-annotated`](#use-annotated) | Use typing.Annotated for Field() with constraints. |
 | [`--use-closed-typed-dict`](#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default:... |
 | [`--use-decimal-for-multiple-of`](#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint... |
+| [`--use-decimal-in-field-forms`](#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field ... |
 | [`--use-generic-container-types`](#use-generic-container-types) | Use generic container types (Sequence, Mapping) for type hin... |
 | [`--use-non-positive-negative-number-constrained-types`](#use-non-positive-negative-number-constrained-types) | Use NonPositive/NonNegative types for number constraints. |
 | [`--use-object-type`](#use-object-type) | Use object instead of Any for unspecified object and array v... |
@@ -42355,6 +42382,145 @@ precise decimal arithmetic when validating values against the constraint.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-decimal-in-field-forms` {#use-decimal-in-field-forms}
+
+Write `Decimal` for a number with `multipleOf` in the field forms too.
+
+Under `--use-decimal-for-multiple-of`, the field forms (`--field-constraints`, `--use-annotated`) write a `float` with
+the constraints in `Field()`, which accepts numbers that are no multiples within the float tolerance, such as
+`0.0100000001` for `multipleOf: 0.01`. With this option they write a `Decimal` with the constraints in `Field()`
+instead, at a property, an item, a map value and a root, which rejects them as `condecimal` does. Under
+`--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or `strict=True` among the `Field()`
+arguments.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input decimal_multiple_of_field_forms.json --use-decimal-for-multiple-of --use-annotated --use-decimal-in-field-forms # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-decimal-in-field-forms` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "DecimalMultipleOfFieldForms",
+      "type": "object",
+      "properties": {
+        "amount": {"type": "number", "multipleOf": 0.01, "minimum": 0, "maximum": 1000000},
+        "opt": {"type": ["number", "null"], "multipleOf": 0.5, "minimum": -1000000, "maximum": 1000000},
+        "maxed": {"type": "number", "multipleOf": 0.1, "minimum": -1000000, "maximum": 10},
+        "inty": {"type": "integer", "multipleOf": 2},
+        "arr": {"type": "array", "items": {"type": "number", "multipleOf": 0.01, "minimum": -1000000, "maximum": 1000000}},
+        "mapv": {"type": "object", "additionalProperties": {"type": "number", "multipleOf": 0.01, "minimum": -1000000, "maximum": 1000000}},
+        "rate": {"$ref": "#/$defs/Rate"},
+        "plainf": {"type": "number", "minimum": 0}
+      },
+      "required": ["amount"],
+      "$defs": {"Rate": {"type": "number", "multipleOf": 0.001, "exclusiveMinimum": 0, "maximum": 1000000}}
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  decimal_multiple_of_field_forms.json
+
+        from __future__ import annotations
+
+        from decimal import Decimal
+        from typing import Annotated
+
+        from pydantic import BaseModel, Field, RootModel
+        from typing_extensions import TypeAliasType
+
+
+        class ArrItem(RootModel[Decimal]):
+            root: Annotated[Decimal, Field(ge=-1000000, le=1000000, multiple_of=0.01)]
+
+
+        MapvAdditionalProperty = TypeAliasType(
+            "MapvAdditionalProperty",
+            Annotated[Decimal, Field(ge=-1000000, le=1000000, multiple_of=0.01)],
+        )
+
+
+        class Rate(RootModel[Decimal]):
+            root: Annotated[Decimal, Field(gt=0, le=1000000, multiple_of=0.001)]
+
+
+        class DecimalMultipleOfFieldForms(BaseModel):
+            amount: Annotated[Decimal, Field(ge=0, le=1000000, multiple_of=0.01)]
+            opt: Annotated[Decimal | None, Field(ge=-1000000, le=1000000, multiple_of=0.5)] = (
+                None
+            )
+            maxed: Annotated[Decimal | None, Field(ge=-1000000, le=10, multiple_of=0.1)] = None
+            inty: Annotated[int | None, Field(multiple_of=2)] = None
+            arr: list[ArrItem] | None = None
+            mapv: dict[str, MapvAdditionalProperty] | None = None
+            rate: Rate | None = None
+            plainf: Annotated[float | None, Field(ge=0.0)] = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  decimal_multiple_of_field_forms.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from pydantic import BaseModel, Field, RootModel
+        from typing_extensions import TypeAliasType
+
+
+        class ArrItem(RootModel[float]):
+            root: Annotated[float, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.01)]
+
+
+        MapvAdditionalProperty = TypeAliasType(
+            "MapvAdditionalProperty",
+            Annotated[float, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.01)],
+        )
+
+
+        class Rate(RootModel[float]):
+            root: Annotated[float, Field(gt=0.0, le=1000000.0, multiple_of=0.001)]
+
+
+        class DecimalMultipleOfFieldForms(BaseModel):
+            amount: Annotated[float, Field(ge=0.0, le=1000000.0, multiple_of=0.01)]
+            opt: Annotated[
+                float | None, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.5)
+            ] = None
+            maxed: Annotated[float | None, Field(ge=-1000000.0, le=10.0, multiple_of=0.1)] = (
+                None
+            )
+            inty: Annotated[int | None, Field(multiple_of=2)] = None
+            arr: list[ArrItem] | None = None
+            mapv: dict[str, MapvAdditionalProperty] | None = None
+            rate: Rate | None = None
+            plainf: Annotated[float | None, Field(ge=0.0)] = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -62977,7 +63143,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 7 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 3 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 13 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 14 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -63026,6 +63192,7 @@ Scalar, date/time, and custom type mapping.
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--use-decimal-for-multiple-of`](../typing-customization.md#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint. |
+| [`--use-decimal-in-field-forms`](../typing-customization.md#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field forms too. |
 | [`--use-object-type`](../typing-customization.md#use-object-type) | Use object instead of Any for unspecified object and array values. |
 | [`--use-pendulum`](../typing-customization.md#use-pendulum) | Use pendulum types for date, time, and duration fields. |
 | [`--use-single-dict-for-object-maps`](../typing-customization.md#use-single-dict-for-object-maps) | Type an object map as one dict instead of a union of dicts. |
@@ -63163,6 +63330,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-annotated`](typing-customization.md#use-annotated) | Use typing.Annotated for Field() with constraints. |
 | [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default: enabled). |
 | [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint. |
+| [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field forms too. |
 | [`--use-generic-container-types`](typing-customization.md#use-generic-container-types) | Use generic container types (Sequence, Mapping) for type hinting. |
 | [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types) | Use NonPositive/NonNegative types for number constraints. |
 | [`--use-object-type`](typing-customization.md#use-object-type) | Use object instead of Any for unspecified object and array values. |
@@ -63610,6 +63778,7 @@ All options sorted alphabetically:
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings) - Generate field descriptions as attribute docstrings instead ...
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict) - Generate TypedDict with PEP 728 closed/extra_items (default:...
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of) - Generate Decimal types for fields with multipleOf constraint...
+- [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms) - Write `Decimal` for a number with `multipleOf` in the field ...
 - [`--use-default`](model-customization.md#use-default) - Use default values from schema in generated models.
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models) - Generate default_factory for optional nested model fields.
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg) - Use default= keyword argument instead of positional argument...
@@ -66241,16 +66410,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 200 | Shared generation options. |
-| `GenerateConfig` | 215 | Public `generate()` configuration. |
-| `ParserConfig` | 165 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 167 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 174 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 175 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 168 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 168 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 167 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 168 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 201 | Shared generation options. |
+| `GenerateConfig` | 216 | Public `generate()` configuration. |
+| `ParserConfig` | 166 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 168 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 175 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 176 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 169 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 169 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 168 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 169 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
