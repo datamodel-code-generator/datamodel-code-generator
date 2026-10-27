@@ -14,6 +14,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict
 from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -333,6 +334,43 @@ def test_allowlist_problems(case: str) -> None:
     assert_output("\n".join(Allowlist(base, entries).problems("0.86.0")) + "\n")
 
 
+REPORT_ENTRY = {**PROPERTY_NAMES_ENTRY, "input": "tests/data/*.json", "decision": "#5017"}
+REPORT_CASES = {
+    "pr_covered_unused": ("pr", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
+    "pr_covers_no_cell": ("pr", [REPORT_ENTRY], "tests/data/a.yaml", "1/1"),
+    "nightly_covered_unused": ("nightly", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
+    "release_covered_unused": ("release", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
+    "release_covers_no_cell": ("release", [REPORT_ENTRY], "tests/data/a.yaml", "1/1"),
+    "release_shard_covers_no_cell": ("release", [REPORT_ENTRY], "tests/data/a.yaml", "1/2"),
+    "pr_malformed_entry": ("pr", [{**REPORT_ENTRY, "decision": ""}], "tests/data/a.json", "1/1"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(REPORT_CASES))
+def test_report_stale_entries_by_tier(case: str) -> None:
+    """The PR tier is a sample and judges no staleness; the full tiers do; malformed entries fail every tier."""
+    tier, entries, label, shard = REPORT_CASES[case]
+    allowlist = Allowlist("0.86.0", entries)
+    cell = SimpleNamespace(label=label, backend="pydantic_v2.BaseModel")
+    result = SimpleNamespace(cell=cell, verdict=SimpleNamespace(cls="same", accepted_by=set(), notes=[]))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    index, _, total = shard.partition("/")
+    ns = SimpleNamespace(
+        base="0.86.0",
+        tier=tier,
+        shard=shard,
+        shard_index=int(index),
+        shard_total=int(total),
+        select=[],
+        check=True,
+        json=None,
+    )
+    stdout = StringIO()
+    with redirect_stdout(stdout):
+        code = behaviour_diff._report([result], gate, ns)
+    assert_output(f"exit={code}\n{stdout.getvalue()}")
+
+
 OPT_IN_CASES = {
     "known": ["--input", "a.json", "--output-model-type", "msgspec.Struct", "--collapse-root-models"],
     "unknown_option": ["--input", "a.json", "--new-option"],
@@ -542,7 +580,7 @@ def test_signature(case: str, tmp_path: Path) -> None:
 
 @pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
 def test_gate(tmp_path: Path) -> None:
-    """The gate generates the selected fixtures on both sides; with --check a stale allowlist entry fails the run."""
+    """The gate generates the selected fixtures on both sides; the PR tier judges no stale entry."""
     allowlist = tmp_path / "allowlist.toml"
     allowlist.write_text(
         'base = "0.0.0"\n[[accepted]]\ninput = "tests/data/jsonschema/person.json"\nreason = "r"\ndecision = "#1"\n',

@@ -23,8 +23,9 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
 public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`. With `--check` the run fails
-on a violation, on an entry without such a decision, on a table whose base is not BASE and on a stale entry: one
-that accepted no change in a run that has a cell it covers, or, in a run of the whole tier, one that covers no cell.
+on a violation, on an entry without such a decision and on a table whose base is not BASE; in the nightly and
+release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
+the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
 Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
 inputs, so a selection may leave an entry's changes out.
 """
@@ -672,7 +673,7 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
         f"allowlist entry {index + 1} ({gate.allowlist.entries[index].get('input')}) is stale: "
         + ("it accepted no change" if index in covered else "it covers no cell")
         for index in entries
-        if index not in used and (index in covered or whole)
+        if ns.tier != "pr" and index not in used and (index in covered or whole)
     ]
     for problem in problems:
         print(f"allowlist: {problem}")
