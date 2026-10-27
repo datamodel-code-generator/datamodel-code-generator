@@ -877,34 +877,51 @@ class DataType(_BaseModel):  # noqa: PLR0904
             yield from data_type.all_imports
         yield from self.imports
 
-    def _conditional_imports(self) -> Iterator[tuple[bool, Import]]:
-        """Yield (condition, import) pairs in the order they may be emitted."""
+    def _conditional_imports(self) -> list[Import]:  # noqa: PLR0912
+        """Return the imports the form of this data type writes, in the order they are emitted."""
+        imports: list[Import] = []
+        use_union_operator = self.use_union_operator
         use_standard_collections = self.use_standard_collections
-        yield (self.admits_none and not self.use_union_operator, IMPORT_OPTIONAL)
-        yield (len(self.data_types) > 1 and not self.use_union_operator, IMPORT_UNION)
-        has_literal = (bool(self.literals) or bool(self.enum_member_literals)) and not self.alias
-        yield (has_literal, self._literal_import if has_literal else IMPORT_LITERAL)
-        yield (bool(self.discriminator), IMPORT_ANNOTATED)
-        yield (self.is_frozen_set and not use_standard_collections, IMPORT_FROZEN_SET)
-        yield (self.is_mapping and use_standard_collections, IMPORT_ABC_MAPPING)
-        yield (self.is_mapping and not use_standard_collections, IMPORT_MAPPING)
-        yield (self.is_sequence and use_standard_collections, IMPORT_ABC_SEQUENCE)
-        yield (self.is_sequence and not use_standard_collections, IMPORT_SEQUENCE)
+        if self.admits_none and not use_union_operator:
+            imports.append(IMPORT_OPTIONAL)
+        if len(self.data_types) > 1 and not use_union_operator:
+            imports.append(IMPORT_UNION)
+        if (self.literals or self.enum_member_literals) and not self.alias:
+            imports.append(self._literal_import)
+        if self.discriminator:
+            imports.append(IMPORT_ANNOTATED)
+        if self.is_frozen_set and not use_standard_collections:
+            imports.append(IMPORT_FROZEN_SET)
+        if self.is_mapping:
+            imports.append(IMPORT_ABC_MAPPING if use_standard_collections else IMPORT_MAPPING)
+        if self.is_sequence:
+            imports.append(IMPORT_ABC_SEQUENCE if use_standard_collections else IMPORT_SEQUENCE)
         if self.use_generic_container:
             if use_standard_collections:
                 # frozenset is builtin, no import needed for is_set
-                yield (self.is_list, IMPORT_ABC_SEQUENCE)
-                yield (self.is_dict, IMPORT_ABC_MAPPING)
+                if self.is_list:
+                    imports.append(IMPORT_ABC_SEQUENCE)
+                if self.is_dict:
+                    imports.append(IMPORT_ABC_MAPPING)
             else:  # pragma: no cover
-                yield (self.is_list, IMPORT_SEQUENCE)
-                yield (self.is_set, IMPORT_FROZEN_SET)
-                yield (self.is_dict, IMPORT_MAPPING)
-                yield (self.is_tuple, IMPORT_TUPLE)
+                if self.is_list:
+                    imports.append(IMPORT_SEQUENCE)
+                if self.is_set:
+                    imports.append(IMPORT_FROZEN_SET)
+                if self.is_dict:
+                    imports.append(IMPORT_MAPPING)
+                if self.is_tuple:
+                    imports.append(IMPORT_TUPLE)
         elif not use_standard_collections:
-            yield (self.is_list, IMPORT_LIST)
-            yield (self.is_set, IMPORT_SET)
-            yield (self.is_dict, IMPORT_DICT)
-            yield (self.is_tuple, IMPORT_TUPLE)
+            if self.is_list:
+                imports.append(IMPORT_LIST)
+            if self.is_set:
+                imports.append(IMPORT_SET)
+            if self.is_dict:
+                imports.append(IMPORT_DICT)
+            if self.is_tuple:
+                imports.append(IMPORT_TUPLE)
+        return imports
 
     @property
     def runtime_expression_imports(self) -> tuple[Import, ...]:
@@ -971,9 +988,8 @@ class DataType(_BaseModel):  # noqa: PLR0904
             yield IMPORT_DECIMAL
 
         # Yield imports based on conditions
-        for field, import_ in self._conditional_imports():
-            if field and import_ is not None and import_ != self.import_:
-                yield import_
+        own = self.import_
+        yield from (import_ for import_ in self._conditional_imports() if import_ != own)
 
         # Propagate imports from any dict_key type
         if self.dict_key:
