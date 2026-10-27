@@ -148,6 +148,7 @@ class ParseMemo:
         "_reading",
         "_revisions",
         "_slots",
+        "_walked",
     )
 
     def __init__(self) -> None:
@@ -163,6 +164,7 @@ class ParseMemo:
         self._derived: dict[tuple[MemoTable, int, Hashable], _Derived] = {}
         self._reading: list[tuple[Any, dict[int, object]]] = []
         self._check: tuple[CheckMode | None] | None = None
+        self._walked: dict[int, tuple[Any, int, tuple[tuple[Any, object, int], ...]]] = {}
 
     def bump_field(self, field: Any) -> None:
         """Move the revision of a field and the ``deep`` revision of its model, after a write to the field."""
@@ -280,14 +282,33 @@ class ParseMemo:
                 reads[id(model)] = model
 
     def _derive(self, field: Any, source: object, value: object, reads: dict[int, object]) -> _Derived:
-        """Keep ``value`` with the revisions it read, and make the nodes of the field's type its readers.
+        """Keep ``value`` with the revisions it read and the references of the field's type (`_references`)."""
+        parent = field.parent
+        deep = self._deep
+        return _Derived(
+            field,
+            source,
+            self._revisions.get(id(field), 0),
+            parent,
+            self._own.get(id(parent), 0),
+            self._references(field),
+            tuple((model, deep.get(id(model), 0)) for model in reads.values()),
+            value,
+            self._clock,
+        )
+
+    def _references(self, field: Any) -> tuple[tuple[Any, object, int], ...]:
+        """Return the references of the field's type with their models and revisions, and make its nodes its readers.
 
         The type of a root model or type alias that the field's type names counts as read too, as the type the model
-        stands for, and so on through the ones that type names.
+        stands for, and so on through the ones that type names. What the walk reads moves the clock when it changes,
+        so the references walked for the field at the current clock are returned again.
         """
+        field_key = id(field)
+        if (walked := self._walked.get(field_key)) is not None and walked[0] is field and walked[1] == self._clock:
+            return walked[2]
         readers = self._readers
         deep = self._deep
-        field_key = id(field)
         references: list[tuple[Any, object, int]] = []
         aliases: list[Any] = []
         seen: set[int] = set()
@@ -316,18 +337,9 @@ class ParseMemo:
                 break
             own = False
             stack.extend(alias_field.data_type for alias_field in aliases.pop().fields)
-        parent = field.parent
-        return _Derived(
-            field,
-            source,
-            self._revisions.get(field_key, 0),
-            parent,
-            self._own.get(id(parent), 0),
-            tuple(references),
-            tuple((model, deep.get(id(model), 0)) for model in reads.values()),
-            value,
-            self._clock,
-        )
+        walked_references = tuple(references)
+        self._walked[field_key] = field, self._clock, walked_references
+        return walked_references
 
     def value(  # noqa: PLR0913, PLR0917
         self,
