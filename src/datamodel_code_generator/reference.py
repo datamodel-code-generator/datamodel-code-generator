@@ -989,6 +989,7 @@ class ModelResolver:  # noqa: PLR0904
         self._new_references_yield = False
         self._paths_named_past_parent: set[tuple[str, ...]] = set()
         self._model_name_map_paths: set[str] = set()
+        self._model_name_map_keys: dict[str, str] = {}
 
         # Default value overrides from external JSON file
         self.default_value_overrides: Mapping[str, Any] = (
@@ -1057,6 +1058,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_new_references_yield", False)
         self.__dict__.setdefault("_paths_named_past_parent", set())
         self.__dict__.setdefault("_model_name_map_paths", set())
+        self.__dict__.setdefault("_model_name_map_keys", {})
         for name, value in slot_state.items():
             setattr(self, name, value)
 
@@ -1085,18 +1087,17 @@ class ModelResolver:  # noqa: PLR0904
 
         A yielding reference matches only by path: its generated name is not final until parsing ends. The first
         matching candidate wins, and every matching key counts as found. A class name key whose name was released
-        (``_apply_model_name_map``) no longer matches by the name of a model.
+        (``_apply_model_name_map``) no longer matches by the name of a model, except of the one it renamed.
         """
         if not self.model_name_map:
             return None
 
         _, separator, fragment = path.partition("#")
         paths = (path, f"#{fragment}") if separator else (path,)
-        names = (
-            tuple(name for name in (generated_name, original_name) if name not in self._released_model_names)
-            if match_names
-            else ()
-        )
+        names = (generated_name, original_name) if match_names else ()
+        if names and self._released_model_names:
+            renamed_by = self._model_name_map_keys.get(path)
+            names = tuple(name for name in names if name not in self._released_model_names or name == renamed_by)
         matched: tuple[str, str] | None = None
         for candidate in (*paths, *names):
             if (value := self.model_name_map.get(candidate)) is None:
@@ -1185,6 +1186,7 @@ class ModelResolver:  # noqa: PLR0904
         self._ensure_model_name_map_value(path, class_name.name, mapped_name, reserved_name)
         if mapped_name != class_name.name:
             self._model_name_map_paths.add(path)
+            self._model_name_map_keys[path] = key
         return ClassName(name=mapped_name, duplicate_name=None)
 
     def _reset_for_reuse(self, exclude_names: set[str]) -> None:

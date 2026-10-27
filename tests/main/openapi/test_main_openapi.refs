@@ -1349,6 +1349,7 @@ first-variant	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main
 map-value-takes-released-name	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[map-value-takes-released-name].py
 nested-models-of-one-title	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[nested-models-of-one-title].py
 same-name-documents	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents].py
+same-name-documents-with-class-name-prefix	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents-with-class-name-prefix].py
 [test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2]
 	main/openapi/module_class_name_collision_deep_exact_imports//*.py
 [test_main_openapi_module_class_name_collision_deep_pydantic_v2]

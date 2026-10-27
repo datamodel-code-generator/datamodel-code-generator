@@ -5344,6 +5344,17 @@ def test_main_openapi_nullable_map_value_model_name_map(
             id="same-name-documents",
         ),
         pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_same_name_documents" / "openapi.yaml",
+            "openapi",
+            '{"Pet": "Cat"}',
+            ["--class-name-prefix", "P", "--class-name-affix-scope", "models"],
+            "PHolder",
+            '{"first":{"first":"a"},"second":{"second":"b"}}',
+            '{"first":{"first":1}}',
+            "string_type",
+            id="same-name-documents-with-class-name-prefix",
+        ),
+        pytest.param(
             JSON_SCHEMA_DATA_PATH / "model_name_map_key_of_map_value.json",
             "jsonschema",
             '{"Tag1": "Y"}',
