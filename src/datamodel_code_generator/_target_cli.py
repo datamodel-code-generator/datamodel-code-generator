@@ -17,11 +17,11 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Iterator, Sequence
 
-    from datamodel_code_generator.__main__ import OutputComparison
+    from datamodel_code_generator.__main__ import ComparisonDifference, OutputComparison
     from datamodel_code_generator._api_generation import PlannedTarget
     from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject, NextSteps
     from datamodel_code_generator._publication import StagedFile
-    from datamodel_code_generator._structured_output import CheckDifferencePayload, ImpliedPayload, TargetPayload
+    from datamodel_code_generator._structured_output import ImpliedPayload, TargetPayload
     from datamodel_code_generator._target_config import TargetConfig
 
 _OK: Final = 0
@@ -179,7 +179,11 @@ def _run(  # noqa: PLR0913, PLR0917
             _join(batch, job, planned, None)
         project = planned.project
         comparison = _compare_target(project, config.output, target.output, config.encoding)
-        _write_comparison_output(comparison, namespace.output_format, target=_target_payload(target, project, implied))
+        _write_comparison_output(
+            comparison,
+            namespace.output_format,
+            target=_target_payload(namespace.output_format, target, project, implied),
+        )
         _print_notice(notice)
         return _DIFF if comparison.differences else _OK
     if config.diff_against is not None:
@@ -196,7 +200,7 @@ def _run(  # noqa: PLR0913, PLR0917
             comparison,
             namespace.output_format,
             kind="input-diff",
-            target=_target_payload(target, current.project, implied),
+            target=_target_payload(namespace.output_format, target, current.project, implied),
         )
         _print_notice(notice)
         return _DIFF if comparison.differences else _OK
@@ -257,11 +261,16 @@ def _payload_base(project: GeneratedProject, models: Path) -> Path:
     return models.parent if models in rendered or (not rendered and models.suffix) else models
 
 
-def _target_payload(target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]) -> TargetPayload:
+def _target_payload(
+    output_format: str | None, target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]
+) -> TargetPayload | None:
     """Name the generated package and the requirements it needs at run time, as the uv add notice does.
 
-    The settings the target implied are keyed as `pyproject.toml` keys them, or left out when it implied none.
+    The settings the target implied are keyed as `pyproject.toml` keys them, or left out when it implied none. Only the
+    JSON report has a payload, so a text report builds none.
     """
+    if output_format != "json":
+        return None
     from datamodel_code_generator._structured_output import TargetPayload  # noqa: PLC0415
 
     return TargetPayload(
@@ -375,7 +384,7 @@ def _compare_target(
     )
 
     nested = _nested(models, target)
-    differences: list[CheckDifferencePayload] = []
+    differences: list[ComparisonDifference] = []
     contents: list[str] = []
     base, cwd = _payload_base(project, models), Path.cwd()
     with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
@@ -432,7 +441,7 @@ def _compare_target(
                 message = f"{_shown(actual)}: Output is not text in encoding {codec!r}: {error}"
                 raise Error(message) from error
             differences.extend(
-                difference.model_copy(update={"path": shown(cwd / difference.path, base).as_posix()})
+                difference._replace(path=shown(cwd / difference.path, base).as_posix())
                 for difference in compared.differences
             )
             if content := compared.content:

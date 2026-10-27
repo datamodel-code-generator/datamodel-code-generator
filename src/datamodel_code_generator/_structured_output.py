@@ -5,10 +5,19 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
-from pydantic.json_schema import SkipJsonSchema
+from pydantic import VERSION, BaseModel, ConfigDict, Field, TypeAdapter
 
+from datamodel_code_generator import _StructuredOutputUnavailableError
 from datamodel_code_generator.prompt import PromptPayload
+
+try:
+    from pydantic.json_schema import SkipJsonSchema
+except ImportError as exc:
+    msg = (
+        f"The JSON output of datamodel-codegen requires pydantic 2.1 or newer, but pydantic {VERSION} is installed. "
+        "Upgrade pydantic to use it; generated code and the other commands do not need it."
+    )
+    raise _StructuredOutputUnavailableError(msg) from exc
 
 if TYPE_CHECKING:
     from pydantic.json_schema import JsonDict

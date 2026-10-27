@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import runpy
 import subprocess
 import sys
@@ -14,6 +15,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import pydantic.json_schema
 import pytest
 
 from tests.conftest import assert_output
@@ -784,6 +786,29 @@ def test_output_format_json_schema_exact_fast_paths_skip_argument_parser_import(
         for fast_path in covered_fast_paths:
             assert fast_path["code"] == 0
             assert fast_path["stdout"] == parsed_path["stdout"]
+
+
+@pytest.mark.abnormal_path("Pydantic 2.0 cannot be installed beside the Pydantic of the test environment")
+@pytest.mark.parametrize("schema_name", ["generation", "structured-output"])
+@pytest.mark.parametrize("separate", [False, True], ids=["equals", "separate"])
+def test_output_format_json_schema_fast_paths_report_the_pydantic_they_need(
+    schema_name: str,
+    separate: bool,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exit with the error code and name pydantic 2.1 where Pydantic lacks SkipJsonSchema."""
+    monkeypatch.delattr(pydantic.json_schema, "SkipJsonSchema")
+    monkeypatch.delitem(sys.modules, "datamodel_code_generator._structured_output", raising=False)
+    options = (
+        ["--output-format-json-schema", schema_name] if separate else [f"--output-format-json-schema={schema_name}"]
+    )
+
+    result = _run_module_schema_fast_path_in_process(options)
+
+    captured = capsys.readouterr()
+    assert_output(json.dumps({"code": result["code"], "stdout": result["stdout"]}) + "\n", name="result")
+    assert_output(re.sub(r"but pydantic \S+ is", "but pydantic <VERSION> is", captured.err), name="stderr")
 
 
 @pytest.mark.allow_direct_assert

@@ -504,6 +504,10 @@ class Error(Exception):
         return self.message
 
 
+class _StructuredOutputUnavailableError(Error):
+    """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
+
+
 def _normalized_absolute_path(path: Path, *, resolve_aliases: bool = False) -> Path:
     """Return a normalized absolute path, resolving aliases only when needed."""
     expanded_path = path.expanduser()
