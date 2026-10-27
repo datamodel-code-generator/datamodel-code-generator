@@ -35,7 +35,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
-from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
+from datamodel_code_generator._checks import CHECK_MODES, CheckArea, CheckMode, check_mode
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Hashable, Iterable, Mapping
@@ -163,7 +163,7 @@ class ParseMemo:
         self._readers: dict[int, dict[int, Any]] = {}
         self._derived: dict[tuple[MemoTable, int, Hashable], _Derived] = {}
         self._reading: list[tuple[Any, dict[int, object]]] = []
-        self._check: tuple[CheckMode | None] | None = None
+        self._check: tuple[Mapping[CheckArea, CheckMode], CheckMode | None] | None = None
         self._walked: dict[int, tuple[Any, int, tuple[tuple[Any, object, int], ...]]] = {}
 
     def bump_field(self, field: Any) -> None:
@@ -375,11 +375,13 @@ class ParseMemo:
     def _checked(self, table: MemoTable, owner: object, kept: _V, recompute: Callable[[], object]) -> _V:
         """Return a kept value, compared under the ``RENDER_MEMOS`` check with the value computed anew.
 
-        The check's mode is read at the memo's first hit: the parse reads the check flags once, at its start.
+        The memo keeps the mode with the check flags it was read from and reads it again when other flags are current:
+        a memo outlives a parse, and its parser may parse again under other flags.
         """
-        if (check := self._check) is None:
-            check = self._check = (check_mode(CheckArea.RENDER_MEMOS),)
-        if (mode := check[0]) is not None:
+        modes = CHECK_MODES.get()
+        if (check := self._check) is None or check[0] is not modes:
+            check = self._check = (modes, modes.get(CheckArea.RENDER_MEMOS))
+        if (mode := check[1]) is not None:
             _check_hit(mode, table, owner, kept, recompute)
         return kept
 
