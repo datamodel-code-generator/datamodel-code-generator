@@ -1403,6 +1403,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return what the field's backend writes after its annotation, as assignment classification reads it."""
         return _model_written(self)
 
+    def _construction_written_assignment(self) -> WrittenAssignment:
+        """Return the written assignment the L1 construction key reads: ``_written_assignment``.
+
+        A backend that decides what its field writes without building the field's render plan answers from that.
+        """
+        return self._written_assignment()
+
     def _dataclass_visibility(self) -> DataclassVisibility:
         """Return what the Pydantic dataclass template needs to see of the field as an assignment."""
         return DataclassVisibility(

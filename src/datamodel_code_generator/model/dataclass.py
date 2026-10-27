@@ -21,7 +21,9 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, g
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import Constraints  # noqa: TC001 # needed for pydantic
 from datamodel_code_generator.model._decisions.assignment import (
+    DataclassItemInputs,
     DataclassWritten,
+    dataclass_field_items,
     participates_in_constructor,
     written_data,
 )
@@ -37,6 +39,7 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
+    _classify_field_assignment,
     _default_factory_type_name,
     _has_field_assignment,
     _model_key_of_model,
@@ -57,7 +60,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DataclassItems
     from datamodel_code_generator.model._render_plan import Omitted
     from datamodel_code_generator.reference import Reference
 
@@ -77,6 +80,18 @@ def field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     return participates_in_constructor(
         "dataclass", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
     )
+
+
+def _construction_order_key(field: DataModelFieldBase) -> bool:
+    """Return whether the class body writes an assignment for the field, as ``has_field_assignment`` answers.
+
+    The field's backend answers from the ``field()`` arguments it decides to write, without building its plan.
+    """
+    return _classify_field_assignment(
+        field,
+        "model",
+        field._construction_written_assignment(),  # noqa: SLF001
+    ).assigned
 
 
 def _has_constructor_default(field: DataModelFieldBase) -> bool:
@@ -281,7 +296,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(field_participates_in_constructor)
-    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_has_field_assignment)
+    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_construction_order_key)
     _ASSIGNMENT_ROW: ClassVar[AssignmentRow | None] = "dataclass"
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
@@ -456,47 +471,69 @@ class DataModelField(DataModelFieldBase):
             default_factory = factory
         return default_factory
 
+    def _nested_model_factory_argument(self) -> _NestedModelFactory | None:
+        """Return the nested model's factory the field writes: optional, no declared factory, a factory found."""
+        if self._takes_nested_model_factory() and "default_factory" not in self.extras:
+            return self._get_default_factory_for_nested_model()
+        return None
+
+    def _field_items(self, nested: _NestedModelFactory | None) -> DataclassItems:
+        """Return which ``field()`` arguments the field writes (``dataclass_field_items``) with ``nested`` found."""
+        default = self.default
+        return dataclass_field_items(
+            DataclassItemInputs(
+                extra_keys=tuple(key for key in self.extras if key in self._FIELD_KEYS),
+                init_excluded=self.extras.get("init") is False,
+                nested_model_factory=nested is not None,
+                default="none" if default is None else "value" if default != UNDEFINED else "undefined",
+                container_default=isinstance(default, (list, dict, set)),
+                strip_default_none=self.strip_default_none,
+                required=self.required and not self.use_default_with_required,
+                unbound=bool(self.__dict__.get(_UNBOUND_FIELD_KEY)),
+            )
+        )
+
     def _field_arguments(self, omitted: list[Omitted]) -> CallArguments:
-        """Build the ``field(...)`` arguments in the order the call writes them, the default among them."""
+        """Build the ``field(...)`` arguments the field writes (``_field_items``), in order, with their values.
+
+        The item left after the others is the factory of a field that ``dataclasses`` unbinds.
+        """
+        nested = self._nested_model_factory_argument()
+        items = self._field_items(nested)
         args = CallArguments(omitted)
-        for key, value in self.extras.items():
-            if key in self._FIELD_KEYS:
-                args.put(key, value, Why(_FIELD_ARGUMENT, key), (f"extra:{key}",))
-
-        if (
-            self._takes_nested_model_factory()
-            and "default_factory" not in args
-            and (nested := self._get_default_factory_for_nested_model()) is not None
-        ):
-            args.put("default_factory", nested, _NESTED_MODEL_FACTORY)
-
-        if self.default is None:
-            if args and "default_factory" not in args and (not self.strip_default_none or args.get("init") is False):
-                args.put("default", None, _KEPT_NONE_DEFAULT)
-        elif self.default != UNDEFINED and "default_factory" not in args:
-            args.put("default", self.default, _DEFAULT)
-
-        if self.required and not self.use_default_with_required:
-            args.pop("default", "factory-not-applicable", _REQUIRED)
-            args.pop("default_factory", "factory-not-applicable", _REQUIRED)
-
-        if (entry := args.entry("default")) is not None:
-            match entry.value:
-                case dict() as default if nested_factory := self._get_default_factory_for_nested_value(default):
-                    args.take("default")
-                    args.put("default_factory", nested_factory, _NESTED_MAPPING_FACTORY, entry.items)
-                case list() | dict() | set() as default:
-                    args.take("default")
-                    args.put("default_factory", _ValueFactory(default), _MUTABLE_FACTORY, entry.items)
-
-        if self.__dict__.get(_UNBOUND_FIELD_KEY) and (
-            "default" in args
-            or not (args or (self.required and not self.use_default_with_required) or self.should_strip_default_none())
-        ):
-            value = self.default if (entry := args.take("default")) is None else entry.value
-            items = () if entry is None else entry.items
-            args.put("default_factory", _ValueFactory(value, always_lambda=True), _UNBOUND_FACTORY, items)
+        for key in items.dropped:
+            args.omit(f"extra:{key}", self.extras[key], "factory-not-applicable", _REQUIRED)
+        for name, item in items.written:
+            match item:
+                case "extra":
+                    args.put(name, self.extras[name], Why(_FIELD_ARGUMENT, name), (f"extra:{name}",))
+                case "nested-model-factory":
+                    args.put(name, nested, _NESTED_MODEL_FACTORY)
+                case "kept-none-default":
+                    args.put(name, None, _KEPT_NONE_DEFAULT)
+                case "default":
+                    args.put(name, self.default, _DEFAULT)
+                case "value-factory":
+                    if isinstance(self.default, dict) and (
+                        nested_factory := self._get_default_factory_for_nested_value(self.default)
+                    ):
+                        args.put(name, nested_factory, _NESTED_MAPPING_FACTORY)
+                    else:
+                        args.put(name, _ValueFactory(self.default), _MUTABLE_FACTORY)
+                case _:
+                    args.put(name, _ValueFactory(self.default, always_lambda=True), _UNBOUND_FACTORY)
         return args
+
+    @override
+    def _construction_written_assignment(self) -> DataclassWritten:
+        """Return the ``field()`` arguments the field decides to write, without building its plan, and a forced call.
+
+        A plan frozen at B2 writes the same arguments while the facts it read hold, as ``RenderReady`` rebuilds it.
+        """
+        return DataclassWritten(
+            data=written_data(self._field_items(self._nested_model_factory_argument()).names()),
+            forced=self._has_forced_field_assignment,
+        )
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:

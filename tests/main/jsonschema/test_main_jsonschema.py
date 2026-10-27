@@ -13986,6 +13986,17 @@ def test_main_dataclass_field(output_file: Path) -> None:
     )
 
 
+def test_main_dataclass_required_default_factory(output_file: Path) -> None:
+    """Test that a required dataclass field leaves out the default factory it declares."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dataclass_required_default_factory.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", "dataclasses.dataclass"],
+    )
+
+
 def test_main_dataclass_deprecated_model(output_file: Path) -> None:
     """Test dataclass generation with deprecated schema metadata."""
     run_main_and_assert(

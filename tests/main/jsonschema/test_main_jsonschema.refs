@@ -5721,6 +5721,8 @@ reuse-cycle	main/jsonschema/dataclass_nested_mapping_default_reuse_path.py	= mai
 	main/jsonschema/dataclass_nested_mapping_defaults.py
 [test_main_dataclass_non_finite_number_values]
 	main/jsonschema/dataclass_non_finite_number_values.py
+[test_main_dataclass_required_default_factory]
+	main/jsonschema/dataclass_required_default_factory.py
 [test_main_decimal_multiple_of_in_field_forms]
 dataclass_annotated	main/jsonschema/decimal_multiple_of_in_field_forms.py
 dataclass_annotated	main/jsonschema/main_jsonschema/main_decimal_multiple_of_in_field_forms[dataclass_annotated].rejected.txt

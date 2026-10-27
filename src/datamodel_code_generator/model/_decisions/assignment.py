@@ -19,13 +19,17 @@ up already leads back to the field's model and gives no factory there (``model/b
 the import snapshot taken at the same point keeps ``field`` where msgspec then writes ``UNSET`` (``NameError``).
 Moving that metadata before the reads fixes that (row ``legacy-nested-factory-at-read``, kept in the adapter).
 
+``dataclass_field_items`` decides which ``field()`` arguments a stdlib dataclass field writes: its render plan fills
+them with values, and the L1 construction key of ``model/dataclass.py`` reads their names without building the plan,
+which the fields' binding to their model would invalidate at once.
+
 The rows named ``legacy-*`` (``AssignmentRule``) keep today's output where a row disagrees with what the template
 writes; the fix of each deletes its row.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, TypeAlias, final
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, final
 
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model._render_plan import AssignmentFacts
@@ -38,6 +42,9 @@ if TYPE_CHECKING:
 __all__ = [
     "AssignmentInputs",
     "AssignmentRow",
+    "DataclassItem",
+    "DataclassItemInputs",
+    "DataclassItems",
     "DataclassVisibility",
     "DataclassWritten",
     "DefaultState",
@@ -47,6 +54,7 @@ __all__ = [
     "WrittenAssignment",
     "WrittenData",
     "classify_assignment",
+    "dataclass_field_items",
     "participates_in_constructor",
     "struct_assigned",
     "struct_construction_assigned",
@@ -163,6 +171,88 @@ class AssignmentInputs:
     init_excluded: bool = False
     visibility: DataclassVisibility | None = None
     keeps_stripped_place: bool = False
+
+
+DataclassItem: TypeAlias = Literal[
+    "extra", "nested-model-factory", "kept-none-default", "default", "value-factory", "unbound-factory"
+]
+"""What gives a stdlib dataclass ``field()`` argument its value.
+
+* ``extra``: the field's extra of that name.
+* ``nested-model-factory``: the factory of the nested model the optional field holds.
+* ``kept-none-default``: the ``None`` default a call with other arguments keeps.
+* ``default``: the field's default.
+* ``value-factory``: a factory building the field's list, dict or set default.
+* ``unbound-factory``: a factory returning the field's default, as ``dataclasses`` unbinds the field.
+"""
+
+
+class DataclassItemInputs(NamedTuple):
+    """The facts ``dataclass_field_items`` reads for one stdlib dataclass field.
+
+    ``extra_keys`` are the ``field()`` arguments its extras declare, in their order, ``init_excluded`` tells that
+    they give ``init=False``, ``nested_model_factory`` that it writes its nested model's factory. ``default`` is its
+    default and ``container_default`` tells that the default is a list, a dict or a set. ``required`` tells that it
+    is required without ``--use-default-with-required``, ``strip_default_none`` that ``--strip-default-none`` is
+    given and ``unbound`` that ``dataclasses`` unbinds the field.
+    """
+
+    extra_keys: tuple[str, ...]
+    init_excluded: bool
+    nested_model_factory: bool
+    default: DefaultState
+    container_default: bool
+    strip_default_none: bool
+    required: bool
+    unbound: bool
+
+
+class DataclassItems(NamedTuple):
+    """The ``field()`` arguments a stdlib dataclass field writes, in order, and the extras a required field drops.
+
+    ``written`` pairs each argument's name with what gives its value; ``dropped`` names the declared extras the
+    call leaves out, as a required field takes no default factory.
+    """
+
+    written: tuple[tuple[str, DataclassItem], ...]
+    dropped: tuple[str, ...]
+
+    def names(self) -> tuple[str, ...]:
+        """Return the names of the arguments, in order."""
+        return tuple(name for name, _ in self.written)
+
+
+def dataclass_field_items(inputs: DataclassItemInputs) -> DataclassItems:
+    """Return which ``field()`` arguments a stdlib dataclass field writes, the one decision its plan and key read.
+
+    A call with other arguments keeps a ``None`` default unless ``--strip-default-none`` strips it, or the field is
+    left out of ``__init__``. A required field writes no default and no default factory. A list, dict or set
+    default is built by a factory, and so is any default of a field that ``dataclasses`` unbinds, or the ``None``
+    of one that writes nothing else.
+    """
+    written: list[tuple[str, DataclassItem]] = [(key, "extra") for key in inputs.extra_keys]
+    if inputs.nested_model_factory:
+        written.append(("default_factory", "nested-model-factory"))
+    default: DataclassItem | None = None
+    if not (inputs.nested_model_factory or "default_factory" in inputs.extra_keys):
+        if inputs.default == "none":
+            if written and (not inputs.strip_default_none or inputs.init_excluded):
+                default = "kept-none-default"
+        elif inputs.default == "value":
+            default = "default"
+    dropped: tuple[str, ...] = ()
+    if inputs.required:
+        default = None
+        dropped = tuple(name for name, item in written if name == "default_factory" and item == "extra")
+        written = [(name, item) for name, item in written if name != "default_factory"]
+    strips_none = inputs.strip_default_none and inputs.default == "none"
+    if default == "default" and inputs.container_default:
+        written.append(("default_factory", "value-factory"))
+    elif inputs.unbound and (default is not None or not (written or inputs.required or strips_none)):
+        written.append(("default_factory", "unbound-factory"))
+    elif default is not None:
+        written.append(("default", default))
+    return DataclassItems(tuple(written), dropped)
 
 
 def written_data(keys: Collection[str]) -> WrittenData:

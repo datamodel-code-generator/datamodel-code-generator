@@ -256,10 +256,6 @@ class CallArguments:
         """Return whether the call has an argument ``name``."""
         return name in self._entries
 
-    def __bool__(self) -> bool:
-        """Return whether the call has any argument."""
-        return bool(self._entries)
-
     def get(self, name: str) -> Any:
         """Return the value of the argument ``name``, or None."""
         return None if (entry := self._entries.get(name)) is None else entry.value
