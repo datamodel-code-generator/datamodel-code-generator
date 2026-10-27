@@ -18,9 +18,9 @@ nullability; the fix of each (G12b, which also moves the decision after the fact
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias, final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind, literal_value_kind
 
 __all__ = [
@@ -99,7 +99,7 @@ LiteralDefaultRule: TypeAlias = Literal[
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class LiteralDefault:
     """What a field fixed to one value writes, and the row of ``LiteralDefaultRule`` it comes from.
 

@@ -14,7 +14,7 @@ from collections import OrderedDict, defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from functools import cached_property, lru_cache
 from itertools import accumulate, chain, takewhile
 from pathlib import Path
@@ -32,6 +32,7 @@ from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, bump_deep, bump_field, forget, memoized, note_reads
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
@@ -159,7 +160,7 @@ _AnswerT = TypeVar("_AnswerT")
 _CustomTemplateSignature = bytes
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ResolveReferenceActionCapabilities:
     """Output-owned behavior used by parser resolve-action fast paths."""
 
@@ -236,7 +237,7 @@ class _MissingCustomTemplateState:
 _missing_custom_template_state = _MissingCustomTemplateState()
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class _TypingImportRequirements:
     union: bool = False
     optional: bool = False
@@ -1649,7 +1650,7 @@ _DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class _ValueFactory:
     """The default factory of a mutable default: ``lambda: <value>``, or the type of an empty container.
 
@@ -1668,7 +1669,7 @@ class _ValueFactory:
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class _NestedModelFactory:
     """The default factory of an optional field holding a nested model: the model's class, or a lambda building it.
 

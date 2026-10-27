@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict, deque
-from dataclasses import dataclass
 from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, cast
 
@@ -26,6 +25,7 @@ from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAK
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -1145,7 +1145,7 @@ def _variant_tags(  # noqa: PLR0913
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _VariantTagFacts:
     """The facts of a variant that ``variant_tags`` reads, from its fields, the mapping and its schema path."""
 

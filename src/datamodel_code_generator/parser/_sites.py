@@ -12,10 +12,10 @@ refresh records for the models store operations noted equal those a full rebuild
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, NewType, TypeAlias, final
 
 from datamodel_code_generator._model_keys import FieldKey, NodeKey
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,7 +38,7 @@ ProvenanceHow: TypeAlias = Literal["parsed", "inherited", "collapsed", "overridd
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Provenance:
     """How a site came to be: the store operation that made it, the site it was derived from and the model via which."""
 
@@ -71,7 +71,7 @@ class SiteOccurrence(NamedTuple):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class RefSite:
     """One reference occurrence the store records, with how it came to be."""
 

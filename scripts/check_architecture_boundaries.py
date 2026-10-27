@@ -83,38 +83,51 @@ _TARGET_MODULES: Final = frozenset({
 })
 _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
     "facts": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._records"}),
         (
-            "the attribute-to-fact table is read by checkers without the package: import only the standard library "
-            "and typing_extensions"
+            "the attribute-to-fact table is read by checkers without the package: import only the standard library, "
+            "typing_extensions and datamodel_code_generator._records"
         ),
     ),
     "schema-graph": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator.reference"}),
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._records",
+            "datamodel_code_generator.reference",
+        }),
         (
-            "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions "
-            "and datamodel_code_generator.reference, and take parser rules as arguments"
+            "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions, "
+            "datamodel_code_generator._records and datamodel_code_generator.reference, and take parser rules as "
+            "arguments"
         ),
     ),
     "requirements": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator.enums"}),
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._records",
+            "datamodel_code_generator.enums",
+        }),
         (
-            "the requirement table is a leaf: import only the standard library, typing_extensions and "
-            "datamodel_code_generator.enums"
+            "the requirement table is a leaf: import only the standard library, typing_extensions, "
+            "datamodel_code_generator._records and datamodel_code_generator.enums"
         ),
     ),
     "constraints": (
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._records",
             "datamodel_code_generator._regex_syntax",
             "datamodel_code_generator._requirements",
             "datamodel_code_generator.enums",
         }),
         (
             "the constraint applicability table is a leaf that types.py reads while it is imported: import only the "
-            "standard library, typing_extensions, datamodel_code_generator._regex_syntax, "
-            "datamodel_code_generator._requirements and datamodel_code_generator.enums"
+            "standard library, typing_extensions, datamodel_code_generator._records, "
+            "datamodel_code_generator._regex_syntax, datamodel_code_generator._requirements and "
+            "datamodel_code_generator.enums"
         ),
     ),
     "regex": (
@@ -125,10 +138,15 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         ),
     ),
     "parser-core": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._regex_syntax"}),
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._records",
+            "datamodel_code_generator._regex_syntax",
+        }),
         (
             "a pure parser core computes from the dumped schemas it is given: import only the standard library, "
-            "typing_extensions and datamodel_code_generator._regex_syntax"
+            "typing_extensions, datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
         ),
     ),
     "checks": (

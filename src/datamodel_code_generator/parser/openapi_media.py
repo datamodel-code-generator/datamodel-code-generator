@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from typing import Literal, TypeAlias
+
+from typing_extensions import final
+
+from datamodel_code_generator._records import record
 
 MediaOwner: TypeAlias = Literal["request_body", "response", "parameter", "header"]
 IgnoredEncodingReason: TypeAlias = Literal["oas_encoding_request_body_only", "oas_encoding_media_not_applicable"]
@@ -17,7 +20,8 @@ _PARAMETER = re.compile(
 )
 
 
-@dataclass(frozen=True, slots=True)
+@final
+@record
 class MediaType:
     """Retain normalized type tokens and ordered, unescaped parameter values."""
 

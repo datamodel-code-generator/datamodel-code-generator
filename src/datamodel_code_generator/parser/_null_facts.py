@@ -13,8 +13,9 @@ The sites disagree today on which sources count and whether ``nullable`` needs `
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal, TypeAlias, final
+
+from datamodel_code_generator._records import record
 
 __all__ = [
     "NO_NULL_MODE",
@@ -181,7 +182,7 @@ NullRule: TypeAlias = Literal[
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NullSources:
     """The keywords of one schema object that can admit null, as written.
 
@@ -209,7 +210,7 @@ class NullSources:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NullMode:
     """The options that change how sites read null.
 
@@ -234,7 +235,7 @@ NO_NULL_MODE: NullMode = NullMode()
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NullFacts:
     """What a site reads, and the row of :data:`NullRule` the answer comes from.
 

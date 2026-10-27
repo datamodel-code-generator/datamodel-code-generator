@@ -34,10 +34,10 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
 from operator import eq, is_
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NewType, Protocol, TypeAlias, cast, final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.python_literal import represent_python_value
 
 if TYPE_CHECKING:
@@ -106,7 +106,7 @@ AssignmentRule: TypeAlias = Literal[
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class AssignmentFacts:
     """What the class body writes for a field and what the field is in its model's constructor.
 
@@ -340,7 +340,7 @@ CallKind: TypeAlias = Literal["Field", "field", "Meta"]
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class CallPlan:
     """A call: its positional argument, its default factory and its other keyword arguments.
 
@@ -365,7 +365,7 @@ class CallPlan:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FieldDefault:
     """The default a field writes: its value, or Pydantic's ``MISSING`` sentinel (``--use-missing-sentinel``).
 
@@ -383,7 +383,7 @@ AnnotationForm: TypeAlias = Literal["plain", "annotated", "classvar"]
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FieldRenderPlan:
     """What the class body writes for one field, with the reason of every item; text is written when it is read.
 
@@ -475,7 +475,7 @@ class PlannedField(Protocol):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NestedFactoryMetadata:
     """What decides the default factory of an optional nested model, final when render preparation ends.
 

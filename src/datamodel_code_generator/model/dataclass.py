@@ -6,7 +6,6 @@ Generates Python dataclasses using the @dataclass decorator.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from typing_extensions import final, override
@@ -17,6 +16,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import Constraints  # noqa: TC001 # needed for pydantic
@@ -175,7 +175,7 @@ def _walks_to_recursive_nested_mapping_default(model: DataClass) -> bool:
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class _NestedDataclassFactory:
     """The default factory that builds a nested dataclass from a mapping default: ``lambda: Model(a=1)``.
 

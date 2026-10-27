@@ -14,13 +14,13 @@ presets and ``PythonVersion`` read it without loading the model package.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import cache
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from typing_extensions import final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least, _pydantic_version_key
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ Construct: TypeAlias = PythonConstruct | PydanticConstruct
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Requirement:
     """One construct of generated code, the library version that has it, and what an older target writes instead.
 
@@ -305,7 +305,7 @@ def python_target_meets(construct: PythonConstruct, version_key: tuple[int, int]
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class PydanticFloor:
     """The Pydantic release a run's models need above its explicit target, and the constructs that need more.
 

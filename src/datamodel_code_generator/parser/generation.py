@@ -65,6 +65,7 @@ from datamodel_code_generator._null_markers import (
     TARGET_NULL_KEY,
 )
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
+from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
@@ -293,7 +294,7 @@ def _detach_data_type_tree(root: DataType) -> None:
         data_type.reference = None
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ModelFact:
     """A parsed model and the stable facts derived from its reference.
 
@@ -318,7 +319,7 @@ class ModelFact:
         return self.model.class_name
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class DataTypeFact:
     """A data type occurrence owned by a parsed model."""
 
@@ -436,7 +437,7 @@ class _HolderIndex:
         return self._holder_by_id[data_type_id]
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class GenerationBuildResult:
     """Facts and stable id state produced by an index rebuild."""
 
@@ -447,7 +448,7 @@ class GenerationBuildResult:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _UniverseFacts:
     """The facts of one universe and the ids they record each model under."""
 

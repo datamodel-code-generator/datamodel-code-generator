@@ -15,9 +15,10 @@ that enum a class.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from math import isnan
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping
@@ -97,7 +98,7 @@ LiteralValueKind: TypeAlias = Literal["none", "bool", "int", "float", "str", "ot
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class EnumKind:
     """The class an enum is written as.
 

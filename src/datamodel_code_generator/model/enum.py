@@ -5,7 +5,6 @@ Provides Enum, StrEnum, and specialized enum classes for code generation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import lru_cache
 from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
@@ -14,6 +13,7 @@ from typing_extensions import Sentinel, assert_never, override
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
+from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
@@ -53,7 +53,7 @@ class _StructuredEnumMemberValue:
     __slots__ = ()
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class EnumMemberValue(_StructuredEnumMemberValue):
     """A raw string enum value that renders as its Python source literal."""
 

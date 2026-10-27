@@ -8,12 +8,13 @@ Keys never reach output.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import TYPE_CHECKING, Final, final
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.reference import SCHEMA_OWNER_FRAMES_KEY, location_of
 
@@ -29,7 +30,7 @@ UNRESOLVED_MODEL_KEY: Final = ModelKey(-1)
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class BuildFrames:
     """The model builder frames open when a model is recorded, innermost first, and the model they build."""
 
@@ -65,7 +66,7 @@ def is_root_or_owned(reference: Reference) -> bool:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ModelIdentity:
     """Who a model is, whatever name and path it is written under."""
 
@@ -85,7 +86,7 @@ def identity_of(reference: Reference) -> ModelIdentity:
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class KeyedModels:
     """The models that an order or a graph is built over, by model key, and the keys of the models at each path."""
 

@@ -38,7 +38,6 @@ admits gives no warning.
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import dataclass
 from fractions import Fraction
 from itertools import chain, starmap
 from math import gcd, isfinite, isnan, lcm
@@ -47,6 +46,7 @@ from warnings import warn
 
 from typing_extensions import Sentinel
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
@@ -91,7 +91,7 @@ _REMOVED: Final = Sentinel("_REMOVED")
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class KeywordIntersection:
     """The schema a site is parsed as, and the keywords whose parts have no value in common.
 

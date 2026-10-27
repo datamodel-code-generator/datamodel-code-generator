@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import keyword
 from ast import literal_eval
-from dataclasses import dataclass
 from fractions import Fraction
 from functools import wraps
 from math import ceil, floor, isfinite
@@ -18,6 +17,7 @@ from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
@@ -212,7 +212,7 @@ _NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class _StructConversion:
     """The default factory that converts a default holding Structs: ``lambda: convert({...},  type=Model)``.
 

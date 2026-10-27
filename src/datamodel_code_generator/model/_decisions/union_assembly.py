@@ -17,8 +17,9 @@ the None; the fix of each deletes its row.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, TypeVar, final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable, Sequence
@@ -91,7 +92,7 @@ members."""
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class MemberFacts:
     """The facts ``assemble_union`` reads about one member: its role, and whether it admits any value (and null)."""
 
@@ -101,7 +102,7 @@ class MemberFacts:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class UnionPolicy:
     """The row a union follows, and whether the builder found that the union admits null."""
 
@@ -110,7 +111,7 @@ class UnionPolicy:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class UnionPlan:
     """The members a union holds, as indexes into the members passed in, and how it writes them.
 
@@ -170,7 +171,7 @@ def assemble_union(members: Sequence[MemberFacts], policy: UnionPolicy, /) -> Un
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class WrittenMember(Generic[_T]):
     """A member as a union writes it: the key it is told apart by, what the union keeps of it, and its None.
 
@@ -185,7 +186,7 @@ class WrittenMember(Generic[_T]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class MergedMembers(Generic[_T]):
     """What a union keeps of its written members, and whether it takes over their None."""
 

@@ -12,10 +12,11 @@ and the registration order breaks ties.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 from typing_extensions import ReadOnly, TypedDict, final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -62,7 +63,7 @@ class DecisionStore(Protocol):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ModuleFacts:
     """One output module at B1: its path and the models it renders."""
 
@@ -71,7 +72,7 @@ class ModuleFacts:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FinalFacts:
     """The facts final at B1, built once per parse by ``GenerationStore.seal_facts``: what decisions read.
 
@@ -84,7 +85,7 @@ class FinalFacts:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DecisionOutcome:
     """What the decision phase changed: the live models a decision wrote, in model order."""
 
@@ -92,7 +93,7 @@ class DecisionOutcome:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DecisionPass(Generic[W]):
     """One decision: ``run`` reads ``FinalFacts`` and writes through ``writer``, the protocol of its writes.
 

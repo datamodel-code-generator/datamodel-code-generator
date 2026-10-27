@@ -7,18 +7,19 @@ Python import statements for generated data models.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator._requirements import backport_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class Import:
     """Represents a single Python import statement."""
 

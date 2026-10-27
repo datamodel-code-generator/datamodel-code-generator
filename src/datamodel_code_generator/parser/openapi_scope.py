@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
 from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
@@ -13,6 +12,7 @@ from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
+from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
@@ -66,7 +66,7 @@ SchemaRole: TypeAlias = Literal[
 ]
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ApiDeclarationFrame:
     """Borrow declaration context only while the existing model engine processes it."""
 
@@ -86,7 +86,7 @@ class ApiDeclarationFrame:
     effective_operation: dict[str, YamlValue] | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class _ApiObject:
     """Borrow a resolved object together with its actual declaration document."""
 
@@ -100,7 +100,7 @@ class _ApiObject:
         return [self.declaration.document, "#", *self.declaration.tokens]
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ApiParameterDeclaration:
     """Keep the original array occurrence separate from its resolved declaration."""
 
@@ -111,7 +111,7 @@ class ApiParameterDeclaration:
     name: str
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ApiIgnoredDeclaration:
     """Describe an ignored source region without retaining its children or values."""
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -16,6 +15,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AsyncAPIVersion
@@ -94,7 +94,7 @@ __getattr__ = create_module_getattr(
 )
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class AsyncAPIContext:
     """Resolver context for an AsyncAPI document."""
 
@@ -104,7 +104,7 @@ class AsyncAPIContext:
     base_url: str | None
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class AsyncAPIResolvedRef:
     """Resolved AsyncAPI reference with parser path and document context."""
 
@@ -113,7 +113,7 @@ class AsyncAPIResolvedRef:
     context: AsyncAPIContext
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class AsyncAPISchema:
     """AsyncAPI schema candidate with the context needed to parse it."""
 

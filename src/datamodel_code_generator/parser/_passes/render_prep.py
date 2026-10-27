@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 from datamodel_code_generator._scc import find_circular_sccs
@@ -187,7 +188,7 @@ class RenderPrepHost(
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@record
 class InheritedFieldCopies:
     """The written modules that keyword-only copies of inherited fields go to, and how they name other modules."""
 

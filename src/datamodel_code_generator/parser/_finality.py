@@ -88,6 +88,7 @@ from pydantic import BaseModel
 from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
+from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
@@ -316,7 +317,7 @@ class Rule(Enum):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class KnownWrite:
     """A finality violation of today's pipeline: reported, never raised, and made by its witness."""
 
@@ -527,7 +528,7 @@ def _getter(row: AttributeFact, dict_keys: dict[str, str], item_keys: frozenset[
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _ClassRows:
     """The fact rows of one class and how to read them."""
 
@@ -559,7 +560,7 @@ class _ClassRows:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _Entry:
     """The fact values of one object of a model's graph."""
 
@@ -573,7 +574,7 @@ class _Entry:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _ModelPrint:
     """The fingerprint of one model: its entries by object id, holding the objects."""
 
@@ -626,7 +627,7 @@ class _PassRun:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _OrderingField:
     """A field of a base that constructor ordering reads, with the values of the facts it reads."""
 
@@ -638,7 +639,7 @@ class _OrderingField:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _OrderingRead:
     """The constructor fields that ordering read from the bases of ``model``."""
 
@@ -1024,7 +1025,7 @@ def _reads_render_fact(row: AttributeFact) -> bool:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _RenderRows:
     """The render-fact rows of one class: by attribute, and by key of a dict attribute or of ``__dict__``."""
 

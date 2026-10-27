@@ -11,10 +11,11 @@ keep working.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from typing_extensions import final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -28,7 +29,7 @@ ResultT_co = TypeVar("ResultT_co", covariant=True)
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class SchemaSite(Generic[SchemaT]):
     """A schema object at a position, with what its rows read beside it."""
 
@@ -42,7 +43,7 @@ class SchemaSite(Generic[SchemaT]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Step(Generic[ParserT_contra, SchemaT]):
     """A rewrite of the site that the entries after it read."""
 
@@ -52,7 +53,7 @@ class Step(Generic[ParserT_contra, SchemaT]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Row(Generic[ParserT_contra, SchemaT, ResultT_co]):
     """A parse method and the sites it applies to."""
 
@@ -62,7 +63,7 @@ class Row(Generic[ParserT_contra, SchemaT, ResultT_co]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Default(Generic[ParserT_contra, SchemaT, ResultT_co]):
     """The parse method of the sites no row of a table applies to."""
 
@@ -71,7 +72,7 @@ class Default(Generic[ParserT_contra, SchemaT, ResultT_co]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Choice(Generic[ParserT_contra, SchemaT, ResultT_co]):
     """What a table chooses for a site: the names of the entries taken, their parse method and the rewritten site."""
 
@@ -81,7 +82,7 @@ class Choice(Generic[ParserT_contra, SchemaT, ResultT_co]):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
     """The ordered entries of a position and the parse method of the sites none of its rows applies to."""
 

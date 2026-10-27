@@ -13,7 +13,7 @@ import re
 from collections import Counter, defaultdict, deque
 from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from copy import copy, deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from functools import cached_property, lru_cache, partial, reduce, wraps
 from itertools import chain, compress
 from operator import and_, is_not
@@ -75,6 +75,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
     is_portable_pattern,
@@ -1089,7 +1090,7 @@ def _get_discriminator_property_name(obj: JsonSchemaObject) -> str | None:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _SchemaTagFacts:
     """The facts of a property schema that ``field_tag`` reads: its ``const``, its ``enum`` and its ``$ref``."""
 
@@ -2417,7 +2418,7 @@ def _unanchored_resource_ref(raw: dict[str, Any], parts: Sequence[str]) -> str |
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _DynamicEdges:
     """What the `$dynamicRef` analysis reads of a referenced schema (``JsonSchemaParser._dynamic_ref_edges``)."""
 
@@ -2439,7 +2440,7 @@ class _DynamicSpecialization(NamedTuple):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _DynamicTarget:
     """Where rule DS (``JsonSchemaParser._dynamic_scope_target``) resolves a reference in the dynamic scope."""
 

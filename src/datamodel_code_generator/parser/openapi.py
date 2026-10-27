@@ -10,7 +10,7 @@ import fnmatch
 import re
 from collections import defaultdict
 from contextlib import contextmanager, nullcontext
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from enum import Enum
 from functools import cache, cached_property, partial
 from pathlib import Path
@@ -28,6 +28,7 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
+from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
@@ -140,7 +141,7 @@ MediaSchema = JsonSchemaObject | ReferenceObject | bool
 RawSchema = dict[str, YamlValue] | StrictBool
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class MediaSchemaSource:
     """Schema extracted from a parsed OpenAPI media type object.
 
@@ -152,7 +153,7 @@ class MediaSchemaSource:
     location: SchemaLocation | None = None
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class RawMediaSchemaSource:
     """Schema extracted from a raw OpenAPI media type object."""
 

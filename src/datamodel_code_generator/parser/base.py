@@ -59,6 +59,7 @@ from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -468,7 +469,7 @@ def _source_path_from_reference_path(reference_path: str) -> list[str] | None:
     )
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ParserRunContext:
     """Immutable parser settings scoped to one facade-managed run."""
 
@@ -850,7 +851,7 @@ def _model_references(model: DataModel) -> list[Reference]:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _ModelShapeSource:
     """What the dedup and reuse keys of ``parser/_model_shapes.py`` read off the live models.
 

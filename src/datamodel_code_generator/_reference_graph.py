@@ -9,7 +9,6 @@ it replaces (`graph_answer`).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, TypeVar, final
@@ -20,6 +19,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
+from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 
 if TYPE_CHECKING:
@@ -98,7 +98,7 @@ _NO_KEYS: frozenset[ModelKey] = frozenset()
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class ReferenceGraph:
     """The models of one snapshot, in the order the pass lists them, and the edges between them by kind."""
 

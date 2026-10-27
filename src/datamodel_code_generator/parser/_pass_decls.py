@@ -11,12 +11,12 @@ source of the generated pass table in ``docs/architecture.md``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum, unique
 from typing import NamedTuple
 
 from typing_extensions import final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact
 
 __all__ = [
@@ -72,7 +72,7 @@ class After(NamedTuple):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class PassDecl:
     """The declaration of one pass: its phase and scope, and the facts it reads and writes."""
 

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypeAlias, TypeVar
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -18,7 +19,7 @@ _Model = TypeVar("_Model")
 SchemaRuntimeValidationCapabilities: TypeAlias = tuple[bool, bool]
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class SchemaRuntimeValidationModulePlan:
     """Small module-level plan reused by the final helper renderer."""
 

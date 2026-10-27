@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import is_portable_pattern
 from datamodel_code_generator._requirements import pydantic_target_meets
 
@@ -50,7 +51,7 @@ _INTERNAL_SCHEMA_RUNTIME_VALIDATION_TOKEN = Sentinel("_INTERNAL_SCHEMA_RUNTIME_V
 _INTERNAL_SCHEMA_RUNTIME_VALIDATION_ERROR = "internal schema runtime validation must be created by the parser"
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class PatternPropertiesRule:
     """Runtime rule for JSON Schema patternProperties."""
 
@@ -120,7 +121,7 @@ class IndependentModelPatternPropertiesRule(PatternPropertiesRule):
     """Distinct pattern models must validate the same original input."""
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class RequiredGroupsRule:
     """Runtime rule for required-property oneOf/anyOf groups and not-required groups."""
 
@@ -128,7 +129,7 @@ class RequiredGroupsRule:
     groups: RequiredGroups
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class ConditionalRequiredRule:
     """Runtime rule for if/then/else required-property conditions."""
 
@@ -151,7 +152,7 @@ def conditional_value_uses_json_equality(value: object) -> bool:
     return False
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class PropertyCountRule:
     """Runtime rule for JSON Schema object property-count bounds."""
 
@@ -159,7 +160,7 @@ class PropertyCountRule:
     max_properties: int | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class UniqueItemsRule:
     """Runtime rule for an array's JSON Schema ``uniqueItems`` constraint."""
 

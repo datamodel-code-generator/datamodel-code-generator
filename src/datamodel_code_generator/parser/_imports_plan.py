@@ -40,13 +40,13 @@ from __future__ import annotations
 
 from collections import Counter
 from contextlib import contextmanager
-from dataclasses import dataclass
 from itertools import chain, repeat
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from typing_extensions import final
 
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.reference import ModelResolver
 
@@ -157,7 +157,7 @@ ImportPass: TypeAlias = Literal[
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ImportProducer:
     """The pass that writes imports, and the model and the field it writes them for."""
 
@@ -167,7 +167,7 @@ class ImportProducer:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Added:
     """``Imports.append`` of the imports."""
 
@@ -179,7 +179,7 @@ class Added:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Removed:
     """``Imports.remove`` of the imports."""
 
@@ -191,7 +191,7 @@ class Removed:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Aliased:
     """``Imports.apply_alias``: the import's alias for the import of the same name, which must be counted."""
 
@@ -203,7 +203,7 @@ class Aliased:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Pruned:
     """``Imports.remove_unused``: drops every import whose bound name is not one of the used names."""
 
@@ -215,7 +215,7 @@ class Pruned:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Remapped:
     """``Imports.remap_modules`` with the overrides, unless no import is counted (reference paths stay then too)."""
 
@@ -228,7 +228,7 @@ class Remapped:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ReferenceDropped:
     """``Imports.remove_referenced_imports``: drops the import added for the reference path."""
 
@@ -240,7 +240,7 @@ class ReferenceDropped:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FutureExtracted:
     """``Imports.extract_future``: moves the ``__future__`` imports out, to be written first."""
 
@@ -254,7 +254,7 @@ ImportOperation: TypeAlias = Added | Removed | Aliased | Pruned | Remapped | Ref
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class LedgerEntry:
     """One write to an ``Imports`` and the producer that asked for it."""
 
@@ -285,7 +285,7 @@ def _key_import(key: _ImportKey, alias: str | None = None) -> Import:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _KeyState:
     """How often each import key is counted and the alias it is bound to."""
 
@@ -367,7 +367,7 @@ def _copy(imports: Imports) -> Imports:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NameRequested:
     """``ModelResolver.add`` on the resolver of a module: the path, the name asked for, as a class name or unique."""
 
@@ -378,7 +378,7 @@ class NameRequested:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NamesReleased:
     """``ModelResolver.delete_names`` on the resolver of a module."""
 
@@ -390,7 +390,7 @@ NameEvent: TypeAlias = NameRequested | NamesReleased
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NameLog:
     """The names the resolver of a module started with and every change to them, in the order made."""
 
@@ -399,7 +399,7 @@ class NameLog:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class BindingRequest:
     """The import of a model of another module: the resolver path of the import and the name it asks for."""
 
@@ -432,7 +432,7 @@ def allocate_bindings(
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FinalName:
     """The class name of a model and the module that writes it, dotted and as a path, read after the last rename."""
 
@@ -442,7 +442,7 @@ class FinalName:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NameTable:
     """The final name of every model the modules write, by model key."""
 
@@ -459,7 +459,7 @@ class NameTable:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ReferenceImport:
     """A model of another module that a module imports, with the import that binds it."""
 
@@ -471,7 +471,7 @@ class ReferenceImport:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ReferenceUse:
     """One place where a module writes the name of a model: what the plan writes there and what was written."""
 
@@ -486,7 +486,7 @@ class ReferenceUse:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ModuleImportPlan:
     """The models one module names, planned from the final names: imports of other modules' models and what is written.
 

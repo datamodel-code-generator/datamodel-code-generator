@@ -1317,9 +1317,9 @@ input-model, reference, model-composition, output-model, shared-model, schema gr
 constraint-table, and debug check flag files are classified explicitly. The composition root may select concrete
 backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
 `sys.modules`, including module-name constants and aliases. The requirement table may import only the standard library,
-`typing_extensions` and `enums`, the constraint table only those and the requirement table, `_checks.py`, which every
-layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema graph
-(`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
+`typing_extensions`, `_records` and `enums`, the constraint table only those and the requirement table, `_checks.py`,
+which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema
+graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,
 `_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the finality checks of `_finality`, the
 pipeline steps of `_pipeline` with the declarations of `_pass_decls`, `_facts` and `_phases`, and each other, not even
@@ -1341,6 +1341,12 @@ registry access such as `sys.modules[model_type.__module__]`. Private parser lif
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,
 and target; extra occurrences fail, and removed dependencies make stale entries fail so the exception cannot silently
 become permanent. The same check runs in pre-commit and pytest with actionable diagnostics.
+
+The generator's internal immutable records (the plans, facts, keys and rows of the pipeline, not public API and not the
+generated runtime) are declared with `@record` from `_records.py`: a slotted dataclass that `ty` treats as frozen, so
+every assignment to a field is a type error, while the run time adds no `__setattr__` guard to each `__init__`
+(hash and equality stay by value). A record whose tests expect the run time to reject an assignment
+(`PythonTypeAnnotation`, the schema feature sets of `parser/schema_version.py`) keeps `dataclass(frozen=True)`.
 
 ## Rendering And Formatting
 

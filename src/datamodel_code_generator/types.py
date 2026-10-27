@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum, auto
 from fractions import Fraction
@@ -64,6 +63,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
+from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
@@ -113,7 +113,7 @@ class DefaultValueRecipe(Enum):
     Decimal = auto()
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class DefaultValueDescriptor:
     """Backend-declared semantics for one generated scalar type.
 
@@ -1251,7 +1251,7 @@ _MAPPING_CONTAINERS: Final = frozenset({"mapping", "dict"})
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class TypeLeaf:
     """A type written as text: ``code``, or the hint of ``node``, whose class writes its own (a backend's override)."""
 
@@ -1261,7 +1261,7 @@ class TypeLeaf:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class RefLeaf:
     """The model ``node`` names, written by the name the model has when the expression is rendered."""
 
@@ -1269,7 +1269,7 @@ class RefLeaf:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class TypeApply:
     """What one data type writes: its ``form`` over ``args``, inside its container, quoted, with its None or its call.
 

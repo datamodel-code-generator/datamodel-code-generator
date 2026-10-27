@@ -36,10 +36,11 @@ cache names ``RenderFact.MODULE_CODE``, the code it holds.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum, unique
 
 from typing_extensions import final
+
+from datamodel_code_generator._records import record
 
 __all__ = [
     "ATTRIBUTE_FACTS",
@@ -182,7 +183,7 @@ RENDER_FACT_FREEZE_POINTS: dict[RenderFact, FreezePoint] = {
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class AttributeFact:
     """One row of the attribute-to-fact table."""
 

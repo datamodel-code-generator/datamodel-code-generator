@@ -11,9 +11,10 @@ every node, when set, is one of its holders, and no node contains itself.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -34,7 +35,7 @@ KNOWN_PARENT_MISMATCHES: Final[Mapping[ParentMismatch, str]] = MappingProxyType(
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class HolderEdge:
     """One place that holds a node: a field's type, an item or the key of another node, or a model's base class."""
 
@@ -46,7 +47,7 @@ class HolderEdge:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ChildList:
     """A ``data_types`` list object that more than one recorded node holds."""
 

@@ -22,6 +22,7 @@ from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator.imports import Import
@@ -90,7 +91,7 @@ if TYPE_CHECKING:
 _SHADOWED_IMPORTS: Final = ImportProducer("shadowed-imports")
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class _InheritedTypeModifiers:
     """Compact deferred state for a partial inherited field."""
 
@@ -543,7 +544,7 @@ def replace_model_in_list(
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ReferenceImportTarget:
     """How a module imports a model of another module: the resolver path of the import and its module and name.
 
@@ -970,7 +971,7 @@ def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel
     )
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
 
@@ -1184,7 +1185,7 @@ def _module_name_from_module_path(module: ModulePath) -> str:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _FieldTagFacts:
     """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the Enum its type names."""
 

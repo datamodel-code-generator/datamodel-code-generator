@@ -36,7 +36,7 @@ builds the public tables of ``DataTypeManager`` from it while it is imported, an
 from __future__ import annotations
 
 import operator
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from fractions import Fraction
 from math import isfinite
 from types import MappingProxyType
@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import pattern_admits
 from datamodel_code_generator._requirements import pydantic_target_meets
 
@@ -292,7 +293,7 @@ _ZERO_BOUND_CLASSES: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType({
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class OutputKeywords:
     """The constraint rows of one output model's type manager; its public ``ClassVar`` tables read them.
 
@@ -358,7 +359,7 @@ def keyword_kinds() -> tuple[tuple[frozenset[str], frozenset[str]], ...]:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DeclaredKinds:
     """The JSON kinds whose keywords the declared types of a schema hold.
 

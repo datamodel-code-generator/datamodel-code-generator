@@ -19,11 +19,11 @@ of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_fie
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
 
 from typing_extensions import assert_never
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind, is_tag_kind, literal_value_kind
 
 if TYPE_CHECKING:
@@ -222,7 +222,7 @@ of different types, or by tags more than one Struct takes."""
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class FieldTag:
     """The tag a field holds, and the row of ``FieldTagRule`` it comes from."""
 
@@ -231,7 +231,7 @@ class FieldTag:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class VariantTags:
     """The tags of a variant, and the row of ``VariantTagRule`` they come from."""
 
@@ -240,7 +240,7 @@ class VariantTags:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class EnumTagMembers:
     """The members of an Enum that tag a variant, and the row of ``EnumTagRule`` they come from."""
 

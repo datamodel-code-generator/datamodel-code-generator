@@ -12,7 +12,6 @@ import stat
 from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property, lru_cache, partial
 from itertools import count, zip_longest
@@ -41,6 +40,7 @@ from typing_extensions import TypeIs, override
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
+from datamodel_code_generator._records import record
 from datamodel_code_generator._target_unicode import (
     is_identifier,
     is_nfkc,
@@ -297,7 +297,7 @@ SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
 SCHEMA_OWNER_FRAMES_KEY: Final = "_schema_owner_frames"
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class SchemaLocation:
     """A JSON value of a loaded document: the document as reference paths name it and the tokens from its root."""
 

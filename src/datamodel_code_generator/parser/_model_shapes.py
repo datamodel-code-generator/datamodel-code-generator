@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, final
 
 from typing_extensions import Protocol, TypeVar
 
+from datamodel_code_generator._records import record
+
 if TYPE_CHECKING:
     import re
     from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
@@ -72,7 +74,7 @@ reference."""
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ShapeRow:
     """How one deduplication or reuse user compares models."""
 

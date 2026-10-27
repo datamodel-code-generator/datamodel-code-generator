@@ -25,9 +25,9 @@ writes; the fix of each deletes its row.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, TypeAlias, final
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.model._render_plan import AssignmentFacts
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ DefaultState: TypeAlias = Literal["undefined", "none", "value"]
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class WrittenData:
     """The ``field()`` arguments a stdlib dataclass or msgspec field writes: any, a default, a default factory."""
 
@@ -83,7 +83,7 @@ class WrittenData:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ModelWritten:
     """The written assignment of a neutral or Pydantic model field.
 
@@ -97,7 +97,7 @@ class ModelWritten:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DataclassWritten:
     """The written assignment of a stdlib dataclass field: its ``field()`` arguments and a forced ``field()``."""
 
@@ -106,7 +106,7 @@ class DataclassWritten:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class PydanticDataclassWritten:
     """The written assignment of a Pydantic dataclass field: its rendered call and the default factory it writes."""
 
@@ -115,7 +115,7 @@ class PydanticDataclassWritten:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class MsgspecWritten:
     """The written assignment of a msgspec Struct field: its ``field()`` arguments."""
 
@@ -126,7 +126,7 @@ WrittenAssignment: TypeAlias = ModelWritten | DataclassWritten | PydanticDatacla
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DataclassVisibility:
     """What the Pydantic dataclass template needs to see as an assignment.
 
@@ -141,7 +141,7 @@ class DataclassVisibility:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class AssignmentInputs:
     """The facts ``classify_assignment`` reads for one field.
 

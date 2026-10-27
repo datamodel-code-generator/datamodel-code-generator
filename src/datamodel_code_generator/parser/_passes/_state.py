@@ -16,6 +16,7 @@ from weakref import WeakKeyDictionary
 from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, final
 
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import DataModel, _keyed_answer
 from datamodel_code_generator.parser._phases import DecisionOutcome
 
@@ -167,7 +168,7 @@ class _RenamedType(NamedTuple):
     import_path: str
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class _ConstNarrowing:
     """The const that admits one value of the enum a model is built from, read at each value typed by that model.
 

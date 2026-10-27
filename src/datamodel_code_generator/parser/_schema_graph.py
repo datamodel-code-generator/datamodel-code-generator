@@ -30,6 +30,7 @@ from urllib.parse import unquote, urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
+from datamodel_code_generator._records import record
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
@@ -84,7 +85,7 @@ SchemaT = TypeVar("SchemaT")
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class RefReading:
     """How ``SchemaGraphBuilder.with_ref_edges`` reads the objects of a document, each reading named by a string."""
 
@@ -123,7 +124,7 @@ class RefOrigin(Enum):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class RefEdge:
     """A reference of a loaded document: a `$ref` or `$dynamicRef` keyword, or a reference the parser derives.
 
@@ -146,7 +147,7 @@ class RefEdge:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class RefKey:
     """What a reference resolves to: the reference key of its target, or the Python package a mapping names."""
 
@@ -159,7 +160,7 @@ class RefKey:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class ConvertedRefs:
     """How the references of a schema converted from another format name their targets."""
 
@@ -223,7 +224,7 @@ class ResourceIdentifier(Protocol):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class DocumentResources:
     """The schema resources of one loaded document and the absolute URIs that name its schemas.
 
