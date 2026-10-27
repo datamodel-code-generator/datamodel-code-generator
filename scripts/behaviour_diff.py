@@ -43,17 +43,22 @@ import sys
 import tempfile
 import threading
 import time
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
-from scripts._behaviour_classify import CLASSES, Allowlist, Side, Verdict, classify_cell  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_classify import CLASSES, Allowlist, Side, Verdict, classify_cell, diff  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
 DEFAULT_ALLOWLIST = Path(__file__).with_name("behaviour_diff_allowlist.toml")
@@ -80,6 +85,33 @@ PRESET_PYTHON_OLDER = "py312"
 PAYLOAD_VALID = 10
 PAYLOAD_INVALID = 12
 PAYLOAD_DRAW_TIMEOUT = 90
+DEFAULT_RECORDS = compare_release._default_cache_dir().parent / "behaviour-records"  # ruff: ignore[private-member-access]
+ERA_PYTHONS = ("3.14", "3.13", "3.12", "3.11")
+ERA_EXTRAS = "graphql,http,protobuf"
+SNIPPET_LINES = 40
+OPT_IN_TRIES = 5
+RESTORE_GROUPS = (
+    "Typing customization",
+    "Field customization",
+    "Model customization",
+    "Template customization",
+    "OpenAPI-only options",
+    "GraphQL-only options",
+)
+ALL_GROUPS = (*RESTORE_GROUPS, "Options", "General options", "Target generation options (experimental)")
+RESTORE_INVENTORY = """
+import json
+from datamodel_code_generator.arguments import arg_parser
+found = []
+for group in arg_parser._action_groups:
+    if group.title in GROUPS:
+        for action in group._group_actions:
+            if action.nargs == 0:
+                found += [[name] for name in action.option_strings]
+            elif action.choices:
+                found += [[action.option_strings[-1], str(c)] for c in action.choices if c != action.default]
+print(json.dumps(found))
+"""
 OPTION_INVENTORY = """
 import json
 from datamodel_code_generator.arguments import arg_parser
@@ -192,9 +224,11 @@ def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) ->
     return Candidate(root, (python or Path(sys.executable)).absolute(), env, revision)
 
 
-def option_inventory(python: Path) -> dict[str, list[str] | None]:
+def option_inventory(python: Path, env: dict[str, str] | None = None) -> dict[str, list[str] | None]:
     """Return every option of an interpreter's datamodel-codegen with its choices."""
-    output = subprocess.run([str(python), "-c", OPTION_INVENTORY], capture_output=True, text=True, check=True).stdout
+    output = subprocess.run(
+        [str(python), "-c", OPTION_INVENTORY], capture_output=True, text=True, check=True, env=env
+    ).stdout
     return json.loads(output)
 
 
@@ -523,36 +557,82 @@ def _selected(label: str, patterns: list[str]) -> bool:
     return not patterns or any(fnmatch.fnmatch(label, pattern) for pattern in patterns)
 
 
+def _environment_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
+    parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
+    parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
+
+
+def _gate_args(parser: argparse.ArgumentParser) -> None:
+    _environment_args(parser)
+    parser.add_argument("--tier", choices=("pr", "nightly", "release"), default="pr")
+    parser.add_argument("--types", default="", help="comma-separated --output-model-type values (default: per tier)")
+    parser.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
+    parser.add_argument(
+        "--select",
+        action="append",
+        default=[],
+        help="only inputs matching this glob (payload cases: 'payload:<case id>'); replaces the PR sample",
+    )
+    parser.add_argument("--allowlist", type=Path, default=DEFAULT_ALLOWLIST)
+    parser.add_argument("--base-python", type=Path, help="interpreter with the release already installed")
+    parser.add_argument("--candidate-python", type=Path, help="interpreter for the candidate")
+
+
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     gate = commands.add_parser("gate", help="classify every output change of the candidate against the release")
     gate.add_argument("base", nargs="?", help="released version (default: the latest tag)")
     gate.add_argument("candidate", nargs="?", help="checkout path or git revision (default: this checkout)")
-    gate.add_argument("--tier", choices=("pr", "nightly", "release"), default="pr")
-    gate.add_argument("--types", default="", help="comma-separated --output-model-type values (default: per tier)")
-    gate.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
-    gate.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
+    _gate_args(gate)
     gate.add_argument("--check", action="store_true", help="exit 1 on a violation or an invalid or stale allowlist")
-    gate.add_argument("--json", type=Path, help="write every cell that is not `same` to this file")
-    gate.add_argument(
-        "--select",
-        action="append",
-        default=[],
-        help="only inputs matching this glob (payload cases: 'payload:<case id>'); replaces the PR sample",
-    )
-    gate.add_argument("--allowlist", type=Path, default=DEFAULT_ALLOWLIST)
-    gate.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
-    gate.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
-    gate.add_argument("--base-python", type=Path, help="interpreter with the release already installed")
-    gate.add_argument("--candidate-python", type=Path, help="interpreter for the candidate")
+    gate.add_argument("--json", type=Path, help="write every cell as one JSON line to this file (read by `guide`)")
+    record = commands.add_parser("record", help="write the behaviour record of one release")
+    record.add_argument("version", help="release version, or the version a checkout is recorded as")
+    record.add_argument("checkout", nargs="?", help="checkout path or git revision to record instead of the release")
+    _environment_args(record)
+    record.add_argument("--out", type=Path, default=DEFAULT_RECORDS, help="record directory")
+    record.add_argument("--types", default=",".join(compare_release.DEFAULT_TYPES))
+    record.add_argument("--select", action="append", default=[], help="only inputs matching this glob")
+    record.add_argument("--python", type=Path, help="interpreter that has the release (default: an era environment)")
+    query = commands.add_parser("query", help="compare two recorded releases without generating anything")
+    query.add_argument("base", help="older recorded version, or `all` for every recorded version before VERSION")
+    query.add_argument("version", help="newer recorded version")
+    query.add_argument("--records", type=Path, default=DEFAULT_RECORDS, help="record directory")
+    query.add_argument("--md", type=Path, help="write the comparison as markdown")
+    query.add_argument("--json", type=Path, help="write the comparison as JSON (the upgrade page data with `all`)")
+    guide = commands.add_parser("guide", help="write the output-change page data and release notes of a release")
+    guide.add_argument("base", help="previous release")
+    guide.add_argument("version", help="the release the page describes")
+    guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
+    _gate_args(guide)
+    guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
+    guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
+    guide.add_argument("--notes", type=Path, help="release-note fragment to write")
     ns = parser.parse_args(argv)
-    ns.base = ns.base or latest_tag()
-    index, _, total = ns.shard.partition("/")
-    ns.shard_index, ns.shard_total = int(index), int(total or 1)
-    if not 1 <= ns.shard_index <= ns.shard_total:
-        parser.error(f"--shard {ns.shard}: I must be between 1 and N")
+    if ns.command in {"gate", "guide"}:
+        ns.base = ns.base or latest_tag()
+        index, _, total = ns.shard.partition("/")
+        ns.shard_index, ns.shard_total = int(index), int(total or 1)
+        if not 1 <= ns.shard_index <= ns.shard_total:
+            parser.error(f"--shard {ns.shard}: I must be between 1 and N")
     return ns
+
+
+def cell_row(result: Result) -> dict[str, Any]:
+    """Return one classified cell as a JSON row (the input of `guide`)."""
+    cell, verdict = result.cell, result.verdict
+    return {
+        "input": cell.label,
+        "file_type": cell.file_type,
+        "type": cell.backend,
+        "options": cell.option_label,
+        "kind": cell.kind,
+        "class": verdict.cls,
+        "notes": list(verdict.notes),
+        "accepted_by": sorted(verdict.accepted_by),
+    }
 
 
 def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
@@ -584,25 +664,12 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
         f"cached base outputs: {gate.cache.hits}"
     )
     if ns.json:
-        rows = [
-            {
-                "input": r.cell.label,
-                "type": r.cell.backend,
-                "options": r.cell.option_label,
-                "kind": r.cell.kind,
-                "class": r.verdict.cls,
-                "notes": list(r.verdict.notes),
-            }
-            for r in results
-            if r.verdict.cls != "same"
-        ]
-        ns.json.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+        ns.json.write_text("".join(json.dumps(cell_row(result)) + "\n" for result in results), encoding="utf-8")
     return 1 if ns.check and (counts["violation"] or problems) else 0
 
 
-def gate_main(ns: argparse.Namespace) -> int:
-    """Run the gate."""
-    started = time.monotonic()
+def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
+    """Return the gate of a release and a candidate, and the release's interpreter."""
     cache_dir = ns.cache_dir.absolute()
     candidate = resolve_candidate(ns.candidate, ns.candidate_python, cache_dir)
     if ns.base_python is not None:
@@ -630,6 +697,13 @@ def gate_main(ns: argparse.Namespace) -> int:
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
     )
+    return gate, base_python
+
+
+def gate_main(ns: argparse.Namespace) -> int:
+    """Run the gate."""
+    started = time.monotonic()
+    gate, base_python = build_gate(ns)
     inventory = option_inventory(base_python)
     cells = [
         cell
@@ -653,6 +727,381 @@ def gate_main(ns: argparse.Namespace) -> int:
     code = _report(results, gate, ns)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
+
+
+def _drop_unsupported_formatters(args: list[str], inventory: dict[str, list[str] | None]) -> list[str]:
+    """Drop `--formatters` from a release that predates it (formatting is not behaviour)."""
+    if "--formatters" in inventory or "--formatters" not in args:
+        return args
+    index = args.index("--formatters")
+    end = index + 1
+    while end < len(args) and not args[end].startswith("--"):
+        end += 1
+    return args[:index] + args[end:]
+
+
+def _pypi_upload_date(version: str) -> str:
+    import urllib.request  # ruff: ignore[import-outside-top-level]
+
+    url = f"https://pypi.org/pypi/datamodel-code-generator/{version}/json"
+    with urllib.request.urlopen(url, timeout=30) as response:
+        files = json.load(response)["urls"]
+    return min(file["upload_time_iso_8601"] for file in files)
+
+
+def era_python(version: str, cache_dir: Path) -> Path:
+    """Install a release with the packages of its release day (`uv --exclude-newer`) and return its interpreter.
+
+    The newest Python of ERA_PYTHONS the release imports on is used.
+    """
+    import datetime as dt  # ruff: ignore[import-outside-top-level]
+    import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only, like compare_release
+
+    root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}"
+    root.parent.mkdir(parents=True, exist_ok=True)
+    with (root.parent / f"{root.name}.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if (root / ".complete").exists():
+            return root / "bin" / "python"
+        uploaded = dt.datetime.fromisoformat(_pypi_upload_date(version).replace("Z", "+00:00"))
+        newer = (uploaded + dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        for python in ERA_PYTHONS:
+            shutil.rmtree(root, ignore_errors=True)
+            install = [
+                ["uv", "venv", "-q", "--python", python, str(root)],
+                [
+                    "uv",
+                    "pip",
+                    "install",
+                    "-q",
+                    "--python",
+                    str(root / "bin" / "python"),
+                    "--exclude-newer",
+                    newer,
+                    f"datamodel-code-generator[{ERA_EXTRAS}]=={version}",
+                    "black",
+                    "isort",
+                ],
+                [str(root / "bin" / "python"), "-c", "import datamodel_code_generator.__main__"],
+            ]
+            if all(subprocess.run(step, capture_output=True, check=False).returncode == 0 for step in install):
+                (root / ".complete").touch()
+                return root / "bin" / "python"
+    msg = f"datamodel-code-generator {version} installs on none of {', '.join(ERA_PYTHONS)}"
+    raise SystemExit(msg)
+
+
+def _write_json(path: Path, data: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp.write_text(json.dumps(data, sort_keys=True), encoding="utf-8")
+    tmp.replace(path)
+
+
+def record_cell(gate: Gate, cell: Cell, args: list[str], out: Path) -> dict[str, Any]:
+    """Generate one cell with the recorded release and store its signature under `out/signatures`."""
+    with tempfile.TemporaryDirectory() as name:
+        tmp = Path(name)
+        outcome = gate.cache.get(cell.input, args, import_check=False)
+        if outcome is None:
+            outcome = gate.base.generate(args, tmp)
+            gate.cache.put(cell.input, args, outcome, import_check=False)
+        if not outcome.ok:
+            return {"gen": "fail", "error": redact(outcome.error)[:200]}
+        payloads = payloads_for(gate, cell)
+        payload_text = payloads.read_text(encoding="utf-8") if payloads else ""
+        key = _stable(json.dumps([outcome.tree, cell.backend, payload_text]))[:24]
+        path = out / "signatures" / f"{key}.json"
+        if not path.exists():
+            target = _write_tree(outcome.tree, tmp / "sig")
+            _write_json(path, signature(gate, target, cell.backend, payloads))
+    entry: dict[str, Any] = {"gen": "ok", "sig": key}
+    if payload_text:
+        valid = [e["id"] for e in json.loads(payload_text) if e.get("kind") == "valid" and e.get("expect") == "accept"]
+        entry["valid"] = sorted(valid)
+    return entry
+
+
+def record_main(ns: argparse.Namespace) -> int:
+    """Write the behaviour record of one release: every fixture and payload case x type with default options."""
+    started = time.monotonic()
+    cache_dir, out = ns.cache_dir.absolute(), ns.out.absolute()
+    recorder = resolve_candidate(None, None, cache_dir)
+    if ns.checkout:
+        source = resolve_candidate(ns.checkout, ns.python, cache_dir)
+        python, env, cache = source.python, source.env, compare_release.OutputCache(None)
+    else:
+        python = (ns.python or era_python(ns.version, cache_dir)).absolute()
+        env = {k: v for k, v in recorder.env.items() if k != "PYTHONPATH"}
+        cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{python.parent.parent.name}")
+    runner = compare_release.Runner(compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout)
+    gate = Gate(
+        base=runner,
+        candidate=runner,
+        cache=cache,
+        candidate_python=Path(sys.executable).absolute(),
+        allowlist=Allowlist(),
+        loaded_allowlist=Allowlist(),
+        timeout=ns.timeout,
+        payload_dir=cache_dir / "payloads",
+        payload_root=cache_dir / "payload-inputs" / _stable(str(recorder.root))[:12],
+        candidate_info=recorder,
+    )
+    types = ns.types.split(",")
+    inputs = [(n, t) for n, t in fixture_inputs(recorder, latest_tag()) if _selected(n, ns.select)]
+    cells = [Cell(recorder.root / name, name, file_type, backend) for name, file_type in inputs for backend in types]
+    if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
+        cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
+    inventory = option_inventory(python, env)
+
+    def run(cell: Cell) -> tuple[str, dict[str, Any]]:
+        key = f"{cell.label}|{cell.backend}|{cell.option_label}"
+        args = _drop_unsupported_formatters(cell.args(), inventory)
+        if reason := opt_in_reason(args, inventory):
+            return key, {"gen": "unsupported", "error": f"the release has no {reason}"}
+        return key, record_cell(gate, cell, args, out)
+
+    try:
+        with ThreadPoolExecutor(ns.j) as pool:
+            entries = dict(pool.map(run, cells))
+    finally:
+        runner.close()
+    _write_json(out / f"{ns.version}.json", {"version": ns.version, "types": types, "cells": entries})
+    counts = Counter(entry["gen"] for entry in entries.values())
+    print(f"recorded {ns.version}: {len(entries)} cells ({dict(counts)}) in {time.monotonic() - started:.0f}s")
+    return 0
+
+
+def load_records(directory: Path) -> tuple[dict[str, dict[str, Any]], Callable[[str], dict[str, Any]]]:
+    """Return every record in a directory and a cached signature loader."""
+    records = {
+        path.stem: json.loads(path.read_text(encoding="utf-8"))
+        for path in directory.glob("*.json")
+        if path.stem[:1].isdigit()
+    }
+    cache: dict[str, dict[str, Any]] = {}
+
+    def load(key: str) -> dict[str, Any]:
+        if key not in cache:
+            cache[key] = json.loads((directory / "signatures" / f"{key}.json").read_text(encoding="utf-8"))
+        return cache[key]
+
+    return records, load
+
+
+def query_main(ns: argparse.Namespace) -> int:
+    """Compare recorded releases; with `all`, every recorded release before VERSION against VERSION."""
+    from scripts.build_behaviour_docs import render_comparison  # ruff: ignore[import-outside-top-level]
+
+    records, load = load_records(ns.records)
+    missing = [v for v in (ns.base, ns.version) if v != "all" and v not in records]
+    if missing:
+        msg = f"no record for {', '.join(missing)} in {ns.records}: run `behaviour_diff.py record VERSION` first"
+        raise SystemExit(msg)
+    olds = (
+        sorted((v for v in records if version_key(v) < version_key(ns.version)), key=version_key)
+        if ns.base == "all"
+        else [ns.base]
+    )
+    comparisons = [compare_records(records, old, ns.version, load) for old in olds]
+    data: dict[str, Any] = (
+        {"schema_version": 1, "to": ns.version, "rows": comparisons} if ns.base == "all" else comparisons[0]
+    )
+    if ns.json:
+        ns.json.parent.mkdir(parents=True, exist_ok=True)
+        ns.json.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    text = "\n\n".join(render_comparison(comparison, level=1) for comparison in comparisons) + "\n"
+    if ns.md:
+        ns.md.write_text(text, encoding="utf-8")
+    if not ns.json and not ns.md:
+        print(text, end="")
+    return 0
+
+
+def _diff_text(old: dict[str, str], new: dict[str, str], limit: int = SNIPPET_LINES) -> str:
+    """Return a unified diff of two generated trees, cut after `limit` lines."""
+    import difflib  # ruff: ignore[import-outside-top-level]
+
+    lines: list[str] = []
+    for name in sorted(set(old) | set(new)):
+        lines += difflib.unified_diff(
+            old.get(name, "").splitlines(), new.get(name, "").splitlines(), name, name, n=2, lineterm=""
+        )
+    if len(lines) > limit:
+        lines = [*lines[:limit], f"... ({len(lines) - limit} more lines)"]
+    return "\n".join(lines)
+
+
+def without_option(options: list[str], option: str, flags: set[str]) -> list[str]:
+    """Return `options` without one option (`--name` or `--name value`), as an opt-in reason names it."""
+    name, _, value = option.partition(" ")
+    rest: list[str] = []
+    skip = False
+    for index, arg in enumerate(options):
+        if skip:
+            skip = False
+            continue
+        if arg == f"{name}={value}" or (not value and arg.startswith(f"{name}=")):
+            continue
+        if arg == name and (not value or options[index + 1 : index + 2] == [value]):
+            skip = name not in flags and index + 1 < len(options) and not options[index + 1].startswith("--")
+            continue
+        rest.append(arg)
+    return rest
+
+
+def restore_candidates(python: Path, env: dict[str, str], groups: tuple[str, ...] = RESTORE_GROUPS) -> list[list[str]]:
+    """Return every flag and choice value of the options in `groups` (default: the customization options)."""
+    code = RESTORE_INVENTORY.replace("GROUPS", repr(groups))
+    output = subprocess.run([str(python), "-c", code], capture_output=True, text=True, check=True, env=env).stdout
+    return json.loads(output)
+
+
+def _generate(runner: compare_release.Runner, args: list[str]) -> compare_release.Outcome:
+    with tempfile.TemporaryDirectory() as name:
+        return runner.generate(args, Path(name))
+
+
+def _restoring_options(gate: Gate, cell: Cell, old: compare_release.Outcome, ns: argparse.Namespace) -> list[str]:
+    """Return the options that make the candidate reproduce the release's behaviour signature for a cell."""
+    candidate = gate.candidate_info
+    new = _generate(gate.candidate, cell.args())
+    with tempfile.TemporaryDirectory() as name:
+        old_signature = signature(gate, _write_tree(old.tree, Path(name) / "old"), cell.backend, None)
+
+    def restores(option: list[str]) -> str | None:
+        args = cell.args() + option
+        outcome = _generate(gate.candidate, args)
+        if not outcome.ok or outcome.tree == new.tree:
+            return None
+        if outcome.tree == old.tree:
+            return " ".join(option)
+        with tempfile.TemporaryDirectory() as name:
+            tried = signature(gate, _write_tree(outcome.tree, Path(name) / "new"), cell.backend, None)
+        return " ".join(option) if not [c for c in diff(old_signature, tried) if c.behaviour] else None
+
+    options = restore_candidates(candidate.python, candidate.env)
+    with ThreadPoolExecutor(ns.j) as pool:
+        return sorted(found for found in pool.map(restores, options) if found)
+
+
+def _smallest_fixture(rows: list[dict[str, Any]], root: Path) -> dict[str, Any] | None:
+    fixtures = [row for row in rows if not row["input"].startswith("payload:") and (root / row["input"]).exists()]
+    order = {"default": 0, "preset": 1, "cli-doc": 2}
+
+    def size(row: dict[str, Any]) -> tuple[int, int, str, str]:
+        path = root / row["input"]
+        total = sum(f.stat().st_size for f in path.rglob("*") if f.is_file()) if path.is_dir() else path.stat().st_size
+        return order.get(row["kind"], 3), total, row["input"], row["type"]
+
+    return min(fixtures, key=size, default=None)
+
+
+def _row_cell(row: dict[str, Any], root: Path) -> Cell:
+    data = root / "tests" / "data"
+    options = tuple(
+        str(data / option) if not option.startswith("-") and (data / option).exists() else option
+        for option in ([] if row["options"] == "default" else row["options"].split(" "))
+    )
+    return Cell(root / row["input"], row["input"], row["file_type"], row["type"], options, row["kind"])
+
+
+def enrich_accepted(gate: Gate, rows: list[dict[str, Any]], data: dict[str, Any], ns: argparse.Namespace) -> None:
+    """Add an example diff and the options that keep the old output to every accepted change."""
+    root = gate.candidate_info.root
+    for group in data["accepted"]:
+        members = [row for row in rows if row["class"] == "accepted" and row["input"] in group["inputs"]]
+        if (row := _smallest_fixture(members, root)) is None:
+            continue
+        cell = _row_cell(row, root)
+        old = _generate(gate.base, cell.args())
+        new = _generate(gate.candidate, cell.args())
+        group["example"] = {
+            "input": row["input"],
+            "type": row["type"],
+            "options": row["options"],
+            "diff": _diff_text(old.tree, new.tree),
+        }
+        group["restored_by"] = _restoring_options(gate, cell, old, ns)
+
+
+def enrich_opt_in(gate: Gate, rows: list[dict[str, Any]], data: dict[str, Any]) -> None:
+    """Add, for each new option, the candidate's output with and without it on its smallest affected input."""
+    root = gate.candidate_info.root
+    candidate = gate.candidate_info
+    flags = {
+        option[0] for option in restore_candidates(candidate.python, candidate.env, ALL_GROUPS) if len(option) == 1
+    }
+    for group in data["opt_in"]:
+        members = [
+            row
+            for row in rows
+            if row["class"] == "opt-in" and row["notes"][0] == f"the release has no {group['option']}"
+        ]
+        for _ in range(OPT_IN_TRIES):
+            if (row := _smallest_fixture(members, root)) is None:
+                break
+            members.remove(row)
+            cell = _row_cell(row, root)
+            rest = without_option(list(cell.options), group["option"], flags)
+            plain = Cell(cell.input, cell.label, cell.file_type, cell.backend, tuple(rest))
+            with_option, without = _generate(gate.candidate, cell.args()), _generate(gate.candidate, plain.args())
+            if with_option.ok and without.ok and with_option.tree != without.tree:
+                group["example"] = {
+                    "input": row["input"],
+                    "type": row["type"],
+                    "options": row["options"],
+                    "diff": _diff_text(without.tree, with_option.tree),
+                }
+                break
+
+
+def render_notes(data: dict[str, Any]) -> str:
+    """Return the release-note fragment of a release page's data."""
+    version, previous = data["version"], data["previous"]
+    totals = Counter()
+    for by_class in data["counts"].values():
+        totals.update(by_class)
+    lines = [
+        f"## Output changes from {previous}",
+        "",
+        (
+            f"Compared over {sum(totals.values())} generations ({', '.join(data['types'])}); details: "
+            f"[Output changes in {version}](https://datamodel-code-generator.koxudaxi.dev/output-changes/{version}/)."
+        ),
+        "",
+        f"- Unchanged: {totals['same']}; formatting or import order only: {totals['no-behaviour']}",
+        f"- Fixed crashes (the release failed to generate, import or validate): {totals['crash-fix']}",
+    ]
+    for group in data["accepted"]:
+        keep = ", ".join(f"`{option}`" for option in group.get("restored_by", [])) or "no option restores it"
+        lines.append(f"- {group['release_note']} ({group['decision']}; to keep the old output: {keep})")
+    if data["opt_in"]:
+        lines.append("- New opt-in options: " + ", ".join(f"`{group['option']}`" for group in data["opt_in"]))
+    return "\n".join(lines) + "\n"
+
+
+def guide_main(ns: argparse.Namespace) -> int:
+    """Write a release page's data (and release notes) from a gate run of the release against the previous one."""
+    gate, _ = build_gate(ns)
+    try:
+        if not ns.cells:
+            ns.check, ns.json = False, ns.cache_dir.absolute() / f"guide-{ns.base}-{ns.version}.jsonl"
+            gate_main(ns)
+            ns.cells = [ns.json]
+        rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
+        data = summarize_gate(rows, gate.loaded_allowlist.entries)
+        data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
+        enrich_accepted(gate, rows, data, ns)
+        enrich_opt_in(gate, rows, data)
+    finally:
+        gate.base.close()
+        gate.candidate.close()
+    ns.docs.parent.mkdir(parents=True, exist_ok=True)
+    ns.docs.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    if ns.notes:
+        ns.notes.write_text(render_notes(data), encoding="utf-8")
+    return 0
 
 
 def _payload_cases(root: Path, out: Path) -> None:
@@ -764,7 +1213,9 @@ def main(argv: list[str] | None = None) -> int:
         with contextlib.suppress(Exception):
             _draw_payloads(Path(argv[1]), argv[2], Path(argv[3]))
         return 0
-    return gate_main(_parse_args(argv))
+    ns = _parse_args(argv)
+    commands = {"gate": gate_main, "record": record_main, "query": query_main, "guide": guide_main}
+    return commands[ns.command](ns)
 
 
 if __name__ == "__main__":

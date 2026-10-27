@@ -1,0 +1,962 @@
+{
+ "accepted": [
+  {
+   "aspects": [
+    "type",
+    "config"
+   ],
+   "cells": 67,
+   "decision": "#5017 (crash fix class)",
+   "entry": "*property_names*",
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -8,5 +8,5 @@\n \n class A(BaseModel):\n-    m: dict[Key, int] | None = None\n+    m: dict[constr(max_length=3), int] | None = None\n \n ",
+    "input": "tests/data/jsonschema/property_names_root_model_key_modules/z.json",
+    "options": "default",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": [
+    "tests/data/jsonschema/collapse_root_models_property_names_reference.json",
+    "tests/data/jsonschema/compound_property_names",
+    "tests/data/jsonschema/property_names_root_model_key_modules/keys.json",
+    "tests/data/jsonschema/property_names_root_model_key_modules/z.json",
+    "tests/data/jsonschema/property_names_root_model_key_override.json",
+    "tests/data/jsonschema/property_names_root_model_key_unions.json",
+    "tests/data/jsonschema/property_names_root_model_keys.json"
+   ],
+   "option_sets": [
+    "--preset practical-py310-20261017",
+    "--preset practical-py312-20260619",
+    "--preset practical-py312-20260826",
+    "--preset practical-py312-20260909",
+    "--preset practical-py312-20261015",
+    "--preset practical-py314-20261017",
+    "--preset standard-py310-20261017",
+    "--preset standard-py312-20260619",
+    "--preset standard-py312-20260826",
+    "--preset standard-py312-20260909",
+    "--preset standard-py312-20261015",
+    "--preset standard-py314-20261017",
+    "default"
+   ],
+   "reason": "propertyNames dict keys RootModel -> constrained str: 0.86.0 keys are unhashable (crash class)",
+   "release_note": "propertyNames keys are typed as constrained str instead of a RootModel that could not be hashed",
+   "restored_by": [],
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "aspects": [
+    "type"
+   ],
+   "cells": 38,
+   "decision": "#5088 (kept and announced in the 0.87.0 release notes)",
+   "entry": "tests/data/jsonschema/external_anchor",
+   "example": {
+    "diff": "--- pkg/root.py\n+++ pkg/root.py\n@@ -11,6 +11,6 @@\n @dataclass\n class ExternalAnchor:\n-    anchored: child.NestedChild | None = None\n-    anchored_again: child.NestedChild | None = None\n+    anchored: child.AnchoredChild | None = None\n+    anchored_again: child.AnchoredChild | None = None\n     legacy: child.LegacyChild | None = None\n     nested: child.NestedChild | None = None",
+    "input": "tests/data/jsonschema/external_anchor",
+    "options": "default",
+    "type": "dataclasses.dataclass"
+   },
+   "inputs": [
+    "tests/data/jsonschema/external_anchor"
+   ],
+   "option_sets": [
+    "--preset practical-py310-20261017",
+    "--preset practical-py312-20260619",
+    "--preset practical-py312-20260826",
+    "--preset practical-py312-20260909",
+    "--preset practical-py312-20261015",
+    "--preset practical-py314-20261017",
+    "--preset standard-py310-20261017",
+    "--preset standard-py312-20260619",
+    "--preset standard-py312-20260826",
+    "--preset standard-py312-20260909",
+    "--preset standard-py312-20261015",
+    "--preset standard-py314-20261017",
+    "default"
+   ],
+   "reason": "spec-correct $anchor target; 0.86.0 depended on file read order",
+   "release_note": "an external $anchor resolves to the anchored schema regardless of file read order",
+   "restored_by": [],
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  }
+ ],
+ "classes": [
+  "same",
+  "no-behaviour",
+  "crash-fix",
+  "accepted",
+  "violation",
+  "both-fail",
+  "opt-in"
+ ],
+ "counts": {
+  "dataclasses.dataclass": {
+   "accepted": 5,
+   "both-fail": 667,
+   "crash-fix": 302,
+   "no-behaviour": 28,
+   "opt-in": 20,
+   "same": 10280,
+   "violation": 2
+  },
+  "msgspec.Struct": {
+   "accepted": 10,
+   "both-fail": 1708,
+   "crash-fix": 1175,
+   "no-behaviour": 44,
+   "opt-in": 22,
+   "same": 23527,
+   "violation": 6
+  },
+  "pydantic_v2.BaseModel": {
+   "accepted": 80,
+   "both-fail": 1743,
+   "crash-fix": 1097,
+   "no-behaviour": 96,
+   "opt-in": 39,
+   "same": 23579,
+   "violation": 57
+  },
+  "pydantic_v2.dataclass": {
+   "accepted": 5,
+   "both-fail": 670,
+   "crash-fix": 426,
+   "no-behaviour": 37,
+   "opt-in": 23,
+   "same": 10113,
+   "violation": 19
+  },
+  "typing.TypedDict": {
+   "accepted": 5,
+   "both-fail": 537,
+   "crash-fix": 270,
+   "no-behaviour": 33,
+   "same": 8648,
+   "violation": 12
+  }
+ },
+ "crash_fixes": [
+  {
+   "cells": 1334,
+   "error": "no exception name",
+   "examples": [
+    {
+     "detail": "$ref file not found: tests/data/jsonschema/allof_inherited_ref_other",
+     "input": "tests/data/jsonschema/allof_inherited_ref_other_directory",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "allOf contains a boolean false schema that makes the schema unsatisfiable",
+     "input": "tests/data/jsonschema/allof_ref_siblings",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    },
+    {
+     "detail": "Unresolved $id reference '#inner' in scope 'anchor_in_one_of.json'. Known $id values: <none>",
+     "input": "tests/data/jsonschema/anchor_in_one_of.json",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 44,
+   "stage": "generation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 536,
+   "error": "TypeError",
+   "examples": [
+    {
+     "detail": "TypeError: The core schema type 'str' is not a valid discriminated union variant.",
+     "input": "tests/data/jsonschema/discriminator_lone_scalar_variant.json",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    },
+    {
+     "detail": "TypeError: non-default argument 'kind' follows default argument 'name'",
+     "input": "tests/data/jsonschema/discriminator_tag_of_earlier_module",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "TypeError: `tag` must be a `str` or an `int`",
+     "input": "tests/data/jsonschema/discriminator_tag_value_kinds.json",
+     "options": "default",
+     "type": "msgspec.Struct"
+    }
+   ],
+   "inputs": 40,
+   "stage": "import",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 273,
+   "error": "no validator or unusable value",
+   "examples": [
+    {
+     "detail": "[type] UserAlias: Annotated[User, discriminator='kind'] -> User",
+     "input": "tests/data/asyncapi/edge-cases.yaml",
+     "options": "default",
+     "type": "pydantic_v2.dataclass"
+    },
+    {
+     "detail": "[type] anchored_disjoint:Root: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+     "input": "tests/data/jsonschema/additional_pattern_intersections",
+     "options": "default",
+     "type": "msgspec.Struct"
+    },
+    {
+     "detail": "[type] union:SomeSpec:services: Union[dict[str, int], dict[str, str]] -> dict[str, Union[int, str]]",
+     "input": "tests/data/jsonschema/annotated_string_keys",
+     "options": "default",
+     "type": "msgspec.Struct"
+    }
+   ],
+   "inputs": 32,
+   "stage": "validation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 164,
+   "error": "ImportError",
+   "examples": [
+    {
+     "detail": "ImportError: attempted relative import with no known parent package",
+     "input": "tests/data/openapi/allof_self_reference_base.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "ImportError: cannot import name 'ReceivedDebit' from partially initialized module 'pkg._internal' (most likely due to a ",
+     "input": "tests/data/openapi/circular_imports_module_below_package.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "ImportError: cannot import name 'Item' from partially initialized module 'pkg._internal' (most likely due to a circular ",
+     "input": "tests/data/openapi/circular_imports_module_using_module_below_package.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 4,
+   "stage": "import",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 160,
+   "error": "ValueError",
+   "examples": [
+    {
+     "detail": "ValueError: `tag_field='k' conflicts with an existing field of that name",
+     "input": "tests/data/jsonschema/discriminator_enum_const_outside_enum.json",
+     "options": "default",
+     "type": "msgspec.Struct"
+    },
+    {
+     "detail": "ValueError: invalid literal for int() with base 10: 'a'",
+     "input": "tests/data/jsonschema/enum_value_base_kinds.json",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "ValueError: `tag_field='k' conflicts with an existing field of that name",
+     "input": "tests/data/jsonschema/msgspec_tag_below_instance_field.json",
+     "options": "default",
+     "type": "msgspec.Struct"
+    }
+   ],
+   "inputs": 11,
+   "stage": "import",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 155,
+   "error": "OverflowError",
+   "examples": [
+    {
+     "detail": "OverflowError: int too large to convert to float",
+     "input": "tests/data/jsonschema/msgspec_number_limits",
+     "options": "default",
+     "type": "msgspec.Struct"
+    },
+    {
+     "detail": "OverflowError: int too large to convert to float",
+     "input": "tests/data/jsonschema/msgspec_number_limits/float_range_bounds.json",
+     "options": "default",
+     "type": "msgspec.Struct"
+    },
+    {
+     "detail": "OverflowError: int too large to convert to float",
+     "input": "tests/data/jsonschema/numeric_constraint_precision",
+     "options": "default",
+     "type": "msgspec.Struct"
+    }
+   ],
+   "inputs": 5,
+   "stage": "generation",
+   "types": [
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 150,
+   "error": "NameError",
+   "examples": [
+    {
+     "detail": "NameError: name 'Node' is not defined",
+     "input": "tests/data/jsonschema/annotated_forward_reference.json",
+     "options": "default",
+     "type": "typing.TypedDict"
+    },
+    {
+     "detail": "NameError: name 'inf' is not defined",
+     "input": "tests/data/jsonschema/literal_constraints_undecided.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "NameError: name 'inf' is not defined",
+     "input": "tests/data/jsonschema/non_finite_enum_members.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 14,
+   "stage": "import",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 135,
+   "error": "ValidationError",
+   "examples": [
+    {
+     "detail": "For further information visit https://errors.pydantic.dev/2.14/v/float_type",
+     "input": "tests/data/jsonschema/allof_constraint_intersections",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "For further information visit https://errors.pydantic.dev/2.14/v/float_type",
+     "input": "tests/data/jsonschema/allof_constraint_intersections/property_named_bounds.json",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+     "input": "tests/data/jsonschema/discriminator_tag_value_kinds.json",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 6,
+   "stage": "generation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 131,
+   "error": "AttributeError",
+   "examples": [
+    {
+     "detail": "AttributeError: 'bool' object has no attribute 'get'",
+     "input": "tests/data/openapi/allof_boolean_member",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "AttributeError: 'bool' object has no attribute 'get'",
+     "input": "tests/data/openapi/allof_boolean_member/external.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "AttributeError: 'bool' object has no attribute 'get'",
+     "input": "tests/data/openapi/allof_boolean_member/openapi.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 5,
+   "stage": "generation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 105,
+   "error": "PydanticUserError",
+   "examples": [
+    {
+     "detail": "PydanticUserError: Model 'User' needs field 'kind' to be of type `Literal`",
+     "input": "tests/data/asyncapi/edge-cases.yaml",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    },
+    {
+     "detail": "PydanticUserError: Model 'Untagged' needs a discriminator field for key 'type'",
+     "input": "tests/data/jsonschema/discriminator_lone_variant_modules",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    },
+    {
+     "detail": "PydanticUserError: Model 'Untagged' needs a discriminator field for key 'type'",
+     "input": "tests/data/jsonschema/discriminator_lone_variant_modules/a.json",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    }
+   ],
+   "inputs": 9,
+   "stage": "import",
+   "types": [
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 45,
+   "error": "TypeError",
+   "examples": [
+    {
+     "detail": "TypeError: cannot use 'tuple' as a set element (unhashable type: 'list')",
+     "input": "tests/data/jsonschema/allof_type_list_member.json",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    },
+    {
+     "detail": "TypeError: cannot use 'tuple' as a set element (unhashable type: 'list')",
+     "input": "payload:jsonschema/allof_type_list_member.json",
+     "options": "--target-python-version 3.14 --class-name Payload --disable-timestamp",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 2,
+   "stage": "generation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 41,
+   "error": "NotADirectoryError",
+   "examples": [
+    {
+     "detail": "NotADirectoryError: [Errno 20] Not a directory: 'tests/data/asyncapi/avro-named-types",
+     "input": "tests/data/asyncapi/avro-named-types.yaml",
+     "options": "default",
+     "type": "dataclasses.dataclass"
+    }
+   ],
+   "inputs": 1,
+   "stage": "generation",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "cells": 28,
+   "error": "OverflowError",
+   "examples": [
+    {
+     "detail": "OverflowError: cannot fit 'int' into an index-sized integer",
+     "input": "tests/data/jsonschema/enum_byte_counts_overflow.json",
+     "options": "--preset practical-py310-20261017",
+     "type": "msgspec.Struct"
+    }
+   ],
+   "inputs": 1,
+   "stage": "import",
+   "types": [
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 13,
+   "error": "AttributeError",
+   "examples": [
+    {
+     "detail": "AttributeError: partially initialized module 'pkg.keys' from '<path>",
+     "input": "tests/data/jsonschema/property_names_root_model_key_modules",
+     "options": "default",
+     "type": "pydantic_v2.BaseModel"
+    }
+   ],
+   "inputs": 1,
+   "stage": "import",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  }
+ ],
+ "kinds": {
+  "cli-doc": 242,
+  "default": 9495,
+  "payload": 7184,
+  "preset": 68364
+ },
+ "numbered_names": [],
+ "opt_in": [
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -37,6 +37,5 @@\n             additional_adapter = None\n             for key, value in data.items():\n-                if key in rule['declared_properties']:\n-                    continue\n+                declared = key in rule['declared_properties']\n                 if any(\n                     re.search(pattern, key) for pattern in rule['rejected_patterns']\n@@ -57,9 +56,11 @@\n                         adapter = TypeAdapter(value_type)\n                         pattern_adapters[index] = adapter\n-                    value = adapter.validate_python(value)\n+                    validated = adapter.validate_python(value)\n+                if declared:\n+                    continue\n                 if matched:\n                     if values is data:\n                         values = dict(data)\n-                    values[key] = value\n+                    values[key] = validated\n                     continue\n                 if rule['additional_property_type'] is not None:\n@@ -106,5 +107,5 @@\n     )\n \n-    root: dict[str, Any] = Field(..., max_length=0, min_length=1)\n+    root: dict[str, Any] = Field(..., min_length=1)\n \n ",
+    "input": "tests/data/jsonschema/object_maps/strict_pattern_maps.json",
+    "options": "--generate-schema-validators --check-pattern-maps-strictly",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--check-pattern-maps-strictly",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -29,13 +29,9 @@\n \n \n-class Payload2(BaseModel):\n-    value: Value | None = None\n-\n-\n class ParentRequest(BaseModel):\n-    payload: Payload2 | None = None\n+    payload: Payload1 | None = None\n \n \n class ParentResponse(BaseModel):\n     id: int | None = None\n-    payload: Payload2 | None = None\n+    payload: Payload1 | None = None",
+    "input": "tests/data/openapi/read_only_write_only_allof_parent_inline_models.yaml",
+    "options": "--read-only-write-only-model-type request-response --dedupe-request-response-variants",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--dedupe-request-response-variants",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 5,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -11,5 +11,4 @@\n class BarEnum(Enum):\n     hello = 'hello'\n-    goodbye = 'goodbye'\n \n ",
+    "input": "tests/data/openapi/max_items_enum.yaml",
+    "options": "--filter-literal-values",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 2,
+   "option": "--filter-literal-values",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "inputs": 1,
+   "option": "--input-file-type malformed",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 9,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -22,9 +22,8 @@\n class E1(Enum):\n     b = 'b'\n-    c = 'c'\n \n \n class Child(Base):\n-    x: conint(le=20) | None = None\n+    x: conint(le=10) | None = None\n     e: E1 | None = None\n     y: conint(ge=0, le=5) | None = None",
+    "input": "tests/data/jsonschema/schema_intersection/inherited_overrides.json",
+    "options": "--intersect-allof-keywords",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 3,
+   "option": "--intersect-allof-keywords",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 9,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -19,5 +19,5 @@\n \n \n-class IntThenFloat(IntEnum):\n+class IntThenFloat(Enum):\n     integer_1 = 1\n     integer_2_5 = 2.5",
+    "input": "tests/data/jsonschema/enum_value_base_kinds.json",
+    "options": "--keep-enum-member-values",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 3,
+   "option": "--keep-enum-member-values",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -8,17 +8,17 @@\n \n class Weight(RootModel[float]):\n-    root: float = Field(None, ge=0.0)\n+    root: float = Field(..., ge=0.0)\n \n \n class Quantity(RootModel[int]):\n-    root: int = Field(5, ge=0)\n+    root: int = Field(..., ge=0)\n \n \n class Quantity1(RootModel[str]):\n-    root: str = Field(5, max_length=3)\n+    root: str = Field(..., max_length=3)\n \n \n class Tags(RootModel[list[str]]):\n-    root: list[str] = Field(None, min_length=1)\n+    root: list[str] = Field(..., min_length=1)\n \n ",
+    "input": "tests/data/openapi/extracted_branch_default.yaml",
+    "options": "--field-constraints --keep-field-defaults-off-branch-roots",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--keep-field-defaults-off-branch-roots",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 3,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -18,5 +18,5 @@\n \n class Count(RootModel[NonNegativeInt | None]):\n-    root: Annotated[NonNegativeInt | None, Field(ge=0)]\n+    root: NonNegativeInt | None\n \n \n@@ -25,18 +25,6 @@\n \n \n-class Model1(RootModel[Literal['gpt-live-1']]):\n-    root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]\n-\n-\n class ConstModel(RootModel[str]):\n     root: Annotated[str, Field(min_length=1)]\n-\n-\n-class ConstModel1(RootModel[Literal['gpt-live-1']]):\n-    root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]\n-\n-\n-class Code(RootModel[Literal['abc']]):\n-    root: Annotated[Literal['abc'], Field(min_length=2)]\n \n \n@@ -45,22 +33,18 @@\n \n \n-class PatternedItem(RootModel[Literal['abc']]):\n-    root: Annotated[Literal['abc'], Field(min_length=1, pattern='^a')]\n-\n-\n class CountModel(RootModel[NonNegativeInt]):\n-    root: Annotated[NonNegativeInt, Field(ge=0)]\n+    root: NonNegativeInt\n \n \n... (62 more lines)",
+    "input": "tests/data/jsonschema/redundant_constraints.json",
+    "options": "--use-annotated --use-non-positive-negative-number-constrained-types --use-single-value-enum-as-const --omit-redundant-constraints",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 2,
+   "option": "--omit-redundant-constraints",
+   "types": [
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -28,8 +28,8 @@\n \n class Use(BaseModel):\n-    name_f: Name | None\n-    name_a: list[Name | None]\n-    name_m: dict[str, Name | None]\n-    name_u: Name | int | None\n+    name_f: Name\n+    name_a: list[Name]\n+    name_m: dict[str, Name]\n+    name_u: Name | int\n     name_o: Name | None\n     name_d: Name | None = None",
+    "input": "tests/data/openapi/redundant_reference_null.yaml",
+    "options": "--strict-nullable --omit-redundant-reference-null",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--omit-redundant-reference-null",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 2,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -4,9 +4,5 @@\n from __future__ import annotations\n \n-from pydantic import BaseModel, RootModel\n-\n-\n-class Node(BaseModel):\n-    children: list[Node] | None = None\n+from pydantic import BaseModel, Field, RootModel\n \n \n@@ -19,22 +15,38 @@\n \n \n-class Branch(Node):\n+class Node(BaseModel):\n+    children: list[Tree] | None = None\n+\n+\n+class Holder(BaseModel):\n+    tree: Tree | None = None\n+    trees: list[Tree] | None = None\n+    grove: Grove | None = None\n+    either: Tree | str | None = None\n+    byName: dict[str, Tree] | None = None\n+    shrub: Shrub | None = None\n+\n+\n+class Tree(RootModel[Node]):\n+    root: Node = Field(..., description='A tree.')\n+\n+\n+class Forest(RootModel[Node]):\n+    root: Node\n+\n+\n+class Grove(RootModel[Tree]):\n+    root: Tree\n... (26 more lines)",
+    "input": "tests/data/openapi/ref_siblings_recursive_target/schema.yaml",
+    "options": "--openapi-as-definitions ref-components",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 2,
+   "option": "--openapi-as-definitions",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 2,
+   "example": {
+    "diff": "--- pkg/b.py\n+++ pkg/b.py\n@@ -13,4 +13,4 @@\n @dataclass\n class Child(Base):\n-    Bar_1: a.Bar = Field(..., alias='Bar', kw_only=True)\n+    Bar_1: a.Bar = Field(..., alias='Bar')\n     Zed: str | None = None",
+    "input": "tests/data/jsonschema/field_type_collision_inherited_modules",
+    "options": "--target-python-version 3.11 --order-constructor-fields-by final-names",
+    "type": "pydantic_v2.dataclass"
+   },
+   "inputs": 2,
+   "option": "--order-constructor-fields-by",
+   "types": [
+    "msgspec.Struct",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -10,7 +10,7 @@\n @dataclass\n class AliasGeneratorModel:\n-    first_name: str\n-    foo_bar: str = Field(..., alias='foo_bar')\n-    last_name: str | None = None\n+    foo_bar: str\n+    first_name: str = Field(..., alias='firstName')\n+    last_name: str | None = Field(None, alias='lastName')\n     weird_url: int = Field(\n         ..., serialization_alias='weird-url', validation_alias=AliasChoices('weird-url')",
+    "input": "tests/data/jsonschema/alias_generator.json",
+    "options": "--snake-case-field --pin-aliases-with-alias-generator --extra-template-data jsonschema/extra_data_alias_generator.json --target-pydantic-version 2",
+    "type": "pydantic_v2.dataclass"
+   },
+   "inputs": 1,
+   "option": "--pin-aliases-with-alias-generator",
+   "types": [
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 49,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -82,8 +82,8 @@\n     propertySingle: Literal['a'] | None = None\n     words: list[Word] | None = None\n-    counts: dict[str, Counts] | None = None\n+    counts: dict[str, Literal[Counts.integer_2]] | None = None\n     branch: Branch | int | None = None\n     refSibling: Literal['on'] | None = None\n-    keys: dict[Literal['a', 'b'], int] | None = None\n+    keys: dict[Literal['a'], int] | None = None\n     refKeys: dict[Narrowed, int] | None = None\n     definition: Narrowed | None = None",
+    "input": "tests/data/jsonschema/enum_const_positions.json",
+    "options": "--read-const-beside-enum",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 13,
+   "option": "--read-const-beside-enum",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -12,6 +12,6 @@\n \n \n-class U1(RootModel[U | str | MISSING]):\n-    root: U | str | MISSING = MISSING\n+class U1(RootModel[U | str | None | MISSING]):\n+    root: U | str | None | MISSING = MISSING\n \n ",
+    "input": "tests/data/openapi/schema_intersection/null_multiple_types_oas30.yaml",
+    "options": "--use-missing-sentinel --read-nullable-beside-type-list",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--read-nullable-beside-type-list",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -3,4 +3,6 @@\n \n from __future__ import annotations\n+\n+from typing import Dict\n \n from pydantic import BaseModel, ConfigDict\n@@ -11,3 +13,6 @@\n         extra='allow',\n     )\n+    __annotations__ = {\n+        '__pydantic_extra__': Dict[str, str],\n+    }\n     name: str",
+    "input": "tests/data/jsonschema/unevaluated_properties_schema.json",
+    "options": "--read-unevaluated-properties",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--read-unevaluated-properties",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -7,9 +7,9 @@\n \n \n-class Cat(Struct, tag_field='pet_kind', tag='cat'):\n+class Cat(Struct, tag_field='pet-kind', tag='cat'):\n     name: str | UnsetType = UNSET\n \n \n-class Dog(Struct, tag_field='pet_kind', tag='dog'):\n+class Dog(Struct, tag_field='pet-kind', tag='dog'):\n     bark: str | UnsetType = UNSET\n ",
+    "input": "tests/data/jsonschema/discriminator_msgspec_wire_name.json",
+    "options": "--tag-msgspec-by-payload-name",
+    "type": "msgspec.Struct"
+   },
+   "inputs": 1,
+   "option": "--tag-msgspec-by-payload-name",
+   "types": [
+    "msgspec.Struct"
+   ]
+  },
+  {
+   "cells": 5,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -7,6 +7,4 @@\n \n \n-class Model(\n-    RootModel[dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]]\n-):\n-    root: dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]\n+class Model(RootModel[dict[constr(pattern=r'^i-|^t-|^n-'), str | int]]):\n+    root: dict[constr(pattern=r'^i-|^t-|^n-'), str | int]",
+    "input": "tests/data/jsonschema/pattern_properties_merge.json",
+    "options": "--use-single-dict-for-object-maps",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 2,
+   "option": "--use-single-dict-for-object-maps",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -9,4 +9,18 @@\n \n \n+class Quantity1(RootModel[conint(ge=1, le=10)]):\n+    root: conint(ge=1, le=10)\n+\n+\n+class Size2(Enum):\n+    m = 'm'\n+    l = 'l'\n+\n+\n+class Order(BaseModel):\n+    quantity: Quantity1 | None = None\n+    sizes: list[Size2] | None = None\n+\n+\n class Quantity(RootModel[conint(ge=1)]):\n     root: conint(ge=1)\n@@ -17,7 +31,2 @@\n     m = 'm'\n     l = 'l'\n-\n-\n-class Order(BaseModel):\n-    quantity: Quantity | None = None\n-    sizes: list[Size] | None = None",
+    "input": "tests/data/jsonschema/site_models_for_constrained_refs.json",
+    "options": "--use-site-models-for-constrained-refs",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--use-site-models-for-constrained-refs",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  },
+  {
+   "cells": 9,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -22,5 +22,5 @@\n \n class Parent(BaseModel):\n-    closed: list[str | int] | None = Field(None, max_length=2, min_length=2)\n+    closed: tuple[str, int] | None = None\n \n \n@@ -30,29 +30,17 @@\n \n class Child(Parent):\n-    closed: list[ClosedItem | int] | None = Field(None, max_length=2, min_length=2)\n+    closed: tuple[ClosedItem, int] | None = None\n \n \n class PrefixItemsClosedLength(BaseModel):\n-    closed_by_items_false: list[str | int] | None = Field(\n-        None, max_length=2, min_length=2\n-    )\n-    closed_by_unevaluated_items_false: list[str | int] | None = Field(\n-        None, max_length=2, min_length=2\n-    )\n-    closed_by_false_position: list[str | int] | None = Field(\n-        None, max_length=2, min_length=2\n-    )\n-    closed_below_max_items: list[str | int] | None = Field(\n-        None, max_length=2, min_length=2\n-    )\n-    closed_nullable: list[str | int] | None = Field(None, max_length=2, min_length=2)\n-    closed_by_contains: list[Any] | None = Field(None, max_length=2, min_length=2)\n-    closed_by_contains_beyond_positions: list[Any] | None = Field(\n-        None, max_length=3, min_length=3\n-    )\n-    closed_to_one_position: list[Any] | None = Field(None, max_length=1, min_length=1)\n-    closed_before_other_positions: list[str | int] | None = Field(\n-        None, max_length=2, min_length=2\n-    )\n+    closed_by_items_false: tuple[str, int] | None = None\n+    closed_by_unevaluated_items_false: tuple[str, int] | None = None\n... (16 more lines)",
+    "input": "tests/data/jsonschema/prefix_items_closed_length.json",
+    "options": "--use-tuple-for-closed-arrays",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 3,
+   "option": "--use-tuple-for-closed-arrays",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass"
+   ]
+  },
+  {
+   "cells": 1,
+   "example": {
+    "diff": "--- model.py\n+++ model.py\n@@ -4,11 +4,13 @@\n from __future__ import annotations\n \n-from typing import Any\n+from pydantic import BaseModel\n \n-from pydantic import BaseModel\n+\n+class Owners(BaseModel):\n+    name: str | None = None\n \n \n class Settings(BaseModel):\n     limits: dict[str, int] | None = None\n-    quotas: dict[str, Any] | str | None = None\n-    owners: dict[str, Any] | str | None = None\n+    quotas: dict[str, int] | str | None = None\n+    owners: dict[str, Owners] | str | None = None",
+    "input": "tests/data/jsonschema/typed_map_values_beside_other_types.json",
+    "options": "--use-typed-nullable-map-values --use-typed-map-values-beside-other-types",
+    "type": "pydantic_v2.BaseModel"
+   },
+   "inputs": 1,
+   "option": "--use-typed-map-values-beside-other-types",
+   "types": [
+    "pydantic_v2.BaseModel"
+   ]
+  }
+ ],
+ "previous": "0.86.0",
+ "schema_version": 1,
+ "tier": "release",
+ "types": [
+  "dataclasses.dataclass",
+  "msgspec.Struct",
+  "pydantic_v2.BaseModel",
+  "pydantic_v2.dataclass",
+  "typing.TypedDict"
+ ],
+ "version": "0.87.0",
+ "violations": [
+  {
+   "detail": "[constraints] ConstraintsOnTargetBuiltinNames:finalization_length: Annotated[PythonFinalizationError, MinLen(min_length=2)] -> PythonFinalizationError",
+   "input": "tests/data/jsonschema/constraints_on_target_builtin_names.json",
+   "options": "--preset practical-py314-20261017",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[constraints] ConstraintsOnTargetBuiltinNames:finalization_length: Annotated[PythonFinalizationError, MinLen(min_length=2)] -> PythonFinalizationError",
+   "input": "tests/data/jsonschema/constraints_on_target_builtin_names.json",
+   "options": "--preset standard-py314-20261017",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[config] Foo: {'extra_items': 'Bar'} -> {'extra_items': 'Bar1'}",
+   "input": "tests/data/openapi/typed_dict_extra_items_final_name/renamed.yaml",
+   "options": "--preset practical-py310-20261017",
+   "type": "typing.TypedDict"
+  },
+  {
+   "detail": "[config] Foo: {'extra_items': 'Bar'} -> {'extra_items': 'Bar1'}",
+   "input": "tests/data/openapi/typed_dict_extra_items_final_name/renamed.yaml",
+   "options": "--preset practical-py314-20261017",
+   "type": "typing.TypedDict"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py310-20261017",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [name-removed] StampsAdditionalProperty: removed",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py310-20261017",
+   "type": "pydantic_v2.dataclass"
+  },
+  {
+   "detail": "[type] Base:prefixItemsNeutral: tuple[int, str] -> tuple[str, int]; [type] Base:legacyItemsNeutral: tuple[int, str] -> tuple[str, int]",
+   "input": "tests/data/openapi/allof_partial_unconstrained_schemas.yaml",
+   "options": "--preset practical-py310-20261017",
+   "type": "typing.TypedDict"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py312-20260619",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py312-20260826",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py312-20260909",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py312-20261015",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py314-20261017",
+   "type": "pydantic_v2.BaseModel"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [name-removed] StampsAdditionalProperty: removed",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset practical-py314-20261017",
+   "type": "pydantic_v2.dataclass"
+  },
+  {
+   "detail": "[type] Base:prefixItemsNeutral: tuple[int, str] -> tuple[str, int]; [type] Base:legacyItemsNeutral: tuple[int, str] -> tuple[str, int]",
+   "input": "tests/data/openapi/allof_partial_unconstrained_schemas.yaml",
+   "options": "--preset practical-py314-20261017",
+   "type": "typing.TypedDict"
+  },
+  {
+   "detail": "[name-removed] Day: removed; [type] StampsAdditionalProperty: Annotated[pydantic.AwareDatetime, MinLen(min_length=20)] -> pydantic.AwareDatetime",
+   "input": "tests/data/jsonschema/string_constraints_on_emitted_types.json",
+   "options": "--preset standard-py310-20261017",
+   "type": "pydantic_v2.BaseModel"
+  }
+ ]
+}

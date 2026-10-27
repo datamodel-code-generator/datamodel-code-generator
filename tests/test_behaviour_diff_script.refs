@@ -53,3 +53,9 @@ msgspec_struct_config	behaviour_diff_script/signature[msgspec_struct_config].txt
 package_reexport	behaviour_diff_script/signature[package_reexport].txt
 payload_verdicts	behaviour_diff_script/signature[payload_verdicts].txt
 typeddict_not_required	behaviour_diff_script/signature[typeddict_not_required].txt
+[test_without_option]
+new_flag	behaviour_diff_script/without_option[new_flag].txt
+new_inline_value	behaviour_diff_script/without_option[new_inline_value].txt
+new_preset_value	behaviour_diff_script/without_option[new_preset_value].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
+new_value_of_known_option	behaviour_diff_script/without_option[new_value_of_known_option].txt
+new_valued_option	behaviour_diff_script/without_option[new_valued_option].txt	= behaviour_diff_script/without_option[new_inline_value].txt

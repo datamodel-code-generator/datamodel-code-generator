@@ -1,0 +1,2 @@
+FileNotFoundError
+generation fixed: FileNotFoundError: tests/data/jsonschema/a.json

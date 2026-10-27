@@ -1,0 +1,2 @@
+ValidationError
+generation fixed:     For further information visit https://errors.pydantic.dev/2.14/v/float_type

@@ -354,6 +354,29 @@ def test_opt_in_reason(case: str) -> None:
     assert_output(f"{behaviour_diff.opt_in_reason(OPT_IN_CASES[case], INVENTORY)}\n")
 
 
+WITHOUT_OPTION_CASES = {
+    "new_flag": (
+        ["--snake-case-field", "--pin-aliases-with-alias-generator", "--target-pydantic-version", "2"],
+        "--pin-aliases-with-alias-generator",
+    ),
+    "new_preset_value": (["--preset", "standard-py314-20261027"], "--preset standard-py314-20261027"),
+    "new_valued_option": (["--use-annotated", "--naming-strategy", "full-path"], "--naming-strategy"),
+    "new_inline_value": (["--naming-strategy=full-path", "--use-annotated"], "--naming-strategy"),
+    "new_value_of_known_option": (
+        ["--target-python-version", "3.10", "--output-datetime-class", "AwareDatetime"],
+        "--output-datetime-class AwareDatetime",
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(WITHOUT_OPTION_CASES))
+def test_without_option(case: str) -> None:
+    """The baseline of a new option's example keeps every other option of the cell."""
+    options, reason = WITHOUT_OPTION_CASES[case]
+    flags = {"--snake-case-field", "--pin-aliases-with-alias-generator", "--use-annotated"}
+    assert_output(" ".join(behaviour_diff.without_option(options, reason, flags)) + "\n")
+
+
 def test_preset_option_sets() -> None:
     """The newest released date runs for py310 and py314 with every type; older dates for py312 with two types."""
     presets = [
