@@ -1410,11 +1410,14 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return self._written_assignment()
 
     def _dataclass_visibility(self) -> DataclassVisibility:
-        """Return what the Pydantic dataclass template needs to see of the field as an assignment."""
+        """Return what the Pydantic dataclass template needs to see of the field as an assignment.
+
+        Constructor ordering that counts defaults as the construction key gives them reads no type as admitting None.
+        """
         return DataclassVisibility(
             metadata_assignment=self.use_annotated and getattr(self, "requires_dataclass_field_assignment", False),
             factory_in_field=getattr(self, "has_default_factory_in_field", False),
-            admits_none=self.data_type.admits_none,
+            admits_none=not _ORDERS_BY_CONSTRUCTION_DEFAULTS.get() and self.data_type.admits_none,
         )
 
     def _takes_nested_model_factory(self) -> bool:
@@ -1722,24 +1725,32 @@ _ORDERS_BEFORE_NULLABILITY: Final[ContextVar[bool]] = ContextVar("orders_before_
 and in the row's own required check."""
 _COUNTS_CONSTRUCTION_DEFAULTS: Final[ContextVar[bool]] = ContextVar("counts_construction_defaults", default=False)
 """Whether a field's default counts as its construction key gives it, as that row's required check counts it."""
+_ORDERS_BY_CONSTRUCTION_DEFAULTS: Final[ContextVar[bool]] = ContextVar("orders_by_construction_defaults", default=False)
+"""Whether constructor ordering counts a ``None`` default that ``--strip-default-none`` strips as no default, as the
+construction key does, also where a Pydantic dataclass keeps it for a type rendered with None."""
 _ORDERS_CONSTRUCTOR_FIELDS: Final[ContextVar[bool]] = ContextVar("orders_constructor_fields", default=False)
 """Whether constructor ordering runs, which leaves out under ``--order-constructor-fields-by written-defaults`` the
 nested factories render preparation has not decided yet."""
 
 
 @contextmanager
-def ordering_constructor_fields(*, before_nullability: bool = False) -> Generator[None, None, None]:
+def ordering_constructor_fields(
+    *, before_nullability: bool = False, construction_defaults: bool = False
+) -> Generator[None, None, None]:
     """Let the nested factories answer constructor ordering while the block runs.
 
     Under ``--order-constructor-fields-by written-defaults`` a field holds no nested factory until render preparation
     decides them, and the ordering after that decision orders by the decided ones. ``before_nullability`` reads row
-    ``legacy-nested-factory-order-before-nullability`` otherwise.
+    ``legacy-nested-factory-order-before-nullability`` otherwise. ``construction_defaults`` counts the defaults as the
+    construction key gives them, for an ordering that runs before the rendered nullability is final.
     """
     ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(True)
     token = _ORDERS_BEFORE_NULLABILITY.set(before_nullability)
+    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(construction_defaults)
     try:
         yield
     finally:
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
         _ORDERS_BEFORE_NULLABILITY.reset(token)
         _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 
@@ -1751,11 +1762,13 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
     """
     ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(False)
     orders = _ORDERS_BEFORE_NULLABILITY.set(counts)
+    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(False)
     token = _COUNTS_CONSTRUCTION_DEFAULTS.set(counts)
     try:
         return compute()
     finally:
         _COUNTS_CONSTRUCTION_DEFAULTS.reset(token)
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
         _ORDERS_BEFORE_NULLABILITY.reset(orders)
         _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 

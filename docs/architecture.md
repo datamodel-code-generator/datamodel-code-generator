@@ -1238,9 +1238,10 @@ right one.
   classifiers treated every stripped `None` default as no default, so a field without a default could follow one with
   a default. The L1 construction key reads only facts known when the model is built, and a `None` default that the
   option may keep counts as no default there, because rendered nullability is final only at L7. L5
-  `fix_constructor_field_ordering` decides with the template rule (the assignment facts, through
-  `DataType.admits_none`) and moves a kept `None` after the fields without a default, where the output stays valid whichever
-  way the `= None` resolves at render. msgspec reads one predicate in both places, as a Struct never strips its
+  `fix_constructor_field_ordering_early` runs before the modules processed later have written theirs, so it counts
+  defaults the same way. L6 `fix_constructor_field_ordering` decides with the template rule (the assignment facts,
+  through `DataType.admits_none`) and moves a kept `None` after the fields without a default, where the output stays
+  valid whichever way the `= None` resolves at render. msgspec reads one predicate in both places, as a Struct never strips its
   defaults. Ordering decides from the field types and `Field()` arguments the class body renders, so a module applies
   `--type-overrides` to the field types of the models it keeps before `fix_constructor_field_ordering`
   ([#4949](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4949),

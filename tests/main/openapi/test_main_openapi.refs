@@ -1801,7 +1801,7 @@ pydantic-dataclass	main/openapi/main_openapi/type_overrides_constructor_order_de
 base-override-drops-inherited-default	main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-drops-inherited-default]/
 base-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-gains-field-argument]/
 [test_main_openapi_type_overrides_constructor_order_modules_default]
-base-override-drops-inherited-default	main/openapi/main_openapi/type_overrides_constructor_order_modules_default[base-override-drops-inherited-default]/
+base-override-drops-inherited-default	main/openapi/main_openapi/type_overrides_constructor_order_modules_default[base-override-drops-inherited-default]/	= main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-drops-inherited-default]/
 base-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order_modules_default[base-override-gains-field-argument]/	= main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-gains-field-argument]/
 [test_main_openapi_typed_dict_extra_items_final_name]
 base_class	main/openapi/main_openapi/typed_dict_extra_items_final_name[base_class].py

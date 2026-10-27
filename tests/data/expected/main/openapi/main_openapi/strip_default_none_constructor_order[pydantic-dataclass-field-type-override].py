@@ -91,7 +91,7 @@ class WithDefault:
 
 @dataclass
 class KeptAfterInheritedDefault(WithDefault):
-    n: Plain | None = None
+    n: Plain | None = Field(None, kw_only=True)
 
 
 @dataclass

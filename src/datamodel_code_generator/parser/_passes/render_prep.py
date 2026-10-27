@@ -584,11 +584,12 @@ def fix_constructor_field_ordering(
     """Fix constructor field ordering after inherited defaults are resolved.
 
     ``early`` runs it where the modules are processed, before the overrides replace the bases and before every
-    field has its final name, the form of ``--order-constructor-fields-by final-names`` off. With ``copies``, a
-    written model gets a keyword-only copy of each inherited field that two of its bases put after a default. The
-    nested factories read row ``legacy-nested-factory-order-before-nullability``.
+    field has its final name, the form of ``--order-constructor-fields-by final-names`` off. The rendered nullability
+    is final only after the modules, so it then counts the defaults as the construction key gives them. With
+    ``copies``, a written model gets a keyword-only copy of each inherited field that two of its bases put after a
+    default. The nested factories read row ``legacy-nested-factory-order-before-nullability``.
     """
-    with ordering_constructor_fields(before_nullability=True):
+    with ordering_constructor_fields(before_nullability=True, construction_defaults=early):
         fix_constructor_field_ordering_of(parser, models, early=early, copies=copies)
 
 

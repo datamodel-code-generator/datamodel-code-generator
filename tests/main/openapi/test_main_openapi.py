@@ -3783,12 +3783,12 @@ def test_main_openapi_strip_default_none_constructor_order(
     A Pydantic dataclass keeps ``= None`` where the rendered type admits None: an ``anyOf`` null branch,
     ``type: [..., "null"]``, a nullable model it names (defined before or after it) or a union member naming one.
     Such a field follows the fields without a default and precedes the other defaults, whatever the null spelling;
-    a keyword-only model keeps it among the fields without a default. It may follow an inherited default without
-    being keyword-only, and a required field that redeclares an inherited one is assigned ``Field(...)`` so that the
-    inherited ``None`` does not become its default. Pydantic 2.14 targets put a required aliased
-    ``Field(...)`` field before it. msgspec.Struct writes every default; --order-constructor-fields-by written-defaults
-    puts its optional fields after the required ones, and without it a stripped field keeps its schema place unless a
-    required field would follow it.
+    a keyword-only model keeps it among the fields without a default. After an inherited default it is keyword-only,
+    as ordering inside the module loop counts its ``None`` as no default, and a required field that redeclares an
+    inherited one is assigned ``Field(...)`` so that the inherited ``None`` does not become its default. Pydantic 2.14
+    targets put a required aliased ``Field(...)`` field before it. msgspec.Struct writes every default;
+    --order-constructor-fields-by written-defaults puts its optional fields after the required ones, and without it a
+    stripped field keeps its schema place unless a required field would follow it.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "strip_default_none_constructor_order.yaml",
@@ -3907,7 +3907,11 @@ def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[
 
 @pytest.mark.parametrize("extra_args", _TYPE_OVERRIDES_CONSTRUCTOR_ORDER_MODULES)
 def test_main_openapi_type_overrides_constructor_order_modules_default(extra_args: list[str], output_dir: Path) -> None:
-    """Order a subclass while the modules are processed: the base's own module has not applied --type-overrides yet."""
+    """Order a subclass while the modules are processed: the base's own module has not applied --type-overrides yet.
+
+    The ordering then counts the ``None`` default that ``--strip-default-none`` may keep as no default, so the
+    subclass's fields stay positional, as with ``--order-constructor-fields-by final-names``.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order_modules.yaml",
         output_path=output_dir,
