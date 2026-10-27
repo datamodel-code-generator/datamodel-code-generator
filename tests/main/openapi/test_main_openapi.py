@@ -973,6 +973,56 @@ def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path, name: 
     assert_output("".join(decoded), expected.with_name(f"{name}_decoded.txt"))
 
 
+@pytest.mark.parametrize("extra_args", [[], ["--use-msgspec-tagged-unions"]])
+def test_main_openapi_discriminator_reuse_variant_module_base_fields(output_dir: Path, extra_args: list[str]) -> None:
+    """Import the models that the fields a reused msgspec variant copies from a base of another module name.
+
+    A variant that reuse made an empty subclass declares the fields of its bases itself to keep its tag, after the
+    modules have bound the models their fields name, so each copied field names its models from the variant's module.
+    The verdicts of each payload are the generated union's, and the schema's decides whether the payload is valid.
+    """
+    import msgspec
+
+    name = "discriminator_reuse_variant_module_base_fields"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--reuse-model",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--target-python-version",
+            "3.10",
+        ],
+        force_exec_validation=True,
+    )
+    document = yaml.safe_load((OPEN_API_DATA_PATH / f"{name}.yaml").read_text(encoding="utf-8"))
+    decoded = []
+    for path, cases in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        validator = Draft202012Validator({**document, "$ref": f"#/components/schemas/{path}"})
+        module_path, _, model_name = path.rpartition(".")
+        with _generated_package_module(output_dir, module_path) as module:
+            for kind, payload in ((kind, payload) for kind, payloads in cases.items() for payload in payloads):
+                if kind == "valid":
+                    validator.validate(payload)
+                else:
+                    with pytest.raises(SchemaValidationError):
+                        validator.validate(payload)
+                try:
+                    value = msgspec.json.decode(json.dumps(payload), type=getattr(module, model_name))
+                except msgspec.ValidationError:
+                    result = "rejected"
+                else:
+                    result = type(value).__name__
+                decoded.append(f"{path} {kind} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), name="decoded")
+
+
 def test_main_openapi_discriminator_same_name_documents(output_file: Path) -> None:
     """Merge a model with the model of the same name in another document whatever tags their unions map.
 

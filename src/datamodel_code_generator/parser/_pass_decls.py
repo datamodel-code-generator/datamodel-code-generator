@@ -695,12 +695,22 @@ TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     Phase.CROSS_MODULE,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET),
-    writes=_facts(Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES),
+    reads=_facts(
+        Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODULE_IMPORTS
+    ),
+    writes=_facts(
+        Fact.BASES,
+        Fact.DISCRIMINATOR_TAGS,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
     summary=(
         "Tags the structs that declare the tag field of a tagged base, or opts them out of the tag, and opts out "
         "the structs whose tag field a base keeps as a field, typing their tag field by its const again; a struct "
-        "that reuse made an empty subclass of that base declares the fields of its base instead and keeps its tag."
+        "that reuse made an empty subclass of that base declares the fields of its base instead and keeps its tag, "
+        "importing the models of other modules that those fields name."
     ),
     condition="msgspec",
 )
@@ -734,6 +744,12 @@ IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
     PassKind.REPAIR,
     reads=_facts(Fact.MODELS_EXIST, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    after=(
+        After(
+            "tag_fields_of_tagged_bases",
+            "repairs the imports of every module once the fields reused structs copy from their bases import theirs",
+        ),
+    ),
     removed_by="RP15b",
 )
 IMPORT_RENAMED_TYPES = PassDecl(
@@ -744,6 +760,10 @@ IMPORT_RENAMED_TYPES = PassDecl(
     reads=_facts(RenderFact.CLASS_NAMES, RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
     after=(
+        After(
+            "tag_fields_of_tagged_bases",
+            "imports renamed types once the fields reused structs copy from their bases import theirs",
+        ),
         After(
             "import_removed_reuse_canonicals",
             "imports renamed types next to the canonicals of removed reuse duplicates",

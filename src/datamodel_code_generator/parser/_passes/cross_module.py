@@ -6,7 +6,6 @@ the parser comes in through ``CrossModuleHost``, which ``Parser`` satisfies stru
 
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
@@ -72,6 +71,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CrossModuleHost",
     "CrossModuleRun",
+    "TaggedBasesHost",
     "apply_generic_base_class",
     "import_enum_member_literal_classes",
     "import_removed_reuse_canonicals",
@@ -130,6 +130,10 @@ class CrossModuleHost(ReferenceExpressionHost, ReplacedRootsHost, Protocol):
         """Return whether a model uses the configured root model representation."""
 
 
+class TaggedBasesHost(CrossModuleHost, FlattenHost, Protocol):
+    """What tagging the structs below tagged bases reads and writes of the parser."""
+
+
 class CrossModuleRun(Protocol):
     """What the cross-module passes read and write of the run."""
 
@@ -138,6 +142,14 @@ class CrossModuleRun(Protocol):
     @property
     def contexts(self) -> Sequence[ModuleContextView]:
         """The processed modules, in module order."""
+
+    @property
+    def internal_modules(self) -> set[ModulePath]:
+        """The modules the output writes."""
+
+    @property
+    def model_path_to_module_name(self) -> dict[str, str]:
+        """The module name of each model, by model path."""
 
 
 _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
@@ -272,12 +284,45 @@ def _tag_fields_of_tagged_bases(
     return opted_out
 
 
-def tag_fields_of_tagged_bases(parser: FlattenHost, run: CrossModuleRun) -> None:
-    """Make the fields of tagged msgspec bases tags, and remember the models that opt out."""
+def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> None:
+    """Make the fields of tagged msgspec bases tags, and remember the models that opt out.
+
+    The modules have bound the names of the models their fields name by then, so a struct that declares the fields
+    of its bases instead names the models of each copied field from its own module, importing those of others.
+    """
+    contexts = {id(model): ctx for ctx in run.contexts for model in ctx.models}
+
+    def flatten(model: DataModel) -> None:
+        own_fields = {id(field) for field in model.fields}
+        flatten_base_layouts(parser, model)
+        ctx = contexts[id(model)]
+        members = keyed_models(module_members(parser, ctx.models), "module members")
+        module_name = _get_model_module_name(model, run.model_path_to_module_name)
+        for data_type in (
+            data_type
+            for field in model.fields
+            if id(field) not in own_fields
+            for data_type in field.data_type.all_data_types
+        ):
+            if (reference := data_type.reference) is None:
+                continue
+            set_reference_expression(
+                parser,
+                data_type,
+                module_name,
+                _get_data_type_target_full_name(data_type, reference, run.model_path_to_module_name),
+                ctx.imports,
+                ctx.scoped_model_resolver,
+                same_module=members.key_of(reference) in members.models,
+                init=ctx.is_init,
+                internal_modules=run.internal_modules,
+                producer=ImportProducer("tag-fields-of-tagged-bases", model),
+            )
+
     run.opted_out = _tag_fields_of_tagged_bases(
         _context_models(run.contexts),
         parser._graph_builder,  # noqa: SLF001
-        partial(flatten_base_layouts, parser),
+        flatten,
     )
 
 

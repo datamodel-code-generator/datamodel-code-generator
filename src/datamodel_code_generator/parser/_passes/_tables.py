@@ -101,7 +101,7 @@ class PipelineHost(
     modules.CollapseHost,
     modules.DiscriminatorHost,
     modules.ModuleLoopHost[Any, Any, Any],
-    cross_module.CrossModuleHost,
+    cross_module.TaggedBasesHost,
     decide.DecideHost,
     render_prep.RenderPrepHost,
     imports.ImportsHost[Any],

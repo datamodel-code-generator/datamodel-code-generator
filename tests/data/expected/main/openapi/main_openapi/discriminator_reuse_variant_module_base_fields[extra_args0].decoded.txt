@@ -1,0 +1,5 @@
+pets.Animal valid {"kind": "cat", "name": "Tom", "details": {"color": "grey"}, "lives": 9}: Kitty
+pets.Animal valid {"kind": "bird"}: Bird
+pets.Animal invalid {"kind": "cat", "details": {"color": "grey"}}: rejected
+pets.Animal invalid {"kind": "cat", "name": "Tom", "details": {"color": 1}}: rejected
+pets.Animal invalid {"kind": "fish"}: rejected
