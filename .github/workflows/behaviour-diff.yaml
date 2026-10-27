@@ -1,0 +1,194 @@
+name: Behaviour diff
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/behaviour-diff.yaml'
+      - 'pyproject.toml'
+      - 'scripts/_behaviour_*.py'
+      - 'scripts/behaviour_diff.py'
+      - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/compare_release.py'
+      - 'src/**'
+      - 'tests/data/**'
+      - 'uv.lock'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/behaviour-diff.yaml'
+      - 'pyproject.toml'
+      - 'scripts/_behaviour_*.py'
+      - 'scripts/behaviour_diff.py'
+      - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/compare_release.py'
+      - 'src/**'
+      - 'tests/data/**'
+      - 'uv.lock'
+  schedule:
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Tier to run on every shard"
+        required: false
+        default: release
+        type: choice
+        options:
+          - release
+          - nightly
+
+concurrency:
+  group: behaviour-diff-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BEHAVIOUR_DIFF_CACHE: ${{ github.workspace }}/.cache/behaviour-diff
+  UV_PYTHON_PREFERENCE: "only-managed"
+
+jobs:
+  pr-tier:
+    name: PR tier
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-suffix: behaviour-diff
+      - name: Resolve the base release
+        id: base
+        run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+      - name: Restore base outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.BEHAVIOUR_DIFF_CACHE }}
+          key: behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ hashFiles('tests/data/**') }}
+          restore-keys: |
+            behaviour-diff-pr-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+      - name: Run the PR tier
+        env:
+          BASE: ${{ steps.base.outputs.tag }}
+        run: |
+          set -o pipefail
+          .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check \
+            --cache-dir "$BEHAVIOUR_DIFF_CACHE" --json behaviour-diff-pr.jsonl | tee behaviour-diff-pr.txt
+      - name: Write job summary
+        if: always()
+        run: |
+          [ -f behaviour-diff-pr.txt ] || exit 0
+          {
+            echo "## Behaviour diff (PR tier)"
+            echo
+            echo '```text'
+            awk '/^violation: /{p=1; print; next} /^    /{if (p) print; next} {p=0} /^(allowlist|summary|cells): /{print}' \
+              behaviour-diff-pr.txt | head -c 60000
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload PR tier cells
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: behaviour-diff-pr
+          path: |
+            behaviour-diff-pr.jsonl
+            behaviour-diff-pr.txt
+          if-no-files-found: ignore
+
+  sharded:
+    name: ${{ github.event_name == 'schedule' && 'nightly' || inputs.tier }} tier (shard ${{ matrix.shard }})
+    if: (github.event_name == 'schedule' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    env:
+      TIER: ${{ github.event_name == 'schedule' && 'nightly' || inputs.tier }}
+      SHARDS: "12"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-suffix: behaviour-diff
+      - name: Resolve the base release
+        id: base
+        run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+      - name: Restore base outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.BEHAVIOUR_DIFF_CACHE }}
+          key: behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-${{ hashFiles('tests/data/**') }}
+          restore-keys: |
+            behaviour-diff-${{ env.TIER }}-${{ steps.base.outputs.tag }}-${{ hashFiles('uv.lock') }}-${{ matrix.shard }}-
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --extra all --group dev
+      - name: Run the shard
+        env:
+          BASE: ${{ steps.base.outputs.tag }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -o pipefail
+          .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier "$TIER" --shard "$SHARD/$SHARDS" --check \
+            --cache-dir "$BEHAVIOUR_DIFF_CACHE" --json "behaviour-diff-$SHARD.jsonl" | tee "behaviour-diff-$SHARD.txt"
+      - name: Upload shard cells
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: behaviour-diff-shard-${{ matrix.shard }}
+          path: |
+            behaviour-diff-${{ matrix.shard }}.jsonl
+            behaviour-diff-${{ matrix.shard }}.txt
+          if-no-files-found: ignore
+
+  combine:
+    name: Combine shards
+    needs: sharded
+    if: always() && needs.sharded.result != 'skipped'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download shard cells
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: behaviour-diff-shard-*
+          path: shards
+          merge-multiple: true
+      - name: Combine cells and write job summary
+        env:
+          TIER: ${{ github.event_name == 'schedule' && 'nightly' || inputs.tier }}
+        run: |
+          set -euo pipefail
+          cat shards/*.jsonl > behaviour-diff.jsonl
+          {
+            echo "## Behaviour diff ($TIER tier)"
+            echo
+            echo '```text'
+            for report in shards/*.txt; do
+              awk '/^violation: /{p=1; print; next} /^    /{if (p) print; next} {p=0} /^(allowlist|summary|cells): /{print}' \
+                "$report"
+            done | head -c 60000
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload combined cells
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: behaviour-diff
+          path: behaviour-diff.jsonl
+          if-no-files-found: error

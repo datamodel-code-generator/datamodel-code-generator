@@ -21,12 +21,14 @@ on:
       - 'scripts/build_docs_examples.py'
       - 'scripts/build_conformance_docs.py'
       - 'scripts/build_architecture_docs.py'
+      - 'scripts/build_behaviour_docs.py'
       - 'scripts/build_release_benchmark_docs.py'
       - 'scripts/build_llms_txt.py'
       - 'scripts/update_generate_prompt_snapshots.py'
       - 'scripts/update_docs_version.py'
       - 'docs/data/release-benchmarks.json'
       - 'docs/data/release-benchmark-notes.json'
+      - 'docs/data/output-changes/*.json'
       - 'docs/assets/benchmarks/release-benchmarks.css'
       - 'docs/assets/benchmarks/release-benchmarks.js'
       - 'tox.ini'
@@ -88,6 +90,7 @@ jobs:
             docs/using_as_module.md
             docs/architecture.md
             docs/performance-benchmarks.md
+            docs/output-changes/
             docs/cli-reference/
             skills/datamodel-code-generator/references/cli-options.md
             docs/llms.txt

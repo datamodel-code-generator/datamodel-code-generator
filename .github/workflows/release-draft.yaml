@@ -84,6 +84,7 @@ jobs:
     if: needs.resolve-pr.outputs.should_analyze == 'true'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pull-requests: read
     outputs:
@@ -204,6 +205,36 @@ jobs:
             echo "analysis_path=$RUNNER_TEMP/release-draft-analysis.json"
           } >> "$GITHUB_OUTPUT"
 
+      # The PR tier of the behaviour diff gate classifies every default-output change of the PR; its cells other
+      # than identical output join the analysis context, which Claude must read completely.
+      - name: Add the behaviour diff of the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
+          CONTEXT_PATH: ${{ steps.pr-diff.outputs.analysis_context_path }}
+        run: |
+          set -euo pipefail
+          report_dir="$(mktemp -d "${RUNNER_TEMP:?}/behaviour-diff.XXXXXX")"
+          head_sha="$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.sha')"
+          run_id="$(
+            gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/behaviour-diff.yaml/runs?event=pull_request&head_sha=$head_sha&per_page=1" \
+              --jq '.workflow_runs[0].id // empty'
+          )"
+          {
+            printf '\n## Behaviour Diff\n\n'
+            if [ -n "$run_id" ] && gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name behaviour-diff-pr --dir "$report_dir" \
+              && [ -f "$report_dir/behaviour-diff-pr.jsonl" ]; then
+              printf 'Cells of the behaviour diff gate (PR tier, default options) whose output is not identical to the last release.\n'
+              printf 'accepted and violation cells change default-output behaviour; crash-fix, no-behaviour and opt-in cells do not.\n\n'
+              printf '```text\n'
+              jq -c 'select(.class != "same") | {input, type, options, class, notes: .notes[:4]}' \
+                "$report_dir/behaviour-diff-pr.jsonl" | head -n 300 | cut -c 1-600
+              printf '```\n'
+            else
+              printf 'The behaviour diff gate did not run on this PR.\n'
+            fi
+          } >> "$CONTEXT_PATH"
+
       - name: Prepare release analysis route
         id: analysis-route
         run: |
@@ -238,6 +269,9 @@ jobs:
             - Diff: ${{ steps.pr-diff.outputs.diff_path }}
             - Deleted lines: ${{ steps.pr-diff.outputs.deleted_lines_path }}
             - Read-boundary marker: ${{ steps.pr-diff.outputs.marker_path }}
+
+            The analysis context ends with the behaviour diff gate's classification of this PR's default-output changes.
+            Use it as evidence for Code Generation Changes and Default Behavior Changes: accepted and violation cells change behaviour, the other classes do not.
 
             Ground rules:
             - Read the entire prepared analysis context and diff before deciding. Start each file at offset 1 with an explicit limit of 500 lines, then read consecutive ranges until the end of the file. Do not skip ranges even when the changes appear unrelated to breaking changes.

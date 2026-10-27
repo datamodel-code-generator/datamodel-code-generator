@@ -104,6 +104,10 @@ nav = [
   { "Performance Benchmarks" = "performance-benchmarks.md" },
   { "Deprecations" = "deprecations.md" },
   { "Dependency Migration" = "dependency-migration.md" },
+  { "Migration" = [
+    { "Output Changes in 0.87.0" = "output-changes/0.87.0.md" },
+    { "Upgrading from an Older Release" = "output-changes/upgrading.md" }
+  ]},
   { "Experimental Features" = "experimental.md" },
   { "FAQ" = "faq.md" },
   { "Architecture" = "architecture.md" },

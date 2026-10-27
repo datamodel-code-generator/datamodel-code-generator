@@ -10,6 +10,7 @@ on:
       - 'docs/**'
       - 'pyproject.toml'
       - 'scripts/build_architecture_docs.py'
+      - 'scripts/build_behaviour_docs.py'
       - 'src/datamodel_code_generator/**'
       - 'scripts/build_cli_docs.py'
       - 'scripts/build_conformance_docs.py'
