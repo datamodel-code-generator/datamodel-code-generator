@@ -47,7 +47,7 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._finality import record_ordering_inputs
+from datamodel_code_generator.parser._check_scopes import record_ordering_inputs
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._keys import (

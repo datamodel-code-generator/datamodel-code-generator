@@ -70,8 +70,7 @@ from __future__ import annotations
 import re
 import sys
 from collections.abc import Mapping
-from contextlib import contextmanager, nullcontext
-from contextvars import ContextVar
+from contextlib import contextmanager
 from dataclasses import dataclass, field, fields, is_dataclass
 from decimal import Decimal
 from enum import Enum, unique
@@ -81,7 +80,7 @@ from itertools import takewhile, zip_longest
 from pathlib import Path
 from threading import Lock
 from traceback import walk_stack
-from typing import TYPE_CHECKING, Any, Final, SupportsIndex
+from typing import TYPE_CHECKING, Any, Final, SupportsIndex, cast
 from weakref import ref
 
 from pydantic import BaseModel
@@ -97,6 +96,12 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser import _pass_decls as decls
+from datamodel_code_generator.parser._check_scopes import (
+    NO_SCOPE,
+    PARSE_CHECKS,
+    GuardedView,
+    ParseChecksPort,
+)
 from datamodel_code_generator.parser._facts import (
     ATTRIBUTE_FACTS,
     RENDER_FACT_FREEZE_POINTS,
@@ -122,18 +127,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "KNOWN_WRITES",
-    "MODULE_TRACE_MARK",
     "KnownWrite",
     "Rule",
-    "arm_parse_checks",
-    "decision_views",
-    "fact_pass",
-    "module_checkpoint",
     "parse_checks",
-    "pass_scope",
-    "record_ordering_inputs",
-    "recording_pass_trace",
-    "viewed",
 ]
 
 _PACKAGE_ROOT: Final = Path(__file__).parents[1]
@@ -158,12 +154,6 @@ _LIST_MUTATORS: Final = (
     "sort",
 )
 _KEYED_MUTATORS: Final = frozenset({"__delitem__", "__setitem__", "pop"})
-
-_CHECKS: Final[ContextVar[_ParseChecks | None]] = ContextVar("parse_checks", default=None)
-_TRACE: Final[ContextVar[list[str] | None]] = ContextVar("pass_trace", default=None)
-MODULE_TRACE_MARK: Final = "-- module"
-"""The line a pass trace records when the pipeline starts processing an output module."""
-_NO_SCOPE: Final = nullcontext()
 
 
 def _rows_by_owner() -> dict[str, tuple[frozenset[str], frozenset[str]]]:
@@ -230,11 +220,15 @@ class _GuardedList(list[Any]):  # noqa: FURB189
         return list, (list(self),)
 
 
+def _current_checks() -> _ParseChecks | None:
+    return cast("_ParseChecks | None", PARSE_CHECKS.get())
+
+
 def _guarded_mutator(name: str) -> Callable[..., Any]:
     mutate = getattr(list, name)
 
     def mutator(self: _GuardedList, *args: Any, **kwargs: Any) -> Any:
-        if (checks := _CHECKS.get()) is None or not checks.armed:
+        if (checks := _current_checks()) is None or not checks.armed:
             return mutate(self, *args, **kwargs)
         before = checks.on_list_write(self, name, args)
         result = mutate(self, *args, **kwargs)
@@ -251,7 +245,7 @@ for _name in _LIST_MUTATORS:
 
 def _guarded_setattr(original: Callable[[Any, str, Any], None]) -> Callable[[Any, str, Any], None]:
     def __setattr__(self: Any, name: str, value: Any) -> None:  # noqa: N807
-        if (checks := _CHECKS.get()) is not None and checks.armed:
+        if (checks := _current_checks()) is not None and checks.armed:
             value = checks.on_setattr(self, name, value, sys._getframe(1))  # noqa: SLF001
         original(self, name, value)
 
@@ -261,7 +255,7 @@ def _guarded_setattr(original: Callable[[Any, str, Any], None]) -> Callable[[Any
 def _noting_invalidation(original: Callable[..., None]) -> Callable[..., None]:
     @wraps(original)
     def invalidate_semantic_caches(self: DataModelFieldBase, *, invalidate_parent: bool = True) -> None:
-        if (checks := _CHECKS.get()) is not None and (finality := checks.finality) is not None:
+        if (checks := _current_checks()) is not None and (finality := checks.finality) is not None:
             finality.mark((self,))
         original(self, invalidate_parent=invalidate_parent)
 
@@ -1102,10 +1096,10 @@ class _ReadGuard:
 
 
 @final
-class _GuardedView:
+class _GuardedView(GuardedView):
     """A view of one graph object that ``_ReadGuard`` gives a decision."""
 
-    __slots__ = ("_guard", "_object")
+    __slots__ = ("_guard",)
 
     def __init__(self, guard: _ReadGuard, owner: object) -> None:
         self._guard = guard
@@ -1118,7 +1112,7 @@ class _GuardedView:
     @override
     def __eq__(self, other: object) -> bool:
         """Compare the object with ``other``, or with the object ``other`` views."""
-        return self._object == (other._object if isinstance(other, _GuardedView) else other)
+        return self._object == (other._object if isinstance(other, GuardedView) else other)
 
     @override
     def __hash__(self) -> int:
@@ -1164,7 +1158,7 @@ class _GuardedItems(Mapping[str, Any]):
 
 @final
 @dataclass(slots=True)
-class _ParseChecks:
+class _ParseChecks(ParseChecksPort):
     """The debug checks of one parse: the store write guard and the finality check, whichever areas are on."""
 
     parser: object
@@ -1183,10 +1177,43 @@ class _ParseChecks:
     _attributes: dict[type, tuple[frozenset[str], frozenset[str]]] = field(default_factory=dict)
 
     @property
+    @override
     def armed(self) -> bool:
         """Return whether L1 is over, so that writes are watched."""
         return self._store is not None
 
+    @override
+    def scope(self, name: str, phase: Phase) -> AbstractContextManager[None]:
+        """Name the scope and phase that guarded writes inside are reported with."""
+        return _scope(self, name, phase)
+
+    @override
+    def fact_pass(self, decl: PassDecl, models: Sequence[DataModel] | None) -> AbstractContextManager[None]:
+        """Run the pass ``decl`` declares inside the finality check; a no-op when that area is off."""
+        return NO_SCOPE if (finality := self.finality) is None else finality.pass_scope(decl, models)
+
+    @override
+    def module_checkpoint(self, models: list[DataModel]) -> AbstractContextManager[None]:
+        """Process the module whose models are ``models`` inside the finality check; a no-op when that area is off."""
+        return NO_SCOPE if (finality := self.finality) is None else finality.module_scope(models)
+
+    @override
+    def decision_views(self) -> Callable[[DataModel], ModelView] | None:
+        """Return how ``FinalFacts`` gives a decision each model while the finality check is armed, else None.
+
+        The views report the render facts a decision reads (``_ReadGuard``).
+        """
+        return None if (finality := self.finality) is None else _ReadGuard(finality).view
+
+    @override
+    def record_ordering_inputs(
+        self, model: DataModel, bases: Iterable[DataModel], stand_ins: Mapping[int, Reference | None]
+    ) -> None:
+        """Record the fields constructor ordering reads from ``bases`` for ``model``, when the finality check is on."""
+        if (finality := self.finality) is not None:
+            finality.record_ordering(model, bases, stand_ins)
+
+    @override
     def arm(self, store: GenerationStore, scope: str) -> None:
         """Guard the classes, the lists of the parsed graph and the store operations, in ``scope`` of SETTLE."""
         self._store = store
@@ -1369,35 +1396,17 @@ def _store_operation(checks: _ParseChecks, name: str, operation: Callable[..., A
 
 @contextmanager
 def parse_checks(parser: object, error: type[Exception]) -> Generator[None, None, None]:
-    """Open the checks of one parse of ``parser`` when an area that watches writes is on; install nothing when off.
+    """Open the checks of one parse of ``parser``; ``Parser.parse`` calls it when an area that watches writes is on.
 
     A violation raises ``error`` when the mode raises.
     """
-    writes = check_mode(CheckArea.STORE_WRITES)
-    finality = check_mode(CheckArea.FACT_FINALITY)
-    if writes is None and finality is None:
-        yield
-        return
-    checks = _ParseChecks(parser, error, writes, finality)
-    token = _CHECKS.set(checks)
+    checks = _ParseChecks(parser, error, check_mode(CheckArea.STORE_WRITES), check_mode(CheckArea.FACT_FINALITY))
+    token = PARSE_CHECKS.set(checks)
     try:
         yield
     finally:
-        _CHECKS.reset(token)
+        PARSE_CHECKS.reset(token)
         checks.disarm()
-
-
-def arm_parse_checks(store: GenerationStore, scope: str) -> None:
-    """Arm the checks of the current parse at the end of L1, if they are open; ``scope`` names the SETTLE scope."""
-    if (checks := _CHECKS.get()) is not None:
-        checks.arm(store, scope)
-
-
-def pass_scope(name: str, phase: Phase) -> AbstractContextManager[None]:
-    """Name the scope and phase that guarded writes inside are reported with; a no-op unless a parse is armed."""
-    if (checks := _CHECKS.get()) is None or not checks.armed:
-        return _NO_SCOPE
-    return _scope(checks, name, phase)
 
 
 @contextmanager
@@ -1407,58 +1416,3 @@ def _scope(checks: _ParseChecks, name: str, phase: Phase) -> Generator[None, Non
         yield
     finally:
         checks.scopes.pop()
-
-
-def fact_pass(decl: PassDecl, models: Sequence[DataModel] | None = None) -> AbstractContextManager[None]:
-    """Run the pass ``decl`` declares; ``models`` are the models it works on (those of its module, for a module pass).
-
-    A no-op unless the finality check is armed or a pass trace is recorded.
-    """
-    if (trace := _TRACE.get()) is not None:
-        trace.append(decl.name)
-    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
-        return _NO_SCOPE
-    return finality.pass_scope(decl, models)
-
-
-def module_checkpoint(models: list[DataModel]) -> AbstractContextManager[None]:
-    """Process the module whose models are ``models``; a no-op unless the finality check is armed or a trace records."""
-    if (trace := _TRACE.get()) is not None:
-        trace.append(MODULE_TRACE_MARK)
-    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
-        return _NO_SCOPE
-    return finality.module_scope(models)
-
-
-@contextmanager
-def recording_pass_trace() -> Generator[list[str], None, None]:
-    """Record the name of every pass that runs while the block runs, and ``MODULE_TRACE_MARK`` before each module."""
-    trace: list[str] = []
-    token = _TRACE.set(trace)
-    try:
-        yield trace
-    finally:
-        _TRACE.reset(token)
-
-
-def decision_views() -> Callable[[DataModel], ModelView] | None:
-    """Return how ``FinalFacts`` gives a decision each model while the finality check is armed, or None when it is not.
-
-    The views report the render facts a decision reads (``_ReadGuard``).
-    """
-    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
-        return None
-    return _ReadGuard(finality).view
-
-
-def viewed(value: Any) -> Any:
-    """Return the object a view of ``FinalFacts`` stands for: the object of a guarded view, else ``value`` itself."""
-    return value._object if isinstance(value, _GuardedView) else value  # noqa: SLF001
-
-
-def record_ordering_inputs(
-    model: DataModel, bases: Iterable[DataModel], stand_ins: Mapping[int, Reference | None]
-) -> None:
-    """Record the fields constructor ordering reads from ``bases`` for ``model``, when the finality check is armed."""
-    if (checks := _CHECKS.get()) is not None and (finality := checks.finality) is not None:
-        finality.record_ordering(model, bases, stand_ins)

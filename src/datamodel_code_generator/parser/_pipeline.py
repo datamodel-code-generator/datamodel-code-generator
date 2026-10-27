@@ -5,7 +5,7 @@ pass (``parser/_pass_decls.py``);
 a ``ForEachModule`` runs passes once per output module; a ``HookCall`` calls an overridable parser method whose default
 runs a sub-table; a ``Segment`` runs the steps of one phase, entering the phase and the boundary before it. The
 ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is false and runs every other one inside
-``fact_pass`` (``parser/_finality.py``), with the models the finality check compares after it. A ``DecisionPhase``
+``fact_pass`` (``parser/_check_scopes.py``), with the models the finality check compares after it. A ``DecisionPhase``
 runs the decision passes of the parser's registry (``parser/_phases.py``), in the order ``decision_order`` computes.
 
 ``check_order`` is the order rule of the tables. For two passes of one segment, a pass that reads what an earlier pass
@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
 from typing_extensions import ParamSpec, final
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator.parser._finality import fact_pass, pass_scope
+from datamodel_code_generator.parser._check_scopes import fact_pass, pass_scope
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence

@@ -119,10 +119,7 @@ from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
     prepare_output_model_config,
 )
-from datamodel_code_generator.parser._finality import (
-    arm_parse_checks,
-    parse_checks,
-)
+from datamodel_code_generator.parser._check_scopes import arm_parse_checks
 from datamodel_code_generator.parser._graph_ids import (
     is_root_or_owned,
     keyed_models,
@@ -235,6 +232,7 @@ from datamodel_code_generator.util import record_watch_dependency
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Hashable, Iterable, Iterator, Mapping, Sequence
+    from contextlib import AbstractContextManager
 
     from datamodel_code_generator._format_types import Formatter, PythonVersion
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -286,6 +284,15 @@ _TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
 _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
 _DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
+
+
+def _parse_checks(parser: Parser[Any, Any], error: type[Exception]) -> AbstractContextManager[None]:
+    """Open the checks of one parse when an area that watches writes is on; the machinery loads only then."""
+    if check_mode(CheckArea.STORE_WRITES) is None and check_mode(CheckArea.FACT_FINALITY) is None:
+        return contextlib.nullcontext()
+    from datamodel_code_generator.parser._finality import parse_checks  # noqa: PLC0415
+
+    return parse_checks(parser, error)
 
 
 @cache
@@ -3720,7 +3727,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
         caller = anchor_parse_caller()
         try:
-            with read_check_flags(), parse_checks(self, Error):
+            with read_check_flags(), _parse_checks(self, Error):
                 self.__runner().run_steps(PIPELINE, self, run)
         finally:
             release_parse_caller(caller)

@@ -53,17 +53,17 @@ from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
     ModelView,
     ReferenceView,
 )
+from datamodel_code_generator.parser._check_scopes import (  # noqa: E402, PLC2701
+    MODULE_TRACE_MARK,
+    recording_pass_trace,
+)
 from datamodel_code_generator.parser._facts import (  # noqa: E402, PLC2701
     ATTRIBUTE_FACTS,
     Fact,
     Phase,
     RenderFact,
 )
-from datamodel_code_generator.parser._finality import (  # noqa: E402, PLC2701
-    MODULE_TRACE_MARK,
-    _reads_render_fact,
-    recording_pass_trace,
-)
+from datamodel_code_generator.parser._finality import _reads_render_fact  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._pass_decls import (  # noqa: E402, PLC2701
     PASS_DECLS,
     After,

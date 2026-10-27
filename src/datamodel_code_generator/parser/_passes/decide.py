@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator.parser._finality import decision_views, viewed
+from datamodel_code_generator.parser._check_scopes import decision_views, viewed
 from datamodel_code_generator.parser._passes._shared import _copy_data_type
 from datamodel_code_generator.parser._phases import _DecisionWriter
 from datamodel_code_generator.parser._pipeline import decision_order

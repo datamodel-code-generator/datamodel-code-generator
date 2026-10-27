@@ -583,7 +583,7 @@ of `parser/_pipeline.py`: a `PassSpec` runs one declared pass, when its conditio
 module by module; a `HookCall` calls an overridable method whose default runs a sub-table; a `Segment` enters a phase
 on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`) and the boundary before it (`PARSED`, B1,
 `DECIDED`, B2), then runs its steps. The `Runner` is the only caller of a pass, inside `fact_pass(DECL)`
-(`parser/_finality.py`) with the models the finality check compares; steps call passes through the parser instance, so
+(`parser/_check_scopes.py`) with the models the finality check compares; steps call passes through the parser instance, so
 overrides and `--debug` tracing apply as to any method. The two diagnostics warnings that name the code calling
 `parse()` find that frame however deep the pipeline is (`stacklevel_at_parse_caller`).
 
@@ -1022,8 +1022,8 @@ accepts any guarded write, and the phase is not checked: which operation and pha
 to the finality checks. With the area off nothing is installed. The guard does
 not see writes through `object.__setattr__`, through `__dict__`, into dict attributes, or into a list an object got
 outside a store operation after L1. The guards, the guarded lists and the store-operation scopes belong to the checks
-of one parse (`parse_checks`, armed by `arm_parse_checks`), which the finality check shares: they are installed when
-either area is on, and the guard reports writes only when `STORE_WRITES` is on, while the finality check uses them to
+of one parse (`parse_checks`, armed by `arm_parse_checks`), which the finality check shares: `Parser.parse` imports
+`parser/_finality.py` and installs them only when either area is on, and the guard reports writes only when `STORE_WRITES` is on, while the finality check uses them to
 learn which models a pass touched.
 
 The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
@@ -1324,7 +1324,8 @@ backends, while shared-model modules must remain neutral: they cannot import a c
 which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema
 graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,
-`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the finality checks of `_finality`, the
+`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the check hooks of `_check_scopes` (the
+finality checks of `_finality` load only when a check area is on), the
 pipeline steps of `_pipeline` with the declarations of `_pass_decls`, `_facts` and `_phases`, and each other, not even
 for typing: a pass of one layer is a function in that layer's module (`settle.py`, `structure.py`, `plans.py`,
 `modules.py`, `cross_module.py`, `decide.py`, `render_prep.py`, `imports.py`) that takes the parser through the layer's

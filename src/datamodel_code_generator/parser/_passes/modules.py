@@ -65,8 +65,8 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser._check_scopes import module_checkpoint, pass_scope
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._finality import module_checkpoint, pass_scope
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL, skips_root_model
