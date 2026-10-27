@@ -16,7 +16,9 @@ model the computation read: the models its type references, through a root model
 type references, the models an on-demand walk of the model graph reached while it computed (`note_reads`) and what
 the derived values of other fields it read depend on. The store's mutations bump what they write (`bump_field`,
 `bump_node`, `bump_model`, `bump_deep`); a node bump reaches the fields whose values read the node and the field that
-holds it. A derived value is returned while none of those revisions moved.
+holds it; a model's constructor bumps the model, as it names the model the source of its reference. A derived value is
+returned while none of those revisions moved. Every bump moves the memo's clock, so a value whose revisions were seen to
+hold at the current clock is returned without comparing them again.
 
 Under the ``RENDER_MEMOS`` check, each value a memo returns is computed anew and compared; a value that differs is a
 stale hit. The memos return what the caches they replace returned, stale or not, and two tables are known to return
@@ -121,6 +123,8 @@ class _Derived:
     reads: tuple[tuple[object, int], ...]
     """Each other model the computation read (`note_reads`), with its ``deep`` revision then."""
     value: Any
+    verified: int
+    """The memo's clock when the revisions it read were last seen to hold; a bump moves the clock."""
 
 
 @final
@@ -222,14 +226,18 @@ class ParseMemo:
         return value
 
     def _holds(self, entry: _Derived, field: Any, source: object) -> bool:
-        """Return whether a kept value was computed for ``field`` from ``source`` and the revisions it read hold."""
-        return (
-            entry.field is field
-            and entry.source is source
-            and entry.revision == self._revisions.get(id(field), 0)
-            and entry.parent is field.parent
-            and self._models_hold(entry)
-        )
+        """Return whether a kept value was computed for ``field`` from ``source`` and the revisions it read hold.
+
+        Every revision moves with the clock, so revisions seen to hold at the current clock still hold.
+        """
+        if entry.field is not field or entry.source is not source or entry.parent is not field.parent:
+            return False
+        if entry.verified == self._clock:
+            return True
+        if entry.revision == self._revisions.get(id(field), 0) and self._models_hold(entry):
+            entry.verified = self._clock
+            return True
+        return False
 
     def _models_hold(self, entry: _Derived) -> bool:
         """Return whether the revisions of the models a kept value read hold: its model's own, the others' deep."""
@@ -311,6 +319,7 @@ class ParseMemo:
             tuple(references),
             tuple((model, deep.get(id(model), 0)) for model in reads.values()),
             value,
+            self._clock,
         )
 
     def value(  # noqa: PLR0913, PLR0917

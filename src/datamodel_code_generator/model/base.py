@@ -31,7 +31,15 @@ from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
-from datamodel_code_generator._parse_memo import MemoTable, bump_deep, bump_field, forget, memoized, note_reads
+from datamodel_code_generator._parse_memo import (
+    MemoTable,
+    bump_deep,
+    bump_field,
+    bump_model,
+    forget,
+    memoized,
+    note_reads,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
@@ -2868,6 +2876,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.reference: Reference = reference
 
         self.reference.source = self
+        bump_model(self)
 
         # Keep raw Python fragments owned by the generator separate from
         # user-supplied template data.  Custom templates continue to receive
