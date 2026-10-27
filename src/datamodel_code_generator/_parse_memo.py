@@ -47,7 +47,12 @@ MemoKey: TypeAlias = "ModelKey | FieldKey | NodeKey"
 
 
 class MemoTable(Enum):
-    """What a memo keeps; the value names it in check reports."""
+    """What a memo keeps; the value names it in check reports.
+
+    A member hashes by identity: it is the first item of every memo key.
+    """
+
+    __hash__ = object.__hash__
 
     DEDUP_KEYS = "dedup keys"
     """The dedup keys of a model by its model key, one per class name it renders under and whether ``M`` stands in
