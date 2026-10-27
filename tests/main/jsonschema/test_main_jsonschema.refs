@@ -6878,6 +6878,13 @@ pydantic_v2.BaseModel-model_extras_without_x_prefix_v2.py	main/jsonschema/model_
 	main/jsonschema/model_name_map_unmatched_keys_warnings.txt
 [test_main_jsonschema_modular_default_enum_member]
 	main/jsonschema/modular_default_enum_member//*.py
+[test_main_jsonschema_module_import_named_like_builtin]
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass]/
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec]/
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2]/
 [test_main_jsonschema_msgspec_enum_value_base_kept]
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.decoded.txt
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.py

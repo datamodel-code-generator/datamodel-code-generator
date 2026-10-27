@@ -31,5 +31,7 @@ assign_forward_reference_fields reads DEFAULTS before set_validate_default_on_fi
 warn_required_assignments_after_defaults reads KEYWORD_ONLY before fix_tag_opt_out_field_ordering writes it (the pydantic warning and this msgspec repair never read or write the same models)
 snapshot_model_imports reads MODELS_EXIST before remove_unused_models writes it (the snapshot holds the imports of unused models, which leave with them)
 remove_unused_imports reads MODULE_IMPORTS before resolve_module_import_conflicts writes it (resolves the conflicts of the imports that are used)
+resolve_module_import_conflicts reads MODULE_IMPORTS before alias_builtin_shadowing_module_imports writes it (aliases the module imports once their names are final)
+alias_builtin_shadowing_module_imports reads IMPORT_ALIASES before bind_module_field_names writes it (binds field names against the aliases of module imports)
 change_imported_model_name reads MODULE_IMPORTS before replan_schema_validators_after_renames writes it (plans the validator helpers again for the renamed models)
 bind_module_field_names reads MODULE_IMPORTS before replan_schema_validators_after_renames writes it (binding reads the module imports before the helpers are planned again)

@@ -1150,6 +1150,16 @@ RESOLVE_MODULE_IMPORT_CONFLICTS = PassDecl(
     after=(After("remove_unused_imports", "resolves the conflicts of the imports that are used"),),
     summary="Lets the backend alias imports that clash with names of the module (model hook).",
 )
+ALIAS_BUILTIN_SHADOWING_MODULE_IMPORTS = PassDecl(
+    "alias_builtin_shadowing_module_imports",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    after=(After("resolve_module_import_conflicts", "aliases the module imports once their names are final"),),
+    summary="Aliases a module import named like a builtin that its module also writes bare, e.g. ``list[str]``.",
+)
 BIND_MODULE_FIELD_NAMES = PassDecl(
     "bind_module_field_names",
     Phase.IMPORTS,
@@ -1157,7 +1167,10 @@ BIND_MODULE_FIELD_NAMES = PassDecl(
     PassKind.REPAIR,
     reads=_facts(Fact.FIELD_NAMES, RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.IMPORT_ALIASES, RenderFact.UNBOUND_FIELDS),
-    after=(After("resolve_module_import_conflicts", "binds field names against the final import names"),),
+    after=(
+        After("resolve_module_import_conflicts", "binds field names against the final import names"),
+        After("alias_builtin_shadowing_module_imports", "binds field names against the aliases of module imports"),
+    ),
     removed_by="RP15b",
 )
 CHANGE_IMPORTED_MODEL_NAME = PassDecl(

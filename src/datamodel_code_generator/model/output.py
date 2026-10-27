@@ -11,7 +11,7 @@ from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Collection, Mapping
+    from collections.abc import Callable, Collection, Iterable, Mapping
     from typing import Any
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -127,6 +127,25 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
             collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
             previous_names.add(name)
     return collisions
+
+
+def _bare_name_loads(models: Iterable[DataModel], names: Collection[str]) -> set[str]:
+    """Find the names of ``names`` that the emitted models load bare, not as the module of an attribute (``name.X``)."""
+    found: set[str] = set()
+    for model in models:
+        rendered = model.render()
+        lent = host_identifiers(rendered)
+        restore_name = lent.restore_name if lent else str
+        tree = ast.parse(lent.source if lent else rendered)
+        attribute_values = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+        found.update(
+            name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name)
+            and id(node) not in attribute_values
+            and (name := restore_name(node.id)) in names
+        )
+    return found
 
 
 class OutputModelContext:

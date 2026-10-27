@@ -20,6 +20,7 @@ from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import rendering_memo
+from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType
@@ -29,7 +30,7 @@ from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
-from datamodel_code_generator.model.output import _model_field_name_collisions
+from datamodel_code_generator.model.output import _bare_name_loads, _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
 from datamodel_code_generator.parser._imports_plan import (
@@ -100,6 +101,7 @@ __all__ = [
     "ImportsHost",
     "RenderHost",
     "add_root_init_result",
+    "alias_builtin_shadowing_module_imports",
     "append_model_imports",
     "bind_module_field_names",
     "change_module_imported_model_names",
@@ -338,6 +340,9 @@ _IMPORT_CONFLICTS: Final = ImportProducer("import-conflicts")
 
 
 _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
+
+
+_BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
 
 
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
@@ -1300,6 +1305,79 @@ def resolve_module_import_conflicts(parser: ImportsHost[Any], state: _FinalizeSt
     for ctx in state.contexts:
         with parser._import_ledger.external(ctx.imports, _IMPORT_CONFLICTS):  # noqa: SLF001
             parser.data_model_type.resolve_module_import_conflicts(ctx.models, state.model_imports, ctx.imports)
+
+
+def _module_binding(expression: str | None) -> str | None:
+    """Return the module binding of an expression ``<binding>.<Class>``, or None for another expression."""
+    return expression.partition(".")[0] if expression and "." in expression else None
+
+
+def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: ModuleContextView) -> None:
+    """Alias the module imports named like a builtin that the module also writes bare, e.g. ``list[str]``.
+
+    ``from . import list``, which names the models of the module ``list`` (``list.Pop``), hides the builtin from the
+    whole module. Such an import takes the name the module's resolver gives it once the builtin holds its own name
+    (``list_1``), as module imports whose names clash with other names do, and every ``list.X`` the module writes
+    follows. A name is a builtin by the static table of the target (``PYTHON_BUILTIN_TYPE_NAMES``), and the module
+    writes it bare when a rendered model loads it other than as the module of an attribute. The class of an enum
+    member literal is written before (``import_enum_member_literal_classes``), so a binding it names keeps its name.
+    A package's own submodule keeps its name too: importing it binds the name in the package whatever the import
+    is named.
+    """
+    references = [
+        data_type for model in ctx.models for data_type in _named_data_types(model) if data_type.reference is not None
+    ]
+    if not (
+        bindings := {
+            binding
+            for data_type in references
+            if (binding := _module_binding(data_type.alias)) in PYTHON_BUILTIN_TYPE_NAMES
+        }
+    ):
+        return
+    bindings.difference_update(
+        _module_binding(enum_class)
+        for model in ctx.models
+        for data_type in model.all_data_types
+        for enum_class, _ in data_type.enum_member_literals
+    )
+    imported = {
+        ctx.imports.get_effective_name(from_, name): (from_, name)
+        for from_, names in ctx.imports.items()
+        for name in names
+    }
+    resolver = ctx.scoped_model_resolver
+    held = {reference.name: reference for reference in resolver.references.values()}
+    if not (
+        shadowing := {
+            binding
+            for binding in bindings
+            if binding in imported and binding in held and not (ctx.is_init and imported[binding][0] == ".")
+        }
+    ):
+        return
+    ledger = parser._import_ledger  # noqa: SLF001
+    aliases: dict[str, str] = {}
+    for binding in sorted(_bare_name_loads(ctx.models, shadowing)):
+        reference = held[binding]
+        ledger.release_names(ctx.imports, resolver, {binding})
+        ledger.add_name(ctx.imports, resolver, get_special_path("builtin", [binding]), binding)
+        alias = aliases[binding] = ledger.add_name(
+            ctx.imports, resolver, [reference.path], reference.original_name
+        ).name
+        from_, import_ = imported[binding]
+        ledger.apply_alias(ctx.imports, Import(from_=from_, import_=import_, alias=alias), _BUILTIN_MODULE_BINDINGS)
+    for data_type in references:
+        if (binding := _module_binding(data_type.alias)) in aliases:
+            parser._graph_builder.name_reference(  # noqa: SLF001
+                data_type, f"{aliases[binding]}{cast('str', data_type.alias)[len(binding) :]}"
+            )
+
+
+def alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Alias the module imports named like a builtin that their module also writes bare."""
+    for ctx in state.contexts:
+        _alias_builtin_shadowing_module_imports(parser, ctx)
 
 
 def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:

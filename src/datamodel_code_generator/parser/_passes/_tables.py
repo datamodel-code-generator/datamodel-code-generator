@@ -535,6 +535,11 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 checked_models=_all_models,
             ),
             PassSpec(
+                decls.ALIAS_BUILTIN_SHADOWING_MODULE_IMPORTS,
+                late(imports.alias_builtin_shadowing_module_imports),
+                checked_models=_all_models,
+            ),
+            PassSpec(
                 decls.BIND_MODULE_FIELD_NAMES,
                 late(imports.bind_module_field_names),
                 checked_models=_all_models,

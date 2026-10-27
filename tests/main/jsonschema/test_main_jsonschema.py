@@ -3767,6 +3767,44 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.PydanticV2BaseModel, DataModelType.DataclassesDataclass, DataModelType.MsgspecStruct],
+    ids=["pydantic-v2", "dataclass", "msgspec"],
+)
+def test_main_jsonschema_module_import_named_like_builtin(output_model_type: DataModelType, output_dir: Path) -> None:
+    """Alias the module import ``list`` of ``holder``, which writes ``list[str]`` too, so the builtin stays the list.
+
+    ``holder.Holder`` names ``app.list.Pop`` through ``from .app import list``, which hid the builtin from
+    ``tags: list[str]``: no payload decoded (#5387). The import takes ``list_1`` and every ``list.Pop`` follows, while
+    ``app``, which writes no ``list`` of its own, and the module import ``app`` keep their names.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_package_module(output_dir, "holder") as module:
+        decode = (
+            partial(msgspec.json.decode, type=module.Holder)
+            if output_model_type == DataModelType.MsgspecStruct
+            else _model_json_validator(module.Holder)
+        )
+        holder = decode('{"tags": ["a"], "pop": {"key": "k"}, "thing": {"pop": {"key": "t"}}}')
+    assert_output(
+        f"tags {holder.tags}, pop.key {holder.pop.key}, thing.pop.key {holder.thing.pop.key}\n", name="payloads"
+    )
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 

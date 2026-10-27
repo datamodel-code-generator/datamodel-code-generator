@@ -109,6 +109,7 @@ ImportPass: TypeAlias = Literal[
     "runtime-expressions",
     "remove-unused",
     "import-conflicts",
+    "builtin-module-bindings",
     "field-name-bindings",
     "reused-variant-literal",
     "shadowed-imports",
@@ -146,6 +147,8 @@ ImportPass: TypeAlias = Literal[
   ``_merge_runtime_expression_imports``, imports that module code and runtime default expressions add.
 * ``remove-unused``: ``_finalize_modules``, drops the imports whose name no model uses.
 * ``import-conflicts``: the output model's ``resolve_module_import_conflicts``, recorded through ``external``.
+* ``builtin-module-bindings``: ``alias_builtin_shadowing_module_imports``, aliases of module imports named like a
+  builtin that their module also writes bare.
 * ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.
