@@ -2,6 +2,6 @@
 #   filename:  circular_imports_module_below_package.yaml
 #   timestamp: 2019-07-26T00:00:00+00:00
 
-from .._internal import ReceivedDebit, TransactionEntry, Type
+from .._internal_1 import ReceivedDebit, TransactionEntry, Type
 
 __all__ = ["ReceivedDebit", "TransactionEntry", "Type"]

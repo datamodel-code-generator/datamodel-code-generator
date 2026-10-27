@@ -34,6 +34,7 @@ __all__ = [
     "ConfigT",
     "ContextT",
     "FinishRun",
+    "Forwarder",
     "ForwarderMap",
     "ModuleContextFields",
     "ModuleContextView",
@@ -53,7 +54,27 @@ __all__ = [
 
 ModulePath: TypeAlias = tuple[str, ...]
 ModuleModels: TypeAlias = list[tuple[ModulePath, list[DataModel]]]
-ForwarderMap: TypeAlias = dict[ModulePath, tuple[ModulePath, list[tuple[str, str]]]]
+
+
+@final
+@record
+class Forwarder:
+    """A module whose models a merge moved into an ``_internal`` module, written as the imports of the names it binds.
+
+    ``names`` holds ``(module, name, bound name)``: the module that writes a model, the model's class name there and the
+    name the forwarder binds it to, its own models first, from ``internal_module``. A module that a grown merge moved
+    (one that only the growth joined, or the ``_internal`` module of a merge of the released layout, which a grown merge
+    holds) has ``released``: its models in their order in that layout, as ``(name there, class name in
+    internal_module)``, and ``released_internal_modules``, the ``_internal`` modules of that layout.
+    """
+
+    internal_module: ModulePath
+    names: tuple[tuple[ModulePath, str, str], ...]
+    released: tuple[tuple[str, str], ...] = ()
+    released_internal_modules: frozenset[ModulePath] = frozenset()
+
+
+ForwarderMap: TypeAlias = dict[ModulePath, Forwarder]
 ModuleContextFields: TypeAlias = "tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]"
 """The fields of ``parser/base.py:ModuleContext`` in order, for the passes that unpack it."""
 

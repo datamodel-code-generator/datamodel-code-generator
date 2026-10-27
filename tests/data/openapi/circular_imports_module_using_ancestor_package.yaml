@@ -1,0 +1,48 @@
+openapi: 3.0.0
+info:
+  title: A cycle that imports a module below a plain package, which imports a model of that package by name
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    # a and x form the cycle that _internal.py merges.
+    a.item:
+      type: object
+      properties:
+        thing:
+          $ref: '#/components/schemas/x.thing'
+
+    x.thing:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/a.item'
+        leaf:
+          $ref: '#/components/schemas/a.c.leaf'
+        dep:
+          $ref: '#/components/schemas/q.d.dep'
+
+    # a.c is below the package a, so it joins the merge.
+    a.c.leaf:
+      type: object
+      properties:
+        code:
+          type: integer
+
+    # q.d uses the model of a.c that _internal.py now holds, and _internal.py imports q.d: q.d joins the merge too.
+    # It imports base from its package q by name, which q.d keeps binding.
+    q.d.dep:
+      type: object
+      properties:
+        leaf:
+          $ref: '#/components/schemas/a.c.leaf'
+        base:
+          $ref: '#/components/schemas/q.base'
+
+    q.base:
+      type: object
+      properties:
+        name:
+          type: string

@@ -38,7 +38,7 @@ from datamodel_code_generator.parser._passes._shared import (
     replace_model_in_list,
     require_update_action,
 )
-from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
+from datamodel_code_generator.parser._passes._state import Forwarder, RecursionFacts, _ModuleNames
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.util import camel_to_snake
 
@@ -996,7 +996,18 @@ def module_dependency_cycles(
     module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
     all_exports_scope: AllExportsScope | None = None,
 ) -> list[set[tuple[str, ...]]]:
+    """Find the modules to merge into ``_internal`` modules (``_module_merges``)."""
+    return _module_merges(parser, module_models_list, all_exports_scope)[1]
+
+
+def _module_merges(
+    parser: StructureHost,
+    module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
+    all_exports_scope: AllExportsScope | None,
+) -> tuple[list[set[tuple[str, ...]]], list[set[tuple[str, ...]]]]:
     """Find the modules to merge into ``_internal`` modules, from the snapshot of the references between models.
+
+    Return the merges of the released layout, the modules that import each other, and the merges they grow into.
 
     A merge starts as modules that import each other. Importing a module runs the ``__init__`` module of each package
     above it first, so ``_internal`` can still import itself back: through a forwarder package of the merge above a
@@ -1058,6 +1069,7 @@ def module_dependency_cycles(
         for module, models in module_models_list
         if any(model.reference and not model.reference.short_name.startswith("_") for model in models)
     }
+    released = merges
     while merges and (
         failing := _failing_import_cycles(
             merges,
@@ -1068,69 +1080,135 @@ def module_dependency_cycles(
         )
     ):
         merges = _joined_merges(merges, failing)
-    return merges
+    return released, merges
 
 
-def resolve_circular_imports(
+def _released_internal_modules(
+    released: list[set[tuple[str, ...]]], existing_modules: set[tuple[str, ...]]
+) -> dict[frozenset[tuple[str, ...]], tuple[str, ...]]:
+    """Return the ``_internal`` module that the released layout gives each of its merges, numbered in merge order."""
+    paths: dict[frozenset[tuple[str, ...]], tuple[str, ...]] = {}
+    for merge in released:
+        paths[frozenset(merge)] = compute_internal_module_path(merge, existing_modules | set(paths.values()))
+    return paths
+
+
+def _released_internal_forwarder(  # noqa: PLR0913, PLR0917
+    parser: StructureHost,
+    merge: set[tuple[str, ...]],
+    grown_models: list[DataModel],
+    model_to_original_module: dict[int, tuple[str, ...]],
+    released_names: dict[int, str],
+    internal_module: tuple[str, ...],
+    released_internal_modules: frozenset[tuple[str, ...]],
+) -> Forwarder:
+    """Return the forwarder of the ``_internal`` module that the released layout writes for a merge a grown merge holds.
+
+    It binds the merge's models to the class names that module gave them (``_merged_class_names`` over the merge alone),
+    in the order it wrote them.
+    """
+    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    models = [model for model in grown_models if model_to_original_module[id(model)] in merge]
+    named = [model for model in models if model_key_of(model.reference) not in stand_ins]
+    merged_names = dict(
+        zip(map(id, named), _merged_class_names([released_names[id(model)] for model in named]), strict=True)
+    )
+    order = _sort_models_by_class_body_references(
+        models, parser.pydantic_v2_root_model_type, _runtime_validation_reference_keys(models, same_module=False)
+    )
+    return Forwarder(
+        internal_module,
+        tuple(sorted((internal_module, model.class_name, merged_names[id(model)]) for model in named)),
+        tuple((merged_names[id(model)], model.class_name) for model in order if id(model) in merged_names),
+        released_internal_modules,
+    )
+
+
+def resolve_circular_imports(  # noqa: PLR0914
     parser: StructureHost,
     module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
     all_exports_scope: AllExportsScope | None,
-) -> tuple[
-    list[tuple[tuple[str, ...], list[DataModel]]],
-    set[tuple[str, ...]],
-    dict[tuple[str, ...], tuple[tuple[str, ...], list[tuple[str, str]]]],
-]:
-    """Resolve circular imports by merging all SCCs into _internal.py modules.
+) -> tuple[list[tuple[tuple[str, ...], list[DataModel]]], set[tuple[str, ...]], ForwarderMap]:
+    """Merge the modules of each import cycle into an ``_internal`` module; the modules become forwarders.
 
-    Uses Tarjan's algorithm to find strongly connected components (SCCs) in the
-    module dependency graph. All modules in each SCC are merged into a single
-    _internal.py module to break import cycles. Original modules become thin
-    forwarders that re-export their classes from _internal.
+    A merge of the released layout (``_module_merges``) keeps the ``_internal`` module that layout gives it. A merge
+    that grew takes an ``_internal`` module of its own beside every module and released ``_internal`` module, and each
+    module of the released layout that it moves keeps what that layout bound there: a module that only the growth
+    joined, and the ``_internal`` module of each released merge it holds, become forwarders that carry their models in
+    that layout (``Forwarder.released``), whose imports render adds.
 
     Returns:
         - Updated module_models_list with models moved to _internal modules
         - Set of _internal modules created
-        - Forwarder map: original_module -> (internal_module, [(original_name, new_name)])
+        - Forwarder map: original_module -> ``Forwarder``
     """
-    circular_sccs = module_dependency_cycles(parser, module_models_list, all_exports_scope)
-
-    forwarder_map: dict[tuple[str, ...], tuple[tuple[str, ...], list[tuple[str, str]]]] = {}
-
-    if not circular_sccs:
+    released, merges = _module_merges(parser, module_models_list, all_exports_scope)
+    forwarder_map: ForwarderMap = {}
+    if not merges:
         return module_models_list, set(), forwarder_map
 
-    # All circular SCCs are problematic and should be merged into _internal.py
-    # to break the import cycles.
-    problematic_sccs = circular_sccs
-
     existing_modules = {module for module, _ in module_models_list}
+    released_paths = _released_internal_modules(released, existing_modules)
+    released_internal_modules = frozenset(released_paths.values())
     internal_modules_created: set[tuple[str, ...]] = set()
+    released_forwarders: list[tuple[str, ...]] = []
+    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
 
     result_modules: dict[tuple[str, ...], list[DataModel]] = {
         module: list(models) for module, models in module_models_list
     }
 
-    for scc in problematic_sccs:
-        internal_module = compute_internal_module_path(scc, existing_modules | internal_modules_created)
+    for merge in merges:
+        grown = (internal_module := released_paths.get(frozenset(merge))) is None
+        if internal_module is None:
+            internal_module = compute_internal_module_path(
+                merge, existing_modules | released_internal_modules | internal_modules_created
+            )
         internal_modules_created.add(internal_module)
         internal_path = Path("/".join(internal_module))
 
-        all_scc_models, model_to_original_module = collect_scc_models(scc, result_modules)
+        all_scc_models, model_to_original_module = collect_scc_models(merge, result_modules)
+        released_names = {id(model): model.class_name for model in all_scc_models}
         module_class_mappings = rename_and_relocate_scc_models(
             parser, all_scc_models, model_to_original_module, internal_module, internal_path
         )
+        joined = set(merge)
+        if grown:
+            for released_merge in (released_merge for released_merge in released if released_merge <= merge):
+                joined -= released_merge
+                released_path = released_paths[frozenset(released_merge)]
+                forwarder_map[released_path] = _released_internal_forwarder(
+                    parser,
+                    released_merge,
+                    all_scc_models,
+                    model_to_original_module,
+                    released_names,
+                    internal_module,
+                    released_internal_modules,
+                )
+                released_forwarders.append(released_path)
         all_scc_models = _sort_models_by_class_body_references(
             all_scc_models,
             parser.pydantic_v2_root_model_type,
             _runtime_validation_reference_keys(all_scc_models, same_module=False),
         )
 
-        for scc_module in scc:
-            if scc_module in result_modules:  # pragma: no branch
-                result_modules[scc_module] = []
+        for scc_module in merge:
+            module_models = result_modules[scc_module]
+            result_modules[scc_module] = []
             if scc_module in module_class_mappings:  # pragma: no branch
                 sorted_mappings = sorted(module_class_mappings[scc_module], key=operator.itemgetter(0))
-                forwarder_map[scc_module] = (internal_module, sorted_mappings)
+                moved = grown and scc_module in joined
+                forwarder_map[scc_module] = Forwarder(
+                    internal_module,
+                    tuple((internal_module, new_name, original_name) for original_name, new_name in sorted_mappings),
+                    tuple(
+                        (released_names[id(model)], model.class_name)
+                        for model in module_models
+                        if moved and model_key_of(model.reference) not in stand_ins
+                    ),
+                    released_internal_modules if moved else frozenset(),
+                )
         result_modules[internal_module] = all_scc_models
 
     new_module_models: list[tuple[tuple[str, ...], list[DataModel]]] = [
@@ -1138,6 +1216,7 @@ def resolve_circular_imports(
         for internal_module in sorted(internal_modules_created)
         if internal_module in result_modules  # pragma: no branch
     ]
+    new_module_models.extend((module, []) for module in sorted(released_forwarders))
 
     for module, _ in module_models_list:
         if module not in internal_modules_created:  # pragma: no branch

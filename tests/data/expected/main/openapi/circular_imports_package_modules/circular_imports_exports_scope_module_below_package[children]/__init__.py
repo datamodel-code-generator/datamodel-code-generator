@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from ._internal import Leaf, Thing, Thing_1, User
+from ._internal_1 import Leaf, Thing, Thing_1, User
 from .p import Item
 
 __all__ = [

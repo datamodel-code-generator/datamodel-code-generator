@@ -2,6 +2,6 @@
 #   filename:  circular_imports_module_using_module_below_package.yaml
 #   timestamp: 2019-07-26T00:00:00+00:00
 
-from .._internal import Item
+from .._internal_1 import Item
 
 __all__ = ["Item"]

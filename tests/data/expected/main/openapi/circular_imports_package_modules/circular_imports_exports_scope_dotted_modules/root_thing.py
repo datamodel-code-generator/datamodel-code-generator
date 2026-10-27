@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from ._internal import User
+from ._internal_1 import User
 
 
 class RootThing(BaseModel):

@@ -2,6 +2,6 @@
 #   filename:  circular_imports_exports_scope_module_below_package.yaml
 #   timestamp: 2019-07-26T00:00:00+00:00
 
-from .._internal import Leaf
+from .._internal_1 import Leaf
 
 __all__ = ["Leaf"]

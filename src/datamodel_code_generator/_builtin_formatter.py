@@ -192,7 +192,7 @@ def _alias_imported_name(alias: str) -> str:
 def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_AliasSortCategory, str]:
     name = names.restore(_alias_imported_name(alias))
     target = names.python_version
-    if is_upper(name, target):
+    if len(name) > 1 and is_upper(name, target):
         category = _AliasSortCategory.CONSTANT
     elif is_upper(name[:1], target):
         category = _AliasSortCategory.CLASS

@@ -2,6 +2,6 @@
 #   filename:  circular_imports_nested_cycle_below_package.yaml
 #   timestamp: 2019-07-26T00:00:00+00:00
 
-from .._internal import S
+from .._internal_1 import S
 
 __all__ = ["S"]

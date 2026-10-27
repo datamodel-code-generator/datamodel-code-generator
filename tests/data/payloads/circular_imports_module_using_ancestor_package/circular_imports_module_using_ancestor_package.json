@@ -1,0 +1,22 @@
+{
+  "a.item": [
+    {},
+    {"thing": {"dep": {"leaf": {"code": 1}, "base": {"name": "n"}}}},
+    {"thing": {"dep": {"base": {"name": 1}}}}
+  ],
+  "x.thing": [
+    {},
+    {"dep": {"base": {}}},
+    {"dep": 1}
+  ],
+  "q.d.dep": [
+    {},
+    {"leaf": {"code": 1}, "base": {"name": "n"}},
+    {"base": {"name": []}}
+  ],
+  "q.base": [
+    {},
+    {"name": "n"},
+    {"name": 1}
+  ]
+}

@@ -39,6 +39,7 @@ BELOW_PACKAGE = "circular_imports_module_below_package"
 BELOW_CYCLE_PACKAGE = "circular_imports_module_below_cycle_package"
 USING_BELOW_PACKAGE = "circular_imports_module_using_module_below_package"
 NESTED_CYCLE = "circular_imports_nested_cycle_below_package"
+USING_ANCESTOR_PACKAGE = "circular_imports_module_using_ancestor_package"
 BELOW_PACKAGE_MODELS = {
     "flow_details": ("", "FlowDetails"),
     "treasury.received_debit": ("treasury", "ReceivedDebit"),
@@ -56,6 +57,12 @@ USING_BELOW_PACKAGE_MODELS = {
     "x.thing": ("x", "Thing"),
     "a.c.leaf": ("a.c", "Leaf"),
     "d.dep": ("d", "Dep"),
+}
+USING_ANCESTOR_PACKAGE_MODELS = {
+    "a.item": ("a", "Item"),
+    "x.thing": ("x", "Thing"),
+    "q.d.dep": ("q.d", "Dep"),
+    "q.base": ("q.d", "Base"),
 }
 NESTED_CYCLE_MODELS = {
     "root_thing": ("", "RootThing"),
@@ -207,6 +214,24 @@ def test_circular_imports_module_using_module_below_package(output_dir: Path) ->
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_output(_open_api_verdicts(output_dir, USING_BELOW_PACKAGE, USING_BELOW_PACKAGE_MODELS), name="payloads")
+
+
+def test_circular_imports_module_using_ancestor_package(output_dir: Path) -> None:
+    """Keep the name ``Base`` that ``q.d`` imported from its package ``q`` when ``q.d`` joins the merge.
+
+    ``q.d`` uses the model of ``a.c``, which joins the merge of the cycle of ``a`` and ``x``, and ``_internal.py``
+    imports ``q.d``, so ``q.d`` joins too and becomes a forwarder. It imported ``Base`` from ``q`` by name, so the
+    forwarder imports it from there as well: ``q.base`` validates through ``q.d.Base``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{USING_ANCESTOR_PACKAGE}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(
+        _open_api_verdicts(output_dir, USING_ANCESTOR_PACKAGE, USING_ANCESTOR_PACKAGE_MODELS), name="payloads"
+    )
 
 
 def test_circular_imports_nested_cycle_below_package(output_dir: Path) -> None:

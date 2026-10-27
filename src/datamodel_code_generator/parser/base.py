@@ -8,6 +8,7 @@ code generation.
 from __future__ import annotations
 
 import contextlib
+import operator
 import re
 from abc import ABC, abstractmethod
 from collections import Counter, defaultdict
@@ -2498,33 +2499,32 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def __generate_forwarder_content(  # noqa: PLR6301
         self,
         original_module: tuple[str, ...],
-        internal_module: tuple[str, ...],
-        class_mappings: list[tuple[str, str]],
+        names: Sequence[tuple[tuple[str, ...], str, str]],
         *,
         is_init: bool = False,
     ) -> str:
-        """Generate forwarder module content that re-exports classes from _internal.
+        """Generate forwarder module content that imports the names it binds from the modules that write them.
 
         Args:
             original_module: The original module tuple (e.g., ("issuing",) or ())
-            internal_module: The _internal module tuple (e.g., ("_internal",))
-            class_mappings: List of (original_name, new_name) tuples, sorted by original_name
+            names: ``(module, name, bound name)`` of each model it binds (``Forwarder.names``)
             is_init: True if this is a package __init__.py, False for regular .py files
 
         Returns:
             The forwarder module content as a string
         """
         original_str = ".".join(original_module)
-        internal_str = ".".join(internal_module)
-        from_dots, module_name = relative(original_str, internal_str, reference_is_module=True, current_is_init=is_init)
-        relative_import = f"{from_dots}{module_name}"
-
+        package = (*original_module, "__init__") if is_init else original_module
         imports = Imports()
-        for original_name, new_name in class_mappings:
-            if original_name == new_name:
-                imports.append(Import(from_=relative_import, import_=new_name))
+        for source, name, bound_name in sorted(names, key=operator.itemgetter(2)):
+            if len(source) < len(package) and package[: len(source)] == source:
+                from_ = "." * (len(package) - len(source))
             else:
-                imports.append(Import(from_=relative_import, import_=new_name, alias=original_name))
+                left, right = relative(
+                    original_str, ".".join(source), reference_is_module=True, current_is_init=is_init
+                )
+                from_ = f"{left}{right}" if left.endswith(".") else f"{left}.{right}"
+            imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"
 
@@ -3468,11 +3468,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
 
         if not result and ctx.module_key in forwarder_map:
-            internal_module, class_mappings = forwarder_map[ctx.module_key]
-            forwarder_content = self.__generate_forwarder_content(
-                ctx.module_key, internal_module, class_mappings, is_init=ctx.is_init
-            )
-            result = [forwarder_content]
+            result = [
+                self.__generate_forwarder_content(
+                    ctx.module_key, forwarder_map[ctx.module_key].names, is_init=ctx.is_init
+                )
+            ]
 
         if not result and not ctx.is_init:
             return None
