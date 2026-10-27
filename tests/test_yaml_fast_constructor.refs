@@ -475,6 +475,7 @@ openapi/schema_intersection/root_site_null_oas30.yaml	yaml_fast_constructor/pari
 openapi/schema_intersection/rw.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_location.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_location_alias.yaml	yaml_fast_constructor/parity.txt
+openapi/self_of_json_schema_document/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/self_spelled_external_ref/library.yaml	yaml_fast_constructor/parity.txt
 openapi/self_spelled_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/serialization_aliases_parameters.yaml	yaml_fast_constructor/parity.txt

@@ -411,7 +411,7 @@ class OpenAPIParser(JsonSchemaParser):
         """
         if document in self._specification_documents:
             return self.openapi_self_context(raw)
-        if isinstance(openapi_self := raw.get("$self"), str) and self.schema_features.openapi_self:
+        if "openapi" in raw and isinstance(openapi_self := raw.get("$self"), str) and self.schema_features.openapi_self:
             scope = "/".join(self.model_resolver.current_root)
             self.model_resolver.ids[scope].setdefault(openapi_self, f"{scope}#")
         return nullcontext()

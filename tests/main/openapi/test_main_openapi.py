@@ -15089,6 +15089,22 @@ def test_main_openapi_self_spelled_external_reference(output_file: Path) -> None
     )
 
 
+def test_main_openapi_self_of_json_schema_document_is_not_an_identity(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Fetch a reference spelled with the `$self` of a loaded JSON Schema document, which only an OpenAPI one names."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "self_of_json_schema_document" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        extra_args=["--no-allow-remote-refs"],
+        expected_stderr_contains="Fetching remote $ref is disabled: https://schemas.example.com/pets/schema.json",
+        output_should_not_exist=True,
+    )
+
+
 def test_main_openapi_api_scope_path_names_custom_class_name_generator(tmp_path: Path) -> None:
     """Hand the custom class name generator the route-derived API scope names."""
     run_generate_file_and_assert(

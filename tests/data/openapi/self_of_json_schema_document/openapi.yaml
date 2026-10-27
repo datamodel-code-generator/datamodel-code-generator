@@ -1,0 +1,9 @@
+openapi: 3.2.0
+info:
+  title: A JSON Schema document that declares a $self
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Pet:
+      $ref: 'schema.json#/$defs/Name'
