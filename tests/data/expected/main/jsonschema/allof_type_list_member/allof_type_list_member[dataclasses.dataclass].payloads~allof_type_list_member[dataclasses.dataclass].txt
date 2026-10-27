@@ -1,0 +1,22 @@
+{}: schema accepts, model accepts
+{"p": "x"}: schema accepts, model accepts
+{"p": 1}: schema rejects, model rejects
+{"q": "x"}: schema accepts, model accepts
+{"q": 1}: schema rejects, model rejects
+{"r": "abc"}: schema accepts, model accepts
+{"r": 1}: schema rejects, model rejects
+{"s": "abc"}: schema accepts, model accepts
+{"s": 1}: schema rejects, model rejects
+{"d": "x"}: schema rejects, model rejects
+{"d": 1}: schema rejects, model rejects
+{"n": 5}: schema accepts, model accepts
+{"n": "x"}: schema accepts, model accepts
+{"n": 1.5}: schema rejects, model rejects
+{"n": null}: schema rejects, model accepts
+{"m": 1}: schema accepts, model accepts
+{"m": 1.5}: schema rejects, model rejects
+{"m": null}: schema rejects, model accepts
+{"m": "x"}: schema rejects, model rejects
+{"x": 1.5}: schema accepts, model accepts
+{"x": "x"}: schema rejects, model rejects
+{"x": true}: schema rejects, model rejects

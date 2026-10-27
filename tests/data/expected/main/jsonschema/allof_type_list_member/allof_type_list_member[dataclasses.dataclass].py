@@ -27,6 +27,21 @@ class Disjoint:
     pass
 
 
+NumberOrString: TypeAlias = int | str
+
+
+NumberString: TypeAlias = float | str
+
+
+MixedMembers: TypeAlias = int
+
+
+SharedNumber: TypeAlias = float
+
+
+NumberNull: TypeAlias = float | None
+
+
 Same: TypeAlias = str | None
 
 
@@ -37,3 +52,6 @@ class Model:
     r: R | None = None
     s: Same | None = None
     d: Disjoint | None = None
+    n: NumberOrString | None = None
+    m: MixedMembers | None = None
+    x: SharedNumber | None = None

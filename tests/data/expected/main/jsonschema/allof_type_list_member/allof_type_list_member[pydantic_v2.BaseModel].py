@@ -31,6 +31,26 @@ class Disjoint(BaseModel):
     pass
 
 
+class NumberOrString(RootModel[int | str]):
+    root: int | str
+
+
+class NumberString(RootModel[float | str]):
+    root: float | str
+
+
+class MixedMembers(RootModel[int]):
+    root: int
+
+
+class SharedNumber(RootModel[float]):
+    root: float
+
+
+class NumberNull(RootModel[float | None]):
+    root: float | None
+
+
 class Same(RootModel[constr(max_length=5) | None]):
     root: constr(max_length=5) | None
 
@@ -41,3 +61,6 @@ class Model(BaseModel):
     r: R | None = None
     s: Same | None = None
     d: Disjoint | None = None
+    n: NumberOrString | None = None
+    m: MixedMembers | None = None
+    x: SharedNumber | None = None

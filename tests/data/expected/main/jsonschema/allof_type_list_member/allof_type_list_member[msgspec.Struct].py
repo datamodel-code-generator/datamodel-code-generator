@@ -27,6 +27,21 @@ class Disjoint(Struct):
     pass
 
 
+NumberOrString: TypeAlias = int | str
+
+
+NumberString: TypeAlias = float | str
+
+
+MixedMembers: TypeAlias = int
+
+
+SharedNumber: TypeAlias = float
+
+
+NumberNull: TypeAlias = float | None
+
+
 Same: TypeAlias = Annotated[str, Meta(max_length=5)] | None
 
 
@@ -36,3 +51,6 @@ class Model(Struct):
     r: R | UnsetType = UNSET
     s: Same | UnsetType = UNSET
     d: Disjoint | UnsetType = UNSET
+    n: NumberOrString | UnsetType = UNSET
+    m: MixedMembers | UnsetType = UNSET
+    x: SharedNumber | UnsetType = UNSET

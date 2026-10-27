@@ -14,7 +14,7 @@ from collections import Counter, defaultdict, deque
 from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from copy import copy, deepcopy
 from dataclasses import dataclass, replace
-from functools import cached_property, lru_cache, partial, wraps
+from functools import cached_property, lru_cache, partial, reduce, wraps
 from itertools import chain, compress
 from operator import and_, is_not
 from pathlib import Path
@@ -784,6 +784,17 @@ _NUMERIC_TYPE_DOMAINS = {
 def _json_schema_types(schema_type: str | list[str]) -> list[str]:
     """Return the JSON Schema type keyword as a list."""
     return [schema_type] if isinstance(schema_type, str) else schema_type
+
+
+def _intersect_json_schema_types(left: list[str], right: list[str]) -> list[str]:
+    """Return the JSON Schema types both lists admit, in the order of ``left``, where number admits integer."""
+    right_types = {type_ for item in right for type_ in ((item, "integer") if item == "number" else (item,))}
+    common = dict.fromkeys(
+        type_ for item in left for type_ in (("integer", item) if item == "number" else (item,)) if type_ in right_types
+    )
+    if "number" in common:
+        common.pop("integer", None)
+    return list(common)
 
 
 def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
@@ -9878,7 +9889,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
 
         constraint_items: list[JsonSchemaObject] = []
-        common_types: list[str] | None = None
         for item in obj.allOf:
             if not isinstance(item, JsonSchemaObject):  # pragma: no cover
                 continue
@@ -9887,24 +9897,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if item.properties or item.items:
                 return None
             if item.has_constraint or item.type or item.format:
-                if item.type and ref_schema.type:
-                    numeric_types = (
-                        _numeric_type_domain(item.type) is not None
-                        and _numeric_type_domain(ref_schema.type) is not None
-                    )
-                    if not numeric_types and item.type != ref_schema.type:
-                        item_types = _json_schema_types(item.type)
-                        common_types = [
-                            type_
-                            for type_ in (common_types or _json_schema_types(ref_schema.type))
-                            if type_ in item_types
-                        ]
-                        if not common_types:
-                            return None
                 constraint_items.append(item)
 
         if not constraint_items:
             return None
+
+        common_types: list[str] | None = None
+        if ref_schema.type and (typed := [item.type for item in constraint_items if item.type]):
+            ref_types = _json_schema_types(ref_schema.type)
+            if any(_numeric_type_domain(type_) is None for type_ in (ref_schema.type, *typed)):
+                common_types = reduce(_intersect_json_schema_types, map(_json_schema_types, typed), ref_types)
+                if not common_types:
+                    return None
+                if common_types == ref_types:
+                    common_types = None
 
         all_items = [ref_schema, *constraint_items]
         merged_schema = self._merge_primitive_schemas_for_allof(all_items)

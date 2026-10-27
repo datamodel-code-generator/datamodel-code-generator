@@ -27,6 +27,21 @@ class Disjoint(TypedDict):
     pass
 
 
+NumberOrString: TypeAlias = int | str
+
+
+NumberString: TypeAlias = float | str
+
+
+MixedMembers: TypeAlias = int
+
+
+SharedNumber: TypeAlias = float
+
+
+NumberNull: TypeAlias = float | None
+
+
 Same: TypeAlias = str | None
 
 
@@ -36,3 +51,6 @@ class Model(TypedDict):
     r: NotRequired[R]
     s: NotRequired[Same]
     d: NotRequired[Disjoint]
+    n: NotRequired[NumberOrString]
+    m: NotRequired[MixedMembers]
+    x: NotRequired[SharedNumber]

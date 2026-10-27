@@ -30,6 +30,21 @@ class Disjoint:
     pass
 
 
+NumberOrString = TypeAliasType("NumberOrString", int | str)
+
+
+NumberString = TypeAliasType("NumberString", float | str)
+
+
+MixedMembers = TypeAliasType("MixedMembers", int)
+
+
+SharedNumber = TypeAliasType("SharedNumber", float)
+
+
+NumberNull = TypeAliasType("NumberNull", float | None)
+
+
 Same = TypeAliasType("Same", Annotated[str, Field(max_length=5)] | None)
 
 
@@ -40,3 +55,6 @@ class Model:
     r: R | None = None
     s: Same | None = None
     d: Disjoint | None = None
+    n: NumberOrString | None = None
+    m: MixedMembers | None = None
+    x: SharedNumber | None = None
