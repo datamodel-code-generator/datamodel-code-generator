@@ -14,7 +14,7 @@ from collections import OrderedDict, defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from itertools import accumulate, chain, takewhile
 from pathlib import Path
@@ -245,30 +245,34 @@ class _MissingCustomTemplateState:
 _missing_custom_template_state = _MissingCustomTemplateState()
 
 
+@dataclass(slots=True)
+class _TypingImportNames:
+    """The typing imports a field's type hint needs, collected over its type tree into one value."""
+
+    union: bool = False
+    optional: bool = False
+    annotated: bool = False
+    any_: bool = False
+
+    def add(self, name: str) -> None:
+        match name:
+            case IMPORT_UNION.import_:
+                self.union = True
+            case IMPORT_OPTIONAL.import_:
+                self.optional = True
+            case IMPORT_ANNOTATED.import_:
+                self.annotated = True
+
+    def requirements(self) -> _TypingImportRequirements:
+        return _TypingImportRequirements(self.union, self.optional, self.annotated, self.any_)
+
+
 @record
 class _TypingImportRequirements:
     union: bool = False
     optional: bool = False
     annotated: bool = False
     any_: bool = False
-
-    def merge(self, other: _TypingImportRequirements) -> _TypingImportRequirements:
-        return _TypingImportRequirements(
-            union=self.union or other.union,
-            optional=self.optional or other.optional,
-            annotated=self.annotated or other.annotated,
-            any_=self.any_ or other.any_,
-        )
-
-    def with_import_name(self, name: str) -> _TypingImportRequirements:
-        match name:
-            case IMPORT_UNION.import_:
-                return replace(self, union=True)
-            case IMPORT_OPTIONAL.import_:
-                return replace(self, optional=True)
-            case IMPORT_ANNOTATED.import_:
-                return replace(self, annotated=True)
-        return self
 
     def allows(self, import_: Import) -> bool:
         match import_:
@@ -1047,40 +1051,40 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         data_type: DataType | None = None,
     ) -> _TypingImportRequirements:
         data_type = data_type or self.data_type
-        requirements = self._data_type_typing_import_requirements(data_type)
+        names = _TypingImportNames()
+        self._add_typing_import_names(data_type, names)
         if needs_annotated:
-            requirements = requirements.with_import_name(IMPORT_ANNOTATED.import_)
-        if not requirements.optional and self._needs_field_optional_import_from_structure(data_type=data_type):
-            requirements = requirements.with_import_name(IMPORT_OPTIONAL.import_)
-        return requirements
+            names.add(IMPORT_ANNOTATED.import_)
+        if not names.optional and self._needs_field_optional_import_from_structure(data_type=data_type):
+            names.add(IMPORT_OPTIONAL.import_)
+        return names.requirements()
 
-    def _data_type_typing_import_requirements(self, data_type: DataType) -> _TypingImportRequirements:
-        requirements = self._explicit_typing_import_requirements(data_type)
+    def _add_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
+        """Add the typing imports the hint of ``data_type`` needs to ``names``."""
+        self._add_explicit_typing_import_names(data_type, names)
 
         if data_type.is_union:
-            requirements = requirements.merge(self._union_typing_import_requirements(data_type))
+            self._add_union_typing_import_names(data_type, names)
         elif len(data_type.data_types) == 1:
-            requirements = requirements.merge(self._data_type_typing_import_requirements(data_type.data_types[0]))
+            self._add_typing_import_names(data_type.data_types[0], names)
 
         if data_type.dict_key:
-            requirements = requirements.merge(self._data_type_typing_import_requirements(data_type.dict_key))
+            self._add_typing_import_names(data_type.dict_key, names)
             if not self._mapping_writes_value(data_type):
-                requirements = replace(requirements, any_=True)
+                names.any_ = True
 
         if data_type.discriminator:
-            requirements = requirements.with_import_name(IMPORT_ANNOTATED.import_)
+            names.add(IMPORT_ANNOTATED.import_)
         if self._data_type_needs_optional_import(data_type):
-            requirements = requirements.with_import_name(IMPORT_OPTIONAL.import_)
-        return requirements
+            names.add(IMPORT_OPTIONAL.import_)
 
-    def _union_typing_import_requirements(self, data_type: DataType) -> _TypingImportRequirements:
-        """Return the typing imports a union needs; one whose members all write nothing or None renders ``Any``."""
-        requirements = _TypingImportRequirements()
+    def _add_union_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
+        """Add the typing imports a union needs; one whose members all write nothing or None renders ``Any``."""
         branch_keys: set[tuple[Any, ...]] = set()
         has_none = False
         writes_member = False
         for child in data_type.data_types:
-            requirements = requirements.merge(self._data_type_typing_import_requirements(child))
+            self._add_typing_import_names(child, names)
             if self._data_type_renders_none(child):
                 has_none = True
                 continue
@@ -1088,30 +1092,27 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             writes_member = writes_member or self._data_type_writes_hint(child)
 
         if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
-            requirements = requirements.with_import_name(IMPORT_OPTIONAL.import_)
+            names.add(IMPORT_OPTIONAL.import_)
         ordered_none_branch_count = int(data_type.preserve_union_member_order and has_none)
         if not writes_member and data_type.data_types and not ordered_none_branch_count:
-            requirements = replace(requirements, any_=True)
+            names.any_ = True
         if len(branch_keys) + ordered_none_branch_count > 1 and not data_type.use_union_operator:
-            requirements = requirements.with_import_name(IMPORT_UNION.import_)
-        return requirements
+            names.add(IMPORT_UNION.import_)
 
     @staticmethod
-    def _explicit_typing_import_requirements(data_type: DataType) -> _TypingImportRequirements:
-        requirements = _TypingImportRequirements()
+    def _add_explicit_typing_import_names(data_type: DataType, names: _TypingImportNames) -> None:
         if data_type.python_type:
             from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
                 iter_python_type_expr_names,
             )
 
             for name in iter_python_type_expr_names(data_type.python_type.expression):
-                requirements = requirements.with_import_name(name)
+                names.add(name)
         for annotation in data_type._annotation_texts:  # noqa: SLF001
             if not annotation:
                 continue
             for name in _annotation_typing_import_names(annotation):
-                requirements = requirements.with_import_name(name)
-        return requirements
+                names.add(name)
 
     def _data_type_needs_optional_import(self, data_type: DataType) -> bool:
         if data_type.use_union_operator or data_type.type == ANY:

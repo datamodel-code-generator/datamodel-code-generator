@@ -46,7 +46,6 @@ from datamodel_code_generator.model.base import (
     _RenderedDataModelField,
     _safe_dataclass_arguments,
     _safe_extra_template_data,
-    _TypingImportRequirements,
     comment_safe,
     escape_docstring,
     format_docstring,
@@ -3330,13 +3329,6 @@ def test_field_import_fallback_keeps_union_operator_optional_in_forward_ref_mode
     model.has_forward_reference = True
 
     assert field.imports == ()
-
-
-def test_typing_import_requirements_ignore_unknown_import_name() -> None:
-    """Test unknown annotation names leave structured import requirements unchanged."""
-    requirements = _TypingImportRequirements(optional=True)
-
-    assert requirements.with_import_name("Literal") is requirements
 
 
 def test_annotation_typing_import_names_ignores_invalid_annotation() -> None:

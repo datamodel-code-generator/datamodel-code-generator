@@ -459,7 +459,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._MAX_CUSTOM_TEMPLATE_SIGNATURES",
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS",
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._RenderedDataModelField",
-        "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._TypingImportRequirements",
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._annotation_typing_import_names",
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._clear_custom_template_caches",
         "private-import:tests/model/test_base.py::datamodel_code_generator.model.base._get_custom_template_signature",
