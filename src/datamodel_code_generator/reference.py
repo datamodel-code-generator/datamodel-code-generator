@@ -1084,14 +1084,19 @@ class ModelResolver:  # noqa: PLR0904
         """Return the key and the explicit model rename for a source path or generated name.
 
         A yielding reference matches only by path: its generated name is not final until parsing ends. The first
-        matching candidate wins, and every matching key counts as found.
+        matching candidate wins, and every matching key counts as found. A class name key whose name was released
+        (``_apply_model_name_map``) no longer matches by the name of a model.
         """
         if not self.model_name_map:
             return None
 
         _, separator, fragment = path.partition("#")
         paths = (path, f"#{fragment}") if separator else (path,)
-        names = (generated_name, original_name) if match_names else ()
+        names = (
+            tuple(name for name in (generated_name, original_name) if name not in self._released_model_names)
+            if match_names
+            else ()
+        )
         matched: tuple[str, str] | None = None
         for candidate in (*paths, *names):
             if (value := self.model_name_map.get(candidate)) is None:

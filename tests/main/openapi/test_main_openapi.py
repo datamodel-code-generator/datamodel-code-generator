@@ -5304,6 +5304,17 @@ def test_main_openapi_nullable_map_value_model_name_map(
             "int_parsing",
             id="map-value-takes-released-name",
         ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_key_of_nested_titles.json",
+            "jsonschema",
+            '{"Pet": "Cat"}',
+            ["--use-title-as-name"],
+            "Root",
+            '{"p1":{"pet":{"x":"a"}},"p2":{"pet":{"y":1}}}',
+            '{"p2":{"pet":{"y":"z"}}}',
+            "int_parsing",
+            id="nested-models-of-one-title",
+        ),
     ],
 )
 def test_main_openapi_model_name_map_key_of_numbered_name(
