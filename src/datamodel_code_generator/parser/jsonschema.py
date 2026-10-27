@@ -5132,8 +5132,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _get_data_type(self, obj: JsonSchemaObject, *, localize_constraints: bool) -> DataType:
-        """Build scalar types while retaining constraints owned by their actual context."""
-        if self._null_facts(obj, "scalar").rule == "legacy-nullable-as-type-list":
+        """Build scalar types while retaining constraints owned by their actual context.
+
+        The null facts of the ``scalar`` site are read once: a ``type`` list returns before the null beside one
+        ``type`` is read, so the mark of ``legacy-nullable-as-type-list`` leaves the facts read for it as they are.
+        """
+        null_facts = self._null_facts(obj, "scalar")
+        if null_facts.rule == "legacy-nullable-as-type-list":
             obj.__dict__[_NULLABLE_TYPE_LIST_KEY] = True
         python_type_override = self._get_python_type_override(obj)
         if python_type_override:  # pragma: no cover
@@ -5158,7 +5163,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 ],
             )
         data_type = self._get_constrained_data_type(obj, schema_type, field_constraints=field_constraints)
-        if self._null_facts(obj, "scalar").admits_null:
+        if null_facts.admits_null:
             return build_union(self.data_type, [data_type], nullable=True)
         return data_type
 
