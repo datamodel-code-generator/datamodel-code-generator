@@ -10444,8 +10444,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
         array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
         (``_read_false_all_of_map_schemas``) are read the same way. ``lightweight`` reads the array positions as the
-        lightweight type of a TypedDict ``extra_items`` types them (``_build_lightweight_array_type``).
+        lightweight type of a TypedDict ``extra_items`` types them (``_build_lightweight_array_type``). A site reads
+        none of them while no loaded document holds an ``allOf`` that lists ``false``
+        (``SchemaGraphBuilder.holds_false_all_of``).
         """
+        if (graph := self._schema_graph) is None or not graph.holds_false_all_of:
+            return obj
         update: dict[str, object] = {}
         if (
             _is_false_all_of(obj.additionalProperties)

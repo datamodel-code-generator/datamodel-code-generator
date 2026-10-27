@@ -417,6 +417,7 @@ class SchemaGraphBuilder:
         "_directories",
         "_documents",
         "_edge_keys",
+        "_false_all_of_documents",
         "_mount_containers",
         "_mount_roots",
         "_mounted",
@@ -432,6 +433,7 @@ class SchemaGraphBuilder:
         self.locations: dict[int, SchemaLocation] = {}
         self.registry = ResourceRegistry()
         self._documents: list[object] = []
+        self._false_all_of_documents: set[str] = set()
         self._mounted: set[int] = set()
         self._mount_roots: set[int] = set()
         self._mount_containers: dict[int, Any] = {}
@@ -440,6 +442,14 @@ class SchemaGraphBuilder:
         self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
         self._schemas: dict[tuple[int, type[Any]], tuple[Any, object]] = {}
+
+    @property
+    def holds_false_all_of(self) -> bool:
+        """Return whether a document indexed so far holds a JSON object whose ``allOf`` lists ``false``.
+
+        Only such a document gives a schema object an ``allOf`` member that is ``false``; the parser writes none.
+        """
+        return bool(self._false_all_of_documents)
 
     def count_ref(self, site: str, ref: str, plain_origin: RefOrigin) -> None:
         """Count a reference that reached a check ``site``, by its origin, with or without its edge.
@@ -603,12 +613,14 @@ class SchemaGraphBuilder:
         under several names) is copied for this position, and its holders are copied on write up to the root, so
         neither the loader's nor the caller's objects are written and each object has one location. A container that
         is its own ancestor is a cycle: it is copied once, the back edge points to the copy and is not descended.
-        Arrays are not indexed: an array shared between positions is copied when an object in it is.
+        Arrays are not indexed: an array shared between positions is copied when an object in it is. A document with
+        a JSON object whose ``allOf`` lists ``false`` is recorded for ``holds_false_all_of``.
 
         With ``reading``, the same walk makes the `$ref` and `$dynamicRef` keywords of the schemas it reads
         ``ResolvedRef``s of ``document``, as ``with_ref_edges`` reads them, and copies their objects on write.
         """
         locations = self.locations
+        false_all_of = self._false_all_of_documents
         ancestors: dict[int, Any] = {}
         mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
         reads_refs = set() if reading is None else {reading.objects, reading.root}
@@ -629,6 +641,8 @@ class SchemaGraphBuilder:
                 location = SchemaLocation(root.document, tokens)
                 seen = locations.get(value_id)
                 ancestors[value_id] = copy(value) if seen is not None and seen != location else value
+                if isinstance(all_of := value.get("allOf"), (list, tuple)) and any(item is False for item in all_of):
+                    false_all_of.add(root.document)
                 children = value.items()
             else:
                 ancestors[value_id] = value
