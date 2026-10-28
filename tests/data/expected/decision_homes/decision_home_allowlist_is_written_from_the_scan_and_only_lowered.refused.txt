@@ -1,0 +1,3 @@
+('other.py', 'Other.method', 'sample.null-test')
+('other.py', 'other_helper', 'sample.keyword-table')
+unchanged: True

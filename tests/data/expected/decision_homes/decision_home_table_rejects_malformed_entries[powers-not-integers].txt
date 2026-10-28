@@ -1,0 +1,1 @@
+signature a.s: powers must be a list of integers

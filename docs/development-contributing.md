@@ -216,6 +216,27 @@ Tests for the checker use source fixtures and expected reports under
 that a contributor or coding agent can identify the owning layer and the expected
 remediation without reading the checker implementation.
 
+## Decision homes
+
+A decision that several parser passes or output models need has one home in
+`docs/architecture.md` ("One home per decision"): a pure core and its adapters.
+`scripts/decision_homes.toml` names each home and the code shapes that mean "this
+code decides it" (a read of a schema object's `nullable`, a graph-component
+computation, the int64 limit, an option read outside its owner). Run
+
+```bash
+python scripts/check_decision_homes.py
+```
+
+after a change. A shape found outside its home fails with "decision X has its
+home in file:function": build the facts in the adapter and call the core, or, for
+a decision without a home, add the home to the toml in the same change instead of
+writing a second copy. The sites that exist today are the allowlist at the end of
+the toml; it only shrinks, and `--write-allowlist` lowers it after you route a
+site. A new `legacy-*` row needs a `legacy_rows` entry (home and `fix`) and a row
+of the "Legacy rows" table in `docs/architecture.md`. The check runs as
+`tests/test_decision_homes.py`; its fixtures are under `tests/data/decision_homes/`.
+
 ## Parser generation state
 
 Parser code must keep generated output, naming order, parse order, and

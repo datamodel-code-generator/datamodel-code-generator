@@ -1,0 +1,23 @@
+
+
+[allow."adapter.py"."Adapter.read_again"]
+"sample.read-flag" = { home = "sample", count = 1, audit = "X-1" }
+
+[allow."other.py"."<module>"]
+"sample.keyword-table" = { home = "sample", count = 2, audit = "X-8" }
+"sample.limit" = { home = "sample", count = 3, audit = "X-7" }
+
+[allow."other.py"."Other.method"]
+"sample.compute-call" = { home = "sample", count = 1, audit = "X-4" }
+"sample.null-test" = { home = "sample", count = 2, audit = "X-6" }
+"sample.read-flag" = { home = "sample", count = 2, audit = "X-2" }
+"sample.write-size" = { home = "sample", count = 2, audit = "X-3" }
+
+[allow."other.py"."_merge_values"]
+"sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
+
+[allow."other.py"."_merge_values._merge_inner"]
+"sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
+
+[allow."other.py"."other_helper"]
+"sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }

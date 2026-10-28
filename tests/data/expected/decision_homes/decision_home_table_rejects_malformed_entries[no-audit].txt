@@ -1,0 +1,1 @@
+signature a.s: audit must be an entry id or a table with a "default" id

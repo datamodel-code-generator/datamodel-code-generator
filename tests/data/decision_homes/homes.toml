@@ -1,0 +1,73 @@
+[homes.sample]
+decision = "the sample decision"
+core = ["core.py"]
+adapters = ["adapter.py:Adapter.read", "pkg/"]
+
+[homes.sample.signatures.read-flag]
+kind = "name"
+names = ["flag"]
+receivers = ["cfg"]
+what = "reads the flag of a configuration"
+audit = { default = "X-1", "other.py:Other.method" = "X-2" }
+
+[homes.sample.signatures.write-size]
+kind = "name"
+names = ["size"]
+ctx = "store"
+what = "writes the size"
+audit = "X-3"
+
+[homes.sample.signatures.compute-call]
+kind = "call"
+names = ["compute"]
+keywords = ["mode"]
+without = ["fast"]
+mentions = ["x"]
+what = "computes the value itself"
+audit = "X-4"
+
+[homes.sample.signatures.merge-function]
+kind = "function"
+pattern = "^_merge"
+paths = ["other.py", "core.py"]
+what = "defines a merge function"
+audit = "X-5"
+
+[homes.sample.signatures.null-test]
+kind = "compare-in"
+values = ["null"]
+what = "tests a type list for null"
+audit = "X-6"
+
+[homes.sample.signatures.limit]
+kind = "number"
+powers = [63]
+literals = [255]
+what = "writes the limit itself"
+audit = "X-7"
+
+[homes.sample.signatures.keyword-table]
+kind = "keyword-set"
+keywords = ["a", "b", "c", "d"]
+what = "lists the keywords itself"
+audit = "X-8"
+
+[legacy_rows."legacy-fixture-row"]
+home = "sample"
+fix = "#12"
+
+[legacy_rows."legacy.fixture-dotted"]
+home = "sample"
+fix = "G12b"
+
+[legacy_rows."legacy-unplanned-row"]
+home = "elsewhere"
+fix = "soon"
+
+[legacy_rows."legacy-undocumented-row"]
+home = "sample"
+fix = "keep"
+
+[legacy_rows."legacy-stale-row"]
+home = "sample"
+fix = "keep"

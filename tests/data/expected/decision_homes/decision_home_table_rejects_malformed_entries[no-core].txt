@@ -1,0 +1,1 @@
+home a: core must be a non-empty list of strings

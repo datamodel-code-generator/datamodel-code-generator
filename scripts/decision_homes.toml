@@ -1,0 +1,1112 @@
+# Where each decision has its one home, which code shape means "this code decides it", and which sites outside the home
+# exist today. Read by scripts/check_decision_homes.py; the design is docs/architecture.md, "One home per decision".
+#
+# [homes.<id>]: `decision` in words, `core` (the pure function or module that decides) and `adapters` (code that reads
+# live objects and calls the core, or is declared to decide for a position). A place is `file`, `dir/` or
+# `file:Qualified.function` below src/datamodel_code_generator/.
+# [homes.<id>.signatures.<name>]: an AST shape that means "this code decides it" (kinds: see the script's docstring).
+# The `audit` entry is the id the site was filed under in the DRY audit of 0.87.0 (D-L1-nn, D-PP-nn, D-X-nn).
+# [legacy_rows."<row id>"]: every `legacy-*` / `legacy.*` row id that src/ names, with its home and `fix` ("#nnnn" the
+# issue that deletes it, a plan group such as "G12", or "keep"); docs/architecture.md, "Legacy rows", lists the same.
+# [allow."<path>"."<function>"]: the sites outside a home that exist today. A new site fails the check, and so does an
+# entry above what the scan finds: the list only shrinks. Route a site through its home, then run
+# `python scripts/check_decision_homes.py --write-allowlist`. Never add an entry without the owner's OK.
+
+[homes.H03]
+decision = "the intersection of the parts of an allOf or a $ref with siblings, keyword by keyword"
+core = ["parser/_intersection.py"]
+adapters = [
+    "parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings",
+    "parser/jsonschema.py:JsonSchemaParser._merge_properties_with_parent_constraints",
+    "parser/jsonschema.py:_intersect_all_of_enum",
+    "parser/jsonschema.py:_align_all_of_enum_metadata",
+    "parser/jsonschema.py:JsonSchemaParser._intersect_constraint",
+]
+
+[homes.H03.signatures.merge-function]
+kind = "function"
+pattern = "^_merge"
+paths = ["parser/jsonschema.py", "parser/openapi.py"]
+what = "a function that merges schema keywords itself; call parser/_intersection.py:intersect_keywords"
+audit = "D-L1-18"
+
+[homes.H03.signatures.bound-tightening]
+kind = "call"
+names = ["min", "max"]
+mentions = [
+    "exclusiveMaximum",
+    "exclusiveMinimum",
+    "maxItems",
+    "maxLength",
+    "maxProperties",
+    "maximum",
+    "minItems",
+    "minLength",
+    "minProperties",
+    "minimum",
+    "multipleOf",
+]
+paths = ["parser/jsonschema.py", "parser/openapi.py"]
+what = "a bound is tightened here; use parser/_intersection.py:intersect_constraint"
+audit = "D-L1-16"
+
+[homes.H06]
+decision = "where a schema object's null comes from (type, type list, anyOf member, nullable, null enum value)"
+core = ["parser/_null_facts.py"]
+adapters = [
+    "parser/jsonschema.py:JsonSchemaParser._null_mode",
+    "parser/jsonschema.py:JsonSchemaParser._null_facts",
+    "parser/jsonschema.py:JsonSchemaParser._type_has_null",
+    "parser/jsonschema.py:_null_sources",
+    "parser/jsonschema.py:_type_null_sources",
+    "parser/openapi.py:OpenAPIParser._null_mode",
+]
+
+[homes.H06.signatures.schema-nullable-read]
+kind = "name"
+names = ["nullable"]
+receivers = ["obj", "schema", "self"]
+paths = ["parser/", "_target_binding.py"]
+what = "reads the `nullable` of a schema object; build NullSources and call resolve_null_facts"
+audit = { default = "D-L1-09", "parser/jsonschema.py:JsonSchemaParser._reads_enum_as_const" = "D-L1-10", "_target_binding.py" = "D-PP-17" }
+
+[homes.H06.signatures.type-has-null]
+kind = "name"
+names = ["type_has_null"]
+receivers = ["obj", "schema", "self"]
+paths = ["parser/", "_target_binding.py"]
+what = "asks whether a schema's type list holds null; call resolve_null_facts"
+audit = "D-L1-08"
+
+[homes.H06.signatures.null-membership]
+kind = "compare-in"
+values = ["null"]
+paths = ["parser/", "_target_binding.py"]
+what = "tests a type list for \"null\"; call resolve_null_facts"
+audit = { default = "D-L1-04", "parser/_intersection.py" = "D-L1-16", "parser/jsonschema.py:JsonSchemaParser._extract_const_enum_from_combined" = "D-L1-10" }
+
+[homes.H10]
+decision = "which members a union holds, in which order, and whether it writes None itself"
+core = ["model/_decisions/union_assembly.py"]
+adapters = [
+    "types.py:build_union",
+    "types.py:DataType.__init__",
+    "types.py:_render_union",
+    "model/msgspec.py:DataModelField._ordered_union_data_type",
+    "parser/graphql.py:GraphQLParser.parse_union",
+    "_target_binding.py:_ordered_union",
+]
+
+[homes.H10.signatures.union-construction]
+kind = "call"
+keywords = ["data_types"]
+without = ["is_list", "is_dict", "is_tuple", "is_set"]
+what = "builds a union DataType of its own; go through types.py:build_union"
+audit = "D-L1-31"
+
+[homes.H16]
+decision = "the class name of a model, and every rename of it"
+core = [
+    "parser/generation.py:GraphBuilder.rename_model",
+    "parser/generation.py:GenerationStore.rename_model",
+    "parser/generation.py:GenerationStore._update_model_reference",
+]
+adapters = [
+    "model/base.py:DataModel.class_name",
+    "model/msgspec.py:Struct.create_base_class_model",
+    "model/pydantic_v2/base_model.py:BaseModel.create_base_class_model",
+]
+
+[homes.H16.signatures.class-name-write]
+kind = "name"
+names = ["name"]
+ctx = "store"
+receivers = ["reference", "ref"]
+paths = ["reference.py", "model/", "parser/"]
+what = "writes the name of a model's reference; call GenerationStore.rename_model"
+audit = "D-PP-01"
+
+[homes.H16.signatures.class-name-assign]
+kind = "name"
+names = ["class_name"]
+ctx = "store"
+receivers = ["model", "data_model", "base_model"]
+paths = ["reference.py", "model/", "parser/"]
+what = "assigns a model's class name; call GenerationStore.rename_model"
+audit = "D-PP-01"
+
+[homes.H20]
+decision = "recursion facts: strongly connected components, cycles and dependency order of the reference graph"
+core = ["_reference_graph.py", "_scc.py", "_graph.py"]
+adapters = ["dynamic.py"]
+
+[homes.H20.signatures.graph-algorithm]
+kind = "call"
+names = ["find_circular_sccs", "strongly_connected_components", "stable_toposort"]
+what = "computes components or an order of a graph itself; ask the reference graph (graph_answer)"
+audit = "D-PP-07"
+
+[homes.Hx-schema-positions]
+decision = "which keywords of a schema hold subschemas, and of which shape"
+core = ["_json_schema.py"]
+adapters = []
+
+[homes.Hx-schema-positions.signatures.keyword-table]
+kind = "keyword-set"
+keywords = [
+    "additionalItems",
+    "additionalProperties",
+    "allOf",
+    "anyOf",
+    "contains",
+    "dependentSchemas",
+    "else",
+    "if",
+    "items",
+    "not",
+    "oneOf",
+    "patternProperties",
+    "prefixItems",
+    "properties",
+    "propertyNames",
+    "then",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+]
+min = 4
+paths = ["parser/", "model/", "_target_binding.py", "input_model.py", "_recommend/_signals.py"]
+what = "lists the subschema keywords itself; read the table of _json_schema.py"
+audit = "D-X-01"
+
+[homes.H07]
+decision = "which constraint keywords and which number values an output type can write"
+core = ["_constraint_applicability.py"]
+adapters = [
+    "parser/jsonschema.py:JsonSchemaParser._literal_view",
+    "parser/jsonschema.py:JsonSchemaParser._check_literal_const",
+    "parser/jsonschema.py:JsonSchemaParser._combined_values_admitted",
+    "parser/jsonschema.py:JsonSchemaParser._literal_written",
+    "parser/jsonschema.py:JsonSchemaParser._admitted_or_warn",
+]
+
+[homes.H07.signatures.int64-range]
+kind = "number"
+powers = [63, 64]
+what = "writes the int64 range itself; add a representability row to _constraint_applicability.py"
+audit = "D-L1-21"
+
+[homes.H08]
+decision = "which class an enum is written as, whether it is a Literal, and the kind of a literal value"
+core = ["model/_decisions/enum_kind.py"]
+adapters = [
+    "parser/jsonschema.py:JsonSchemaParser._get_enum_model_class",
+    "parser/graphql.py:GraphQLParser.parse_enum_as_enum_class",
+    "parser/_passes/modules.py:extract_inherited_enum",
+]
+
+[homes.H09]
+decision = "the type a const takes and the default, required state and nullability of a field fixed to one value"
+core = ["model/_decisions/literal_default.py"]
+adapters = [
+    "model/base.py:DataModelFieldBase._process_const_as_literal",
+    "model/msgspec.py:DataModelField.process_const",
+    "parser/_passes/modules.py:set_one_literal_on_default",
+    "parser/_passes/modules.py:set_tag_literal_default",
+]
+
+[homes.H11]
+decision = "discriminator tag values and the tag and tag_field of a msgspec Struct"
+core = ["model/_decisions/tag_value.py"]
+adapters = [
+    "parser/_passes/modules.py:apply_discriminator_type",
+    "parser/_passes/cross_module.py:_tag_fields_of_tagged_bases",
+]
+
+[homes.H12]
+decision = "the keys deduplication and reuse compare models by"
+core = ["parser/_model_shapes.py"]
+adapters = ["parser/_passes/structure.py:delete_duplicate_models"]
+
+[homes.H21]
+decision = "model identity, holders and shared nodes of the generation graph"
+core = ["parser/_graph_ids.py", "parser/_holders.py", "parser/generation.py"]
+adapters = []
+
+[homes.H23]
+decision = "whether a type's rendered hint, or the annotation a field writes around it, includes None"
+core = ["model/_decisions/nullability.py"]
+adapters = [
+    "types.py:DataType.admits_none",
+    "model/base.py:DataModelFieldBase._field_null_source",
+    "types.py:DataType._materialize_render_state",
+]
+
+[homes.H24]
+decision = "what the class body writes after a field's annotation and what that gives the constructor"
+core = ["model/_decisions/assignment.py"]
+adapters = ["model/base.py:DataModel._field_assignment_facts"]
+
+[homes.H26]
+decision = "module imports, bindings and final names"
+core = ["parser/_imports_plan.py"]
+adapters = []
+
+# Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
+# fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
+# a site in the allowlist. `Parser.__init__` only copies the option from the config onto the parser.
+
+[homes.F-read-nullable-beside-type-list]
+decision = "where --read-nullable-beside-type-list is read"
+core = ["parser/_null_facts.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "parser/jsonschema.py:JsonSchemaParser._null_mode",
+]
+
+[homes.F-read-nullable-beside-type-list.signatures.option-read]
+kind = "name"
+names = ["read_nullable_beside_type_list"]
+what = "reads --read-nullable-beside-type-list"
+audit = "D-L1-08"
+
+[homes.F-keep-enum-member-values]
+decision = "where --keep-enum-member-values is read"
+core = ["model/_decisions/enum_kind.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "parser/jsonschema.py:JsonSchemaParser._get_enum_model_class",
+    "parser/graphql.py:GraphQLParser.parse_enum_as_enum_class",
+]
+
+[homes.F-keep-enum-member-values.signatures.option-read]
+kind = "name"
+names = ["keep_enum_member_values"]
+what = "reads --keep-enum-member-values"
+audit = "D-L1-26"
+
+[homes.F-use-typed-map-values-beside-other-types]
+decision = "where --use-typed-map-values-beside-other-types is read"
+core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "parser/jsonschema.py:JsonSchemaParser._typed_nullable_map_value_schema",
+]
+
+[homes.F-use-typed-map-values-beside-other-types.signatures.option-read]
+kind = "name"
+names = ["use_typed_map_values_beside_other_types"]
+what = "reads --use-typed-map-values-beside-other-types"
+audit = "D-L1-34"
+
+[homes.F-omit-redundant-reference-null]
+decision = "where --omit-redundant-reference-null is read"
+core = ["parser/_held_null.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "parser/jsonschema.py:JsonSchemaParser.get_ref_data_type",
+]
+
+[homes.F-omit-redundant-reference-null.signatures.option-read]
+kind = "name"
+names = ["omit_redundant_reference_null"]
+what = "reads --omit-redundant-reference-null"
+audit = "D-L1-01"
+
+[homes.F-tag-msgspec-by-payload-name]
+decision = "where --tag-msgspec-by-payload-name is read"
+core = ["model/_decisions/tag_value.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "parser/_passes/modules.py:apply_discriminator_type",
+]
+
+[homes.F-tag-msgspec-by-payload-name.signatures.option-read]
+kind = "name"
+names = ["tag_msgspec_by_payload_name"]
+what = "reads --tag-msgspec-by-payload-name"
+audit = "D-PP-14"
+
+[homes.F-pin-aliases-with-alias-generator]
+decision = "where --pin-aliases-with-alias-generator is read"
+core = ["model/output.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-pin-aliases-with-alias-generator.signatures.option-read]
+kind = "name"
+names = ["pin_aliases_with_alias_generator"]
+what = "reads --pin-aliases-with-alias-generator"
+audit = "D-PP-03"
+
+[homes.F-openapi-as-definitions]
+decision = "where --openapi-as-definitions is read"
+core = ["parser/openapi.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "__init__.py:_openapi_shared_options",
+]
+
+[homes.F-openapi-as-definitions.signatures.option-read]
+kind = "name"
+names = ["openapi_as_definitions"]
+what = "reads --openapi-as-definitions"
+audit = "D-X-03"
+
+[homes.F-intersect-allof-keywords]
+decision = "where --intersect-allof-keywords is read"
+core = ["parser/_intersection.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-intersect-allof-keywords.signatures.option-read]
+kind = "name"
+names = ["intersect_allof_keywords", "intersects_allof_keywords"]
+what = "reads --intersect-allof-keywords"
+audit = "D-L1-14"
+
+[homes.F-use-site-models-for-constrained-refs]
+decision = "where --use-site-models-for-constrained-refs is read"
+core = ["parser/_intersection.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-use-site-models-for-constrained-refs.signatures.option-read]
+kind = "name"
+names = ["use_site_models_for_constrained_refs"]
+what = "reads --use-site-models-for-constrained-refs"
+audit = "D-L1-14"
+
+[homes.F-read-const-beside-enum]
+decision = "where --read-const-beside-enum is read"
+core = ["model/_decisions/enum_kind.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-read-const-beside-enum.signatures.option-read]
+kind = "name"
+names = ["read_const_beside_enum"]
+what = "reads --read-const-beside-enum"
+audit = "D-L1-10"
+
+[homes.F-filter-literal-values]
+decision = "where --filter-literal-values is read"
+core = ["_constraint_applicability.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-filter-literal-values.signatures.option-read]
+kind = "name"
+names = ["filter_literal_values", "checks_literal_values"]
+what = "reads --filter-literal-values"
+audit = "D-L1-25"
+
+[homes.F-omit-redundant-constraints]
+decision = "where --omit-redundant-constraints is read"
+core = ["_constraint_applicability.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-omit-redundant-constraints.signatures.option-read]
+kind = "name"
+names = ["omit_redundant_constraints"]
+what = "reads --omit-redundant-constraints"
+audit = "D-L1-23"
+
+[homes.F-use-decimal-in-field-forms]
+decision = "where --use-decimal-in-field-forms is read"
+core = ["_constraint_applicability.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-use-decimal-in-field-forms.signatures.option-read]
+kind = "name"
+names = ["use_decimal_in_field_forms"]
+what = "reads --use-decimal-in-field-forms"
+audit = "D-L1-23"
+
+[homes.F-keep-field-defaults-off-branch-roots]
+decision = "where --keep-field-defaults-off-branch-roots is read"
+core = ["model/_decisions/literal_default.py"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-keep-field-defaults-off-branch-roots.signatures.option-read]
+kind = "name"
+names = ["keep_field_defaults_off_branch_roots"]
+what = "reads --keep-field-defaults-off-branch-roots"
+audit = "D-L1-30"
+
+[homes.F-use-single-dict-for-object-maps]
+decision = "where --use-single-dict-for-object-maps is read"
+core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-use-single-dict-for-object-maps.signatures.option-read]
+kind = "name"
+names = ["use_single_dict_for_object_maps"]
+what = "reads --use-single-dict-for-object-maps"
+audit = "D-L1-32"
+
+[homes.F-check-pattern-maps-strictly]
+decision = "where --check-pattern-maps-strictly is read"
+core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-check-pattern-maps-strictly.signatures.option-read]
+kind = "name"
+names = ["check_pattern_maps_strictly"]
+what = "reads --check-pattern-maps-strictly"
+audit = "D-L1-32"
+
+[homes.F-dedupe-request-response-variants]
+decision = "where --dedupe-request-response-variants is read"
+core = ["parser/jsonschema.py:JsonSchemaParser._create_request_response_models"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-dedupe-request-response-variants.signatures.option-read]
+kind = "name"
+names = ["dedupe_request_response_variants"]
+what = "reads --dedupe-request-response-variants"
+audit = "D-PP-06"
+
+[homes.F-order-constructor-fields-by]
+decision = "where --order-constructor-fields-by is read"
+core = ["parser/_passes/_tables.py"]
+adapters = [
+    "parser/base.py:Parser.__init__",
+    "model/base.py:_keeps_stripped_place",
+    "model/base.py:_keeps_order_before_nullability",
+    "model/base.py:_defers_nested_factory",
+]
+
+[homes.F-order-constructor-fields-by.signatures.option-read]
+kind = "name"
+names = ["order_constructor_fields_by_final_names", "order_constructor_fields_by_written_defaults"]
+what = "reads --order-constructor-fields-by"
+audit = "D-PP-18"
+
+[homes.F-use-tuple-for-closed-arrays]
+decision = "where --use-tuple-for-closed-arrays is read"
+core = ["parser/jsonschema.py:JsonSchemaParser._get_fixed_positional_items"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-use-tuple-for-closed-arrays.signatures.option-read]
+kind = "name"
+names = ["use_tuple_for_closed_arrays"]
+what = "reads --use-tuple-for-closed-arrays"
+audit = "D-PP-11"
+
+[homes.F-collapse-shared-parent-wrappers]
+decision = "where --collapse-shared-parent-wrappers is read"
+core = ["parser/_passes/modules.py:keeps_root_for_later_holders"]
+adapters = ["parser/base.py:Parser.__init__"]
+
+[homes.F-collapse-shared-parent-wrappers.signatures.option-read]
+kind = "name"
+names = ["collapse_shared_parent_wrappers"]
+what = "reads --collapse-shared-parent-wrappers"
+audit = "D-PP-11"
+
+# Every `legacy-*` / `legacy.*` row id that src/ names: the home whose decision the row exempts, and what deletes it.
+# `fix`: "#nnnn" the issue, a plan group of the DRY audit and the refactor roadmap (G.. group, RP.. render-plan step,
+# DC.. decision core, PH.. phase, GR.. graph step, FIX-.. prerequisite fix, OPT-.. opt-in option), or "keep" for a row
+# whose 0.86.0 output the default keeps for good (a fix is opt-in). The list only shrinks unless the owner agrees to a
+# new row; docs/architecture.md, "Legacy rows", has the same rows with what each keeps.
+
+[legacy_rows."legacy-nullable-as-type-list"]
+home = "H06"
+fix = "G12"
+
+[legacy_rows."legacy-root-model-type-only"]
+home = "H06"
+fix = "G12"
+
+[legacy_rows."legacy-ref-target-null-type-only"]
+home = "H06"
+fix = "G12"
+
+[legacy_rows."legacy-map-copied-nullable"]
+home = "H06"
+fix = "keep"
+
+[legacy_rows."legacy-root-type-nullable-ungated"]
+home = "H06"
+fix = "#5054"
+
+[legacy_rows."legacy-multiple-types-nullable-not-recorded"]
+home = "H06"
+fix = "keep"
+
+[legacy_rows."legacy-array-nullable-ungated"]
+home = "H06"
+fix = "#5054"
+
+[legacy_rows."legacy-enum-literal-value-only"]
+home = "H06"
+fix = "#5054"
+
+[legacy_rows."legacy-msgspec-top-level-null-as-written"]
+home = "H23"
+fix = "RP13"
+
+[legacy_rows."legacy-member-null-from-hint-text"]
+home = "H23"
+fix = "RP13"
+
+[legacy_rows."legacy-l3-import-nullability"]
+home = "H23"
+fix = "RP14"
+
+[legacy_rows."legacy-consumed-at-object-property"]
+home = "H07"
+fix = "keep"
+
+[legacy_rows."legacy-all-of-root-format-kinds"]
+home = "H07"
+fix = "G03b"
+
+[legacy_rows."legacy-undeclared-keywords-off-literal"]
+home = "H07"
+fix = "G03b"
+
+[legacy_rows."legacy-override-keeps-string-keywords"]
+home = "H07"
+fix = "G03b"
+
+[legacy_rows."legacy-anyurl-keeps-string-keywords"]
+home = "H07"
+fix = "G03b"
+
+[legacy_rows."legacy-value-base-changing-a-member"]
+home = "H08"
+fix = "keep"
+
+[legacy_rows."legacy-msgspec-decodable-value-base"]
+home = "H08"
+fix = "G16"
+
+[legacy_rows."legacy-inherited-first-base-class"]
+home = "H08"
+fix = "G01-3"
+
+[legacy_rows."legacy-inherited-specialized-without-member-check"]
+home = "H08"
+fix = "G01-3"
+
+[legacy_rows."legacy-const-drops-null"]
+home = "H09"
+fix = "#4873"
+
+[legacy_rows."legacy-const-without-literal-not-null"]
+home = "H09"
+fix = "#4804"
+
+[legacy_rows."legacy-msgspec-const-not-null"]
+home = "H09"
+fix = "#5054"
+
+[legacy_rows."legacy-one-literal-drops-type-null"]
+home = "H09"
+fix = "#5054"
+
+[legacy_rows."legacy-non-array-first"]
+home = "H10"
+fix = "keep"
+
+[legacy_rows."legacy-replacement-last"]
+home = "H10"
+fix = "OPT-6"
+
+[legacy_rows."legacy-graphql-template"]
+home = "H10"
+fix = "OPT-8"
+
+[legacy_rows."legacy-dedup-before-strip"]
+home = "H10"
+fix = "OPT-5"
+
+[legacy_rows."legacy-missing-appended"]
+home = "H10"
+fix = "RP14"
+
+[legacy_rows."legacy-any-key"]
+home = "H11"
+fix = "G05"
+
+[legacy_rows."legacy-hash-order"]
+home = "H11"
+fix = "G05"
+
+[legacy_rows."legacy-literal-only"]
+home = "H11"
+fix = "G05"
+
+[legacy_rows."legacy-literal-property-replaces-declared"]
+home = "H11"
+fix = "G05"
+
+[legacy_rows."legacy-python-equality"]
+home = "H11"
+fix = "G05"
+
+[legacy_rows."legacy-python-name"]
+home = "H11"
+fix = "keep"
+
+[legacy_rows."legacy-same-name-dedup"]
+home = "H12"
+fix = "G06"
+
+[legacy_rows."legacy-collapse-reuse"]
+home = "H12"
+fix = "G06"
+
+[legacy_rows."legacy-tree-scope"]
+home = "H12"
+fix = "G06"
+
+[legacy_rows."legacy-reuse-model"]
+home = "H12"
+fix = "G06"
+
+[legacy_rows."legacy-stale-dedup-keys"]
+home = "H12"
+fix = "FIX-9"
+
+[legacy_rows."legacy-graphql-affix-only"]
+home = "H16"
+fix = "G09"
+
+[legacy_rows."legacy-recursion-follows-path"]
+home = "H20"
+fix = "GR9a"
+
+[legacy_rows."legacy-stale-self-reference"]
+home = "H21"
+fix = "FIX-9"
+
+[legacy_rows."legacy-shared-node-in-place"]
+home = "H21"
+fix = "FIX-3"
+
+[legacy_rows."legacy-keyless-reference-by-path"]
+home = "H21"
+fix = "GR11"
+
+[legacy_rows."legacy-module-follows-path"]
+home = "H21"
+fix = "GR11"
+
+[legacy_rows."legacy-keep-order-short-name"]
+home = "H21"
+fix = "GR11"
+
+[legacy_rows."legacy-replaced-root-shares-path"]
+home = "H21"
+fix = "GR11"
+
+[legacy_rows."legacy-nested-factory-at-read"]
+home = "H24"
+fix = "PH2"
+
+[legacy_rows."legacy-nested-factory-order-before-nullability"]
+home = "H24"
+fix = "PH2"
+
+[legacy_rows."legacy.L-NF"]
+home = "H24"
+fix = "PH2"
+
+[legacy_rows."legacy-stdlib-annotated"]
+home = "H24"
+fix = "DC12"
+
+[legacy_rows."legacy.alias-order"]
+home = "H26"
+fix = "RP15b"
+
+[legacy_rows."legacy.enum-member-import-bindings"]
+home = "H26"
+fix = "RP15b"
+
+[legacy_rows."legacy.pdc-annotated-strip"]
+home = "H26"
+fix = "RP15b"
+
+[legacy_rows."legacy-run-alias-generator-import"]
+home = "H26"
+fix = "RP15b"
+
+# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
+
+[allow."src/datamodel_code_generator/_recommend/_signals.py"."<module>"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.get_object_field"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-PP-17" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader._subschemas"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/input_model.py"."<module>"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/model/_decisions/enum_kind.py"."<module>"]
+"H07.int64-range" = { home = "H07", count = 1, audit = "D-L1-21" }
+
+[allow."src/datamodel_code_generator/model/_decisions/tag_value.py"."<module>"]
+"H07.int64-range" = { home = "H07", count = 2, audit = "D-L1-21" }
+
+[allow."src/datamodel_code_generator/model/msgspec.py"."<module>"]
+"H07.int64-range" = { home = "H07", count = 10, audit = "D-L1-21" }
+
+[allow."src/datamodel_code_generator/model/msgspec.py"."DataModelField._annotated_union_data_type"]
+"H10.union-construction" = { home = "H10", count = 1, audit = "D-PP-15" }
+
+[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager._field_form_kwargs"]
+"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager._is_decimal_multiple"]
+"F-use-decimal-in-field-forms.option-read" = { home = "F-use-decimal-in-field-forms", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager.get_data_float_type"]
+"F-use-decimal-in-field-forms.option-read" = { home = "F-use-decimal-in-field-forms", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/parser/_intersection.py"."<module>"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
+
+[allow."src/datamodel_code_generator/parser/_intersection.py"."_explicit_null"]
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
+
+[allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_sort_models_by_class_body_references.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/imports.py"."<module>"]
+"H07.int64-range" = { home = "H07", count = 2, audit = "D-L1-21" }
+
+[allow."src/datamodel_code_generator/parser/_passes/imports.py"."tuple_unique_items_warning"]
+"F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
+
+[allow."src/datamodel_code_generator/parser/_passes/modules.py"."_build_keep_model_order_component_order"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/modules.py"."_build_keep_model_order_components.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/modules.py"."_build_keep_model_ordered_names.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/modules.py"."replace_unique_list_to_set"]
+"F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
+
+[allow."src/datamodel_code_generator/parser/_passes/plans.py"."set_circular_root_model_paths.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/render_prep.py"."_alias_reference_cycles"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/render_prep.py"."quote_forward_rule_types.quoted"]
+"H10.union-construction" = { home = "H10", count = 1, audit = "D-PP-10" }
+
+[allow."src/datamodel_code_generator/parser/_passes/settle.py"."sort_parsed_models"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/_passes/structure.py"."_failing_cycles"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/structure.py"."_module_merges"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/_passes/structure.py"."_module_merges.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/base.py"."Parser._nested_model_default_factory_decision.old"]
+"H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
+
+[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_enum_as_enum_class"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."<module>"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 12, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._add_pattern_properties_validator"]
+"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_enum_site_schema"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_reference_value_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_root_value_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_value_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._apply_root_model_sequence_interface"]
+"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-31" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._array_all_of_site_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_neutral_object_field"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_literal_const"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._check_version_specific_features"]
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._combined_values_admitted"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._conjoined_pattern"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._const_literal_enforces_constraints"]
+"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._dropped_property_counts"]
+"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enforced_value_keywords"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enum_positions_outside_const"]
+"F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._extract_const_enum_from_combined"]
+"F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-10" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_additional_properties_root_field"]
+"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
+"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_conditional_schema"]
+"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_schema_types"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_type_shape"]
+"F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_ref_schema_rw_model_field_facts"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_ref_schema_rw_model_reference_facts"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_rw_model_variant_graph_node"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_separate_model_fields"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_type_array_data_type"]
+"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._intersect_parts"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._is_all_of_mapping_item"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._joins_other_types"]
+"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_view"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_written"]
+"F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
+"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._mark_partial_inherited_fields"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_additional_properties_all_of"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_object"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_validation_keywords"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_children"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_nodes"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_schema"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_value_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_conditional_properties"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_definition_ref"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_field_overrides"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_nested_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_schema_keyword"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_dict"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_keyword"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_value"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_union_branch"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-15" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_no_merge_inherited_property"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas_for_allof"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_property_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_ref_with_schema"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_schema_constraints"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_value_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_enum_fails"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+"F-keep-enum-member-values.option-read" = { home = "F-keep-enum-member-values", count = 1, audit = "D-L1-26" }
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-17" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_model_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_sibling_schemas"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._null_mode"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._other_keys_schema"]
+"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_field_item"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_inherited_schema_fields"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_multiple_types_with_properties"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_map"]
+"H06.type-has-null" = { home = "H06", count = 1, audit = "D-L1-08" }
+"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_root_type_with_context"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reads_enum_as_const"]
+"F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._ref_member_narrows_literals"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
+"F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._register_root_model_as"]
+"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 2, audit = "D-PP-06" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._satisfiable_all_of_value_parts"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._type_enforced_keywords"]
+"F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._type_has_null"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_all_of"]
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_array"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_array_fields"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_combined_schema"]
+"F-keep-field-defaults-off-branch-roots.option-read" = { home = "F-keep-field-defaults-off-branch-roots", count = 2, audit = "D-L1-30" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_enum"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 3, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_object_fields"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_pattern_properties"]
+"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
+"H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."_lists_null"]
+"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
+
+[allow."src/datamodel_code_generator/parser/jsonschema.py"."_merges_ref_siblings"]
+"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
+
+[allow."src/datamodel_code_generator/parser/openapi.py"."OpenAPIParser._get_data_type"]
+"H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-08" }
+
+[allow."src/datamodel_code_generator/reference.py"."ModelResolver._evict_yielding_reference"]
+"H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }
+
+[allow."src/datamodel_code_generator/reference.py"."ModelResolver._rename_external_ref_with_same_name"]
+"H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }
+
+[allow."src/datamodel_code_generator/reference.py"."ModelResolver.add"]
+"H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }
+
+[allow."src/datamodel_code_generator/reference.py"."ModelResolver.settle_yielding_names"]
+"H16.class-name-write" = { home = "H16", count = 1, audit = "D-PP-01" }
