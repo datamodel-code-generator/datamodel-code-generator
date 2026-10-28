@@ -8,22 +8,6 @@
 base = "0.87.0"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_ref_item_constraints.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(TwoItem|TwoMap)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_refs.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\bTwoRefs(Item|Map|Prop)\\b|Model:two_refs_(prop|items):|Model:two_refs_map: .*Pick2"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
 input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
 aspects = [ "kind", "type", "name-removed", "probe" ]
 match = "\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
@@ -32,57 +16,9 @@ decision = "#5401"
 release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_values.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\bPat\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/root_forms.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(Arr|ArrRef|Pat|TwoRefs)\\b|Model:(a|b|p|two_refs): .*\\bM2\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/root_site_null.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(InlineArray|InlineInteger|RefArray|RefIntegers)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/root_value_items_draft07.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(ClosingElsewhere|NullableTags|OwnClosing|TupleLater)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/jsonschema/schema_intersection/root_value_keywords.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(Bounded|ItemsFirst|ItemsLater|RefBounded|RefItems|RefNoParts|UnevaluatedItems)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
 input = "tests/data/openapi/schema_intersection"
 aspects = [ "kind", "type", "name-removed" ]
 match = "root_site_null_oas30:(Model:\\w+: .*\\b(InlineArray|RefArray)\\b|(InlineArray|RefArray):)"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
-
-[[accepted]]
-input = "tests/data/openapi/schema_intersection/root_site_null_oas30.yaml"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(InlineArray|RefArray)\\b"
 reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
 decision = "#5401"
 release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
@@ -97,7 +33,7 @@ release_note = "an allOf of scalar schemas (for example two integer $refs with a
 
 [[accepted]]
 input = "tests/data/openapi/allof_scalar_roots.yaml"
-aspects = [ "kind", "type", "name-removed" ]
+aspects = [ "kind", "type", "name-removed", "probe" ]
 match = "\\bTwoPatterns\\b"
 reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
 decision = "#5401"
@@ -110,3 +46,35 @@ match = "\\broot_forms:Model: accept -> reject|\\ballof_ref_item_constraints:.*?
 reason = "the directory input of the same #5401 sites: an allOf whose parts admit no object was an empty object model that rejected every valid scalar (crash class); it is written as the value type now"
 decision = "#5401"
 release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] (allof_ref_item_constraints:Model:two_map|allof_refs:Model:two_refs_(map|prop)|allof_scalar_refs:Model:(lookahead_items|pattern_refs|two_map|two_prop)|allof_values:Model:pat|root_forms:Model:(a|b|p|two_refs)|root_site_null:M:(inline_array|inline_integer|ref_array|ref_integers)|root_value_items_draft07:M:(closing_elsewhere|nullable_tags|own_closing|tuple_later)|root_value_keywords:M:(items_first|items_later|ref_bounded|ref_items|ref_no_parts|unevaluated_items)): |^\\[constructor-order\\] (allof_ref_item_constraints|allof_refs|allof_scalar_refs|allof_values|root_forms):Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] Model:(lookahead_items|pattern_refs|two_map|two_prop): |^\\[constructor-order\\] Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+
+[[accepted]]
+input = "tests/data/jsonschema/allof_root_model_constraints.json"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] Model:(refarr|withitems): |^\\[constructor-order\\] Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "required", "default" ]
+match = "^\\[(required|default)\\] root_site_null_oas30:Model:(inline_array|ref_array): "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"

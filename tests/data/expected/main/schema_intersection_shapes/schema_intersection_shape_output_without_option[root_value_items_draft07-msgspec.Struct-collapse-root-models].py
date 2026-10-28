@@ -10,11 +10,10 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 Tags: TypeAlias = list[str]
 
 
-NullableTags: TypeAlias = Annotated[Tags, Meta(description='Tags or null.')] | None
-
-
 class M(Struct):
     tuple_later: Annotated[list[str], Meta(max_length=1)] | UnsetType = UNSET
     closing_elsewhere: list[str] | UnsetType = UNSET
     own_closing: Annotated[list[str], Meta(min_length=1)] | UnsetType = UNSET
-    nullable_tags: NullableTags | UnsetType = UNSET
+    nullable_tags: (
+        Annotated[Tags, Meta(description='Tags or null.')] | None | UnsetType
+    ) = UNSET

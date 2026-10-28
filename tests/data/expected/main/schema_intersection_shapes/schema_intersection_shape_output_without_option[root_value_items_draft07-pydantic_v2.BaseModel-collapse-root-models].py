@@ -18,12 +18,8 @@ class OwnClosing(RootModel[list[str]]):
     root: list[str] = Field(..., min_length=1)
 
 
-class NullableTags(RootModel[Tags | None]):
-    root: Tags | None = Field(None, description='Tags or null.')
-
-
 class M(BaseModel):
     tuple_later: TupleLater | None = None
     closing_elsewhere: list[str] | None = None
     own_closing: OwnClosing | None = None
-    nullable_tags: NullableTags | None = None
+    nullable_tags: Tags | None = Field(None, description='Tags or null.')

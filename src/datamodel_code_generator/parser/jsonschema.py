@@ -10335,24 +10335,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _all_of_site_schema(
-        self, obj: JsonSchemaObject, parts: Sequence[JsonSchemaObject], value: dict[str, Any]
+        self,
+        obj: JsonSchemaObject,
+        parts: Sequence[JsonSchemaObject],
+        value: dict[str, Any],
+        *,
+        null_member: bool = False,
     ) -> JsonSchemaObject:
         """Return the schema of an allOf site with the ``value`` of its parts; its own annotations win, the parts' fill.
 
-        The site admits null as its null facts say (``all-of-value``).
+        The site admits null as its null facts say (``all-of-value``): in the value's type, else as ``nullable``. With
+        ``null_member`` a value without a type, such as a lone ``$ref``, takes the null as an ``anyOf`` member instead,
+        which the root-model rules read as they read a ``null`` in a type list; ``nullable`` they read only as legacy.
         """
         annotations: dict[str, Any] = {}
         for part in reversed(parts):
             annotations.update(part.model_dump(include=_ALL_OF_MEMBER_ANNOTATIONS, exclude_unset=True, by_alias=True))
         own = obj.model_dump(exclude={"allOf", *_ALL_OF_VALUE_KEYWORDS}, exclude_unset=True, by_alias=True)
         if value.pop("nullable", False) or self._null_facts(obj, "all-of-value").admits_null:
-            if (type_ := value.get("type")) is None:
-                value["nullable"] = True
-            else:
+            if (type_ := value.get("type")) is not None:
                 value["type"] = [
                     *(item for item in (type_ if isinstance(type_, list) else [type_]) if item != "null"),
                     "null",
                 ]
+            elif null_member:
+                value = {"anyOf": [value, {"type": "null"}]}
+            else:
+                value["nullable"] = True
         return self._schema_object({**value, **annotations, **own})
 
     def _all_of_root_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
@@ -10364,9 +10373,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         references is decided by ``_all_of_enum_site_schema``) and the parts ``_intersects_value_parts`` leaves out.
         Without --intersect-allof-keywords only where that model is the type of the site, not the member an array
         site writes beside its own array, and the intersection names a type without objects, whose values the model
-        would all reject; the site schema is then marked as one (``FIELDLESS_SITE_KEY``). Such a site keeps the model
-        where a pattern of the intersection needs a regex engine of the models that use its type
-        (``_patterns_need_holder_engine``): that engine would apply to their other patterns.
+        would all reject; the site schema is then marked as one (``FIELDLESS_SITE_KEY``) and admits null as a JSON
+        Schema null (``null_member``). Such a site keeps the model where a pattern of the intersection needs a regex
+        engine of the models that use its type (``_patterns_need_holder_engine``): that engine would apply to their
+        other patterns.
         """
         if (
             (obj.is_array and not self.intersects_allof_keywords)
@@ -10388,7 +10398,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             == self._enforced_value_keywords(self._intersect_typed_value_parts(target_parts, None))
         ):
             value = {"$ref": refs[0]}
-        site = self._all_of_site_schema(obj, parts, value)
+        site = self._all_of_site_schema(obj, parts, value, null_member=not self.intersects_allof_keywords)
         if not self.intersects_allof_keywords:
             site.__dict__[FIELDLESS_SITE_KEY] = True
         return site
