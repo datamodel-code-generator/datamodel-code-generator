@@ -843,12 +843,12 @@ def test_process_single_module_override_lists_a_model_for_the_reference_update_a
     assert_output(cast("str", parser.parse(disable_future_imports=True)))
 
 
-def test_process_single_module_override_gives_module_names_by_path(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_process_single_module_override_gives_module_names_by_path() -> None:
     """A custom parser whose ``_process_single_module`` gives the module's models another module name by path.
 
     A module name written by path after the parser gave it wins over the one by model key, so a later module imports
     the models from the module it names, which its import plan, made from the modules that write the models, does
-    not hold; the import check is off here.
+    not hold; the import check reports it.
     """
     from typing_extensions import override
 
@@ -863,10 +863,10 @@ def test_process_single_module_override_gives_module_names_by_path(monkeypatch: 
                 model_path_to_module_name[model.path] = "elsewhere"
             return context
 
-    monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, "0")
     parser = RelabelingParser(OPEN_API_DATA_PATH / "modular.yaml", formatters=[Formatter.BUILTIN])
-    modules = cast("dict[tuple[str, ...], Any]", parser.parse())
-    assert_output("".join(f"# {'/'.join(module)}\n{modules[module].body}\n" for module in sorted(modules)))
+    with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
+        parser.parse()
+    assert_output(str(exc_info.value))
 
 
 def test_reference_built_outside_the_resolver_names_the_model_at_its_path() -> None:
