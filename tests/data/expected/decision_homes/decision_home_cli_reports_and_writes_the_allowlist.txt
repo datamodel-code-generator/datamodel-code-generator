@@ -11,12 +11,14 @@ other.py:20:17: decision sample (the sample decision) has its home in core.py; r
 other.py:22:8: decision sample (the sample decision) has its home in core.py; writes the size. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
 other.py:23:8: decision sample (the sample decision) has its home in core.py; writes the size. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
 other.py:24:8: decision sample (the sample decision) has its home in core.py; computes the value itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
-other.py:29:15: decision sample (the sample decision) has its home in core.py; tests a type list for null. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
-other.py:29:46: decision sample (the sample decision) has its home in core.py; tests a type list for null. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
-other.py:32:0: decision sample (the sample decision) has its home in core.py; defines a merge function. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in _merge_values)
-other.py:33:4: decision sample (the sample decision) has its home in core.py; defines a merge function. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in _merge_values._merge_inner)
-other.py:41:11: decision sample (the sample decision) has its home in core.py; lists the keywords itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in other_helper)
+other.py:27:8: decision sample (the sample decision) has its home in core.py; computes the value itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
+other.py:30:15: decision sample (the sample decision) has its home in core.py; tests a type list for null. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
+other.py:30:46: decision sample (the sample decision) has its home in core.py; tests a type list for null. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in Other.method)
+other.py:33:0: decision sample (the sample decision) has its home in core.py; defines a merge function. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in _merge_values)
+other.py:34:4: decision sample (the sample decision) has its home in core.py; defines a merge function. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in _merge_values._merge_inner)
+other.py:42:11: decision sample (the sample decision) has its home in core.py; lists the keywords itself. Route this site through the home, or add it to scripts/decision_homes.toml with the owner's OK (in other_helper)
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
+row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
 row legacy-undocumented-row: the Legacy rows table of docs/architecture.md must list it with home sample and fix keep, found None
 row legacy-unplanned-row: home 'elsewhere' is not in homes
@@ -38,6 +40,7 @@ other.py: other_helper: sample.keyword-table
 --seed exit: 1
 Decision home violations found:
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
+row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
 row legacy-undocumented-row: the Legacy rows table of docs/architecture.md must list it with home sample and fix keep, found None
 row legacy-unplanned-row: home 'elsewhere' is not in homes
@@ -49,9 +52,13 @@ docs/architecture.md names row legacy-removed-row, which src/ does not define
 --write-allowlist exit: 1
 Decision home violations found:
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
+row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
 row legacy-undocumented-row: the Legacy rows table of docs/architecture.md must list it with home sample and fix keep, found None
 row legacy-unplanned-row: home 'elsewhere' is not in homes
 row legacy-unplanned-row: fix must be "#nnnn", a plan group such as "G12", or "keep"
 row legacy.fixture-dotted: the Legacy rows table of docs/architecture.md must list it with home sample and fix G12b, found ('other', 'G12b')
 docs/architecture.md names row legacy-removed-row, which src/ does not define
+--write-allowlist exit: 1
+Decision home violations found:
+allowlist entry other.py Other.method missing.signature: the signature is unknown, belongs to another home than sample, or the count is below 1

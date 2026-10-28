@@ -8,7 +8,7 @@
 "sample.limit" = { home = "sample", count = 3, audit = "X-7" }
 
 [allow."other.py"."Other.method"]
-"sample.compute-call" = { home = "sample", count = 1, audit = "X-4" }
+"sample.compute-call" = { home = "sample", count = 2, audit = "X-4" }
 "sample.read-flag" = { home = "sample", count = 2, audit = "X-2" }
 "sample.write-size" = { home = "sample", count = 2, audit = "X-3" }
 

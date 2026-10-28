@@ -12,8 +12,8 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 * ``name``: a read, write or any use (``ctx`` = ``load`` (default), ``store`` or ``any``) of an attribute or a name
   in ``names``; ``receivers`` limits an attribute to values whose last name is listed (``reference.name``).
 * ``call``: a call whose callee ends in one of ``names`` (any callee when omitted), that passes every keyword in
-  ``keywords`` and none of ``without`` (a call that unpacks ``**`` is skipped when ``without`` is set), and whose
-  positional arguments name one of ``mentions`` (when given).
+  ``keywords`` and none of ``without`` (a keyword passed a literal ``False`` does not count; a call that unpacks
+  ``**`` is skipped when ``without`` is set), and whose positional arguments name one of ``mentions`` (when given).
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
@@ -66,7 +66,7 @@ COMPILED_TEMPLATE_DIRECTORY = store.COMPILED_TEMPLATE_DIRECTORY
 ALLOWLIST_MARKER = "# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ===="
 SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set"})
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
-LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*(?![-\w])")
+LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
 FIX_FORMAT = re.compile(r"#\d+|keep|[A-Z]{1,4}-?\d+[a-z]?(?:-\d+)?")
 ALLOWLIST_START = re.compile(rf"^(?:{re.escape(ALLOWLIST_MARKER)}|\[allow\.)", re.MULTILINE)
@@ -356,7 +356,12 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             if "mentions" in options and not (set(options["mentions"]) & set(_names_in(node.args))):
                 return False
             without = set(options.get("without", ()))
-            return not (without and (None in keywords or without & keywords))
+            excluding = {
+                keyword.arg
+                for keyword in node.keywords
+                if not (isinstance(keyword.value, ast.Constant) and keyword.value.value is False)
+            }
+            return not (without and (None in excluding or without & excluding))
         case "function":
             return isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and bool(
                 options["pattern"].match(node.name)
@@ -669,6 +674,10 @@ def main(argv: list[str] | None = None) -> int:
         print("--seed needs an empty allowlist", file=sys.stderr)
         return 1
     if args.seed or args.write_allowlist:
+        if problems := table_problems(config, args.source_root):
+            print("Decision home violations found:", file=sys.stderr)
+            print(format_report(problems), end="", file=sys.stderr)
+            return 1
         scan = scan_tree(config, args.source_root)
         if grown := write_allowlist(config, scan, seed=args.seed, path=config_path, source_root=args.source_root):
             print("Refusing to add allowlist entries; route these sites through their home:", file=sys.stderr)

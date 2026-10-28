@@ -20,7 +20,7 @@ ALLOWED = """
 [allow."other.py"."Other.method"]
 "sample.read-flag" = { home = "sample", count = 2, audit = "X-2" }
 "sample.write-size" = { home = "sample", count = 2, audit = "X-3" }
-"sample.compute-call" = { home = "sample", count = 1, audit = "X-4" }
+"sample.compute-call" = { home = "sample", count = 2, audit = "X-4" }
 "sample.null-test" = { home = "sample", count = 2, audit = "X-6" }
 
 [allow."other.py"."_merge_values"]
@@ -38,6 +38,10 @@ ALLOWED = """
 
 [allow."adapter.py"."Adapter.read_again"]
 "sample.read-flag" = { home = "sample", count = 1, audit = "X-1" }
+"""
+MALFORMED = """
+[allow."other.py"."Other.method"]
+"missing.signature" = { home = "sample", count = 1, audit = "X-1" }
 """
 FIXTURE_ARGS = ["--source-root", str(FIXTURE_SOURCE), "--docs", str(FIXTURE_DOCS)]
 
@@ -196,6 +200,7 @@ def test_decision_home_cli_reports_and_writes_the_allowlist(tmp_path: Path, caps
         ("", ["--seed"]),
         (ALLOWED, ["--seed"]),
         (ALLOWED, ["--write-allowlist"]),
+        (MALFORMED, ["--write-allowlist"]),
     ):
         config_path.write_text(FIXTURE_CONFIG + allowlist, encoding="utf-8")
         code = check_decision_homes.main([*fixture_args, *flags])

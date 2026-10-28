@@ -24,6 +24,7 @@ class Other:
         compute(cfg.x, mode=1)
         compute(cfg.y, mode=1)
         compute(cfg.x, mode=1, fast=True)
+        compute(cfg.x, mode=1, fast=False)
         compute(cfg.x, mode=1, **types)
         compute(cfg.x)
         return "null" in types, "x" in types, "null" not in types

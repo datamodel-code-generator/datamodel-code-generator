@@ -1,4 +1,5 @@
 row legacy-new-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
+row legacy-snake_case-row is in src/ but not in scripts/decision_homes.toml: add it as a legacy_rows table with its home and fix
 stale legacy row legacy-stale-row: src/ no longer names it; remove it from scripts/decision_homes.toml
 row legacy-undocumented-row: the Legacy rows table of docs/architecture.md must list it with home sample and fix keep, found None
 row legacy-unplanned-row: home 'elsewhere' is not in homes
