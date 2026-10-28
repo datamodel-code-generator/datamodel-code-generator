@@ -8,7 +8,7 @@ path its error names, which only the reader can locate, as a function called whe
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator import SchemaParseError
 
@@ -35,7 +35,7 @@ def string_keys(keys: Iterable[object], kind: str, error_path: Callable[[object]
 
 
 def document_statuses(
-    responses: Mapping[object, YamlValue], error_path: Callable[[str], list[str]]
+    responses: Mapping[Any, YamlValue], error_path: Callable[[str], list[str]]
 ) -> dict[str, YamlValue]:
     """Return ``responses`` by their status, the text of their key.
 
