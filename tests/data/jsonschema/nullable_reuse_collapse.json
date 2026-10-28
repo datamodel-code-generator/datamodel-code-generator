@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Person",
+  "type": "object",
+  "required": ["home", "work", "office", "shop", "first", "second"],
+  "properties": {
+    "home": {"$ref": "#/$defs/Home"},
+    "work": {"$ref": "#/$defs/Work"},
+    "office": {"$ref": "#/$defs/Office"},
+    "shop": {"$ref": "#/$defs/Shop"},
+    "works": {"type": "array", "items": {"$ref": "#/$defs/Work"}},
+    "first": {"title": "Badge", "type": ["object", "null"], "properties": {"code": {"type": "string"}}},
+    "second": {"title": "Badge", "type": "object", "properties": {"code": {"type": "string"}}}
+  },
+  "$defs": {
+    "Home": {"type": ["object", "null"], "properties": {"street": {"type": "string"}}},
+    "Work": {"type": "object", "properties": {"street": {"type": "string"}}},
+    "Office": {"type": "object", "properties": {"floor": {"type": "integer"}}},
+    "Shop": {"type": ["object", "null"], "properties": {"floor": {"type": "integer"}}}
+  }
+}

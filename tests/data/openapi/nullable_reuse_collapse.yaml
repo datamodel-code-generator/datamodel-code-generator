@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: Nullable reuse collapse
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Home:
+      type: object
+      nullable: true
+      properties:
+        street:
+          type: string
+    Work:
+      type: object
+      properties:
+        street:
+          type: string
+    Office:
+      type: object
+      properties:
+        floor:
+          type: integer
+    Shop:
+      type: object
+      nullable: true
+      properties:
+        floor:
+          type: integer
+    HomeVisit:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: '#/components/schemas/Home'
+    WorkVisit:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: '#/components/schemas/Work'
+    Person:
+      type: object
+      required:
+        - home
+        - work
+        - office
+        - shop
+        - first
+        - second
+        - homeVisit
+        - workVisit
+      properties:
+        home:
+          $ref: '#/components/schemas/Home'
+        work:
+          $ref: '#/components/schemas/Work'
+        office:
+          $ref: '#/components/schemas/Office'
+        shop:
+          $ref: '#/components/schemas/Shop'
+        works:
+          type: array
+          items:
+            $ref: '#/components/schemas/Work'
+        first:
+          title: Badge
+          type: object
+          nullable: true
+          properties:
+            code:
+              type: string
+        second:
+          title: Badge
+          type: object
+          properties:
+            code:
+              type: string
+        homeVisit:
+          $ref: '#/components/schemas/HomeVisit'
+        workVisit:
+          $ref: '#/components/schemas/WorkVisit'

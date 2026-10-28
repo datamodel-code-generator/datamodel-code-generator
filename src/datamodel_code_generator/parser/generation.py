@@ -60,6 +60,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._null_markers import (
     HELD_NULL_DROPPED_KEY,
+    NAMED_NULL_REJECTED_KEY,
     REFERENCE_NULL_KEY,
     RENDER_PREPARATION_NULL_KEY,
     TARGET_NULL_KEY,
@@ -2696,14 +2697,20 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate_after_mutation()
 
     @deprecated("Use GenerationStore.builder().redirect_reference_users() instead.", category=None)
-    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> list[DataType]:
+    def redirect_reference_users(
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+    ) -> list[DataType]:
         """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
 
-        Their sites are redirected from ``old_reference``.
+        Their sites are redirected from ``old_reference``. When the model of ``old_reference`` is ``merged`` into the
+        equal model of ``new_reference``, each user keeps rejecting null as the schema it names does
+        (``_keep_named_null_rejected``).
         """
         children = [child for child in old_reference.children[:] if hasattr(child, "replace_reference")]
         self._state_sites_at("redirect_reference_users", children, via=old_reference)
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
+        if merged:
+            self._keep_named_null_rejected(children)
         self._replace_reference_children(old_reference, new_reference)
         self._note_changed_data_types(children)
         self._invalidate_owner_caches_many(cache_owners)
@@ -2726,7 +2733,11 @@ class GenerationStore:  # noqa: PLR0904
         models: list[DataModel],
         new_reference: Reference,
     ) -> None:
-        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected."""
+        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected.
+
+        ``model`` is merged into the model of ``new_reference``, so each user keeps rejecting null as the schema it
+        names does (``_keep_named_null_rejected``).
+        """
         model_ids = {id(candidate) for candidate in models}
         cache_owners = []
         for child in model.reference.children[:]:
@@ -2742,6 +2753,7 @@ class GenerationStore:  # noqa: PLR0904
                 continue
             cache_owners.append(cache_owners_for_child)
             self._state_sites_at("redirect_model_reference_users", (child,), via=model.reference)
+            self._keep_named_null_rejected((child,))  # ty: ignore[invalid-argument-type]
             child.replace_reference(new_reference)  # ty: ignore[call-non-callable]
             self._note_changed_data_types((child,))
         self._invalidate_owner_caches_many(cache_owners)
@@ -2796,6 +2808,17 @@ class GenerationStore:  # noqa: PLR0904
             data_type.reference = new_reference
             if new_reference:
                 new_reference.children.append(data_type)
+
+    @staticmethod
+    def _keep_named_null_rejected(data_types: Iterable[DataType]) -> None:
+        """Mark the types naming a model that rejects null, before merging it points them at an equal model.
+
+        A reference admits None from the schema it names, not from the model it names after the merge
+        (``DataType.names_nullable_model``); the first merge marks it, as the type named that schema.
+        """
+        for data_type in data_types:
+            if not data_type.names_nullable_model:
+                data_type.__dict__[NAMED_NULL_REJECTED_KEY] = True
 
     @staticmethod
     def _replace_reference_children(old_reference: Reference, new_reference: Reference) -> None:
@@ -3070,9 +3093,14 @@ class GraphBuilder:
         """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected."""
         self._store.redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
 
-    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> list[DataType]:
-        """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users."""
-        return self._store.redirect_reference_users(old_reference, new_reference)  # ty: ignore[deprecated]
+    def redirect_reference_users(
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+    ) -> list[DataType]:
+        """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
+
+        ``merged`` says the model of ``old_reference`` is merged into the equal model of ``new_reference``.
+        """
+        return self._store.redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
 
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes."""

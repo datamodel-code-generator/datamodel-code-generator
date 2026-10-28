@@ -6951,6 +6951,13 @@ reuse-model	main/jsonschema/nullable_map_value_reuse.py
 	main/jsonschema/nullable_map_value_reuse_tree//*.py
 [test_main_jsonschema_nullable_object]
 	main/jsonschema/nullable_object.py
+[test_main_jsonschema_nullable_reuse_collapse]
+collapse-dataclasses.dataclass	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-dataclasses.dataclass].py
+collapse-msgspec.Struct	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-msgspec.Struct].py
+collapse-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-pydantic_v2.BaseModel].py
+collapse-pydantic_v2.dataclass	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-pydantic_v2.dataclass].py
+collapse-typing.TypedDict	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-typing.TypedDict].py
+same-name	main/jsonschema/main_jsonschema/nullable_reuse_collapse[same-name].py
 [test_main_jsonschema_nullable_root_reuse_keeps_class_base]
 	main/jsonschema/nullable_reuse.py
 [test_main_jsonschema_object_has_one_of]

@@ -451,7 +451,9 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         model_class_names[class_name] = model
     for model, duplicate_models in model_to_duplicate_models.items():
         for duplicate_model in duplicate_models:
-            parser._graph_builder.redirect_reference_users(duplicate_model.reference, model.reference)  # noqa: SLF001
+            parser._graph_builder.redirect_reference_users(  # noqa: SLF001
+                duplicate_model.reference, model.reference, merged=True
+            )
             # Deduplicate base_classes in all DataModel children
             for child in duplicate_model.reference.iter_data_model_children():
                 parser._graph_builder.set_base_classes(  # noqa: SLF001
@@ -616,7 +618,9 @@ def replace_typed_map_value_duplicates(
     for duplicate in duplicates:
         duplicate_module, duplicate_model, _, canonical = duplicate
         if id(duplicate_model.reference) in typed_map_values and id(canonical.reference) not in typed_map_values:
-            parser._graph_builder.redirect_reference_users(duplicate_model.reference, canonical.reference)  # noqa: SLF001
+            parser._graph_builder.redirect_reference_users(  # noqa: SLF001
+                duplicate_model.reference, canonical.reference, merged=True
+            )
             module_lists[duplicate_module].remove(duplicate_model)
             parser._graph_builder.retire_model(duplicate_model)  # noqa: SLF001
         else:
