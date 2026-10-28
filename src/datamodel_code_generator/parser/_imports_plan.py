@@ -110,6 +110,7 @@ ImportPass: TypeAlias = Literal[
     "remove-unused",
     "import-conflicts",
     "builtin-module-bindings",
+    "builtin-submodule-bindings",
     "field-name-bindings",
     "reused-variant-literal",
     "shadowed-imports",
@@ -149,6 +150,8 @@ ImportPass: TypeAlias = Literal[
 * ``import-conflicts``: the output model's ``resolve_module_import_conflicts``, recorded through ``external``.
 * ``builtin-module-bindings``: ``alias_builtin_shadowing_module_imports``, aliases of module imports named like a
   builtin that their module also writes bare.
+* ``builtin-submodule-bindings``: ``alias_builtins_hidden_by_submodules``, aliases of builtins that a package's own
+  submodules hide and that the package writes bare.
 * ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.

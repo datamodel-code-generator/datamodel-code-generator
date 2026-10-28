@@ -27,24 +27,12 @@ Small: TypeAlias = Annotated[int, Meta(le=5)]
 Big: TypeAlias = Annotated[int, Meta(ge=3)]
 
 
-class Arr(Struct):
-    pass
-
-
-class ArrRef(Struct):
-    pass
-
-
 class EnumC(Enum):
     a = 'a'
     b = 'b'
 
 
 EnumD: TypeAlias = AB
-
-
-class Pat(Struct):
-    pass
 
 
 class Untyped(Struct):
@@ -58,19 +46,18 @@ class NullableMap(Struct):
 Base: TypeAlias = Annotated[str, Meta(examples=['bb'], title='BaseT')]
 
 
-class TwoRefs(Struct):
-    pass
-
-
 class Model(Struct):
-    a: Arr | UnsetType = UNSET
-    b: ArrRef | UnsetType = UNSET
+    a: Annotated[list[str], Meta(min_length=1)] | UnsetType = UNSET
+    b: Annotated[list[str], Meta(min_length=1)] | UnsetType = UNSET
     c: EnumC | UnsetType = UNSET
     d: EnumD | UnsetType = UNSET
     v: Annotated[int, Meta(ge=3, le=5)] | UnsetType = UNSET
-    p: Pat | UnsetType = UNSET
+    p: (
+        Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
+        | UnsetType
+    ) = UNSET
     u: Untyped | UnsetType = UNSET
-    two_refs: TwoRefs | UnsetType = UNSET
+    two_refs: Annotated[int, Meta(ge=3, le=5)] | UnsetType = UNSET
     m: NullableMap | UnsetType = UNSET
     m2: M2 | UnsetType = UNSET
     path_a: (

@@ -32,12 +32,12 @@ pydantic_v2.BaseModel default member_map {"k": 2} accepted
 pydantic_v2.BaseModel default member_map {"k": 9} accepted
 pydantic_v2.BaseModel default member_map {"k": 1} accepted
 pydantic_v2.BaseModel default member_map {"k": 10} accepted
-pydantic_v2.BaseModel default two_items [4] rejected
-pydantic_v2.BaseModel default two_items [5] rejected
+pydantic_v2.BaseModel default two_items [4] accepted
+pydantic_v2.BaseModel default two_items [5] accepted
 pydantic_v2.BaseModel default two_items [3] rejected
 pydantic_v2.BaseModel default two_items [6] rejected
-pydantic_v2.BaseModel default two_map {"k": 4} rejected
-pydantic_v2.BaseModel default two_map {"k": 5} rejected
+pydantic_v2.BaseModel default two_map {"k": 4} accepted
+pydantic_v2.BaseModel default two_map {"k": 5} accepted
 pydantic_v2.BaseModel default two_map {"k": 3} rejected
 pydantic_v2.BaseModel default two_map {"k": 6} rejected
 pydantic_v2.BaseModel default stamp_items ["2020-01-01T00:00:00Z"] accepted
@@ -105,12 +105,12 @@ pydantic_v2.dataclass default member_map {"k": 2} accepted
 pydantic_v2.dataclass default member_map {"k": 9} accepted
 pydantic_v2.dataclass default member_map {"k": 1} accepted
 pydantic_v2.dataclass default member_map {"k": 10} accepted
-pydantic_v2.dataclass default two_items [4] rejected
-pydantic_v2.dataclass default two_items [5] rejected
+pydantic_v2.dataclass default two_items [4] accepted
+pydantic_v2.dataclass default two_items [5] accepted
 pydantic_v2.dataclass default two_items [3] rejected
 pydantic_v2.dataclass default two_items [6] rejected
-pydantic_v2.dataclass default two_map {"k": 4} rejected
-pydantic_v2.dataclass default two_map {"k": 5} rejected
+pydantic_v2.dataclass default two_map {"k": 4} accepted
+pydantic_v2.dataclass default two_map {"k": 5} accepted
 pydantic_v2.dataclass default two_map {"k": 3} rejected
 pydantic_v2.dataclass default two_map {"k": 6} rejected
 pydantic_v2.dataclass default stamp_items ["2020-01-01T00:00:00Z"] accepted
@@ -397,12 +397,12 @@ pydantic_v2.BaseModel --collapse-root-models member_map {"k": 2} accepted
 pydantic_v2.BaseModel --collapse-root-models member_map {"k": 9} accepted
 pydantic_v2.BaseModel --collapse-root-models member_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models member_map {"k": 10} accepted
-pydantic_v2.BaseModel --collapse-root-models two_items [4] rejected
-pydantic_v2.BaseModel --collapse-root-models two_items [5] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models two_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models two_items [3] rejected
 pydantic_v2.BaseModel --collapse-root-models two_items [6] rejected
-pydantic_v2.BaseModel --collapse-root-models two_map {"k": 4} rejected
-pydantic_v2.BaseModel --collapse-root-models two_map {"k": 5} rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 5} accepted
 pydantic_v2.BaseModel --collapse-root-models two_map {"k": 3} rejected
 pydantic_v2.BaseModel --collapse-root-models two_map {"k": 6} rejected
 pydantic_v2.BaseModel --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] accepted
@@ -543,12 +543,12 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 2}
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 9} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 1} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member_map {"k": 10} rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [5] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [3] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [6] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 4} rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 5} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 5} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 3} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 6} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
@@ -616,12 +616,12 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 2}
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 9} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 1} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member_map {"k": 10} rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [5] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [3] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [6] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 4} rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 5} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 5} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 3} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 6} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted
@@ -835,12 +835,12 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 9} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 1} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member_map {"k": 10} rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [5] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [3] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [6] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 4} rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 5} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 5} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 3} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 6} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs stamp_items ["2020-01-01T00:00:00Z"] accepted

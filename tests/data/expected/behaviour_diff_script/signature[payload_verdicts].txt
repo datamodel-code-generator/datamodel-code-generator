@@ -56,5 +56,9 @@
       "v0": "accept",
       "v1": "accept"
     }
+  },
+  "probes": {
+    "Name": "accept",
+    "Payload": "accept"
   }
 }

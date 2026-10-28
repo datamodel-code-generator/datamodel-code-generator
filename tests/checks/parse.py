@@ -157,6 +157,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "remove_unused_imports": _all_models,
     "resolve_module_import_conflicts": _all_models,
     "alias_builtin_shadowing_module_imports": _all_models,
+    "alias_builtins_hidden_by_submodules": _all_models,
     "bind_module_field_names": _all_models,
     "change_imported_model_name": _all_models,
     "name_final_classes_of_additional_properties": _additional_properties_models,

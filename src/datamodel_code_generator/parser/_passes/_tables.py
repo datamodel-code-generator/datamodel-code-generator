@@ -46,7 +46,7 @@ from datamodel_code_generator.parser._pipeline import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Collection, Iterable, Sequence
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import, Imports
@@ -141,12 +141,14 @@ class PipelineHost(
     def _check_model_inheritance(self, contexts: Sequence[Any]) -> None:
         """Reject invalid builtin inheritance."""
 
-    def _finalize_modules(
+    def _finalize_modules(  # noqa: PLR0913, PLR0917
         self,
         contexts: list[Any],
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
+        forwarder_modules: Collection[ModulePath],
+        with_import: bool,  # noqa: FBT001
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module."""
 
@@ -383,6 +385,11 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             PassSpec("remove_unused_imports", late(imports.remove_unused_imports)),
             PassSpec("resolve_module_import_conflicts", late(imports.resolve_module_import_conflicts)),
             PassSpec("alias_builtin_shadowing_module_imports", late(imports.alias_builtin_shadowing_module_imports)),
+            PassSpec(
+                "alias_builtins_hidden_by_submodules",
+                late(imports.alias_builtins_hidden_by_submodules),
+                when=lambda _, state: state.with_import,
+            ),
             PassSpec("bind_module_field_names", late(imports.bind_module_field_names)),
             PassSpec("change_imported_model_name", late(imports.change_module_imported_model_names)),
             PassSpec(
@@ -656,7 +663,12 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             HookCall(
                 "finalize_modules",
                 lambda self, run: self._finalize_modules(
-                    run.contexts, run.unused_models, run.model_to_module_models, run.module_to_import
+                    run.contexts,
+                    run.unused_models,
+                    run.model_to_module_models,
+                    run.module_to_import,
+                    run.forwarder_map,
+                    bool(run.args.with_import),
                 ),
             ),
         ),

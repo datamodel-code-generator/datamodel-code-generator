@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[import-path-removed] holder:list: from holder import list"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[import-path-removed] holder:list: from holder import list"
+  ]
+}

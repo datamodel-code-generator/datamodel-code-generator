@@ -1,0 +1,44 @@
+{
+  "decoders": {
+    "Item": "ok"
+  },
+  "items": {
+    "Item": {
+      "bases": [
+        "Struct"
+      ],
+      "config": {},
+      "fields": {
+        "code": {
+          "alias": null,
+          "ctype": "Annotated[str, Meta(min_length=2,pattern='^[A-Z]')]",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "str",
+          "validation_alias": null
+        },
+        "count": {
+          "alias": null,
+          "ctype": "Annotated[int, Meta(ge=1)]",
+          "default": "1",
+          "required": false,
+          "serialization_alias": null,
+          "type": "int",
+          "validation_alias": null
+        }
+      },
+      "kind": "msgspec.Struct",
+      "positional": [
+        "code",
+        "count"
+      ]
+    }
+  },
+  "names": [
+    "Item"
+  ],
+  "probes": {
+    "Item": "reject"
+  }
+}

@@ -9,6 +9,12 @@ from __future__ import annotations
 from typing import Final, NewType
 
 MODEL_KEY_ATTRIBUTE: Final = "_model_key"
+FIELDLESS_SITE_KEY: Final = "_fieldless_site"
+"""Marks on a `Reference` the model of an allOf site that earlier releases wrote as a model without fields.
+
+Under --collapse-root-models it inlines none of the models it names, and it keeps the regex engine its pattern needs
+to itself.
+"""
 
 ModelKey = NewType("ModelKey", int)
 """The identity of the model a `Reference` names, unlike `id(reference)` never reused within a process."""

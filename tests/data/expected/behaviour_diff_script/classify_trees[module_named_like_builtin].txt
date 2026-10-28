@@ -1,0 +1,7 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [type] holder:Holder:tags: Union[<module pkg.app.list>[str], msgspec.UnsetType] -> Union[list[str], msgspec.UnsetType]"
+  ],
+  "accepted_by": []
+}

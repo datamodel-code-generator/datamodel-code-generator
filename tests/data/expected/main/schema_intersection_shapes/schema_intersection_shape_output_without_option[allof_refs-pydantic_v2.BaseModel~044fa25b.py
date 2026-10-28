@@ -60,6 +60,18 @@ class NonNegativeMap(RootModel[confloat(ge=0.0)]):
     root: confloat(ge=0.0)
 
 
+class TwoRefsProp(RootModel[conint(ge=3, le=5)]):
+    root: conint(ge=3, le=5)
+
+
+class TwoRefsItem(RootModel[conint(ge=3, le=5)]):
+    root: conint(ge=3, le=5)
+
+
+class TwoRefsMap(RootModel[conint(ge=3, le=5)]):
+    root: conint(ge=3, le=5)
+
+
 class QAllofProp(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
 
@@ -166,18 +178,6 @@ class AllOfRoot(RootModel[conint(ge=1, le=10)]):
 
 class AllOfRoot2(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
-
-
-class TwoRefsProp(BaseModel):
-    pass
-
-
-class TwoRefsItem(BaseModel):
-    pass
-
-
-class TwoRefsMap(BaseModel):
-    pass
 
 
 class Model(BaseModel):
