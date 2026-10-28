@@ -8,7 +8,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, final
+from typing import TYPE_CHECKING, Any, Final, cast, final
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -62,10 +62,8 @@ class Mode:
         self.record(text, **details)
 
     def record(self, message: str, **details: object) -> None:
-        """Append the message and its details to the report as one JSON line; with no report file, do nothing."""
-        if self.report_path is None:
-            return
-        with self.report_path.open("a", encoding="utf-8") as report:
+        """Append the message and its details to the report as one JSON line; only a report mode calls it."""
+        with cast("Path", self.report_path).open("a", encoding="utf-8") as report:
             report.write(f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n")
 
 

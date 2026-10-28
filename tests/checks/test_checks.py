@@ -9,10 +9,12 @@ from typing import TYPE_CHECKING
 
 from tests.checks.__main__ import main
 from tests.checks.seams import report
-from tests.conftest import CHECK_FACT_FINALITY_ENV, assert_output
+from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_RENDER_MEMOS_ENV, assert_output
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
 _EXTENSION_MAKES_A_MEMO_STALE = """
 from datamodel_code_generator import Error
@@ -63,3 +65,25 @@ def test_checked_run_of_the_command_line(tmp_path: Path) -> None:
     args = ["--input", str(schema), "--input-file-type", "jsonschema", "--output", str(output), "--disable-timestamp"]
     status = main([*args, "--formatters", "builtin"])
     assert_output(f"exit status {status}\n{output.read_text(encoding='utf-8')}")
+
+
+def _run_with_check_mode(tmp_path: Path, value: str, monkeypatch: pytest.MonkeyPatch) -> int:
+    schema = tmp_path / "schema.json"
+    schema.write_text('{"title": "M", "type": "object", "properties": {"v": {"type": "string"}}}', encoding="utf-8")
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, value)
+    args = ["--input", str(schema), "--input-file-type", "jsonschema", "--output", str(tmp_path / "model.py")]
+    return main([*args, "--disable-timestamp", "--formatters", "builtin"])
+
+
+def test_check_area_turned_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A parse with an area set to 0 runs without that area's check."""
+    status = _run_with_check_mode(tmp_path, "0", monkeypatch)
+    assert_output(f"exit status {status}\n{(tmp_path / 'model.py').read_text(encoding='utf-8')}")
+
+
+def test_check_area_with_unknown_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A value other than 0, 1 or report:<path> fails the run with an error that names the variable."""
+    status = _run_with_check_mode(tmp_path, "report:", monkeypatch)
+    assert_output(f"exit status {status}\n{capsys.readouterr().err.splitlines()[-1]}")
