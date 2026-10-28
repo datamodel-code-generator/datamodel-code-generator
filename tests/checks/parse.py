@@ -9,38 +9,32 @@ records them. ``Parser.parse`` itself stays unwrapped: it remembers the frame th
 
 from __future__ import annotations
 
-from contextlib import nullcontext
 from contextvars import ContextVar
 from dataclasses import replace
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.checks.areas import MODES, Area, read_modes
+from tests.checks.finality import (
+    NO_SCOPE,
+    PARSE_CHECKS,
+    GuardedView,
+    _Finality,
+    guarded_facts,
+    parse_checks,
+)
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
     from contextlib import AbstractContextManager
 
-    from tests.checks.finality import ParseChecks, _Finality
-
-NO_SCOPE: Final = nullcontext()
-PARSE_CHECKS: Final[ContextVar[ParseChecks | None]] = ContextVar("parse_checks", default=None)
-"""The checks of the parse that runs, while ``STORE_WRITES`` or ``FACT_FINALITY`` is on."""
 _IN_MODULE: Final[ContextVar[bool]] = ContextVar("in_module", default=False)
 """Whether the parse that runs processes an output module now: an override that calls its base processes it once."""
 _SEGMENT_SCOPES: Final[dict[int, tuple[str, Any]]] = {}
 """The scope name and phase of each segment with a scope name, by the id of its steps."""
 _HOOKS: Final = ("_process_single_module",)
 """The parser methods wrapped on the class that defines them in the running parser's MRO (``seams.py`` rule 2)."""
-
-
-class GuardedView:
-    """The base of the views of one graph object that a decision reads while the finality check runs."""
-
-    __slots__ = ("_object",)
-
-    _object: object
 
 
 def viewed(value: Any) -> Any:
@@ -116,7 +110,6 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
 def _checks(parser: object) -> AbstractContextManager[None]:
     """Open the checks of one parse of ``parser``; ``finality.py`` loads only then."""
     from datamodel_code_generator import Error
-    from tests.checks.finality import parse_checks
 
     return parse_checks(parser, Error)
 
@@ -208,7 +201,6 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def _views(finality: _Finality, facts: Any) -> Any:
-    from tests.checks.finality import guarded_facts
 
     return guarded_facts(finality, facts)
 

@@ -68,7 +68,8 @@ from __future__ import annotations
 import re
 import sys
 from collections.abc import Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from dataclasses import dataclass, field, fields, is_dataclass
 from decimal import Decimal
 from enum import Enum, unique
@@ -111,7 +112,6 @@ from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.checks import areas
 from tests.checks.areas import Area, Mode
-from tests.checks.parse import NO_SCOPE, PARSE_CHECKS, GuardedView
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
@@ -122,12 +122,28 @@ if TYPE_CHECKING:
 
 __all__ = [
     "KNOWN_WRITES",
+    "NO_SCOPE",
+    "PARSE_CHECKS",
+    "GuardedView",
     "KnownWrite",
     "ParseChecks",
     "Rule",
     "guarded_facts",
     "parse_checks",
 ]
+
+NO_SCOPE: Final = nullcontext()
+PARSE_CHECKS: Final[ContextVar[ParseChecks | None]] = ContextVar("parse_checks", default=None)
+"""The checks of the parse that runs, while ``STORE_WRITES`` or ``FACT_FINALITY`` is on."""
+
+
+class GuardedView:
+    """The base of the views of one graph object that a decision reads while the finality check runs."""
+
+    __slots__ = ("_object",)
+
+    _object: object
+
 
 _PACKAGE_ROOT: Final = Path(datamodel_code_generator.__file__).parent
 _PACKAGE: Final = _PACKAGE_ROOT.name
