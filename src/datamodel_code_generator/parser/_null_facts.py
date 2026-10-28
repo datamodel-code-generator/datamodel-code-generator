@@ -13,9 +13,12 @@ The sites disagree today on which sources count and whether ``nullable`` needs `
 
 from __future__ import annotations
 
-from typing import Literal, TypeAlias, final
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
 
 from datamodel_code_generator._records import record
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = [
     "NO_NULL_MODE",
@@ -24,6 +27,7 @@ __all__ = [
     "NullRule",
     "NullSite",
     "NullSources",
+    "dump_null_sources",
     "resolve_null_facts",
 ]
 
@@ -72,7 +76,8 @@ NullSite: TypeAlias = Literal[
   (``JsonSchemaParser._add_nullable_combined_schema_branches``).
 * ``inherited-child``: a property that overrides an inherited one, which drops the null of the inherited type unless
   it admits null itself (``JsonSchemaParser._merge_inherited_type_shape_dict``,
-  ``JsonSchemaParser._mark_partial_inherited_fields``).
+  ``JsonSchemaParser._mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's
+  own ``type`` and ``nullable``, ``parser/jsonschema.py:_dump_drops_inherited_null``).
 """
 
 NullRule: TypeAlias = Literal[
@@ -232,6 +237,23 @@ class NullMode:
 
 NO_NULL_MODE: NullMode = NullMode()
 """The mode of sites that no option changes."""
+
+
+def dump_null_sources(dump: Mapping[str, Any]) -> NullSources:
+    """Return the null sources of a dumped schema's own ``type`` and ``nullable``; members and ``enum`` are not read.
+
+    ``type_has_null`` is the ``schema-type`` answer of its own ``type`` list.
+    """
+    type_ = dump.get("type")
+    lists_null = isinstance(type_, list) and "null" in type_
+    return NullSources(
+        type_has_null=lists_null,
+        type_null=type_ == "null",
+        type_list=isinstance(type_, list),
+        type_lists_null=lists_null,
+        typed=type_ is not None,
+        nullable=dump.get("nullable"),
+    )
 
 
 @final

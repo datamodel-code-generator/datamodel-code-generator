@@ -1938,37 +1938,18 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_field_overrides"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_nested_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_schema_keyword"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_dict"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_keyword"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_type_shape_value"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_inherited_union_branch"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-15" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_no_merge_inherited_property"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_primitive_schemas_for_allof"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_property_schemas"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-18" }
-"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-06" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_ref_with_schema"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }

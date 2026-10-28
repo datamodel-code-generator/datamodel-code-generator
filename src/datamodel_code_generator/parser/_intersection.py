@@ -4,8 +4,8 @@ A schema object with a ``$ref`` and sibling keywords means the conjunction of th
 and its own keywords (its last part); a property that overrides an inherited property means the conjunction of the
 inherited property and its own. Each such site has a legacy merge, its presentation row, which writes one schema for
 the parts: ``JsonSchemaParser._deep_merge`` for ``$ref`` siblings (lists concatenated, the own value of any other
-keyword winning, the referenced value filling in) and ``JsonSchemaParser._merge_property_schemas`` for inherited
-overrides (the child's value winning). :func:`intersect_keywords` keeps the row's schema wherever it enforces what the
+keyword winning, the referenced value filling in) and :func:`inherited_override_row` for inherited overrides (the
+child's value winning). :func:`intersect_keywords` keeps the row's schema wherever it enforces what the
 conjunction enforces, so working output keeps its bytes, and writes the intersection of a keyword where the row
 enforces something else.
 
@@ -13,6 +13,12 @@ Pure: the parts and the row are dumped schema dicts, nothing is written to them,
 copied with ``copy.copy``, so a located dump keeps its location. The adapters are ``parser/jsonschema.py``:
 ``JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
 ``_resolve_inherited_parent_property``) and ``JsonSchemaParser._merge_properties_with_parent_constraints``.
+
+The presentation row of an inherited property override is built here (:func:`inherited_override_row`), by the rows of
+``--allof-merge-mode``: which keywords an override inherits (:func:`inherits_keyword`, also read for the default of an
+inherited field), and how one subschema value or keyword of the inherited property merges with the override's
+(:func:`merge_inherited_value`, :func:`merge_inherited_keyword`, rows of :data:`InheritedRow`), which the type shape
+``--allof-merge-mode none`` writes (``JsonSchemaParser._merge_inherited_type_shape_dict``) reads too.
 
 ``pattern`` is the conjunction of the parts' patterns (``_regex_syntax.py:conjoin_patterns``) unless the row's pattern
 implies each of them; patterns not every engine runs, and patterns no single expression conjoins, keep the row's pattern
@@ -42,33 +48,42 @@ from __future__ import annotations
 
 from copy import copy
 from fractions import Fraction
+from functools import partial
 from itertools import chain, starmap
 from math import gcd, isfinite, isnan, lcm
-from typing import TYPE_CHECKING, Any, Final, final
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 from warnings import warn
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator._json_schema import SINGLE_SCHEMA_SHAPES, schema_positions
+from datamodel_code_generator._json_schema import SEQUENCE_SCHEMA_SHAPES, SINGLE_SCHEMA_SHAPES, schema_positions
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
 __all__ = [
     "ENUM_METADATA_KEYWORDS",
+    "INHERITED_SCHEMA_KEYWORDS",
     "INTERSECTED_KEYWORDS",
     "LEGACY_ROWS",
+    "POSITIONAL_SCHEMA_KEYWORDS",
+    "InheritedRow",
     "KeywordIntersection",
     "bounds_admit_no_value",
     "enum_metadata",
+    "inherited_override_row",
+    "inherited_positional_tail",
+    "inherits_keyword",
     "intersect_constraint",
     "intersect_enum_values",
     "intersect_keywords",
     "intersect_multiple_of",
     "is_hash_safe_json_scalar",
     "json_values_equal",
+    "merge_inherited_keyword",
+    "merge_inherited_value",
     "warn_unsatisfiable",
     "warn_untaken_patterns",
 ]
@@ -88,6 +103,12 @@ _SCHEMA_KEYWORDS: Final = (
 )
 """The keywords of one nested schema the intersection reads: the core ones, then those of the unevaluated vocabulary."""
 _SCHEMA_MAP_KEYWORDS: Final = schema_positions("modeled", shapes=("map",))
+INHERITED_SCHEMA_KEYWORDS: Final = schema_positions("modeled", "child")
+"""The subschema keywords whose values an inherited property and its override merge value by value."""
+POSITIONAL_SCHEMA_KEYWORDS: Final = frozenset(schema_positions("child", shapes=SEQUENCE_SCHEMA_SHAPES))
+"""The keywords that can declare a tuple, whose positions an inherited property and its override merge by index."""
+_NOT_INHERITED: Final = {"constraints": frozenset({"default", "examples", "example"})}
+"""The keywords an override does not inherit, by ``--allof-merge-mode`` value; ``none`` inherits no keyword."""
 ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _NUMBER_TYPES: Final = frozenset({"integer", "number"})
@@ -116,6 +137,16 @@ LEGACY_ROWS: Final = {
         "of an inherited type, an allOf map member's `type` keeps its null, and a `None` merged enum value fits"
     ),
 }
+
+
+InheritedRow: TypeAlias = Literal["override", "type-shape"]
+"""How one inherited schema value and the value its override declares merge (:func:`merge_inherited_value`).
+
+* ``override``: the presentation row of ``--allof-merge-mode all`` and ``constraints`` (:func:`inherited_override_row`):
+  an inherited ``true`` beside the override's schema is that schema.
+* ``type-shape``: the type shape ``--allof-merge-mode none`` writes the override's keywords on: an inherited ``true``
+  stays ``true``.
+"""
 
 
 @final
@@ -530,3 +561,116 @@ def intersect_keywords(
         tuple(dict.fromkeys(reconciler.unsatisfiable)),
         tuple(dict.fromkeys(reconciler.untaken_patterns)),
     )
+
+
+def inherits_keyword(merge_mode: str, keyword: str) -> bool:
+    """Return whether a property that overrides an inherited one takes ``keyword`` from it where it declares none.
+
+    ``--allof-merge-mode all`` inherits every keyword, ``constraints`` all but ``default``, ``examples`` and
+    ``example``, and ``none`` none.
+    """
+    return merge_mode != "none" and keyword not in _NOT_INHERITED.get(merge_mode, ())
+
+
+def inherited_positional_tail(read: Callable[[str], object], key: str) -> object:
+    """Return the schema of the positions beyond the tuple that ``key`` (``items`` or ``prefixItems``) declares.
+
+    ``read`` reads a keyword of the inherited schema: a dump's ``get`` or a schema object's attribute.
+    """
+    if key == "items":
+        return True if (additional_items := read("additionalItems")) is None else additional_items
+    if (items := read("items")) is not None and not isinstance(items, list):
+        return items
+    return True if (unevaluated_items := read("unevaluatedItems")) is None else unevaluated_items
+
+
+def merge_inherited_value(
+    parent: object, child: object, merge_schemas: Callable[[Any, Any], object], *, row: InheritedRow
+) -> object:
+    """Return the merge of one inherited schema value and the value its override declares.
+
+    ``false`` on either side wins, ``true`` beside a schema is that schema (an inherited ``true`` stays under
+    ``type-shape``), two schemas merge by ``merge_schemas``, and any other value is the override's.
+    """
+    match parent, child:
+        case (False, _) | (_, False):
+            return False
+        case _, True:
+            return parent
+        case True, _:
+            return True if row == "type-shape" else child
+        case dict(), dict():
+            return merge_schemas(parent, child)
+        case _:
+            return child
+
+
+def merge_inherited_keyword(  # noqa: PLR0913
+    key: str,
+    parent: object,
+    child: object,
+    read_parent: Callable[[str], object],
+    merge_value: Callable[[object, object], object],
+    *,
+    maps_by_name: bool,
+) -> object:
+    """Return the merge of the values an inherited schema and its override give one subschema keyword.
+
+    Tuple positions merge by index: :func:`inherited_positional_tail` (``read_parent`` reads the inherited schema)
+    stands for the positions the inherited tuple lacks, and its positions beyond the override's stay. With
+    ``maps_by_name`` a map of named schemas merges name by name. Any other value merges by ``merge_value``.
+    """
+    if key in POSITIONAL_SCHEMA_KEYWORDS and isinstance(parent, list) and isinstance(child, list):
+        tail = inherited_positional_tail(read_parent, key)
+        return [
+            merge_value(parent[index] if index < len(parent) else tail, item) for index, item in enumerate(child)
+        ] + parent[len(child) :]
+    if maps_by_name and key in _SCHEMA_MAP_KEYWORDS and isinstance(parent, dict) and isinstance(child, dict):
+        result = parent.copy()
+        for name, schema in child.items():
+            result[name] = schema if (inherited := parent.get(name)) is None else merge_value(inherited, schema)
+        return result
+    return merge_value(parent, child)
+
+
+def inherited_override_row(
+    parent: Mapping[str, Any],
+    child: dict[str, Any],
+    *,
+    merge_mode: str,
+    drops_null: Callable[[Mapping[str, Any]], bool],
+) -> dict[str, Any]:
+    """Return the presentation row of a property that overrides an inherited one, for :func:`intersect_keywords`.
+
+    The override's value of a keyword wins and the inherited value fills in (:func:`inherits_keyword`): subschema
+    keywords merge by :func:`merge_inherited_keyword` (row ``override``), other schema values recursively, and an
+    override that holds a ``$ref`` replaces the inherited schema; under ``--allof-merge-mode`` ``none`` (``merge_mode``)
+    the override is the row. An override for which ``drops_null`` holds drops the inherited ``nullable``: the caller
+    asks the null rule (``parser/_null_facts.py``). The result is a dict of the kind of ``child``, so a located dump
+    keeps its location.
+    """
+    if merge_mode == "none" or "$ref" in child:
+        return copy(child)
+    result = {key: value for key, value in parent.items() if inherits_keyword(merge_mode, key)}
+    if drops_null(child):
+        result.pop("nullable", None)
+    merge_row = partial(inherited_override_row, merge_mode=merge_mode, drops_null=drops_null)
+    merge_value = partial(merge_inherited_value, merge_schemas=merge_row, row="override")
+    for key, value in child.items():
+        if key in result and key in INHERITED_SCHEMA_KEYWORDS:
+            result[key] = merge_inherited_keyword(key, result[key], value, result.get, merge_value, maps_by_name=False)
+        elif key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = value if "$ref" in value else merge_row(result[key], value)
+        else:
+            result[key] = value
+    return _like(child, result)
+
+
+def _like(template: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    """Return ``data`` as a dict of the kind of ``template``: the copy of a located dump keeps its location."""
+    if type(template) is dict:
+        return data
+    result = copy(template)
+    result.clear()
+    result.update(data)
+    return result

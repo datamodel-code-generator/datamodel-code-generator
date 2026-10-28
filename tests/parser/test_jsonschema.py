@@ -4189,36 +4189,52 @@ def test_inherited_nested_schema_merge_matrix() -> None:
             ],
         )
     )
-    assert parser._merge_inherited_nested_schemas(False, {"type": "string"}) is False
-    assert parser._merge_inherited_nested_schemas({"type": "string"}, False) is False
-    assert parser._merge_inherited_nested_schemas(True, {"type": "string"}) == {"type": "string"}
-    assert parser._merge_inherited_nested_schemas({"type": "string"}, True) == {"type": "string"}
-    assert parser._merge_inherited_nested_schemas(
-        {"type": "string", "minLength": 1},
-        {"maxLength": 3},
-    ) == {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 3,
-    }
-    assert parser._merge_inherited_nested_schemas("parent", "child") == "child"
-    assert parser._merge_inherited_schema_keyword(
-        "prefixItems",
-        [{"type": "string"}],
-        [{"maxLength": 3}, {"minimum": 0}],
-        {"items": {"type": "integer"}},
-    ) == [
-        {"type": "string", "maxLength": 3},
-        {"type": "integer", "minimum": 0},
+    overrides = [
+        (
+            parent,
+            child,
+            parser._inherited_override_schema(
+                JsonSchemaObject.model_validate(parent),
+                JsonSchemaObject.model_validate(child),
+                "#/$defs/Parent",
+                "property",
+            ).model_dump(exclude_unset=True, by_alias=True),
+        )
+        for parent, child in (
+            ({"additionalProperties": False}, {"additionalProperties": {"type": "string"}}),
+            ({"additionalProperties": {"type": "string"}}, {"additionalProperties": False}),
+            ({"additionalProperties": True}, {"additionalProperties": {"type": "string"}}),
+            ({"additionalProperties": {"type": "string"}}, {"additionalProperties": True}),
+            (
+                {"additionalProperties": {"type": "string", "minLength": 1}},
+                {"additionalProperties": {"maxLength": 3}},
+            ),
+            ({"items": [{"type": "string"}]}, {"items": {"minLength": 1}}),
+            (
+                {"prefixItems": [{"type": "string"}], "items": {"type": "integer"}},
+                {"prefixItems": [{"maxLength": 3}, {"minimum": 0}]},
+            ),
+            (
+                {"properties": {"nested": {"type": "string"}}},
+                {"properties": {"nested": {"$ref": "#/$defs/Nested"}}},
+            ),
+            ({"properties": {"nested": {"minimum": 1}}}, {"properties": {"nested": {"maximum": 2}}}),
+        )
     ]
-    assert parser._merge_property_schemas(
-        {"nested": {"type": "string"}},
-        {"nested": {"$ref": "#/$defs/Nested"}},
-    ) == {"nested": {"$ref": "#/$defs/Nested"}}
-    assert parser._merge_property_schemas(
-        {"nested": {"minimum": 1}},
-        {"nested": {"maximum": 2}},
-    ) == {"nested": {"minimum": 1, "maximum": 2}}
+    assert [merged for _, _, merged in overrides] == [
+        {"additionalProperties": False},
+        {"additionalProperties": False},
+        {"additionalProperties": {"type": "string"}},
+        {"additionalProperties": {"type": "string"}},
+        {"additionalProperties": {"type": "string", "minLength": 1, "maxLength": 3}},
+        {"items": {"minLength": 1}},
+        {
+            "prefixItems": [{"type": "string", "maxLength": 3}, {"type": "integer", "minimum": 0}],
+            "items": {"type": "integer"},
+        },
+        {"properties": {"nested": {"$ref": "#/$defs/Nested"}}},
+        {"properties": {"nested": {"minimum": 1, "maximum": 2}}},
+    ]
 
 
 def test_inherited_distributed_constraint_matrix() -> None:
@@ -4328,39 +4344,22 @@ def test_inherited_type_shape_branch_matrix() -> None:
         1,
         JsonSchemaObject.model_validate({"type": "string"}),
     )
-    assert (
-        parser._merge_inherited_type_shape_value(
-            False,
-            {"type": "string"},
-            "#/$defs/Parent",
-            frozenset(),
+    assert [
+        parser._merge_inherited_type_shape_dict(parent, child, "#/$defs/Parent")
+        for parent, child in (
+            ({"type": "object", "additionalProperties": False}, {"additionalProperties": {"type": "string"}}),
+            ({"type": "object", "additionalProperties": {"type": "string"}}, {"additionalProperties": False}),
+            ({"type": "object", "additionalProperties": {"type": "string"}}, {"additionalProperties": True}),
+            ({"type": "object", "additionalProperties": True}, {"additionalProperties": {"minLength": 1}}),
+            ({"type": "array", "items": [{"type": "string"}]}, {"items": {"minLength": 1}}),
         )
-        is False
-    )
-    assert (
-        parser._merge_inherited_type_shape_value(
-            {"type": "string"},
-            False,
-            "#/$defs/Parent",
-            frozenset(),
-        )
-        is False
-    )
-    assert parser._merge_inherited_type_shape_value(
-        {"type": "string"},
-        True,
-        "#/$defs/Parent",
-        frozenset(),
-    ) == {"type": "string"}
-    assert (
-        parser._merge_inherited_type_shape_value(
-            "parent",
-            "child",
-            "#/$defs/Parent",
-            frozenset(),
-        )
-        == "child"
-    )
+    ] == [
+        {"type": "object", "additionalProperties": False},
+        {"type": "object", "additionalProperties": False},
+        {"type": "object", "additionalProperties": {"type": "string"}},
+        {"type": "object", "additionalProperties": True},
+        {"type": "array", "items": {"minLength": 1}},
+    ]
     assert parser._merge_inherited_union_branch(
         {"type": ["string", "null"]},
         {"minLength": 1},
@@ -4423,12 +4422,13 @@ def test_inherited_type_shape_branch_matrix() -> None:
     assert isinstance(typed_property, JsonSchemaObject)
     assert typed_property.__dict__[_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY]
     assert materialized.properties["boolean"] is True
-    incompatible_child = JsonSchemaObject.model_validate({"type": "integer"})
+    incompatible_child = JsonSchemaObject.model_validate({"type": "integer", "minimum": 1})
     assert (
-        parser._merge_no_merge_inherited_property(
+        parser._inherited_override_schema(
             JsonSchemaObject.model_validate({"type": "string"}),
             incompatible_child,
             "#/$defs/Parent",
+            "property",
         )
         is incompatible_child
     )
@@ -4748,10 +4748,12 @@ def test_partial_inherited_nested_nullable_ref_type_compatibility(
 def test_merge_property_schemas_and_parent_constraint_paths() -> None:
     """Property merging preserves child precedence and handles boolean and no-merge parents."""
     parser = JsonSchemaParser("")
-    assert parser._merge_property_schemas(
-        {"required": ["base"]},
-        {"required": ["child", "base"]},
-    ) == {"required": ["child", "base"]}
+    assert parser._inherited_override_schema(
+        JsonSchemaObject.model_validate({"required": ["base"]}),
+        JsonSchemaObject.model_validate({"required": ["child", "base"]}),
+        "#/$defs/Base",
+        "property",
+    ).model_dump(exclude_unset=True, by_alias=True) == {"required": ["child", "base"]}
 
     parser.raw_obj = {
         "$defs": {
@@ -4794,13 +4796,16 @@ def test_merge_property_schemas_and_parent_constraint_paths() -> None:
         )
         is no_merge_child
     )
-    no_merge_property = {"maxLength": 5}
-    copied_no_merge_property = no_merge_parser._merge_property_schemas(
-        {"type": "string", "minLength": 2},
-        no_merge_property,
+    no_merge_property = JsonSchemaObject.model_validate({"type": "integer"})
+    assert (
+        no_merge_parser._inherited_override_schema(
+            JsonSchemaObject.model_validate({"type": "string", "minLength": 2}),
+            no_merge_property,
+            "#/$defs/Base",
+            "property",
+        )
+        is no_merge_property
     )
-    assert copied_no_merge_property == no_merge_property
-    assert copied_no_merge_property is not no_merge_property
 
 
 def test_nested_inherited_constraint_detection() -> None:
