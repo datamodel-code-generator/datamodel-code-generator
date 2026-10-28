@@ -8,6 +8,8 @@ from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
+TwoRefs: TypeAlias = Annotated[int, Meta(ge=3, le=5)]
+
 
 class M2(Struct):
     pass
@@ -27,12 +29,10 @@ Small: TypeAlias = Annotated[int, Meta(le=5)]
 Big: TypeAlias = Annotated[int, Meta(ge=3)]
 
 
-class Arr(Struct):
-    pass
+Arr: TypeAlias = Annotated[list[str], Meta(min_length=1)]
 
 
-class ArrRef(Struct):
-    pass
+ArrRef: TypeAlias = Annotated[list[str], Meta(min_length=1)]
 
 
 class EnumC(Enum):
@@ -46,8 +46,9 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = Annotated[int, Meta(ge=3, le=5)]
 
 
-class Pat(Struct):
-    pass
+Pat: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 class Untyped(Struct):
@@ -74,10 +75,6 @@ RootMulti: TypeAlias = Annotated[
 InlineRoot: TypeAlias = Annotated[
     str, Meta(description='D', examples=['ab'], min_length=2)
 ]
-
-
-class TwoRefs(Struct):
-    pass
 
 
 class Model(Struct):

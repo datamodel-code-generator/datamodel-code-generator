@@ -2,157 +2,80 @@
 # Shrink-only within a release cycle: `behaviour_diff.py gate --check` fails on an entry that accepts no change
 # (stale), on an entry whose `decision` is not the public PR or issue references of the owner decision (#1234, #1235)
 # and on a table whose base is not the gate's base.
-# Replace the whole table when the base moves to the next release, which contains the accepted changes.
+# A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
+# its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
 # decision, release_note.
-base = "0.86.0"
+base = "0.87.0"
 
 [[accepted]]
-input = "*property_names*"
-aspects = [ "type", "config", "parsed-value" ]
-match = "dict\\[|regex_engine|parsed value"
-reason = "propertyNames dict keys RootModel -> constrained str: 0.86.0 keys are unhashable (crash class)"
-decision = "#5017"
-release_note = "propertyNames keys are typed as constrained str instead of a RootModel that could not be hashed"
+input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
+aspects = [ "kind", "type", "name-removed", "probe" ]
+match = "\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/jsonschema/external_anchor"
-aspects = [ "type" ]
-match = "AnchoredChild"
-reason = "spec-correct $anchor target; 0.86.0 depended on file read order (announced in the 0.87.0 release notes)"
-decision = "#5088"
-release_note = "an external $anchor resolves to the anchored schema regardless of file read order"
-
-# --- #5001: string keywords on non-string types (crash class) -------------------------------------------------------
-# 0.86.0 wrote maxLength/minLength/pattern on date, time, timedelta, datetime, UUID, IPv4Address, Decimal and SecretStr
-# fields; Pydantic raises TypeError ("Unable to apply constraint ...") on every value, so these fields, maps, root
-# models and the models that require them rejected every payload.
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "kind", "type", "name-removed" ]
+match = "root_site_null_oas30:(Model:\\w+: .*\\b(InlineArray|RefArray)\\b|(InlineArray|RefArray):)"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_refs.json"
-backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
-aspects = [ "name-removed", "type", "constraints" ]
-match = "StampLenMap|stamp_len_map"
-reason = "StampLenMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)"
-decision = "#5001"
-release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+input = "tests/data/jsonschema/allof_root_model_constraints.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(ConstraintWithItems|RefToArrayAllOf)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_ref_item_constraints.json"
-backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
-aspects = [ "name-removed", "type", "constraints" ]
-match = "StampMap|stamp_map"
-reason = "StampMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)"
-decision = "#5001"
-release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+input = "tests/data/openapi/allof_scalar_roots.yaml"
+aspects = [ "kind", "type", "name-removed", "probe" ]
+match = "\\bTwoPatterns\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/jsonschema/string_constraints_on_emitted_types.json"
-backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
-aspects = [ "name-removed", "type", "constraints" ]
-match = "MaxLen|MinLen|pattern=|\\] Day: removed|StampsAdditionalProperty|list\\[Day\\]"
-reason = "every dropped keyword raised TypeError on every value in 0.86.0; the required `at` field made the model reject every payload (crash class)"
-decision = "#5001"
-release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+input = "tests/data/jsonschema/schema_intersection"
+aspects = [ "kind", "type", "name-removed", "probe" ]
+match = "\\broot_forms:Model: accept -> reject|\\ballof_ref_item_constraints:.*?(?:\\b(TwoItem|TwoMap)\\b)|\\ballof_refs:.*?(?:\\bTwoRefs(Item|Map|Prop)\\b|Model:two_refs_(prop|items):|Model:two_refs_map: .*Pick2)|\\ballof_scalar_refs:.*?(?:\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b)|\\ballof_values:.*?(?:\\bPat\\b)|\\broot_forms:.*?(?:\\b(Arr|ArrRef|Pat|TwoRefs)\\b|Model:(a|b|p|two_refs): .*\\bM2\\b)|\\broot_site_null:.*?(?:\\b(InlineArray|InlineInteger|RefArray|RefIntegers)\\b)|\\broot_value_items_draft07:.*?(?:\\b(ClosingElsewhere|NullableTags|OwnClosing|TupleLater)\\b)|\\broot_value_keywords:.*?(?:\\b(Bounded|ItemsFirst|ItemsLater|RefBounded|RefItems|RefNoParts|UnevaluatedItems)\\b)"
+reason = "the directory input of the same #5401 sites: an allOf whose parts admit no object was an empty object model that rejected every valid scalar (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
 
 [[accepted]]
-input = "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml"
-backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
-aspects = [ "constraints" ]
-match = "uuid\\.UUID, MinLen"
-reason = "required UUID fields with min_length raised TypeError on every value in 0.86.0, so Base and Child rejected every payload (crash class)"
-decision = "#5001"
-release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
+input = "tests/data/jsonschema/schema_intersection"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] (allof_ref_item_constraints:Model:two_map|allof_refs:Model:two_refs_(map|prop)|allof_scalar_refs:Model:(lookahead_items|pattern_refs|two_map|two_prop)|allof_values:Model:pat|root_forms:Model:(a|b|p|two_refs)|root_site_null:M:(inline_array|inline_integer|ref_array|ref_integers)|root_value_items_draft07:M:(closing_elsewhere|nullable_tags|own_closing|tuple_later)|root_value_keywords:M:(items_first|items_later|ref_bounded|ref_items|ref_no_parts|unevaluated_items)): |^\\[constructor-order\\] (allof_ref_item_constraints|allof_refs|allof_scalar_refs|allof_values|root_forms):Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
 
 [[accepted]]
-input = "tests/data/jsonschema/constraints_on_target_builtin_names.json"
-backends = [ "pydantic_v2.BaseModel" ]
-aspects = [ "constraints" ]
-match = "PythonFinalizationError, MinLen"
-reason = "min_length on an exception class: no validator can be built in 0.86.0 (the model is not fully defined on both sides) (crash class)"
-decision = "#5001"
-release_note = "string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value"
-
-# --- #5291 (Fixes #5283): tuple items inlined by --collapse-root-models keep their position (crash class) -----------
-# 0.86.0 moved the inlined item to the end ([Flag, string] -> tuple[str, int | bool]), rejecting every valid value.
+input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] Model:(lookahead_items|pattern_refs|two_map|two_prop): |^\\[constructor-order\\] Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
 
 [[accepted]]
-input = "tests/data/jsonschema/collapse_root_models_tuple_items.json"
-aspects = [ "type" ]
-match = "tuple\\["
-reason = "tuple items in the wrong order rejected every schema-valid value in 0.86.0 (crash class)"
-decision = "#5291, #5283"
-release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
+input = "tests/data/jsonschema/allof_root_model_constraints.json"
+aspects = [ "required", "default", "constructor-order" ]
+match = "^\\[(required|default)\\] Model:(refarr|withitems): |^\\[constructor-order\\] Model: "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
 
 [[accepted]]
-input = "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml"
-backends = [ "typing.TypedDict" ]
-aspects = [ "type" ]
-match = "tupleValue: tuple\\[int, str\\] -> tuple\\[str, int\\]"
-reason = "prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)"
-decision = "#5291, #5283"
-release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
-
-[[accepted]]
-input = "tests/data/openapi/allof_partial_unconstrained_schemas.yaml"
-backends = [ "typing.TypedDict" ]
-aspects = [ "type" ]
-match = "ItemsNeutral: tuple\\[int, str\\] -> tuple\\[str, int\\]"
-reason = "prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)"
-decision = "#5291, #5283"
-release_note = "a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end"
-
-# --- #5387: a module import named like a builtin no longer shadows it (crash class) ---------------------------------
-# 0.86.0 wrote `from .app import list` and `tags: list[str]` in holder.py: get_type_hints, msgspec.convert and every
-# decode raise TypeError 'module' object is not subscriptable. The candidate imports the module as list_1; the removed
-# paths `from holder import list` and `from __init__ import list` are the submodule pkg.app.list, still importable at its
-# own path.
-
-[[accepted]]
-input = "tests/data/jsonschema/module_import_named_like_builtin*.json"
-aspects = [ "import-path-removed" ]
-match = "from (holder|__init__) import list$"
-reason = "the shadowing submodule import made Holder unusable (TypeError on every decode / type-hint evaluation) in 0.86.0 (crash class)"
-decision = "#5387"
-release_note = "a submodule named like a builtin (list, dict, ...) is imported under an alias, so the module's list[...] annotations name the builtin again"
-
-# --- #5022: TypedDict extra_items names the final class (owner decision: a wrong reference is fixed by default) -----
-
-[[accepted]]
-input = "tests/data/openapi/typed_dict_extra_items_final_name/renamed.yaml"
-backends = [ "typing.TypedDict" ]
-aspects = [ "config" ]
-match = "extra_items"
-reason = "0.86.0's extra_items named the local Bar instead of the referenced external Bar (renamed Bar1); a wrong reference is fixed by default"
-decision = "#5022"
-release_note = "TypedDict extra_items names the referenced class under its final name"
-
-# --- #5407: a reference admits null only when the schema it names does (owner decision 2026-10-28) ---
-# Since 0.84.0 --strict-nullable --reuse-model --collapse-reuse-models (the practical presets) and same-name
-# deduplication merged a non-nullable object model into an equally shaped nullable one, and every reference to it
-# took the None of the nullable model. The models are merged as before; the references reject null again as in
-# 0.83.0, and a model that was merged only for that None stays apart.
-
-[[accepted]]
-input = "tests/data/openapi/ref_nullable.yaml"
-aspects = [ "type" ]
-match = "NullableChild"
-reason = "nonNullableChild named NonNullableChild, merged into the nullable NullableChild, and accepted null (0.84.0 regression)"
-decision = "#5407"
-release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"
-
-[[accepted]]
-input = "tests/data/openapi/schema_intersection/null_multiple_types_oas30.yaml"
-aspects = [ "type" ]
-match = "Model:w:"
-reason = "the object member of W named the nullable U it was merged into, so the w accepted null (0.84.0 regression)"
-decision = "#5407"
-release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"
-
-[[accepted]]
-input = "tests/data/*/nullable_reuse_collapse.*"
-aspects = [ "type" ]
-match = "Person:(work|works|second|work_visit|workVisit):"
-reason = "work, works items and second named Work and the second Badge, merged into the nullable Home and Badge, and accepted null; WorkVisit was merged into HomeVisit only for that null"
-decision = "#5407"
-release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "required", "default" ]
+match = "^\\[(required|default)\\] root_site_null_oas30:Model:(inline_array|ref_array): "
+reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
+decision = "#5401"
+release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"

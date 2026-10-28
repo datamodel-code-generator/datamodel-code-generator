@@ -19,10 +19,6 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(Struct):
-    pass
-
-
 class Untyped(Struct):
     pass
 
@@ -36,7 +32,10 @@ class Model(Struct):
     mode_prop: int | UnsetType = UNSET
     mode_items: list[int] | UnsetType = UNSET
     mode_map: dict[str, int] | UnsetType = UNSET
-    pat: Pat | UnsetType = UNSET
+    pat: (
+        Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
+        | UnsetType
+    ) = UNSET
     pat_prop: str | UnsetType = UNSET
     pat_items: list[str] | UnsetType = UNSET
     pat_map: dict[str, PatMap] | UnsetType = UNSET

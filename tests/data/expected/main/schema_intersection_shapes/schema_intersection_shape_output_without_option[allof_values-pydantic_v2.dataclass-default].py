@@ -62,9 +62,12 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-@dataclass
-class Pat:
-    pass
+Pat = TypeAliasType(
+    "Pat",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
 
 
 @dataclass

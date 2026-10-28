@@ -33,6 +33,14 @@ class MemberMap(RootModel[conint(ge=2, le=9)]):
     root: conint(ge=2, le=9)
 
 
+class TwoItem(RootModel[conint(ge=4, le=5)]):
+    root: conint(ge=4, le=5)
+
+
+class TwoMap(RootModel[conint(ge=4, le=5)]):
+    root: conint(ge=4, le=5)
+
+
 class EnumItem(IntEnum):
     integer_1 = 1
     integer_2 = 2
@@ -84,14 +92,6 @@ class Point(BaseModel):
 class Letter(Enum):
     a = 'a'
     bb = 'bb'
-
-
-class TwoItem(BaseModel):
-    pass
-
-
-class TwoMap(BaseModel):
-    pass
 
 
 class Model(BaseModel):

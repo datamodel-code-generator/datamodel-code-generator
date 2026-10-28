@@ -6480,5 +6480,282 @@
         ]
       }
     }
+  },
+  "allof_scalar_refs": {
+    "model": "Model",
+    "fields": {
+      "two_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            6
+          ],
+          [
+            4.5
+          ]
+        ]
+      },
+      "two_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "two_pattern_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "two_prop": {
+        "valid": [
+          4,
+          5
+        ],
+        "invalid": [
+          3,
+          6,
+          {}
+        ]
+      },
+      "refs_items": {
+        "valid": [
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "text_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          [
+            "abcde"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "abcdef"
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "number_items": {
+        "valid": [
+          [
+            0.5
+          ],
+          [
+            3
+          ],
+          [
+            9.5
+          ]
+        ],
+        "invalid": [
+          [
+            0.4
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "list_items": {
+        "valid": [
+          [
+            [
+              1
+            ]
+          ],
+          [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        ],
+        "invalid": [
+          [
+            []
+          ],
+          [
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              "a"
+            ]
+          ]
+        ]
+      },
+      "untyped_typed_items": {
+        "valid": [
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "untyped_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            "a"
+          ],
+          [
+            {}
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "nullable_items": {
+        "valid": [
+          [
+            null
+          ],
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "point_items": {
+        "valid": [],
+        "invalid": [
+          [
+            {
+              "x": 1
+            }
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "name": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          "y"
+        ]
+      },
+      "pattern_refs": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
+      },
+      "lookahead_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "b"
+          ]
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,10 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [constraints] Child:uuidValue: x -> uuid.UUID"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[constraints] Child:uuidValue: x -> uuid.UUID"
+  ]
+}
