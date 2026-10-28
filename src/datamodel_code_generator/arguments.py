@@ -538,7 +538,8 @@ model_options.add_argument(
     "of msgspec.Struct and Pydantic dataclass models by the defaults they write, so under --strip-default-none an "
     "optional field whose None default is stripped but still written (UNSET, or None for a type that admits None) "
     "goes after the required fields of a Struct with the other optional fields and stays positional after an "
-    "inherited default, and a required pydantic.dataclass field redeclaring it is written Field(...); without it the "
+    "inherited default, and a required pydantic.dataclass field redeclaring it is written Field(...) (a msgspec.Struct "
+    "writes a bare annotation); without it the "
     "field keeps its place among the fields without a default, as before: it is keyword-only after an inherited "
     "default, a redeclaring field inherits its None default, and the fields are reordered only where a required "
     "field would then follow a default.",

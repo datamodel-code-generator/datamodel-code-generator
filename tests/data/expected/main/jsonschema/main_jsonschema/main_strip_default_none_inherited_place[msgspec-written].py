@@ -48,6 +48,10 @@ class NamedCat(Cat):
     kind: str
 
 
+class GrandCat(NamedCat):
+    tag: str
+
+
 class TaggedCat(Cat):
     kind: str
     tag: str

@@ -50,6 +50,12 @@
         {"type": "object", "required": ["kind"], "properties": {"kind": {"type": "string"}}}
       ]
     },
+    "GrandCat": {
+      "allOf": [
+        {"$ref": "#/definitions/NamedCat"},
+        {"type": "object", "required": ["tag"], "properties": {"tag": {"type": "string"}}}
+      ]
+    },
     "TaggedCat": {
       "allOf": [
         {"$ref": "#/definitions/Cat"},

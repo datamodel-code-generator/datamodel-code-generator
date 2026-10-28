@@ -3769,8 +3769,8 @@ releases: it is keyword-only after an inherited default, a required field that r
 and the fields are reordered or made keyword-only only when a required field would then follow a default (which the
 class rejects at import). With the value every optional field of a Struct goes after the required fields, in schema
 order, which changes the order of the constructor's positional arguments; such a field stays positional after an
-inherited default (for a Pydantic dataclass together with `final-names`), and a required field that redeclares it is
-written `Field(...)`.""",
+inherited default (for a Pydantic dataclass together with `final-names`), and a required Pydantic dataclass field
+that redeclares it is written `Field(...)` (a Struct writes the bare annotation).""",
     input_schema="openapi/strip_default_none_constructor_order.yaml",
     cli_args=[
         "--output-model-type",

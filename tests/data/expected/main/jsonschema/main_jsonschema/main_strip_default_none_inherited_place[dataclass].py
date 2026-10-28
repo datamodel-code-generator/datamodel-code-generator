@@ -55,6 +55,11 @@ class NamedCat(Cat):
 
 
 @dataclass
+class GrandCat(NamedCat):
+    tag: str
+
+
+@dataclass
 class TaggedCat(Cat):
     kind: str
     tag: str

@@ -4039,8 +4039,9 @@ fields, in schema order, which changes the order of the constructor's positional
 positional after an inherited default (for a Pydantic dataclass together with `final-names`).
 
 A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
-default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
-subclass field inherits the `None` default, as in earlier releases.""",
+default in a subclass with the value: a required field redeclaring it is written `Field(...)` (a `msgspec.Struct`
+writes the bare annotation, `kind: str`). Without the value the subclass field
+inherits the `None` default, as in earlier releases.""",
     input_schema="jsonschema/field_type_collision_inherited_modules",
     cli_args=[
         "--output-model-type",
@@ -21104,9 +21105,10 @@ def test_main_strip_default_none_inherited_place(
 
     Without --order-constructor-fields-by written-defaults ``Child.n`` is keyword-only after the inherited ``d`` and
     ``Pet.level_default``, whose default its reference gives, goes after ``untyped``, as in 0.86.0, also under
-    --order-constructor-fields-by final-names; ``Flat`` and ``TaggedCat``, whose required field would follow a
-    default the class body writes, are reordered or made keyword-only. With written-defaults the fields follow the
-    defaults they write: ``Child.n`` stays positional and ``Pet.untyped`` goes last.
+    --order-constructor-fields-by final-names; ``GrandCat``, whose required field follows the ``None`` that ``NamedCat``
+    inherits, ``Flat`` and ``TaggedCat``, whose required field would follow a default the class body writes, are
+    reordered or made keyword-only. With written-defaults the fields follow the defaults they write: ``Child.n``
+    stays positional and ``Pet.untyped`` goes last.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "strip_default_none_inherited_place.json",

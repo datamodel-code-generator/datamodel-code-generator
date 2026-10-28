@@ -4376,8 +4376,9 @@ fields, in schema order, which changes the order of the constructor's positional
 positional after an inherited default (for a Pydantic dataclass together with `final-names`).
 
 A `pydantic.dataclass` field whose stripped `None` default stays written, as its type admits None, counts as that
-default in a subclass with the value: a required field redeclaring it is written `Field(...)`. Without the value the
-subclass field inherits the `None` default, as in earlier releases.
+default in a subclass with the value: a required field redeclaring it is written `Field(...)` (a `msgspec.Struct`
+writes the bare annotation, `kind: str`). Without the value the subclass field
+inherits the `None` default, as in earlier releases.
 
 !!! tip "Usage"
 

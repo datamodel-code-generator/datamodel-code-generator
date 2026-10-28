@@ -58,6 +58,11 @@ class NamedCat(Cat):
 
 
 @dataclass
+class GrandCat(NamedCat):
+    tag: str = Field(..., kw_only=True)
+
+
+@dataclass
 class TaggedCat(Cat):
     kind: str
     tag: str = Field(..., kw_only=True)

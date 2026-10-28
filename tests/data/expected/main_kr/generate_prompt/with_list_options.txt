@@ -878,12 +878,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         required fields of a Struct with the other optional
                         fields and stays positional after an inherited
                         default, and a required pydantic.dataclass field
-                        redeclaring it is written Field(...); without it the
-                        field keeps its place among the fields without a
-                        default, as before: it is keyword-only after an
-                        inherited default, a redeclaring field inherits its
-                        None default, and the fields are reordered only where
-                        a required field would then follow a default.
+                        redeclaring it is written Field(...) (a msgspec.Struct
+                        writes a bare annotation); without it the field keeps
+                        its place among the fields without a default, as
+                        before: it is keyword-only after an inherited default,
+                        a redeclaring field inherits its None default, and the
+                        fields are reordered only where a required field would
+                        then follow a default.
   --output-date-class {date,PastDate,FutureDate}
                         Choose Date class between PastDate, FutureDate or
                         date. (Pydantic v2 only) Each output model has its

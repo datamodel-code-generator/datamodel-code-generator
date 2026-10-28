@@ -57,6 +57,11 @@ class NamedCat(Cat):
 
 
 @dataclass(kw_only=True)
+class GrandCat(NamedCat):
+    tag: str
+
+
+@dataclass(kw_only=True)
 class TaggedCat(Cat):
     kind: str
     tag: str
