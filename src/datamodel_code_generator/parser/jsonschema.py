@@ -159,14 +159,14 @@ from datamodel_code_generator.model.runtime_validation import (
 from datamodel_code_generator.parser._graph_ids import BuildFrames
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._intersection import (
-    ENUM_METADATA_KEYWORDS,
     INHERITED_SCHEMA_KEYWORDS,
     INTERSECTED_KEYWORDS,
     LEGACY_ROWS,
     POSITIONAL_SCHEMA_KEYWORDS,
     KeywordIntersection,
+    all_of_member_row,
     bounds_admit_no_value,
-    enum_metadata,
+    concatenating_row,
     inherited_override_row,
     inherited_positional_tail,
     inherits_keyword,
@@ -350,17 +350,6 @@ _NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMed
 _FALSE_ALL_OF_KEYWORDS = _ANNOTATION_KEYWORDS | {"allOf"}
 _MODELED_SCHEMA_MAPS = schema_positions("modeled", shapes=("map",))
 """The maps of named subschemas ``JsonSchemaObject`` models: ``properties`` and ``patternProperties``."""
-_ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
-    "minimum",
-    "maximum",
-    "exclusiveMinimum",
-    "exclusiveMaximum",
-    "minLength",
-    "maxLength",
-    "minItems",
-    "maxItems",
-    *PROPERTY_COUNT_KEYWORDS,
-})
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
 _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
@@ -632,11 +621,7 @@ def _schema_implies(declared: object, other: object, *, same_document: bool) -> 
         bounds_admit_no_value(other_keywords) and not bounds_admit_no_value(declared_keywords)
     ):
         return False
-    intersection = intersect_keywords(
-        [declared_keywords, other_keywords],
-        {**other_keywords, **declared_keywords},
-        extras_key=JsonSchemaObject.__extra_key__,
-    )
+    intersection = _intersect_dumps([declared_keywords, other_keywords], {**other_keywords, **declared_keywords})
     return (
         not intersection.unsatisfiable
         and not intersection.untaken_patterns
@@ -780,27 +765,6 @@ def _json_schema_type_may_accept_container(
 ) -> bool:
     """Return whether a JSON Schema type keyword permits the raw container shape."""
     return schema_type == container_type if isinstance(schema_type, str) else container_type in schema_type
-
-
-def _intersect_all_of_enum(parent: list[Any], child: list[Any]) -> list[Any]:
-    """Intersect JSON enum values while retaining order and already-correct enum aliases."""
-    intersection = intersect_enum_values(parent, child)
-    if not intersection or (
-        len(intersection) == len(parent) and len(intersect_enum_values(child, parent)) == len(child)
-    ):
-        return parent + child
-    return intersection
-
-
-def _align_all_of_enum_metadata(parent: dict[str, Any], child: dict[str, Any], result: dict[str, Any]) -> None:
-    """Keep annotations attached to their retained enum values, preferring parent annotations."""
-    retained_ids = {id(value) for value in result["enum"]}
-    indices = [index for index, value in enumerate(parent["enum"]) if id(value) in retained_ids]
-    result.update({
-        key: [enum_metadata((parent, child), key, index) for index in indices]
-        for key in ENUM_METADATA_KEYWORDS
-        if parent.get(key) or child.get(key)
-    })
 
 
 def _is_rw_model_variant_path(path: str) -> bool:
@@ -1436,11 +1400,6 @@ def _single_value_enum_as_const(
     return {**result, _READ_AS_CONST_KEY: True} if "const" in result else result
 
 
-def _lists_null(type_: str | list[str] | None) -> bool:
-    """Return whether a ``type`` keyword is a list that holds null."""
-    return isinstance(type_, list) and "null" in type_
-
-
 def _read_type(obj: JsonSchemaObject) -> str | list[str] | None:
     """Return the ``type`` of a schema object, as a list holding null where OpenAPI reads ``nullable`` so.
 
@@ -1476,7 +1435,8 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
         typed=type_ is not None,
         type_string=type_ == "string",
         member_null=any(
-            isinstance(item, JsonSchemaObject) and (item.type == "null" or _lists_null(item.type))
+            isinstance(item, JsonSchemaObject)
+            and (item.type == "null" or (isinstance(item.type, list) and "null" in item.type))
             for item in (*obj.oneOf, *obj.anyOf)
         ),
         nullable=obj.nullable,
@@ -1488,6 +1448,35 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
 def _dump_drops_inherited_null(dump: Mapping[str, Any]) -> bool:
     """Return whether a dumped override drops the inherited null (row ``inherited-typed-without-null``)."""
     return resolve_null_facts(dump_null_sources(dump), "inherited-child").rule == "inherited-typed-without-null"
+
+
+def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
+    """Return whether the dumped parts of an intersection admit null (site ``all-of-parts``); the last is its own."""
+    return bool(
+        resolve_null_facts(
+            dump_null_sources(parts[-1]),
+            "all-of-parts",
+            parts=[dump_null_sources(part) for part in parts if "type" in part],
+        ).admits_null
+    )
+
+
+def _intersect_dumps(
+    parts: Sequence[Mapping[str, Any]],
+    row: dict[str, Any],
+    *,
+    ref_siblings_are_parts: bool = True,
+    legacy_rows: Collection[str] = (),
+) -> KeywordIntersection:
+    """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``."""
+    return intersect_keywords(
+        parts,
+        row,
+        extras_key=JsonSchemaObject.__extra_key__,
+        parts_admit_null=_dump_parts_admit_null,
+        ref_siblings_are_parts=ref_siblings_are_parts,
+        legacy_rows=legacy_rows,
+    )
 
 
 def _excluded_null_members(
@@ -5342,16 +5331,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         required: bool = False,
         has_default: bool = False,
-        parts_null: bool = False,
+        parts: Sequence[NullSources] = (),
     ) -> NullFacts:
-        """Return what ``site`` reads from where the null of ``obj`` comes from."""
+        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
         return resolve_null_facts(
             _null_sources(obj, site, self._type_has_null),
             site,
             self._null_mode,
             required=required,
             has_default=has_default,
-            parts_null=parts_null,
+            parts=parts,
         )
 
     def _object_nullable(self, obj: JsonSchemaObject) -> bool:
@@ -6026,20 +6015,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             for index, item in enumerate(combined_schemas)
         ]
-
-    def _deep_merge(self, dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, Any]:
-        """Deep merge two dictionaries, combining nested dicts and lists."""
-        result = dict1.copy()
-        for key, value in dict2.items():
-            if key in result:
-                if isinstance(result[key], dict) and isinstance(value, dict):
-                    result[key] = _located(self._deep_merge(result[key], value), _dump_location(value))
-                    continue
-                if isinstance(result[key], list) and isinstance(value, list):
-                    result[key] = result[key] + value  # noqa: PLR6104
-                    continue
-            result[key] = value
-        return result
 
     def _get_ref_raw_schema(self, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
         return self._read_ref_value(resolved_ref)
@@ -6897,15 +6872,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[dict[str, Any], tuple[str, ...]]:
         """Merge the dump of a referenced schema with the sibling keywords of its $ref into their intersection.
 
-        The earlier merge (``_deep_merge``: lists concatenated, a sibling's value winning) stays wherever it enforces
-        what the intersection enforces; ``intersect_keywords`` replaces the keywords where it does not. A keyword whose
-        parts have no value in common keeps the earlier merge's value, with a warning. Returns the merged keywords and
-        the keywords with no value in common. Under ``legacy-merge-row`` the earlier merge alone.
+        The earlier merge (``concatenating_row``: lists concatenated, a sibling's value winning) stays wherever it
+        enforces what the intersection enforces; ``intersect_keywords`` replaces the keywords where it does not. A
+        keyword whose parts have no value in common keeps the earlier merge's value, with a warning. Returns the merged
+        keywords and the keywords with no value in common. Under ``legacy-merge-row`` the earlier merge alone.
         """
-        intersection = intersect_keywords(
+        intersection = _intersect_dumps(
             [target, siblings],
-            self._deep_merge(target, siblings),
-            extras_key=JsonSchemaObject.__extra_key__,
+            concatenating_row(target, siblings),
             ref_siblings_are_parts=siblings_are_parts,
             legacy_rows=self._legacy_intersection,
         )
@@ -7639,7 +7613,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             const_part := next((dump for dump in dumps if "const" in dump.get(extras_key, {})), None)
         ):
             row_extras["const"] = added["const"] = const_part[extras_key]["const"]
-        intersection = intersect_keywords(dumps, row, extras_key=extras_key)
+        intersection = _intersect_dumps(dumps, row)
         keywords = intersection.keywords
         if where is not None:
             self._warn_intersection(where, intersection, _ALL_OF_PARTS)
@@ -8696,10 +8670,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return merged_schema
         parent_dict = parent.model_dump(exclude_unset=True, by_alias=True)
         child_dict = child.model_dump(exclude_unset=True, by_alias=True)
-        intersection = intersect_keywords(
+        intersection = _intersect_dumps(
             [parent_dict, child_dict],
             self._inherited_override_row(parent_dict, child_dict),
-            extras_key=JsonSchemaObject.__extra_key__,
             legacy_rows=self._legacy_intersection,
         )
         self._warn_intersection(where, intersection)
@@ -9589,69 +9562,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self.parse_root_type(name, merged_schema, path)
         return self.parse_root_type(name, merged_schema, path)
 
-    def _merge_all_of_schema(
-        self,
-        parent: dict[str, Any],
-        child: dict[str, Any],
-        *,
-        schema_map: bool = False,
-        intersect_bounds: bool = True,
-    ) -> dict[str, Any]:
-        """Intersect allOf bounds and enums only in positive schema positions."""
-        result = parent.copy()
-        conjoins_patterns = (
-            "legacy-lookahead-patterns" not in self._legacy_intersection and intersect_bounds and not schema_map
+    def _all_of_pattern_conjunction(self) -> Callable[[Sequence[str]], str] | None:
+        """Return how ``all_of_member_row`` conjoins two patterns, or None under ``legacy-lookahead-patterns``."""
+        return (
+            None
+            if "legacy-lookahead-patterns" in self._legacy_intersection
+            else partial(self._conjoined_pattern, where="allOf")
         )
-        for key, value in child.items():
-            if key not in result:
-                result[key] = value
-                continue
-            previous = result[key]
-            if isinstance(previous, dict) and isinstance(value, dict):
-                if schema_map or key in INHERITED_SCHEMA_KEYWORDS:
-                    result[key] = _located(
-                        self._merge_all_of_schema(
-                            previous,
-                            value,
-                            schema_map=not schema_map and key in _MODELED_SCHEMA_MAPS,
-                            intersect_bounds=intersect_bounds,
-                        ),
-                        _dump_location(value),
-                    )
-                else:
-                    result[key] = self._deep_merge(previous, value)
-            elif (
-                intersect_bounds
-                and not schema_map
-                and key in _ALLOF_BOUND_CONSTRAINT_FIELDS
-                and previous is not None
-                and value is not None
-            ):
-                # Preserve the legacy child representation when two bounds are equal.
-                result[key] = JsonSchemaParser._intersect_constraint(key, value, previous)
-            elif isinstance(previous, list) and isinstance(value, list):
-                if not schema_map and key == "enum":
-                    result[key] = _intersect_all_of_enum(previous, value)
-                else:
-                    result[key] = previous + value
-            elif (
-                conjoins_patterns
-                and key == "pattern"
-                and isinstance(previous, str)
-                and isinstance(value, str)
-                and previous != value
-            ):
-                result[key] = self._conjoined_pattern((previous, value), "allOf")
-            else:
-                result[key] = value
-        if (
-            not schema_map
-            and isinstance(parent_enum := parent.get("enum"), list)
-            and isinstance(child_enum := child.get("enum"), list)
-            and len(result["enum"]) < len(parent_enum) + len(child_enum)
-        ):
-            _align_all_of_enum_metadata(parent, child, result)
-        return result
 
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models.
@@ -9686,7 +9603,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         merged_schema: dict[str, Any] = obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
         merge_schema = (
-            self._deep_merge if self.allof_merge_mode == AllOfMergeMode.NoMerge else self._merge_all_of_schema
+            concatenating_row
+            if self.allof_merge_mode == AllOfMergeMode.NoMerge
+            else partial(all_of_member_row, conjoin_patterns=self._all_of_pattern_conjunction())
         )
         for resolved_item in resolved_items:
             merged_schema = merge_schema(merged_schema, resolved_item.model_dump(exclude_unset=True, by_alias=True))
@@ -9935,12 +9854,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         merged = self._inherited_override_row(
             merged, obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
         )
-        typed = [*sibling_types, *(schema.type for schema in (*mapping_schemas, obj) if schema.type)]
-        if self._null_mode.type_excludes_member_null and any(_lists_null(type_) for type_ in typed):
+        typed = [
+            dump_null_sources({"type": type_})
+            for type_ in (*sibling_types, *(schema.type for schema in (*mapping_schemas, obj) if schema.type))
+        ]
+        if self._null_mode.type_excludes_member_null and any(part.type_lists_null for part in typed):
             merged["type"] = (
-                ["object", "null"]
-                if self._null_facts(obj, "all-of-map", parts_null=all(map(_lists_null, typed))).admits_null
-                else "object"
+                ["object", "null"] if self._null_facts(obj, "all-of-map", parts=typed).admits_null else "object"
             )
         elif merged.get("type") == ["object"]:
             merged["type"] = "object"
@@ -9962,7 +9882,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         merged: dict[str, Any] = {}
         for schema in schemas:
-            merged = self._deep_merge(
+            merged = concatenating_row(
                 merged,
                 schema.model_dump(
                     exclude={"allOf", *JsonSchemaObject.__constraint_fields__}, exclude_unset=True, by_alias=True
@@ -10050,7 +9970,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return parts
         dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
         row = {keyword: value for dump in dumps for keyword, value in dump.items()}
-        unsatisfiable = intersect_keywords(dumps, row, extras_key=JsonSchemaObject.__extra_key__).unsatisfiable
+        unsatisfiable = _intersect_dumps(dumps, row).unsatisfiable
         if "legacy-all-of-site-form" not in self._legacy_intersection:
             self._warn_unsatisfiable(str(obj.schema_location or "allOf"), unsatisfiable, _ALL_OF_PARTS)
         return None if unsatisfiable else parts
@@ -10447,7 +10367,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                     self._preserve_inherited_materialized_type_shape(
                                         target_attribute,
                                         self._schema_object(
-                                            self._merge_all_of_schema(
+                                            all_of_member_row(
                                                 base_object,
                                                 merged_attr.model_dump(exclude_unset=True, by_alias=True),
                                                 intersect_bounds=False,
@@ -10471,7 +10391,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             self._preserve_inherited_materialized_type_shape(
                                 target_attribute,
                                 self._schema_object(
-                                    self._merge_all_of_schema(
+                                    all_of_member_row(
                                         base_object,
                                         target_attribute.model_dump(exclude_unset=True, by_alias=True),
                                         intersect_bounds=False,

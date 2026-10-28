@@ -19,8 +19,7 @@ core = ["parser/_intersection.py"]
 adapters = [
     "parser/jsonschema.py:JsonSchemaParser._intersect_ref_siblings",
     "parser/jsonschema.py:JsonSchemaParser._merge_properties_with_parent_constraints",
-    "parser/jsonschema.py:_intersect_all_of_enum",
-    "parser/jsonschema.py:_align_all_of_enum_metadata",
+    "parser/jsonschema.py:_intersect_dumps",
     "parser/jsonschema.py:JsonSchemaParser._intersect_constraint",
 ]
 
@@ -59,6 +58,7 @@ adapters = [
     "parser/jsonschema.py:JsonSchemaParser._null_facts",
     "parser/jsonschema.py:JsonSchemaParser._type_has_null",
     "parser/jsonschema.py:_null_sources",
+    "parser/jsonschema.py:_dump_parts_admit_null",
     "parser/jsonschema.py:_type_null_sources",
     "parser/openapi.py:OpenAPIParser._null_mode",
 ]
@@ -1795,9 +1795,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
 
-[allow."src/datamodel_code_generator/parser/_intersection.py"."_explicit_null"]
-"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
-
 [allow."src/datamodel_code_generator/parser/_passes/_shared.py"."_sort_models_by_class_body_references.old"]
 "H20.graph-algorithm" = { home = "H20", count = 1, audit = "D-PP-07" }
 
@@ -1923,9 +1920,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_root_value_nodes"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_schema"]
-"H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merge_all_of_value_schema"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-13" }
 
@@ -2013,9 +2007,6 @@ fix = "RP15b"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_pattern_properties"]
 "H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."_lists_null"]
-"H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."_merges_ref_siblings"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }

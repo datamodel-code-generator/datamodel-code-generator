@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
 __all__ = [
     "NO_NULL_MODE",
@@ -43,6 +43,7 @@ NullSite: TypeAlias = Literal[
     "object-map",
     "all-of-map",
     "all-of-value",
+    "all-of-parts",
     "root-type",
     "multiple-types-root",
     "array-field",
@@ -65,6 +66,9 @@ NullSite: TypeAlias = Literal[
 * ``object-map``: the dict of an object map (``JsonSchemaParser._object_map_admits_null``).
 * ``all-of-map``, ``all-of-value``: the map or the value an ``allOf`` merges its parts into
   (``JsonSchemaParser._merge_all_of_root_schema``, ``JsonSchemaParser._all_of_root_value_schema``).
+* ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
+  override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
+  ``parser/jsonschema.py:_dump_parts_admit_null`` answers).
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
@@ -100,6 +104,9 @@ NullRule: TypeAlias = Literal[
     "all-of-own-null",
     "all-of-every-part-null",
     "all-of-not-null",
+    "all-of-own-declares-null",
+    "all-of-every-part-declares-null",
+    "all-of-part-excludes-null",
     "force-optional",
     "legacy-root-type-nullable-ungated",
     "root-type-not-nullable",
@@ -157,6 +164,11 @@ NullRule: TypeAlias = Literal[
   holding null, also without ``--strict-nullable``, as root types read it (``legacy-root-type-nullable-ungated``).
 * ``all-of-every-part-null``: a merged map also admits null when every typed part lists null (G01 decision 3).
 * ``all-of-not-null``: neither holds.
+* ``all-of-own-declares-null``: the intersection of parts admits null when the last part declares it: ``nullable:
+  true``, a ``type`` of null or a ``type`` list holding null.
+* ``all-of-every-part-declares-null``: also when every typed part declares it so; ``all-of-every-part-null`` of a
+  merged map counts only ``type`` lists.
+* ``all-of-part-excludes-null``: otherwise a typed part excludes null.
 * ``force-optional``: ``--force-optional`` makes a root field optional and leaves its nullability undecided.
 * ``legacy-root-type-nullable-ungated``: a root field is optional and nullable by its ``nullable``, also without
   ``--strict-nullable``; ``type`` lists do not count.
@@ -276,13 +288,13 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     *,
     required: bool = False,
     has_default: bool = False,
-    parts_null: bool = False,
+    parts: Sequence[NullSources] = (),
 ) -> NullFacts:
     """Return what ``site`` reads from the null ``sources`` of one schema object under ``mode``.
 
     The match returns for every site but ``inherited-child``, whose rows follow it. ``required`` and ``has_default``
-    are the required state and default of the field a site builds (``field``, ``array-field``); ``parts_null`` tells
-    that every typed part of an ``allOf`` lists null (``all-of-map``).
+    are the required state and default of the field a site builds (``field``, ``array-field``); ``parts`` are the
+    sources of the typed parts an ``allOf`` merges (``all-of-map``, ``all-of-parts``).
     """
     type_null = sources.type_has_null
     match site:
@@ -327,9 +339,15 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
         case "all-of-map" | "all-of-value":
             if sources.nullable or sources.type_lists_null:
                 return NullFacts("all-of-own-null", admits_null=True)
-            if site == "all-of-map" and parts_null:
+            if site == "all-of-map" and all(part.type_lists_null for part in parts):
                 return NullFacts("all-of-every-part-null", admits_null=True)
             return NullFacts("all-of-not-null", admits_null=False)
+        case "all-of-parts":
+            if _declares_null(sources):
+                return NullFacts("all-of-own-declares-null", admits_null=True)
+            if all(map(_declares_null, parts)):
+                return NullFacts("all-of-every-part-declares-null", admits_null=True)
+            return NullFacts("all-of-part-excludes-null", admits_null=False)
         case "root-type":
             if mode.force_optional:
                 return NullFacts("force-optional", admits_null=None, required=False)
@@ -373,6 +391,11 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     return NullFacts("inherited-keeps-null")
 
 
+def _declares_null(sources: NullSources) -> bool:
+    """Return whether a schema object's own keywords declare null: ``nullable: true``, a null ``type`` or list."""
+    return sources.nullable is True or sources.type_null or sources.type_lists_null
+
+
 def _type_excludes_null(sources: NullSources) -> bool:
-    """Return whether the schema object's own ``type`` excludes null: set, without null, and not ``nullable: true``."""
-    return sources.typed and not (sources.type_null or sources.type_lists_null) and sources.nullable is not True
+    """Return whether the schema object's own ``type`` excludes null: set, and its own keywords declare no null."""
+    return sources.typed and not _declares_null(sources)
