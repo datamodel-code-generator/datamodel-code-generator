@@ -3625,6 +3625,7 @@ negative_decimal_singleton-schema25	payloads/native_numeric_empty_errors.txt	= m
 negative_large-schema12	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 negative_limit-schema22	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 nested_decimal_singleton-schema26	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+number_singleton_beyond_sampling_range-schema29	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 plain_number-schema10	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 positive-schema2	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 positive_large-schema11	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3632,6 +3633,8 @@ positive_limit-schema21	payloads/native_numeric_empty_errors.txt	= main/jsonsche
 schema_positions-schema17	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 subnormal_multiple-schema14	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 tiny_multiple-schema13	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+unbounded_integer_multiple-schema28	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+unbounded_number_integer_multiple-schema27	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 [test_payload_generation_reports_real_schema_failure]
 	main/payload_generation_missing_reference.txt
 [test_payload_runtime_alias_fallback]

@@ -10,7 +10,7 @@
       "names": []
     },
     "broken": {
-      "import_error": "ValueError: cannot import"
+      "import_error": "imported first: ValueError: cannot import"
     },
     "pets": {
       "adapters": {
@@ -38,7 +38,10 @@
       },
       "names": [
         "Pet"
-      ]
+      ],
+      "probes": {
+        "Pet": "accept"
+      }
     }
   }
 }

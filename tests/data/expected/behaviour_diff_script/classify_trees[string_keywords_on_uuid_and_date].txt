@@ -1,0 +1,8 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [constraints] Child:uuidValue: Annotated[uuid.UUID, MinLen(min_length=1)] -> uuid.UUID",
+    "crash-fix [constraints] Day: Annotated[datetime.date, MaxLen(max_length=10)] -> datetime.date"
+  ],
+  "accepted_by": []
+}

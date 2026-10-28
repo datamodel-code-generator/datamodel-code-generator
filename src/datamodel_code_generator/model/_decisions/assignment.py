@@ -110,10 +110,15 @@ class ModelWritten:
 @final
 @record
 class DataclassWritten:
-    """The written assignment of a stdlib dataclass field: its ``field()`` arguments and a forced ``field()``."""
+    """The written assignment of a stdlib dataclass field: its ``field()`` arguments and a forced ``field()``.
+
+    ``text`` tells that the field's call renders (``bool(field.field)``, ``_render_plan.written_text``); the arguments
+    and the forced call give its constructor default.
+    """
 
     data: WrittenData
     forced: bool
+    text: bool
 
 
 @final
@@ -128,9 +133,13 @@ class PydanticDataclassWritten:
 @final
 @record
 class MsgspecWritten:
-    """The written assignment of a msgspec Struct field: its ``field()`` arguments."""
+    """The written assignment of a msgspec Struct field: its ``field()`` arguments and whether its call renders.
+
+    ``text`` tells that the field's call renders (``bool(field.field)``, ``_render_plan.written_text``).
+    """
 
     data: WrittenData
+    text: bool
 
 
 WrittenAssignment: TypeAlias = ModelWritten | DataclassWritten | PydanticDataclassWritten | MsgspecWritten
@@ -288,12 +297,6 @@ def struct_construction_assigned(*, required: bool, keeps_stripped_place: bool) 
     return struct_assigned(required=required) and not keeps_stripped_place
 
 
-def _text(written: WrittenAssignment) -> bool:
-    if isinstance(written, DataclassWritten):
-        return written.data.any or written.forced
-    return written.data.any if isinstance(written, MsgspecWritten) else written.text
-
-
 def _model_assignment(inputs: AssignmentInputs, *, text: bool) -> tuple[bool, AssignmentRule]:
     if text and not inputs.annotated:
         return True, "field-call"
@@ -325,17 +328,21 @@ def _visibility(inputs: AssignmentInputs) -> DataclassVisibility:
 
 
 def _constructor_default(inputs: AssignmentInputs, *, text: bool, model_assigned: bool) -> ConstructorDefault:
-    """Return the constructor default the field's written assignment gives it; a required field has none."""
+    """Return the constructor default the field's written assignment gives it; a required field has none.
+
+    A stdlib dataclass field's comes from the ``field()`` arguments it writes, whatever its call renders.
+    """
     if inputs.required:
         return "none"
     written = inputs.written
     if isinstance(written, ModelWritten):
         return _declared_default(written, strips_none=inputs.strips_none) if model_assigned else "none"
     if isinstance(written, DataclassWritten):
-        writes = (written.data.any or not written.forced) and (
-            (text and not inputs.annotated) or not inputs.strips_none
+        data = written.data
+        writes = (data.any or not written.forced) and (
+            ((data.any or written.forced) and not inputs.annotated) or not inputs.strips_none
         )
-        return _data_default(written.data) if writes else "none"
+        return _data_default(data) if writes else "none"
     if isinstance(written, PydanticDataclassWritten):
         writes = not inputs.class_var and _pydantic_dataclass_assignment(inputs, _visibility(inputs), text=text)[0]
         return ("factory" if written.factory else "value") if writes else "none"
@@ -360,7 +367,7 @@ def classify_assignment(inputs: AssignmentInputs) -> AssignmentFacts:
     The row decides the assignment, the class attribute and the constructor's participants; the field's written
     assignment decides its constructor default.
     """
-    text = _text(inputs.written)
+    text = inputs.written.text
     model_assigned, model_rule = _model_assignment(inputs, text=text)
     row = inputs.row
     if row == "pydantic-dataclass":

@@ -94,18 +94,19 @@ def validate_with_source_schema(case: SchemaCase, payload: Any) -> None:
 def _bound_float_multiples(schema: dict[str, Any]) -> None:
     """Bound the copied sampling domain before integer multipliers become floats.
 
+    hypothesis-jsonschema samples every multipleOf as an unbounded integer times the multiple: a float multiple
+    turns the product into a float, and a ``number`` schema the model reads as a float. Hypothesis also draws
+    integers from the constants of the modules a worker has loaded, so unbounded products can leave the float range.
     The original schema remains the validation oracle. Intervals outside this
     sampling domain need a different strategy, even when their schema is valid.
     """
     for node in _iter_schema_nodes(schema):
-        if (
-            not isinstance(multiple := node.get("multipleOf"), float)
-            or multiple.is_integer()
-            or "enum" in node
-            or "const" in node
-        ):
+        multiple = node.get("multipleOf")
+        if isinstance(multiple, bool) or not isinstance(multiple, int | float) or "enum" in node or "const" in node:
             continue
-        if (schema_types := _schema_types(node)) and not schema_types & {"integer", "number"}:
+        schema_types = _schema_types(node)
+        numeric_types = schema_types & {"integer", "number"}
+        if numeric_types != {"number"} and not (isinstance(multiple, float) and (numeric_types or not schema_types)):
             continue
 
         # hypothesis-jsonschema multiplies an integer by multipleOf. Bound both
@@ -114,6 +115,12 @@ def _bound_float_multiples(schema: dict[str, Any]) -> None:
         limit = sys.float_info.max / 2 * min(1, multiple)
         minimum = node.get("minimum", -limit)
         maximum = node.get("maximum", limit)
+        if "minimum" in node and "maximum" in node and minimum == maximum:
+            # Sample the exact JSON endpoint; binary multiplication can miss it.
+            # The unchanged source validator still enforces multipleOf afterward.
+            node["enum"] = [minimum]
+            del node["multipleOf"]
+            continue
         outside_domain = (
             minimum > limit
             or maximum < -limit
@@ -128,12 +135,6 @@ def _bound_float_multiples(schema: dict[str, Any]) -> None:
         if outside_domain:
             msg = "Numeric interval lies outside the finite multipleOf sampling domain"
             raise ValueError(msg)
-        if "minimum" in node and "maximum" in node and minimum == maximum:
-            # Sample the exact JSON endpoint; binary multiplication can miss it.
-            # The unchanged source validator still enforces multipleOf afterward.
-            node["enum"] = [minimum]
-            del node["multipleOf"]
-            continue
         node["minimum"] = max(minimum, -limit)
         node["maximum"] = min(maximum, limit)
 

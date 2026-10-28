@@ -76,6 +76,7 @@ from .payload_validation.constants import (
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
+    PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS,
     PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES,
@@ -144,6 +145,7 @@ PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES = frozenset({"unbounded_number_integer_multiple"})
 PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN = Version(PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION)
 PydanticV2LegacyRuntimeExclusions: TypeAlias = Mapping[PayloadBackend, Mapping[str, str]]
@@ -340,7 +342,21 @@ def test_numeric_payload_sampling_preserves_source_schemas() -> None:
         )
 
 
-@pytest.mark.parametrize(("name", "schema"), NUMERIC_SAMPLING_SCHEMAS.items())
+@pytest.mark.parametrize(
+    ("name", "schema"),
+    [
+        pytest.param(
+            name,
+            schema,
+            marks=pytest.mark.skipif(
+                name in NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES
+                and PYDANTIC_RUNTIME_VERSION < PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN,
+                reason=PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+            ),
+        )
+        for name, schema in NUMERIC_SAMPLING_SCHEMAS.items()
+    ],
+)
 @settings(
     database=None,
     deadline=None,

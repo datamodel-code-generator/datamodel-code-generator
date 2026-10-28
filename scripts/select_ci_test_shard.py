@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import os
+import re
+from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -14,7 +17,12 @@ if TYPE_CHECKING:
 
 EXCLUDED_PARTS = frozenset({"__pycache__", "cli_doc", "data"})
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
-SPLIT_NODE_FILES = frozenset({PAYLOAD_VALIDATION_FILE})
+SPLIT_NODE_FILES = frozenset({
+    PAYLOAD_VALIDATION_FILE,
+    "tests/api_generation/test_client_bindings.py",
+    "tests/main/test_schema_intersection_shapes.py",
+})
+PART_PATTERN = re.compile(r"(?P<base>.+)@[1-9][0-9]*/[1-9][0-9]*")
 RECIPE_VERSION = 1
 WEIGHTS_VERSION = 3
 SLOW_TEST_MS = 1000
@@ -62,9 +70,13 @@ def _collect_test_files(root: Path = TESTS_ROOT) -> list[str]:
 
 
 def _collect_test_items(root: Path = TESTS_ROOT) -> list[str]:
-    file_items = [file for file in _collect_test_files(root) if file not in SPLIT_NODE_FILES]
+    files = _collect_test_files(root)
+    file_items = [file for file in files if file not in SPLIT_NODE_FILES]
     split_node_items = (
-        nodeid for split_file in sorted(SPLIT_NODE_FILES) for nodeid in _collect_split_nodeids(Path(split_file))
+        nodeid
+        for split_file in files
+        if split_file in SPLIT_NODE_FILES
+        for nodeid in _collect_split_nodeids(Path(split_file))
     )
     file_items.extend(split_node_items)
     file_items.sort()
@@ -219,26 +231,72 @@ def _record_weights(path: Path, profile: str, junit_paths: Iterable[Path], *, ru
     _write_json(path, document)
 
 
+def _check_shard(shard_index: int, shard_total: int) -> None:
+    if not 1 <= shard_index <= shard_total:
+        msg = "shard_index must be between 1 and shard_total"
+        raise SystemExit(msg)
+
+
+def _part_base(item: str) -> str:
+    return match["base"] if (match := PART_PATTERN.fullmatch(item)) else item
+
+
+def _assign_shards(weights: Mapping[str, int], shard_total: int) -> tuple[list[list[str]], list[int]]:
+    """Assign items heaviest-first to the lightest shard that holds no other part of the same item."""
+    shards: list[list[str]] = [[] for _ in range(shard_total)]
+    shard_weights = [0] * shard_total
+    holders: dict[str, set[int]] = {}
+
+    if crowded := sorted(base for base, count in Counter(map(_part_base, weights)).items() if count > shard_total):
+        msg = f"more parts than {shard_total} shards: {', '.join(crowded)}"
+        raise SystemExit(msg)
+
+    for item, weight in sorted(weights.items(), key=lambda item: (-item[1], item[0])):
+        held = holders.setdefault(_part_base(item), set())
+        target = min(
+            (index for index in range(shard_total) if index not in held),
+            key=lambda index: (shard_weights[index], len(shards[index]), index),
+        )
+        held.add(target)
+        shards[target].append(item)
+        shard_weights[target] += weight
+
+    return shards, shard_weights
+
+
 def select_shard(weights: Mapping[str, int], shard_index: int, shard_total: int) -> list[str]:
     """Assign node ids to shards heaviest-first and keep that order so xdist starts long tests early.
 
     Every node id lands in exactly one shard, so the shards of one collection never drop or repeat a test.
     """
-    if not 1 <= shard_index <= shard_total:
-        msg = "shard_index must be between 1 and shard_total"
-        raise SystemExit(msg)
-    shards: list[list[str]] = [[] for _ in range(shard_total)]
-    shard_weights = [0] * shard_total
+    _check_shard(shard_index, shard_total)
+    return _assign_shards(weights, shard_total)[0][shard_index - 1]
 
-    for item, weight in sorted(weights.items(), key=lambda item: (-item[1], item[0])):
-        target = min(
-            range(shard_total),
-            key=lambda index: (shard_weights[index], len(shards[index]), index),
-        )
-        shards[target].append(item)
-        shard_weights[target] += weight
 
-    return shards[shard_index - 1]
+def _part_items(weights: Mapping[str, int], shard_total: int) -> dict[str, int]:
+    """Divide each item heavier than half a shard's share into ``ITEM@INDEX/TOTAL`` parts, at most one per shard."""
+    half_share = sum(weights.values()) / (2 * shard_total)
+    parted: dict[str, int] = {}
+    for item, weight in weights.items():
+        if (parts := min(shard_total, math.ceil(weight / half_share))) > 1:
+            parted.update({f"{item}@{index}/{parts}": math.ceil(weight / parts) for index in range(1, parts + 1)})
+        else:
+            parted[item] = weight
+    return parted
+
+
+def select_parted_shard(weights: Mapping[str, int], shard_index: int, shard_total: int) -> list[str]:
+    """Select a shard like ``select_shard``, after splitting heavy items into parts where that shortens the slowest.
+
+    pytest runs a part ``ITEM@INDEX/TOTAL`` through ``--test-part``, which splits the item's tests like
+    ``--test-shard``.
+    """
+    _check_shard(shard_index, shard_total)
+    parted = _part_items(weights, shard_total)
+    slowest = max(_assign_shards(weights, shard_total)[1])
+    return select_shard(
+        parted if max(_assign_shards(parted, shard_total)[1]) < slowest else weights, shard_index, shard_total
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -276,7 +334,7 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("shard_index and shard_total are required unless only --write-recipe is used")
 
     weights = {str(item["nodeid"]): int(item["weight"]) for item in items}
-    if selected := select_shard(weights, args.shard_index, args.shard_total):
+    if selected := select_parted_shard(weights, args.shard_index, args.shard_total):
         print(*selected, sep="\n")
         return
 

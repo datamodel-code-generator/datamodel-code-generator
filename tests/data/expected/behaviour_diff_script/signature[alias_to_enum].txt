@@ -27,5 +27,9 @@
     "Letter",
     "LetterItem",
     "Letters"
-  ]
+  ],
+  "probes": {
+    "LetterItem": "accept",
+    "Letters": "accept"
+  }
 }

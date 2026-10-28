@@ -95,6 +95,29 @@ def test_test_shard_option_partitions_collection(name: str) -> None:
     )
 
 
+def test_test_part_option_partitions_one_node() -> None:
+    """The pytest --test-part parts of a node id select each of its tests once and keep every test outside it."""
+    base = f"{SHARDED_TESTS}::test_client_typing"
+    collected = _collect()
+    inside = sorted(nodeid for nodeid in collected if nodeid.startswith(f"{base}["))
+    outside = sorted(nodeid for nodeid in collected if not nodeid.startswith(f"{base}["))
+    parts = [_collect(f"--test-part={base}@{index}/3") for index in range(1, 4)]
+    selected = [nodeid for part in parts for nodeid in part if nodeid.startswith(f"{base}[")]
+    assert_output(
+        json.dumps(
+            {
+                "complete": sorted(selected) == inside,
+                "disjoint": len(selected) == len(set(selected)),
+                "every_part_selects": all(set(part) - set(outside) for part in parts),
+                "keeps_others": all(sorted(set(part) & set(outside)) == outside for part in parts),
+                "similar_names_kept": f"{SHARDED_TESTS}::test_client_typing_adapters" in outside,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+    )
+
+
 @pytest.mark.parametrize("shard_total", [2, 3])
 def test_recipe_round_trip_selects_disjoint_shards(tmp_path: Path, shard_total: int) -> None:
     """Generated recipes can be read back to select shards without duplicate items."""

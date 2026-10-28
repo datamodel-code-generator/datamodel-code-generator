@@ -1,0 +1,1 @@
+{"complete": true, "disjoint": true, "every_part_selects": true, "keeps_others": true, "similar_names_kept": true}
