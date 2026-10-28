@@ -12,6 +12,7 @@ from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
+from datamodel_code_generator._document_reader import string_key
 from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
@@ -807,18 +808,21 @@ class ApiOpenAPIParser(OpenAPIParser):
         finally:
             self._active_api_objects.remove(target.declaration)
 
+    @staticmethod
     def _validate_operation_name_keys(
-        self, prefix: str, operation_tokens: tuple[str, ...], use_site: SchemaLocation, declaration: SchemaLocation
+        prefix: str, operation_tokens: tuple[str, ...], use_site: SchemaLocation, declaration: SchemaLocation
     ) -> None:
         """Require the keys an operation's model name is built from to be strings: the item's prefix and the method.
 
         Only a webhook name, the prefix of the path item at ``use_site``, can be another value by then. The method is
         written in the path item's ``declaration``, which a reference can place elsewhere than ``use_site``.
         """
-        if not isinstance(prefix, str):
-            raise self._key_error(prefix, "webhook name", [str(use_site)])
-        if not isinstance(method := operation_tokens[-1], str):
-            raise self._key_error(method, "method", [str(declaration.child(*operation_tokens[:-1], str(method)))])
+        string_key(prefix, "webhook name", lambda _: [str(use_site)])
+        string_key(
+            operation_tokens[-1],
+            "method",
+            lambda method: [str(declaration.child(*operation_tokens[:-1], str(method)))],
+        )
 
     def _api_operations(self, target: _ApiObject) -> Generator[tuple[tuple[str, ...], YamlValue], None, None]:
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""

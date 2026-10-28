@@ -15,6 +15,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator._document_reader import string_keys
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -416,9 +417,7 @@ class AsyncAPIParser(OpenAPIParser):
         A schema in another format is converted to JSON Schema, which is mounted at the value's location. A key on
         ``path`` that is no string, such as a YAML key ``1``, is an error.
         """
-        for part in path:
-            if not isinstance(part, str):
-                raise self._key_error(part, "name", _named_path(location, list(map(str, path))))
+        string_keys(path, "name", lambda _: _named_path(location, list(map(str, path))))
         schema_format = inherited_schema_format
         if multi_format_schema := _parse_multi_format_schema_object(raw_schema, path):
             schema_format = multi_format_schema.schema_format or schema_format

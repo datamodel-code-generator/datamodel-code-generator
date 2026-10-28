@@ -28,6 +28,7 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
+from datamodel_code_generator._document_reader import string_key, string_keys
 from datamodel_code_generator._records import record
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -53,7 +54,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
+    from collections.abc import Callable, Generator, Iterator
     from contextlib import AbstractContextManager
     from urllib.parse import ParseResult
 
@@ -441,23 +442,17 @@ class OpenAPIParser(JsonSchemaParser):
             self.model_resolver.ids[scope].setdefault(openapi_self, f"{scope}#")
         return nullcontext()
 
-    def _key_error(self, key: object, kind: str, path: list[str]) -> SchemaParseError:  # noqa: PLR6301
-        """Return the error at ``path`` for ``key``, which names a ``kind`` and is no string.
-
-        A YAML key such as ``1`` loads as a number.
-        """
-        return SchemaParseError(f"{kind} {key!r} is not a string", path=path)
+    def _key_path(self, holder: object, path: list[str]) -> Callable[[object], list[str]]:
+        """Return the function that locates the error for a key of ``holder`` at ``path``."""
+        return lambda key: _named_path(self._member_location(holder, str(key)), [*path, str(key)])
 
     def _key_name(self, holder: object, key: object, path: list[str], kind: str) -> str:
         """Return ``key``, which names a ``kind`` in ``holder`` at ``path``; a key that is no string is an error."""
-        if isinstance(key, str):
-            return key
-        raise self._key_error(key, kind, _named_path(self._member_location(holder, str(key)), [*path, str(key)]))
+        return string_key(key, kind, self._key_path(holder, path))
 
     def _named_components(self, components: dict[Any, YamlValue], path: list[str]) -> dict[str, YamlValue]:
-        """Return ``components`` once each of its keys names a component (``_key_name``)."""
-        for key in components:
-            self._key_name(components, key, path, "component name")
+        """Return ``components`` once each of its keys names a component."""
+        string_keys(components, "component name", self._key_path(components, path))
         return components
 
     def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
