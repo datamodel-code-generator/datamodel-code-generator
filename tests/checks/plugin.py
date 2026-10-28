@@ -23,7 +23,7 @@ PACKAGE_ENV: Final = "DATAMODEL_CODE_GENERATOR_CHECKS_PACKAGE"
 
 def pytest_configure(config: pytest.Config) -> None:
     """Install the checks, and give the Pythons that tests start the ``sitecustomize`` that installs them there."""
-    if config.getoption("codspeed", default=False):
+    if config.getoption("codspeed", default=False):  # pragma: no cover - benchmark runs measure the package unchecked
         return
     install()
     os.environ[PACKAGE_ENV] = str(Path(datamodel_code_generator.__file__).resolve().parent)
