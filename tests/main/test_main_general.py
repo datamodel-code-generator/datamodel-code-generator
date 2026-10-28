@@ -3380,6 +3380,50 @@ def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("override", "call"),
+    [
+        pytest.param("field", "field(metadata={'x': 1})", id="field-metadata"),
+        pytest.param("field", "field(default=0, metadata={'x': 1})", id="field-default"),
+        pytest.param("str", "field(default=0, metadata={'x': 1})", id="str-default"),
+    ],
+)
+def test_dataclass_field_type_orders_fields_by_what_it_writes(override: str, call: str) -> None:
+    """A dataclass field type that overrides ``field`` or ``__str__`` orders fields by the call it writes, as 0.86.0.
+
+    The required ``a`` writes ``call`` and so follows the required ``b``; with a default before ``b`` the dataclass
+    would raise ``TypeError`` at import.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    types = get_data_model_types(DataModelType.DataclassesDataclass, PythonVersion.PY_311)
+
+    class CallField(types.field_model):
+        @property
+        def field(self) -> str | None:
+            return call if self.name == "a" else super().field
+
+    class CallStr(types.field_model):
+        def __str__(self) -> str:
+            return call if self.name == "a" else super().__str__()
+
+    parser = JsonSchemaParser(
+        '{"title": "M", "type": "object", "required": ["a", "b"], "properties": {"a": {"type": "integer"},'
+        ' "b": {"type": "string"}, "c": {"type": "integer", "default": 3}}}',
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type={"field": CallField, "str": CallStr}[override],
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        formatters=[Formatter.BUILTIN],
+    )
+    output = str(parser.parse())
+    assert_output(output)
+    validate_generated_code(output, "<generated>", do_exec=True)
+
+
+@pytest.mark.parametrize(
     ("output_model_type", "check"),
     [
         ("pydantic_v2.BaseModel", "1"),

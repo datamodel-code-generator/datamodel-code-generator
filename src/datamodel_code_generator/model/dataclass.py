@@ -36,6 +36,7 @@ from datamodel_code_generator.model._render_plan import (
     Why,
     field_call_text,
     written_argument_names,
+    written_text,
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
@@ -60,7 +61,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DataclassItems
+    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DataclassItems, WrittenData
     from datamodel_code_generator.model._render_plan import Omitted
     from datamodel_code_generator.reference import Reference
 
@@ -530,10 +531,7 @@ class DataModelField(DataModelFieldBase):
 
         A plan frozen at B2 writes the same arguments while the facts it read hold, as ``RenderReady`` rebuilds it.
         """
-        return DataclassWritten(
-            data=written_data(self._field_items(self._nested_model_factory_argument()).names()),
-            forced=self._has_forced_field_assignment,
-        )
+        return self._written(written_data(self._field_items(self._nested_model_factory_argument()).names()))
 
     @override
     def _build_frozen_render_plan(self) -> FieldRenderPlan:
@@ -599,9 +597,12 @@ class DataModelField(DataModelFieldBase):
     @override
     def _written_assignment(self) -> DataclassWritten:
         """Return the ``field()`` arguments the field writes and whether it forces a ``field()``."""
-        return DataclassWritten(
-            data=written_data(written_argument_names(self._render_plan())), forced=self._has_forced_field_assignment
-        )
+        return self._written(written_data(written_argument_names(self._render_plan())))
+
+    def _written(self, data: WrittenData) -> DataclassWritten:
+        """Return the written assignment of the ``field()`` arguments ``data``, with what the field's call renders."""
+        forced = self._has_forced_field_assignment
+        return DataclassWritten(data=data, forced=forced, text=written_text(self, writes=data.any or forced))
 
     @override
     def __str__(self) -> str:
