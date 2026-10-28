@@ -1158,6 +1158,10 @@ exception to a home is a new named row, never an anonymous `if`.
 
 | Row | Home | Keeps | Fix |
 | --- | --- | --- | --- |
+| `legacy-merge-row` | H03 | a `$ref` with siblings and an inherited property override are the earlier merge (`_deep_merge` / `_merge_property_schemas`) | G01 |
+| `legacy-lookahead-patterns` | H03 | patterns are joined by lookaheads with no warning; an allOf member merge keeps the later pattern | G01 |
+| `legacy-all-of-site-form` | H03 | allOf value sites keep their earlier form with no conflict warning; a `$ref` member's sibling `enum`/`const` does not narrow its literals | G01 |
+| `legacy-all-of-null-as-written` | H03 | null is read as written where allOf parts meet (null members beside a `type` without null, an allOf map member's `type` keeps its null, a `None` merged enum value fits) | G01 |
 | `legacy-nullable-as-type-list` | H06 | OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item is nullable under a root model and not elsewhere) | G12 |
 | `legacy-root-model-type-only` | H06 | a root model ignores `nullable` and reads only its `type` | G12 |
 | `legacy-ref-target-null-type-only` | H06 | a reference reads only a `type` of null (or strict `nullable`) of its target, not a type list | G12 |
