@@ -54,9 +54,7 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-@dataclass
-class Pat:
-    pass
+Pat: TypeAlias = str
 
 
 @dataclass

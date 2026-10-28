@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class LevelProp(RootModel[int]):
@@ -70,8 +70,11 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(BaseModel):
-    pass
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: str = Field(..., pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
 
 
 class Untyped(BaseModel):

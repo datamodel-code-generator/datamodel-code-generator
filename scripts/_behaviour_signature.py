@@ -18,14 +18,17 @@ from __future__ import annotations
 
 import ast
 import builtins
+import concurrent.futures
 import contextlib
 import dataclasses
 import enum
+import functools
 import hashlib
 import importlib
 import importlib.util
 import inspect
 import json
+import subprocess
 import sys
 import types
 import typing
@@ -191,6 +194,8 @@ def canonical(tp: object, ctx: Context, *, meta: bool, depth: int = 0, seen: fro
         return f"{tp.__module__.split('.')[0]}.{tp.__qualname__}"
     if tp is Ellipsis:
         return "..."
+    if isinstance(tp, types.ModuleType):
+        return f"<module {tp.__name__}>"
     return repr(tp).replace("typing_extensions.", "").replace("typing.", "")
 
 
@@ -547,14 +552,163 @@ def defined_names(tree: ast.Module) -> list[str]:
     return [name for name in names if not name.startswith("_") and name != "model_config"]
 
 
+TREE_ROOT = [""]
+
+
+def _error_text(kind: str, message: str, limit: int) -> str:
+    """Return the exception class name and the first line of its message, the tree's location written as `<tree>`."""
+    if TREE_ROOT[0]:
+        message = message.replace(TREE_ROOT[0], "<tree>")
+    text = message.splitlines()[0][:limit] if message else ""
+    return f"{kind}: {text}"
+
+
 def _short_error(exc: BaseException, limit: int = 80) -> str:
-    text = str(exc).splitlines()[0][:limit] if str(exc) else ""
-    return f"{type(exc).__name__}: {text}"
+    """Return the exception's class and first line, the tree's location written as `<tree>`."""
+    return _error_text(type(exc).__name__, str(exc), limit)
 
 
-def _usability(module: types.ModuleType, items: dict[str, Any], output_model_type: str) -> tuple[str, dict[str, str]]:
-    """Return whether a validator can be built for each public name (msgspec Decoder or pydantic TypeAdapter)."""
+STRING_FORMATS = {
+    "date-time": "2000-01-01T00:00:00Z",
+    "date": "2000-01-01",
+    "time": "00:00:00Z",
+    "duration": "PT1S",
+    "uuid": "00000000-0000-4000-8000-000000000000",
+    "email": "a@example.com",
+    "uri": "https://example.com",
+    "ipv4": "127.0.0.1",
+    "ipv6": "::1",
+    "hostname": "example.com",
+}
+EXAMPLE_DEPTH = 8
+MIN_ITEMS_CAP = 10
+
+
+def _ref_target(ref: str, root: dict[str, Any]) -> object:
+    node: object = root
+    for part in ref.removeprefix("#/").split("/"):
+        node = node.get(part.replace("~1", "/").replace("~0", "~")) if isinstance(node, dict) else None
+    return node
+
+
+def _example_number(schema: dict[str, Any], *, integer: bool) -> float:
+    """Return a number inside every bound of the schema (0 when it allows it)."""
+    low = high = None
+    low_open = high_open = False
+    for key, is_open in (("minimum", False), ("exclusiveMinimum", True)):
+        bound = schema.get(key)
+        if isinstance(bound, (int, float)) and not isinstance(bound, bool) and (low is None or bound >= low):
+            low, low_open = bound, is_open
+    for key, is_open in (("maximum", False), ("exclusiveMaximum", True)):
+        bound = schema.get(key)
+        if isinstance(bound, (int, float)) and not isinstance(bound, bool) and (high is None or bound <= high):
+            high, high_open = bound, is_open
+    value: float = 0
+    if low is not None and (value < low or (low_open and value <= low)):
+        value = low + _gap(low, high) if low_open else low
+    if high is not None and (value > high or (high_open and value >= high)):
+        value = high - _gap(low, high) if high_open else high
+    if isinstance(step := schema.get("multipleOf"), (int, float)) and step > 0:
+        value = -(-value // step) * step
+        if high is not None and (value > high or (high_open and value >= high)):
+            value -= step
+    return int(value) if integer else float(value)
+
+
+def _gap(low: float | None, high: float | None) -> float:
+    """Return the distance from an exclusive bound to the example: 1, or half the interval when it is narrower."""
+    return 1 if low is None or high is None or high - low > 1 else (high - low) / 2
+
+
+def example_value(  # ruff: ignore[too-many-return-statements]
+    schema: object, root: dict[str, Any] | None = None, depth: int = 0
+) -> object:
+    """Return a value of a JSON Schema that reaches every property, item and map value once.
+
+    The value is the validator's own schema's witness: string keywords on a date or UUID, constraints the validator
+    can only apply at validation time, nested models behind optional fields are all exercised. Patterns are not
+    honoured; a value they reject is a plain rejection, never a crash.
+    """
+    root = schema if root is None and isinstance(schema, dict) else root or {}
+    if depth > EXAMPLE_DEPTH or not isinstance(schema, dict):
+        return None
+    if isinstance(ref := schema.get("$ref"), str):
+        return example_value(_ref_target(ref, root), root, depth + 1)
+    if "const" in schema:
+        return schema["const"]
+    if isinstance(members := schema.get("enum"), list) and members:
+        return members[0]
+    for key in ("anyOf", "oneOf"):
+        if isinstance(branches := schema.get(key), list) and branches:
+            chosen = next((b for b in branches if not (isinstance(b, dict) and b.get("type") == "null")), branches[0])
+            return example_value(chosen, root, depth + 1)
+    if isinstance(parts := schema.get("allOf"), list) and parts:
+        merged = {k: v for k, v in schema.items() if k != "allOf"}
+        for part in parts:
+            target = _ref_target(part["$ref"], root) if isinstance(part, dict) and "$ref" in part else part
+            if isinstance(target, dict):
+                merged = {**target, **merged}
+        return example_value(merged, root, depth + 1)
+    kind = schema.get("type")
+    if isinstance(kind, list):
+        kind = next((k for k in kind if k != "null"), "null")
+    match kind:
+        case "object" | None if "properties" in schema or "additionalProperties" in schema:
+            properties = schema.get("properties") or {}
+            value = {name: example_value(sub, root, depth + 1) for name, sub in properties.items()}
+            if isinstance(extra := schema.get("additionalProperties"), dict):
+                key = "a"
+                while key in properties:
+                    key += "_"
+                value[key] = example_value(extra, root, depth + 1)
+            return value
+        case "object":
+            return {}
+        case "array":
+            if isinstance(prefix := schema.get("prefixItems"), list):
+                return [example_value(sub, root, depth + 1) for sub in prefix]
+            item = example_value(schema.get("items", {}), root, depth + 1)
+            return [item] * min(max(schema.get("minItems", 1), 1), MIN_ITEMS_CAP)
+        case "string":
+            text = STRING_FORMATS.get(schema.get("format", ""), "a")
+            if schema.get("format") not in STRING_FORMATS:
+                text *= max(schema.get("minLength", 1), 1)
+            return text
+        case "integer" | "number":
+            return _example_number(schema, integer=kind == "integer")
+        case "boolean":
+            return False
+    return None
+
+
+def _probe(validate: Callable[[object], object], rejection: tuple[type[Exception], ...], schema: object) -> str:
+    """Validate the example of a validator's own schema: an exception other than a rejection makes the name unusable."""
+    try:
+        validate(example_value(schema))
+    except rejection:
+        return "reject"
+    except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
+        return "error:" + _short_error(exc)
+    return "accept"
+
+
+def _schema_or_none(build: Callable[[], object]) -> object:
+    try:
+        return build()
+    except Exception:  # ruff: ignore[blind-except] - without a schema the probe validates None
+        return None
+
+
+def _usability(
+    module: types.ModuleType, items: dict[str, Any], output_model_type: str
+) -> tuple[str, dict[str, str], dict[str, str]]:
+    """Return whether a validator can be built for each public name (msgspec Decoder or pydantic TypeAdapter).
+
+    Each name's validator also validates one example of its own JSON Schema (the probe): pydantic applies some
+    constraints only while validating, e.g. `min_length` on a UUID raises TypeError on every value.
+    """
     results: dict[str, str] = {}
+    probes: dict[str, str] = {}
     if output_model_type == "msgspec.Struct":
         import msgspec  # ruff: ignore[import-outside-top-level]
 
@@ -568,21 +722,29 @@ def _usability(module: types.ModuleType, items: dict[str, Any], output_model_typ
                 msgspec.json.Decoder(obj)
             except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
                 results[name] = _short_error(exc)
-            else:
-                results[name] = "ok"
-        return "decoders", results
+                continue
+            results[name] = "ok"
+            probes[name] = _probe(
+                functools.partial(msgspec.convert, type=obj),
+                (msgspec.ValidationError,),
+                _schema_or_none(functools.partial(msgspec.json.schema, obj)),
+            )
+        return "decoders", results, probes
     import pydantic  # ruff: ignore[import-outside-top-level]
 
     for name, item in items.items():
         if item["kind"] not in ADAPTED_KINDS:
             continue
         try:
-            pydantic.TypeAdapter(module.__dict__[name])
+            adapter = pydantic.TypeAdapter(module.__dict__[name])
         except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
             results[name] = _short_error(exc)
-        else:
-            results[name] = "ok"
-    return "adapters", results
+            continue
+        results[name] = "ok"
+        probes[name] = _probe(
+            adapter.validate_python, (pydantic.ValidationError,), _schema_or_none(adapter.json_schema)
+        )
+    return "adapters", results, probes
 
 
 def module_signature(module: types.ModuleType, source: str, output_model_type: str) -> dict[str, Any]:
@@ -610,8 +772,10 @@ def module_signature(module: types.ModuleType, source: str, output_model_type: s
             exports[name] = defined_in.partition(".")[2] or "__init__"
     if exports:
         signature["exports"] = exports
-    key, results = _usability(module, items, output_model_type)
+    key, results, probes = _usability(module, items, output_model_type)
     signature[key] = results
+    if probes:
+        signature["probes"] = probes
     return signature
 
 
@@ -705,10 +869,52 @@ def _import_file(path: Path) -> types.ModuleType:
     return module
 
 
+PRELOADED = ("pydantic", "msgspec", "typing_extensions")
+FIRST_IMPORT_CODE = """
+import contextlib, importlib, json, sys
+sys.dont_write_bytecode = True
+sys.path.insert(0, sys.argv[1])
+for name in sys.argv[3:]:
+    with contextlib.suppress(ImportError):
+        importlib.import_module(name)
+result = {}
+try:
+    importlib.import_module(sys.argv[2])
+except Exception as exc:
+    result = {"kind": type(exc).__name__, "message": str(exc)}
+sys.stdout.write("\\n" + json.dumps(result) + "\\n")
+"""
+FIRST_IMPORT_WORKERS = 4
+
+
+def _first_import_error(root: str, name: str) -> str:
+    """Import `name` in a fresh interpreter that has only the preloaded libraries and return the error text, if any."""
+    completed = subprocess.run(
+        [sys.executable, "-c", FIRST_IMPORT_CODE, root, name, *PRELOADED],
+        capture_output=True,
+        check=False,
+    )
+    result = json.loads(completed.stdout.decode("utf-8", "replace").splitlines()[-1])
+    return _error_text(result["kind"], result["message"], 200) if result else ""
+
+
+def first_import_errors(names: list[str], root: str) -> dict[str, str]:
+    """Return the error of each module that fails when it is the first module of the package a process imports.
+
+    Each module is imported in a fresh interpreter, started with `subprocess` so that it works without `fork`, that
+    has imported only the generated code's libraries, so a module that only imports after a sibling put the right
+    modules into `sys.modules` first is caught.
+    """
+    with concurrent.futures.ThreadPoolExecutor(FIRST_IMPORT_WORKERS) as pool:
+        messages = list(pool.map(lambda name: _first_import_error(root, name), names))
+    return {name: message for name, message in zip(names, messages, strict=False) if message}
+
+
 def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Return the signature of a generated module file or package directory."""
     warnings.simplefilter("ignore")
     path = path.resolve()
+    TREE_ROOT[0] = str(path.parent)
     if not path.is_dir():
         try:
             module = _import_file(path)
@@ -719,13 +925,20 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
             signature["payloads"] = payload_verdicts(module, payloads, output_model_type)
         return signature
     sys.path.insert(0, str(path.parent))
-    package = {}
+    modules = {}
     for file in sorted(path.rglob("*.py")):
-        if "__pycache__" in file.parts:
+        if "__pycache__" not in file.parts:
+            relative = file.relative_to(path).with_suffix("")
+            modules[".".join(relative.parts)] = (
+                ".".join([path.name, *(part for part in relative.parts if part != "__init__")]),
+                file,
+            )
+    first = first_import_errors([name for name, _ in modules.values()], str(path.parent))
+    package = {}
+    for key, (name, file) in modules.items():
+        if name in first:
+            package[key] = {"import_error": f"imported first: {first[name]}"}
             continue
-        relative = file.relative_to(path).with_suffix("")
-        name = ".".join([path.name, *(part for part in relative.parts if part != "__init__")])
-        key = ".".join(relative.parts)
         try:
             module = importlib.import_module(name)
         except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result

@@ -3,30 +3,27 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 Tags = TypeAliasType("Tags", list[str])
 
 
-@dataclass
-class TupleLater:
-    pass
+TupleLater = TypeAliasType("TupleLater", Annotated[list[str], Field(..., max_length=1)])
 
 
-@dataclass
-class ClosingElsewhere:
-    pass
+ClosingElsewhere = TypeAliasType("ClosingElsewhere", list[str])
 
 
-@dataclass
-class OwnClosing:
-    pass
+OwnClosing = TypeAliasType("OwnClosing", Annotated[list[str], Field(..., min_length=1)])
 
 
-@dataclass
-class NullableTags:
-    pass
+NullableTags = TypeAliasType(
+    "NullableTags", Annotated[Tags | None, Field(..., description='Tags or null.')]
+)
 
 
 @dataclass

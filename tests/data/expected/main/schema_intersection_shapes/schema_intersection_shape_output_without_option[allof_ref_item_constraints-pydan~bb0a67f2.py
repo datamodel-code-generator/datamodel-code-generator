@@ -28,6 +28,12 @@ MemberItem = TypeAliasType("MemberItem", Annotated[int, Field(ge=2, le=9)])
 MemberMap = TypeAliasType("MemberMap", Annotated[int, Field(ge=2, le=9)])
 
 
+TwoItem = TypeAliasType("TwoItem", Annotated[int, Field(ge=4, le=5)])
+
+
+TwoMap = TypeAliasType("TwoMap", Annotated[int, Field(ge=4, le=5)])
+
+
 class EnumItem(IntEnum):
     integer_1 = 1
     integer_2 = 2
@@ -72,16 +78,6 @@ class Point:
 class Letter(Enum):
     a = 'a'
     bb = 'bb'
-
-
-@dataclass
-class TwoItem:
-    pass
-
-
-@dataclass
-class TwoMap:
-    pass
 
 
 @dataclass

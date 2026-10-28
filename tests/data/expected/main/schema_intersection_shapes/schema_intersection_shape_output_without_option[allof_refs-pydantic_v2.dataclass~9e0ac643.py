@@ -57,6 +57,15 @@ NonNegativeItem = TypeAliasType("NonNegativeItem", Annotated[float, Field(ge=0.0
 NonNegativeMap = TypeAliasType("NonNegativeMap", Annotated[float, Field(ge=0.0)])
 
 
+TwoRefsProp = TypeAliasType("TwoRefsProp", Annotated[int, Field(ge=3, le=5)])
+
+
+TwoRefsItem = TypeAliasType("TwoRefsItem", Annotated[int, Field(ge=3, le=5)])
+
+
+TwoRefsMap = TypeAliasType("TwoRefsMap", Annotated[int, Field(ge=3, le=5)])
+
+
 QAllofProp = TypeAliasType("QAllofProp", Annotated[int, Field(ge=1, le=10)])
 
 
@@ -145,21 +154,6 @@ AllOfRoot = TypeAliasType("AllOfRoot", Annotated[int, Field(ge=1, le=10)])
 
 
 AllOfRoot2 = TypeAliasType("AllOfRoot2", Annotated[int, Field(ge=1, le=10)])
-
-
-@dataclass
-class TwoRefsProp:
-    pass
-
-
-@dataclass
-class TwoRefsItem:
-    pass
-
-
-@dataclass
-class TwoRefsMap:
-    pass
 
 
 @dataclass

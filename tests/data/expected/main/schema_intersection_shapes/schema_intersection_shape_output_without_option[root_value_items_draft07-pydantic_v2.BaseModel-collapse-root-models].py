@@ -3,31 +3,23 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, Field, RootModel
 
 
 class Tags(RootModel[list[str]]):
     root: list[str]
 
 
-class TupleLater(BaseModel):
-    pass
+class TupleLater(RootModel[list[str]]):
+    root: list[str] = Field(..., max_length=1)
 
 
-class ClosingElsewhere(BaseModel):
-    pass
-
-
-class OwnClosing(BaseModel):
-    pass
-
-
-class NullableTags(BaseModel):
-    pass
+class OwnClosing(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
 class M(BaseModel):
     tuple_later: TupleLater | None = None
-    closing_elsewhere: ClosingElsewhere | None = None
+    closing_elsewhere: list[str] | None = None
     own_closing: OwnClosing | None = None
-    nullable_tags: NullableTags | None = None
+    nullable_tags: Tags | None = Field(None, description='Tags or null.')

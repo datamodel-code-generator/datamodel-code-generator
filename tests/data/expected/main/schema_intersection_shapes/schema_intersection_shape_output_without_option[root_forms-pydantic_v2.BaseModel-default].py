@@ -5,7 +5,11 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
+
+
+class TwoRefs(RootModel[conint(ge=3, le=5)]):
+    root: conint(ge=3, le=5)
 
 
 class M2(BaseModel):
@@ -29,12 +33,12 @@ class Big(RootModel[conint(ge=3)]):
     root: conint(ge=3)
 
 
-class Arr(BaseModel):
-    pass
+class Arr(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
-class ArrRef(BaseModel):
-    pass
+class ArrRef(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
 class EnumC(Enum):
@@ -50,8 +54,11 @@ class Value(RootModel[conint(ge=3, le=5)]):
     root: conint(ge=3, le=5)
 
 
-class Pat(BaseModel):
-    pass
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class Untyped(BaseModel):
@@ -80,10 +87,6 @@ class RootMulti(RootModel[constr(min_length=2)]):
 
 class InlineRoot(RootModel[constr(min_length=2)]):
     root: constr(min_length=2) = Field('zz', description='D', examples=['ab'])
-
-
-class TwoRefs(BaseModel):
-    pass
 
 
 class Model(BaseModel):

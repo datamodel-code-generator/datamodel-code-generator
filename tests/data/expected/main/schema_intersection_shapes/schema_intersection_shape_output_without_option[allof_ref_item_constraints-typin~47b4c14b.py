@@ -7,6 +7,12 @@ from typing import Any, Literal, TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
+TwoItem: TypeAlias = int
+
+
+TwoMap: TypeAlias = int
+
+
 EnumItem: TypeAlias = Literal[1, 2, 20]
 
 
@@ -36,14 +42,6 @@ class Point(TypedDict):
 
 
 Letter: TypeAlias = Literal['a', 'bb']
-
-
-class TwoItem(TypedDict):
-    pass
-
-
-class TwoMap(TypedDict):
-    pass
 
 
 class Model(TypedDict):
