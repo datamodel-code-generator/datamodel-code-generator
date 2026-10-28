@@ -14,10 +14,17 @@ class U(BaseModel):
     x: int | MISSING = MISSING
 
 
+class W(BaseModel):
+    model_config = ConfigDict(
+        validate_by_name=True,
+    )
+    x: int | MISSING = MISSING
+
+
 class Model(BaseModel):
     model_config = ConfigDict(
         validate_by_name=True,
     )
     u: U | str | None | MISSING = MISSING
     v: U | str | None | MISSING = MISSING
-    w: U | str | None | MISSING = MISSING
+    w: W | str | MISSING = MISSING

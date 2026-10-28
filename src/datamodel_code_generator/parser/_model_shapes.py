@@ -226,7 +226,7 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         raise NotImplementedError
 
     def admits_null(self, model: ModelT) -> bool:
-        """Return whether the model's schema admits null, so every type naming the model admits None."""
+        """Return whether every type naming the model admits None, as its schema admits null."""
         raise NotImplementedError
 
     def identity(self, reference: ReferenceT) -> Hashable:
