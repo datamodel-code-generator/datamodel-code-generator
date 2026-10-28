@@ -26,7 +26,6 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self, deprecated, final, override
 
 from datamodel_code_generator import Error, cached_path_exists
-from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
@@ -164,7 +163,6 @@ _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
 })
 _RESOLVE_REFERENCE_ACTION_CAPABILITIES_MARKER = "__datamodel_code_generator_resolve_reference_action_capabilities__"
 MroT = TypeVar("MroT")
-_AnswerT = TypeVar("_AnswerT")
 _CustomTemplateSignature = bytes
 
 
@@ -3784,17 +3782,6 @@ def _model_ancestor_keys(model: DataModel, stand_ins: Mapping[int, Reference | N
 def _model_key_of_model(model: DataModel) -> ModelKey:
     """Return the model key of ``model``, the identity C3 merges compare."""
     return model_key_of(model.reference)
-
-
-def _keyed_answer(site: str, by_key: _AnswerT, by_path: Callable[[], _AnswerT]) -> _AnswerT:
-    """Return ``by_key``, what a site finds by model key or Reference identity.
-
-    Under the ``MODEL_GRAPH`` check, a ``by_key`` that differs from ``by_path()``, what the site found by path, name or
-    Reference equality before, is a violation.
-    """
-    if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None and by_key != by_path():
-        mode.violation(Error, f"{site}: the lookups by model key and by path disagree", site=site)
-    return by_key
 
 
 @final

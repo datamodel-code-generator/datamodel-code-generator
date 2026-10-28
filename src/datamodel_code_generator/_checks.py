@@ -30,8 +30,7 @@ class CheckArea(Enum):
     """A family of debug checks; the value is the environment variable that sets its mode."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """A site that tells models apart by model key or Reference identity finds what it found by path or Reference
-    equality before (`model/base.py:_keyed_answer`)."""
+    """The model graph that the generation store records keeps its invariants (checked by the test suite)."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """Each `$ref` edge of the schema graph gets one key and names the target the parser loads; under request-response

@@ -132,8 +132,7 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     ``legacy-keyless-reference-by-path``: a model with no entry by key, as for an entry a subclass wrote by path, and
     a reference that no model was built with are looked up by path. Row ``legacy-module-follows-path``: the entries
     were paths, so a model that moves to another path leaves its entry behind (`forget`), and a root model whose
-    inner model takes its path takes the inner model's entry. Under the ``MODEL_GRAPH`` check, an entry by key that
-    differs from the entry at the model's path is a violation.
+    inner model takes its path takes the inner model's entry.
     """
 
     __slots__ = ("assigned", "by_key")
