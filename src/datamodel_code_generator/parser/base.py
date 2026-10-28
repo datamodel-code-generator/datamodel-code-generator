@@ -120,6 +120,7 @@ from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
     prepare_output_model_config,
 )
+from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._graph_ids import (
     is_root_or_owned,
     keyed_models,
@@ -205,7 +206,6 @@ from datamodel_code_generator.parser._passes.render_prep import (
 )
 from datamodel_code_generator.parser._passes.render_prep import _needs_validate_default as _moved_needs_validate_default
 from datamodel_code_generator.parser._pipeline import (
-    Boundary,
     Runner,
     anchor_parse_caller,
     release_parse_caller,
@@ -242,7 +242,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
-    from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes.modules import _DiscriminatorUnion, _InlineVariantTags
     from datamodel_code_generator.parser._phases import DecisionPass
@@ -3066,7 +3065,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             require_update_action_models=require_update_action_models,
             unused_models=unused_models,
         )
-        self.__runner().run_module_body(MODULE_BODY, self, state)
+        self.__runner().run_steps(MODULE_BODY, self, state)
         self._prepared_modules.append(_PreparedModule.of(state))
         return ModuleContext(module, module_, state.model_list, is_init, imports, scoped_model_resolver)
 
@@ -3736,11 +3735,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __runner(self) -> Runner:
         """Return a runner of the pipeline tables for this parser."""
-        return Runner(self.__enter_phase, {Boundary.PARSED: self.__enter_parsed})
+        return Runner(self.__enter_phase)
 
     def __enter_phase(self, phase: Phase) -> None:
-        """Mark that the pipeline enters ``phase`` on the generation store."""
+        """Mark that the pipeline enters ``phase`` on the generation store; entering ``SETTLE`` ends L1 (``PARSED``)."""
         self.generation_store.enter_phase(phase)
+        if phase is Phase.SETTLE:
+            self.__enter_parsed()
 
     def __enter_parsed(self) -> None:
         """Run the check-mode checks of L1."""

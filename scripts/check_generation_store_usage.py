@@ -1,8 +1,8 @@
 """Reject writes of generation facts that bypass GenerationStore.
 
 The checker reads two tables with ``ast``, so it never imports the package: the store mutation API
-(``GENERATION_STORE_MUTATION_METHODS`` in ``parser/generation.py``) and the attribute-to-fact table
-(``ATTRIBUTE_FACTS`` in ``parser/_facts.py``). It scans
+(``GENERATION_STORE_MUTATION_METHODS`` in ``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS``
+in ``scripts/fact_tables.py``, whose rows name the ``Phase`` members of ``parser/_facts.py``). It scans
 
 * ``parser/`` (except the store and its runtime write guard) for writes of fact and presentation attributes, list
   and dict mutators on them, and direct reference and model-list mutations;
@@ -45,7 +45,8 @@ SOURCE_ROOT = Path("src/datamodel_code_generator")
 DEFAULT_TARGET = SOURCE_ROOT / "parser"
 DEFAULT_TARGETS = (DEFAULT_TARGET, SOURCE_ROOT / "model", SOURCE_ROOT / "types.py")
 GENERATION_STORE_MODULE = SOURCE_ROOT / "parser" / "generation.py"
-FACTS_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
+FACTS_MODULE = Path("scripts/fact_tables.py")
+PHASE_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
 DECLARATION_MODULES = (SOURCE_ROOT / "types.py", SOURCE_ROOT / "reference.py", SOURCE_ROOT / "model")
 DEFAULT_ALLOWLIST = Path("scripts/generation_store_allowlist.toml")
 STORE_WRITES_VARIABLE = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
@@ -391,17 +392,23 @@ def _make_row(values: dict[str, object], freeze_points: dict[str, str]) -> FactR
     return row
 
 
+def _vocabulary(tree: ast.Module) -> dict[str, tuple[str, ...]]:
+    """Return the members of every enum of ``tree`` and of ``Phase`` in ``parser/_facts.py``, ``tree`` first."""
+    phase_module = ROOT / PHASE_MODULE
+    return {**_enum_members(ast.parse(phase_module.read_text(), filename=str(phase_module))), **_enum_members(tree)}
+
+
 def fact_vocabulary(path: Path | None = None) -> dict[str, tuple[str, ...]]:
-    """Return the members of every enum in ``parser/_facts.py`` in declaration order."""
+    """Return the members of every enum of the fact tables, ``Phase`` included, in declaration order."""
     facts_module = path or ROOT / FACTS_MODULE
-    return _enum_members(ast.parse(facts_module.read_text(), filename=str(facts_module)))
+    return _vocabulary(ast.parse(facts_module.read_text(), filename=str(facts_module)))
 
 
 def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
-    """Read ``ATTRIBUTE_FACTS`` from ``parser/_facts.py`` without importing it."""
+    """Read ``ATTRIBUTE_FACTS`` from ``scripts/fact_tables.py`` without importing it."""
     facts_module = path or ROOT / FACTS_MODULE
     tree = ast.parse(facts_module.read_text(), filename=str(facts_module))
-    enums = _enum_members(tree)
+    enums = _vocabulary(tree)
     names, defaults = _row_fields(tree)
     freeze_points = _load_freeze_points(tree, enums)
     if not isinstance(table := _module_assignment(tree, "ATTRIBUTE_FACTS"), ast.Tuple):

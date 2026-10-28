@@ -1,8 +1,8 @@
 """Check the pass declarations, and that the known finality violations still happen, so that ``KNOWN_WRITES`` shrinks.
 
-Every run checks ``PASS_DECLS`` in ``src/datamodel_code_generator/parser/_pass_decls.py``: names are unique, phases
-never go back in execution order, a repair names the change that removes it, and setup, check and bookkeeping passes
-write no fact (a check pass may write ``STDERR``, the warnings it emits). ``KNOWN_WRITES`` in
+Every run checks ``PASS_DECLS`` in ``scripts/pass_decls.py``: names are unique, phases never go back in execution
+order, a repair names the change that removes it, and setup, check and bookkeeping passes write no fact (a check pass
+may write ``STDERR``, the warnings it emits). ``KNOWN_WRITES`` in
 ``tests/checks/finality.py`` lists the violations of today's pipeline that
 ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` reports but never raises. Each entry names a
 witness, the arguments of one ``datamodel-codegen`` run that makes it. ``--witnesses`` runs every witness with the check
@@ -32,14 +32,14 @@ for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from datamodel_code_generator.parser._facts import RenderFact  # noqa: E402, PLC2701
-from datamodel_code_generator.parser._pass_decls import PASS_DECLS, PassKind  # noqa: E402, PLC2701
+from scripts.fact_tables import RenderFact  # noqa: E402
+from scripts.pass_decls import PASS_DECLS, PassKind  # noqa: E402
 from tests.checks.finality import KNOWN_WRITES  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from datamodel_code_generator.parser._pass_decls import PassDecl
+    from scripts.pass_decls import PassDecl
     from tests.checks.finality import KnownWrite
 
 NO_WRITE_KINDS = frozenset({PassKind.SETUP, PassKind.CHECK, PassKind.BOOKKEEPING})

@@ -250,7 +250,7 @@ The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks `parser/`, the
 parser-facing hooks in `model/` and `types.py`, and caches kept in the
 `__dict__` of data types, fields and models, against the attribute-to-fact
-table in `src/datamodel_code_generator/parser/_facts.py`. The hook runs when a
+table in `scripts/fact_tables.py`. The hook runs when a
 parser file changes; after editing `model/`, `types.py` or the table, run the
 script yourself (the test suite runs it too).
 
@@ -317,10 +317,9 @@ measure performance outside pytest with the variables unset as well.
 `FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
-list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
-`Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same script
-checks the declarations,
-`scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
+tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
+script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
@@ -336,7 +335,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
-| `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 
 A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable

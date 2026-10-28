@@ -31,14 +31,14 @@ becomes final and where a decision belongs.
   path.
 - Don't change nodes in place that other models share; replace them in each holder through the generation store's
   mutation APIs.
-- `scripts/check_generation_store_usage.py` checks fact writes against `parser/_facts.py`; its allowlist
+- `scripts/check_generation_store_usage.py` checks fact writes against `scripts/fact_tables.py`; its allowlist
   `scripts/generation_store_allowlist.toml` only shrinks. Route a new write through the store instead of adding an
   entry, and remove the entries of writes you route.
 - Every test also runs the runtime write guard (`DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`): a test that fails with
   "... is written outside store operations" made a write the allowlist does not list; route it the same way. Witness
   entries (`target = "<datamodel-codegen args>"`) only record runtime-only writes that existed before the guard; never
   add one for a new write.
-- Every pass has a declaration in `parser/_pass_decls.py` and an entry in the pipeline tables of `Parser`; the
+- Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the
   finality check of the test suite (`tests/checks/finality.py`) runs it inside the scope of that declaration; a pass
   that conflicts with an earlier one of its segment needs an `after` edge with
   its reason (`scripts/check_pass_pipeline.py` says which). Every test runs the finality check

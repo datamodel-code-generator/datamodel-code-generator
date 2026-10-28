@@ -14,6 +14,7 @@ from dataclasses import replace
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
+from scripts.pass_decls import DECISION_DECLS, HOOK_BODIES, PASS_DECLS, SCOPE_NAMES
 from tests.checks.areas import MODES, Area, read_modes
 from tests.checks.finality import (
     NO_SCOPE,
@@ -26,13 +27,15 @@ from tests.checks.finality import (
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
     from contextlib import AbstractContextManager
 
 _IN_MODULE: Final[ContextVar[bool]] = ContextVar("in_module", default=False)
 """Whether the parse that runs processes an output module now: an override that calls its base processes it once."""
 _SEGMENT_SCOPES: Final[dict[int, tuple[str, Any]]] = {}
-"""The scope name and phase of each segment with a scope name, by the id of its steps."""
+"""The scope name (``SCOPE_NAMES``) and phase of each segment with a scope name, by the id of its steps."""
+_DECLS: Final = {decl.name: decl for decl in PASS_DECLS}
+"""The declaration of each table pass, by the name of its ``PassSpec``."""
 _HOOKS: Final = ("_process_single_module",)
 """The parser methods wrapped on the class that defines them in the running parser's MRO (``seams.py`` rule 2)."""
 
@@ -49,15 +52,119 @@ def _traced(name: str) -> None:
 
 
 def _segment_scopes(steps: Iterable[Any]) -> None:
+    from datamodel_code_generator.parser._passes import _tables
     from datamodel_code_generator.parser._pipeline import ForEachModule, HookCall, Segment
 
     for step in steps:
         if isinstance(step, Segment):
-            if step.scope_name is not None:
-                _SEGMENT_SCOPES[id(step.steps)] = (step.scope_name, step.phase)
+            if (scope_name := SCOPE_NAMES.get(step.name)) is not None:
+                _SEGMENT_SCOPES[id(step.steps)] = (scope_name, step.phase)
             _segment_scopes(step.steps)
-        elif isinstance(step, (HookCall, ForEachModule)):
+        elif isinstance(step, ForEachModule):
             _segment_scopes(step.body)
+        elif isinstance(step, HookCall):
+            _segment_scopes(getattr(_tables, HOOK_BODIES[step.name]))
+
+
+def _models(_parser: object, models: Sequence[Any]) -> Sequence[Any]:
+    return models
+
+
+def _model_list(_parser: object, state: Any) -> Sequence[Any]:
+    return state.model_list
+
+
+def _model_list_before_override_removal(_parser: object, state: Any) -> Sequence[Any]:
+    return state.model_list_before_override_removal
+
+
+def _live_models(_parser: object, state: Any) -> Sequence[Any]:
+    return state.live_models
+
+
+def _all_models(_parser: object, state: Any) -> Sequence[Any]:
+    return state.all_models
+
+
+def _additional_properties_models(_parser: object, state: Any) -> Sequence[Any]:
+    return state.additional_properties_models
+
+
+def _context_models(_parser: object, state: Any) -> Sequence[Any]:
+    from datamodel_code_generator.parser._passes._shared import _context_models
+
+    return _context_models(state.contexts)
+
+
+def _models_before_override_removal(parser: Any, state: Any) -> Sequence[Any]:
+    from datamodel_code_generator.parser._passes._tables import _models_before_override_removal
+
+    return _models_before_override_removal(parser, state)
+
+
+CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
+    "delete_duplicate_models": _models,
+    "replace_duplicate_name_in_module": _models,
+    "record_decimal_alias_models": _model_list,
+    "alias_shadowed_imports": _model_list,
+    "override_required_field": _model_list,
+    "replace_unique_list_to_set": _model_list,
+    "change_from_import": _model_list,
+    "extract_inherited_enum": _model_list,
+    "mark_unused_models_start": _model_list,
+    "set_reference_default_value_to_field": _model_list,
+    "reuse_model": _model_list,
+    "collapse_root_models": _model_list,
+    "set_default_enum_member": _model_list,
+    "sort_models": _model_list,
+    "change_field_name": _model_list,
+    "restore_inherited_field_names_for_unique_aliases": _model_list,
+    "apply_discriminator_type": _model_list,
+    "type_const_narrowed_values": _model_list,
+    "set_one_literal_on_default": _model_list,
+    "refresh_field_config": _model_list,
+    "rename_fields_hiding_types": _model_list,
+    "remove_overridden_models": _model_list,
+    "apply_field_type_overrides": _model_list,
+    "type_dict_keys_by_root_types": _model_list,
+    "fix_constructor_field_ordering_early": _model_list_before_override_removal,
+    "snapshot_module_unused_models": _model_list,
+    "apply_base_class_type_overrides": _model_list,
+    "settle_discriminated_unions": _context_models,
+    "tag_fields_of_tagged_bases": _context_models,
+    "write_enum_member_tags_as_values": _context_models,
+    "assign_forward_reference_fields": _model_list,
+    "fix_constructor_field_ordering": _models_before_override_removal,
+    "unbind_hidden_type_fields": _model_list,
+    "update_type_aliases": _model_list,
+    "collect_live_models": _model_list,
+    "set_validate_default_on_fields": _live_models,
+    "warn_required_assignments_after_defaults": _live_models,
+    "fix_tag_opt_out_field_ordering": _context_models,
+    "finalize_rendered_nullability": _context_models,
+    "prepare_type_alias_fields": _all_models,
+    "finalize_type_alias_users": _all_models,
+    "mark_set_item_models_hashable": _all_models,
+    "finalize_structured_imports": _all_models,
+    "finalize_sequence_interface": _all_models,
+    "order_constructor_fields_by_decided_nested_factories": _all_models,
+    "snapshot_model_imports": _all_models,
+    "append_model_imports": _all_models,
+    "remove_unused_models": _all_models,
+    "prepare_schema_runtime_validation_module_code": _all_models,
+    "sync_schema_runtime_validation_module_imports": _all_models,
+    "merge_runtime_expression_imports": _all_models,
+    "remove_unused_imports": _all_models,
+    "resolve_module_import_conflicts": _all_models,
+    "alias_builtin_shadowing_module_imports": _all_models,
+    "bind_module_field_names": _all_models,
+    "change_imported_model_name": _all_models,
+    "name_final_classes_of_additional_properties": _additional_properties_models,
+    "refresh_sequence_interface_after_renames": _all_models,
+    "replan_schema_validators_after_renames": _all_models,
+    "decide_config_items": _all_models,
+}
+"""The models the finality check compares when a pass ends, besides those it touched, by pass name."""
 
 
 def _wrap_hooks(parser_class: type) -> None:
@@ -125,12 +232,12 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
         trace, checks = TRACE.get(), PARSE_CHECKS.get()
         if trace is None and checks is None:
             return original(self, spec, parser, state)
-        run, checked_models = spec.run, spec.checked_models
+        run, checked_models = spec.run, CHECKED_MODELS.get(spec.name)
 
         def instrumented(parser: object, state: object) -> None:
             models = None if checks is None or checked_models is None else checked_models(parser, state)
-            _traced(spec.decl.name)
-            with NO_SCOPE if checks is None else checks.fact_pass(spec.decl, models):
+            _traced(spec.name)
+            with NO_SCOPE if checks is None else checks.fact_pass(_DECLS[spec.name], models):
                 run(parser, state)
 
         return original(self, replace(spec, run=instrumented), parser, state)
@@ -139,13 +246,17 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
 
 
 def run_decision(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``Runner.run_decision``: a decision is traced and runs inside the finality scope of its declaration."""
+    """Wrap ``Runner.run_decision``: a decision is traced and runs inside the finality scope of its declaration.
+
+    The declaration is the entry of ``DECISION_DECLS`` that the decision names.
+    """
 
     @wraps(original)
     def run_decision(self: Any, decision: Any, facts: object, writer: object) -> None:
-        decl = decision.spec["decl"]
-        _traced(decl.name)
-        with NO_SCOPE if (checks := PARSE_CHECKS.get()) is None else checks.fact_pass(decl, None):
+        name = decision.spec["name"]
+        _traced(name)
+        checks = PARSE_CHECKS.get()
+        with NO_SCOPE if checks is None else checks.fact_pass(DECISION_DECLS[name], None):
             return original(self, decision, facts, writer)
 
     return run_decision

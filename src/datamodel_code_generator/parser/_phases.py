@@ -3,11 +3,12 @@
 ``Parser`` enters ``DECIDE`` right after ``__apply_generic_base_class`` (B1). When its registry
 (``Parser._DECISION_PASSES``) holds decisions, ``GenerationStore.seal_facts`` builds the one ``FinalFacts`` of the
 parse: the live models of every module, typed as the read-only views of ``model/_views.py``. Each ``DecisionPass``
-then runs with the ``PassDecl`` its ``DecisionSpec`` carries, to which the finality check of the test suite
-(``tests/checks/finality.py``) holds its writes; it gets ``FinalFacts`` and the writer protocol it names, which
-``_DecisionWriter`` implements over the store. The decisions run in the order ``parser/_pipeline.py:check_order``
-computes from their declarations: a decision that reads what another writes runs after it, every other conflict needs an
-``After`` edge in ``decl.after``, and the registration order breaks ties.
+then runs, in registry order, with ``FinalFacts`` and the writer protocol it names, which ``_DecisionWriter``
+implements over the store. Its ``DecisionSpec`` names its declaration in ``scripts/pass_decls.py``
+(``DECISION_DECLS``), to which the finality check of the test suite (``tests/checks/finality.py``) holds its writes;
+``scripts/check_pass_pipeline.py`` checks that the registry lists the decisions in the order the order rule computes
+from their declarations: a decision that reads what another writes runs after it, every other conflict needs an
+``After`` edge, and the registration order breaks ties.
 """
 
 from __future__ import annotations
@@ -23,7 +24,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
     from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.parser._pass_decls import PassDecl
 
 __all__ = [
     "DecisionOutcome",
@@ -39,9 +39,9 @@ W = TypeVar("W", bound="DecisionWriter")
 
 
 class DecisionSpec(TypedDict, closed=True):
-    """A decision: its declaration, whose ``after`` edges are its only explicit order, and the issue it fixes."""
+    """A decision: the name of its declaration (``scripts/pass_decls.py:DECISION_DECLS``) and the issue it fixes."""
 
-    decl: ReadOnly[PassDecl]
+    name: ReadOnly[str]
     issue: ReadOnly[str]
 
 

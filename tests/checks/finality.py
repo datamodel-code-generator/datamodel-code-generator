@@ -12,7 +12,7 @@ ran in and the pass scope and phase of the pipeline (``ParseChecks.scope``), onc
 of an object (its ``__init__`` and what that calls) writes freely.
 
 ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: every pass runs inside ``ParseChecks.fact_pass`` with its declaration
-from ``parser/_pass_decls.py`` (``parse.run_pass``). The parse keeps one fingerprint per model: the
+from ``scripts/pass_decls.py`` (``parse.run_pass``). The parse keeps one fingerprint per model: the
 values of the ``fact`` rows of ``ATTRIBUTE_FACTS`` on the model, its fields and every data type of their types and of
 its bases, holding the objects it keys. When a pass ends, the fingerprints of the models it touched are compared with
 the stored ones: for a module pass the models of its module and the models they reference, the models that guarded
@@ -94,8 +94,12 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser import _pass_decls as decls
-from datamodel_code_generator.parser._facts import (
+from datamodel_code_generator.parser._facts import Phase
+from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
+from datamodel_code_generator.reference import Reference
+from datamodel_code_generator.types import DataType
+from scripts import pass_decls as decls
+from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
     RENDER_FACT_FREEZE_POINTS,
     Access,
@@ -103,13 +107,9 @@ from datamodel_code_generator.parser._facts import (
     Fact,
     FactKind,
     FreezePoint,
-    Phase,
     RenderFact,
 )
-from datamodel_code_generator.parser._pass_decls import PassDecl, PassKind, Scope
-from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
-from datamodel_code_generator.reference import Reference
-from datamodel_code_generator.types import DataType
+from scripts.pass_decls import PassDecl, PassKind, Scope
 from tests.checks import areas
 from tests.checks.areas import Area, Mode
 
