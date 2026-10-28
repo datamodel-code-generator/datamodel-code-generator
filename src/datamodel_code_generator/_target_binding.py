@@ -24,6 +24,12 @@ from typing_extensions import Sentinel, override
 
 from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._generation_contract import AttemptId
+from datamodel_code_generator._json_schema import (
+    MODEL_VALUE_POSITIONS,
+    SCHEMA_SHAPES,
+    SEQUENCE_SCHEMA_SHAPES,
+    SINGLE_SCHEMA_SHAPES,
+)
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BackendFieldFacts,
@@ -885,6 +891,13 @@ def _schema_use(location: SourceLocation) -> TypeUseId:
         DeclarationId(replace(location, role="declaration")),
         "neutral",
     )
+
+
+_VALUE_SCHEMA_LISTS = tuple(
+    keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SEQUENCE_SCHEMA_SHAPES
+)
+_VALUE_SCHEMA_MAPS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] == "map")
+_VALUE_SCHEMAS = tuple(keyword for keyword in MODEL_VALUE_POSITIONS if SCHEMA_SHAPES[keyword] in SINGLE_SCHEMA_SHAPES)
 
 
 def _mapping(value: object) -> dict[str, YamlValue]:
@@ -2568,12 +2581,12 @@ class _Reader(_SchemaLocations):
                 yield from self._referenced(declaration, ref, dynamic=keyword == "$dynamicRef")
         if self.legacy and "$ref" in raw:
             return
-        for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
+        for keyword in _VALUE_SCHEMA_LISTS:
             if isinstance(branches := raw.get(keyword), list):
                 yield from (declaration.child(keyword, str(index)) for index in range(len(branches)))
-        for keyword in ("properties", "patternProperties"):
+        for keyword in _VALUE_SCHEMA_MAPS:
             yield from (declaration.child(keyword, str(name)) for name in _mapping(raw.get(keyword)))
-        for keyword in ("items", "additionalProperties"):
+        for keyword in _VALUE_SCHEMAS:
             if isinstance(raw.get(keyword), dict):
                 yield declaration.child(keyword)
 

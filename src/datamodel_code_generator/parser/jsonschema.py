@@ -73,7 +73,18 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
-from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    REF_PRE_PASS_FIELDS,
+    REF_PRE_PASS_POSITIONS,
+    SCHEMA_MAP_KEYS,
+    SCHEMA_POSITIONS,
+    SCHEMA_SHAPES,
+    SCHEMA_VALUE_KEYS,
+    SEQUENCE_SCHEMA_SHAPES,
+    SINGLE_SCHEMA_SHAPES,
+    schema_positions,
+)
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
@@ -290,7 +301,9 @@ _CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
 """The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
 _LIGHTWEIGHT_MAX_DEPTH: Final = 3
 _LIGHTWEIGHT_MAX_UNION_ELEMENTS: Final = 5
-_ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset({"items", "additionalItems", "prefixItems", "unevaluatedItems"})
+_MODELED_POSITIONS = frozenset(schema_positions("modeled"))
+"""The subschema keywords ``JsonSchemaObject`` holds as fields."""
+_ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset(schema_positions("modeled", "array"))
 
 
 def _update_false_schema_refs(
@@ -328,19 +341,10 @@ _ANNOTATION_KEYWORDS = frozenset({
 })
 _NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMediaType", "contentSchema", "format"}
 _FALSE_ALL_OF_KEYWORDS = _ANNOTATION_KEYWORDS | {"allOf"}
-_INHERITED_NESTED_SCHEMA_FIELDS = (
-    "items",
-    "additionalItems",
-    "prefixItems",
-    "additionalProperties",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-    "properties",
-    "patternProperties",
-    "propertyNames",
-)
-_INHERITED_POSITIONAL_SCHEMA_FIELDS = frozenset({"items", "prefixItems"})
-_INHERITED_SCHEMA_MAP_FIELDS = frozenset({"patternProperties", "properties"})
+_INHERITED_NESTED_SCHEMA_FIELDS = schema_positions("modeled", "child")
+_INHERITED_POSITIONAL_SCHEMA_FIELDS = frozenset(schema_positions("child", shapes=SEQUENCE_SCHEMA_SHAPES))
+_MODELED_SCHEMA_MAPS = schema_positions("modeled", shapes=("map",))
+"""The maps of named subschemas ``JsonSchemaObject`` models: ``properties`` and ``patternProperties``."""
 _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
     "minimum",
     "maximum",
@@ -355,43 +359,19 @@ _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
 _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
+    *_MODELED_POSITIONS,
     "$dynamicRef",
     "$recursiveRef",
     "$ref",
-    "additionalItems",
-    "additionalProperties",
-    "allOf",
-    "anyOf",
     "customBasePath",
     "customTypePath",
     "discriminator",
-    "items",
-    "oneOf",
-    "patternProperties",
-    "prefixItems",
-    "properties",
-    "propertyNames",
     "required",
     "type",
-    "unevaluatedItems",
-    "unevaluatedProperties",
 })
 _INHERITED_CONTAINER_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], ...] = (
-    (
-        frozenset({"array"}),
-        frozenset({"additionalItems", "items", "prefixItems", "unevaluatedItems"}),
-    ),
-    (
-        frozenset({"object"}),
-        frozenset({
-            "additionalProperties",
-            "patternProperties",
-            "properties",
-            "propertyNames",
-            "required",
-            "unevaluatedProperties",
-        }),
-    ),
+    (frozenset({"array"}), _ARRAY_ITEMS_CONSTRAINT_FIELDS),
+    (frozenset({"object"}), frozenset({*schema_positions("modeled", "object"), "required"})),
 )
 _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY = "_inherited_materialized_type_shape"
 _MERGED_REF_TARGET_KEY = "_merged_ref_target"
@@ -412,15 +392,12 @@ _DERIVED_FROM_REF_KEY = "_derived_from_ref"
 _REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
 _VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
 _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
-    "contains",
+    *schema_positions("applicator", without=(*_MODELED_POSITIONS, "dependencies", "extends")),
     "dependentRequired",
-    "dependentSchemas",
-    "else",
-    "if",
-    "not",
-    "then",
     "x-python-type",
 })
+"""The extras that keep an allOf member from being a value part: ``dependentRequired``, ``x-python-type`` and the
+applicators held in extras, except ``dependencies`` and ``extends`` (legacy)."""
 _NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
@@ -607,13 +584,7 @@ def _validation_keywords(
 
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
-_UNMATCHED_SCHEMA_KEYWORDS = frozenset({
-    "additionalItems",
-    "additionalProperties",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-})
-_PROPERTY_NAME_KEYWORDS = ("properties", "patternProperties")
+_UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
 
 
 def _schema_dump(schema: JsonSchemaObject | bool) -> object:  # ruff: ignore[boolean-type-hint-positional-argument]
@@ -689,7 +660,7 @@ def _keyword_implies(keyword: str, declared: dict[str, Any], other: dict[str, An
     if keyword in _UNMATCHED_SCHEMA_KEYWORDS:
         return _schema_keywords(other_value) == {} or (
             keyword == "additionalProperties"
-            and all(set(declared.get(names) or ()) == set(other.get(names) or ()) for names in _PROPERTY_NAME_KEYWORDS)
+            and all(set(declared.get(names) or ()) == set(other.get(names) or ()) for names in _MODELED_SCHEMA_MAPS)
             and _schema_implies(declared_value, other_value, same_document=same_document)
         )
     if keyword == JsonSchemaObject.__extra_key__ and isinstance(other_value, dict):
@@ -733,7 +704,7 @@ def _locate_dump(obj: JsonSchemaObject, data: dict[str, Any]) -> dict[str, Any]:
     The correspondence is the object's own structure (field, key, index), never a match across merge inputs.
     """
     fields = obj.__dict__
-    for name in obj.model_fields_set.intersection(_LOCATED_CHILD_FIELDS):
+    for name in obj.model_fields_set.intersection(_MODELED_POSITIONS):
         value, dumped = fields[name], data.get(name)
         if isinstance(dumped, dict):
             if isinstance(value, JsonSchemaObject):
@@ -871,23 +842,8 @@ def _get_json_value_type(value: object) -> str:
     return value_type
 
 
-# Keep this in sync with _traverse_schema_objects(). Only schemas that did not
-# explicitly receive one of these fields can skip the child traversal below.
-_SCHEMA_OBJECT_CHILD_FIELDS = frozenset({
-    "items",
-    "prefixItems",
-    "additionalProperties",
-    "unevaluatedProperties",
-    "unevaluatedItems",
-    "patternProperties",
-    "propertyNames",
-    "anyOf",
-    "allOf",
-    "oneOf",
-    "properties",
-})
-_CONDITIONAL_SCHEMA_KEYWORDS = frozenset({"if", "then", "else"})
-_LOCATED_CHILD_FIELDS = _SCHEMA_OBJECT_CHILD_FIELDS | {"additionalItems"}
+_CONDITIONAL_SCHEMA_KEYWORDS = frozenset(schema_positions("conditional"))
+_REF_PRE_PASS_KEYWORDS = frozenset(REF_PRE_PASS_POSITIONS)
 
 
 def _get_data_type_constraint_kwargs(
@@ -1327,29 +1283,6 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
     return parts, reference_parts
 
 
-_JSON_SCHEMA_MAP_KEYWORDS = frozenset({
-    "$defs",
-    "definitions",
-    "dependencies",
-    "dependentSchemas",
-    "properties",
-    "patternProperties",
-})
-_JSON_SCHEMA_SEQUENCE_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
-_JSON_SCHEMA_SINGLE_KEYWORDS = frozenset({
-    "additionalItems",
-    "additionalProperties",
-    "contains",
-    "contentSchema",
-    "else",
-    "if",
-    "not",
-    "propertyNames",
-    "then",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-})
-_JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS = frozenset({"extends", "items"})
 _NON_SCHEMA_KEYWORDS = frozenset({
     "const",
     "default",
@@ -1362,7 +1295,7 @@ _NON_SCHEMA_KEYWORDS = frozenset({
     "serverVariables",
     "servers",
 })
-_NAMED_ENTRY_MAP_KEYWORDS = _JSON_SCHEMA_MAP_KEYWORDS | {
+_NAMED_ENTRY_MAP_KEYWORDS = SCHEMA_MAP_KEYS | {
     "callbacks",
     "channels",
     "content",
@@ -1379,14 +1312,11 @@ _DocumentEntries = Literal["object", "names", "maps"]
 def _iter_ref_walk_children(data: dict[str, Any]) -> Iterator[dict[str, Any] | list[Any]]:
     """Yield the subschemas of a raw schema in keyword order, leaving instance values and metadata out."""
     for keyword, value in data.items():
-        if keyword in _JSON_SCHEMA_MAP_KEYWORDS and isinstance(value, dict):
-            yield from (schema for schema in value.values() if isinstance(schema, dict))
-        elif (
-            keyword in _JSON_SCHEMA_SINGLE_KEYWORDS
-            or keyword in _JSON_SCHEMA_SEQUENCE_KEYWORDS
-            or keyword in _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS
-        ) and isinstance(value, (dict, list)):
-            yield value
+        match SCHEMA_SHAPES.get(keyword), value:
+            case "map", dict():
+                yield from (schema for schema in value.values() if isinstance(schema, dict))
+            case "sequence" | "single" | "single-or-sequence", dict() | list():
+                yield value
 
 
 def _document_child_entries(
@@ -1411,10 +1341,7 @@ def _document_child_entries(
 _RefEdgeEntries = Literal["root", "object", "names", "maps"]
 _REF_EDGE_NAME_MAPS = frozenset({"bindings", "paths"})
 _REF_EDGE_KEYWORDS = (
-    _JSON_SCHEMA_MAP_KEYWORDS
-    | _JSON_SCHEMA_SEQUENCE_KEYWORDS
-    | _JSON_SCHEMA_SINGLE_KEYWORDS
-    | _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS
+    frozenset(SCHEMA_POSITIONS)
     | _NAMED_ENTRY_MAP_KEYWORDS
     | _REF_EDGE_NAME_MAPS
     | {
@@ -1659,30 +1586,21 @@ def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | No
         if value.get("$anchor") == anchor:
             return "/" + "/".join(part.replace("~", "~0").replace("/", "~1") for part in path)
         for keyword, child in value.items():
-            match keyword:
-                case _ if keyword in _JSON_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            match SCHEMA_SHAPES.get(keyword), child:
+                case "map", dict():
                     pending.extend(
                         (subschema, (*path, keyword, str(name)))
                         for name, subschema in child.items()
                         if isinstance(subschema, dict)
                     )
-                case _ if keyword in _JSON_SCHEMA_SEQUENCE_KEYWORDS and isinstance(child, list):
+                case "sequence" | "single-or-sequence", list():
                     pending.extend(
                         (subschema, (*path, keyword, str(index)))
                         for index, subschema in enumerate(child)
                         if isinstance(subschema, dict)
                     )
-                case _ if keyword in _JSON_SCHEMA_SINGLE_KEYWORDS and isinstance(child, dict):
+                case "single" | "single-or-sequence", dict():
                     pending.append((child, (*path, keyword)))
-                case _ if keyword in _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS:
-                    if isinstance(child, dict):
-                        pending.append((child, (*path, keyword)))
-                    elif isinstance(child, list):
-                        pending.extend(
-                            (subschema, (*path, keyword, str(index)))
-                            for index, subschema in enumerate(child)
-                            if isinstance(subschema, dict)
-                        )
     return None
 
 
@@ -1722,29 +1640,19 @@ class Discriminator(BaseModel):
     mapping: Optional[dict[str, str]] = None  # noqa: UP045
 
 
+_REF_KEYWORDS: Final = ("$ref", "$dynamicRef", "$recursiveRef")
 _IN_PLACE_APPLICATOR_KEYWORDS: Final = frozenset({
-    "allOf",
-    "anyOf",
-    "oneOf",
-    "not",
-    "if",
-    "dependentSchemas",
-    "dependencies",
-    "$ref",
-    "$dynamicRef",
-    "$recursiveRef",
+    *schema_positions("in-place", without=("then", "else", "extends")),
+    *_REF_KEYWORDS,
 })
+"""The keywords that apply a schema to the instance itself; ``then`` and ``else`` apply only through ``if``."""
 READ_UNEVALUATED_PROPERTIES_CONTEXT: Final = "read_unevaluated_properties"
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
     *_IN_PLACE_APPLICATOR_KEYWORDS,
-    "then",
-    "else",
-    "properties",
-    "patternProperties",
-    "additionalProperties",
-    "unevaluatedProperties",
+    *_CONDITIONAL_SCHEMA_KEYWORDS,
+    *schema_positions("object", without=("propertyNames",)),
 })
 
 
@@ -2287,7 +2195,7 @@ EXCLUDE_FIELD_KEYS = (set(JsonSchemaObject.get_fields()) - DEFAULT_FIELD_KEYS - 
 }
 
 
-_ALL_OF_VALUE_ITEM_KEYWORDS: Final = ("items", "additionalItems", "unevaluatedItems")
+_ALL_OF_VALUE_ITEM_KEYWORDS: Final = schema_positions("modeled", "array", shapes=SINGLE_SCHEMA_SHAPES)
 """The item schemas an allOf value part writes, which the intersection of the parts keeps."""
 _ALL_OF_VALUE_KEYWORDS: Final = frozenset({
     "type",
@@ -6668,11 +6576,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         which array parsing appends as the tail item. References under keywords the parser ignores and
         definitions that apply only through references are not analyzed.
         """
-        keywords = (
-            _SCHEMA_OBJECT_CHILD_FIELDS | _CONDITIONAL_SCHEMA_KEYWORDS
-            if self.generate_schema_validators
-            else _SCHEMA_OBJECT_CHILD_FIELDS
-        )
+        keywords = _REF_PRE_PASS_KEYWORDS if self.generate_schema_validators else REF_PRE_PASS_FIELDS
         stack = [(pointer, cast("dict[str, Any]", schema))] if isinstance(schema, dict) else []
         while stack:
             current_pointer, current = stack.pop()
@@ -8451,7 +8355,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 nested_parent,
                 parent_tail=parent_tail,
                 context=context,
-                schema_map=field_name in _INHERITED_SCHEMA_MAP_FIELDS,
+                schema_map=field_name in _MODELED_SCHEMA_MAPS,
             ):
                 return False
         return True
@@ -8541,7 +8445,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _mark_inherited_materialized_type_shapes(self, schema: JsonSchemaObject) -> None:
         """Mark synthesized schemas whose container constraints need a root wrapper."""
         schema.__dict__[_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY] = True
-        for field_name in (*_INHERITED_NESTED_SCHEMA_FIELDS, "allOf", "anyOf", "oneOf"):
+        for field_name in _MODELED_POSITIONS:
             match getattr(schema, field_name):
                 case JsonSchemaObject() as nested_schema:
                     self._mark_inherited_materialized_type_shapes(nested_schema)
@@ -8679,7 +8583,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 for index, child_item in enumerate(child)
             ] + parent[len(child) :]
-        if key in _INHERITED_SCHEMA_MAP_FIELDS and isinstance(parent, dict) and isinstance(child, dict):
+        if key in _MODELED_SCHEMA_MAPS and isinstance(parent, dict) and isinstance(child, dict):
             parent_map = cast("dict[str, object]", parent)
             child_map = cast("dict[str, object]", child)
             result = parent_map.copy()
@@ -9821,7 +9725,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self._merge_all_of_schema(
                             previous,
                             value,
-                            schema_map=not schema_map and key in _INHERITED_SCHEMA_MAP_FIELDS,
+                            schema_map=not schema_map and key in _MODELED_SCHEMA_MAPS,
                             intersect_bounds=intersect_bounds,
                         ),
                         _dump_location(value),
@@ -10717,9 +10621,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_conditional_schema(
         self,
         obj: JsonSchemaObject,
-        keyword: Literal["if", "then", "else", "not"],
+        keyword: str,
     ) -> JsonSchemaObject | bool | None:
-        """Return the branch schema named by keyword, which the schema graph validates once from extras."""
+        """Return the schema of an applicator kept in extras, such as ``if``, which the schema graph validates once."""
         item = obj.extras.get(keyword)
         if isinstance(item, (JsonSchemaObject, bool)):
             return item
@@ -15852,106 +15756,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with scope:
             self._walk_schema_objects(obj, path, callback)
 
-    def _walk_schema_objects(  # noqa: PLR0912
+    def _walk_schema_objects(
         self,
         obj: JsonSchemaObject,
         path: list[str],
         callback: Callable[[JsonSchemaObject, list[str]], None],
     ) -> None:
-        """Apply callback to a schema object and traverse its child schemas."""
+        """Apply callback to a schema object and traverse its child schemas at ``REF_PRE_PASS_POSITIONS``."""
         callback(obj, path)
         if (
             type(self) is JsonSchemaParser
             and type(obj) is JsonSchemaObject
-            and obj.model_fields_set.isdisjoint(_SCHEMA_OBJECT_CHILD_FIELDS)
+            and obj.model_fields_set.isdisjoint(REF_PRE_PASS_FIELDS)
             and (not self.generate_schema_validators or obj.extras.keys().isdisjoint(_CONDITIONAL_SCHEMA_KEYWORDS))
         ):
             return
-        match obj.items:
-            case JsonSchemaObject() as item:
-                self._traverse_schema_objects(item, [*path, "items"], callback)
-            case list() as items:
-                for index, item in enumerate(items):
-                    if isinstance(item, JsonSchemaObject):
-                        self._traverse_schema_objects(
-                            item,
-                            [*path, "items", str(index)],
-                            callback,
-                        )
-        if obj.prefixItems:
-            for index, item in enumerate(obj.prefixItems):
-                if isinstance(item, JsonSchemaObject):
-                    self._traverse_schema_objects(
-                        item,
-                        [*path, "prefixItems", str(index)],
-                        callback,
-                    )
-        if isinstance(obj.additionalProperties, JsonSchemaObject):
-            self._traverse_schema_objects(
-                obj.additionalProperties,
-                [*path, "additionalProperties"],
-                callback,
-            )
-        if isinstance(obj.unevaluatedProperties, JsonSchemaObject):
-            self._traverse_schema_objects(
-                obj.unevaluatedProperties,
-                [*path, "unevaluatedProperties"],
-                callback,
-            )
-        if isinstance(obj.unevaluatedItems, JsonSchemaObject):
-            self._traverse_schema_objects(
-                obj.unevaluatedItems,
-                [*path, "unevaluatedItems"],
-                callback,
-            )
-        if obj.patternProperties:
-            for key, value in obj.patternProperties.items():
-                if isinstance(value, JsonSchemaObject):
-                    self._traverse_schema_objects(
-                        value,
-                        [*path, "patternProperties", key],
-                        callback,
-                    )
-        if isinstance(obj.propertyNames, JsonSchemaObject):
-            self._traverse_schema_objects(
-                obj.propertyNames,
-                [*path, "propertyNames"],
-                callback,
-            )
-        for index, item in enumerate(obj.anyOf):
-            if isinstance(item, JsonSchemaObject):
-                self._traverse_schema_objects(
-                    item,
-                    [*path, "anyOf", str(index)],
-                    callback,
-                )
-        for index, item in enumerate(obj.allOf):
-            if isinstance(item, JsonSchemaObject):
-                self._traverse_schema_objects(
-                    item,
-                    [*path, "allOf", str(index)],
-                    callback,
-                )
-        for index, item in enumerate(obj.oneOf):
-            if isinstance(item, JsonSchemaObject):
-                self._traverse_schema_objects(item, [*path, "oneOf", str(index)], callback)
-        if self.generate_schema_validators:
-            for keyword in ("if", "then", "else"):
-                item = self._get_conditional_schema(obj, keyword)
-                if isinstance(item, JsonSchemaObject):
-                    self._traverse_schema_objects(
-                        item,
-                        [*path, keyword],
-                        callback,
-                    )
-        if obj.properties:
-            for key, value in obj.properties.items():
-                if isinstance(value, JsonSchemaObject):
-                    self._traverse_schema_objects(
-                        value,
-                        [*path, "properties", key],
-                        callback,
-                    )
+        for keyword in REF_PRE_PASS_POSITIONS:
+            if keyword in _CONDITIONAL_SCHEMA_KEYWORDS:
+                if not self.generate_schema_validators:
+                    continue
+                value = self._get_conditional_schema(obj, keyword)
+            else:
+                value = getattr(obj, keyword)
+            match value:
+                case JsonSchemaObject():
+                    self._traverse_schema_objects(value, [*path, keyword], callback)
+                case list():
+                    for index, item in enumerate(value):
+                        if isinstance(item, JsonSchemaObject):
+                            self._traverse_schema_objects(item, [*path, keyword, str(index)], callback)
+                case dict():
+                    for key, item in value.items():
+                        if isinstance(item, JsonSchemaObject):
+                            self._traverse_schema_objects(item, [*path, keyword, key], callback)
 
     def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Resolve $ref in schema object, and the targets of $dynamicRef and $recursiveRef as their data types do."""
@@ -16019,24 +15856,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
         """Visit schema-valued keywords without inspecting examples, defaults or extensions."""
         for keyword, value in schema.items():
-            if keyword in {"$defs", "definitions"} and isinstance(value, dict):
+            if keyword in DEFINITION_KEYS and isinstance(value, dict):
                 for _name, child, path in self._iter_schema_definition_entries(value, [keyword]):
                     if isinstance(child, dict):
                         yield tuple(path), child
-            elif keyword in _JSON_SCHEMA_MAP_KEYWORDS and isinstance(value, dict):
-                for name, child in value.items():
-                    if isinstance(child, dict):
-                        yield (keyword, str(name)), child
-            elif (
-                keyword in _JSON_SCHEMA_SEQUENCE_KEYWORDS or keyword in _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS
-            ) and isinstance(value, list):
-                for index, sequence_child in enumerate(value):
-                    if isinstance(sequence_child, dict):
-                        yield (keyword, index), cast("dict[str, Any]", sequence_child)
-            elif (
-                keyword in _JSON_SCHEMA_SINGLE_KEYWORDS or keyword in _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS
-            ) and isinstance(value, dict):
-                yield (keyword,), value
+                continue
+            match SCHEMA_SHAPES.get(keyword), value:
+                case "map", dict():
+                    for name, child in value.items():
+                        if isinstance(child, dict):
+                            yield (keyword, str(name)), child
+                case "sequence" | "single-or-sequence", list():
+                    for index, sequence_child in enumerate(value):
+                        if isinstance(sequence_child, dict):
+                            yield (keyword, index), cast("dict[str, Any]", sequence_child)
+                case "single" | "single-or-sequence", dict():
+                    yield (keyword,), value
 
     def _schema_resource_identifier(
         self, schema: dict[str, Any], id_field: str | None, *, is_root: bool

@@ -1,40 +1,144 @@
-"""Shared JSON Schema positions and local definition reference rewriting."""
+"""The subschema positions of JSON Schema, and local definition reference rewriting.
+
+``SCHEMA_POSITIONS`` is the one table of the keywords that hold subschemas: the shape of each value and the roles the
+keyword plays. Every walker reads it, by shape or through a view of its roles (``schema_positions``); a walker that
+visits another set or order than a role gives keeps it as a named view here.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from copy import deepcopy
-from typing import Any, Literal, TypeAlias
+from types import MappingProxyType
+from typing import Any, Final, Literal, NamedTuple, TypeAlias
 
 DefinitionKey: TypeAlias = Literal["$defs", "definitions"]
 DEFINITION_KEYS: tuple[DefinitionKey, ...] = ("$defs", "definitions")
-SCHEMA_MAP_KEYS: frozenset[str] = frozenset({
-    "$defs",
+SchemaShape: TypeAlias = Literal["map", "sequence", "single", "single-or-sequence"]
+"""How a keyword holds subschemas: a map of named ones, a list, one, or one or a list."""
+SchemaRole: TypeAlias = Literal[
+    "applicator",
+    "in-place",
+    "conditional",
+    "child",
+    "array",
+    "object",
+    "unmatched",
+    "unevaluated",
+    "modeled",
     "definitions",
-    "dependencies",
-    "dependentSchemas",
-    "patternProperties",
-    "properties",
+]
+"""What a subschema keyword does.
+
+``applicator``: it applies its subschemas to the instance or to its members. ``in-place``: to the instance itself.
+``conditional``: ``if``, ``then`` and ``else``. ``child``: to the members of the instance; ``array`` to items,
+``object`` to properties or their names. ``unmatched``: to the members no sibling keyword matches. ``unevaluated``:
+of the unevaluated vocabulary. ``modeled``: ``JsonSchemaObject`` holds it as a field of the same name, not in its
+extras. ``definitions``: it holds schemas for references only.
+"""
+SCHEMA_VALUE_SHAPES: Final[tuple[SchemaShape, ...]] = ("sequence", "single", "single-or-sequence")
+"""The shapes of keywords whose value is a subschema or a list of them."""
+SINGLE_SCHEMA_SHAPES: Final[tuple[SchemaShape, ...]] = ("single", "single-or-sequence")
+"""The shapes of keywords whose value may be one subschema."""
+SEQUENCE_SCHEMA_SHAPES: Final[tuple[SchemaShape, ...]] = ("sequence", "single-or-sequence")
+"""The shapes of keywords whose value may be a list of subschemas."""
+
+
+class SchemaPosition(NamedTuple):
+    """The shape of a subschema keyword's value and the roles of the keyword."""
+
+    shape: SchemaShape
+    roles: frozenset[SchemaRole]
+
+
+def _position(shape: SchemaShape, *roles: SchemaRole) -> SchemaPosition:
+    return SchemaPosition(shape, frozenset(roles))
+
+
+SCHEMA_POSITIONS: Final[Mapping[str, SchemaPosition]] = MappingProxyType({
+    "allOf": _position("sequence", "applicator", "in-place", "modeled"),
+    "anyOf": _position("sequence", "applicator", "in-place", "modeled"),
+    "oneOf": _position("sequence", "applicator", "in-place", "modeled"),
+    "prefixItems": _position("sequence", "applicator", "child", "array", "modeled"),
+    "items": _position("single-or-sequence", "applicator", "child", "array", "modeled"),
+    "additionalItems": _position("single", "applicator", "child", "array", "unmatched", "modeled"),
+    "additionalProperties": _position("single", "applicator", "child", "object", "unmatched", "modeled"),
+    "unevaluatedItems": _position("single", "applicator", "child", "array", "unmatched", "unevaluated", "modeled"),
+    "unevaluatedProperties": _position(
+        "single", "applicator", "child", "object", "unmatched", "unevaluated", "modeled"
+    ),
+    "contains": _position("single", "applicator", "child", "array"),
+    "propertyNames": _position("single", "applicator", "child", "object", "modeled"),
+    "not": _position("single", "applicator", "in-place"),
+    "if": _position("single", "applicator", "in-place", "conditional"),
+    "then": _position("single", "applicator", "in-place", "conditional"),
+    "else": _position("single", "applicator", "in-place", "conditional"),
+    "properties": _position("map", "applicator", "child", "object", "modeled"),
+    "patternProperties": _position("map", "applicator", "child", "object", "modeled"),
+    "dependentSchemas": _position("map", "applicator", "in-place"),
+    "dependencies": _position("map", "applicator", "in-place"),
+    "$defs": _position("map", "definitions"),
+    "definitions": _position("map", "definitions"),
+    "contentSchema": _position("single"),
+    "extends": _position("single-or-sequence", "applicator", "in-place"),
 })
-SCHEMA_VALUE_KEYS: frozenset[str] = frozenset({
-    "additionalItems",
-    "additionalProperties",
-    "allOf",
-    "anyOf",
-    "contains",
-    "contentSchema",
-    "else",
-    "extends",
-    "if",
-    "items",
-    "not",
-    "oneOf",
-    "prefixItems",
-    "propertyNames",
-    "then",
-    "unevaluatedItems",
-    "unevaluatedProperties",
+"""Every keyword that holds subschemas, in the order walkers visit them unless a view says otherwise."""
+SCHEMA_SHAPES: Final[Mapping[str, SchemaShape]] = MappingProxyType({
+    keyword: position.shape for keyword, position in SCHEMA_POSITIONS.items()
 })
+"""The shape of each subschema keyword, for walkers that read raw schemas in their own key order."""
+
+
+def schema_positions(
+    *roles: SchemaRole, shapes: Collection[SchemaShape] = (), without: Collection[str] = ()
+) -> tuple[str, ...]:
+    """Return the keywords that play every role of ``roles`` with one of ``shapes`` (any), in table order.
+
+    ``without`` names the keywords a walker leaves out of the role, each a legacy subset named where it is read.
+    """
+    return tuple(
+        keyword
+        for keyword, position in SCHEMA_POSITIONS.items()
+        if position.roles.issuperset(roles) and (not shapes or position.shape in shapes) and keyword not in without
+    )
+
+
+SCHEMA_MAP_KEYS: frozenset[str] = frozenset(schema_positions(shapes=("map",)))
+SCHEMA_VALUE_KEYS: frozenset[str] = frozenset(schema_positions(shapes=SCHEMA_VALUE_SHAPES))
+_UNTYPED_MODEL_POSITIONS: Final = ("additionalItems", "unevaluatedItems", "unevaluatedProperties", "propertyNames")
+MODEL_VALUE_POSITIONS: Final = schema_positions("modeled", without=_UNTYPED_MODEL_POSITIONS)
+"""The positions whose schemas make up the values of a schema: its branches, items and properties.
+
+The legacy subset the target binding and the input-model converter walk: no tuple tail, no unevaluated keyword and no
+property names.
+"""
+REF_PRE_PASS_FIELDS: Final = frozenset(schema_positions("modeled", without=("additionalItems",)))
+"""The fields the reference pre-pass descends into: the modeled positions without ``additionalItems`` (legacy)."""
+REF_PRE_PASS_POSITIONS: Final = tuple(
+    sorted(
+        REF_PRE_PASS_FIELDS.union(schema_positions("conditional")),
+        key=(
+            "items",
+            "prefixItems",
+            "additionalProperties",
+            "unevaluatedProperties",
+            "unevaluatedItems",
+            "patternProperties",
+            "propertyNames",
+            "anyOf",
+            "allOf",
+            "oneOf",
+            "if",
+            "then",
+            "else",
+            "properties",
+        ).index,
+    )
+)
+"""The positions of the reference pre-pass, the conditional ones under --generate-schema-validators only.
+
+In the legacy order it meets references in, which the names of the references it registers follow.
+"""
 
 
 def _local_definition_ref_name(ref: str) -> tuple[str, str, str] | None:

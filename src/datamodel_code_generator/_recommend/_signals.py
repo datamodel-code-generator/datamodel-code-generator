@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
 
+from datamodel_code_generator._json_schema import SCHEMA_VALUE_SHAPES, schema_positions
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
@@ -83,26 +85,10 @@ SchemaKind: TypeAlias = Literal["openapi", "jsonschema", "asyncapi"]
 SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
 
 _HTTP_METHODS = frozenset({"get", "put", "post", "delete", "patch", "head", "options", "trace"})
-_SCHEMA_MAP_KEYWORDS = ("properties", "patternProperties", "dependentSchemas")
+_SCHEMA_MAP_KEYWORDS = schema_positions("applicator", shapes=("map",), without=("dependencies",))
 _ZERO_BOUND_KEYWORDS = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
 _LITERAL_CHECKED_KEYWORDS = frozenset({*_ZERO_BOUND_KEYWORDS, "multipleOf", "minLength", "maxLength"})
-_SUBSCHEMA_KEYWORDS = (
-    "allOf",
-    "anyOf",
-    "oneOf",
-    "prefixItems",
-    "items",
-    "additionalItems",
-    "additionalProperties",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-    "contains",
-    "propertyNames",
-    "not",
-    "if",
-    "then",
-    "else",
-)
+_SUBSCHEMA_KEYWORDS = schema_positions("applicator", shapes=SCHEMA_VALUE_SHAPES, without=("extends",))
 _SHAPE_IGNORED_KEYWORDS = frozenset({"description", "title", "example", "examples", "$comment"})
 _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "description", "title", "$comment"})
 _COERCIBLE_TYPES = frozenset({"integer", "number", "boolean"})

@@ -1116,8 +1116,9 @@ over dumped schemas or frozen schema facts, in a pure parser core (`parser/_inte
 `parser/_null_facts.py`, `parser/_model_shapes.py`); the adapter that reads those facts is the only
 code that reads the live objects, and callers are to go through it (readers of the stored `is_optional` move in a later
 step). `scripts/check_architecture_boundaries.py` keeps the package free of concrete backends and the parser cores free
-of everything but the standard library. A table that `types.py` reads while it is imported is a top-level leaf instead,
-as the model package imports `types.py`: `_requirements.py` and `_constraint_applicability.py`.
+of everything but the standard library and the leaf tables they read (`_json_schema.py`, `_records`, `_regex_syntax`).
+A table that `types.py` reads while it is imported is a top-level leaf instead, as the model package imports
+`types.py`: `_requirements.py` and `_constraint_applicability.py`.
 
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
@@ -1146,6 +1147,7 @@ as the model package imports `types.py`: `_requirements.py` and `_constraint_app
 | Pydantic `extra`, closedness and by-name configuration of a model through its bases (targets read it, never derive it) | planned: `model/_decisions/closedness.py` | none yet (the first adapter is the target seam; the model backends follow) |
 | targets: the structure and spelling of a model type: the model's `TypeExpr`, frozen once at the seam (no target builds, unwraps or inspects a type view for a decision) | `types.py`: `type_expr_of`, `render_type_expr`; planned: `_target_types.py:freeze_type` | `_target_module.py:TargetModule`, `_target_module.py:TypeComposer` (text of support compositions) |
 | targets: the operation plan both targets read (groups, operation and argument names, settings resolution, parameters and defaults, media, bodies, responses, status classes, bodyless statuses, forms, parts, security requirements); where the client and the server differ, a named policy row | planned: `_target_operations.py` | none (each target keeps only its own forms) |
+| which keywords of a schema hold subschemas, the shape of each value (a map of named schemas, a list, one, or one or a list) and the roles each keyword plays (applicator, in place, conditional, child of an array or an object, unmatched, unevaluated, held as a `JsonSchemaObject` field, definitions); a walker that visits another set or order than a role gives keeps it as a named view of the table | `_json_schema.py`: `SCHEMA_POSITIONS`, `SCHEMA_SHAPES`, `schema_positions`; views `SCHEMA_MAP_KEYS`, `SCHEMA_VALUE_KEYS`, `MODEL_VALUE_POSITIONS`, `REF_PRE_PASS_FIELDS`, `REF_PRE_PASS_POSITIONS` | the walkers of `parser/jsonschema.py` (`_walk_schema_objects`, `_iter_referencing_schemas`, `_iter_schema_resource_children`, `_iter_ref_walk_children`, `_find_json_schema_anchor_pointer`, `_locate_dump`) and its keyword tables, `parser/_intersection.py`, `_target_binding.py:_Reader._subschemas`, `input_model.py`, `_recommend/_signals.py` |
 
 The target rows have their code shapes in the toml (`T-wire`, `T-resolver`, `T-kind`, `T-type`, `T-operation`, `H14`,
 `Hx-closedness`, and target signatures of `H08`, `H11`, `H23`, `H24`). A `planned` place is a core that a later change
@@ -1422,11 +1424,12 @@ paths:
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
 input-model, reference, model-composition, output-model, shared-model, schema graph, parser pass, requirement-table,
-constraint-table, and debug check flag files are classified explicitly. The composition root may select concrete
-backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
+constraint-table, subschema-position-table and debug check flag files are classified explicitly. The composition
+root may select concrete backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
 `sys.modules`, including module-name constants and aliases. The requirement table may import only the standard library,
 `typing_extensions`, `_records` and `enums`, the constraint table only those and the requirement table, `_checks.py`,
-which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema
+which every layer reads for the debug check flags, and `_json_schema.py`, the table of subschema positions every schema
+walker reads (by shape or through a view of its roles), only the standard library and `typing_extensions`, and the schema
 graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,
 `_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the check hooks of `_check_scopes` (the

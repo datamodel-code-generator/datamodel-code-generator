@@ -49,6 +49,7 @@ from warnings import warn
 
 from typing_extensions import Sentinel
 
+from datamodel_code_generator._json_schema import SINGLE_SCHEMA_SHAPES, schema_positions
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
@@ -80,15 +81,13 @@ _BOUND_DIMENSIONS: Final = (
     (("minItems",), ("maxItems",)),
     (("minProperties",), ("maxProperties",)),
 )
+_UNEVALUATED_KEYWORDS: Final = schema_positions("unevaluated")
 _SCHEMA_KEYWORDS: Final = (
-    "items",
-    "additionalItems",
-    "additionalProperties",
-    "propertyNames",
-    "unevaluatedItems",
-    "unevaluatedProperties",
+    *schema_positions("modeled", "child", shapes=SINGLE_SCHEMA_SHAPES, without=_UNEVALUATED_KEYWORDS),
+    *_UNEVALUATED_KEYWORDS,
 )
-_SCHEMA_MAP_KEYWORDS: Final = ("properties", "patternProperties")
+"""The keywords of one nested schema the intersection reads: the core ones, then those of the unevaluated vocabulary."""
+_SCHEMA_MAP_KEYWORDS: Final = schema_positions("modeled", shapes=("map",))
 ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _NUMBER_TYPES: Final = frozenset({"integer", "number"})

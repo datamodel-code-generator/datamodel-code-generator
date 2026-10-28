@@ -1453,9 +1453,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/_openapi_wire_plan.py"."property_members"]
 "H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
 
-[allow."src/datamodel_code_generator/_recommend/_signals.py"."<module>"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
-
 [allow."src/datamodel_code_generator/_target_binding.py"."<module>"]
 "T-type.view-construction" = { home = "T-type", count = 12, audit = "M-08" }
 "T-wire.raw-value" = { home = "T-wire", count = 5, audit = "R-01" }
@@ -1596,7 +1593,6 @@ fix = "RP15b"
 "T-wire.raw-key" = { home = "T-wire", count = 2, audit = "R-08" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Reader._subschemas"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."_Reader.borrow"]
@@ -1726,9 +1722,6 @@ fix = "RP15b"
 "T-wire.raw-key" = { home = "T-wire", count = 2, audit = "R-07" }
 "T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-07" }
 
-[allow."src/datamodel_code_generator/input_model.py"."<module>"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
-
 [allow."src/datamodel_code_generator/model/_decisions/enum_kind.py"."<module>"]
 "H07.int64-range" = { home = "H07", count = 1, audit = "D-L1-21" }
 
@@ -1749,9 +1742,6 @@ fix = "RP15b"
 
 [allow."src/datamodel_code_generator/model/pydantic_v2/types.py"."_PydanticDataTypeManager.get_data_float_type"]
 "F-use-decimal-in-field-forms.option-read" = { home = "F-use-decimal-in-field-forms", count = 1, audit = "D-L1-23" }
-
-[allow."src/datamodel_code_generator/parser/_intersection.py"."<module>"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
 
 [allow."src/datamodel_code_generator/parser/_intersection.py"."_Reconciler._type"]
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-16" }
@@ -1813,9 +1803,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."<module>"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 12, audit = "D-X-01" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
 
@@ -1862,9 +1849,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_additional_properties_root_field"]
 "F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
 "F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_conditional_schema"]
-"Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_schema_types"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-06" }

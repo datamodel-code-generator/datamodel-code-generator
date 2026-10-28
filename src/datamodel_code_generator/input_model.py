@@ -34,6 +34,7 @@ from pydantic import BaseModel
 from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
+from datamodel_code_generator._json_schema import MODEL_VALUE_POSITIONS, SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeExpr,
@@ -257,7 +258,8 @@ _PRESERVED_TYPE_ORIGINS: dict[type, str] = {}
 # Marker for types that Pydantic cannot serialize to JSON Schema
 _UNSERIALIZABLE_MARKER = "x-python-unserializable"
 _UNION_BRANCH_MARKER = "x-python-union-branch"
-_UNSERIALIZABLE_SCHEMA_KEYS = frozenset({"anyOf", "oneOf", "allOf", "items", "prefixItems", "additionalProperties"})
+_UNSERIALIZABLE_SCHEMA_KEYS = SCHEMA_VALUE_KEYS.intersection(MODEL_VALUE_POSITIONS)
+"""The positions Pydantic writes the schema of a type expression at: branches and items, no named members."""
 _FIELD_SCHEMA_NAME = "x-datamodel-code-generator-field-name"
 _MISSING_FIELD_SCHEMA_NAME = Sentinel("_MISSING_FIELD_SCHEMA_NAME")
 
@@ -921,11 +923,6 @@ def _add_python_type_to_properties(
 
 def _clear_field_schema_names(schema: dict[str, Any]) -> None:
     """Remove temporary owners from schema positions, including custom inlined models."""
-    from datamodel_code_generator._json_schema import (  # ruff: ignore[import-outside-top-level]
-        SCHEMA_MAP_KEYS,
-        SCHEMA_VALUE_KEYS,
-    )
-
     pending: list[Any] = [schema]
     while pending:
         node = pending.pop()
