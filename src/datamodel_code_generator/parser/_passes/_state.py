@@ -21,7 +21,7 @@ from datamodel_code_generator.model.base import DataModel, _keyed_answer
 from datamodel_code_generator.parser._phases import DecisionOutcome
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Generator, Iterable, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
@@ -466,6 +466,8 @@ class _FinalizeState(Generic[ContextT]):
     unused_models: list[DataModel]
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]]
     module_to_import: dict[ModulePath, Imports]
+    forwarder_modules: Collection[ModulePath]
+    with_import: bool
     all_models: list[DataModel] = dataclasses.field(init=False)
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False

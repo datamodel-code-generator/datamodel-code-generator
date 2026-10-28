@@ -3,48 +3,26 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Annotated, Any, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 Array: TypeAlias = list[Any]
 
 
-class Bounded(Struct):
-    pass
+Bounded: TypeAlias = Annotated[list[str], Meta(min_length=1)]
 
 
 Anything: TypeAlias = Any
 
 
-class ItemsLater(Struct):
-    pass
-
-
-class ItemsFirst(Struct):
-    pass
-
-
-class UnevaluatedItems(Struct):
-    pass
-
-
-class RefItems(Struct):
-    pass
-
-
-class RefBounded(Bounded):
-    pass
-
-
-class RefNoParts(Struct):
-    pass
+RefBounded: TypeAlias = Bounded
 
 
 class M(Struct):
-    items_later: ItemsLater | UnsetType = UNSET
-    items_first: ItemsFirst | UnsetType = UNSET
-    unevaluated_items: UnevaluatedItems | UnsetType = UNSET
-    ref_items: RefItems | UnsetType = UNSET
+    items_later: list[str] | UnsetType = UNSET
+    items_first: Annotated[list[int], Meta(min_length=1)] | UnsetType = UNSET
+    unevaluated_items: list[str] | UnsetType = UNSET
+    ref_items: list[str] | UnsetType = UNSET
     ref_bounded: RefBounded | UnsetType = UNSET
-    ref_no_parts: RefNoParts | UnsetType = UNSET
+    ref_no_parts: list[str] | UnsetType = UNSET

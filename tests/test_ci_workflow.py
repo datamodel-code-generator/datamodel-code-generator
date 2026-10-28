@@ -108,13 +108,33 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
         for name in skipped
         for state in ("success", "failure", "cancelled")
     })
-    full_runs = {**dict.fromkeys(cases, "true"), **dict.fromkeys(mid_stack_cases, "false")}
+    main_only_jobs = [name for name in gate["needs"] if jobs[name].get("if") == "github.event_name != 'pull_request'"]
+    pull_request_cases = {
+        f"pull-request:{name}:{state}": {
+            **success,
+            **{job: {"result": "skipped"} for job in main_only_jobs},
+            name: {"result": state},
+        }
+        for name in success
+        for state in ("success", "failure", "cancelled", "skipped")
+    }
+    full_runs = {
+        **dict.fromkeys(cases, "true"),
+        **dict.fromkeys(mid_stack_cases, "false"),
+        **dict.fromkeys(pull_request_cases, "true"),
+    }
     cases.update(mid_stack_cases)
+    cases.update(pull_request_cases)
     outputs = {}
     for name, needs in cases.items():
         result = subprocess.run(
             [sys.executable, "-c", gate["steps"][0]["run"]],
-            env={**os.environ, "NEEDS": json.dumps(needs), "FULL_TEST_RUN": full_runs[name]},
+            env={
+                **os.environ,
+                "NEEDS": json.dumps(needs),
+                "FULL_TEST_RUN": full_runs[name],
+                "MAIN_ONLY_JOBS": " ".join(main_only_jobs) if name in pull_request_cases else "",
+            },
             capture_output=True,
             text=True,
             check=False,

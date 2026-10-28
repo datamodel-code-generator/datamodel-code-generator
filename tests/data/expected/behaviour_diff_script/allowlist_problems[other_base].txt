@@ -1,1 +1,0 @@
-allowlist base 0.85.0 is not 0.86.0: replace the table when the base moves

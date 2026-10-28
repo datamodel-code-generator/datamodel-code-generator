@@ -844,7 +844,7 @@ fix = "RP15b"
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_root_value_schema"]
-"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }
+"F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 5, audit = "#5406" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_value_schema"]
 "F-intersect-allof-keywords.option-read" = { home = "F-intersect-allof-keywords", count = 1, audit = "D-L1-14" }

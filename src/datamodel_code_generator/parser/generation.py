@@ -142,6 +142,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "append_field",
     "apply_const",
     "apply_literal_default",
+    "bind_builtin_names",
     "clear_target_null",
     "collapse_root_data_type",
     "defer_refresh",
@@ -223,6 +224,7 @@ passes build are ``copied``."""
 NO_SITE_EFFECT: frozenset[str] = frozenset({
     "add_model_import",
     "apply_literal_default",
+    "bind_builtin_names",
     "clear_target_null",
     "defer_refresh",
     "detach_data_type_ref",
@@ -2429,6 +2431,13 @@ class GenerationStore:  # noqa: PLR0904
             return
         model._additional_imports.append(import_)  # noqa: SLF001
 
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().bind_builtin_names() instead.", category=None)
+    def bind_builtin_names(model: DataModel, bindings: Mapping[str, str]) -> None:
+        """Write the bare builtins of a model through the aliases its module imports them by."""
+        model._builtin_name_bindings = bindings  # noqa: SLF001
+        model.invalidate_render_caches()
+
     @deprecated("Use GenerationStore.builder().replace_nested_data_type() instead.", category=None)
     def replace_nested_data_type(
         self,
@@ -2966,6 +2975,10 @@ class GraphBuilder:
     def add_model_import(self, model: DataModel, import_: Import) -> None:
         """Add an import to a model once."""
         self._store.add_model_import(model, import_)  # ty: ignore[deprecated]
+
+    def bind_builtin_names(self, model: DataModel, bindings: Mapping[str, str]) -> None:
+        """Write the bare builtins of a model through ``GenerationStore.bind_builtin_names``."""
+        self._store.bind_builtin_names(model, bindings)  # ty: ignore[deprecated]
 
     def set_type_expressions(  # noqa: PLR0913
         self,

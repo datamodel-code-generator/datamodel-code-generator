@@ -40,5 +40,9 @@
   "names": [
     "Model",
     "Version"
-  ]
+  ],
+  "probes": {
+    "Model": "accept",
+    "Version": "accept"
+  }
 }

@@ -28,12 +28,13 @@ from datamodel_code_generator.imports import IMPORT_LITERAL, Import
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
-from datamodel_code_generator.model.base import BaseClassDataType, DataModel
+from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _bare_name_loads, _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
 from datamodel_code_generator.parser._imports_plan import (
+    Added,
     BindingRequest,
     FinalName,
     ImportProducer,
@@ -102,8 +103,10 @@ __all__ = [
     "RenderHost",
     "add_root_init_result",
     "alias_builtin_shadowing_module_imports",
+    "alias_builtins_hidden_by_submodules",
     "append_model_imports",
     "bind_module_field_names",
+    "builtin_name_bindings",
     "change_module_imported_model_names",
     "decide_config_items",
     "name_final_classes_of_additional_properties",
@@ -164,6 +167,10 @@ class ImportsHost(ReplacedRootsHost, Protocol[ContextT]):
     @property
     def target_python_version(self) -> PythonVersion:
         """The Python version the output targets."""
+
+    @property
+    def treat_dot_as_module(self) -> bool | None:
+        """Whether dots in schema names make modules."""
 
     def _collect_used_names_from_models(
         self,
@@ -343,6 +350,9 @@ _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
 
 
 _BUILTIN_MODULE_BINDINGS: Final = ImportProducer("builtin-module-bindings")
+
+
+_BUILTIN_SUBMODULE_BINDINGS: Final = ImportProducer("builtin-submodule-bindings")
 
 
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
@@ -1378,6 +1388,96 @@ def alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], state: _Fin
     """Alias the module imports named like a builtin that their module also writes bare."""
     for ctx in state.contexts:
         _alias_builtin_shadowing_module_imports(parser, ctx)
+
+
+def _written_module_path(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
+    """Return the path that the output writes a module at, as ``render_modules`` normalizes and expands it."""
+    path = _normalize_result_module_path(module, treat_dot_as_module=treat_dot_as_module)
+    return _expand_export_module_path(path) if treat_dot_as_module else path
+
+
+def _package_submodule_names(
+    contexts: Iterable[ModuleContextView],
+    forwarder_modules: Collection[ModulePath],
+    *,
+    treat_dot_as_module: bool | None,
+) -> dict[ModulePath, set[str]]:
+    """Return the names of the written submodules of each package, by the package's path in the written layout.
+
+    Importing a submodule, from any module, binds its name in its package.
+    """
+    names: dict[ModulePath, set[str]] = {}
+    for ctx in contexts:
+        if not (ctx.models or ctx.is_init or ctx.module_key in forwarder_modules):
+            continue
+        *packages, file_name = _written_module_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
+        if file_name != "__init__.py":
+            packages.append(file_name.removesuffix(".py"))
+        for depth in range(len(packages)):
+            names.setdefault(tuple(packages[:depth]), set()).add(packages[depth])
+    return names
+
+
+def _alias_builtins_hidden_by_submodules(
+    parser: ImportsHost[Any], ctx: ModuleContextView, submodule_names: Collection[str]
+) -> None:
+    """Import the builtins that a package's submodules hide, and that the package writes bare, under aliases.
+
+    ``app/list.py`` binds ``list`` in ``app/__init__.py`` once anything imports it, whatever the import is named, so
+    ``list[str]`` there would subscript the module. The package imports the builtin as ``list_aliased``, the alias
+    form of field-name bindings, and every bare ``list`` its models and module code write follows; ``list.Pop``
+    names the submodule and keeps its name. A builtin is a name of the static table of the target
+    (``PYTHON_BUILTIN_TYPE_NAMES``); the output writes a bare load of one for nothing but the builtin.
+    """
+    if not (hidden := PYTHON_BUILTIN_TYPE_NAMES.intersection(submodule_names)):
+        return
+    loads = {model: found for model in ctx.models if (found := _bare_loads_of(model.render(), hidden))}
+    module_code = parser.data_model_type.render_module_code(ctx.models)
+    if not (written := {name for found in loads.values() for name in found} | _bare_loads_of(module_code, hidden)):
+        return
+    reserved = {
+        *submodule_names,
+        *(model.class_name for model in ctx.models),
+        *(field.name for model in ctx.models for field in model.fields if field.name is not None),
+        *(
+            module_imports.get_effective_name(from_, import_)
+            for module_imports in (ctx.imports, parser.imports)
+            for from_, imported in module_imports.items()
+            for import_ in imported
+        ),
+    }
+    bindings = {name: _reserve_import_alias(name, reserved) for name in sorted(written)}
+    parser._import_ledger.append(  # noqa: SLF001
+        ctx.imports,
+        [Import(from_="builtins", import_=name, alias=alias) for name, alias in bindings.items()],
+        _BUILTIN_SUBMODULE_BINDINGS,
+    )
+    for model, found in loads.items():
+        parser._graph_builder.bind_builtin_names(model, {name: bindings[name] for name in sorted(found)})  # noqa: SLF001
+
+
+def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Import the builtins that each package's submodules hide, and that the package writes bare, under aliases."""
+    submodule_names = _package_submodule_names(
+        state.contexts, state.forwarder_modules, treat_dot_as_module=parser.treat_dot_as_module
+    )
+    for ctx in state.contexts:
+        if ctx.is_init and (
+            names := submodule_names.get(
+                _written_module_path(ctx.module, treat_dot_as_module=parser.treat_dot_as_module)[:-1]
+            )
+        ):
+            _alias_builtins_hidden_by_submodules(parser, ctx, names)
+
+
+def builtin_name_bindings(ledger: ModuleImportLedger, imports: Imports) -> dict[str, str]:
+    """Return the aliases that ``alias_builtins_hidden_by_submodules`` imported the builtins of a module under."""
+    return {
+        import_.import_: cast("str", import_.alias)
+        for entry in ledger.entries(imports)
+        if entry.producer == _BUILTIN_SUBMODULE_BINDINGS and isinstance(entry.operation, Added)
+        for import_ in entry.operation.imports
+    }
 
 
 def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
