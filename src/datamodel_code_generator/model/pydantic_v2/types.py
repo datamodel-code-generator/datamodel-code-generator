@@ -196,7 +196,6 @@ _ZERO_BOUND_KEYWORDS: tuple[str, ...] = ("minimum", "maximum", "exclusiveMinimum
 """The bounds of which exactly one equal to 0 gives a zero-bound class in the field forms, in schema order."""
 
 escape_characters = str.maketrans({
-    "'": r"\'",
     "\b": r"\b",
     "\f": r"\f",
     "\n": r"\n",
@@ -208,13 +207,24 @@ HOSTNAME_REGEX = _DataTypeManagerBase.HOSTNAME_REGEX
 
 
 def _get_regex_literal(pattern: str) -> str:
+    r"""Render a pattern as a raw string literal that reads back as the same regex.
+
+    A raw literal cannot escape its own quote (``r'\\''`` keeps the backslash), so the
+    quote is chosen from those the pattern does not contain. A pattern holding both
+    quotes, or ending in a lone backslash, is returned as is and rendered as a plain
+    string literal.
+    """
     escaped_regex = pattern.translate(escape_characters)
-    raw_literal = f"r'{escaped_regex}'"
-    try:
-        ast.literal_eval(raw_literal)
-    except SyntaxError:
-        return pattern
-    return PythonCode(raw_literal, pattern)
+    for quote in ("'", '"'):
+        if quote in escaped_regex:
+            continue
+        raw_literal = f"r{quote}{escaped_regex}{quote}"
+        try:
+            ast.literal_eval(raw_literal)
+        except SyntaxError:
+            continue
+        return PythonCode(raw_literal, pattern)
+    return pattern
 
 
 class _PydanticDataTypeManager(_DataTypeManagerBase):
