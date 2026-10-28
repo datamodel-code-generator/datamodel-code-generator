@@ -2520,8 +2520,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether msgspec decodes data by the output's annotations, which it resolves at the first decode."""
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = None
     """The construct that the model's own form writes where Pydantic reads it, such as a ``type`` statement."""
-    _CONFIG_KEYS_WITHOUT_REQUIREMENT: ClassVar[Callable[[], tuple[str, ...]]] = staticmethod(tuple)
-    """The config keys that the model can write without a row in ``_requirements.py``, for the debug check."""
     _LITERAL_HOLDS_ENUM_MEMBERS: ClassVar[bool] = True
     """Whether the output validates a ``Literal`` of enum members (msgspec does not)."""
     _LAYERS_REPEATED_CONSTRAINTS: ClassVar[bool] = True
@@ -2986,7 +2984,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             self,
             (class_name, use_default),
             compute,
-            lambda: self._render_dedup_key(render_class_name),
         )
 
     def _prepare_dedup_key(self) -> None:

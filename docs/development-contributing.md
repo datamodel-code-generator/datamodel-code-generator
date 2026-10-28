@@ -298,9 +298,16 @@ for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENE
 | `1` | raise at the first violation, with a message that starts with the variable |
 | `report:<path>` | append every violation to `<path>` as one JSON line (`area`, `message` and the area's details) and go on |
 
-Any other value fails the run. `Parser.parse` reads every variable once, at its start (`read_check_flags` in
-`src/datamodel_code_generator/_checks.py`); the code it runs asks `check_mode(area)`, which costs one lookup, and
-reports a violation through the mode it returns.
+Any other value fails the run. A parse reads every variable once, at its start, and its code reports a violation
+through the mode of the area.
+
+The areas of `tests/checks` (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the
+package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
+starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in the test process and, through the
+`sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
+same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest. The
+other areas still run inside the package: `Parser.parse` reads them with `read_check_flags`
+(`src/datamodel_code_generator/_checks.py`), and the code it runs asks `check_mode(area)`.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
@@ -328,12 +335,15 @@ and fails the test for a write of the package that the allowlist does not list.
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
-| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
+| `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 
-A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
-a row to this table, and keeps tests that run it on and off. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
+A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
+to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
+`test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
+not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
 sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in

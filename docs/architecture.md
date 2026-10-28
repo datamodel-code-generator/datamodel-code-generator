@@ -964,9 +964,9 @@ field's type walked at the current clock are not walked again. `DataModel.import
 fields' kept imports with the model's own (`_additional_imports`) at each read; the snapshot of the IMPORTS phase is
 where they become final. Fields and models of classes outside the package, and every field of a parse by a parser
 class outside it, compute both at each read (`DataModel.clear_imports_cache` is a deprecated no-op).
-`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` computes every returned value anew and fails on a difference, except for
-the dedup keys and self references whose stale values today's output keeps (`legacy-stale-dedup-keys`,
-`legacy-stale-self-reference`), which it records with a report file.
+`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS` (`tests/checks/memos.py`) computes every returned value anew and fails on
+a difference, except for the dedup keys and self references whose stale values today's output keeps
+(`legacy-stale-dedup-keys`, `legacy-stale-self-reference`), which it records with a report file.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and

@@ -505,19 +505,6 @@ def _config_constructs(config_items: Iterable[tuple[str, str]]) -> Iterator[tupl
             yield cast("PydanticConstruct", row.construct), None
 
 
-def _config_keys_without_requirement() -> tuple[str, ...]:
-    """Return the keys of the installed Pydantic's ``ConfigDict`` that have no row: user config writes any of them."""
-    from pydantic import ConfigDict as PydanticConfigDict  # noqa: PLC0415
-
-    return tuple(
-        sorted(
-            key
-            for key in PydanticConfigDict.__required_keys__ | PydanticConfigDict.__optional_keys__
-            if key not in CONFIG_KEY_REQUIREMENTS
-        )
-    )
-
-
 def _import_rendered_alias_generator(model: DataModel, config_items: Iterable[tuple[str, str]]) -> None:
     """Import the known alias generator that the model's rendered config items name.
 
@@ -1575,7 +1562,6 @@ class BaseModel(BaseModelBase):
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
     _CHECKS_CONSTRAINTS: ClassVar[bool] = True
-    _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     BASE_CLASS_ALIAS: ClassVar[str] = "_BaseModel"
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.PYDANTIC

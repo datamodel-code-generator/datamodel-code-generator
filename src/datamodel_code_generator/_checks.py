@@ -58,18 +58,10 @@ class CheckArea(Enum):
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations."""
 
-    GENERATED_CODE_REQUIREMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
-    """Every Pydantic ``ConfigDict`` key that the generator can write has a row in ``_requirements.py``."""
-
     RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
     """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
     modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
     with it renders as the type hint then."""
-
-    RENDER_MEMOS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
-    """Every value a per-parse memo returns equals the value computed anew where it is read. With a report file, it
-    also records the values of the tables with a legacy row (``_parse_memo.LEGACY_ROWS``: stale dedup keys, self
-    references and nested models' required fields before nullability) that differ from the values computed anew."""
 
     FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a

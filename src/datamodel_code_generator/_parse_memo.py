@@ -20,25 +20,20 @@ holds it; a model's constructor bumps the model, as it names the model the sourc
 returned while none of those revisions moved. Every bump moves the memo's clock, so a value whose revisions were seen to
 hold at the current clock is returned without comparing them again.
 
-Under the ``RENDER_MEMOS`` check, each value a memo returns is computed anew and compared; a value that differs is a
-stale hit. The memos return what the caches they replace returned, stale or not, and two tables are known to return
-stale values that today's output keeps (`LEGACY_ROWS`): their stale hits are recorded with a report file and never
-raise.
+The memos return what the caches they replace returned, stale or not; the ``RENDER_MEMOS`` debug check of the test
+suite (``tests/checks/memos.py``) computes each returned value anew and compares.
 """
 
 from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass
 from enum import Enum
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
-from datamodel_code_generator._checks import CHECK_MODES, CheckArea, CheckMode, check_mode
-
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Hashable, Iterable, Mapping
+    from collections.abc import Callable, Generator, Hashable, Iterable
 
     from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey
 
@@ -79,27 +74,6 @@ class MemoTable(Enum):
     enclosing union that reads the same hint spreads them."""
 
 
-LEGACY_ROWS: Final[Mapping[MemoTable, str]] = MappingProxyType({
-    MemoTable.DEDUP_KEYS: "legacy-stale-dedup-keys",
-    MemoTable.SELF_REFERENCE: "legacy-stale-self-reference",
-    MemoTable.NESTED_MODEL_REQUIRED_FIELDS_BEFORE_NULLABILITY: "legacy-nested-factory-order-before-nullability",
-})
-"""The tables whose stale values today's output keeps, with the row that names that.
-
-* ``legacy-stale-dedup-keys`` (``parser/_model_shapes.py``): deduplication and reuse compare the key a model kept from
-  an earlier pass, which only render-cache invalidation drops.
-* ``legacy-stale-self-reference``: under ``--collapse-root-models-name-strategy parent``, the root field of a wrapper
-  whose name the inner model takes keeps whether its type named the wrapper before the rename, and whether its
-  constraints apply reads that.
-* ``legacy-nested-factory-order-before-nullability`` (``model/base.py:_nested_model_factory``): without
-  ``--order-constructor-fields-by written-defaults``, the constructor ordering of a Pydantic dataclass under
-  ``--use-default-factory-for-optional-nested-models --strip-default-none`` builds a nested model by factory only when
-  the model had no required constructor field at the first read, a stripped ``None`` default counting as no default
-  unless the field's type was optional then, before reference unions become nullable. The order is 0.86.0's; the
-  option orders by the factories render preparation decides instead.
-"""
-
-
 @final
 @dataclass(slots=True)
 class _Slot:
@@ -108,8 +82,6 @@ class _Slot:
     owner: object
     epoch: int
     values: dict[Hashable, Any]
-    serial: int = 0
-    """For ``UNION_MEMBERS``: the count of union renderings the memo had kept when this one was kept."""
 
 
 @final
@@ -137,12 +109,10 @@ class ParseMemo:
     """The memos of one parse, which the generation store owns."""
 
     __slots__ = (
-        "_check",
         "_clock",
         "_deep",
         "_derived",
         "_epochs",
-        "_joins",
         "_own",
         "_readers",
         "_reading",
@@ -155,7 +125,6 @@ class ParseMemo:
         """Start with no values."""
         self._slots: dict[tuple[MemoTable, MemoKey], _Slot] = {}
         self._epochs: dict[tuple[MemoTable, MemoKey], int] = {}
-        self._joins = 0
         self._clock = 0
         self._revisions: dict[int, int] = {}
         self._own: dict[int, int] = {}
@@ -163,7 +132,6 @@ class ParseMemo:
         self._readers: dict[int, dict[int, Any]] = {}
         self._derived: dict[tuple[MemoTable, int, Hashable], _Derived] = {}
         self._reading: list[tuple[Any, dict[int, object]]] = []
-        self._check: tuple[Mapping[CheckArea, CheckMode], CheckMode | None] | None = None
         self._walked: dict[int, tuple[Any, int, tuple[tuple[Any, object, int], ...]]] = {}
 
     def bump_field(self, field: Any) -> None:
@@ -201,15 +169,8 @@ class ParseMemo:
         """Return the revisions of a field and of its model's own attributes."""
         return self._revisions.get(id(field), 0), self._own.get(id(field.parent), 0)
 
-    def derived(  # noqa: PLR0913
-        self,
-        table: MemoTable,
-        field: Any,
-        view: Hashable,
-        compute: Callable[[], _V],
-        recompute: Callable[[], _V] | None = None,
-        *,
-        source: object = None,
+    def derived(
+        self, table: MemoTable, field: Any, view: Hashable, compute: Callable[[], _V], *, source: object = None
     ) -> _V:
         """Return the value of a field kept in the table for ``view`` and read from ``source``, or compute and keep it.
 
@@ -222,7 +183,7 @@ class ParseMemo:
         if (entry := self._derived.get(key)) is not None and self._holds(entry, field, source):
             if self._reading:
                 self._read_by_outer(entry)
-            return self._checked(table, field, entry.value, recompute or compute)
+            return entry.value
         reads: dict[int, object] = {}
         self._reading.append((field, reads))
         try:
@@ -341,20 +302,11 @@ class ParseMemo:
         self._walked[field_key] = field, self._clock, walked_references
         return walked_references
 
-    def value(  # noqa: PLR0913, PLR0917
-        self,
-        table: MemoTable,
-        key: MemoKey,
-        owner: object,
-        args: Hashable,
-        compute: Callable[[], _V],
-        recompute: Callable[[], _V] | None,
-    ) -> _V:
+    def value(self, table: MemoTable, key: MemoKey, owner: object, args: Hashable, compute: Callable[[], _V]) -> _V:
         """Return the value kept for the owner and arguments, or compute and keep it.
 
         ``compute`` may invalidate the owner's values: a value is kept with the epoch the owner has once it returns, so
-        the values kept before it are dropped then. ``recompute``, when given, is what the check computes anew instead
-        of ``compute``, without its writes.
+        the values kept before it are dropped then.
         """
         slot_key = (table, key)
         if (
@@ -363,7 +315,7 @@ class ParseMemo:
             and slot.epoch == self._epochs.get(slot_key, 0)
             and args in slot.values
         ):
-            return self._checked(table, owner, slot.values[args], recompute or compute)
+            return slot.values[args]
         value = compute()
         epoch = self._epochs.get(slot_key, 0)
         if (slot := self._slots.get(slot_key)) is None or slot.owner is not owner or slot.epoch != epoch:
@@ -372,55 +324,24 @@ class ParseMemo:
             slot.values[args] = value
         return value
 
-    def _checked(self, table: MemoTable, owner: object, kept: _V, recompute: Callable[[], object]) -> _V:
-        """Return a kept value, compared under the ``RENDER_MEMOS`` check with the value computed anew.
-
-        The memo keeps the mode with the check flags it was read from and reads it again when other flags are current:
-        a memo outlives a parse, and its parser may parse again under other flags.
-        """
-        modes = CHECK_MODES.get()
-        if (check := self._check) is None or check[0] is not modes:
-            check = self._check = (modes, modes.get(CheckArea.RENDER_MEMOS))
-        if (mode := check[1]) is not None:
-            _check_hit(mode, table, owner, kept, recompute)
-        return kept
-
     def forget(self, table: MemoTable, key: MemoKey, owner: object) -> None:
         """Bump the owner's epoch in the table, so that no value it kept there is returned again."""
         slot_key = (table, key)
         if (slot := self._slots.get(slot_key)) is not None and slot.owner is owner:
             self._epochs[slot_key] = self._epochs.get(slot_key, 0) + 1
 
-    @property
-    def joins(self) -> int:
-        """The count of union renderings kept so far, which `union_members` compares a kept rendering with."""
-        return self._joins
-
     def keep_union_members(self, key: NodeKey, node: object, hint: str, members: tuple[str, ...]) -> None:
         """Keep the member hints a union node joined to ``hint``, in place of what it joined before."""
-        self._joins += 1
-        self._slots[MemoTable.UNION_MEMBERS, key] = _Slot(node, 0, {hint: members}, self._joins)
+        self._slots[MemoTable.UNION_MEMBERS, key] = _Slot(node, 0, {hint: members})
 
-    def union_members(self, key: NodeKey, node: object, hint: str, joins: int) -> tuple[str, ...] | None:
-        """Return the member hints the node last joined, when they joined to ``hint``, else None.
-
-        ``joins`` is `joins` before the node rendered ``hint``. Under the check, members a rendering before that one
-        kept are a stale hit: the node rendered ``hint`` without joining them.
-        """
+    def union_members(self, key: NodeKey, node: object, hint: str) -> tuple[str, ...] | None:
+        """Return the member hints the node last joined, when they joined to ``hint``, else None."""
         if (
             (slot := self._slots.get((MemoTable.UNION_MEMBERS, key))) is None
             or slot.owner is not node
             or (members := slot.values.get(hint)) is None
         ):
             return None
-        if slot.serial <= joins and (mode := check_mode(CheckArea.RENDER_MEMOS)) is not None:
-            _stale(
-                mode,
-                f"the {MemoTable.UNION_MEMBERS.value} joined to {hint}",
-                "were joined by an earlier rendering of the node",
-                table=MemoTable.UNION_MEMBERS.name,
-                hint=hint,
-            )
         return members
 
 
@@ -428,21 +349,14 @@ PARSE_MEMO: Final[ContextVar[ParseMemo | None]] = ContextVar("parse_memo", defau
 """The memo of the parse that runs, or None outside a parse."""
 
 
-def memoized(  # noqa: PLR0913, PLR0917
-    table: MemoTable,
-    key: MemoKey,
-    owner: object,
-    args: Hashable,
-    compute: Callable[[], _V],
-    recompute: Callable[[], _V] | None = None,
-) -> _V:
+def memoized(table: MemoTable, key: MemoKey, owner: object, args: Hashable, compute: Callable[[], _V]) -> _V:
     """Return what the current parse kept for the owner and arguments in the table (`ParseMemo.value`).
 
     Outside a parse the value is computed at each read.
     """
     if (memo := PARSE_MEMO.get()) is None:
         return compute()
-    return memo.value(table, key, owner, args, compute, recompute)
+    return memo.value(table, key, owner, args, compute)
 
 
 def forget(table: MemoTable, key: MemoKey, owner: object) -> None:
@@ -493,59 +407,3 @@ def rendering_memo() -> Generator[ParseMemo, None, None]:
         yield memo
     finally:
         PARSE_MEMO.reset(token)
-
-
-def _owner_name(owner: object) -> str:
-    """Name a model by its class name and a field by its model's class name and its name."""
-    if (class_name := getattr(owner, "class_name", None)) is not None:
-        return str(class_name)
-    return f"{getattr(getattr(owner, 'parent', None), 'class_name', None)}.{getattr(owner, 'name', None)}"
-
-
-def _same(kept: object, fresh: object) -> bool:
-    """Compare two values; a mapping of model objects (an enum member index) holds the same objects.
-
-    Values that differ only by objects that equal nothing, such as a ``nan`` default computed again, write the same.
-    """
-    if isinstance(kept, dict) and isinstance(fresh, dict):
-        return kept.keys() == fresh.keys() and all(kept[name] is fresh[name] for name in kept)
-    return _equal(kept, fresh)
-
-
-def _equal(kept: object, fresh: object) -> bool:
-    """Compare two values item by item inside tuples, lists and dataclasses.
-
-    Other values of one type are the same when they write the same text, such as ``nan`` or a runtime expression
-    built again, which equal nothing but themselves.
-    """
-    if kept is fresh or kept == fresh:
-        return True
-    if isinstance(kept, (tuple, list)) and isinstance(fresh, (tuple, list)) and type(kept) is type(fresh):
-        return len(kept) == len(fresh) and all(map(_equal, kept, fresh))
-    if is_dataclass(kept) and type(kept) is type(fresh):
-        return all(_equal(getattr(kept, field.name), getattr(fresh, field.name)) for field in fields(kept))
-    return type(kept) is type(fresh) and repr(kept) == repr(fresh)
-
-
-def _check_hit(mode: CheckMode, table: MemoTable, owner: object, kept: object, recompute: Callable[[], object]) -> None:
-    """Compare a returned value with the value computed anew; a stale hit of a legacy row is only recorded."""
-    if (row := LEGACY_ROWS.get(table)) is None:
-        if not _same(kept, recompute()):
-            name = _owner_name(owner)
-            why = "differ from the value computed anew"
-            _stale(mode, f"the {table.value} of {name}", why, table=table.name, owner=name)
-        return
-    if mode.report_path is not None and not _same(kept, recompute()):
-        mode.record(
-            f"{mode.area.value}: the {table.value} of {_owner_name(owner)} that row {row} reads differ from the value "
-            "computed anew",
-            table=table.name,
-            row=row,
-            owner=_owner_name(owner),
-        )
-
-
-def _stale(mode: CheckMode, subject: str, why: str, **details: object) -> None:
-    from datamodel_code_generator import Error  # noqa: PLC0415
-
-    mode.violation(Error, f"{subject} that the memo returns {why}", **details)

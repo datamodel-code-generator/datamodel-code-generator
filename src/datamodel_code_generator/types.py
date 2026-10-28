@@ -1543,10 +1543,9 @@ def _union_member_hints(members: tuple[TypeExpr, ...]) -> list[str]:
 def _spread_union_member_hints(memo: ParseMemo, members: tuple[TypeExpr, ...]) -> list[str]:
     hints: list[str] = []
     for member in members:
-        joins = memo.joins
         hint = render_type_expr(member)
         node = cast("DataType", member.node)
-        if spread := memo.union_members(NodeKey(id(node)), node, hint, joins):
+        if spread := memo.union_members(NodeKey(id(node)), node, hint):
             hints.extend(spread)
         else:
             hints.append(hint)

@@ -40,7 +40,6 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _config_constructs,
     _config_dict_items,
-    _config_keys_without_requirement,
     _import_rendered_alias_generator,
     _model_references,
     _template_config_items,
@@ -137,7 +136,6 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
     _READ_BY_PYDANTIC: ClassVar[bool] = True
     _CHECKS_CONSTRAINTS: ClassVar[bool] = True
-    _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)

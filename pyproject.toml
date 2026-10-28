@@ -427,6 +427,7 @@ run.omit = [
   "tests/api_generation/test_client_typing.py",
   "tests/api_generation/test_fastapi_install.py",
   "tests/api_generation/test_fastapi_typing.py",
+  "tests/checks/child/*",
   "tests/cli_doc/*",
   "tests/data/*",
   "tests/main/payload_validation/*",

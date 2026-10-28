@@ -1049,10 +1049,6 @@ def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextVi
     each construct, named with its module when the parse writes more than one. Output that Pydantic does not
     build has no floor to state.
     """
-    if (mode := check_mode(CheckArea.GENERATED_CODE_REQUIREMENTS)) is not None and (
-        unlisted := parser.data_model_type._CONFIG_KEYS_WITHOUT_REQUIREMENT()  # noqa: SLF001
-    ):
-        mode.violation(Error, f"config keys without a row in _requirements.py: {', '.join(unlisted)}")
     if (record := _PYDANTIC_FLOORS.get()) is None or parser.target_pydantic_version is None:
         return
     if not parser.data_model_type._READ_BY_PYDANTIC:  # noqa: SLF001

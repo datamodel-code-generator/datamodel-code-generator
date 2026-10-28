@@ -1,0 +1,6 @@
+datamodel_code_generator.parser._pipeline:Runner.run_steps <- tests.checks.parse.run_steps
+datamodel_code_generator._parse_memo:ParseMemo.value <- tests.checks.memos.value
+datamodel_code_generator._parse_memo:ParseMemo.derived <- tests.checks.memos.derived
+datamodel_code_generator._parse_memo:ParseMemo.keep_union_members <- tests.checks.memos.keep_union_members
+datamodel_code_generator._parse_memo:ParseMemo.union_members <- tests.checks.memos.union_members
+datamodel_code_generator.types:_spread_union_member_hints <- tests.checks.memos.spread_union_member_hints
