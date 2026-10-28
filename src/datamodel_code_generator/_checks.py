@@ -30,10 +30,8 @@ class CheckArea(Enum):
     """A family of debug checks; the value is the environment variable that sets its mode."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """The models that an order or a graph is built over by model key never share a key, a reference whose key names
-    one of them names it by its path too, and a lookup by path, for the references whose key names none of them, never
-    names two or more; every answer of a reference graph snapshot equals the computation it replaced. With a report
-    file, it also records the root-collapse decisions whose answer over the emitted models differs."""
+    """A site that tells models apart by model key or Reference identity finds what it found by path or Reference
+    equality before (`model/base.py:_keyed_answer`)."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """Each `$ref` edge of the schema graph gets one key and names the target the parser loads; under request-response

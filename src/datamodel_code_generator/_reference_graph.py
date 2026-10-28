@@ -3,8 +3,7 @@
 Each pass that reads cycles or an order among models takes a snapshot of the graph where its computation runs, over
 the models and the edge kinds it reads, and asks the snapshot instead of building a graph of its own. A predicate that
 models answer on demand, such as the order of the base classes of a model, takes its snapshot when it is asked, over
-the models it reaches (`walk_graph`). Under the ``MODEL_GRAPH`` check, every answer is compared with the computation
-it replaces (`graph_answer`).
+the models it reaches (`walk_graph`).
 """
 
 from __future__ import annotations
@@ -15,8 +14,6 @@ from typing import TYPE_CHECKING, Generic, TypeVar, final
 
 from typing_extensions import NamedTuple
 
-from datamodel_code_generator import Error
-from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
@@ -27,7 +24,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
 
-_AnswerT = TypeVar("_AnswerT")
 _GroupT = TypeVar("_GroupT", bound="Hashable")
 _NodeT = TypeVar("_NodeT")
 
@@ -281,18 +277,3 @@ def walk_graph(
             pending.extend(target_keys)
     note_reads(node_of.values())
     return ReachedModels(reference_graph(snapshot, node_of, {kind: targets}), MappingProxyType(node_of), start_keys)
-
-
-def graph_answer(snapshot: GraphSnapshot, answer: _AnswerT, old: Callable[[], _AnswerT]) -> _AnswerT:
-    """Return ``answer``, what the snapshot answers.
-
-    Under the ``MODEL_GRAPH`` check, an ``answer`` that differs from ``old()``, what the site computed before it read
-    the snapshot, is a violation.
-    """
-    if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None and answer != old():
-        mode.violation(
-            Error,
-            f"{snapshot.value}: the reference graph and the computation it replaces disagree",
-            site=snapshot.value,
-        )
-    return answer

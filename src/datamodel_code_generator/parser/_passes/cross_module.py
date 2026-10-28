@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_as_values,
@@ -24,7 +24,6 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     _find_base_classes,
-    _keyed_answer,
     _model_key_of_model,
 )
 from datamodel_code_generator.model.enum import Enum
@@ -158,27 +157,7 @@ _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
 def _has_cyclic_ancestry(model: DataModel) -> bool:
     """Return whether the base classes of a model, however distant, inherit from one another in a cycle."""
     walk = walk_graph(GraphSnapshot.CYCLIC_ANCESTRY, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes)
-    return graph_answer(
-        GraphSnapshot.CYCLIC_ANCESTRY,
-        walk.graph.acyclic_order((EdgeKind.BASE,)) is None,
-        lambda: _walks_to_cyclic_ancestry(model),
-    )
-
-
-def _walks_to_cyclic_ancestry(model: DataModel) -> bool:
-    """Return whether the base classes of a model inherit from one another in a cycle, by walking them."""
-    visiting: dict[int, bool] = {id(model): True}
-    stack = [(id(model), iter(_find_base_classes(model)))]
-    while stack:
-        if (base := next(stack[-1][1], None)) is None:
-            visiting[stack.pop()[0]] = False
-            continue
-        if visiting.get(id(base)):
-            return True
-        if id(base) not in visiting:
-            visiting[id(base)] = True
-            stack.append((id(base), iter(_find_base_classes(base))))
-    return False
+    return walk.graph.acyclic_order((EdgeKind.BASE,)) is None
 
 
 def _redeclared_tag_field(tag_fields: AbstractSet[str], field: DataModelFieldBase) -> str | None:
@@ -430,9 +409,11 @@ def import_removed_reuse_canonicals(
 
 def renamed_types_of(parser: CrossModuleHost, reference: Reference) -> list[_RenamedType] | None:
     """Return the class names that the model ``reference`` names had before it was renamed, or None."""
-    by_path = parser._renamed_type_paths.get(reference.path)  # noqa: SLF001
-    by_key = by_path if reference.source is None else parser._renamed_types.get(model_key_of(reference))  # noqa: SLF001
-    return _keyed_answer("renamed types", by_key, lambda: by_path)
+    return (
+        parser._renamed_type_paths.get(reference.path)  # noqa: SLF001
+        if reference.source is None
+        else parser._renamed_types.get(model_key_of(reference))  # noqa: SLF001
+    )
 
 
 def import_renamed_types(

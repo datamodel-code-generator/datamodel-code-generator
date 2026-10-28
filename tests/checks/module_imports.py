@@ -345,10 +345,10 @@ def _plan_module_imports(imports_mode: Mode, parser: Any, run: Any) -> None:
     A model's final module is the module that writes it.
     """
     from datamodel_code_generator._model_keys import model_key_of
-    from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
+    from datamodel_code_generator.parser._graph_ids import keyed_models
     from datamodel_code_generator.parser._passes._shared import _module_name_from_module_path
 
-    emitted = unchecked(keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan"))
+    emitted = keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan")
     names = NameTable({
         model_key_of(model.reference): FinalName(
             model.reference.short_name, _module_name_from_module_path(ctx.module_key), ctx.module
@@ -432,14 +432,14 @@ def _module_import_plan(
     """
     from datamodel_code_generator._model_keys import model_key_of
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.parser._graph_ids import keyed_models, unchecked
+    from datamodel_code_generator.parser._graph_ids import keyed_models
     from datamodel_code_generator.parser._passes._shared import (
         _generic_base_class_module,
         _get_model_module_name,
         reference_import_target,
     )
 
-    members = unchecked(keyed_models(ctx.models, "module import plan"))
+    members = keyed_models(ctx.models, "module import plan")
     overrides = parser._import_overrides or {}
     generic_base = None if parser._generic_base_model is None else model_key_of(parser._generic_base_model.reference)
     uses: list[ReferenceUse] = []

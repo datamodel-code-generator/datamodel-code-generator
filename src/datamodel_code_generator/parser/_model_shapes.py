@@ -27,7 +27,7 @@ from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Hashable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
     "COLLAPSE_REUSE",
@@ -229,13 +229,6 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         """Return what tells apart the models that references name: the model key."""
         raise NotImplementedError
 
-    def agreed(self, site: str, *, by_key: bool, by_path: Callable[[], bool]) -> bool:
-        """Return ``by_key``, what a site found by `identity`.
-
-        Under the adapter's check, a different ``by_path()``, what the site found by path, is a violation.
-        """
-        raise NotImplementedError
-
 
 @final
 @dataclass(slots=True)
@@ -308,7 +301,6 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             return True
         pending: list[tuple[ModelT | None, ModelT | None]] = [(left, right)]
         assumed_pairs: set[tuple[Hashable, Hashable]] = set()
-        assumed_paths: set[tuple[str, str]] = set()
         while pending:
             left_model, right_model = pending.pop()
             if (
@@ -320,16 +312,11 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             for left_reference, right_reference in zip(left_shape[1], right_shape[1], strict=True):
                 if left_reference is right_reference:
                     continue
-                pair = (self.source.identity(left_reference), self.source.identity(right_reference))
-                paths = (left_reference.path, right_reference.path)
-                if self.source.agreed(
-                    "assumed reference pairs",
-                    by_key=pair in assumed_pairs,
-                    by_path=lambda paths=paths: paths in assumed_paths,
-                ):
+                if (
+                    pair := (self.source.identity(left_reference), self.source.identity(right_reference))
+                ) in assumed_pairs:
                     continue
                 assumed_pairs.add(pair)
-                assumed_paths.add(paths)
                 pending.append((self.source.model_of(left_reference), self.source.model_of(right_reference)))
         return True
 

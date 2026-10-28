@@ -41,7 +41,7 @@ from datamodel_code_generator._parse_memo import (
     note_reads,
 )
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers, host_parsable
 from datamodel_code_generator.imports import (
@@ -826,9 +826,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             self,
             None,
             lambda: any(
-                _reference_names_model(d.reference, parent, "self reference")
-                for d in self.data_type.all_data_types
-                if d.reference
+                _reference_names_model(d.reference, parent) for d in self.data_type.all_data_types if d.reference
             ),
         )
 
@@ -3019,13 +3017,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         added to it.
         """
         met = set() if visited is None else visited
-        met_before = set(met)
         walk = _base_walk(GraphSnapshot.INHERITED_FIELDS, (self,))
-        for key in graph_answer(
-            GraphSnapshot.INHERITED_FIELDS,
-            walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met),
-            lambda: [_model_key_of_model(model) for model in _walked_inherited_field_models(self, met_before)],
-        ):
+        for key in walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met):
             yield from walk.node_of[key].fields
 
     def get_dedup_key(self, class_name: str | None = None, *, use_default: bool = True) -> tuple[Any, ...]:
@@ -3575,8 +3568,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             reference
             for rule_data_type in runtime_validation.data_types
             for data_type in rule_data_type.all_data_types
-            if (reference := data_type.reference) is not None
-            and not _reference_names_model(reference, self, "schema runtime validation references")
+            if (reference := data_type.reference) is not None and not _reference_names_model(reference, self)
         )
 
     @property
@@ -3783,39 +3775,10 @@ def _base_walk(
     )
 
 
-def _walked_inherited_field_models(model: DataModel, met: set[ModelKey]) -> list[DataModel]:
-    """Return the models whose fields ``model`` inherits, bases first, each once, by walking its bases."""
-    if (key := model_key_of(model.reference)) in met:
-        return []
-    met.add(key)
-    models = [
-        inherited for base in _find_base_classes(model) for inherited in _walked_inherited_field_models(base, met)
-    ]
-    models.append(model)
-    return models
-
-
 def _model_ancestor_keys(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
     """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
     walk = _base_walk(GraphSnapshot.ANCESTORS, (model,), stand_ins)
-    return graph_answer(
-        GraphSnapshot.ANCESTORS,
-        walk.graph.reached(walk.starts[0], (EdgeKind.BASE,)),
-        lambda: _walked_ancestors(model, stand_ins),
-    )
-
-
-def _walked_ancestors(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
-    """Collect the model keys of the generated ancestors of ``model`` by walking its bases."""
-    ancestors: set[ModelKey] = set()
-    to_visit = direct_base_models(model, stand_ins)
-    while to_visit:
-        parent = to_visit.pop()
-        if (parent_key := model_key_of(parent.reference)) in ancestors:
-            continue
-        ancestors.add(parent_key)
-        to_visit.extend(direct_base_models(parent, stand_ins))
-    return frozenset(ancestors)
+    return walk.graph.reached(walk.starts[0], (EdgeKind.BASE,))
 
 
 def _model_key_of_model(model: DataModel) -> ModelKey:
@@ -3836,24 +3799,17 @@ def _keyed_answer(site: str, by_key: _AnswerT, by_path: Callable[[], _AnswerT]) 
 
 @final
 class _ModelKeys:
-    """The model keys of the models that one walk, map or cache meets, which it tells models apart by.
+    """The model keys of the models that one walk, map or cache meets, which it tells models apart by."""
 
-    Under the ``MODEL_GRAPH`` check, a model met at the path of another model the same walk met is a violation
-    (`_keyed_answer`): told apart by path, the two would be taken for one model.
-    """
+    __slots__ = ("_met",)
 
-    __slots__ = ("_keys_by_path", "_met", "_site")
-
-    def __init__(self, site: str) -> None:
-        """Start the keys of one walk, map or cache, which ``site`` names in a violation."""
-        self._site = site
-        self._keys_by_path: dict[str, ModelKey] = {}
+    def __init__(self) -> None:
+        """Start the keys of one walk, map or cache."""
         self._met: set[ModelKey] = set()
 
-    def of(self, model: DataModel) -> ModelKey:
+    def of(self, model: DataModel) -> ModelKey:  # noqa: PLR6301
         """Return the model key of ``model``."""
-        key = model_key_of(model.reference)
-        return _keyed_answer(self._site, key, lambda: self._keys_by_path.setdefault(model.path, key))
+        return model_key_of(model.reference)
 
     def first(self, model: DataModel) -> bool:
         """Return whether the walk meets ``model`` for the first time, and remember it as met."""
@@ -3890,23 +3846,17 @@ def forget_model_memos(model: DataModel, *tables: MemoTable) -> None:
             forget(table, model_key_of(reference), model)
 
 
-def _reference_names_model(reference: Reference, model: DataModel, site: str) -> bool:
+def _reference_names_model(reference: Reference, model: DataModel) -> bool:
     """Return whether ``reference`` names ``model``: whether the two carry one model key.
 
     Row ``legacy-keyless-reference-by-path``: a reference that no model was built with (one built outside the resolver,
     such as by a parser extension) names the model at its path. Row ``legacy-replaced-root-shares-path``: a reference
     to the model that shares the path of ``model`` since collapse replaced one by the other names it too
-    (`_share_path_identity`). Under the ``MODEL_GRAPH`` check, a reference whose path and model key disagree on
-    whether it names ``model`` is a violation (`_keyed_answer`).
+    (`_share_path_identity`).
     """
-    by_path = reference.path == model.path
-    key = model_key_of(reference)
-    named = (
-        by_path
-        if reference.source is None
-        else key in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
-    )
-    return _keyed_answer(site, named, lambda: by_path)
+    if reference.source is None:
+        return reference.path == model.path
+    return model_key_of(reference) in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
 
 
 def sort_data_models_for_mro(
@@ -3972,14 +3922,7 @@ def linearize_data_models(
     lineages: dict[ModelKey, list[DataModel]] = {}
     for key in order:
         lineages[key] = [node_of[key], *merged([node_of[base] for base in graph.ordered_targets(key, EdgeKind.BASE)])]
-    return [
-        node_of[key]
-        for key in graph_answer(
-            GraphSnapshot.BASE_CLASS_ORDER,
-            list(map(_model_key_of_model, merged(list(models)))),
-            lambda: list(map(_model_key_of_model, _linearize_depth_first(models, stand_ins))),
-        )
-    ]
+    return [node_of[key] for key in map(_model_key_of_model, merged(list(models)))]
 
 
 def _linearize_depth_first(

@@ -67872,7 +67872,7 @@ the models by model key and the edges between them by kind, which answers their 
 predicates that models answer on demand by walking base classes, root types or mapping defaults (inherited fields,
 ancestors, cyclic ancestry, the C3 order of bases, msgspec struct tags, pydantic protected namespaces, preservable root
 constraints, recursive dataclass mapping defaults) take a snapshot of the models they reach when asked and answer
-from it, each model once. Under the `MODEL_GRAPH` check, each answer is compared with the computation it replaced.
+from it, each model once.
 
 ## Generated Inventory
 
@@ -68826,9 +68826,7 @@ Current behaviour that a decision reading the index must allow for:
   `retire_model` (`replace_model` for a model built in another's place) records each model that leaves the output
   (duplicates, reused and overridden models, unused models leaving their written module list). `universe="emitted"`
   answers over the models the output writes. Under `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, the written models
-  must equal the emitted universe after render preparation, and with a report file each root-collapse decision on
-  remaining references records when its answer over the emitted models differs (`kind: universe-differs`), the
-  evidence for switching the default.
+  must equal the emitted universe after render preparation.
 - A store operation called with `refresh="deferred"` notes the models it changes for the next refresh but does not
   mark the facts dirty, so they stay as they were until another mutation. `drop_union_member_constraints` (msgspec
   `unconstrain_union_members`, slice assignment on `data_types`), `swap_data_type` for the nested lists of

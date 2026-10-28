@@ -18,7 +18,7 @@ from typing_extensions import Sentinel, final, override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -500,7 +500,7 @@ class Struct(DataModel):
         model key.
         """
         pending = [(view.layout_model(base), False) for base in bases]
-        keys = _ModelKeys("struct layout")
+        keys = _ModelKeys()
         visited: dict[ModelKey, int] = {}
         owner_depths: dict[ModelKey, int] = {}
         field_depths: dict[str | None, int] = {}
@@ -698,17 +698,7 @@ class Struct(DataModel):
                 options[key] = walk.node_of[key]._own_tag_options([  # noqa: SLF001
                     options[base] for base in graph.ordered_targets(key, EdgeKind.BASE) if base not in component
                 ])
-        return graph_answer(
-            GraphSnapshot.STRUCT_TAGS,
-            options[walk.starts[0]],
-            lambda: (
-                options[walk.starts[0]] if graph.acyclic_order((EdgeKind.BASE,)) is None else self._walked_tag_options()
-            ),
-        )
-
-    def _walked_tag_options(self) -> tuple[Any, Any]:
-        """Return the tag and tag_field options of the struct by walking its generated bases."""
-        return self._own_tag_options([base._walked_tag_options() for base in _struct_bases(self)])  # noqa: SLF001
+        return options[walk.starts[0]]
 
     @property
     @override

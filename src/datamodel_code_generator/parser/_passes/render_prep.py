@@ -17,9 +17,8 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, reference_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
-from datamodel_code_generator._scc import find_circular_sccs
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
     UNDEFINED,
@@ -388,11 +387,7 @@ def _alias_reference_cycles(models: Sequence[DataModel]) -> dict[int, int]:
                     graph[key].add(model_key_of(target.reference))
                     pending.append(target)
     snapshot = reference_graph(GraphSnapshot.ALIAS_CYCLES, graph, {EdgeKind.CONTAINER_ITEM: graph})
-    cycles = graph_answer(
-        GraphSnapshot.ALIAS_CYCLES,
-        snapshot.circular_components((EdgeKind.CONTAINER_ITEM,)),
-        lambda: find_circular_sccs(graph),
-    )
+    cycles = snapshot.circular_components((EdgeKind.CONTAINER_ITEM,))
     return {id(aliases[key]): index for index, scc in enumerate(cycles) for key in scc}
 
 

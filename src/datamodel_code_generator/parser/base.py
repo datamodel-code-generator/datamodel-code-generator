@@ -64,7 +64,6 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
-    graph_answer,
     reference_graph,
     walk_graph,
 )
@@ -72,7 +71,6 @@ from datamodel_code_generator._requirements import (
     REQUIREMENTS,
     python_target_meets,
 )
-from datamodel_code_generator._scc import find_circular_sccs
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -104,7 +102,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _bind_builtin_names,
-    _keyed_answer,
     _model_key_of_model,
     _overlay_constraints,
     _set_nested_model_default_factory_order,
@@ -123,7 +120,6 @@ from datamodel_code_generator.model.output import (
 )
 from datamodel_code_generator.parser._graph_ids import (
     keyed_models,
-    unchecked,
 )
 from datamodel_code_generator.parser._held_null import OMIT_HELD_NULL
 from datamodel_code_generator.parser._imports_plan import (
@@ -530,22 +526,7 @@ def _has_preservable_root_constraints(model: DataModel) -> bool:
     walk = walk_graph(
         GraphSnapshot.ROOT_CONSTRAINTS, EdgeKind.ROOT_TYPE, (model,), _model_key_of_model, _root_type_models
     )
-    return graph_answer(
-        GraphSnapshot.ROOT_CONSTRAINTS,
-        any(map(_constrains_root_field, walk.node_of.values())),
-        lambda: _walks_to_preservable_root_constraints(model, seen_models=set()),
-    )
-
-
-def _walks_to_preservable_root_constraints(model: DataModel, *, seen_models: set[int]) -> bool:
-    """Return whether flattening a root wrapper would discard field-owned constraints, by walking the root types."""
-    if not model.fields or id(model) in seen_models:
-        return False
-    seen_models.add(id(model))
-    return _constrains_root_field(model) or any(
-        _walks_to_preservable_root_constraints(source_model, seen_models=seen_models)
-        for source_model in _root_type_models(model)
-    )
+    return any(map(_constrains_root_field, walk.node_of.values()))
 
 
 def _copy_data_model_field(
@@ -895,10 +876,6 @@ class _ModelShapeSource:
     def identity(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
         """Return what tells apart the models that references name: the model key."""
         return model_key_of(reference)
-
-    def agreed(self, site: str, *, by_key: bool, by_path: Callable[[], bool]) -> bool:  # noqa: PLR6301
-        """Return ``by_key``; under the ``MODEL_GRAPH`` check, a different ``by_path()`` is a violation."""
-        return _keyed_answer(site, by_key, by_path)
 
 
 def _resolve_module_file(module_: ModulePath, results: dict[ModulePath, Result]) -> tuple[ModulePath, bool]:
@@ -3382,15 +3359,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     }
                 },
             )
-
-            def old() -> list[set[ModelKey]]:
-                silent = unchecked(keyed)
-                return find_circular_sccs({
-                    key: index.referenced_keys_for_model(model, silent) & keyed.models.keys()
-                    for key, model in keyed.models.items()
-                })
-
-            for component in graph_answer(snapshot, graph.circular_components((EdgeKind.REFERENCE,)), old):
+            for component in graph.circular_components((EdgeKind.REFERENCE,)):
                 recursive_keys = frozenset(component)
                 recursive_keys_by_model.update(dict.fromkeys(recursive_keys, recursive_keys))
         order = {

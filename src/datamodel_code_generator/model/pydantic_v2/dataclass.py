@@ -244,8 +244,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         if (
             as_string
             and any(
-                (reference := data_type.reference) is not None
-                and _reference_names_model(reference, self, "dataclass own name")
+                (reference := data_type.reference) is not None and _reference_names_model(reference, self)
                 for data_type in field.data_type.all_data_types
             )
             and model_target_meets(self, "pydantic.dataclass_own_name")
