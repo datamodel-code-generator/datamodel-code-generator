@@ -21,11 +21,13 @@ import builtins
 import contextlib
 import dataclasses
 import enum
+import functools
 import hashlib
 import importlib
 import importlib.util
 import inspect
 import json
+import os
 import sys
 import types
 import typing
@@ -191,6 +193,8 @@ def canonical(tp: object, ctx: Context, *, meta: bool, depth: int = 0, seen: fro
         return f"{tp.__module__.split('.')[0]}.{tp.__qualname__}"
     if tp is Ellipsis:
         return "..."
+    if isinstance(tp, types.ModuleType):
+        return f"<module {tp.__name__}>"
     return repr(tp).replace("typing_extensions.", "").replace("typing.", "")
 
 
@@ -547,14 +551,140 @@ def defined_names(tree: ast.Module) -> list[str]:
     return [name for name in names if not name.startswith("_") and name != "model_config"]
 
 
+TREE_ROOT = [""]
+
+
 def _short_error(exc: BaseException, limit: int = 80) -> str:
-    text = str(exc).splitlines()[0][:limit] if str(exc) else ""
+    """Return the exception's class and first line, the tree's location written as `<tree>`."""
+    message = str(exc).replace(TREE_ROOT[0], "<tree>") if TREE_ROOT[0] else str(exc)
+    text = message.splitlines()[0][:limit] if message else ""
     return f"{type(exc).__name__}: {text}"
 
 
-def _usability(module: types.ModuleType, items: dict[str, Any], output_model_type: str) -> tuple[str, dict[str, str]]:
-    """Return whether a validator can be built for each public name (msgspec Decoder or pydantic TypeAdapter)."""
+STRING_FORMATS = {
+    "date-time": "2000-01-01T00:00:00Z",
+    "date": "2000-01-01",
+    "time": "00:00:00Z",
+    "duration": "PT1S",
+    "uuid": "00000000-0000-4000-8000-000000000000",
+    "email": "a@example.com",
+    "uri": "https://example.com",
+    "ipv4": "127.0.0.1",
+    "ipv6": "::1",
+    "hostname": "example.com",
+}
+EXAMPLE_DEPTH = 8
+MIN_ITEMS_CAP = 10
+
+
+def _ref_target(ref: str, root: dict[str, Any]) -> object:
+    node: object = root
+    for part in ref.removeprefix("#/").split("/"):
+        node = node.get(part.replace("~1", "/").replace("~0", "~")) if isinstance(node, dict) else None
+    return node
+
+
+def _example_number(schema: dict[str, Any], *, integer: bool) -> float:
+    value: float = 0
+    if isinstance(low := schema.get("minimum"), (int, float)):
+        value = max(value, low)
+    if isinstance(low := schema.get("exclusiveMinimum"), (int, float)) and not isinstance(low, bool):
+        value = max(value, low + 1)
+    if isinstance(high := schema.get("maximum"), (int, float)):
+        value = min(value, high)
+    if isinstance(high := schema.get("exclusiveMaximum"), (int, float)) and not isinstance(high, bool):
+        value = min(value, high - 1)
+    if isinstance(step := schema.get("multipleOf"), (int, float)) and step > 0:
+        value = -(-value // step) * step
+    return int(value) if integer else float(value)
+
+
+def example_value(  # ruff: ignore[too-many-return-statements]
+    schema: object, root: dict[str, Any] | None = None, depth: int = 0
+) -> object:
+    """Return a value of a JSON Schema that reaches every property, item and map value once.
+
+    The value is the validator's own schema's witness: string keywords on a date or UUID, constraints the validator
+    can only apply at validation time, nested models behind optional fields are all exercised. Patterns are not
+    honoured; a value they reject is a plain rejection, never a crash.
+    """
+    root = schema if root is None and isinstance(schema, dict) else root or {}
+    if depth > EXAMPLE_DEPTH or not isinstance(schema, dict):
+        return None
+    if isinstance(ref := schema.get("$ref"), str):
+        return example_value(_ref_target(ref, root), root, depth + 1)
+    if "const" in schema:
+        return schema["const"]
+    if isinstance(members := schema.get("enum"), list) and members:
+        return members[0]
+    for key in ("anyOf", "oneOf"):
+        if isinstance(branches := schema.get(key), list) and branches:
+            chosen = next((b for b in branches if not (isinstance(b, dict) and b.get("type") == "null")), branches[0])
+            return example_value(chosen, root, depth + 1)
+    if isinstance(parts := schema.get("allOf"), list) and parts:
+        merged = {k: v for k, v in schema.items() if k != "allOf"}
+        for part in parts:
+            target = _ref_target(part["$ref"], root) if isinstance(part, dict) and "$ref" in part else part
+            if isinstance(target, dict):
+                merged = {**target, **merged}
+        return example_value(merged, root, depth + 1)
+    kind = schema.get("type")
+    if isinstance(kind, list):
+        kind = next((k for k in kind if k != "null"), "null")
+    match kind:
+        case "object" | None if "properties" in schema or "additionalProperties" in schema:
+            properties = schema.get("properties") or {}
+            value = {name: example_value(sub, root, depth + 1) for name, sub in properties.items()}
+            if not properties and isinstance(extra := schema.get("additionalProperties"), dict):
+                value["a"] = example_value(extra, root, depth + 1)
+            return value
+        case "object":
+            return {}
+        case "array":
+            if isinstance(prefix := schema.get("prefixItems"), list):
+                return [example_value(sub, root, depth + 1) for sub in prefix]
+            item = example_value(schema.get("items", {}), root, depth + 1)
+            return [item] * min(max(schema.get("minItems", 1), 1), MIN_ITEMS_CAP)
+        case "string":
+            text = STRING_FORMATS.get(schema.get("format", ""), "a")
+            if schema.get("format") not in STRING_FORMATS:
+                text *= max(schema.get("minLength", 1), 1)
+            return text
+        case "integer" | "number":
+            return _example_number(schema, integer=kind == "integer")
+        case "boolean":
+            return False
+    return None
+
+
+def _probe(validate: Callable[[object], object], rejection: tuple[type[Exception], ...], schema: object) -> str:
+    """Validate the example of a validator's own schema: an exception other than a rejection makes the name unusable."""
+    try:
+        validate(example_value(schema))
+    except rejection:
+        return "reject"
+    except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
+        return "error:" + _short_error(exc)
+    return "accept"
+
+
+def _schema_or_none(build: Callable[[], object]) -> object:
+    try:
+        return build()
+    except Exception:  # ruff: ignore[blind-except] - without a schema the probe validates None
+        return None
+
+
+def _usability(
+    module: types.ModuleType, items: dict[str, Any], output_model_type: str
+) -> tuple[str, dict[str, str], dict[str, str]]:
+    """Return whether a validator can be built for each public name (msgspec Decoder or pydantic TypeAdapter).
+
+    Each name's validator also validates one example of its own JSON Schema (the probe): pydantic applies some
+    constraints only while validating, e.g. `min_length` on a UUID raises TypeError on every value.
+    """
     results: dict[str, str] = {}
+    probes: dict[str, str] = {}
     if output_model_type == "msgspec.Struct":
         import msgspec  # ruff: ignore[import-outside-top-level]
 
@@ -568,21 +698,29 @@ def _usability(module: types.ModuleType, items: dict[str, Any], output_model_typ
                 msgspec.json.Decoder(obj)
             except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
                 results[name] = _short_error(exc)
-            else:
-                results[name] = "ok"
-        return "decoders", results
+                continue
+            results[name] = "ok"
+            probes[name] = _probe(
+                functools.partial(msgspec.convert, type=obj),
+                (msgspec.ValidationError,),
+                _schema_or_none(functools.partial(msgspec.json.schema, obj)),
+            )
+        return "decoders", results, probes
     import pydantic  # ruff: ignore[import-outside-top-level]
 
     for name, item in items.items():
         if item["kind"] not in ADAPTED_KINDS:
             continue
         try:
-            pydantic.TypeAdapter(module.__dict__[name])
+            adapter = pydantic.TypeAdapter(module.__dict__[name])
         except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
             results[name] = _short_error(exc)
-        else:
-            results[name] = "ok"
-    return "adapters", results
+            continue
+        results[name] = "ok"
+        probes[name] = _probe(
+            adapter.validate_python, (pydantic.ValidationError,), _schema_or_none(adapter.json_schema)
+        )
+    return "adapters", results, probes
 
 
 def module_signature(module: types.ModuleType, source: str, output_model_type: str) -> dict[str, Any]:
@@ -610,8 +748,10 @@ def module_signature(module: types.ModuleType, source: str, output_model_type: s
             exports[name] = defined_in.partition(".")[2] or "__init__"
     if exports:
         signature["exports"] = exports
-    key, results = _usability(module, items, output_model_type)
+    key, results, probes = _usability(module, items, output_model_type)
     signature[key] = results
+    if probes:
+        signature["probes"] = probes
     return signature
 
 
@@ -705,10 +845,46 @@ def _import_file(path: Path) -> types.ModuleType:
     return module
 
 
+PRELOADED = ("pydantic", "msgspec", "typing_extensions")
+
+
+def first_import_errors(names: list[str]) -> dict[str, str]:
+    """Return the error of each module that fails when it is the first module of the package a process imports.
+
+    Each module is imported in a fork of this process taken before any generated module is imported, so a module that
+    only imports after a sibling put the right modules into `sys.modules` first is caught.
+    """
+    if not hasattr(os, "fork"):
+        return {}
+    for name in PRELOADED:
+        with contextlib.suppress(ImportError):
+            importlib.import_module(name)
+    errors = {}
+    for name in names:
+        read, write = os.pipe()
+        if (pid := os.fork()) == 0:
+            os.close(read)
+            message = ""
+            try:
+                importlib.import_module(name)
+            except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
+                message = _short_error(exc, 200)
+            os.write(write, message.encode())
+            os._exit(0)
+        os.close(write)
+        with os.fdopen(read, "rb") as reader:
+            message = reader.read().decode()
+        os.waitpid(pid, 0)
+        if message:
+            errors[name] = message
+    return errors
+
+
 def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Return the signature of a generated module file or package directory."""
     warnings.simplefilter("ignore")
     path = path.resolve()
+    TREE_ROOT[0] = str(path.parent)
     if not path.is_dir():
         try:
             module = _import_file(path)
@@ -719,13 +895,20 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
             signature["payloads"] = payload_verdicts(module, payloads, output_model_type)
         return signature
     sys.path.insert(0, str(path.parent))
-    package = {}
+    modules = {}
     for file in sorted(path.rglob("*.py")):
-        if "__pycache__" in file.parts:
+        if "__pycache__" not in file.parts:
+            relative = file.relative_to(path).with_suffix("")
+            modules[".".join(relative.parts)] = (
+                ".".join([path.name, *(part for part in relative.parts if part != "__init__")]),
+                file,
+            )
+    first = first_import_errors([name for name, _ in modules.values()])
+    package = {}
+    for key, (name, file) in modules.items():
+        if name in first:
+            package[key] = {"import_error": f"imported first: {first[name]}"}
             continue
-        relative = file.relative_to(path).with_suffix("")
-        name = ".".join([path.name, *(part for part in relative.parts if part != "__init__")])
-        key = ".".join(relative.parts)
         try:
             module = importlib.import_module(name)
         except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result

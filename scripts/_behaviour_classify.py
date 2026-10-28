@@ -6,7 +6,8 @@
 - `same`: equal output bytes
 - `no-behaviour`: the output differs, the signatures and payload verdicts do not
 - `crash-fix`: the release failed to generate or import, or every change is on a name the release could not use
-  (no validator, failed introspection, dcg's internal placeholder as a value) or on a payload it crashed on
+  (no validator, a validator that raised on its own schema's example value where the candidate's does not, failed
+  introspection, dcg's internal placeholder as a value) or on a payload it crashed on
 - `accepted`: every behaviour change matches an owner-approved allowlist entry
 - `violation`: any other behaviour change, or the candidate fails where the release worked
 - `both-fail`: both sides fail
@@ -147,9 +148,14 @@ def _modules(signature: dict[str, Any]) -> dict[str, Any]:
 
 
 def import_paths(signature: dict[str, Any]) -> dict[str, set[str]]:
-    """Return the names importable from each module: its own public names and its re-exports."""
+    """Return the names importable from each module: its own public names and its re-exports.
+
+    A submodule bound in a module (`from .app import list`) is no re-export: its own path is the module itself,
+    which `module-removed` checks.
+    """
     return {
-        module.removesuffix(".__init__"): set(sig.get("items", {})) | set(sig.get("exports", {}))
+        module.removesuffix(".__init__"): set(sig.get("items", {}))
+        | {name for name, source in sig.get("exports", {}).items() if not source.startswith("<module ")}
         for module, sig in _modules(signature).items()
     }
 
@@ -193,6 +199,38 @@ def unusable_items(signature: dict[str, Any]) -> set[tuple[str, str]]:
             unusable |= {(module, name) for name, status in (sig.get(key) or {}).items() if status != "ok"}
         unusable |= {(module, name) for name, item in sig.get("items", {}).items() if item.get("kind") == "error"}
     return unusable
+
+
+def probe_fixed(old: dict[str, Any], new: dict[str, Any]) -> set[tuple[str, str]]:
+    """Return the names whose validator raised on the probe value in the release and no longer does (or is gone).
+
+    A validator that raises on both sides, e.g. pydantic on a TypedDict whose `extra_items` it cannot resolve, gives no
+    evidence: the change is judged like any other.
+    """
+    new_modules = _modules(new)
+    fixed = set()
+    for module, sig in _modules(old).items():
+        new_probes = (new_modules.get(module) or {}).get("probes") or {}
+        fixed |= {
+            (module, name)
+            for name, probe in (sig.get("probes") or {}).items()
+            if probe.startswith("error:") and not new_probes.get(name, "").startswith("error:")
+        }
+    return fixed
+
+
+def probe_changes(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
+    """Return the names whose validator now raises on the probe value where the release's did not (`probe`)."""
+    old_modules, new_modules = _modules(old), _modules(new)
+    changes = []
+    for module in sorted(set(old_modules) & set(new_modules)):
+        old_probes, new_probes = old_modules[module].get("probes") or {}, new_modules[module].get("probes") or {}
+        changes += [
+            Change(module, name, "probe", f"{old_probes[name]} -> {probe}")
+            for name, probe in sorted(new_probes.items())
+            if probe.startswith("error:") and name in old_probes and not old_probes[name].startswith("error:")
+        ]
+    return changes
 
 
 def payload_changes(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
@@ -313,10 +351,10 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
     if old_errors:
         return Verdict("both-fail")
     payloads = payload_changes(old, new)
-    changes = [change for change in diff(old, new) if change.behaviour] + payloads
+    changes = [change for change in diff(old, new) if change.behaviour] + probe_changes(old, new) + payloads
     if not changes:
         return Verdict("no-behaviour")
-    unusable = unusable_items(old)
+    unusable = unusable_items(old) | probe_fixed(old, new)
     rejected_valid = (
         {f"payload {key}" for key in valid_payloads}
         if payloads and rejects_every_valid_payload(old, valid_payloads)

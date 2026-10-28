@@ -46,5 +46,8 @@
       "i0": "reject",
       "v0": "accept"
     }
+  },
+  "probes": {
+    "Payload": "accept"
   }
 }

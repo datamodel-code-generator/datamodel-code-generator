@@ -1,0 +1,90 @@
+{
+  "adapters": {
+    "Day": "ok",
+    "Plain": "ok",
+    "StampsAdditionalProperty": "ok",
+    "StringConstraintsOnEmittedTypes": "ok"
+  },
+  "items": {
+    "Day": {
+      "bases": [
+        "RootModel"
+      ],
+      "config": {},
+      "croot": "Annotated[datetime.date, MaxLen(max_length=10)]",
+      "default": null,
+      "kind": "RootModel",
+      "root": "datetime.date"
+    },
+    "Plain": {
+      "bases": [
+        "BaseModel"
+      ],
+      "config": {},
+      "fields": {
+        "stamps": {
+          "alias": null,
+          "ctype": "Union[None, dict[str, pydantic.AwareDatetime]]",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, dict[str, pydantic.AwareDatetime]]",
+          "validation_alias": null
+        }
+      },
+      "kind": "BaseModel"
+    },
+    "StampsAdditionalProperty": {
+      "kind": "alias",
+      "type": "Annotated[pydantic.AwareDatetime, MinLen(min_length=20)]"
+    },
+    "StringConstraintsOnEmittedTypes": {
+      "bases": [
+        "BaseModel"
+      ],
+      "config": {},
+      "fields": {
+        "at": {
+          "alias": null,
+          "ctype": "pydantic.AwareDatetime",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "pydantic.AwareDatetime",
+          "validation_alias": null
+        },
+        "days": {
+          "alias": null,
+          "ctype": "Union[None, list[Day]]",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, list[Day]]",
+          "validation_alias": null
+        },
+        "id": {
+          "alias": null,
+          "ctype": "Annotated[Union[None, uuid.UUID], MinLen(min_length=36)]",
+          "default": "None",
+          "required": false,
+          "serialization_alias": null,
+          "type": "Union[None, uuid.UUID]",
+          "validation_alias": null
+        }
+      },
+      "kind": "BaseModel"
+    }
+  },
+  "names": [
+    "Day",
+    "Plain",
+    "StampsAdditionalProperty",
+    "StringConstraintsOnEmittedTypes"
+  ],
+  "probes": {
+    "Day": "error:TypeError: Unable to apply constraint 'max_length' to supplied value 2000-01-01",
+    "Plain": "accept",
+    "StampsAdditionalProperty": "error:TypeError: Unable to apply constraint 'min_length' to supplied value 2000-01-01 00:00:00+00",
+    "StringConstraintsOnEmittedTypes": "error:TypeError: Unable to apply constraint 'min_length' to supplied value 00000000-0000-4000-800"
+  }
+}

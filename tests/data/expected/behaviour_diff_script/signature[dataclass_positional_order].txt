@@ -52,5 +52,9 @@
   "names": [
     "Box",
     "Point"
-  ]
+  ],
+  "probes": {
+    "Box": "accept",
+    "Point": "accept"
+  }
 }
