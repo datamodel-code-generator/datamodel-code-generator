@@ -1545,6 +1545,14 @@ def _object_map_other_types(obj: JsonSchemaObject) -> list[str] | None:
     return None
 
 
+def _pattern_value_groups(patterns: list[str], value_types: list[DataType]) -> dict[str, tuple[list[str], DataType]]:
+    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types."""
+    groups: dict[str, tuple[list[str], DataType]] = {}
+    for pattern, value_type in zip(patterns, value_types, strict=True):
+        groups.setdefault(value_type.type_hint, ([], value_type))[0].append(pattern)
+    return groups
+
+
 def _with_null(data_type: DataType) -> DataType:
     """Return a type equal to ``data_type``, which this parse has just built and nothing holds yet, admitting null.
 
@@ -3341,11 +3349,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the property counts of ``obj`` that the object map builder leaves out of its type-array union.
 
         A field takes the counts only on a type that is a map itself; they are keyed as the field writes the length
-        of a map, so the dropped-constraint warning names them. Only the builder of
-        ``--use-single-dict-for-object-maps`` joins the map with the other types.
+        of a map, so the dropped-constraint warning names them. Row ``legacy-map-null-left-to-field`` keeps the counts
+        on the field.
         """
         if (
-            not self.use_single_dict_for_object_maps
+            "legacy-map-null-left-to-field" in self._legacy_object_maps
             or not (obj.patternProperties or obj.propertyNames is not None)
             or _object_map_other_types(obj) is None
             or not any(member.is_dict or member.is_mapping for member in data_type.data_types)
@@ -5088,13 +5096,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type of a type array from the types of its members other than null.
 
         The dict of an array of object and null is the type itself, admitting the null, so the property counts of
-        the object stay on it, under ``--use-single-dict-for-object-maps``.
+        the object stay on it, unless row ``legacy-map-null-left-to-field`` is kept.
         """
         match data_types:
             case []:
                 return self.data_type_manager.get_data_type(Types.null)
             case [map_type] if (
-                self.use_single_dict_for_object_maps and map_type.is_dict and set(types) <= {"object", "null"}
+                "legacy-map-null-left-to-field" not in self._legacy_object_maps
+                and map_type.is_dict
+                and set(types) <= {"object", "null"}
             ):
                 return _with_null(map_type) if "null" in types else map_type
         return build_union(self.data_type, data_types, nullable=len(data_types) != len(types))
@@ -11891,7 +11901,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             any((self.config.base_class, self.config.base_class_map, self.config.custom_template_dir))
             or self.config.extra_template_data is not None
         )
-        declared_witness = not self.check_pattern_maps_strictly
+        declared_witness = "legacy-validated-pattern-maps" in self._legacy_object_maps
         intersection = (
             None
             if helpers_kept
@@ -13070,11 +13080,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             additional_properties=additional_props,
             constrained_name=additional_property_name,
         )
-        dict_key = (
-            self._parse_simple_property_name_key_type(property_names)
-            if (property_names := obj.propertyNames) is not None
-            else None
-        )
+        dict_key = self._object_map_key_type(obj.propertyNames, "extra-field")
 
         return self.data_model_type.create_typed_extra_field(
             field_model=self.data_model_field_type,
@@ -13252,6 +13258,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             **(self._get_python_type_flags(obj) or {"is_dict": True}),
         )
 
+    @cached_property
+    def _legacy_object_maps(self) -> frozenset[str]:
+        """The rows of 0.86.0 object maps kept: the rows each map option leaves out of ``_parse_object_map``.
+
+        Without ``--use-single-dict-for-object-maps``: ``legacy-map-union-of-dicts`` (patternProperties give a union
+        of dicts, one per value type, with no inexact-map warning), ``legacy-map-pattern-keys-only``
+        (additionalProperties beside patternProperties types no key) and ``legacy-map-null-left-to-field`` (the dict
+        takes neither the null nor the property counts of its type array or ``nullable``). Without
+        ``--check-pattern-maps-strictly``: ``legacy-validated-pattern-maps`` (a map the patternProperties validator
+        checks keys its root dict ``str`` and counts no pattern, a declared key witnesses the check, and its model
+        joins no other type of its type array).
+        """
+        rows: set[str] = set()
+        if not self.use_single_dict_for_object_maps:
+            rows |= {"legacy-map-union-of-dicts", "legacy-map-pattern-keys-only", "legacy-map-null-left-to-field"}
+        if not self.check_pattern_maps_strictly:
+            rows.add("legacy-validated-pattern-maps")
+        return frozenset(rows)
+
     @property
     def _types_nullable_map_values(self) -> bool:
         """Whether this run types the values of nullable maps."""
@@ -13322,12 +13347,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Build the dict root field of an object without declared fields, without leaking value constraints.
 
         additionalProperties types the values. Where the patternProperties validator checks the map, the values are
-        ``Any``; under ``--check-pattern-maps-strictly`` its keys are read from propertyNames as a pattern map reads
-        them and the field reads the keywords that count the keys of the object, patternProperties included, so a key
-        that a pattern admits counts. Elsewhere the keys are ``str``: an object with propertyNames and without
-        properties reaches this field only where the validator checks its patterns. The object map builder's null
-        reaches the dict under ``--use-single-dict-for-object-maps``. Without the options the keys are ``str``, the
-        counts leave the patterns out and the dict has no null, as in 0.86.0.
+        ``Any``; its keys are read from propertyNames as a pattern map reads them and the field reads the keywords that
+        count the keys of the object, patternProperties included, so a key that a pattern admits counts, unless row
+        ``legacy-validated-pattern-maps`` keeps ``str`` keys and counts without the patterns. Elsewhere the keys are
+        ``str``: an object with propertyNames and without properties reaches this field only where the validator checks
+        its patterns. The dict takes the object map builder's null unless row ``legacy-map-null-left-to-field`` is kept.
         """
         value_type = self.data_type_manager.get_data_type(Types.any)
         key_type = None
@@ -13338,8 +13362,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             "additionalProperties": obj.additionalProperties,
         }
         if self._has_pattern_properties_validator(obj):
-            if self.check_pattern_maps_strictly:
-                key_type = self._pattern_map_key_type(obj.propertyNames, None)
+            if "legacy-validated-pattern-maps" not in self._legacy_object_maps:
+                key_type = self._object_map_key_type(obj.propertyNames, "pattern-map")
                 counts["patternProperties"] = obj.patternProperties
         else:
             match obj.additionalProperties:
@@ -13358,7 +13382,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             original_field_name=None,
             field_type=(
                 _with_null(map_type)
-                if self.use_single_dict_for_object_maps and self._object_map_admits_null(obj)
+                if "legacy-map-null-left-to-field" not in self._legacy_object_maps and self._object_map_admits_null(obj)
                 else map_type
             ),
             alias=None,
@@ -13499,73 +13523,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         type is written, and a value that admits anything makes the whole value ``Any``. The patterns are joined
         into one key pattern, intersected with ``property_names``. A ``false`` pattern admits no key. A map whose
         additionalProperties types the keys that match no pattern (``_other_keys_schema``) is not built here.
-        Without ``--use-single-dict-for-object-maps`` the map is a union of dicts, one per value type, whose keys match
-        its patterns; an output that cannot decode a union of several dicts, such as msgspec, gets the one dict.
+        Row ``legacy-map-union-of-dicts`` keeps the map of 0.86.0, a union of dicts, one per value type, whose keys
+        match its patterns; an output that cannot decode a union of several dicts, such as msgspec, gets the one dict.
         """
-        if self.use_single_dict_for_object_maps:
-            return self._parse_pattern_map(name, pattern_properties, path, property_names, None)
-        pattern_value_pairs: list[tuple[str, DataType]] = []
-        for i, (pattern, schema) in enumerate(pattern_properties.items()):
-            if schema is False:
-                continue
-
-            if schema is True:
-                value_type = self.data_type_manager.get_data_type(Types.any)
-            else:
-                value_type = self.parse_item(
-                    name,
-                    schema,
-                    get_special_path(f"patternProperties/{i}", path),
-                )
-            pattern_value_pairs.append((pattern, value_type))
-
-        if not pattern_value_pairs:
+        patterns, value_types = self._parse_pattern_values(name, pattern_properties, path)
+        if (
+            "legacy-map-union-of-dicts" in self._legacy_object_maps
+            and value_types
+            and (
+                len(groups := _pattern_value_groups(patterns, value_types)) == 1
+                or self._output_model_context.decodes_value_unions
+            )
+        ):
             return self.data_type(
-                data_types=[self.data_type_manager.get_data_type(Types.any)],
-                is_dict=True,
+                data_types=[
+                    self._pattern_map_type(group_patterns, [value_type], property_names, joins_patterns=True)
+                    for group_patterns, value_type in groups.values()
+                ]
             )
+        return self._pattern_map_type(patterns, value_types, property_names, joins_patterns=True)
 
-        groups: dict[str, tuple[list[str], DataType]] = {}
-        for pattern, value_type in pattern_value_pairs:
-            key = value_type.type_hint
-            if key not in groups:
-                groups[key] = ([], value_type)
-            groups[key][0].append(pattern)
-
-        if len(groups) > 1 and not self._output_model_context.decodes_value_unions:
-            return self._pattern_map_type(
-                [pattern for pattern, _ in pattern_value_pairs],
-                [value_type for _, value_type in pattern_value_pairs],
-                property_names,
-                joins_patterns=True,
-            )
-
-        data_types: list[DataType] = []
-        for patterns, value_type in groups.values():
-            merged_pattern = patterns[0] if len(patterns) == 1 else "|".join(patterns)
-            data_types.append(
-                self.data_type(
-                    data_types=[value_type],
-                    is_dict=True,
-                    dict_key=self._pattern_map_key_type(property_names, merged_pattern),
-                )
-            )
-
-        return self.data_type(data_types=data_types)
-
-    def _parse_pattern_map(
-        self,
-        name: str,
-        pattern_properties: dict[str, JsonSchemaObject | bool],
-        path: list[str],
-        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-        other_keys: JsonSchemaObject | None,
-    ) -> DataType:
-        """Build the dict of ``parse_pattern_properties``, admitting the keys that ``other_keys`` types.
-
-        Where ``other_keys`` types the keys that match no pattern, the dict's keys are those of ``property_names`` and
-        its value joins the value of ``other_keys`` last.
-        """
+    def _parse_pattern_values(
+        self, name: str, pattern_properties: dict[str, JsonSchemaObject | bool], path: list[str]
+    ) -> tuple[list[str], list[DataType]]:
+        """Return the patterns that admit a key and their value types, parsed where each pattern declares its value."""
         patterns: list[str] = []
         value_types: list[DataType] = []
         for i, (pattern, schema) in enumerate(pattern_properties.items()):
@@ -13577,17 +13558,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if schema is True
                 else self.parse_item(name, schema, get_special_path(f"patternProperties/{i}", path))
             )
-        if other_keys is not None:
-            value_types.append(
-                self._parse_additional_properties_value(
-                    name,
-                    get_special_path("additionalProperties", path),
-                    other_keys,
-                    additional_properties=other_keys,
-                )
-            )
+        return patterns, value_types
 
-        return self._pattern_map_type(patterns, value_types, property_names, joins_patterns=other_keys is None)
+    def _parse_pattern_map(
+        self,
+        name: str,
+        pattern_properties: dict[str, JsonSchemaObject | bool],
+        path: list[str],
+        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+        other_keys: JsonSchemaObject,
+    ) -> DataType:
+        """Build the dict of a pattern map whose additionalProperties ``other_keys`` types the keys no pattern matches.
+
+        The dict's keys are those of ``property_names`` and its value joins the value of ``other_keys`` last.
+        """
+        patterns, value_types = self._parse_pattern_values(name, pattern_properties, path)
+        value_types.append(
+            self._parse_additional_properties_value(
+                name,
+                get_special_path("additionalProperties", path),
+                other_keys,
+                additional_properties=other_keys,
+            )
+        )
+        return self._pattern_map_type(patterns, value_types, property_names, joins_patterns=False)
 
     def _pattern_map_type(
         self,
@@ -13599,8 +13593,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Return the one dict of a pattern map whose value is the union of ``value_types``.
 
-        Its keys match one of ``patterns`` where ``joins_patterns``, else those of ``property_names``. It is also the
-        map of 0.86.0 patternProperties whose union of dicts the output cannot decode.
+        Its keys match one of ``patterns`` where ``joins_patterns``, else those of ``property_names``. Each dict of row
+        ``legacy-map-union-of-dicts`` is one too.
         """
         if not value_types:
             return self.data_type(
@@ -13615,18 +13609,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type(
             data_types=value_types,
             is_dict=True,
-            dict_key=self._pattern_map_key_type(property_names, "|".join(patterns) if joins_patterns else None),
+            dict_key=self._object_map_key_type(
+                property_names, "pattern-map", pattern="|".join(patterns) if joins_patterns else None
+            ),
         )
 
     def _other_keys_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the additionalProperties schema that types the keys no pattern of the pattern map of ``obj`` matches.
 
-        Only the builder of ``--use-single-dict-for-object-maps`` types them, only with a schema that asserts
-        something, and only where the output decodes a union of any value types (msgspec keeps its earlier type until
-        its union fallbacks are decided); otherwise the map admits the keys of its patterns only.
+        Only a schema that asserts something types them, only where the output decodes a union of any value types
+        (msgspec keeps its earlier type until its union fallbacks are decided), and not where row
+        ``legacy-map-pattern-keys-only`` is kept; otherwise the map admits the keys of its patterns only.
         """
         if (
-            self.use_single_dict_for_object_maps
+            "legacy-map-pattern-keys-only" not in self._legacy_object_maps
             and isinstance(additional_properties := obj.additionalProperties, JsonSchemaObject)
             and self._output_model_context.decodes_value_unions
             and _schema_assertions(additional_properties)
@@ -13634,42 +13630,88 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return additional_properties
         return None
 
-    def _pattern_map_key_type(
+    def _object_map_key_type(
         self,
         property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-        pattern: str | None,
+        row: Literal["pattern-map", "property-names-map", "extra-field"],
+        *,
+        pattern: str | None = None,
+        name: str = "",
+        path: Sequence[str] = (),
     ) -> DataType | None:
-        """Return the key type of a pattern map: propertyNames read as a string schema, its ``$ref`` resolved.
+        """Return the key type of the dict of an object map, ``None`` for ``str`` keys.
 
-        ``pattern`` joins the key when the map admits only the keys of its patterns. ``None`` means ``str`` keys.
+        Every row reads the key schema it keeps through ``_parse_property_name_key_schema``; the rows differ by the
+        position of the dict:
+
+        - ``pattern-map``, the dict of patternProperties and the root dict a pattern validator checks: propertyNames
+          read as a string schema, its ``$ref`` resolved; ``pattern`` joins it when the map admits only the keys of its
+          patterns, and gives ``str`` keys of that pattern without a propertyNames schema.
+        - ``property-names-map``, the dict of ``parse_property_names``: a ``$ref`` merged with its siblings; an anyOf,
+          oneOf or allOf parsed as a type under ``name`` and ``path`` (``_parse_combined_property_names_key_type``).
+        - ``extra-field``, the typed extra field of a model: only a direct schema that constrains the keys.
         """
-        if not isinstance(property_names, JsonSchemaObject):
-            return (
-                None
-                if pattern is None
-                else self.data_type_manager.get_data_type(
-                    Types.string,
-                    pattern=pattern,
-                    use_annotated=self.use_annotated,
-                    target_pydantic_version=self.target_pydantic_version,
+        match row:
+            case "pattern-map" if isinstance(property_names, JsonSchemaObject):
+                schema = property_names.model_copy(deep=True)
+                schema.type = "string"
+                if pattern is not None:
+                    schema.pattern = (
+                        pattern
+                        if schema.pattern is None
+                        else self._conjoined_pattern(
+                            (schema.pattern, pattern), str(property_names.schema_location or "propertyNames")
+                        )
+                    )
+                if schema.ref:
+                    schema = self._merge_ref_with_schema(schema)
+            case "pattern-map":
+                return (
+                    None
+                    if pattern is None
+                    else self.data_type_manager.get_data_type(
+                        Types.string,
+                        pattern=pattern,
+                        use_annotated=self.use_annotated,
+                        target_pydantic_version=self.target_pydantic_version,
+                    )
                 )
-            )
-        merged_property_names = property_names.model_copy(deep=True)
-        merged_property_names.type = "string"
-        if pattern is not None:
-            merged_property_names.pattern = (
-                pattern
-                if merged_property_names.pattern is None
-                else self._conjoined_pattern(
-                    (merged_property_names.pattern, pattern),
-                    str(property_names.schema_location or "propertyNames"),
-                )
-            )
-        if merged_property_names.ref:
-            merged_property_names = self._merge_ref_with_schema(merged_property_names)
-        return self._parse_property_name_key_schema(merged_property_names)
+            case "property-names-map":
+                schema = cast("JsonSchemaObject | bool", property_names)
+                if isinstance(schema, JsonSchemaObject) and _merges_ref_siblings(schema):
+                    schema = self._merge_ref_with_schema(schema)
+                if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
+                    return self._parse_combined_property_names_key_type(name, schema, [*path])
+            case _ if self._is_direct_key_schema(property_names):
+                schema = cast("JsonSchemaObject", property_names)
+            case _:
+                return None
+        return self._parse_property_name_key_schema(schema)
 
-    def _parse_object_map(  # noqa: PLR0911
+    def _is_direct_key_schema(
+        self,
+        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+    ) -> bool:
+        """Return whether propertyNames is a schema that constrains keys without a ``$ref`` or a combined schema."""
+        match property_names:
+            case JsonSchemaObject(ref=None, anyOf=[], oneOf=[], allOf=[]) as property_names if (
+                not type(self)._property_names_forbids_all_keys(property_names)  # noqa: SLF001
+                and (
+                    (
+                        bool(x_python_type := property_names.extras.get("x-python-type"))
+                        and (isinstance(x_python_type, str) or self._get_x_python_type(property_names) is not None)
+                    )
+                    or property_names.pattern is not None
+                    or property_names.minLength is not None
+                    or property_names.maxLength is not None
+                    or any(isinstance(value, str) for value in property_names.enum)
+                    or isinstance(property_names.extras.get("const"), str)
+                )
+            ):
+                return True
+        return False
+
+    def _parse_object_map(
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -13687,31 +13729,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``--strict-nullable``, so its property counts stay on it; other types of the type array join it in a union.
         The members of the dict are parsed under ``object_path``, the other types under ``path``.
 
-        Without ``--use-single-dict-for-object-maps`` the map is built as 0.86.0 built it: patternProperties give a
-        union of dicts, one per value type (``parse_pattern_properties``), else propertyNames and additionalProperties
-        one dict; the null and the other types of its type array are left to the field. The values typed under
-        ``--use-typed-nullable-map-values`` make one dict, optional where its type array lists null, and the union
-        with the other types of its type array.
+        Row ``legacy-map-union-of-dicts`` keeps the patternProperties of 0.86.0, a union of dicts, one per value type
+        (``parse_pattern_properties``), with no inexact-map warning. Row ``legacy-map-null-left-to-field`` leaves the
+        null and the other types of its type array to the field; only the values typed under
+        ``--use-typed-nullable-map-values`` make one dict, optional where its type array lists null, and the union with
+        the other types of its type array.
         """
-        if not self.use_single_dict_for_object_maps:
-            if pattern_properties := obj.patternProperties:
-                return self.parse_pattern_properties(
-                    name, pattern_properties, object_path, property_names=obj.propertyNames
-                )
-            if obj.propertyNames is not None:
-                return self.parse_property_names(
-                    name, obj.propertyNames, obj.additionalProperties, object_path, parent_obj=obj
-                )
-            if typed_values is not None:
-                map_type = self._parse_nullable_map(name, obj, object_path, typed_values)
-                if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
-                    return union
-                return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
-            if isinstance(obj.additionalProperties, JsonSchemaObject):
-                return self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
-            return self.data_type_manager.get_data_type(Types.object)
+        rows = self._legacy_object_maps
+        typed = False
         if pattern_properties := obj.patternProperties:
-            self._warn_inexact_object_map(name, obj, pattern_properties)
+            if "legacy-map-union-of-dicts" not in rows:
+                self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = (
                 self.parse_pattern_properties(name, pattern_properties, object_path, property_names=obj.propertyNames)
                 if (other_keys := self._other_keys_schema(obj)) is None
@@ -13722,13 +13750,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 name, obj.propertyNames, obj.additionalProperties, object_path, parent_obj=obj
             )
         elif typed_values is not None:
+            typed = True
             map_type = self._parse_nullable_map(name, obj, object_path, typed_values)
         elif isinstance(obj.additionalProperties, JsonSchemaObject):
             map_type = self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
         else:
             map_type = self.data_type_manager.get_data_type(Types.object)
+        null_left_to_field = "legacy-map-null-left-to-field" in rows
+        if null_left_to_field and not typed:
+            return map_type
         if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
             return union
+        if null_left_to_field:
+            return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
         return _with_null(map_type) if self._object_map_admits_null(obj) else map_type
 
     def _object_map_type_union(
@@ -13878,86 +13912,52 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None, False
         return build_union(self.data_type, data_types), False
 
-    def _parse_property_names_key_type(
-        self,
-        name: str,
-        property_names: JsonSchemaObject | bool,  # noqa: FBT001
-        path: list[str],
+    def _parse_combined_property_names_key_type(
+        self, name: str, property_names: JsonSchemaObject, path: list[str]
     ) -> DataType:
-        """Build a propertyNames key type, parsing compound schemas only when needed."""
-        if isinstance(property_names, JsonSchemaObject) and _merges_ref_siblings(property_names):
-            property_names = self._merge_ref_with_schema(property_names)
-
-        match property_names:
-            case JsonSchemaObject() if property_names.anyOf or property_names.oneOf or property_names.allOf:
-                if property_names.anyOf:
-                    key_type, _ = self._parse_string_property_name_union(property_names)
-                    if key_type is not None:
-                        return key_type
-                key_type = self.parse_item(name, property_names, get_special_path("propertyNames/key", path))
-                if property_names.anyOf and not any(item.reference for item in key_type.all_data_types):
-                    string_key_type, _ = self._parse_string_property_name_union(property_names, discard_nonstring=True)
-                    if string_key_type is not None:
-                        key_type = string_key_type
-                if (
-                    not property_names.allOf
-                    or self.field_constraints
-                    or self.collapse_root_models
-                    or (reference := key_type.reference) is None
-                    or not isinstance(root_model := reference.source, self.data_model_root_type)
-                ):
-                    return key_type
-                if (
-                    self.custom_template_dir
-                    or self.enable_faux_immutability
-                    or self.validators
-                    or (self.dataclass_arguments and self.dataclass_arguments.get("frozen"))
-                ):
-                    return key_type
-                if (
-                    not root_model.IS_ROOT_MODEL
-                    or root_model.decorators
-                    or root_model.has_model_config
-                    or property_names.model_fields_set - {"allOf", "title", "description"}
-                    or any(
-                        not isinstance(item, JsonSchemaObject)
-                        or item.type != "string"
-                        or item.model_fields_set - {"type", "pattern", "minLength", "maxLength"}
-                        for item in property_names.allOf
-                    )
-                ):
-                    return key_type
-                schemas = cast("list[JsonSchemaObject]", property_names.allOf)
-                merged = JsonSchemaParser._first_typed_schema_dict(schemas)
-                self._merge_schema_constraints(
-                    merged, schemas, intersect=self.allof_merge_mode != AllOfMergeMode.NoMerge
-                )
-                key_type.unregister_reference()
-                return self._parse_property_name_key_schema(self._schema_object(merged))
-        return self._parse_property_name_key_schema(property_names)
-
-    def _parse_simple_property_name_key_type(
-        self,
-        property_names: JsonSchemaObject | bool | None,  # noqa: FBT001
-    ) -> DataType | None:
-        """Parse a direct propertyNames schema without resolving references or combinators."""
-        match property_names:
-            case JsonSchemaObject(ref=None, anyOf=[], oneOf=[], allOf=[]) as property_names if (
-                not type(self)._property_names_forbids_all_keys(property_names)  # noqa: SLF001
-                and (
-                    (
-                        bool(x_python_type := property_names.extras.get("x-python-type"))
-                        and (isinstance(x_python_type, str) or self._get_x_python_type(property_names) is not None)
-                    )
-                    or property_names.pattern is not None
-                    or property_names.minLength is not None
-                    or property_names.maxLength is not None
-                    or any(isinstance(value, str) for value in property_names.enum)
-                    or isinstance(property_names.extras.get("const"), str)
-                )
-            ):
-                return self._parse_property_name_key_schema(property_names)
-        return None
+        """Build the key type of an anyOf, oneOf or allOf propertyNames schema, parsing it only when needed."""
+        if property_names.anyOf:
+            key_type, _ = self._parse_string_property_name_union(property_names)
+            if key_type is not None:
+                return key_type
+        key_type = self.parse_item(name, property_names, get_special_path("propertyNames/key", path))
+        if property_names.anyOf and not any(item.reference for item in key_type.all_data_types):
+            string_key_type, _ = self._parse_string_property_name_union(property_names, discard_nonstring=True)
+            if string_key_type is not None:
+                key_type = string_key_type
+        if (
+            not property_names.allOf
+            or self.field_constraints
+            or self.collapse_root_models
+            or (reference := key_type.reference) is None
+            or not isinstance(root_model := reference.source, self.data_model_root_type)
+        ):
+            return key_type
+        if (
+            self.custom_template_dir
+            or self.enable_faux_immutability
+            or self.validators
+            or (self.dataclass_arguments and self.dataclass_arguments.get("frozen"))
+        ):
+            return key_type
+        if (
+            not root_model.IS_ROOT_MODEL
+            or root_model.decorators
+            or root_model.has_model_config
+            or property_names.model_fields_set - {"allOf", "title", "description"}
+            or any(
+                not isinstance(item, JsonSchemaObject)
+                or item.type != "string"
+                or item.model_fields_set - {"type", "pattern", "minLength", "maxLength"}
+                for item in property_names.allOf
+            )
+        ):
+            return key_type
+        schemas = cast("list[JsonSchemaObject]", property_names.allOf)
+        merged = JsonSchemaParser._first_typed_schema_dict(schemas)
+        self._merge_schema_constraints(merged, schemas, intersect=self.allof_merge_mode != AllOfMergeMode.NoMerge)
+        key_type.unregister_reference()
+        return self._parse_property_name_key_schema(self._schema_object(merged))
 
     def parse_property_names(
         self,
@@ -13990,7 +13990,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         else:
             value_type = self.data_type_manager.get_data_type(Types.any)
 
-        key_type = self._parse_property_names_key_type(name, property_names, path)
+        key_type = self._object_map_key_type(property_names, "property-names-map", name=name, path=path)
 
         dict_flags: dict[str, bool] = {"is_dict": True}
         if parent_obj:  # pragma: no branch
@@ -15059,10 +15059,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _joins_other_types(self, obj: JsonSchemaObject) -> bool:
         """Return whether the model of an object joins the other types of its type array in a union.
 
-        An object without properties, built as a model for its schema validators, joins them only under
-        ``--check-pattern-maps-strictly``, as an object map does.
+        An object without properties, built as a model for its schema validators, joins them as an object map does,
+        unless row ``legacy-validated-pattern-maps`` is kept.
         """
-        return obj.has_multiple_types and (bool(obj.properties) or self.check_pattern_maps_strictly)
+        return obj.has_multiple_types and (
+            bool(obj.properties) or "legacy-validated-pattern-maps" not in self._legacy_object_maps
+        )
 
     def _parse_root_type_site(self, site: _Site) -> DataType:
         """Parse the schema of a site into a root model."""

@@ -187,8 +187,9 @@ def test_input_model_transport_property_names_survives_schema_copy() -> None:
         },
         {token: PythonTypeName("int")},
     )
-    JsonSchemaParser("")._parse_simple_property_name_key_type(
-        JsonSchemaObject.model_validate({"x-python-type": PythonTypeSchemaAnnotation(PythonTypeName("int"))})
+    JsonSchemaParser("")._object_map_key_type(
+        JsonSchemaObject.model_validate({"x-python-type": PythonTypeSchemaAnnotation(PythonTypeName("int"))}),
+        "extra-field",
     )
 
     for source in (loaded, legacy_loaded):

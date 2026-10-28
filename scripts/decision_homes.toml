@@ -805,7 +805,7 @@ audit = "D-L1-30"
 [homes.F-use-single-dict-for-object-maps]
 decision = "where --use-single-dict-for-object-maps is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__"]
+adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
 
 [homes.F-use-single-dict-for-object-maps.signatures.option-read]
 kind = "name"
@@ -816,7 +816,7 @@ audit = "D-L1-32"
 [homes.F-check-pattern-maps-strictly]
 decision = "where --check-pattern-maps-strictly is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._parse_object_map"]
-adapters = ["parser/base.py:Parser.__init__"]
+adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_object_maps"]
 
 [homes.F-check-pattern-maps-strictly.signatures.option-read]
 kind = "name"
@@ -910,6 +910,22 @@ fix = "G01"
 [legacy_rows."legacy-all-of-null-as-written"]
 home = "H03"
 fix = "G01"
+
+[legacy_rows."legacy-map-union-of-dicts"]
+home = "F-use-single-dict-for-object-maps"
+fix = "keep"
+
+[legacy_rows."legacy-map-pattern-keys-only"]
+home = "F-use-single-dict-for-object-maps"
+fix = "keep"
+
+[legacy_rows."legacy-map-null-left-to-field"]
+home = "F-use-single-dict-for-object-maps"
+fix = "keep"
+
+[legacy_rows."legacy-validated-pattern-maps"]
+home = "F-check-pattern-maps-strictly"
+fix = "keep"
 
 [legacy_rows."legacy-nullable-as-type-list"]
 home = "H06"
@@ -1839,9 +1855,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaObject.is_ref_with_nullable_only"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-09" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._add_pattern_properties_validator"]
-"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._all_of_enum_site_schema"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
@@ -1866,9 +1879,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._const_literal_enforces_constraints"]
 "F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._dropped_property_counts"]
-"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._enforced_value_keywords"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-10" }
 
@@ -1879,10 +1889,6 @@ fix = "RP15b"
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-10" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_additional_properties_root_field"]
-"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
-"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_schema_types"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-L1-06" }
 
@@ -1890,11 +1896,7 @@ fix = "RP15b"
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_type_array_data_type"]
-"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._joins_other_types"]
-"F-check-pattern-maps-strictly.option-read" = { home = "F-check-pattern-maps-strictly", count = 1, audit = "D-L1-32" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._literal_view"]
 "F-filter-literal-values.option-read" = { home = "F-filter-literal-values", count = 1, audit = "D-L1-25" }
@@ -1987,9 +1989,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._merged_ref_sibling_schemas"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._other_keys_schema"]
-"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_field_item"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
@@ -2032,7 +2031,6 @@ fix = "RP15b"
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_pattern_properties"]
-"F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
 "H10.union-construction" = { home = "H10", count = 1, audit = "D-L1-32" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."_lists_null"]
