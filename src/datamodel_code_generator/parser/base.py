@@ -3147,20 +3147,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
                 model_imports[model] = prepared_imports
 
-    def _finalize_modules(
+    def _finalize_modules(  # noqa: PLR0913, PLR0917
         self,
         contexts: list[ModuleContext],
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
         forwarder_modules: Collection[ModulePath],
+        with_import: bool,  # noqa: FBT001
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module.
 
         The pipeline runs it after the generic base class, the decision phase and the render preparation of each
         module, which ``_process_single_module`` hands over.
         """
-        state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules)
+        state = _FinalizeState(
+            contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules, with_import
+        )
         render_ready = (
             RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
             if RENDER_READY.get() is None

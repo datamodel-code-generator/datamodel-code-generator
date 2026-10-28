@@ -467,6 +467,7 @@ class _FinalizeState(Generic[ContextT]):
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]]
     module_to_import: dict[ModulePath, Imports]
     forwarder_modules: Collection[ModulePath]
+    with_import: bool
     all_models: list[DataModel] = dataclasses.field(init=False)
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False

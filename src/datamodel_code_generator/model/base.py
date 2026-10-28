@@ -2463,14 +2463,43 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
     return _rewrite_names(rendered, replacements)
 
 
-def _bare_loads(tree: ast.AST) -> Iterator[ast.Name]:
-    """Yield the names a tree loads bare: loaded, and not the module of an attribute (``name.X``)."""
-    attribute_values = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
-    return (
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and id(node) not in attribute_values
+_NAME_SCOPES: Final = (
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.Lambda,
+    ast.ListComp,
+    ast.SetComp,
+    ast.DictComp,
+    ast.GeneratorExp,
+)
+
+
+def _local_names(scope: ast.AST) -> set[str]:
+    """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
+    arguments = getattr(scope, "args", None)
+    parameters = (
+        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
+        if isinstance(arguments, ast.arguments)
+        else ()
     )
+    return {parameter.arg for parameter in parameters if parameter is not None} | {
+        node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+    }
+
+
+def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
+    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
+    match tree:
+        case ast.Name(ctx=ast.Load()):
+            if tree.id not in bound:
+                yield tree
+        case ast.Attribute(value=ast.Name()):
+            return
+        case _:
+            if isinstance(tree, _NAME_SCOPES):
+                bound |= _local_names(tree)
+            for child in ast.iter_child_nodes(tree):
+                yield from _bare_loads(child, bound)
 
 
 def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:

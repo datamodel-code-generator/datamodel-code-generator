@@ -3884,6 +3884,30 @@ def test_main_jsonschema_module_import_named_like_builtin_package(
     assert_output("\n".join(verdicts) + "\n", name="payloads")
 
 
+def test_main_jsonschema_module_import_named_like_builtin_package_keeps_local_names(output_dir: Path) -> None:
+    """Keep the parameters and local names of a custom template that are named like a hidden builtin (#5387).
+
+    ``def echo(self, list)`` returns its argument, so only the bare ``list`` the models load as the builtin follows
+    the alias.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_package.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--custom-template-dir",
+            str(DATA_PATH / "templates_builtin_name_parameter"),
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 
