@@ -1456,6 +1456,7 @@ def test_watch_dependencies_collect_module_formatter_and_protobuf_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Generation collection includes module, formatter, and nested protobuf resources."""
+    monkeypatch.delenv("PYTHONPATH", raising=False)
     import py_compile
     from importlib.util import cache_from_source
 
