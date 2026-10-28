@@ -72,6 +72,20 @@ class Ends(RootModel[constr(pattern=r'b$')]):
     root: constr(pattern=r'b$')
 
 
+class LookaheadList(RootModel[list[str]]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: list[constr(pattern=r'^(?=a)\w+$')]
+
+
+class LookaheadItems(RootModel[list[str]]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: list[constr(pattern=r'^(?=a)\w+$')] = Field(..., min_length=1)
+
+
 class PointItem(Point):
     pass
 
@@ -96,3 +110,4 @@ class Model(BaseModel):
     pattern_refs: (
         constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None
     ) = None
+    lookahead_items: LookaheadItems | None = None

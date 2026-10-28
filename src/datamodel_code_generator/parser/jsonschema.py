@@ -2321,6 +2321,17 @@ _ALL_OF_VALUE_KEYWORDS: Final = frozenset({
 })
 """The keywords of an allOf site that its parts' intersection writes, not its own annotations."""
 _DEFAULT_SCHEMA_PATHS = ("#/definitions", "#/$defs")
+_PATTERN_SCAN_SKIPPED_KEYWORDS: Final = frozenset({
+    "enum",
+    "const",
+    "default",
+    "examples",
+    "example",
+    "patternProperties",
+    "$defs",
+    "definitions",
+})
+"""The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
 _ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
 """The end of an allOf member's location, which a warning about the site leaves out."""
 
@@ -10353,7 +10364,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         references is decided by ``_all_of_enum_site_schema``) and the parts ``_intersects_value_parts`` leaves out.
         Without --intersect-allof-keywords only where that model is the type of the site, not the member an array
         site writes beside its own array, and the intersection names a type without objects, whose values the model
-        would all reject; the site schema is then marked as one (``FIELDLESS_SITE_KEY``).
+        would all reject; the site schema is then marked as one (``FIELDLESS_SITE_KEY``). Such a site keeps the model
+        where a pattern of the intersection needs a regex engine of the models that use its type
+        (``_patterns_need_holder_engine``): that engine would apply to their other patterns.
         """
         if (
             (obj.is_array and not self.intersects_allof_keywords)
@@ -10364,6 +10377,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 or self.intersects_allof_keywords
             )
         ):
+            return None
+        if not self.intersects_allof_keywords and self._patterns_need_holder_engine(intersection):
             return None
         value: dict[str, Any] = intersection.model_dump(exclude_unset=True, by_alias=True)
         if (
@@ -10377,6 +10392,43 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not self.intersects_allof_keywords:
             site.__dict__[FIELDLESS_SITE_KEY] = True
         return site
+
+    def _patterns_need_holder_engine(self, schema: JsonSchemaObject) -> bool:
+        """Return whether a pattern of a value schema needs a regex engine of the models that use its root type.
+
+        Every pattern its type carries counts: those of its subschemas, the keys of its ``patternProperties`` and those
+        of the schemas it names, which the models that use the type reach through it.
+        """
+        if (needs_engine := self.data_model_field_type.PATTERN_NEEDS_HOLDER_ENGINE) is None:
+            return False
+        pending: list[object] = [schema.model_dump(exclude_unset=True, by_alias=True)]
+        named: set[str] = set()
+        while pending:
+            match value := pending.pop():
+                case list():
+                    pending.extend(value)
+                case dict():
+                    pattern_properties: dict[str, object] = value.get("patternProperties", {})
+                    patterns = [*pattern_properties]
+                    if isinstance(pattern := value.get("pattern"), str):
+                        patterns.append(pattern)
+                    if any(
+                        needs_engine(
+                            self.data_model_root_type, pattern, self.target_python_version, self.target_pydantic_version
+                        )
+                        for pattern in patterns
+                    ):
+                        return True
+                    if isinstance(ref := value.get("$ref"), str) and ref not in named:
+                        named.add(ref)
+                        pending.append(
+                            self._merge_ref_with_schema(self._schema_object({"$ref": ref}), "allOf").model_dump(
+                                exclude_unset=True, by_alias=True
+                            )
+                        )
+                    pending.extend(pattern_properties.values())
+                    pending.extend(item for key, item in value.items() if key not in _PATTERN_SCAN_SKIPPED_KEYWORDS)
+        return False
 
     def _reference_site_schema(self, obj: JsonSchemaObject, *, layered: bool = False) -> JsonSchemaObject | None:
         """Return the schema of an allOf site whose earlier form, the type of its first ``$ref`` member, it leaves.

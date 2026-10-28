@@ -115,6 +115,21 @@ class PatternRefs(RootModel[str]):
     root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
+class Lookahead(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^(?=a)\w+$')
+
+
+class LookaheadList(RootModel[list[Lookahead]]):
+    root: list[Lookahead]
+
+
+class LookaheadItems(RootModel[list[Lookahead]]):
+    root: list[Lookahead] = Field(..., min_length=1)
+
+
 class UntypedItem(BaseModel):
     pass
 
@@ -138,3 +153,4 @@ class Model(BaseModel):
     point_items: list[PointItem] | None = None
     name: constr(pattern=r'^x$') | None = None
     pattern_refs: PatternRefs | None = None
+    lookahead_items: LookaheadItems | None = None

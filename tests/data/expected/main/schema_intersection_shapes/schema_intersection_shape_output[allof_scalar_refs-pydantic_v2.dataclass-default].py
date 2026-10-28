@@ -100,6 +100,19 @@ PatternRefs = TypeAliasType(
 )
 
 
+Lookahead = TypeAliasType(
+    "Lookahead", Annotated[str, Field(pattern=compile('^(?=a)\\w+$'))]
+)
+
+
+LookaheadList = TypeAliasType("LookaheadList", list[Lookahead])
+
+
+LookaheadItems = TypeAliasType(
+    "LookaheadItems", Annotated[list[Lookahead], Field(..., min_length=1)]
+)
+
+
 @dataclass
 class PointItem(Point):
     pass
@@ -121,3 +134,4 @@ class Model:
     point_items: list[PointItem] | None = None
     name: constr(pattern=r'^x$') | None = None
     pattern_refs: PatternRefs | None = None
+    lookahead_items: LookaheadItems | None = None

@@ -168,6 +168,9 @@
     },
     "pattern_refs": {
       "$ref": "#/$defs/PatternRefs"
+    },
+    "lookahead_items": {
+      "$ref": "#/$defs/LookaheadItems"
     }
   },
   "$defs": {
@@ -249,6 +252,26 @@
         },
         {
           "$ref": "#/$defs/Ends"
+        }
+      ]
+    },
+    "Lookahead": {
+      "type": "string",
+      "pattern": "^(?=a)\\w+$"
+    },
+    "LookaheadList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Lookahead"
+      }
+    },
+    "LookaheadItems": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LookaheadList"
+        },
+        {
+          "$ref": "#/$defs/NonEmpty"
         }
       ]
     }

@@ -95,6 +95,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
@@ -615,6 +616,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     ] = None
     NEEDS_MODEL_REGEX_ENGINE: ClassVar[Callable[[list[DataModelFieldBase]], bool] | None] = None
     """Return whether a pattern of the fields selects a regex engine in the config of the model that holds them."""
+    PATTERN_NEEDS_HOLDER_ENGINE: ClassVar[
+        Callable[[type[DataModel], str, PythonVersion, TargetPydanticVersion | None], bool] | None
+    ] = None
+    """Return whether a pattern in a model of the given root type needs a regex engine of the models that use it.
+
+    It takes the root type, the pattern and the target Python and Pydantic versions.
+    """
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None

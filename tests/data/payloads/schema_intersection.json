@@ -6742,6 +6742,19 @@
           "a",
           "ba"
         ]
+      },
+      "lookahead_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "b"
+          ]
+        ]
       }
     }
   }

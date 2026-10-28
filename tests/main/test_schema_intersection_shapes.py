@@ -90,6 +90,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--target-python-version", "3.11")),
         (DataModelType.MsgspecStruct, ("--target-python-version", "3.11")),
     ),
+    "allof_scalar_refs": (
+        (DataModelType.PydanticV2Dataclass, ("--target-pydantic-version", "2")),
+        (DataModelType.PydanticV2BaseModel, ("--use-type-alias", "--target-pydantic-version", "2")),
+    ),
     "allof_ref_item_constraints": (
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
         (DataModelType.PydanticV2Dataclass, ("--field-constraints",)),

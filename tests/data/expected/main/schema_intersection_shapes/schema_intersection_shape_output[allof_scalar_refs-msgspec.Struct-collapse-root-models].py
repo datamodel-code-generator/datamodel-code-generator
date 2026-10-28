@@ -74,6 +74,12 @@ Starts: TypeAlias = Annotated[str, Meta(pattern='^a')]
 Ends: TypeAlias = Annotated[str, Meta(pattern='b$')]
 
 
+Lookahead: TypeAlias = Annotated[str, Meta(pattern='^(?=a)\\w+$')]
+
+
+LookaheadList: TypeAlias = list[Lookahead]
+
+
 TwoItem: TypeAlias = Annotated[int, Meta(ge=4, le=5)]
 
 
@@ -99,3 +105,4 @@ class Model(Struct):
         Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
         | UnsetType
     ) = UNSET
+    lookahead_items: Annotated[list[Lookahead], Meta(min_length=1)] | UnsetType = UNSET

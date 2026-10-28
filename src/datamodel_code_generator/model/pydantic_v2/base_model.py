@@ -23,7 +23,7 @@ from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_s
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
-from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
+from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, pydantic_target_meets
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
@@ -127,6 +127,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
@@ -700,6 +701,26 @@ def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
     return has_lookaround_pattern(fields)
 
 
+def _pattern_needs_holder_engine(
+    root_type: type[DataModel],
+    pattern: str,
+    target_python: PythonVersion,
+    target_pydantic: TargetPydanticVersion | None,
+) -> bool:
+    """Return whether a string pattern in a model of ``root_type`` needs the ``python-re`` engine of its users.
+
+    A type alias has no config, and a target that predates compiled patterns keeps its patterns strings, which
+    Pydantic builds with the config of the model that uses the alias (``models_reaching_string_pattern_aliases``).
+    """
+    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
+
+    if not issubclass(root_type, TypeAliasBase) or pydantic_target_meets("pydantic.compiled_pattern", target_pydantic):
+        return False
+    return has_lookaround(pattern) or (
+        (scan := scan_regex_syntax(pattern)) is not None and scan[0] and target_python.version_key >= scan[1]
+    )
+
+
 def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
     """Keep prepared expressions out of json_schema_extra while preserving user-supplied extras."""
     if isinstance(args.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression):
@@ -716,6 +737,7 @@ class DataModelField(_PydanticBaseDataModelField):
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
+    PATTERN_NEEDS_HOLDER_ENGINE = staticmethod(_pattern_needs_holder_engine)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",

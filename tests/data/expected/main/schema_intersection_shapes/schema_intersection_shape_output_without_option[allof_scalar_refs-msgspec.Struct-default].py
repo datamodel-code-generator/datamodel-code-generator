@@ -85,6 +85,15 @@ PatternRefs: TypeAlias = Annotated[
 ]
 
 
+Lookahead: TypeAlias = Annotated[str, Meta(pattern='^(?=a)\\w+$')]
+
+
+LookaheadList: TypeAlias = list[Lookahead]
+
+
+LookaheadItems: TypeAlias = Annotated[list[Lookahead], Meta(min_length=1)]
+
+
 TwoItem: TypeAlias = Annotated[Small, Meta(ge=4)]
 
 
@@ -111,3 +120,4 @@ class Model(Struct):
     point_items: list[PointItem] | UnsetType = UNSET
     name: Annotated[str, Meta(pattern='^x$')] | UnsetType = UNSET
     pattern_refs: PatternRefs | UnsetType = UNSET
+    lookahead_items: LookaheadItems | UnsetType = UNSET

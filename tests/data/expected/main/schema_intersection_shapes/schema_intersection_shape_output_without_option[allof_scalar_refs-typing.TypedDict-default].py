@@ -86,6 +86,15 @@ Ends: TypeAlias = str
 PatternRefs: TypeAlias = str
 
 
+Lookahead: TypeAlias = str
+
+
+LookaheadList: TypeAlias = list[Lookahead]
+
+
+LookaheadItems: TypeAlias = list[Lookahead]
+
+
 class UntypedItem(TypedDict):
     pass
 
@@ -109,3 +118,4 @@ class Model(TypedDict):
     point_items: NotRequired[list[PointItem]]
     name: NotRequired[str]
     pattern_refs: NotRequired[PatternRefs]
+    lookahead_items: NotRequired[LookaheadItems]

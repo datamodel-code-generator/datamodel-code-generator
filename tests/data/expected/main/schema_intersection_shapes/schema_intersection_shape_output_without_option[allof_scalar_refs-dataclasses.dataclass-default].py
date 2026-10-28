@@ -86,6 +86,15 @@ Ends: TypeAlias = str
 PatternRefs: TypeAlias = str
 
 
+Lookahead: TypeAlias = str
+
+
+LookaheadList: TypeAlias = list[Lookahead]
+
+
+LookaheadItems: TypeAlias = list[Lookahead]
+
+
 @dataclass
 class UntypedItem:
     pass
@@ -112,3 +121,4 @@ class Model:
     point_items: list[PointItem] | None = None
     name: str | None = None
     pattern_refs: PatternRefs | None = None
+    lookahead_items: LookaheadItems | None = None

@@ -146,7 +146,7 @@ release_note = "an allOf of scalar schemas (for example two integer $refs with a
 [[accepted]]
 input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
 aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(ListItem|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
+match = "\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
 reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
 decision = "#5401"
 release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
