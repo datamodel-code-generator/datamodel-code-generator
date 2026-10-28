@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[constraints] Child:uuidValue: uuid.UUID -> Annotated[uuid.UUID, MinLen(min_length=1)]",
+    "[constraints] Day: datetime.date -> Annotated[datetime.date, MaxLen(max_length=10)]",
+    "[probe] Child: accept -> error:TypeError: Unable to apply constraint 'min_length' to supplied value 00000000-0000-4000-800",
+    "[probe] Day: accept -> error:TypeError: Unable to apply constraint 'max_length' to supplied value 2000-01-01"
+  ],
+  "accepted_by": []
+}

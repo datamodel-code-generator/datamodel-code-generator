@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[config] Foo: {'extra_items': 'Bar'} -> {'extra_items': 'Bar1'}"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[config] Foo: {'extra_items': 'Bar'} -> {'extra_items': 'Bar1'}"
+  ]
+}

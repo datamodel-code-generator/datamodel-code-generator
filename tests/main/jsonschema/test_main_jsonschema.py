@@ -3826,6 +3826,88 @@ def test_main_jsonschema_module_import_named_like_builtin_type_alias(output_dir:
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        (DataModelType.PydanticV2BaseModel, []),
+        (DataModelType.PydanticV2BaseModel, ["--generate-schema-validators"]),
+        (DataModelType.DataclassesDataclass, []),
+        (DataModelType.MsgspecStruct, []),
+    ],
+    ids=["pydantic-v2", "pydantic-v2-schema-validators", "dataclass", "msgspec"],
+)
+def test_main_jsonschema_module_import_named_like_builtin_package(
+    output_model_type: DataModelType, extra_args: list[str], output_dir: Path
+) -> None:
+    """Import the builtins that the submodules ``app.list`` and ``app.dict`` hide in ``app`` under aliases (#5387).
+
+    ``from . import list`` binds the submodule in ``app``, and so does ``from .app import dict`` in the root package,
+    whatever either import is named, so ``list[str]`` and ``dict[str, int]`` in ``app`` subscripted the modules and
+    no payload decoded. ``app`` imports ``list`` and ``dict`` from ``builtins`` as ``list_aliased`` and
+    ``dict_aliased``, and every bare use in its models and schema validator helpers follows, while ``list.Pop`` keeps
+    naming the submodule.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_package.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+    )
+    payloads = [
+        '{"tags": ["a"], "counts": {"x": 1}, "pop": {"key": "k"}, "names": ["n"]}',
+        '{"tags": ["a", "a"]}',
+        '{"counts": {"x": "one"}}',
+    ]
+    verdicts = []
+    with _generated_package_module(output_dir, "app") as module:
+        decode = (
+            partial(msgspec.json.decode, type=module.Holder)
+            if output_model_type == DataModelType.MsgspecStruct
+            else _model_json_validator(module.Holder)
+        )
+        for payload in payloads:
+            try:
+                decode(payload)
+            except (msgspec.ValidationError, ValidationError) as error:  # noqa: PERF203
+                verdicts.append(f"{payload}: rejected {type(error).__name__}")
+            else:
+                verdicts.append(f"{payload}: accepted")
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+def test_main_jsonschema_module_import_named_like_builtin_package_keeps_local_names(output_dir: Path) -> None:
+    """Keep the parameters and local names of a custom template that are named like a hidden builtin (#5387).
+
+    ``def echo(self, list)`` returns its argument, so only the bare ``list`` the models load as the builtin follows
+    the alias.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "module_import_named_like_builtin_package.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--custom-template-dir",
+            str(DATA_PATH / "templates_builtin_name_parameter"),
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 def test_main_jsonschema_discriminator_lone_variant_modules(output_dir: Path) -> None:
     """Write no discriminator for a lone variant without a tag, unless a union of any module tags the variant.
 

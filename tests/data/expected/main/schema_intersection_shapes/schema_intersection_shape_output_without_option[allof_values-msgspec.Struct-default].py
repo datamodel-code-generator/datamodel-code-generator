@@ -55,8 +55,9 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(Struct):
-    pass
+Pat: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 class Untyped(Struct):

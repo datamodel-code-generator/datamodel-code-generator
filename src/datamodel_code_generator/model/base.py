@@ -95,6 +95,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
@@ -613,6 +614,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         ]
         | None
     ] = None
+    NEEDS_MODEL_REGEX_ENGINE: ClassVar[Callable[[list[DataModelFieldBase]], bool] | None] = None
+    """Return whether a pattern of the fields selects a regex engine in the config of the model that holds them."""
+    PATTERN_NEEDS_HOLDER_ENGINE: ClassVar[
+        Callable[[type[DataModel], str, PythonVersion, TargetPydanticVersion | None], bool] | None
+    ] = None
+    """Return whether a pattern in a model of the given root type needs a regex engine of the models that use it.
+
+    It takes the root type, the pattern and the target Python and Pydantic versions.
+    """
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
@@ -2419,6 +2429,23 @@ def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     )
 
 
+def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) -> str:
+    """Write each name node parsed from ``rendered`` as its replacement, at the UTF-8 offsets ``ast`` gives."""
+    source = rendered.encode()
+    offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
+    spans = [
+        (
+            offsets[node.lineno - 1] + node.col_offset,
+            offsets[cast("int", node.end_lineno) - 1] + cast("int", node.end_col_offset),
+            alias,
+        )
+        for node, alias in replacements
+    ]
+    for start, end, alias in sorted(spans, reverse=True):
+        source = source[:start] + alias.encode() + source[end:]
+    return source.decode()
+
+
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
     """Bind names in field annotations and defaults without changing template objects.
 
@@ -2426,9 +2453,7 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
     statement is parsed as an assignment of the same length (`host_parsable`), so the offsets it parses hold for the
     rendered text.
     """
-    source = rendered.encode()
-    offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
-    replacements: list[tuple[int, int, str]] = []
+    replacements: list[tuple[ast.Name, str]] = []
     host_source, restore_name = host_parsable(rendered)
     for statement in ast.parse(host_source).body:
         if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
@@ -2437,23 +2462,73 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
             if not isinstance(field, ast.AnnAssign):
                 continue
             expressions = (field.annotation,) if field.value is None else (field.annotation, field.value)
-            for expression in expressions:
-                for node in ast.walk(expression):
-                    match node:
-                        case ast.Name(
-                            id=name,
-                            ctx=ast.Load(),
-                            end_lineno=int() as end_line,
-                            end_col_offset=int() as end_column,
-                        ) if (alias := bindings.get(restore_name(name))) is not None:
-                            replacements.append((
-                                offsets[node.lineno - 1] + node.col_offset,
-                                offsets[end_line - 1] + end_column,
-                                alias,
-                            ))
-    for start, end, alias in sorted(replacements, reverse=True):
-        source = source[:start] + alias.encode() + source[end:]
-    return source.decode()
+            replacements.extend(
+                (node, alias)
+                for expression in expressions
+                for node in ast.walk(expression)
+                if isinstance(node, ast.Name)
+                and isinstance(node.ctx, ast.Load)
+                and (alias := bindings.get(restore_name(node.id))) is not None
+            )
+    return _rewrite_names(rendered, replacements)
+
+
+_NAME_SCOPES: Final = (
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.Lambda,
+    ast.ListComp,
+    ast.SetComp,
+    ast.DictComp,
+    ast.GeneratorExp,
+)
+
+
+def _local_names(scope: ast.AST) -> set[str]:
+    """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
+    arguments = getattr(scope, "args", None)
+    parameters = (
+        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
+        if isinstance(arguments, ast.arguments)
+        else ()
+    )
+    return {parameter.arg for parameter in parameters if parameter is not None} | {
+        node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+    }
+
+
+def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
+    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
+    match tree:
+        case ast.Name(ctx=ast.Load()):
+            if tree.id not in bound:
+                yield tree
+        case ast.Attribute(value=ast.Name()):
+            return
+        case _:
+            if isinstance(tree, _NAME_SCOPES):
+                bound |= _local_names(tree)
+            for child in ast.iter_child_nodes(tree):
+                yield from _bare_loads(child, bound)
+
+
+def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:
+    """Return the names of ``names`` that ``rendered`` loads bare, the loads ``_bind_builtin_names`` rewrites."""
+    host_source, restore_name = host_parsable(rendered)
+    return {name for node in _bare_loads(ast.parse(host_source)) if (name := restore_name(node.id)) in names}
+
+
+def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
+    """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
+    host_source, restore_name = host_parsable(rendered)
+    return _rewrite_names(
+        rendered,
+        [
+            (node, alias)
+            for node in _bare_loads(ast.parse(host_source))
+            if (alias := bindings.get(restore_name(node.id))) is not None
+        ],
+    )
 
 
 class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
@@ -2463,6 +2538,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """
 
     _field_name_bindings: Mapping[str, str] | None = None
+    _builtin_name_bindings: Mapping[str, str] | None = None
     reused_reference: Reference | None = None
     """The reference of the model that reuse replaced with this empty subclass of an equal model."""
 
@@ -3184,6 +3260,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @override
     def _render(self, *args: Any, **kwargs: Any) -> str:
+        """Render the template, writing the bare builtins that the module imports under aliases through the aliases."""
+        rendered = self._render_template(*args, **kwargs)
+        if self._builtin_name_bindings is None:
+            return rendered
+        return _bind_builtin_names(rendered, self._builtin_name_bindings)
+
+    def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
         if (
             args
