@@ -270,7 +270,7 @@ CLASSIFY_CASES = {
         "tests/data/openapi/modular",
         [],
     ),
-    "submodule_binding_is_no_reexport": (
+    "submodule_binding_renamed": (
         Side(
             generated=True,
             signature={
@@ -290,6 +290,68 @@ CLASSIFY_CASES = {
             },
         ),
         "tests/data/jsonschema/module_import_named_like_builtin.json",
+        [],
+    ),
+    "submodule_binding_with_module_removed": (
+        Side(
+            generated=True,
+            signature={
+                "package": {
+                    "holder": _module({"Holder": _model({})}, exports={"list": "<module app.list>"}),
+                    "app.list": _module({"Pop": _model({})}),
+                }
+            },
+        ),
+        Side(
+            generated=True,
+            signature={
+                "package": {
+                    "holder": _module({"Holder": _model({})}, exports={"list_1": "<module app.list_1>"}),
+                    "app.list_1": _module({"Pop": _model({})}),
+                }
+            },
+        ),
+        "tests/data/jsonschema/module_import_named_like_builtin.json",
+        [],
+    ),
+    "import_error_on_both_sides_beside_a_changed_module": (
+        Side(
+            generated=True,
+            signature={
+                "package": {"__init__": {"import_error": "E: a"}, "b": _module({"M": _model({"x": _field("int")})})}
+            },
+        ),
+        Side(
+            generated=True,
+            signature={
+                "package": {"__init__": {"import_error": "E: a"}, "b": _module({"M": _model({"x": _field("str")})})}
+            },
+        ),
+        "tests/data/jsonschema/person.json",
+        [],
+    ),
+    "validation_probe_missing_in_candidate": (
+        Side(
+            generated=True,
+            signature=_module(
+                {"Child": _model({"uuidValue": _field("uuid.UUID")})},
+                probes={"Child": "error:TypeError: Unable to apply constraint 'min_length' to supplied value"},
+            ),
+        ),
+        Side(generated=True, signature=_module({"Child": _model({"uuidValue": _field("str")})})),
+        "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml",
+        [],
+    ),
+    "validation_probe_rejected_now": (
+        Side(
+            generated=True,
+            signature=_module({"Child": _model({"uuidValue": _field("uuid.UUID")})}, probes={"Child": "accept"}),
+        ),
+        Side(
+            generated=True,
+            signature=_module({"Child": _model({"uuidValue": _field("uuid.UUID")})}, probes={"Child": "reject"}),
+        ),
+        "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml",
         [],
     ),
     "validation_probe_raised_in_release": (
@@ -899,6 +961,13 @@ EXAMPLE_CASES: dict[str, dict[str, Any]] = {
     "string_min_length": {"type": "string", "minLength": 4},
     "number_bounds": {"type": "number", "exclusiveMinimum": 2, "multipleOf": 0.5},
     "integer_maximum": {"type": "integer", "maximum": -3},
+    "narrow_exclusive_interval": {"type": "number", "exclusiveMinimum": 0.2, "exclusiveMaximum": 0.8},
+    "bounded_multiple": {"type": "integer", "minimum": 1, "maximum": 10, "multipleOf": 3},
+    "properties_and_extra_values": {
+        "type": "object",
+        "properties": {"a": {"type": "integer"}},
+        "additionalProperties": {"type": "string"},
+    },
     "map_values": {"type": "object", "additionalProperties": {"type": "string", "format": "date-time"}},
     "nullable_type_list": {"type": ["null", "integer"], "minimum": 1},
     "const": {"const": "box"},
@@ -925,6 +994,59 @@ def _git(*args: str, cwd: Path) -> str:
         text=True,
         check=True,
     ).stdout.strip()
+
+
+PROJECT_RUN_CASES = {
+    "checkout_fails": "missing-repo",
+    "input_missing": "repo",
+}
+
+
+@pytest.mark.parametrize("case", sorted(PROJECT_RUN_CASES))
+def test_project_cell_problems_are_violations(case: str, tmp_path: Path) -> None:
+    """A project whose checkout fails or lacks the input is one violation, never a crash of the shard."""
+    repo_name = PROJECT_RUN_CASES[case]
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git("init", "-q", cwd=repo)
+    (repo / "README").write_text("x\n", encoding="utf-8")
+    _git("add", ".", cwd=repo)
+    _git("commit", "-qm", "pinned", cwd=repo)
+    manifest = tmp_path / "projects.json"
+    manifest.write_text(
+        json.dumps({
+            "projects": [
+                {
+                    "name": "fake",
+                    "repo": "example/fake",
+                    "url": str(tmp_path / repo_name),
+                    "sha": _git("rev-parse", "HEAD", cwd=repo),
+                    "paths": ["README"],
+                    "jobs": [
+                        {
+                            "name": "job",
+                            "input": "schemas/pet.json",
+                            "input_file_type": "jsonschema",
+                            "output_model_type": "pydantic_v2.BaseModel",
+                            "args": [],
+                            "stubs": {"base_mod/base.py": "x = 1\n"},
+                        }
+                    ],
+                }
+            ]
+        }),
+        encoding="utf-8",
+    )
+    projects, cells = behaviour_diff.load_projects(manifest, tmp_path / "cache")
+    result = behaviour_diff.run_cell(SimpleNamespace(projects=projects), cells[0])
+    assert_output(
+        json.dumps({
+            "stubs": cells[0].stubs,
+            "cls": result.verdict.cls,
+            "note": result.verdict.notes[0].partition(":")[0],
+        })
+        + "\n"
+    )
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")

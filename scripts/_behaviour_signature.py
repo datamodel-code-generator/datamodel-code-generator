@@ -592,18 +592,32 @@ def _ref_target(ref: str, root: dict[str, Any]) -> object:
 
 
 def _example_number(schema: dict[str, Any], *, integer: bool) -> float:
+    """Return a number inside every bound of the schema (0 when it allows it)."""
+    low = high = None
+    low_open = high_open = False
+    for key, is_open in (("minimum", False), ("exclusiveMinimum", True)):
+        bound = schema.get(key)
+        if isinstance(bound, (int, float)) and not isinstance(bound, bool) and (low is None or bound >= low):
+            low, low_open = bound, is_open
+    for key, is_open in (("maximum", False), ("exclusiveMaximum", True)):
+        bound = schema.get(key)
+        if isinstance(bound, (int, float)) and not isinstance(bound, bool) and (high is None or bound <= high):
+            high, high_open = bound, is_open
     value: float = 0
-    if isinstance(low := schema.get("minimum"), (int, float)):
-        value = max(value, low)
-    if isinstance(low := schema.get("exclusiveMinimum"), (int, float)) and not isinstance(low, bool):
-        value = max(value, low + 1)
-    if isinstance(high := schema.get("maximum"), (int, float)):
-        value = min(value, high)
-    if isinstance(high := schema.get("exclusiveMaximum"), (int, float)) and not isinstance(high, bool):
-        value = min(value, high - 1)
+    if low is not None and (value < low or (low_open and value <= low)):
+        value = low + _gap(low, high) if low_open else low
+    if high is not None and (value > high or (high_open and value >= high)):
+        value = high - _gap(low, high) if high_open else high
     if isinstance(step := schema.get("multipleOf"), (int, float)) and step > 0:
         value = -(-value // step) * step
+        if high is not None and (value > high or (high_open and value >= high)):
+            value -= step
     return int(value) if integer else float(value)
+
+
+def _gap(low: float | None, high: float | None) -> float:
+    """Return the distance from an exclusive bound to the example: 1, or half the interval when it is narrower."""
+    return 1 if low is None or high is None or high - low > 1 else (high - low) / 2
 
 
 def example_value(  # ruff: ignore[too-many-return-statements]
@@ -642,8 +656,11 @@ def example_value(  # ruff: ignore[too-many-return-statements]
         case "object" | None if "properties" in schema or "additionalProperties" in schema:
             properties = schema.get("properties") or {}
             value = {name: example_value(sub, root, depth + 1) for name, sub in properties.items()}
-            if not properties and isinstance(extra := schema.get("additionalProperties"), dict):
-                value["a"] = example_value(extra, root, depth + 1)
+            if isinstance(extra := schema.get("additionalProperties"), dict):
+                key = "a"
+                while key in properties:
+                    key += "_"
+                value[key] = example_value(extra, root, depth + 1)
             return value
         case "object":
             return {}

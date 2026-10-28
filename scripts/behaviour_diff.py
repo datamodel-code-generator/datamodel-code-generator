@@ -146,6 +146,7 @@ class Cell:
     options: tuple[str, ...] = ()
     kind: str = "default"
     payload_key: str | None = None
+    stubs: tuple[tuple[str, str], ...] = ()
 
     @property
     def option_label(self) -> str:
@@ -223,7 +224,8 @@ def load_projects(manifest: Path, cache_dir: Path) -> tuple[dict[str, Project], 
     projects: dict[str, Project] = {}
     cells = []
     for entry in data["projects"]:
-        root = cache_dir / "projects" / f"{entry['name']}-{entry['sha'][:12]}"
+        paths_key = _stable(json.dumps(entry["paths"]))[:8]
+        root = cache_dir / "projects" / f"{entry['name']}-{entry['sha'][:12]}-{paths_key}"
         projects[entry["name"]] = Project(
             entry["name"],
             entry.get("url") or f"https://github.com/{entry['repo']}.git",
@@ -239,6 +241,7 @@ def load_projects(manifest: Path, cache_dir: Path) -> tuple[dict[str, Project], 
                 job["output_model_type"],
                 tuple(arg.replace(PROJECT_REPO, str(root)) for arg in job["args"]),
                 "project",
+                stubs=tuple(sorted(job.get("stubs", {}).items())),
             )
             for job in entry["jobs"]
         ]
@@ -600,7 +603,12 @@ def payloads_for(gate: Gate, cell: Cell) -> Path | None:
 def run_cell(gate: Gate, cell: Cell) -> Result:
     """Generate one cell on both sides and classify it."""
     if (project := project_of(gate, cell)) is not None:
-        project.fetch()
+        try:
+            project.fetch()
+        except RuntimeError as exc:
+            return Result(cell, Verdict("violation", (f"project checkout failed: {exc}",)))
+        if not cell.input.exists():
+            return Result(cell, Verdict("violation", (f"project input missing in the checkout: {cell.input.name}",)))
     args = cell.args()
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
@@ -620,7 +628,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             sides = [
                 Side(
                     generated=True,
-                    signature=signature(gate, _write_tree(outcome.tree, tmp / f"sig-{side}"), cell.backend, payloads),
+                    signature=signature(
+                        gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
+                    ),
                 )
                 for side, outcome in (("base", base), ("cand", candidate))
             ]
@@ -690,7 +700,8 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
         "--select",
         action="append",
         default=[],
-        help="only inputs matching this glob (payload cases: 'payload:<case id>'); replaces the PR sample",
+        help="only cells whose input or label matches this glob (payload cases: 'payload:<case id>'; project jobs: "
+        "'project:<project>/<job>'); replaces the PR sample",
     )
     parser.add_argument("--allowlist", type=Path, default=DEFAULT_ALLOWLIST)
     parser.add_argument(

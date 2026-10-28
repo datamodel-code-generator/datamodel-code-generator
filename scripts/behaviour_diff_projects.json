@@ -1,5 +1,5 @@
 {
-  "comment": "Projects tier of scripts/behaviour_diff.py (nightly and release): projects that run datamodel-codegen on their own schemas, each checked out at a pinned commit, with the arguments of the invocation named in `source`. Schemas are fetched, never vendored. `{repo}` in an argument is the checkout. Projects whose invocation needs their own code (Python API drivers, schema pre-passes) run the recorded arguments on the committed schema.",
+  "comment": "Projects tier of scripts/behaviour_diff.py (nightly and release): projects that run datamodel-codegen on their own schemas, each checked out at a pinned commit, with the arguments of the invocation named in `source`. Schemas are fetched, never vendored. `{repo}` in an argument is the checkout. Projects whose invocation needs their own code (Python API drivers, schema pre-passes) run the recorded arguments on the committed schema. A job's `stubs` map a module path to the source of a stand-in for the project's own base class (a plain pydantic subclass), written beside the generated package so the signature interpreter can import it.",
   "projects": [
     {
       "name": "mcp-python-sdk",
@@ -14,6 +14,7 @@
           "input": "schema/2025-11-25.json",
           "input_file_type": "jsonschema",
           "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"mcp_types/_wire_base.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n"},
           "args": [
             "--target-python-version", "3.11", "--base-class", "mcp_types._wire_base.WireModel", "--snake-case-field",
             "--remove-special-field-name-prefix", "--use-annotated", "--use-field-description",
@@ -28,6 +29,7 @@
           "input": "schema/2026-07-28.json",
           "input_file_type": "jsonschema",
           "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"mcp_types/_wire_base.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n"},
           "args": [
             "--target-python-version", "3.11", "--base-class", "mcp_types._wire_base.WireModel", "--snake-case-field",
             "--remove-special-field-name-prefix", "--use-annotated", "--use-field-description",
@@ -138,6 +140,7 @@
           "input": "openmetadata-spec/src/main/resources/json/schema",
           "input_file_type": "jsonschema",
           "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"metadata/ingestion/models/custom_pydantic.py": "from pydantic import BaseModel as _BaseModel\n\n\nclass BaseModel(_BaseModel):\n    pass\n"},
           "args": [
             "--use-annotated", "--base-class", "metadata.ingestion.models.custom_pydantic.BaseModel",
             "--set-default-enum-member", "--formatters", "black", "isort"
