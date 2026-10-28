@@ -18,9 +18,9 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
 * ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``.
-* ``key``: a subscript ``x["k"]`` or a call ``x.get("k")`` / ``x.pop("k")`` / ``x.setdefault("k", ...)`` whose string
-  key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so a raw read of a loaded document is
-  invisible to them).
+* ``key``: a subscript ``x["k"]`` that is read (not assigned or deleted) or a call ``x.get("k")`` / ``x.pop("k")`` /
+  ``x.setdefault("k", ...)`` whose string key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so
+  a raw read of a loaded document is invisible to them).
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
@@ -345,9 +345,12 @@ def _string_elements(node: ast.AST) -> Iterator[str]:
 
 
 def _key_read(node: ast.AST) -> str | None:
-    """Return the string key that ``x["k"]``, ``x.get("k")``, ``x.pop("k")`` or ``x.setdefault("k", ...)`` reads."""
+    """Return the string key that ``x["k"]``, ``x.get("k")``, ``x.pop("k")`` or ``x.setdefault("k", ...)`` reads.
+
+    A subscript that is assigned or deleted (``x["k"] = v``, ``del x["k"]``) reads no key.
+    """
     match node:
-        case ast.Subscript(slice=ast.Constant(value=str() as key)):
+        case ast.Subscript(slice=ast.Constant(value=str() as key), ctx=ast.Load()):
             return key
         case ast.Call(func=ast.Attribute(attr=method), args=[ast.Constant(value=str() as key), *_]):
             return key if method in KEY_METHODS else None
@@ -519,6 +522,16 @@ def _place_exists(place: Place, source_root: Path) -> bool:
     return path.is_file() and (place.function is None or place.function in _function_names(path))
 
 
+def _names_planned(place: Place, planned: Iterable[Place]) -> bool:
+    """Return whether a signature path is a planned place, inside one, or the file or directory that holds one."""
+    return any(
+        item.covers(place.file, place.function)
+        if place.function
+        else (item.in_file(place.file) or place.in_file(item.file))
+        for item in planned
+    )
+
+
 def table_problems(config: Config, source_root: Path | None = None) -> list[Problem]:
     """Return what is wrong with the table itself: missing places, unknown homes, and entries of another home."""
     root = source_root or ROOT / SOURCE_ROOT
@@ -534,12 +547,12 @@ def table_problems(config: Config, source_root: Path | None = None) -> list[Prob
             for place in home.planned
             if _place_exists(place, root)
         )
-    planned = {place.file for home in config.homes.values() for place in home.planned}
+    planned = [place for home in config.homes.values() for place in home.planned]
     problems.extend(
         Problem(f"signature {signature.id}: {place} does not exist")
         for signature in config.signatures.values()
         for place in signature.paths
-        if place.file not in planned and not _place_exists(place, root)
+        if not _names_planned(place, planned) and not _place_exists(place, root)
     )
     problems.extend(
         Problem(

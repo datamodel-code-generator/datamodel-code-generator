@@ -19,4 +19,4 @@
 "sample.merge-function" = { home = "sample", count = 1, audit = "X-5" }
 
 [allow."other.py"."read_keys"]
-"sample.read-key" = { home = "sample", count = 5, audit = "X-9" }
+"sample.read-key" = { home = "sample", count = 4, audit = "X-9" }

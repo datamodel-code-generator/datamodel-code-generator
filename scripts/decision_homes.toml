@@ -1397,7 +1397,7 @@ fix = "RP15b"
 
 [allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.discriminator"]
 "H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
-"H11.target-tag-key" = { home = "H11", count = 2, audit = "M-09" }
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
 
 [allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.index"]
 "T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
