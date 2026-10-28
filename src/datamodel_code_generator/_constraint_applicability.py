@@ -38,7 +38,7 @@ from __future__ import annotations
 import operator
 from dataclasses import replace
 from fractions import Fraction
-from math import isfinite
+from math import inf, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final
 
@@ -65,6 +65,7 @@ __all__ = [
     "MSGSPEC_OUTPUT",
     "NO_KEYWORDS",
     "NUMBER_BOUND_KEYWORDS",
+    "NUMBER_FIELD_KEYWORDS",
     "NUMBER_KEYWORDS",
     "NUMBER_KEYWORD_ORDER",
     "PROPERTY_COUNT_KEYWORDS",
@@ -83,7 +84,11 @@ __all__ = [
     "constrained_type_keyword_order",
     "declared_keywords",
     "declared_string_keywords_taken",
+    "exact_float",
     "holds_number_format",
+    "int_beyond_values",
+    "int_constraint_beyond_values",
+    "is_non_finite",
     "keyword_kinds",
     "length_reading",
     "listed_type_keywords",
@@ -91,9 +96,11 @@ __all__ = [
     "literal_number_keywords",
     "member_keywords",
     "meta_keywords",
+    "non_finite_written",
     "overridden_declared_constraints",
     "property_consumed_keywords",
     "resplit_overridden_constraints",
+    "saturating_float",
     "shape_keywords",
     "shape_meta_keywords",
     "split_declared_keywords",
@@ -305,6 +312,11 @@ class OutputKeywords:
     keywords, and ``literals_take`` that a ``Literal`` takes the keywords its values take. ``zero_bound_classes`` maps
     a class built for one zero bound to the keyword it enforces itself (row ``legacy-consumed-at-object-property``),
     and ``writes_constrained_types`` tells that the type manager writes scalar constraints into ``con*`` types.
+
+    The number rows say which values the output writes: ``int_values`` is the range of the ints it takes as a number
+    constraint, an ``Enum`` or ``Literal`` value or a tag (None when it takes every int), and
+    ``drops_non_finite_bounds`` that a bound or divisor with no finite float is left out (else it is written as the
+    infinity or NaN).
     """
 
     type_keywords: Mapping[str, frozenset[str]]
@@ -315,6 +327,8 @@ class OutputKeywords:
     literals_take: bool
     zero_bound_classes: Mapping[str, tuple[str, ...]]
     writes_constrained_types: bool
+    int_values: range | None
+    drops_non_finite_bounds: bool
 
 
 BASE_OUTPUT: Final = OutputKeywords(
@@ -326,6 +340,8 @@ BASE_OUTPUT: Final = OutputKeywords(
     literals_take=True,
     zero_bound_classes=MappingProxyType({}),
     writes_constrained_types=False,
+    int_values=None,
+    drops_non_finite_bounds=False,
 )
 """The rows of the type manager of the standard-library outputs (dataclasses, TypedDict)."""
 PYDANTIC_OUTPUT: Final = replace(
@@ -345,6 +361,8 @@ MSGSPEC_OUTPUT: Final = replace(
     annotation_unions_take=False,
     fixed_tuples_take_length=False,
     literals_take=False,
+    int_values=range(-(2**63), 2**63),
+    drops_non_finite_bounds=True,
 )
 """The rows of the msgspec type manager, as the msgspec type table lists what ``msgspec.Meta`` checks."""
 
@@ -680,3 +698,72 @@ def literal_check(
     met = {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
     decided = tuple(keyword for keyword, results in met.items() if None not in results)
     return decided, tuple(all(met[keyword][index] for keyword in decided) for index in range(len(values)))
+
+
+NUMBER_FIELD_KEYWORDS: Final[frozenset[str]] = frozenset({"gt", "ge", "lt", "le", "multiple_of"})
+"""The number constraints of a field, as the Pydantic ``Field`` and ``msgspec.Meta`` call them."""
+
+
+def saturating_float(number: float) -> float:
+    """Return a number as a float: an int beyond the float range is the infinity of its sign, as ``1e400`` is."""
+    try:
+        return float(number)
+    except OverflowError:
+        return inf if number > 0 else -inf
+
+
+def exact_float(number: int) -> float | None:
+    """Return an int as the float that equals it, or None when the float range or its precision cannot hold it.
+
+    Row ``legacy-exact-ints-as-floats``: the schema models read an int constraint as a float where one equals it
+    (``-2**63``, ``2**64``) and keep the int only where a float would differ.
+    """
+    try:
+        float_value = float(number)
+    except OverflowError:
+        return None
+    return float_value if float_value == number else None
+
+
+def is_non_finite(number: float) -> bool:
+    """Return whether a number has no finite float: an infinity, NaN, or an int beyond the float range."""
+    return not isfinite(saturating_float(number))
+
+
+def non_finite_written(number: float, *, as_float: bool) -> float | None:
+    """Return a number as the infinity or NaN that a type writes it as, or None when it writes it finite.
+
+    A float type writes an int beyond the float range as an infinity too (``saturating_float``); an int or a
+    ``Decimal`` type writes an int as it is.
+    """
+    if not as_float and not isinstance(number, float):
+        return None
+    return None if isfinite(written := saturating_float(number)) else written
+
+
+def _within(values: range, value: int) -> bool:
+    """Return whether an int lies in a range, by its bounds: ``in`` counts the range for an ``int`` subclass."""
+    return values.start <= value < values.stop
+
+
+def int_beyond_values(output: OutputKeywords, value: object) -> bool:
+    """Return whether the output refuses an int: one outside ``OutputKeywords.int_values``. A ``bool`` lies within."""
+    return output.int_values is not None and isinstance(value, int) and not _within(output.int_values, value)
+
+
+def int_constraint_beyond_values(output: OutputKeywords, keyword: str, value: object) -> bool:
+    """Return whether the output refuses a number constraint of an int: one outside the range its keyword takes.
+
+    A ``gt`` or ``lt`` takes the range less its greatest or least int, whose ``ge`` or ``le`` the output writes
+    instead; a keyword that is no number constraint of a field (``NUMBER_FIELD_KEYWORDS``) is never refused.
+    """
+    if output.int_values is None or not isinstance(value, int) or keyword not in NUMBER_FIELD_KEYWORDS:
+        return False
+    match keyword:
+        case "gt":
+            taken = output.int_values[:-1]
+        case "lt":
+            taken = output.int_values[1:]
+        case _:
+            taken = output.int_values
+    return not _within(taken, value)

@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._checks import CheckArea, check_mode
+from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import rendering_memo
 from datamodel_code_generator._python_target_names import PYTHON_BUILTIN_TYPE_NAMES
@@ -814,26 +815,18 @@ def _msgspec_mixed_enum_message(model: Enum, *, literal_under_all: bool) -> str 
     )
 
 
-_MSGSPEC_INT_MIN: Final = -(2**63)
-"""The least int msgspec decodes as an Enum or a Literal value, that of the signed 64-bit range."""
-
-
-_MSGSPEC_INT_MAX: Final = 2**63 - 1
-"""The greatest int msgspec decodes as an Enum or a Literal value, that of the signed 64-bit range."""
-
-
 _BEYOND_MSGSPEC_INTS: Final = (
     "is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1"
 )
 
 
 def _msgspec_wide_int(values: Iterable[object]) -> int | None:
-    """Return the first int of the values that msgspec refuses as an Enum or a Literal value (``_MSGSPEC_INT_MIN``).
+    """Return the first int of the values that msgspec refuses as an Enum or a Literal value (``int_values``).
 
     A bool, which is no int as a value, lies within the range.
     """
     return next(
-        (value for value in values if isinstance(value, int) and not _MSGSPEC_INT_MIN <= value <= _MSGSPEC_INT_MAX),
+        (value for value in values if isinstance(value, int) and int_beyond_values(MSGSPEC_OUTPUT, value)),
         None,
     )
 

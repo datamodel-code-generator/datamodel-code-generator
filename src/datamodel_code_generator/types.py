@@ -15,7 +15,6 @@ from enum import Enum, auto
 from fractions import Fraction
 from functools import cache, lru_cache
 from itertools import chain, repeat
-from math import inf, isfinite
 from re import Pattern
 from types import MappingProxyType
 from typing import (
@@ -209,13 +208,9 @@ else:
 
 
 def _preserve_float_constraint_precision(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
-    """Retain legacy floats except when conversion would lose integer precision."""
+    """Retain legacy floats except when conversion would lose integer precision (``exact_float``)."""
     if isinstance(value, int) and not isinstance(value, bool):
-        try:
-            float_value = float(value)
-        except OverflowError:
-            return value
-        return float_value if float_value == value else value
+        return value if (float_value := _applicability.exact_float(value)) is None else float_value
     return handler(value)
 
 
@@ -314,24 +309,13 @@ def _get_constraint_number(value: Any) -> Any:
 
 
 def _float_constraint(value: Any) -> float:
-    """Return a number constraint as a float: an int beyond the float range is the infinity of its sign, as 1e400 is."""
-    number = _get_constraint_number(value)
-    try:
-        return float(number)
-    except OverflowError:
-        return inf if number > 0 else -inf
+    """Return a number constraint as a float (``saturating_float``)."""
+    return _applicability.saturating_float(_get_constraint_number(value))
 
 
 def _non_finite_as_written(value: Any, *, as_float: bool) -> float | None:
-    """Return a number constraint as the infinity or NaN that a type writes it as, or None when it writes it finite.
-
-    A float type writes an int beyond the float range as an infinity too (``_float_constraint``); an int or a
-    ``Decimal`` type writes an int as it is.
-    """
-    number = _get_constraint_number(value)
-    if not as_float and not isinstance(number, float):
-        return None
-    return None if isfinite(written := _float_constraint(number)) else written
+    """Return a number constraint as the infinity or NaN that a type writes it as (``non_finite_written``)."""
+    return _applicability.non_finite_written(_get_constraint_number(value), as_float=as_float)
 
 
 def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any] | None:  # noqa: PLR0911
@@ -357,6 +341,27 @@ def normalize_integer_constraint(constraint: str, value: Any) -> tuple[str, Any]
             return "le", _get_fraction_floor(fraction)
         case "lt":
             return "le", _get_fraction_ceil(fraction) - 1
+    return constraint, value
+
+
+def strict_number_constraint(
+    output: _applicability.OutputKeywords, constraint: str, value: Any, *, is_float_type: bool, is_int_type: bool
+) -> tuple[str, Any] | None:
+    """Return a number constraint of a field normalized for the field's numeric type, or None when it is left out.
+
+    A bound with no finite float is left out where the output drops it (``OutputKeywords.drops_non_finite_bounds``),
+    else it stays as the float or the infinity it is written as.
+    """
+    if value is None or constraint not in _applicability.NUMBER_FIELD_KEYWORDS:
+        return constraint, value
+    if output.drops_non_finite_bounds and _applicability.is_non_finite(_get_constraint_number(value)):
+        return None
+    if is_float_type:
+        return constraint, _float_constraint(value)
+    if is_int_type:
+        return normalize_integer_constraint(constraint, value)
+    if isinstance(value, float) and value.is_integer():
+        return constraint, int(value)
     return constraint, value
 
 

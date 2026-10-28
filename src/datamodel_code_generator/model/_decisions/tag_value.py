@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
 
 from typing_extensions import assert_never
 
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind, is_tag_kind, literal_value_kind
 
@@ -502,16 +503,12 @@ def struct_tag_field(*, property_name: str, field_name: str, by_payload_name: bo
     return property_name if by_payload_name else field_name
 
 
-_STRUCT_TAG_INTS = range(-(2**63), 2**63)
-"""The ints msgspec takes as a Struct tag: those of the signed 64-bit range."""
-
-
 def struct_tag_refused(value: object, /) -> bool:
-    """Return whether msgspec refuses a value as a Struct tag: an int beyond the 64-bit range (``_STRUCT_TAG_INTS``).
+    """Return whether msgspec refuses a value as a Struct tag: an int beyond the 64-bit range (``int_values``).
 
     A bool is no int (``literal_value_kind``).
     """
-    return literal_value_kind(value) == "int" and value not in _STRUCT_TAG_INTS
+    return literal_value_kind(value) == "int" and _applicability.int_beyond_values(_applicability.MSGSPEC_OUTPUT, value)
 
 
 def struct_tag_conflicts(value: TagValue | None, mapped: Iterable[str], /) -> bool:

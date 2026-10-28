@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, cast
 from pydantic import Field as _Field
 from typing_extensions import override
 
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
 from datamodel_code_generator.imports import IMPORT_DECIMAL
@@ -46,11 +47,10 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
-    _float_constraint,
     _non_finite_as_written,
     chain_as_tuple,
     merge_normalized_constraint,
-    normalize_integer_constraint,
+    strict_number_constraint,
 )
 
 if TYPE_CHECKING:
@@ -153,7 +153,7 @@ class DataModelField(DataModelFieldBase):
         "regex",
     }
     _COMPARE_EXPRESSIONS: ClassVar[set[str]] = {"gt", "ge", "lt", "le"}
-    _INTEGER_CONSTRAINTS: ClassVar[set[str]] = _COMPARE_EXPRESSIONS | {"multiple_of"}
+    _INTEGER_CONSTRAINTS: ClassVar[set[str]] = set(_applicability.NUMBER_FIELD_KEYWORDS)
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _FIELD_CONSTRAINT_ARGUMENTS
     """The ``Field()`` argument that the constraints model of the field writes each schema keyword as."""
     constraints: Optional[Constraints] = None  # noqa: UP045
@@ -282,19 +282,6 @@ class DataModelField(DataModelFieldBase):
             for data_type in self.data_type.all_data_types
         )
 
-    def _get_strict_field_constraint(
-        self, constraint: str, value: Any, *, is_float_type: bool, is_int_type: bool
-    ) -> tuple[str, Any] | None:
-        if value is None or constraint not in self._INTEGER_CONSTRAINTS:
-            return constraint, value
-        if is_float_type:
-            return constraint, _float_constraint(value)
-        if is_int_type:
-            return normalize_integer_constraint(constraint, value)
-        if isinstance(value, float) and value.is_integer():
-            return constraint, int(value)
-        return constraint, value
-
     def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
         """Return the constraint arguments with integer-safe values, merging colliding bounds into one argument.
 
@@ -326,8 +313,8 @@ class DataModelField(DataModelFieldBase):
                 )
                 continue
             if (
-                normalized := self._get_strict_field_constraint(
-                    k, v, is_float_type=is_float_type, is_int_type=is_int_type
+                normalized := strict_number_constraint(
+                    _applicability.PYDANTIC_OUTPUT, k, v, is_float_type=is_float_type, is_int_type=is_int_type
                 )
             ) is None:
                 omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
