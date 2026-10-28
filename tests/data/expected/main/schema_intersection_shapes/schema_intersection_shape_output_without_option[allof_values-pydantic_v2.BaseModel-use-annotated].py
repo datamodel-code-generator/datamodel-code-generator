@@ -73,8 +73,11 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(BaseModel):
-    pass
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
 
 
 class Untyped(BaseModel):

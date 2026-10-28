@@ -36,6 +36,15 @@ class Level2Map(IntEnum):
     integer_3 = 3
 
 
+TwoRefsProp: TypeAlias = int
+
+
+TwoRefsItem: TypeAlias = int
+
+
+TwoRefsMap: TypeAlias = int
+
+
 @dataclass
 class NullsibC:
     x: int | None = None
@@ -106,21 +115,6 @@ AllOfRoot: TypeAlias = Quantity
 
 
 AllOfRoot2: TypeAlias = int
-
-
-@dataclass
-class TwoRefsProp:
-    pass
-
-
-@dataclass
-class TwoRefsItem:
-    pass
-
-
-@dataclass
-class TwoRefsMap:
-    pass
 
 
 @dataclass

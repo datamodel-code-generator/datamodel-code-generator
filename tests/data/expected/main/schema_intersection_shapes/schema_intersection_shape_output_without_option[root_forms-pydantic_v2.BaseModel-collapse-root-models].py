@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class M2(BaseModel):
@@ -29,12 +29,12 @@ class Big(RootModel[conint(ge=3)]):
     root: conint(ge=3)
 
 
-class Arr(BaseModel):
-    pass
+class Arr(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
-class ArrRef(BaseModel):
-    pass
+class ArrRef(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
 class EnumC(Enum):
@@ -44,10 +44,6 @@ class EnumC(Enum):
 
 class EnumD(RootModel[AB]):
     root: AB
-
-
-class Pat(BaseModel):
-    pass
 
 
 class Untyped(BaseModel):
@@ -62,19 +58,18 @@ class Base(RootModel[str]):
     root: str = Field('base', examples=['bb'], title='BaseT')
 
 
-class TwoRefs(BaseModel):
-    pass
-
-
 class Model(BaseModel):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     a: Arr | None = None
     b: ArrRef | None = None
     c: EnumC | None = None
     d: EnumD | None = None
     v: conint(ge=3, le=5) | None = None
-    p: Pat | None = None
+    p: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
     u: Untyped | None = None
-    two_refs: TwoRefs | None = None
+    two_refs: conint(ge=3, le=5) | None = None
     m: NullableMap | None = None
     m2: M2 | None = None
     path_a: constr(min_length=2) | None = Field(

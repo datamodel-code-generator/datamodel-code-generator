@@ -14,10 +14,6 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(BaseModel):
-    pass
-
-
 class Untyped(BaseModel):
     pass
 
@@ -34,7 +30,7 @@ class Model(BaseModel):
     mode_prop: int | None = None
     mode_items: list[int] | None = None
     mode_map: dict[str, int] | None = None
-    pat: Pat | None = None
+    pat: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
     pat_prop: constr(pattern=r'(?=^a)(?=b$)') | None = None
     pat_items: list[constr(pattern=r'(?=^a)(?=b$)')] | None = None
     pat_map: dict[str, constr(pattern=r'(?=^a)(?=b$)')] | None = None

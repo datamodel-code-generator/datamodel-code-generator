@@ -5551,7 +5551,7 @@ to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_u
 [test_main_allof_mro]
 	main/jsonschema/allof_mro.py
 [test_main_allof_root_model_constraints_intersect]
-	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_intersect.py
+	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_intersect.py	= main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_merge]
 	main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_merge_pydantic_v2]

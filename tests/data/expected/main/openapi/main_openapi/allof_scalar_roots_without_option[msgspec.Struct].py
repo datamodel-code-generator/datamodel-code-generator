@@ -70,8 +70,9 @@ class Cat(Pet):
     pass
 
 
-class TwoPatterns(Struct):
-    pass
+TwoPatterns: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 class MismatchAlias(Mismatch):

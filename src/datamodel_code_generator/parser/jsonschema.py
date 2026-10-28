@@ -1601,6 +1601,11 @@ def _admits_arrays(type_: object) -> bool:
     return type_ == "array" or (isinstance(type_, list) and "array" in type_)
 
 
+def _excludes_objects(type_: str | list[str] | None) -> bool:
+    """Return whether a schema type is written and names no object."""
+    return type_ is not None and type_ != "object" and not (isinstance(type_, list) and "object" in type_)
+
+
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
     """Return whether a schema type permits only object values."""
     match type_:
@@ -10344,15 +10349,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         The site's own annotations win, the members' fill in (``_all_of_site_schema``). None when no part has a value
         keyword, and where the site keeps its earlier form: a part with an ``enum`` or ``const`` (an allOf of enum
         references is decided by ``_all_of_enum_site_schema``) and the parts ``_intersects_value_parts`` leaves out.
-        None without --intersect-allof-keywords.
+        Without --intersect-allof-keywords only where that model is the type of the site, not the member an array
+        site writes beside its own array, and the intersection names a type without objects, whose values the model
+        would all reject.
         """
         if (
-            not self.intersects_allof_keywords
+            (obj.is_array and not self.intersects_allof_keywords)
             or (parts := self._satisfiable_all_of_value_parts(obj)) is None
             or not self._intersects_value_parts(parts, literals=False)
+            or not (
+                _excludes_objects((intersection := self._intersect_typed_value_parts(parts, None)).type)
+                or self.intersects_allof_keywords
+            )
         ):
             return None
-        intersection = self._intersect_typed_value_parts(parts, None)
         value: dict[str, Any] = intersection.model_dump(exclude_unset=True, by_alias=True)
         if (
             len(refs := [item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]) == 1
