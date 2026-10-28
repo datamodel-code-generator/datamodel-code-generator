@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "two_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ],
+        "minimum": 4
+      }
+    },
+    "two_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ],
+        "minimum": 4
+      }
+    },
+    "two_pattern_map": {
+      "type": "object",
+      "patternProperties": {
+        "^k": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Small"
+            },
+            {
+              "$ref": "#/$defs/Big"
+            }
+          ],
+          "minimum": 4
+        }
+      }
+    },
+    "two_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "$ref": "#/$defs/Big"
+        }
+      ],
+      "minimum": 4
+    },
+    "refs_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ]
+      }
+    },
+    "text_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Short"
+          },
+          {
+            "$ref": "#/$defs/Long"
+          }
+        ]
+      }
+    },
+    "number_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Low"
+          },
+          {
+            "$ref": "#/$defs/High"
+          }
+        ]
+      }
+    },
+    "list_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Bounded"
+          },
+          {
+            "$ref": "#/$defs/NonEmpty"
+          }
+        ]
+      }
+    },
+    "untyped_typed_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AtMostFive"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ]
+      }
+    },
+    "untyped_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AtMostFive"
+          },
+          {
+            "$ref": "#/$defs/AtLeastThree"
+          }
+        ]
+      }
+    },
+    "nullable_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/NullableSmall"
+          },
+          {
+            "$ref": "#/$defs/NullableBig"
+          }
+        ]
+      }
+    },
+    "point_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Point"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ]
+      }
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^x$"
+    },
+    "pattern_refs": {
+      "$ref": "#/$defs/PatternRefs"
+    },
+    "lookahead_items": {
+      "$ref": "#/$defs/LookaheadItems"
+    }
+  },
+  "$defs": {
+    "Small": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "Big": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "Short": {
+      "type": "string",
+      "maxLength": 5
+    },
+    "Long": {
+      "type": "string",
+      "minLength": 2
+    },
+    "Low": {
+      "type": "number",
+      "minimum": 0.5
+    },
+    "High": {
+      "type": "number",
+      "maximum": 9.5
+    },
+    "Bounded": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 3
+    },
+    "NonEmpty": {
+      "type": "array",
+      "minItems": 1
+    },
+    "AtMostFive": {
+      "maximum": 5
+    },
+    "AtLeastThree": {
+      "minimum": 3
+    },
+    "NullableSmall": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 5
+    },
+    "NullableBig": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 3
+    },
+    "Point": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "Starts": {
+      "type": "string",
+      "pattern": "^a"
+    },
+    "Ends": {
+      "type": "string",
+      "pattern": "b$"
+    },
+    "PatternRefs": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Starts"
+        },
+        {
+          "$ref": "#/$defs/Ends"
+        }
+      ]
+    },
+    "Lookahead": {
+      "type": "string",
+      "pattern": "^(?=a)\\w+$"
+    },
+    "LookaheadList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Lookahead"
+      }
+    },
+    "LookaheadItems": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LookaheadList"
+        },
+        {
+          "$ref": "#/$defs/NonEmpty"
+        }
+      ]
+    }
+  }
+}

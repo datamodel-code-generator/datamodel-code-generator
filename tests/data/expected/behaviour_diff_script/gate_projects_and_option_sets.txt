@@ -1,0 +1,14 @@
+exit=0
+default | tests/data/jsonschema/person.json | pydantic_v2.BaseModel | default | same
+default | tests/data/jsonschema/person.json | typing.TypedDict | default | same
+option-set | tests/data/jsonschema/person.json | pydantic_v2.BaseModel | --strip-default-none --keyword-only | same
+option-set | tests/data/jsonschema/person.json | pydantic_v2.BaseModel | --strip-default-none --use-default-factory-for-optional-nested-models | same
+option-set | tests/data/jsonschema/person.json | pydantic_v2.BaseModel | --strip-default-none | same
+option-set | tests/data/jsonschema/person.json | typing.TypedDict | --strip-default-none --keyword-only | same
+option-set | tests/data/jsonschema/person.json | typing.TypedDict | --strip-default-none --use-default-factory-for-optional-nested-models | same
+option-set | tests/data/jsonschema/person.json | typing.TypedDict | --strip-default-none | same
+payload | payload:jsonschema/collapse_root_models_tuple_items.json | pydantic_v2.BaseModel | <harness arguments> | same
+payload | payload:jsonschema/collapse_root_models_tuple_items.json | typing.TypedDict | <harness arguments> | same
+project | project:fake/pydantic | pydantic_v2.BaseModel | --use-annotated | same
+fake-<sha>-4feca259/.complete
+fake-<sha>-4feca259/schemas/pet.json

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "holder": {"$ref": "#/definitions/app.Holder"},
+    "entry": {"$ref": "#/definitions/app.dict.Entry"}
+  },
+  "definitions": {
+    "app.Holder": {
+      "type": "object",
+      "properties": {
+        "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "pop": {"$ref": "#/definitions/app.list.Pop"},
+        "names": {"$ref": "#/definitions/app.Names"}
+      }
+    },
+    "app.Names": {"type": "array", "items": {"type": "string"}},
+    "app.list.Pop": {"type": "object", "properties": {"key": {"type": "string"}}},
+    "app.dict.Entry": {"type": "object", "properties": {"key": {"type": "string"}}}
+  }
+}

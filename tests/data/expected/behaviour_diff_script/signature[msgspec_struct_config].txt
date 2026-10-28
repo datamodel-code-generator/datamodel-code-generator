@@ -59,5 +59,9 @@
   "names": [
     "Key",
     "Model"
-  ]
+  ],
+  "probes": {
+    "Key": "accept",
+    "Model": "reject"
+  }
 }

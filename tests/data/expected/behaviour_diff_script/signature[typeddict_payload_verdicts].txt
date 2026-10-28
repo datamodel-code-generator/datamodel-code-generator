@@ -1,0 +1,47 @@
+{
+  "adapters": {
+    "Payload": "ok"
+  },
+  "items": {
+    "Payload": {
+      "bases": [],
+      "config": {},
+      "fields": {
+        "pair": {
+          "alias": null,
+          "ctype": "tuple[str, Union[bool, int]]",
+          "default": null,
+          "required": false,
+          "serialization_alias": null,
+          "type": "tuple[str, Union[bool, int]]",
+          "validation_alias": null
+        },
+        "triple": {
+          "alias": null,
+          "ctype": "tuple[float, bool, str]",
+          "default": null,
+          "required": false,
+          "serialization_alias": null,
+          "type": "tuple[float, bool, str]",
+          "validation_alias": null
+        }
+      },
+      "kind": "TypedDict",
+      "readonly": []
+    }
+  },
+  "names": [
+    "Payload"
+  ],
+  "payloads": {
+    "values": {},
+    "verdicts": {
+      "i0": "reject",
+      "v0": "reject",
+      "v1": "reject"
+    }
+  },
+  "probes": {
+    "Payload": "accept"
+  }
+}

@@ -73,9 +73,7 @@ class Cat(Pet):
     pass
 
 
-@dataclass
-class TwoPatterns:
-    pass
+TwoPatterns: TypeAlias = str
 
 
 @dataclass

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypeAlias
 
+TwoRefs: TypeAlias = int
+
 
 @dataclass
 class M2:
@@ -27,14 +29,10 @@ Small: TypeAlias = int
 Big: TypeAlias = int
 
 
-@dataclass
-class Arr:
-    pass
+Arr: TypeAlias = list[str]
 
 
-@dataclass
-class ArrRef:
-    pass
+ArrRef: TypeAlias = list[str]
 
 
 class EnumC(Enum):
@@ -48,9 +46,7 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = int
 
 
-@dataclass
-class Pat:
-    pass
+Pat: TypeAlias = str
 
 
 @dataclass
@@ -73,11 +69,6 @@ RootMulti: TypeAlias = str
 
 
 InlineRoot: TypeAlias = str
-
-
-@dataclass
-class TwoRefs:
-    pass
 
 
 @dataclass

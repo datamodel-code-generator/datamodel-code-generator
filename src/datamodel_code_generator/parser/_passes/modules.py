@@ -24,7 +24,7 @@ from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._internal_utils import get_most_of_parent
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
@@ -1901,7 +1901,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     ``settle_kept_parent_roots`` decides it once every module is processed. A root model that a schema validator rule
     names stays written after its holders inline it: the rule checks values through its class. A root model that its
     inner model replaces leaves; once every module is processed, the rules name the inner model instead
-    (``name_inner_models_in_rules``).
+    (``name_inner_models_in_rules``). The model of a site that earlier releases wrote as a model without fields
+    (``FIELDLESS_SITE_KEY``) keeps the types it names, so collapsing leaves every model those releases wrote.
     """
     generation_store = parser.generation_store
     generation_index = generation_store.index
@@ -1918,6 +1919,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
 
     for model in models:  # noqa: PLR1702
+        if model.reference.__dict__.get(FIELDLESS_SITE_KEY):
+            continue
         for model_field in model.fields:
             for data_type in model_field.data_type.all_data_types:
                 reference = data_type.reference

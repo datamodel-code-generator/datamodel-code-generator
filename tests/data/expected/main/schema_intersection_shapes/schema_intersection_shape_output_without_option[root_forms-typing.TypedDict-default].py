@@ -7,6 +7,8 @@ from typing import Literal, TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
+TwoRefs: TypeAlias = int
+
 
 class M2(TypedDict):
     pass
@@ -24,12 +26,10 @@ Small: TypeAlias = int
 Big: TypeAlias = int
 
 
-class Arr(TypedDict):
-    pass
+Arr: TypeAlias = list[str]
 
 
-class ArrRef(TypedDict):
-    pass
+ArrRef: TypeAlias = list[str]
 
 
 class EnumC(TypedDict):
@@ -42,8 +42,7 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = int
 
 
-class Pat(TypedDict):
-    pass
+Pat: TypeAlias = str
 
 
 class Untyped(TypedDict):
@@ -64,10 +63,6 @@ RootMulti: TypeAlias = str
 
 
 InlineRoot: TypeAlias = str
-
-
-class TwoRefs(TypedDict):
-    pass
 
 
 class Model(TypedDict):

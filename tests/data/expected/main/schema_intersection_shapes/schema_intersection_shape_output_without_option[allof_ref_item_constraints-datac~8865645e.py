@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Any, TypeAlias
 
+TwoItem: TypeAlias = int
+
+
+TwoMap: TypeAlias = int
+
 
 class EnumItem(IntEnum):
     integer_1 = 1
@@ -46,16 +51,6 @@ class Point:
 class Letter(Enum):
     a = 'a'
     bb = 'bb'
-
-
-@dataclass
-class TwoItem:
-    pass
-
-
-@dataclass
-class TwoMap:
-    pass
 
 
 @dataclass
