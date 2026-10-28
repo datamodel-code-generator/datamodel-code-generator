@@ -41,6 +41,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _locate,
     _located,
     _located_model_schema,
+    _merges_ref_siblings,
     _named_path,
     get_model_by_path,
 )
@@ -1130,7 +1131,7 @@ class OpenAPIParser(JsonSchemaParser):
             )
             if parameter.schema_:
                 param_schema = self._array_all_of_site_schema(parameter.schema_)
-                if param_schema.has_ref_with_schema_keywords and not param_schema.is_ref_with_nullable_only:
+                if _merges_ref_siblings(param_schema):
                     param_schema = self._merge_ref_with_schema(param_schema)
                 param_schema = self._read_false_all_of_values(param_schema)
                 field_schemas.append((param_schema, [*path, name, parameter_name]))

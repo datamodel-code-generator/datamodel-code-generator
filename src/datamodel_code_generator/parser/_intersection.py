@@ -30,6 +30,9 @@ schema (the caller passes ``ref_siblings_are_parts=False``). The site's own ``en
 depth) is then no part: the row's ``enum`` stays (the referenced values and the sibling values concatenated), and no
 ``enum`` or ``const`` warning counts it. The other sibling keywords are parts in every dialect.
 
+Without ``--intersect-allof-keywords`` a parse keeps every row of ``LEGACY_ROWS``: the output of 0.86.0 where parts
+meet.
+
 Known gap, left to a later change: an ``enum`` value that the ``type`` of another part rejects (``{"$ref": I, "enum":
 [1, 2.5, "x"]}`` with an ``integer`` target) is kept, and an ``enum`` none of whose values the other part's ``type``
 admits gives no warning.
@@ -50,10 +53,12 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Collection, Iterable, Mapping, Sequence
 
 __all__ = [
     "ENUM_METADATA_KEYWORDS",
+    "INTERSECTED_KEYWORDS",
+    "LEGACY_ROWS",
     "KeywordIntersection",
     "bounds_admit_no_value",
     "enum_metadata",
@@ -88,6 +93,29 @@ ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descr
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _NUMBER_TYPES: Final = frozenset({"integer", "number"})
 _REMOVED: Final = Sentinel("_REMOVED")
+INTERSECTED_KEYWORDS: Final = frozenset(_LOWER_BOUNDS + _UPPER_BOUNDS).union((
+    "multipleOf",
+    "uniqueItems",
+    "required",
+    "pattern",
+    "type",
+    "enum",
+    "nullable",
+))
+LEGACY_ROWS: Final = {
+    "legacy-merge-row": "a `$ref` with sibling keywords and an inherited property override are their earlier merge",
+    "legacy-lookahead-patterns": (
+        "the patterns of the parts are joined by lookaheads, unwarned; an allOf member merge keeps the later pattern"
+    ),
+    "legacy-all-of-site-form": (
+        "an allOf site of value parts keeps its earlier form, unwarned where they conflict, and a `$ref` member's "
+        "sibling `enum` or `const` does not narrow its literals"
+    ),
+    "legacy-all-of-null-as-written": (
+        "null is read as written where parts meet: a `type` without null keeps the null members beside it and those "
+        "of an inherited type, an allOf map member's `type` keeps its null, and a `None` merged enum value fits"
+    ),
+}
 
 
 @final
@@ -477,7 +505,12 @@ class _Reconciler:
 
 
 def intersect_keywords(
-    parts: Sequence[Mapping[str, Any]], row: dict[str, Any], *, extras_key: str, ref_siblings_are_parts: bool = True
+    parts: Sequence[Mapping[str, Any]],
+    row: dict[str, Any],
+    *,
+    extras_key: str,
+    ref_siblings_are_parts: bool = True,
+    legacy_rows: Collection[str] = (),
 ) -> KeywordIntersection:
     """Return the schema of a site whose ``parts`` a legacy merge wrote as ``row``, keyword by keyword.
 
@@ -485,8 +518,11 @@ def intersect_keywords(
     last. ``extras_key`` is where a dump keeps keywords such as ``const``. A keyword of the row stays wherever it
     enforces what the intersection of the parts enforces (a looser bound, a concatenated or wider ``enum``, a wider
     ``type`` or a dropped ``false`` does not), and nested schemas follow the same rule. ``ref_siblings_are_parts`` is
-    False for ``$ref`` siblings in a dialect that does not read them as parts (the legacy sibling enum row).
+    False for ``$ref`` siblings in a dialect that does not read them as parts (the legacy sibling enum row). Under
+    ``legacy-merge-row`` of ``legacy_rows`` the schema is ``row`` itself.
     """
+    if "legacy-merge-row" in legacy_rows:
+        return KeywordIntersection(row, ())
     reconciler = _Reconciler(extras_key, own_enum_is_part=ref_siblings_are_parts)
     keywords = reconciler.schema(parts, row)
     return KeywordIntersection(
