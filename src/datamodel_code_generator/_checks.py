@@ -29,8 +29,6 @@ _REPORT_PREFIX: Final = "report:"
 class CheckArea(Enum):
     """A family of debug checks; the value is the environment variable that sets its mode."""
 
-    SCHEMA_LOCATIONS = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
-    """Every model parsed from a JSON document has a schema location at the end of L1."""
     MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
     """The imports of every module, and those all modules share, equal the replay of their import ledger when the
     module's import text is written; the module writes for each model it names what its import plan, made from the
@@ -38,23 +36,19 @@ class CheckArea(Enum):
     also records how many model names of each module it compared."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """Collapse stops before it would build a data type cycle; the store never meets a copied Reference; every model
-    parsed from a JSON document has an owner or is a root at the end of L1; the models that an order or a graph is
-    built over by model key never share a key, a reference whose key names one of them names it by its path too, and
-    a lookup by path, for the references whose key names none of them, never names two or more; every answer of a
-    reference graph snapshot equals the computation it replaced; a refresh that records only the models store
-    operations noted records the facts and reference sites a full rebuild would; the models the output writes are
-    the store's emitted models. With a report file, it also records the root-collapse decisions whose answer over the
-    emitted models differs."""
+    """The models that an order or a graph is built over by model key never share a key, a reference whose key names
+    one of them names it by its path too, and a lookup by path, for the references whose key names none of them, never
+    names two or more; every answer of a reference graph snapshot equals the computation it replaced. With a report
+    file, it also records the root-collapse decisions whose answer over the emitted models differs."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """Each `$ref` edge of the schema graph gets one key and names the target the parser loads; under request-response
     read/write models with --dedupe-request-response-variants, a model whose key names its schema splits exactly when
-    the key needs variants, and no other model splits after a reference to it read that it does not; no reader writes a
-    schema object the graph validated once and shares; each reserved target has the same value in the prepared tree it
-    is parsed from as in a fresh load of its source. With a report file, it also records the `$dynamicRef` and
-    `$recursiveRef` answers from the anchors L1 has registered that differ from the answers of the document's anchor
-    tables."""
+    the key needs variants, and no other model splits after a reference to it read that it does not; each reserved
+    target has the same value in the prepared tree it is parsed from as in a fresh load of its source; the schema graph
+    keeps a fingerprint of each schema object it validates and shares. With a report file, it also records the
+    `$dynamicRef` and `$recursiveRef` answers from the anchors L1 has registered that differ from the answers of the
+    document's anchor tables."""
 
     RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
     """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the

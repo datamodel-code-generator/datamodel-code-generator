@@ -26,6 +26,13 @@ class Area(Enum):
     also records the values of the tables with a legacy row (``memos.LEGACY_ROWS``: stale dedup keys, self references
     and nested models' required fields before nullability) that differ from the values computed anew."""
 
+    SCHEMA_LOCATIONS = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
+    """Every model parsed from a JSON document has a schema location at the end of L1 (``schema_locations.py``)."""
+
+    MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
+    """The model graph that the generation store records keeps its invariants (``model_graph.py``). The package
+    itself still runs the checks of the area that compare an answer with the computation it replaced."""
+
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations (``finality.py``)."""
 

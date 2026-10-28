@@ -1,10 +1,12 @@
 """The scopes of one parse that the checks run in: the parse itself, its segments, passes, decisions and modules.
 
 The run of the whole pipeline (``PIPELINE``) of a parse reads the modes of its checks and, when ``STORE_WRITES`` or
-``FACT_FINALITY`` is on, opens the checks of ``finality.py`` (``PARSE_CHECKS``), which arm when the pipeline enters
-``PARSED``. Every pass and decision then runs inside the finality scope of its declaration, every output module inside
-its module checkpoint, and every segment with a scope name inside that pass scope, as the pass trace (``trace.py``)
-records them. ``Parser.parse`` itself stays unwrapped: it remembers the frame that called it, which warnings name.
+``FACT_FINALITY`` is on, opens the checks of ``finality.py`` (``PARSE_CHECKS``). When the pipeline enters ``PARSED``,
+the checks of L1 run and those of ``finality.py`` arm; when the modules are final (``FINALIZE_SEGMENTS``), the model
+graph check compares the models they write with the emitted ones. Every pass and decision runs inside the finality
+scope of its declaration, every output module inside its module checkpoint, and every segment with a scope name inside
+that pass scope, as the pass trace (``trace.py``) records them. ``Parser.parse`` itself stays unwrapped: it remembers
+the frame that called it, which warnings name.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from dataclasses import replace
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
-from scripts.pass_decls import DECISION_DECLS, HOOK_BODIES, PASS_DECLS, SCOPE_NAMES
+from scripts.pass_decls import BOUNDARY_BEFORE, DECISION_DECLS, HOOK_BODIES, PASS_DECLS, SCOPE_NAMES, Boundary
 from tests.checks.areas import MODES, Area, read_modes
 from tests.checks.finality import (
     NO_SCOPE,
@@ -24,6 +26,9 @@ from tests.checks.finality import (
     guarded_facts,
     parse_checks,
 )
+from tests.checks.model_graph import check_emitted_models, check_model_owners
+from tests.checks.schema_graph import check_shared_schemas
+from tests.checks.schema_locations import check_schema_locations
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
 
 if TYPE_CHECKING:
@@ -34,6 +39,8 @@ _IN_MODULE: Final[ContextVar[bool]] = ContextVar("in_module", default=False)
 """Whether the parse that runs processes an output module now: an override that calls its base processes it once."""
 _SEGMENT_SCOPES: Final[dict[int, tuple[str, Any]]] = {}
 """The scope name (``SCOPE_NAMES``) and phase of each segment with a scope name, by the id of its steps."""
+_PARSED_STEPS: Final[set[int]] = set()
+"""The ids of the steps of the segments that enter ``PARSED`` (``BOUNDARY_BEFORE``)."""
 _DECLS: Final = {decl.name: decl for decl in PASS_DECLS}
 """The declaration of each table pass, by the name of its ``PassSpec``."""
 _HOOKS: Final = ("_process_single_module",)
@@ -59,6 +66,8 @@ def _segment_scopes(steps: Iterable[Any]) -> None:
         if isinstance(step, Segment):
             if (scope_name := SCOPE_NAMES.get(step.name)) is not None:
                 _SEGMENT_SCOPES[id(step.steps)] = (scope_name, step.phase)
+            if BOUNDARY_BEFORE.get(step.name) is Boundary.PARSED:
+                _PARSED_STEPS.add(id(step.steps))
             _segment_scopes(step.steps)
         elif isinstance(step, ForEachModule):
             _segment_scopes(step.body)
@@ -177,14 +186,25 @@ def _wrap_hooks(parser_class: type) -> None:
 
 
 def run_steps(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``Runner.run_steps``: the pipeline of a parse runs with its checks, a segment's steps in its scope."""
+    """Wrap ``Runner.run_steps``: the pipeline of a parse runs with its checks, a segment's steps in its scope.
+
+    The steps after ``PARSED`` start with the checks of L1 and the arming of those of the parse; the modules that the
+    steps of ``FINALIZE_SEGMENTS`` leave are compared with the emitted models.
+    """
 
     @wraps(original)
-    def run_steps(self: Any, steps: Any, parser: Any, state: object) -> None:
-        from datamodel_code_generator.parser._passes._tables import PIPELINE
+    def run_steps(self: Any, steps: Any, parser: Any, state: Any) -> None:
+        from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, PIPELINE
 
         if steps is PIPELINE:
             return _run_pipeline(original, self, steps, parser, state)
+        if steps is FINALIZE_SEGMENTS:
+            original(self, steps, parser, state)
+            return check_emitted_models(
+                parser.generation_store, (model for ctx in state.contexts for model in ctx.models)
+            )
+        if id(steps) in _PARSED_STEPS:
+            _enter_parsed(parser)
         if (
             (scope := _SEGMENT_SCOPES.get(id(steps))) is not None
             and (checks := PARSE_CHECKS.get()) is not None
@@ -285,16 +305,13 @@ def process_single_module(original: Callable[..., Any]) -> Callable[..., Any]:
     return process_single_module
 
 
-def enter_parsed(original: Callable[[Any], None]) -> Callable[[Any], None]:
-    """Wrap ``Parser.__enter_parsed``: after the checks of L1, the checks of the parse arm, in the SETTLE scope."""
-
-    @wraps(original)
-    def enter_parsed(self: Any) -> None:
-        original(self)
-        if (checks := PARSE_CHECKS.get()) is not None:
-            checks.arm(self.generation_store, "Parser.parse")
-
-    return enter_parsed
+def _enter_parsed(parser: Any) -> None:
+    """Run the checks of L1, then arm the checks of the parse, in the SETTLE scope."""
+    check_schema_locations(parser)
+    check_model_owners(parser)
+    check_shared_schemas(parser)
+    if (checks := PARSE_CHECKS.get()) is not None:
+        checks.arm(parser.generation_store, "Parser.parse")
 
 
 def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:

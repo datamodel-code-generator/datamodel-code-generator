@@ -68705,8 +68705,7 @@ wrap the operations on the store keep seeing every call. The operations on `Gene
 every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
-counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it
-(`identity_of` returns the `ModelIdentity` record: the key, the schema location and the owner). The owner
+counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it. The owner
 (`owner_of`) is the model whose builder built this one: each model builder of `JsonSchemaParser` runs in a frame whose
 cell takes the model it built when it returns, and a model records the frames open when it is recorded. A read or
 write variant stands for its base model in those frames, so it takes the base's owner; a document parse (`_parse_file`,
@@ -69562,7 +69561,9 @@ starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in
 `sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
 same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest. The
 other areas still run inside the package: `Parser.parse` reads them with `read_check_flags`
-(`src/datamodel_code_generator/_checks.py`), and the code it runs asks `check_mode(area)`.
+(`src/datamodel_code_generator/_checks.py`), and the code it runs asks `check_mode(area)`. `MODEL_GRAPH` and
+`SCHEMA_GRAPH` run in both: the invariants of the model graph and the shared-schema check at the end of L1 in
+`tests/checks`, the comparisons of an answer with the computation it replaced in the package.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
@@ -69584,9 +69585,9 @@ and fails the test for a write of the package that the allowlist does not list.
 
 | Area | Checks |
 | --- | --- |
-| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
 | `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan ([Model Processing Passes](architecture.md#model-processing-passes)) |
-| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
+| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |

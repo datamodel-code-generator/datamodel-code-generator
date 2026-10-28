@@ -16,14 +16,14 @@ from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_reference
-from datamodel_code_generator.reference import SCHEMA_OWNER_FRAMES_KEY, location_of
+from datamodel_code_generator.reference import SCHEMA_OWNER_FRAMES_KEY
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.reference import Reference, SchemaLocation
+    from datamodel_code_generator.reference import Reference
 
 UNRESOLVED_MODEL_KEY: Final = ModelKey(-1)
 """The key a lookup returns for a reference or a path naming none of the models of a site; no model takes it."""
@@ -51,38 +51,6 @@ def owner_of(reference: Reference) -> Reference | None:
         return None
     key = model_key_of(record.model)
     return next((owner for (owner,) in record.frames if owner is not None and model_key_of(owner) != key), None)
-
-
-def is_root_or_owned(reference: Reference) -> bool:
-    """Return whether the model of ``reference`` was recorded and has an owner or is a root model.
-
-    A root model is recorded with no builder frame open but its own builders'. A model recorded inside a builder that
-    built no model, or never recorded, breaks the rule.
-    """
-    if owner_of(reference) is not None:
-        return True
-    record = reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY)
-    return record is not None and all(owner is not None for (owner,) in record.frames)
-
-
-@final
-@record
-class ModelIdentity:
-    """Who a model is, whatever name and path it is written under."""
-
-    key: ModelKey
-    location: SchemaLocation | None
-    """The schema object the model is built from (`location_of`), or None."""
-    owner: ModelKey | None
-    """The model whose builder built this one (`owner_of`), or None for a root model."""
-
-
-def identity_of(reference: Reference) -> ModelIdentity:
-    """Return the identity of the model of ``reference``, from what the Reference carries."""
-    owner = owner_of(reference)
-    return ModelIdentity(
-        model_key_of(reference), location_of(reference), None if owner is None else model_key_of(owner)
-    )
 
 
 @final

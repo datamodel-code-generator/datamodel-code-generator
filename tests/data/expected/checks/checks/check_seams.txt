@@ -1,9 +1,11 @@
 datamodel_code_generator.parser._pipeline:Runner.run_steps <- tests.checks.parse.run_steps
 datamodel_code_generator.parser._pipeline:Runner.run_pass <- tests.checks.parse.run_pass
 datamodel_code_generator.parser._pipeline:Runner.run_decision <- tests.checks.parse.run_decision
-datamodel_code_generator.parser.base:Parser._Parser__enter_parsed <- tests.checks.parse.enter_parsed
 datamodel_code_generator.parser.base:Parser._process_single_module <- tests.checks.parse.process_single_module (and on each parser class that overrides it)
 datamodel_code_generator.parser.generation:GenerationStore.seal_facts <- tests.checks.parse.seal_facts
+datamodel_code_generator.parser.generation:GenerationStore.refresh_now <- tests.checks.model_graph.refresh_now
+datamodel_code_generator.parser.generation:GenerationStore.model_key <- tests.checks.model_graph.model_key
+datamodel_code_generator.parser._passes.modules:collapse_module_root_models <- tests.checks.model_graph.collapse_module_root_models
 datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
 datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
 datamodel_code_generator._parse_memo:ParseMemo.value <- tests.checks.memos.value

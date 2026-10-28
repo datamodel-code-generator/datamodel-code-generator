@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, ca
 
 from typing_extensions import Protocol, final
 
-from datamodel_code_generator import CollapseRootModelsNameStrategy, Error, FieldTypeCollisionStrategy, ReuseScope
+from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._graph import stable_toposort
@@ -1821,8 +1821,6 @@ def collapse_module_root_models(parser: CollapseHost, state: ModuleStateView) ->
     except _CollapseRootModelsRecursionError:
         raise
     except RecursionError as exc:
-        if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
-            mode.violation(Error, "collapsing root models reached the recursion limit instead of stopping at a cycle")
         raise _CollapseRootModelsRecursionError from exc
 
 

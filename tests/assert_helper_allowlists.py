@@ -67,8 +67,11 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "normal-path-mock:tests/checks/finality.py",
         "private-import:tests/checks/finality.py",
         "private-import:tests/checks/memos.py",
+        "private-import:tests/checks/model_graph.py",
         "private-import:tests/checks/parse.py",
         "private-import:tests/checks/requirements.py",
+        "private-import:tests/checks/schema_graph.py",
+        "private-import:tests/checks/schema_locations.py",
     ),
     "model-test-drivers": (
         "data-logic:tests/data/python/core_special_field_prefix_generate.py",

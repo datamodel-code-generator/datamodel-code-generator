@@ -57,9 +57,11 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_steps", "parse.run_steps"),
     Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_pass", "parse.run_pass"),
     Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_decision", "parse.run_decision"),
-    Seam(f"{_PACKAGE}.parser.base", "Parser", "_Parser__enter_parsed", "parse.enter_parsed"),
     Seam(f"{_PACKAGE}.parser.base", "Parser", "_process_single_module", "parse.process_single_module", hook=True),
     Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "seal_facts", "parse.seal_facts"),
+    Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "refresh_now", "model_graph.refresh_now"),
+    Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "model_key", "model_graph.model_key"),
+    Seam(f"{_PASSES}.modules", None, "collapse_module_root_models", "model_graph.collapse_module_root_models"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
     Seam(
         f"{_PASSES}._shared",

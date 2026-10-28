@@ -53,7 +53,7 @@ witness each; they are reported with ``report:<path>`` and never raise. Presenta
 and rows a model class computes with a property are not fingerprinted.
 
 Machinery shared by both areas: ``parse_checks`` opens the state of one parse when either area is on, and
-``ParseChecks.arm`` arms it at the end of L1 (``parse.enter_parsed``): ``DataType``, ``DataModelFieldBase`` and
+``ParseChecks.arm`` arms it at the end of L1 (``parse.run_steps``): ``DataType``, ``DataModelFieldBase`` and
 ``DataModel`` get a ``__setattr__`` guard (they inherit theirs, so leaving deletes it again), each store operation of
 the parser's store runs in a write scope, and the list attributes of the parsed graph, and the lists store operations
 set, are replaced by ``_GuardedList`` copies: a list keeps being shared by the objects that shared it, but not with

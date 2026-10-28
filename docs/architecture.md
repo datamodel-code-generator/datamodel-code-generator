@@ -940,8 +940,7 @@ wrap the operations on the store keep seeing every call. The operations on `Gene
 every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
-counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it
-(`identity_of` returns the `ModelIdentity` record: the key, the schema location and the owner). The owner
+counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it. The owner
 (`owner_of`) is the model whose builder built this one: each model builder of `JsonSchemaParser` runs in a frame whose
 cell takes the model it built when it returns, and a model records the frames open when it is recorded. A read or
 write variant stands for its base model in those frames, so it takes the base's owner; a document parse (`_parse_file`,

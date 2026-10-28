@@ -121,9 +121,7 @@ from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
     prepare_output_model_config,
 )
-from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._graph_ids import (
-    is_root_or_owned,
     keyed_models,
     unchecked,
 )
@@ -216,7 +214,6 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
-    SCHEMA_LOCATION_CONFLICT_KEY,
     ModelResolver,
     ModelType,
     Reference,
@@ -243,6 +240,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
+    from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes.modules import _DiscriminatorUnion, _InlineVariantTags
     from datamodel_code_generator.parser._phases import DecisionPass
@@ -3179,8 +3177,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 PARSE_MEMO.reset(memo)
             if render_ready is not None:
                 RENDER_READY.reset(render_ready)
-        if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
-            self.generation_store.check_emitted_models(mode, (model for ctx in contexts for model in ctx.models))
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
@@ -3637,35 +3633,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             references=len(plan.references),
         )
 
-    def _check_schema_locations(self, mode: CheckMode) -> None:
-        """Report the models parsed from a JSON document without a schema location (the copy step lost it).
-
-        A model whose Reference several schema objects reach has none by rule and is not reported.
-        """
-        if missing := [
-            model
-            for model in self.results
-            if location_of(model.reference) is None and not model.reference.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY)
-        ]:
-            paths = [(model.class_name, redact_reference(model.reference.path)) for model in missing]
-            names = ", ".join(f"{name} ({path})" for name, path in paths)
-            mode.violation(
-                Error,
-                f"models without a schema location: {names}",
-                models=[{"class_name": name, "path": path} for name, path in paths],
-            )
-
-    def _check_model_owners(self, mode: CheckMode) -> None:
-        """Report the models parsed from a JSON document that have no owner and are not roots (`is_root_or_owned`)."""
-        if unowned := [model for model in self.results if not is_root_or_owned(model.reference)]:
-            paths = [(model.class_name, redact_reference(model.reference.path)) for model in unowned]
-            names = ", ".join(f"{name} ({path})" for name, path in paths)
-            mode.violation(
-                Error,
-                f"models without an owner that are not roots: {names}",
-                models=[{"class_name": name, "path": path} for name, path in paths],
-            )
-
     def _close_http_fetch_session(self) -> None:
         """Close and discard the parser-scoped HTTP session without masking parser results."""
         if (session := self._http_fetch_session) is None:
@@ -3759,32 +3726,5 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return Runner(self.__enter_phase)
 
     def __enter_phase(self, phase: Phase) -> None:
-        """Mark that the pipeline enters ``phase`` on the generation store; entering ``SETTLE`` ends L1 (``PARSED``)."""
+        """Mark that the pipeline enters ``phase`` on the generation store."""
         self.generation_store.enter_phase(phase)
-        if phase is Phase.SETTLE:
-            self.__enter_parsed()
-
-    def __enter_parsed(self) -> None:
-        """Run the check-mode checks of L1."""
-        if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
-            self._check_schema_locations(mode)
-        if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
-            self._check_model_owners(mode)
-        if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None:
-            if changed := [redact_reference(str(location)) for location in self._schema_graph.changed_schemas()]:
-                mode.violation(
-                    Error,
-                    f"shared schema objects changed after validation: {', '.join(changed)}",
-                    kind="shared-schema",
-                    locations=changed,
-                )
-            for (site, origin), (plain, carried) in self._schema_graph.ref_site_counts().items():
-                mode.record(
-                    f"{CheckArea.SCHEMA_GRAPH.value}: {site} read {carried} references of origin {origin.value} with "
-                    f"their edge and {plain} as plain strings",
-                    kind="ref-sites",
-                    site=site,
-                    origin=origin.value,
-                    plain=plain,
-                    carried=carried,
-                )
