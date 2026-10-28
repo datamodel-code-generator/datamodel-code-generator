@@ -13499,41 +13499,40 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
           oneOf or allOf parsed as a type under ``name`` and ``path`` (``_parse_combined_property_names_key_type``).
         - ``extra-field``, the typed extra field of a model: only a direct schema that constrains the keys.
         """
-        match row:
-            case "pattern-map" if isinstance(property_names, JsonSchemaObject):
-                schema = property_names.model_copy(deep=True)
-                schema.type = "string"
-                if pattern is not None:
-                    schema.pattern = (
-                        pattern
-                        if schema.pattern is None
-                        else self._conjoined_pattern(
-                            (schema.pattern, pattern), str(property_names.schema_location or "propertyNames")
-                        )
-                    )
-                if schema.ref:
-                    schema = self._merge_ref_with_schema(schema)
-            case "pattern-map":
-                return (
-                    None
-                    if pattern is None
-                    else self.data_type_manager.get_data_type(
-                        Types.string,
-                        pattern=pattern,
-                        use_annotated=self.use_annotated,
-                        target_pydantic_version=self.target_pydantic_version,
+        if row == "pattern-map" and isinstance(property_names, JsonSchemaObject):
+            schema = property_names.model_copy(deep=True)
+            schema.type = "string"
+            if pattern is not None:
+                schema.pattern = (
+                    pattern
+                    if schema.pattern is None
+                    else self._conjoined_pattern(
+                        (schema.pattern, pattern), str(property_names.schema_location or "propertyNames")
                     )
                 )
-            case "property-names-map":
-                schema = cast("JsonSchemaObject | bool", property_names)
-                if isinstance(schema, JsonSchemaObject) and _merges_ref_siblings(schema):
-                    schema = self._merge_ref_with_schema(schema)
-                if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
-                    return self._parse_combined_property_names_key_type(name, schema, [*path])
-            case _ if self._is_direct_key_schema(property_names):
-                schema = cast("JsonSchemaObject", property_names)
-            case _:
-                return None
+            if schema.ref:
+                schema = self._merge_ref_with_schema(schema)
+        elif row == "pattern-map":
+            return (
+                None
+                if pattern is None
+                else self.data_type_manager.get_data_type(
+                    Types.string,
+                    pattern=pattern,
+                    use_annotated=self.use_annotated,
+                    target_pydantic_version=self.target_pydantic_version,
+                )
+            )
+        elif row == "property-names-map":
+            schema = cast("JsonSchemaObject | bool", property_names)
+            if isinstance(schema, JsonSchemaObject) and _merges_ref_siblings(schema):
+                schema = self._merge_ref_with_schema(schema)
+            if isinstance(schema, JsonSchemaObject) and (schema.anyOf or schema.oneOf or schema.allOf):
+                return self._parse_combined_property_names_key_type(name, schema, [*path])
+        elif self._is_direct_key_schema(property_names):
+            schema = cast("JsonSchemaObject", property_names)
+        else:
+            return None
         return self._parse_property_name_key_schema(schema)
 
     def _is_direct_key_schema(
