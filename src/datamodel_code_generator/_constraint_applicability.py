@@ -759,11 +759,6 @@ def int_constraint_beyond_values(output: OutputKeywords, keyword: str, value: ob
     """
     if output.int_values is None or not isinstance(value, int) or keyword not in NUMBER_FIELD_KEYWORDS:
         return False
-    match keyword:
-        case "gt":
-            taken = output.int_values[:-1]
-        case "lt":
-            taken = output.int_values[1:]
-        case _:
-            taken = output.int_values
+    values = output.int_values
+    taken = values[:-1] if keyword == "gt" else values[1:] if keyword == "lt" else values
     return not _within(taken, value)
