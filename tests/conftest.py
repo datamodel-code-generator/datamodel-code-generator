@@ -240,6 +240,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run one of TOTAL shards of the selected tests, split by their measured CI durations",
     )
     parser.addoption(
+        "--test-part",
+        action="append",
+        default=[],
+        metavar="NODEID@INDEX/TOTAL",
+        help="Of the selected tests under NODEID, run only the INDEX/TOTAL shard that --test-shard would select",
+    )
+    parser.addoption(
         "--expected-observe",
         metavar="DIR",
         help="Record every expected-output comparison into DIR without failing on unrecorded or changed output "
@@ -473,6 +480,19 @@ def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], 
     return ordered
 
 
+def _shard_nodeids(items: list[pytest.Item], durations: dict[str, int], index: int, total: int) -> set[str]:
+    from scripts.select_ci_test_shard import median_weight, select_shard
+
+    measured = {item.nodeid: durations[item.nodeid] for item in items if item.nodeid in durations}
+    fallback = median_weight(measured)
+    return set(select_shard({item.nodeid: measured.get(item.nodeid, fallback) for item in items}, index, total))
+
+
+def _keep_selected(config: pytest.Config, items: list[pytest.Item], selected: set[str]) -> list[pytest.Item]:
+    config.hook.pytest_deselected(items=[item for item in items if item.nodeid not in selected])
+    return [item for item in items if item.nodeid in selected]
+
+
 def select_test_shard(
     config: pytest.Config, items: list[pytest.Item], durations: dict[str, int], shard: str
 ) -> list[pytest.Item]:
@@ -480,14 +500,38 @@ def select_test_shard(
 
     Tests without a measured duration weigh the median of the measured ones, and the rest are deselected.
     """
-    from scripts.select_ci_test_shard import median_weight, select_shard
-
     index, total = map(int, shard.split("/"))
-    measured = {item.nodeid: durations[item.nodeid] for item in items if item.nodeid in durations}
-    fallback = median_weight(measured)
-    selected = set(select_shard({item.nodeid: measured.get(item.nodeid, fallback) for item in items}, index, total))
-    config.hook.pytest_deselected(items=[item for item in items if item.nodeid not in selected])
-    return [item for item in items if item.nodeid in selected]
+    return _keep_selected(config, items, _shard_nodeids(items, durations, index, total))
+
+
+def select_test_parts(
+    config: pytest.Config, items: list[pytest.Item], durations: dict[str, int], parts: list[str]
+) -> list[pytest.Item]:
+    """Keep each ``NODEID@INDEX/TOTAL`` part of the items under its node id, split like ``--test-shard``.
+
+    Each item belongs to the longest listed node id it is under.
+    Items under no listed node id stay selected, so a CI shard runs whole files beside parts of heavy ones.
+    """
+    wanted: dict[str, list[tuple[int, int]]] = {}
+    for part in parts:
+        base, _, shard = part.rpartition("@")
+        index, total = map(int, shard.split("/"))
+        wanted.setdefault(base, []).append((index, total))
+    groups: dict[str, list[pytest.Item]] = {base: [] for base in wanted}
+    selected: set[str] = set()
+    for item in items:
+        if (base := max(filter(lambda base: _is_under(item.nodeid, base), wanted), key=len, default=None)) is None:
+            selected.add(item.nodeid)
+        else:
+            groups[base].append(item)
+    for base, shards in wanted.items():
+        for index, total in shards:
+            selected |= _shard_nodeids(groups[base], durations, index, total)
+    return _keep_selected(config, items, selected)
+
+
+def _is_under(nodeid: str, base: str) -> bool:
+    return nodeid == base or nodeid.startswith((f"{base}::", f"{base}["))
 
 
 class StoreWritesCheck:
@@ -528,12 +572,14 @@ class StoreWritesCheck:
 
 
 class SlowTestOrdering:
-    """Select the requested test shard, then reorder it so every xdist worker chunk starts with measured slow tests."""
+    """Select the requested test parts and shard, then start each xdist worker chunk with measured slow tests."""
 
     @pytest.hookimpl(trylast=True)
     def pytest_collection_modifyitems(self, config: pytest.Config, items: list[pytest.Item]) -> None:
         """Run after marker and keyword deselection so shards and chunk boundaries match what xdist distributes."""
         durations = slow_test_durations()
+        if parts := config.getoption("--test-part"):
+            items[:] = select_test_parts(config, items, durations, parts)
         if (shard := config.getoption("--test-shard")) is not None:
             items[:] = select_test_shard(config, items, durations, shard)
         workers = getattr(config, "workerinput", {}).get("workercount", 1)

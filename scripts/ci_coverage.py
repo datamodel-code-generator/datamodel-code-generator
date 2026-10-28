@@ -7,12 +7,12 @@ import json
 from pathlib import Path
 
 SHARD_COUNTS = {
-    "py315-parallel": 5,
-    "py314-parallel": 5,
-    "py313-parallel": 5,
-    "py312-parallel": 5,
-    "py311-parallel": 5,
-    "py310-parallel": 5,
+    "py315-parallel": 8,
+    "py314-parallel": 8,
+    "py313-parallel": 13,
+    "py312-parallel": 17,
+    "py311-parallel": 18,
+    "py310-parallel": 14,
     "client-e2e": 3,
 }
 COVERAGE_ENVS = (

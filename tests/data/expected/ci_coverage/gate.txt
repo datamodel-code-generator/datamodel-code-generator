@@ -179,6 +179,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "mid-stack:test-shard-nocov-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-nocov-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-nocov-main:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "mid-stack:test-shard-nocov:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -206,6 +221,226 @@
   },
   "mid-stack:test-shard:success": {
     "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:check:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:check:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:check:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:check:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:coverage:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:coverage:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:e2e:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:e2e:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:e2e:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:e2e:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-coverage:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-coverage:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-coverage:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-coverage:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-subset:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-subset:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-subset:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-formatter-subset:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends-nocov:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends-nocov:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends-nocov:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends-nocov:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-http-backends:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov-main:skipped": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov-main:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-nocov:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard:success": {
+    "exit": 0,
     "results_match": true,
     "stderr": ""
   },
@@ -285,6 +520,21 @@
     "stderr": ""
   },
   "test-http-backends:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-nocov-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-nocov-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-nocov-main:skipped": {
     "exit": 1,
     "results_match": true,
     "stderr": ""

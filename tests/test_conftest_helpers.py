@@ -633,6 +633,68 @@ def _shared(ledger: LedgerProject, **outputs: str) -> None:
     ledger.write("test_m.py", f"OUTPUTS = {outputs!r}\n{SHARED}")
 
 
+def test_test_part_and_shard_options_partition_collection(ledger: LedgerProject) -> None:
+    """The --test-part parts of a node id and the --test-shard shards each select every test once."""
+    ledger.write(
+        "test_m.py",
+        """
+        import pytest
+
+
+        @pytest.mark.parametrize("case", range(6))
+        def test_heavy(case):
+            pass
+
+
+        def test_heavy_other():
+            pass
+        """,
+    )
+
+    def collected(*args: str) -> list[str]:
+        result = ledger.run("--collect-only", "-q", "suite", *args)
+        return [line for line in result.stdout.lines if "::" in line]
+
+    heavy = "suite/test_m.py::test_heavy"
+    parts = [collected(f"--test-part={heavy}@{index}/2") for index in (1, 2)]
+    shards = [collected(f"--test-shard={index}/2") for index in (1, 2)]
+    every = collected()
+    assert all(f"{heavy}_other" in part for part in parts)
+    assert sorted(nodeid for part in parts for nodeid in part if nodeid.startswith(f"{heavy}[")) == sorted(
+        nodeid for nodeid in every if nodeid.startswith(f"{heavy}[")
+    )
+    assert all(len(part) == 4 for part in parts)
+    assert sorted(nodeid for shard in shards for nodeid in shard) == sorted(every)
+
+
+@pytest.mark.parametrize("narrow_first", [True, False])
+def test_test_part_gives_each_test_to_its_most_specific_part(ledger: LedgerProject, narrow_first: bool) -> None:
+    """Nested --test-part node ids select each test under the longest one, whatever the option order."""
+    ledger.write(
+        "test_m.py",
+        """
+        import pytest
+
+
+        @pytest.mark.parametrize("case", range(4))
+        def test_heavy(case):
+            pass
+
+
+        def test_light():
+            pass
+        """,
+    )
+    broad, narrow = "--test-part=suite/test_m.py@1/2", "--test-part=suite/test_m.py::test_heavy@2/2"
+    result = ledger.run("--collect-only", "-q", "suite", *((narrow, broad) if narrow_first else (broad, narrow)))
+    selected = sorted(line for line in result.stdout.lines if "::" in line)
+    assert selected == [
+        "suite/test_m.py::test_heavy[1]",
+        "suite/test_m.py::test_heavy[3]",
+        "suite/test_m.py::test_light",
+    ]
+
+
 def test_ledger_creates_derived_output_and_records_it(ledger: LedgerProject) -> None:
     """A local run stores output under the test's name and records it; later runs only compare it."""
     ledger.write(

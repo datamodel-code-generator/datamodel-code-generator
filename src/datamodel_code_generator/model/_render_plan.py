@@ -74,6 +74,7 @@ __all__ = [
     "unchanged_render_inputs",
     "visible_nested_factories",
     "written_argument_names",
+    "written_text",
 ]
 
 ConstructorDefault: TypeAlias = Literal["none", "value", "factory"]
@@ -659,6 +660,15 @@ def _package_class(cls: type | None) -> bool:
     if (known := _PACKAGE_CLASSES.get(cls)) is None:
         known = _PACKAGE_CLASSES[cls] = cast("type", cls).__module__.startswith("datamodel_code_generator.")
     return known
+
+
+def written_text(field: Any, *, writes: bool) -> bool:
+    """Return whether the field's call renders (``bool(field.field)``), ``writes`` for a field class of this package.
+
+    A field class outside the package may write anything through ``field`` or ``__str__``, which ordering and the
+    class attribute then read, as they did in 0.86.0.
+    """
+    return writes if _package_class(type(field)) else bool(field.field)
 
 
 _DERIVING_CLASSES: Final[dict[tuple[type, type], bool]] = {}

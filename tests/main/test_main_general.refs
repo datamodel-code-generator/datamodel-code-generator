@@ -370,6 +370,10 @@ sibling	main/jsonschema/custom_file_header_path_prepend_multi_file//*.py
 field	main/main_general/dataclass_field_type_imports_follow_its_field[field].txt
 none	main/main_general/dataclass_field_type_imports_follow_its_field[none].txt
 str	main/main_general/dataclass_field_type_imports_follow_its_field[str].txt	= main/main_general/dataclass_field_type_imports_follow_its_field[field].txt
+[test_dataclass_field_type_orders_fields_by_what_it_writes]
+field-default	main/main_general/dataclass_field_type_orders_fields_by_what_it_writes[field-default].txt
+field-metadata	main/main_general/dataclass_field_type_orders_fields_by_what_it_writes[field-metadata].txt
+str-default	main/main_general/dataclass_field_type_orders_fields_by_what_it_writes[str-default].txt	= main/main_general/dataclass_field_type_orders_fields_by_what_it_writes[field-default].txt
 [test_default_target_python_version_follows_the_interpreter]
 	main/default_target_python_version.txt
 [test_direct_input_dict]
