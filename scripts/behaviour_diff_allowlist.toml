@@ -206,3 +206,19 @@ match = "\\b(InlineArray|RefArray)\\b"
 reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
 decision = "#5401"
 release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/allof_root_model_constraints.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(ConstraintWithItems|RefToArrayAllOf)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/openapi/allof_scalar_roots.yaml"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\bTwoPatterns\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
