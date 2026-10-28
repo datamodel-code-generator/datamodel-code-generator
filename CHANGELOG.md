@@ -5,6 +5,451 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.87.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.87.0) - 2026-10-28
+
+## Compatibility policy for 0.87.0
+* Default output is unchanged from 0.86.0 except for fixes of output that failed to import or generate, or that rejected every valid payload, and changes that do not alter behaviour. Every other change is behind its own option and the dated presets `standard-*-20261027` / `practical-*-20261027` (for example `standard-py312-20261027`).
+* Announced exceptions to "unchanged by default":
+  * External `$anchor` references in directory input resolve to the document that declares the anchor (#5088). This is what the specification says; 0.86.0 depended on the order the files were read.
+  * msgspec unions whose members all failed to decode in 0.86.0 now decode. A member class that is also used on its own loses the field named like the union tag, or the field its base already declares (#5369, #4984, #5085, #5086).
+  * `propertyNames` keys that reference a root model are typed as a constrained `str` (#5017); the previous output rejected every non-empty map.
+  * With `--strict-nullable --reuse-model --collapse-reuse-models` (and the practical presets), a reference to a non-nullable object schema whose model was merged into an equal nullable one rejects `null` again, as in 0.83.0; 0.84.0 to 0.86.0 wrote `| None` there (#5407). No class is renamed or removed; where a second merge depended on that `None`, the model or type alias of the non-nullable schema is written again.
+* Import cycles: the modules merged into `_internal` (#5347, #5374) keep every name importable from its 0.86.0 module path, including the `_internal` module. A module import named like a builtin is aliased where the module also writes that builtin (partial fix of #5387).
+* Performance: generation is 12-21% faster than the previous development build, but on large schemas it is still 1.27-1.71x the time of 0.86.0 (quiet x86 Linux host, minimum of 7 runs; small schemas 1.27-1.30x).
+* New tooling: per-release output-change pages and an upgrade guide are generated from recorded behaviour differences (#5386, #5388).
+* Known issues, open at release: #5376, #5378, #5380, #5382, #5384, #5385, #5387, #5411, #5412.
+
+## Opt-in behaviour changes (enable per option or with the 20261027 preset)
+* `--filter-literal-values` drops `enum` and `const` values that fail the constraints beside them; implied by `--omit-redundant-constraints` (#5100)
+* `--read-const-beside-enum` types a value by the `const` that narrows its enum, and reads an enum that contains its `const` as that `const` under `--use-single-value-enum-as-const` (#5101, #5102)
+* `--use-tuple-for-closed-arrays` generates closed `prefixItems` / `items` arrays (and the length-fixing `--use-tuple-for-fixed-items` cases) as fixed-length tuples (#5103)
+* `--pin-aliases-with-alias-generator` decides each field's alias by the `alias_generator` its model applies, for Pydantic v2 models and dataclasses (#5104)
+* `--tag-msgspec-by-payload-name` tags msgspec discriminated unions by the property name in the document, not its Python name (#5105)
+* `--order-constructor-fields-by final-names` orders constructor fields by their final names, so an overriding required field keeps the position of the inherited one instead of becoming `kw_only` (#5106)
+* `--use-site-models-for-constrained-refs` gives a `$ref` that carries more assertions (or an `allOf` that adds constraints, an enum or a type to a reference) its own model (#5107)
+* `--intersect-allof-keywords` combines the keywords of every `allOf` part: constraints intersect, enums narrow, patterns conjoin, `null` members drop beside a type that excludes null (for example `kind: str | None` becomes `kind: str`) (#5108, #4951)
+* `--use-single-dict-for-object-maps` generates one dict for `patternProperties` / `propertyNames` object maps instead of a union of dicts, and counts every key in schema validators (#5113)
+* `--read-unevaluated-properties` reads a schema-valued `unevaluatedProperties` like `additionalProperties`, so extra keys are typed (#5114)
+* `--dedupe-request-response-variants` (needs `--read-only-write-only-model-type request-response` or `all`, which the preset does not set) decides request/response variants from the schema graph: no unreferenced duplicates, stable numbering, `allOf` parent inline models written once (#5115, #5089)
+* `--order-constructor-fields-by written-defaults` orders `msgspec.Struct` and Pydantic dataclass fields by the defaults they write under `--strip-default-none` (which the preset does not set): a stripped `None` default counts as a default for the field's place, a subclass after an inherited default is no longer `kw_only=True`, and a Pydantic dataclass field that redeclares an inherited stripped `None` default as required gets `Field(...)`. Without it the output keeps 0.86.0's order, `kw_only` and inherited defaults (#5116, #4946, #5399)
+* `--read-nullable-beside-type-list` lets the root model admit `None` for `nullable: true` beside a `type` list that holds an object and another type, under `--strict-nullable` or `--use-missing-sentinel` (#5117, #5064)
+* `--keep-field-defaults-off-branch-roots` keeps a nullable field's `default: null` off the root model of a constrained union branch under `--field-constraints` / `--use-annotated` (#5118, #5084, #4987)
+* `--omit-redundant-reference-null` stops writing `| None` after a reference to a model that already admits null (`list[Name | None]` becomes `list[Name]`) (#5120, #5081)
+* `--use-typed-map-values-beside-other-types`, together with `--use-typed-nullable-map-values` (which no preset sets), types the `additionalProperties` values of the object member of type arrays that list other types, such as `[object, string]`; the option changes nothing without `--use-typed-nullable-map-values` (#5127, #5094)
+* `--keep-enum-member-values` writes an enum whose `IntEnum` / `StrEnum` / `(T, Enum)` base would change a member value as a plain `Enum` that keeps every value as written (#5133)
+* `--omit-redundant-constraints` does not write a constraint again beside a type that already enforces it, such as the bound of `NonNegativeInt` (needs `--use-non-positive-negative-number-constrained-types`, not set by the preset) and the length and number constraints a `const` or `enum` `Literal` meets by its values; implies `--filter-literal-values` (#4525, #4875)
+* `--use-decimal-in-field-forms` writes `Decimal` for `multipleOf` in field forms (#5021)
+* `--collapse-shared-parent-wrappers`: under `--collapse-root-models --collapse-root-models-name-strategy parent`, later holders of a parent root wrapper follow the first holder's collapse even where `--field-type-collision-strategy rename-type` renames the wrapper apart from its inner model. By default those holders keep the 0.86.0 wrapper; inputs that crashed in 0.86.0 are fixed either way. Under the parent strategy a pydantic v2 dataclass no longer writes the self-named alias `Wrapper = TypeAliasType("Wrapper", Wrapper)` beside the class that took the wrapper's name; the class validates the same payloads. (#5398)
+* `--openapi-as-definitions paths-bodies` gives the request and response bodies of the `paths` and `webhooks` scopes the model a schema definition of the same body gets, for example an object body with a `type` array such as `[object, null]` (needs `--openapi-scopes paths` / `webhooks`, not set by the preset); it also covers object-map bodies of the legacy `paths` scope, whose default output is as in 0.86.0 except that closed `patternProperties` maps are fixed by default (#5025, #5024, #5141)
+* Under `--generate-schema-validators`, counting every key of pattern maps and checking declared keys against matching patterns now needs `--check-pattern-maps-strictly`; without it the output is the same as 0.86.0 (#5152)
+* `--order-constructor-fields-by written-defaults` now also orders dataclass and Pydantic dataclass fields by the nested-model default factories they write (under `--use-default-factory-for-optional-nested-models --strip-default-none`); without it the output is the same as 0.86.0
+* Giving OpenAPI components written as a constrained `$ref` to a recursive schema their own root model now needs `--openapi-as-definitions ref-components` (in preset 20261027); without it the output is the same as 0.86.0 (#5176)
+
+## Crash and import fixes
+* msgspec: a union of several dicts, which msgspec cannot decode, is generated as one dict
+* Map keys that reference a root model that is not frozen are typed by the root type: the previous `dict[Key, ...]` raised `TypeError: unhashable type` on every non-empty map (#5017)
+* Object bodies in the legacy `paths` scope get models (#5024)
+* `TypedDict` `extra_items` names the final class so the module imports (#5022)
+* Non-finite float enum members are written importably (#4954)
+* GraphQL subclass enums are written as importable `StrEnum` (#4970)
+* A discriminator whose tag values are float (or, for msgspec, bool) consts no longer crashes generation or import; the union is written without a discriminator (#5053, #5086)
+* Schemas merged from another document resolve their `$ref`s in their own document: inputs that failed with "A Parser can not resolve classes" (#5046), an inherited property narrowed by a child in another directory (`$ref file not found`, #5068), and several `--read-only-write-only-model-type request-response` inputs now generate
+* `$ref` to an `$anchor` declared inside a `oneOf` branch resolves instead of failing with `Unresolved $id reference` (#5056, #5092)
+* Fixed a `ValidationError` when an `allOf` child and its parent both declare a property named like a schema keyword, such as `minimum` or `maximum` (#5069)
+* Long chains of `$ref` aliases generate the same models whatever the Python recursion limit; long `$ref` chains and deeply nested objects that 0.86.0 generated give the same output, chains that 0.86.0 silently truncated now stop with a clear error instead of incomplete output (#5076)
+* Root `allOf` sites that crashed or failed to import now generate, including the msgspec `TagsLenItem` decode failure; `$ref` sibling constraints at item positions no longer stack two `ge` annotations that raised `TypeError` on every decode (#5027)
+* Constructor order no longer depends on module order: pydantic dataclasses drop a redundant `kw_only=True` on a redeclared inherited field, and cross-module discriminator tags and `--type-overrides` bases no longer fail at import (a redundant `kw_only` only; moving an overriding required field to the inherited position is the opt-in `--order-constructor-fields-by final-names`)
+* Constructor field order under `--strip-default-none` (msgspec.Struct, Pydantic dataclass): modules whose 0.86.0 order failed at class creation (a required field after an optional one) now generate valid code (#4946, #5394)
+* An `allOf` whose parts no value can satisfy (conflicting `type`, `enum` or `const`) generates with a `UserWarning` instead of stopping with "allOf contains a boolean false schema that makes the schema unsatisfiable" (#5039)
+* A `format: byte` enum with an integer beyond `Py_ssize_t` under `--use-subclass-enum` is written as a plain `Enum` instead of a `bytes` enum that failed at import
+* An integer `minimum` beyond float range in `patternProperties` with `--generate-schema-validators` no longer crashes generation with `OverflowError`
+* OpenAPI component schemas with a boolean `true` among their `allOf` members no longer crash generation; a `false` member reports that the schema is unsatisfiable instead of crashing (#4491)
+* `--use-default-factory-for-optional-nested-models` with `--strip-default-none` no longer crashes with `RecursionError` on models that reference each other; fields in the cycle get no default factory (#5151)
+* A reference to a component written as a constrained `$ref` to a recursive schema is typed by that `$ref`'s target instead of failing with "A Parser can not resolve classes" (#5162)
+* `--collapse-root-models` no longer writes `int | "Name"` unions that fail at import or type evaluation; such fields use `Union[...]` (#4976)
+* msgspec: constraints beside a `$ref` to an enum, a Struct or an alias whose type cannot take them are left out with a warning; before, the model raised `TypeError` when used to decode (#5033)
+* `--generate-schema-validators`: a module whose patternProperties or additionalProperties value refers to its own model, or to a model later in the same `$ref` cycle, now imports (#4932)
+* Pydantic output leaves out string length constraints on UUID, date, datetime, time, timedelta, IP address and similar types, with a warning; 0.86.0 wrote them and every value raised `TypeError: Unable to apply constraint` (#5001)
+* An `allOf` of an integer enum and an enum that holds `null` writes the integer enum without the `None` member that made it fail at import (#5124)
+* Server and client generation report a response status given by both an integer and a string key as a schema error instead of an internal error (#5271)
+* An `allOf` of enums that merges into an `IntEnum` or `StrEnum` leaves out the inherited members the merged type cannot hold, so the enum imports and validates (#5310)
+* A component that is only a `$ref` to itself is dropped from the bases of the models whose `allOf` names it, so those models keep their own fields and import (#5315)
+* A functional `TypedDict` quotes the models it names before they are defined (self-references, mutual references, inherited fields), also under deferred annotations, so the module imports (#5314)
+* msgspec: a field whose collapsed type is empty, in sibling reference cycles under `--collapse-root-models`, writes `None` inside `Annotated`, so the model keeps a valid base type and its description (#5273)
+* A later `type` statement named in a class annotation that the runtime evaluates while the class is defined is quoted, so recursive and later-declared types import, also for typed extra fields (#5321)
+* `--use-enum-values-in-discriminator`: a variant whose tags name no member of its enum is tagged with the enum's members, for models and JSON Schemas of every output type (#5324)
+* `--read-only-write-only-model-type request-response` splits array models exactly where the item positions that array parsing types name a readOnly model, including tuple items and entries after `false` schemas (#5325)
+* The root of a `$ref` cycle that deduplication dropped is imported nowhere, so `--collapse-root-models` output parses with the builtin and black formatters (#5326)
+* The one-value `Enum` tag of a variant that nested choices give a discriminated union is written as its `Literal`; a union that names one variant alone keeps that variant's model as before and is written without the discriminator (#5335)
+* msgspec: a variant stays untagged, with its tag field a `Literal` of its const, when a base declares the tag field; reused variant tags no longer fail at import (#5333)
+* msgspec: under `--use-enum-values-in-discriminator`, a variant tagged by enum members is tagged by the members' string or integer values, and members whose values cannot be plain literals keep their enum literals (#5334)
+* A discriminator is left out of a union that names one variant by its `$ref` when that variant has no tag, instead of generating an invalid model (#5340)
+* A discriminator is left out of a union that takes a root model with a default as a variant, or a variant whose default makes it unsuitable (#5339)
+* A discriminator is left out of a union whose only variant is a scalar, `Any` or `None` instead of a model; it is kept where the variant supports it (#5344)
+* Modules that a cycle imports below one of its packages are merged into the `_internal` module, so the package imports, for example under `--naming-strategy full-path` (#4823)
+* A `--type-overrides` value with brackets, such as `typing.Literal[1, 2]`, is written as the annotation it spells, with its names imported, instead of a broken import (#4747, partly)
+* An `additionalProperties`, `items`, tuple position, `patternProperties` or `propertyNames` value that is an `allOf` holding `false` is generated as with `false` (no extra keys or items) instead of stopping generation as unsatisfiable, for models and schema validators (#5296, #5312, #5317)
+* With `--use-enum-values-in-discriminator`, a variant that sits in a second discriminated union keeps its enum-member tag instead of the schema path segment, and a tag that matches no enum member no longer becomes an invented member name, so the module imports (#5099, #5201)
+* A discriminated union whose variants are inline `allOf` schemas extending a component is tagged by the tag each variant inherits instead of an internal path marker no payload carries (#4829)
+* `--collapse-root-models` writes the items of a list that inline a union with a root model with a default without a discriminator, so the module imports (#5354)
+* A `--model-name-map` class name key that renamed a model no longer matches the next model of the same family, which stopped generation with "that model name is already used" (#4864)
+* A reference spelled with the `$self` of an OpenAPI 3.2 document loaded through a reference resolves to that document instead of being fetched again (#4492)
+* dataclass, `TypedDict` and msgspec fields naming a `TypeAlias` of `None` and also admitting null are written without the extra `None`, so the annotation evaluates (#5109)
+* An `allOf` holding a `$ref` to a typed root beside a member whose type is a list, such as `["string", "null"]`, merges on the types they share instead of stopping with "unhashable type: 'list'" (#5028)
+* `--use-root-model-type-alias`: the `RootModel` classes kept for constrained roots are ordered and quoted like other root models, so a cycle through one no longer raises `NameError` at import (#4498)
+* msgspec: with `--reuse-model`, a reused variant of a discriminated union keeps its tag as a `Struct` of its own, so the union decodes (#5353, #4984)
+* With `--all-exports-scope`, modules that a re-exporting package imports back are merged into `_internal`, so the output no longer fails with a partially initialized module import error (#5349)
+
+## Other
+* `--recommend-options` (experimental) may recommend different options for schemas with dotted names, because the modular `--naming-strategy full-path` output it scores now imports (#4823)
+* `--emit-model-metadata` writes `source_ref` / `source_path` as JSON Pointers that exist in the document for nested models and request/response variants; 0.86.0 wrote internal parse paths there (#4956)
+* The experimental client runtime raises its own JSON decoding errors on every Python version (#5050)
+* `--recommend-options` (experimental) recommends the 20261027 presets with the rules dated 2026-10-19
+* Removed internal helper re-exports from `parser.base`: `exact_import`, `is_ancestor_package_reference` and `iter_models_field_data_types` can no longer be imported from `datamodel_code_generator.parser.base`; they were internal helpers outside the documented API and now live in a private module (#5048)
+* Redundant `model_rebuild()` call dropped under `--reuse-model` for a nested model that references no other model; the generated module behaves the same (#5058)
+* `DataModel.clear_imports_cache()` is deprecated and does nothing: models no longer cache their imports and the generator no longer calls it, so subclass overrides are not called
+* Parser subclasses: `GenerationStore` mutation methods are deprecated (no runtime warning, type checkers report them); call them through `GenerationStore.builder()`, which forwards to the same methods so store subclasses keep working
+* Parser subclasses: `_process_single_module` returns modules before ordering and render preparation, and `_finalize_modules` no longer runs the generic base class or the decision phase
+* Behaviour-change page: every option above is documented with before/after examples in the new "Behaviour changes" page (#5096)
+- Fixed #5198: with `--generate-schema-validators` and modular output, a rule naming a model from another module now imports it the way field types do. A module that also defines a class with the same name used to check rule values against its own class; the rule now checks against the referenced model, as the schema says.
+- Fixed #5031: TypedDict `extra_items` naming a class from another module now imports it. A module that also defines a class with the same short name used to point `extra_items` at its own class; it now points at the referenced one.
+- Fixed #4822: a union that collapsing root models leaves with no member to write now imports `Any`.
+- Fixed #5178: with `--collapse-root-models --generate-schema-validators`, a root model that a validator rule names is kept, so the module imports.
+- Fixed #5180: `--use-type-alias` with `--generate-schema-validators` no longer fails with "schema_runtime_validation is reserved"; an alias that holds rules is written as the RootModel class.
+- Fixed #5097 / #5132: `--read-only-write-only-model-type request-response` no longer fails with "can not resolve classes" when only map keywords reach a readOnly model, or when an allOf child re-declares an inherited readOnly property.
+- Fixed #4751: a warning turned into an error while writing output exits 2 with the traceback (it exited 1, the `--check` "differences found" code).
+- Fixed #4910: YAML that the ryaml backend cannot read (for example integers outside 64 bits) is read with PyYAML.
+- Fixed #4491 / #4979: non-string component names and malformed schemas of legacy `paths` operations stop with an `Error at schema path ...` message instead of a traceback.
+- Fixed #5211 / #5213: msgspec output leaves out integer bounds outside the 64-bit range (with a warning) and number bounds beyond the float range, which msgspec rejects; protobuf `uint64` fields now decode.
+- msgspec output warns about enums whose values msgspec cannot decode (mixed str/int, bool, float) and names `--enum-field-as-literal all` (#4493).
+- Fixed #5203: a model that uses a `$ref` to a whole document mapped by `--external-ref-mapping` now stops with an error asking for a fragment, instead of "can not resolve classes".
+- Fixed #5208 / #5209 / #5210: more `--read-only-write-only-model-type request-response` shapes generate (patternProperties beside a `$ref` or under allOf; additionalProperties beside properties on dataclass, msgspec and TypedDict; validator rules name the matching variants).
+- Fixed #5222 / #5212: numeric path, webhook, callback, method and AsyncAPI names stop with an `Error at schema path ...` message; a warning turned into an error while options are processed exits 2 with the traceback.
+- Fixed #5223: Pydantic output for a number bound too large for a float no longer crashes generation (written like `1e400`); a `multipleOf` that is not finite is left out with a warning, since Pydantic cannot take it.
+- msgspec output warns about enums and Literal values holding integers outside the 64-bit range, which msgspec cannot decode (#5225).
+- Fixed #5252: with `--collapse-root-models` (part of the dated presets), a site that holds only a quoted forward reference is written as `Optional["X"]` instead of `"X" | None`, which failed when annotations were evaluated (also in 0.86.0). dataclass and msgspec output that imported but raised TypeError on every payload changes the same way.
+- Fixed #5248 / #5227: numeric header names, media-type keys and encoding property names in the `api` scope, and a used `$ref` chain of constrained references that loops back, stop with schema errors instead of crashing.
+- Fixed #5253: msgspec output leaves a Struct tag outside the 64-bit range out (the variant keeps its discriminator field), so the module imports.
+- Fixed #5237 / #5238 / #5239: more `--read-only-write-only-model-type request-response` shapes generate (models reaching a readOnly model only through untyped map keywords keep one class; inline objects under a document's root properties split without NotADirectoryError; dedupe variants of an allOf over a root map carry no undeclared field).
+- Fixed #5267 / #5268: request-response variants of an allOf over a root map carry no undeclared field in the default mode either (`field_`, `''`, or a SyntaxError before), and sites typed by a `customTypePath` no longer force variants that are never written.
+- Fixed #5260 / #5204: server and client generation report non-string keys as schema errors; msgspec writes `Any | UnsetType` where a collapsed union writes no member (it wrote `UnsetType` alone and rejected every value).
+- The four unreleased 0.87.0 options merge into two multi-value options with the same output: `--order-constructor-fields-by final-names|written-defaults` and `--openapi-as-definitions paths-bodies|ref-components`. The pyproject keys become `order-constructor-fields-by` and `openapi-as-definitions` (lists; an empty list turns off the values a preset sets), the Python API takes `order_constructor_fields_by` and `openapi_as_definitions` sequences, and the 20261027 presets set both values of each (#5330).
+* Payload sampling skips strings whose final newline Python's `$` accepts but the end of the input rejects, and the watch CLI test retries replacing the watched file on Windows (#4654, #5149)
+* The test tooling keeps `hypothesis` below 6.170.10, which breaks the object strategy of `hypothesis-jsonschema` 0.23.1 (#5362)
+
+* `--generate-schema-validators` (experimental): the `TypeAdapter` that checks pattern-typed keys and values now gets `config={"regex_engine": "python-re"}` where a pattern needs Python regex features (#5057).
+
+## Upgrading from older releases
+* Upgrading from 0.85.0 or earlier: with `--use-annotated` or `--field-constraints`, a `multipleOf` on a field typed `datetime.timedelta` (`x-python-type`) is no longer written (since 0.86.0, following the 0.84.0 rule for `timedelta`). Pydantic 2.13 and earlier ignored it; Pydantic 2.14 enforces it. Writing it for a 2.14 target is tracked in #5408.
+Changes you may notice when you move to 0.87.0 from an older release, found by comparing generated output across releases.
+These changes shipped in earlier releases and are unchanged in 0.87.0. Each was checked by generating the same schema with the releases before and after it.
+* **From before 0.84.0:** a model built from an `allOf` whose member sets `additionalProperties: false` is closed (`extra='forbid'`); 0.83.0 wrote `extra='allow'`, so payloads with unknown keys are now rejected.
+* **From before 0.72.0:** properties a model redeclares on top of an `allOf` base keep the base's `required`, so a redeclared property becomes required and loses the override's default.
+* **From before 0.58.0:** an object with `properties` and a schema-valued `additionalProperties` gets `extra='allow'`, keeping and validating unknown keys instead of dropping them. Pass `--extra-fields ignore` to drop them again.
+* **From before 0.54.0:** enum members built from `oneOf`/`anyOf` `const` branches are named after each branch's `title` (`integer_200` becomes `OK`); values are unchanged.
+* **From 0.21.1 to 0.45.x:** a property that is both `required` and nullable is required again (`int | None` without a default, as in 0.21.0), so payloads that omit the key are rejected.
+* **From before 0.42.2:** a string schema whose `oneOf` lists `const` branches becomes an `Enum` instead of `RootModel[str]`. Pass `--enum-field-as-literal all` to keep a `RootModel` (its root is a `Literal` of the consts).
+* **From before 0.36.0:** an integer `enum` becomes an `IntEnum`; members keep their names and values but now compare equal to ints.
+* **From before 0.28.5:** a field named like the class of its own type is renamed with a suffix (`Elem` becomes `Elem_1`) and keeps the JSON name as its alias.
+* **From before 0.25.0:** models for inline object branches of `oneOf`/`anyOf` are named after the property (`Animal`, `Animal1`) instead of `AnimalItem`, `AnimalItem1`.
+* **From before 0.21.4:** a `const` property is typed as its `Literal`; an optional one defaults to `None` instead of the const value.
+
+## Extension API
+* Model hooks `enable_structured_default_validation`, `apply_discriminator_tag` and `unconstrain_union_members` now return whether the field should change, and the parser applies the change; overriding them works as before, but code that calls them directly and relies on the hook writing the field must apply the result itself (#5363)
+* Generation is faster than in 0.87.0 development builds: each field's render plan and imports are computed once and reused until something they read changes (#5363, #5360)
+* Generation of msgspec output is faster: each field's `Meta` call and constructor-ordering classification are built once from its render plan, and a benchmark covers 500 msgspec Structs and dataclasses (#5364, #5365, #5360)
+
+## Breaking Changes
+
+These changes alter the default output or the Python API of 0.86.0. Output changes that are opt-in are listed above.
+
+### Code Generation Changes
+* References to non-nullable schemas reject null again after model merging (opt-in options only) - With `--strict-nullable` and `--reuse-model --collapse-reuse-models` (including the practical presets), `--reuse-scope tree` or same-name deduplication, a non-nullable object model merged into an equal nullable one made every reference to it accept `None` since 0.84.0. Those references reject null again, as in 0.83.0 (`work: Home | None` becomes `work: Home`). No class is renamed or removed; where a second merge depended on that `None` (for example `WorkVisit`), the model or type alias is generated again. Default output is unchanged (#5407, #5410)
+* Model metadata `source_ref` and `source_path` now hold JSON Pointer locations - The `--emit-model-metadata` output (payload `version` still 1) now gives each model's `source_ref` as the document plus the RFC 6901 JSON Pointer of the schema object the model is built from. Pointer tokens are escaped with `~0` and `~1`, and `source_path` holds the decoded tokens. Before, both values came from internal reference paths, which could contain internal special-path markers and left out steps such as `properties` and `items`. So nested models get different values (an inline object property now points at `.../properties/owner`), OpenAPI operation parameter models point at the operation object, and converted AsyncAPI payloads point at the payload they come from. Read and write variants no longer get synthetic paths such as `$defs/ReadWriteEmptyRequest` and `$defs/ReadWriteEmptyResponse`; they share the base schema's location (`$defs/ReadWriteEmpty`). As a result, `source_ref` is no longer unique per model, and consumers must identify a model by `module` and `class_name`. Models with colliding parse paths, GraphQL models, and models that a custom parser builds from copied schema objects keep the old reference-path form. Tools that parse these values, key on them, or reuse them as `--model-name-map` keys need updating (#4956)
+* Unused pydantic `Field` import no longer emitted for enums with member descriptions - Enum classes whose members have descriptions (from `x-enum-descriptions`, described `const` branches in `oneOf`/`anyOf`, or protobuf enum value comments) no longer add `from pydantic import Field` to the generated module, because the enum class never used it. `Field` drops out of the `from pydantic import ...` line, and modules that contain only such enums lose the line entirely. Code that imported `Field` from a generated module, or custom enum templates that relied on it, will break (#4995)
+* Tuple items inlined by `--collapse-root-models` now keep their original position - When `--collapse-root-models` is combined with `--use-tuple-for-fixed-items` or `--use-tuple-for-closed-arrays`, a tuple item that references a root model is now replaced where it sits in the tuple. Before, it was moved to the end. For example, a schema `[Flag, string]` with `Flag` as `integer | boolean` used to generate `tuple[str, int | bool]` and now generates `tuple[int | bool, str]`, and `[number, Label, boolean]` changes from `tuple[float, bool, str]` to `tuple[float, str, bool]`. The new output matches the schema, but anyone who regenerates will see different tuple annotations, and code written against the old wrong order needs updating. This affects all output model types, including Pydantic v2, dataclasses, TypedDict and msgspec. Replacing a root model inside a union still puts it last, as before (#5291)
+* A union that restated `None` writes it once, in a different position, for example `V | str | None | None | UnsetType` becomes `V | None | str | UnsetType`; accepted values are unchanged but the generated text differs (#5125)
+
+### Error Handling Changes
+* Schema errors and strict-mode warnings now name the schema's document location instead of the internal parse path - Four kinds of message now give the source document and the JSON Pointer fragment of the offending schema, in the same form as model metadata `source_ref`, instead of the parser's internal path: `SchemaParseError` messages for schema values that fail validation, the "contains a boolean false schema that makes the schema unsatisfiable" errors for `allOf` and `anyOf`, the `Schema path:` warnings from `--schema-version-mode strict`, and the "A Parser can not resolve classes" error. Three changes are visible: the slash that used to separate the file name from the fragment is gone; a document root now has an empty fragment marker after the file name; and unsatisfiable-schema errors point at the real schema position (for example `components/schemas/Derived/allOf/1/properties/value`) instead of synthetic segments that contain `datamodel-code-generator` special markers. When the location is known, the `path` of the raised `SchemaParseError` is now a single location string rather than the list of parse-path parts. Scripts, CI checks or warning filters that match these messages, and code that reads `SchemaParseError.path`, must be updated (#4991)
+* `allOf` schemas that no value can satisfy now warn - Generation emits a `UserWarning` when the `type`, `enum` or `const` of the parts of an `allOf` have no value in common. Some of these schemas stopped generation with an unsatisfiable-schema error in 0.86.0 and now generate, keeping the literals of the first source that has some. Builds that treat warnings as errors may fail, and tooling that relied on generation failing for these schemas must be updated (#5027, #5039)
+* Cycle detection no longer swallows every exception - `_is_ref_circular` used to catch any `Exception` and treat the reference as circular. It now catches only `Error`, `NotImplementedError`, `OSError` and `ValueError`, so any other exception raised while checking `$ref` cycles now propagates and stops generation. (#5087)
+* Generation now fails when a class reaches a cycle of type aliases that never resolves to a schema - A new check, `reject_alias_cycles_without_schema`, runs for output that Pydantic builds, such as `--output-model-type pydantic_v2.dataclass` or `pydantic_v2.BaseModel` with `--use-type-alias`. It catches `$ref` chains where the aliases only point at each other and never reach a real schema, for example component `A` refs `B` and `B` refs `A`. If any non-alias class reaches one of these aliases, directly or through other aliases or containers such as arrays, generation now stops with an `Error`. Before, the generator wrote `A = TypeAliasType("A", "B")` and `B = TypeAliasType("B", A)` and exited successfully, but Pydantic could not build the resulting classes. The new message reads like `Holder uses type aliases whose $ref chain loops back without reaching a schema, which Pydantic cannot build: A (...) -> B (...) -> A (...)`. Two cases keep their old output: cycles that no class reaches, and plain `pydantic_v2.BaseModel` output where the aliases are `RootModel` classes. Fix the schemas so that every `$ref` chain ends at a real schema (#5302)
+* msgspec output now fails when a Struct reaches a type alias cycle - Before, generation with `--output-model-type msgspec.Struct` finished without error when a Struct field reached type aliases whose `$ref` chain loops back without reaching a schema, such as `A: TypeAlias = "B"` and `B: TypeAlias = A`. msgspec could not decode that output. The `reject_alias_cycles_without_schema` check now also runs for msgspec output, so generation stops with an error such as `Holder uses type aliases whose $ref chain loops back without reaching a schema, which msgspec cannot decode: A (...) -> B (...) -> A (...)`. Aliases that no class reaches are still generated as before. Users whose schemas contain such cycles must fix the `$ref` chain so it reaches a real schema before they can generate msgspec models (#5308)
+* Self-referencing `$ref` components now rejected for every output type - When a schema component is only a `$ref` to itself, deduplication drops that root model even though other code still names it. Generation now fails with an error such as `C uses a $ref chain that loops back without reaching a schema, which Python cannot evaluate as the module runs` whenever the generated module would look up the missing name at import time. Before this change the check ran only for Pydantic and msgspec output, and it skipped aliases that no class reached. Three kinds of output used to be written with no error even though the module then failed to import: `dataclasses.dataclass` and `typing.TypedDict` output whose module-level type aliases, functional TypedDicts or class annotations under `--disable-future-imports` name such a component, and Pydantic or msgspec output with an unused alias naming it. The generator now exits with an error for all three instead of writing output. Python 3.12 `type` statements and deferred annotations are not affected (#5392)
+
+### API/CLI Changes
+* GenerationStore reference maps are now keyed by model key instead of object id - The public compatibility properties `GenerationStore.model_by_ref_id` and `GenerationStore.reverse_edges`, and the matching `GenerationFacts` fields, are now keyed by a `ModelKey`. Each `Reference` gets this key when it is built, and it replaces `id(reference)`. Custom parser code that looks up these maps with `id(reference)` will now silently find nothing and should use `GenerationStore.model_key(reference)` instead. Copies of a Reference made with `deepcopy`, `model_copy` or pickling keep the key of their original, so store queries such as `model_for_reference` and `has_data_type_references` now treat a copied Reference as the original model instead of an unknown one. (#4996)
+* Reference equality changes under pydantic before 2.6 - `Reference.model_post_init` now stores a per-instance `_model_key` in the object's `__dict__`. Pydantic versions before 2.6 compare `__dict__` in `==`, so on those versions two distinct `Reference` objects with identical fields now compare unequal. On every pydantic version, `vars(reference)` now includes the extra `_model_key` entry. (#4996)
+* Custom DataTypeManager receives all constraints in field-constraint mode - The JSON Schema parser now passes every constraint the schema declares, such as `minimum`, `maxLength` or `multipleOf`, to `DataTypeManager.get_data_type` even when `field_constraints=True`. Before, it passed an empty mapping or only a single zero bound. The Pydantic v2 manager now filters these itself. Custom `DataTypeManager` subclasses that build constrained types from these kwargs without checking `field_constraints` may now emit constrained types such as `conint` or `confloat` in addition to the `Field()` constraints (#5021)
+* Removed DataType CARRIED_CONSTRAINT_KEYWORDS attribute - The public `CARRIED_CONSTRAINT_KEYWORDS` class attribute on `DataType`, and its override on `EncodedBytesDataType`, was replaced by a private `_consumed_constraints` property that is computed from the type's arguments. Subclasses that read or overrode `CARRIED_CONSTRAINT_KEYWORDS` must switch to `_consumed_constraints` (#5021)
+* `sort_data_models` now uses model keys instead of reference paths - The public function `datamodel_code_generator.parser.base.sort_data_models` and the `SortedDataModels` alias now key models by integer model keys (`ModelKey`) instead of reference path strings. The returned dict was `dict[str, DataModel]` and is now `dict[ModelKey, DataModel]`. The returned list of models needing a reference update action was `list[str]` and is now `list[ModelKey]`. The `require_update_action_models` and `runtime_validation_references` arguments must also hold model keys now. Code that calls `sort_data_models` directly and looks up results by path, or passes path strings in `require_update_action_models`, has to switch to model keys, for example via `datamodel_code_generator.reference.model_key_of` (#5058)
+* Parser subclass hooks changed signatures - Custom `Parser` subclasses that override or call internal hooks may need updates. `Parser._generate_module_output` now takes `require_update: Collection[ModelKey]` instead of `require_update_action_models: list[str]` of paths. `Parser._build_module_structure` no longer takes `require_update_action_models` and returns one fewer item, because the path-mapping dict is gone. `Parser._keeps_root_model_named` now takes model keys instead of paths. The `Parser._circular_root_model_paths` attribute was replaced by `_recursion_facts`. Overrides of `_process_single_module` that append paths to its list still work (#5058)
+
+### Default Behavior Changes
+* Remote schema HTTPS fetches over the DNS-pinned transport now use the HTTP backend's CA selection instead of the OS trust store - When fetching `--url` or remote `$ref` schemas, the pinned transport used to pass no SSL context when verification was on. The HTTP core then built its own default context, which trusted the operating system's default CA paths plus certifi. The transport now builds the context with the backend's `create_ssl_context`, the same way HTTPX does. With the stable `http` extra, only certifi is trusted by default. `SSL_CERT_FILE` replaces the default roots entirely; if it is not set, `SSL_CERT_DIR` selects an OpenSSL hashed CA directory. Private or corporate CAs installed only in the OS trust store are no longer used on this path, so those fetches now fail certificate verification unless the CA is supplied through `SSL_CERT_FILE` or `SSL_CERT_DIR`. A custom `SSL_CERT_FILE` bundle also no longer gets the certifi roots added on top (#5111)
+* The `http` and `validation` extras now require `certifi>=2026.10.19` - Environments or lockfiles that pin an older certifi will no longer resolve with these extras. The newer certifi bundle, along with the refreshed OS `ca-certificates` in the official Docker image, drops the roots distrusted in the October 2026 eMudhra CA incident, such as `AAA Certificate Services` and `emSign ECC Root CA - G3`. Remote schemas served from hosts whose certificate chains rely on those roots now fail TLS verification instead of loading (#5111)
+
+## What's Changed
+* Order pydantic dataclass and msgspec Struct fields by the defaults they write under --strip-default-none by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4946
+* Add schema intersection shape fixtures by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4948
+* Render non-finite enum members importably by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4954
+* Mark overrides in the model, type and parser hierarchies by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4957
+* Write JSON Pointer schema locations to model metadata by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4956
+* Make rendered nullability one pure predicate with explicit writes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4960
+* Read generated-code requirements from one table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4961
+* Extend the generation store checker to every fact attribute and model hook by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4963
+* Decide enum class kinds in one function by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4966
+* Write GraphQL subclass enums importably as StrEnum by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4970
+* Read debug check flags through one helper by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4972
+* Choose an enum value base only when it keeps every member value by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4973
+* Apply --type-overrides to field types before constructor field ordering by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4958
+* Decide nested dataclass default recursion once per model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4959
+* List colliding export names in a stable order by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4962
+* Pick a free name when relocating models into `_internal` by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4971
+* Keep the root model's module when collapse renames the inner model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4975
+* Note import failures that both sides share in compare_release.py by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4982
+* Detect collapse cycles before they are created by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4983
+* Build the schema graph when a document loads by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4988
+* Keep one table of which constraint each type takes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4989
+* Guard model writes outside store operations in check mode by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4990
+* Name schema locations in parse errors and warnings by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4991
+* Compute discriminator tag values in one function by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4992
+* Write prefixItems arrays whose closed tail fixes their length as tuples by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4993
+* Collect module imports through one ledger by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4994
+* Drop the Field import that described enum members never use by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4995
+* Give every Reference a model key by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4996
+* Build one dict type per object map by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4997
+* Count every key of pattern maps in schema validators by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4998
+* Type keys outside the patterns by additionalProperties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4999
+* Decide const, one-literal and tag defaults and nullability with one function by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5000
+* Decide string keywords by the type written for the field by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5001
+* Read target-binding locations from recorded schema locations by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5002
+* Record holder edges and shared child lists by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5004
+* Read a model's own alias generator when deciding its field aliases by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5005
+* State the Pydantic version that generated models need above the target by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5006
+* Declare the facts each pass reads and writes and check finality in check mode by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5008
+* Type a value by the const that narrows its enum by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5009
+* Read an enum that admits its const as that const under --use-single-value-enum-as-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5010
+* Intersect $ref siblings and inherited property overrides keyword by keyword by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5011
+* Route class-name changes through one naming service by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5012
+* Check literal values against the constraints beside them by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5015
+* Keep length constraints on nullable enum literals under field constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5016
+* Type map keys that reference a root model by the root type by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5017
+* Fix review findings on the alias, floor and const-narrowing PRs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5018
+* Record the owner model of every parsed model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5019
+* Choose field-form types from the schema constraints in the type manager by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5021
+* Name the final class in TypedDict extra_items by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5022
+* Resolve read/write variant checks of external schemas by their canonical reference by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5023
+* Build models for object bodies in the legacy paths scope by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5024
+* Add --openapi-paths-bodies-as-definitions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5025
+* Add --omit-redundant-constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5026
+* Intersect allOf values at property, item and map positions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5027
+* Run the post-parse passes from one declared pipeline by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5035
+* Keep custom type manager constructors working with --omit-redundant-constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5036
+* Write an enum member literal whose enum the module defines later as a string annotation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5037
+* Narrow the values that collapse inlines in every holder, as in their root model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5038
+* Intersect allOf values at the root by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5039
+* Classify field assignments once per field by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5040
+* Resolve where a schema object's null comes from in one function by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5041
+* Turn the cross-layer parser helpers into functions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5042
+* Assemble unions through one pure policy by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5043
+* Compute dedup and reuse keys in one pure function by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5044
+* Carry graph edges on $ref values and check them against today's resolution by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5045
+* Conjoin patterns and filter literals statically by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5047
+* Fix review findings on the null-facts and shared-helper PRs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5048
+* Raise the client runtime's own JSON errors on every Python version by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5050
+* Carry graph edges on every statically resolved reference by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5051
+* Fix review findings on the pattern-conjunction and reference-edge PRs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5055
+* Check declared keys against matching patterns in schema validators by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5057
+* Key dependency edges and recursion facts by model key by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5058
+* Switch every dedup and reuse user to the pure keys by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5059
+* Add a decision phase after the generic base class by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5060
+* Drop the unused BaseModel binding legacy row by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5061
+* Use typing_extensions.sentinel and TypeForm in internal and runtime code by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5062
+* Look models up by key after settling names by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5063
+* Record the null of multiple-types roots like declared fields by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5064
+* Drop null members beside a type without null by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5065
+* Fix review findings on the decision-phase and null-member PRs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5066
+* Build one reference graph with snapshots by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5067
+* Answer recursive predicates from the graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5070
+* Compare inherited properties mappings key by key instead of validating them as schemas by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5073
+* Order constructors and prepare rendering once after the decision phase by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5074
+* Drop unused graph type aliases by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5075
+* Fix CA trust for HTTPS and CI by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5111
+* Verify pip bootstrap downloads by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5112
+* Drop the inherited null of a deferred override that excludes null by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5083
+* Keep the field's default off the root of an extracted constrained branch by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5084
+* Tag msgspec unions by the payload's property name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5085
+* Fix integer and float discriminator tag values by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5086
+* Make reference-chain and alias-merge walks terminate without relying on the recursion limit by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5087
+* Take reference keys from graph edges by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5088
+* Find $anchor names inside oneOf branches by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5092
+* Route post-parse type-tree writes through the store by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5093
+* Type the object member of every type array under --use-typed-nullable-map-values by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5094
+* Route post-parse field and model writes through the store by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5095
+* Decide read/write variants from the raw schema graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5121
+* Read unevaluatedProperties in place and flatten allOf parents from their own parse by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5122
+* Register every emitted model and reference site in the store by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5123
+* Read referenced schemas from graph nodes and build site models for constrained refs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5124
+* Write rendered nullability once at render preparation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5125
+* Put pinned aliases and msgspec payload tag names behind options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5134
+* Put the new constructor field orders behind options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5135
+* Put deduplicated request-response variants behind --dedupe-request-response-variants by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5136
+* Make collapse sharing explicit by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5137
+* Put reading const and enum values by their constraints behind options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5138
+* Put intersecting allOf keywords behind --intersect-allof-keywords by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5139
+* Put nullable beside type lists and branch-root defaults behind options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5140
+* Put closed-array tuples and single-dict object maps behind options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5141
+* Put typing extra keys by unevaluatedProperties behind --read-unevaluated-properties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5142
+* Put the last opt-in changes behind options and enable them in the 20261019 presets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5143
+* Render pydantic fields from one frozen plan by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5145
+* Render msgspec, dataclass, TypedDict and enum fields from the plan by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5146
+* Walk schemas by node and resolve reserved and dynamic references on the graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5147
+* Decide RootModel config items before rendering by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5148
+* Move render caches into per-parse store memos by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5157
+* Choose the parse method for every schema position from one table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5158
+* Accept boolean schemas in allOf by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5159
+* Seal the graph at the decision and render boundaries by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5165
+* Build module import plans and the name table beside today's imports by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5166
+* Resolve OpenAPI and AsyncAPI document references on the graph by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5167
+* Put the stricter pattern-map checks of schema validators behind --check-pattern-maps-strictly by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5168
+* Correct the opt-in entries of the FAQ by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5169
+* Narrow the enum of an allOf site by the const of another part by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5170
+* Test schema positions by node instead of parse-path suffixes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5171
+* Keep null on a nullable object that another branch narrows by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5172
+* Parse nested schemas with no more frames per level than 0.86.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5173
+* Remove the import caches and their clearing by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5174
+* Say the api scope is not available for AsyncAPI input by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5182
+* Render type expressions from one renderer by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5183
+* Write no default factory for a nested model that leads back to its field's model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5184
+* Keep the 0.86.0 constructor order of nested factories in reference cycles by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5185
+* Remove the string-path resolution helpers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5186
+* Read reference kinds from graph edges and drop the reference rewrites by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5187
+* Keep JsonSchemaObject.ref_type for parser extensions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5188
+* Type references to components without a model by their target by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5189
+* Put treating OpenAPI components as definitions behind --openapi-ref-components-as-definitions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5190
+* Write Union where a collapsed root model's site joins a quoted name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5191
+* Leave out msgspec Meta constraints that a referenced enum, Struct or alias type does not take by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5193
+* Quote schema validator rule types that name a later model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5194
+* Type mapped component users by their import, write typing generics in shared holders and keep msgspec Meta on GraphQL scalars by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5199
+* Move the settle and structure passes into their own modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5196
+* Move the plan and cross-module passes into their own modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5197
+* Type mapped component users in dict keys and TypedDict extra_items by their import and say DispatchTable.choose returns a Choice by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5206
+* Move the L5 preparation and simple processing passes into their own modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5207
+* Keep writing a collapsed root model that a schema validator rule names by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5215
+* Write a type alias that holds schema validator rules as the RootModel class by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5216
+* Import the types that schema validator rules name from other modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5217
+* Import Any for a union that collapsing root models leaves with no member to write by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5218
+* Import the class of another module that TypedDict extra_items names by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5219
+* Generate request-response models when only map keywords of a model reach a readOnly model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5220
+* Split a request-response model that re-declares the flagged property of an allOf ancestor by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5221
+* Keep schema validator rules right under the parent strategy, reuse and model metadata by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5226
+* Report a warning turned into an error during publication with its traceback and exit 2 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5228
+* Read YAML that ryaml cannot read, such as integers outside 64 bits, with PyYAML by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5229
+* Report component names that are not strings as schema errors by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5230
+* Report malformed schemas of legacy operations at the schema instead of crashing by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5231
+* Leave msgspec Meta int constraints beyond the 64-bit range out with a warning by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5232
+* Leave msgspec Meta number constraints beyond the float range out like infinite ones by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5233
+* Warn about msgspec enums whose values are neither all str nor all int by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5234
+* Stop with an error that asks for a fragment where a model uses a $ref to the whole mapped document by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5240
+* Generate request-response models where patternProperties sit beside a $ref or an allOf wraps a map by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5242
+* Generate request-response models of dataclass, msgspec and TypedDict where additionalProperties sit beside properties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5243
+* Name the matching variants in the schema validator rules of request-response models by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5244
+* Import the inner model for validator rules once the parent strategy has replaced a root model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5245
+* Keep ryaml's error, legacy operation errors and msgspec int limits on every path their fixes cover by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5246
+* Report path, webhook, callback, method and AsyncAPI names that are not strings as schema errors by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5250
+* Report a warning turned into an error while the options are processed with its traceback and exit 2 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5251
+* Name the declaration of a referenced path item in the error for a non-string additionalOperations key by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5254
+* Write Pydantic number bounds beyond the float range as infinities like 1e400 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5255
+* Warn about msgspec enums and Literal values holding ints beyond the 64-bit range by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5256
+* Leave a Pydantic multipleOf that is not finite out of the type and warn by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5257
+* Write Optional where a collapsed root model's site holds only a quoted name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5258
+* Move the reuse, collapse and discriminator passes into their own modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5259
+* Report header, media type and encoding property names that are not strings as api scope schema errors by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5263
+* Leave msgspec Struct tags beyond the 64-bit range out, keeping their discriminator fields by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5264
+* Report a used $ref chain of constrained references that loops back without a schema as an error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5265
+* Move the render preparation, import and finish passes and the pass tables into their own modules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5270
+* Generate the read/write variants of inline objects under the root properties of a document by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5274
+* Keep one request-response class for models that reach a readOnly model only through map keywords they do not type by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5275
+* Give the --dedupe-request-response-variants variants of an allOf that names a root map the fields the model holds by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5276
+* Count additionalProperties references as uses of a $ref cycle so a TypedDict schema cannot bypass the loop error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5277
+* Generate request-response models whose sites reach a readOnly model only through a customTypePath by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5278
+* Give the request-response variants of an allOf that names a root map no field, wherever the model sits by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5279
+* Split request-response models whose typed extras reach a readOnly model through a merged allOf or customTypePath items in extra_items by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5280
+* Report media type, encoding, header, link and scheme names that are not strings as server and client schema errors by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5281
+* Write Any for a msgspec field whose collapsed union writes no member, instead of UnsetType alone by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5282
+* Report a response status given by both an integer and a string key as a server and client schema error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5284
+* Import Any for a map with a key type whose value collapsing root models leaves with nothing to write by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5285
+* Read the request-response split graph from the schema each model is built from and the keywords its builder types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5287
+* Inherit the class --external-ref-mapping imports where an allOf member names a schema of the mapped document by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5288
+* Inherit the class x-python-import names where an allOf member names the component by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5289
+* Keep each tuple item that --collapse-root-models inlines at its position by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5291
+* Name --enum-field-as-literal all in the msgspec enum warnings only for enums that option writes as a Literal by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5292
+* Merge into _internal the modules that schema validator rule types make import each other by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5294
+* Keep the validator rules on the class of a type alias that moved to another path by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5295
+* Split pydantic request-response models only where their typed extra field or schema validator rules type additionalProperties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5297
+* Keep one TypedDict request-response class for models an inline allOf member closes beside a schema additionalProperties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5298
+* Report a Pydantic class that uses $ref aliases looping back without a schema as an error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5302
+* Leave only the None member out of the IntEnum or StrEnum an allOf of enums merges into by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5303
+* Give a dataclass a keyword-only copy of each inherited field that two of its bases put after a default by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5306
+* Report a msgspec class that uses $ref aliases looping back without a schema as an error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5308
+* Report a Pydantic or msgspec class that uses a component that is only a $ref to itself as an error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5309
+* Split request-response maps beside patternProperties only where their dict or TypedDict extra_items type names a readOnly model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5311
+* Forbid the keys an allOf holding false covers in the patternProperties rules of --generate-schema-validators by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5313
+* Leave the members it cannot hold out of the IntEnum or StrEnum an allOf of enums merges into by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5318
+* Generate maps and arrays whose additionalProperties or items is an allOf holding false as with false by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5319
+* Drop a component that is only a $ref to itself from the bases of the models whose allOf names it by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5320
+* Quote the models a functional TypedDict names before they are defined, also under deferred annotations by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5322
+* Generate arrays and maps with an allOf holding false in their tuple positions, patternProperties or propertyNames as with false by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5328
+* Write None inside Annotated for a msgspec field whose collapsed type is empty by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5329
+* Merge four opt-in options into --order-constructor-fields-by and --openapi-as-definitions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5330
+* Quote a later type statement in the class annotations that the runtime evaluates as the class is defined by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5331
+* Tag a variant whose tags name no member of its Enum with the Enum's members under --use-enum-values-in-discriminator by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5332
+* Split request-response array models exactly where the item positions array parsing types name a readOnly model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5336
+* Write no import for the root of a $ref cycle that deduplication dropped, so --collapse-root-models output parses with the builtin and black formatters by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5337
+* Write the one-value Enum tag of a lone or nested discriminator variant as its Literal by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5341
+* Keep a msgspec variant untagged, its tag field a Literal of its const, when a base declares the tag field by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5342
+* Write the values of the enum members that tag a msgspec variant under --use-enum-values-in-discriminator by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5343
+* Write no discriminator for a union that names one variant by its $ref where the variant has no tag by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5345
+* Write no discriminator for a union that takes a root model with a default as a variant by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5346
+* Merge into the _internal module the modules that a cycle imports below one of its packages, so the package imports by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5347
+* Write no discriminator for a union whose one variant is a scalar, Any or None instead of a model by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5350
+* Write no discriminator for a union that takes a type alias holding the default of its schema as a variant by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5351
+* Write a field --type-overrides value with brackets, such as typing.Literal[1, 2], as the annotation it spells by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5352
+* Keep hypothesis below 6.170.10, which breaks the object strategy of hypothesis-jsonschema 0.23.1 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5362
+* fix: preserve enum discriminator tags across shared unions by @mvanhorn in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5201
+* Keep each field's render plan and imports in the parse's memo while the revisions they read hold by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5363
+* Build msgspec Meta calls and constructor-ordering classifications once per field by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5364
+* Tag a reused variant of a msgspec discriminated union as a Struct of its own by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5369
+* Order and quote the RootModel classes that --use-root-model-type-alias keeps for constrained roots by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5370
+* Merge allOf type lists on shared types and write no None beside a TypeAlias that is None by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5371
+* Resolve $self references of loaded documents and keep model-name-map family names free by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5372
+* Tag inline allOf variants by their inherited tag and drop discriminators on collapsed list items by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5373
+* Merge into _internal the modules a re-exporting package imports back under --all-exports-scope by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5374
+* Fix the review findings on the allOf type lists, None aliases, $self references and model-name-map stack by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5379
+* Fix the review findings on the inherited inline tags and the reused msgspec variants by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5381
+* Add a behaviour diff gate that classifies every output change against the last release by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5386
+* Report pydantic 2.1 as the requirement of the JSON output, and let --check run without it by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5390
+* Write a model-level or GraphQL --type-overrides value with brackets, such as typing.Literal[1, 2], as the annotation it spells by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5391
+* Report a dataclass or TypedDict module that evaluates the name of a component that is only a $ref to itself as an error by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5392
+* Speed up generation by reading each memo, graph and parser fact once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5393
+* Restore the 0.86.0 dialect flag reads and constructor field ordering under --strip-default-none by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5394
+* Date the unreleased preset 20261027 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5395
+* Keep 0.86.0 output for legacy path object bodies, multipleOf field forms, inherited None defaults and grown import-cycle namespaces, with the new forms opt-in by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5396
+* Keep the parent root wrapper for its later holders, as 0.86.0 did, where the run renames it apart from its inner model, with --collapse-shared-parent-wrappers for the followed form by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5398
+* Generate per-release output-change pages and an upgrade guide from behaviour records by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5388
+* Keep the 0.86.0 kw_only and field order of msgspec and Pydantic dataclass subclasses under --strip-default-none unless --order-constructor-fields-by written-defaults is set by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5399
+* Rebalance the CI test shards on current durations and split them so each job finishes in about four minutes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5400
+* Order the fields of a dataclass whose field class overrides field or __str__ by the call it writes, as 0.86.0 does by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5404
+* Bound the payload sampling of number schemas with an integer multipleOf to the float range, so Hypothesis constants from loaded modules cannot draw numbers a float field rejects by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5405
+* Keep a reference rejecting null when the schema it names does, after --collapse-reuse-models, reuse, tree-scope reuse or same-name deduplication merge its model into an equal nullable one, as 0.83.0 does by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/5410
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.86.0...0.87.0
+
+---
+
 ## [0.86.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.86.0) - 2026-10-18
 
 ## Breaking Changes

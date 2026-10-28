@@ -100,6 +100,7 @@ _REFERENCE_NULL_DATA_TYPE_KEY = _null_markers.REFERENCE_NULL_KEY
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _TARGET_NULL_DATA_TYPE_KEY = _null_markers.TARGET_NULL_KEY
 _HELD_NULL_DROPPED_DATA_TYPE_KEY = _null_markers.HELD_NULL_DROPPED_KEY
+_NAMED_NULL_REJECTED_DATA_TYPE_KEY = _null_markers.NAMED_NULL_REJECTED_KEY
 _RENDER_PREPARATION_NULL_DATA_TYPE_KEY = _null_markers.RENDER_PREPARATION_NULL_KEY
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 _VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
@@ -730,6 +731,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             _VALUES_AS_WRITTEN_KEY,
             _TARGET_NULL_DATA_TYPE_KEY,
             _HELD_NULL_DROPPED_DATA_TYPE_KEY,
+            _NAMED_NULL_REJECTED_DATA_TYPE_KEY,
             _DROPPED_MULTIPLE_OF_KEY,
         ):
             if key in self.__dict__:
@@ -1063,7 +1065,13 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     @property
     def names_nullable_model(self) -> bool:
-        """Return whether the type names a model that admits null and is not a type alias."""
+        """Return whether the type names a model that admits null and is not a type alias.
+
+        A reference admits None from the schema it names: a type that named a model rejecting null keeps rejecting it
+        after merging that model into an equal one that admits null (``GenerationStore.redirect_reference_users``).
+        """
+        if _NAMED_NULL_REJECTED_DATA_TYPE_KEY in self.__dict__:
+            return False
         return (
             (reference := self.reference) is not None
             and not getattr(source := reference.source, "is_alias", False)

@@ -20,4 +20,4 @@ class Model(BaseModel):
     )
     u: U | str | None | MISSING = MISSING
     v: U | str | None | MISSING = MISSING
-    w: U | str | None | MISSING = MISSING
+    w: U | str | MISSING = MISSING

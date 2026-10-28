@@ -279,10 +279,12 @@ class RecordingGenerationStore(GenerationStore):
         super().__init__()
         self.redirects: list[tuple[Reference, Reference]] = []
 
-    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> list[DataType]:
+    def redirect_reference_users(
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+    ) -> list[DataType]:
         """Record a global redirect, then redirect every user and return the redirected users."""
         self.redirects.append((old_reference, new_reference))
-        return super().redirect_reference_users(old_reference, new_reference)  # ty: ignore[deprecated]
+        return super().redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference

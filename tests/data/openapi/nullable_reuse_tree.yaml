@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Nullable reuse tree
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Place:
+      type: object
+      properties:
+        street:
+          type: string
+    b.Place:
+      type: object
+      nullable: true
+      properties:
+        street:
+          type: string
+    a.Person:
+      type: object
+      required:
+        - place
+      properties:
+        place:
+          $ref: '#/components/schemas/a.Place'
+    b.Person:
+      type: object
+      required:
+        - place
+      properties:
+        place:
+          $ref: '#/components/schemas/b.Place'
