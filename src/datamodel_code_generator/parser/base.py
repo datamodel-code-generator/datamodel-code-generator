@@ -56,7 +56,7 @@ from datamodel_code_generator._constraint_applicability import (
 )
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
@@ -966,6 +966,16 @@ def _qualified_python_type_import(qualified_name: str) -> Import:
 def _override_path(override_import: Import) -> str:
     """Return the path a ``--type-overrides`` value spells, which its import splits at the last dot."""
     return f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
+
+
+def _site_needs_model_regex_engine(model: DataModel) -> bool:
+    """Return whether ``model`` is a fieldless site (``FIELDLESS_SITE_KEY``) whose pattern needs its holder's engine.
+
+    The engine is one in the config of the model that holds the pattern.
+    """
+    return bool(model.reference.__dict__.get(FIELDLESS_SITE_KEY)) and (
+        (needs_engine := model.fields[0].NEEDS_MODEL_REGEX_ENGINE) is not None and needs_engine(model.fields)
+    )
 
 
 class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
@@ -1977,12 +1987,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return whether collapsing keeps a root model named wherever it is referenced.
 
         A circular root model cannot be fully inlined, runtime rules the model owns would be lost with it, and
-        flattening it would discard constraints that live on a nested array or union alias, or on a mapping.
+        flattening it would discard constraints that live on a nested array or union alias, or on a mapping. The
+        model of a site that earlier releases wrote as a model without fields (``FIELDLESS_SITE_KEY``) stays where
+        its pattern needs a regex engine in the config of the model that holds it: inlined, that engine would apply
+        to the other patterns of its holder.
         """
         if (
             not model.fields
             or model_key_of(model.reference) in circular_root_models
             or model.has_runtime_object_validation
+            or _site_needs_model_regex_engine(model)
         ):
             return True
         if not self.field_constraints and _has_preservable_root_constraints(model):

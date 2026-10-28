@@ -6724,6 +6724,24 @@
             4
           ]
         ]
+      },
+      "name": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          "y"
+        ]
+      },
+      "pattern_refs": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
       }
     }
   }

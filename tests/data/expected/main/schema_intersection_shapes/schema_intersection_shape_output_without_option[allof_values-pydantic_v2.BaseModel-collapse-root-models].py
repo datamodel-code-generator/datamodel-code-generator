@@ -6,12 +6,19 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, conint, constr
+from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
 
 
 class Mode(IntEnum):
     integer_1 = 1
     integer_2 = 2
+
+
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class Untyped(BaseModel):
@@ -30,7 +37,7 @@ class Model(BaseModel):
     mode_prop: int | None = None
     mode_items: list[int] | None = None
     mode_map: dict[str, int] | None = None
-    pat: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
+    pat: Pat | None = None
     pat_prop: constr(pattern=r'(?=^a)(?=b$)') | None = None
     pat_items: list[constr(pattern=r'(?=^a)(?=b$)')] | None = None
     pat_map: dict[str, constr(pattern=r'(?=^a)(?=b$)')] | None = None

@@ -1052,6 +1052,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "Reference", "_DERIVED_FROM_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
+        "Reference", "FIELDLESS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
         "Parser",
         "results",
         FactKind.FACT,

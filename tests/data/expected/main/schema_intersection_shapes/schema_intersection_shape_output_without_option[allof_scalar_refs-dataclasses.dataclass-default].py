@@ -77,6 +77,15 @@ class Point:
     x: int | None = None
 
 
+Starts: TypeAlias = str
+
+
+Ends: TypeAlias = str
+
+
+PatternRefs: TypeAlias = str
+
+
 @dataclass
 class UntypedItem:
     pass
@@ -101,3 +110,5 @@ class Model:
     untyped_items: list[UntypedItem] | None = None
     nullable_items: list[NullableItem] | None = None
     point_items: list[PointItem] | None = None
+    name: str | None = None
+    pattern_refs: PatternRefs | None = None

@@ -53,6 +53,12 @@ pydantic_v2.BaseModel default nullable_items [6] rejected
 pydantic_v2.BaseModel default nullable_items ["a"] rejected
 pydantic_v2.BaseModel default point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel default point_items [4] rejected
+pydantic_v2.BaseModel default name "x" accepted
+pydantic_v2.BaseModel default name "y" rejected
+pydantic_v2.BaseModel default pattern_refs "ab" accepted
+pydantic_v2.BaseModel default pattern_refs "axb" accepted
+pydantic_v2.BaseModel default pattern_refs "a" rejected
+pydantic_v2.BaseModel default pattern_refs "ba" rejected
 pydantic_v2.dataclass default two_items [4] accepted
 pydantic_v2.dataclass default two_items [5] accepted
 pydantic_v2.dataclass default two_items [3] rejected
@@ -108,6 +114,12 @@ pydantic_v2.dataclass default nullable_items [6] rejected
 pydantic_v2.dataclass default nullable_items ["a"] rejected
 pydantic_v2.dataclass default point_items [{"x": 1}] accepted
 pydantic_v2.dataclass default point_items [4] rejected
+pydantic_v2.dataclass default name "x" accepted
+pydantic_v2.dataclass default name "y" rejected
+pydantic_v2.dataclass default pattern_refs "ab" accepted
+pydantic_v2.dataclass default pattern_refs "axb" accepted
+pydantic_v2.dataclass default pattern_refs "a" rejected
+pydantic_v2.dataclass default pattern_refs "ba" rejected
 msgspec.Struct default two_items [4] accepted
 msgspec.Struct default two_items [5] accepted
 msgspec.Struct default two_items [3] rejected
@@ -163,6 +175,12 @@ msgspec.Struct default nullable_items [6] rejected
 msgspec.Struct default nullable_items ["a"] rejected
 msgspec.Struct default point_items [{"x": 1}] accepted
 msgspec.Struct default point_items [4] rejected
+msgspec.Struct default name "x" accepted
+msgspec.Struct default name "y" rejected
+msgspec.Struct default pattern_refs "ab" accepted
+msgspec.Struct default pattern_refs "axb" accepted
+msgspec.Struct default pattern_refs "a" rejected
+msgspec.Struct default pattern_refs "ba" rejected
 pydantic_v2.BaseModel --field-constraints two_items [4] accepted
 pydantic_v2.BaseModel --field-constraints two_items [5] accepted
 pydantic_v2.BaseModel --field-constraints two_items [3] rejected
@@ -218,6 +236,12 @@ pydantic_v2.BaseModel --field-constraints nullable_items [6] rejected
 pydantic_v2.BaseModel --field-constraints nullable_items ["a"] rejected
 pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --field-constraints point_items [4] rejected
+pydantic_v2.BaseModel --field-constraints name "x" accepted
+pydantic_v2.BaseModel --field-constraints name "y" rejected
+pydantic_v2.BaseModel --field-constraints pattern_refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints pattern_refs "axb" accepted
+pydantic_v2.BaseModel --field-constraints pattern_refs "a" rejected
+pydantic_v2.BaseModel --field-constraints pattern_refs "ba" rejected
 pydantic_v2.BaseModel --use-annotated two_items [4] accepted
 pydantic_v2.BaseModel --use-annotated two_items [5] accepted
 pydantic_v2.BaseModel --use-annotated two_items [3] rejected
@@ -273,6 +297,12 @@ pydantic_v2.BaseModel --use-annotated nullable_items [6] rejected
 pydantic_v2.BaseModel --use-annotated nullable_items ["a"] rejected
 pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --use-annotated point_items [4] rejected
+pydantic_v2.BaseModel --use-annotated name "x" accepted
+pydantic_v2.BaseModel --use-annotated name "y" rejected
+pydantic_v2.BaseModel --use-annotated pattern_refs "ab" accepted
+pydantic_v2.BaseModel --use-annotated pattern_refs "axb" accepted
+pydantic_v2.BaseModel --use-annotated pattern_refs "a" rejected
+pydantic_v2.BaseModel --use-annotated pattern_refs "ba" rejected
 pydantic_v2.BaseModel --collapse-root-models two_items [4] accepted
 pydantic_v2.BaseModel --collapse-root-models two_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models two_items [3] rejected
@@ -328,6 +358,12 @@ pydantic_v2.BaseModel --collapse-root-models nullable_items [6] rejected
 pydantic_v2.BaseModel --collapse-root-models nullable_items ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --collapse-root-models point_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models name "x" accepted
+pydantic_v2.BaseModel --collapse-root-models name "y" rejected
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "ba" rejected
 msgspec.Struct --collapse-root-models two_items [4] accepted
 msgspec.Struct --collapse-root-models two_items [5] accepted
 msgspec.Struct --collapse-root-models two_items [3] rejected
@@ -383,6 +419,12 @@ msgspec.Struct --collapse-root-models nullable_items [6] rejected
 msgspec.Struct --collapse-root-models nullable_items ["a"] rejected
 msgspec.Struct --collapse-root-models point_items [{"x": 1}] accepted
 msgspec.Struct --collapse-root-models point_items [4] rejected
+msgspec.Struct --collapse-root-models name "x" accepted
+msgspec.Struct --collapse-root-models name "y" rejected
+msgspec.Struct --collapse-root-models pattern_refs "ab" accepted
+msgspec.Struct --collapse-root-models pattern_refs "axb" accepted
+msgspec.Struct --collapse-root-models pattern_refs "a" rejected
+msgspec.Struct --collapse-root-models pattern_refs "ba" rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [3] rejected
@@ -438,6 +480,12 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [6] 
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items ["a"] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "ba" rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [3] rejected
@@ -493,6 +541,12 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [6] 
 pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items ["a"] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "ba" rejected
 msgspec.Struct --use-site-models-for-constrained-refs two_items [4] accepted
 msgspec.Struct --use-site-models-for-constrained-refs two_items [5] accepted
 msgspec.Struct --use-site-models-for-constrained-refs two_items [3] rejected
@@ -548,6 +602,12 @@ msgspec.Struct --use-site-models-for-constrained-refs nullable_items [6] rejecte
 msgspec.Struct --use-site-models-for-constrained-refs nullable_items ["a"] rejected
 msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 msgspec.Struct --use-site-models-for-constrained-refs point_items [4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs name "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs name "y" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "ba" rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [4] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [3] rejected
@@ -603,6 +663,12 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items ["a"] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "ba" rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [3] rejected
@@ -658,3 +724,9 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "ba" rejected

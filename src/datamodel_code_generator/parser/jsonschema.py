@@ -74,7 +74,7 @@ from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
-from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
@@ -5602,9 +5602,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         variant_of: Reference | None = None,
     ) -> None:
-        """Record the schema object the model of ``reference`` is built from, and take its template data."""
+        """Record the schema object the model of ``reference`` is built from, and take its template data and marks."""
         self._record_schema_location(reference, obj.schema_location, variant_of=variant_of)
         self._record_derived_from(reference, obj)
+        if obj.__dict__.get(FIELDLESS_SITE_KEY):
+            reference.__dict__[FIELDLESS_SITE_KEY] = True
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
 
@@ -10351,7 +10353,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         references is decided by ``_all_of_enum_site_schema``) and the parts ``_intersects_value_parts`` leaves out.
         Without --intersect-allof-keywords only where that model is the type of the site, not the member an array
         site writes beside its own array, and the intersection names a type without objects, whose values the model
-        would all reject.
+        would all reject; the site schema is then marked as one (``FIELDLESS_SITE_KEY``).
         """
         if (
             (obj.is_array and not self.intersects_allof_keywords)
@@ -10371,7 +10373,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             == self._enforced_value_keywords(self._intersect_typed_value_parts(target_parts, None))
         ):
             value = {"$ref": refs[0]}
-        return self._all_of_site_schema(obj, parts, value)
+        site = self._all_of_site_schema(obj, parts, value)
+        if not self.intersects_allof_keywords:
+            site.__dict__[FIELDLESS_SITE_KEY] = True
+        return site
 
     def _reference_site_schema(self, obj: JsonSchemaObject, *, layered: bool = False) -> JsonSchemaObject | None:
         """Return the schema of an allOf site whose earlier form, the type of its first ``$ref`` member, it leaves.

@@ -46,6 +46,13 @@ class EnumD(RootModel[AB]):
     root: AB
 
 
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
+
+
 class Untyped(BaseModel):
     pass
 
@@ -59,15 +66,12 @@ class Base(RootModel[str]):
 
 
 class Model(BaseModel):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
     a: Arr | None = None
     b: ArrRef | None = None
     c: EnumC | None = None
     d: EnumD | None = None
     v: conint(ge=3, le=5) | None = None
-    p: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
+    p: Pat | None = None
     u: Untyped | None = None
     two_refs: conint(ge=3, le=5) | None = None
     m: NullableMap | None = None

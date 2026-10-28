@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+from re import compile
 from typing import Annotated, Any
 
-from pydantic import Field, constr
+from pydantic import ConfigDict, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -85,12 +86,26 @@ class Point:
     x: int | None = None
 
 
+Starts = TypeAliasType("Starts", Annotated[str, Field(pattern=r'^a')])
+
+
+Ends = TypeAliasType("Ends", Annotated[str, Field(pattern=r'b$')])
+
+
+PatternRefs = TypeAliasType(
+    "PatternRefs",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
+
+
 @dataclass
 class PointItem(Point):
     pass
 
 
-@dataclass
+@dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     two_items: list[TwoItem] | None = None
     two_map: dict[str, TwoMap] | None = None
@@ -104,3 +119,5 @@ class Model:
     untyped_items: list[UntypedItem] | None = None
     nullable_items: list[NullableItem] | None = None
     point_items: list[PointItem] | None = None
+    name: constr(pattern=r'^x$') | None = None
+    pattern_refs: PatternRefs | None = None

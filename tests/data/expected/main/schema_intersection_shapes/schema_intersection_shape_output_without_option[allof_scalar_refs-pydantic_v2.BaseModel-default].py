@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, conint, constr
 
 
 class TwoItem(RootModel[conint(ge=4, le=5)]):
@@ -100,6 +100,21 @@ class Point(BaseModel):
     x: int | None = None
 
 
+class Starts(RootModel[constr(pattern=r'^a')]):
+    root: constr(pattern=r'^a')
+
+
+class Ends(RootModel[constr(pattern=r'b$')]):
+    root: constr(pattern=r'b$')
+
+
+class PatternRefs(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
+
+
 class UntypedItem(BaseModel):
     pass
 
@@ -121,3 +136,5 @@ class Model(BaseModel):
     untyped_items: list[UntypedItem] | None = None
     nullable_items: list[NullableItem | None] | None = None
     point_items: list[PointItem] | None = None
+    name: constr(pattern=r'^x$') | None = None
+    pattern_refs: PatternRefs | None = None

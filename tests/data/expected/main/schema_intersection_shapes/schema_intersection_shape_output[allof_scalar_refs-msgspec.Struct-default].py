@@ -77,6 +77,17 @@ class Point(Struct):
     x: int | UnsetType = UNSET
 
 
+Starts: TypeAlias = Annotated[str, Meta(pattern='^a')]
+
+
+Ends: TypeAlias = Annotated[str, Meta(pattern='b$')]
+
+
+PatternRefs: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
+
+
 TwoItem: TypeAlias = Annotated[Small, Meta(ge=4)]
 
 
@@ -97,3 +108,5 @@ class Model(Struct):
     untyped_items: list[UntypedItem] | UnsetType = UNSET
     nullable_items: list[NullableItem] | UnsetType = UNSET
     point_items: list[PointItem] | UnsetType = UNSET
+    name: Annotated[str, Meta(pattern='^x$')] | UnsetType = UNSET
+    pattern_refs: PatternRefs | UnsetType = UNSET

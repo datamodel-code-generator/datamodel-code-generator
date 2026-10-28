@@ -7,7 +7,7 @@ from enum import Enum
 from re import compile
 from typing import Annotated
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -98,7 +98,7 @@ InlineRoot = TypeAliasType(
 )
 
 
-@dataclass(config=ConfigDict(regex_engine="python-re"))
+@dataclass
 class Model:
     a: Arr | None = None
     b: ArrRef | None = None

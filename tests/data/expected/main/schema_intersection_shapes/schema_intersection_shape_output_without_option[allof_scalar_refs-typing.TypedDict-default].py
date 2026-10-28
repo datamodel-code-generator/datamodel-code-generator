@@ -77,6 +77,15 @@ class Point(TypedDict):
     x: NotRequired[int]
 
 
+Starts: TypeAlias = str
+
+
+Ends: TypeAlias = str
+
+
+PatternRefs: TypeAlias = str
+
+
 class UntypedItem(TypedDict):
     pass
 
@@ -98,3 +107,5 @@ class Model(TypedDict):
     untyped_items: NotRequired[list[UntypedItem]]
     nullable_items: NotRequired[list[NullableItem]]
     point_items: NotRequired[list[PointItem]]
+    name: NotRequired[str]
+    pattern_refs: NotRequired[PatternRefs]

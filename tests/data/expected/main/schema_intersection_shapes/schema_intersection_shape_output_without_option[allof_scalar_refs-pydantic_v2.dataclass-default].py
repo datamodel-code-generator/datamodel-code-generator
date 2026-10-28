@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from re import compile
 from typing import Annotated, Any
 
 from pydantic import Field, constr
@@ -82,6 +83,20 @@ class Point:
     x: int | None = None
 
 
+Starts = TypeAliasType("Starts", Annotated[str, Field(pattern=r'^a')])
+
+
+Ends = TypeAliasType("Ends", Annotated[str, Field(pattern=r'b$')])
+
+
+PatternRefs = TypeAliasType(
+    "PatternRefs",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
+
+
 @dataclass
 class UntypedItem:
     pass
@@ -106,3 +121,5 @@ class Model:
     untyped_items: list[UntypedItem] | None = None
     nullable_items: list[NullableItem] | None = None
     point_items: list[PointItem] | None = None
+    name: constr(pattern=r'^x$') | None = None
+    pattern_refs: PatternRefs | None = None

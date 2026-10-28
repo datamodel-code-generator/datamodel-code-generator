@@ -20,7 +20,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
-from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._regex_syntax import has_lookaround, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
@@ -695,6 +695,11 @@ def _prepare_type_alias_field(
     return True
 
 
+def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
+    """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them."""
+    return has_lookaround_pattern(fields)
+
+
 def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
     """Keep prepared expressions out of json_schema_extra while preserving user-supplied extras."""
     if isinstance(args.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression):
@@ -710,6 +715,7 @@ class DataModelField(_PydanticBaseDataModelField):
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _constraint_arguments(Constraints)
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
+    NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",
@@ -1336,6 +1342,9 @@ def has_lookaround_pattern(
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
     alias patterns are compiled with the consuming dataclass's config rather than their own.
+    A site that earlier releases wrote as a model without fields (``FIELDLESS_SITE_KEY``) is not followed where the
+    target compiles the patterns of type aliases: its patterns then need no engine of the model that uses it, whose
+    other patterns keep the engine they had.
     When ``include_compiled`` is False, patterns the parser already wrapped in ``re.compile`` are skipped.
     """
     if _visited is None:
@@ -1356,6 +1365,10 @@ def has_lookaround_pattern(
             if not follow_references or data_type.reference is None:
                 continue
             source = data_type.reference.source
+            if data_type.reference.__dict__.get(FIELDLESS_SITE_KEY) and model_target_meets(
+                cast("DataModel", source), "pydantic.compiled_pattern"
+            ):
+                continue
             source_fields = getattr(source, "fields", None)
             if source_fields is not None and id(source) not in _visited:
                 _visited.add(id(source))

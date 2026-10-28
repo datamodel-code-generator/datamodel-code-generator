@@ -161,6 +161,13 @@
           }
         ]
       }
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^x$"
+    },
+    "pattern_refs": {
+      "$ref": "#/$defs/PatternRefs"
     }
   },
   "$defs": {
@@ -226,6 +233,24 @@
           "type": "integer"
         }
       }
+    },
+    "Starts": {
+      "type": "string",
+      "pattern": "^a"
+    },
+    "Ends": {
+      "type": "string",
+      "pattern": "b$"
+    },
+    "PatternRefs": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Starts"
+        },
+        {
+          "$ref": "#/$defs/Ends"
+        }
+      ]
     }
   }
 }
