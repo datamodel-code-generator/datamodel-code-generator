@@ -179,6 +179,23 @@ paths = ["parser/", "model/", "_target_binding.py", "input_model.py", "_recommen
 what = "lists the subschema keywords itself; read the table of _json_schema.py"
 audit = "D-X-01"
 
+[homes.Hx-typed-positions]
+decision = "which child schemas a site of a dispatch table types, and which models its type names"
+core = ["parser/_schema_dispatch.py"]
+adapters = [
+    "parser/jsonschema.py:JsonSchemaParser._typed_model_children",
+    "parser/jsonschema.py:JsonSchemaParser._typed_field_site",
+    "parser/jsonschema.py:JsonSchemaParser._types_site_model",
+    "parser/jsonschema.py:JsonSchemaParser._types_nothing",
+]
+
+[homes.Hx-typed-positions.signatures.typed-children-walker]
+kind = "function"
+pattern = "^_(iter_rw|walk_rw|rw_typed|site_writes)_\\w*$"
+paths = ["parser/"]
+what = "predicts the children a site types for the request/response split; ask the table (typed_children)"
+audit = "D-X-02"
+
 [homes.H07]
 decision = "which constraint keywords and which number values an output type can write"
 core = ["_constraint_applicability.py"]
@@ -810,7 +827,7 @@ audit = "D-L1-32"
 [homes.F-dedupe-request-response-variants]
 decision = "where --dedupe-request-response-variants is read"
 core = ["parser/jsonschema.py:JsonSchemaParser._create_request_response_models"]
-adapters = ["parser/base.py:Parser.__init__"]
+adapters = ["parser/base.py:Parser.__init__", "parser/jsonschema.py:JsonSchemaParser._legacy_rw_variants"]
 
 [homes.F-dedupe-request-response-variants.signatures.option-read]
 kind = "name"
@@ -861,6 +878,22 @@ audit = "D-PP-11"
 # DC.. decision core, PH.. phase, GR.. graph step, FIX-.. prerequisite fix, OPT-.. opt-in option), or "keep" for a row
 # whose 0.86.0 output the default keeps for good (a fix is opt-in). The list only shrinks unless the owner agrees to a
 # new row; docs/architecture.md, "Legacy rows", has the same rows with what each keeps.
+
+[legacy_rows."legacy-rw-parsed-facts"]
+home = "F-dedupe-request-response-variants"
+fix = "keep"
+
+[legacy_rows."legacy-rw-unowned-parent-fields"]
+home = "F-dedupe-request-response-variants"
+fix = "keep"
+
+[legacy_rows."legacy-rw-extra-items-as-written"]
+home = "Hx-typed-positions"
+fix = "B5"
+
+[legacy_rows."legacy-rw-field-site-as-written"]
+home = "Hx-typed-positions"
+fix = "B5"
 
 [legacy_rows."legacy-merge-row"]
 home = "H03"
@@ -1856,18 +1889,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_inherited_type_shape"]
 "F-use-tuple-for-closed-arrays.option-read" = { home = "F-use-tuple-for-closed-arrays", count = 1, audit = "Hx-array-shape" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_ref_schema_rw_model_field_facts"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_ref_schema_rw_model_reference_facts"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_rw_model_variant_graph_node"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_separate_model_fields"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_type_array_data_type"]
 "F-use-single-dict-for-object-maps.option-read" = { home = "F-use-single-dict-for-object-maps", count = 1, audit = "D-L1-32" }
 "H06.null-membership" = { home = "H06", count = 1, audit = "D-L1-04" }
@@ -1972,9 +1993,6 @@ fix = "RP15b"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_field_item"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_inherited_schema_fields"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_multiple_types_with_properties"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
@@ -1991,9 +2009,6 @@ fix = "RP15b"
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reference_site_value"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._register_root_model_as"]
-"F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 2, audit = "D-PP-06" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._type_enforced_keywords"]
 "F-omit-redundant-constraints.option-read" = { home = "F-omit-redundant-constraints", count = 1, audit = "D-L1-23" }

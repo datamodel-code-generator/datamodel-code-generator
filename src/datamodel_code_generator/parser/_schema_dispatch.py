@@ -7,25 +7,32 @@ and the rows that choose the parse method (``Row``); the first row that applies 
 ``Default``.
 The parser keeps the predicates and builders: rows call its public hooks through the parser, so overriding subclasses
 keep working.
+
+A table also declares what its sites type (``TypedChild``): the child schemas and the models their types name. A row
+that types other children than the rest of its table declares its own (``Row.typed``); readers that must follow
+what a parse types, such as the request/response split, ask the table (``DispatchTable.typed_children``) instead of
+walking the schema themselves.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, TypeVar
 
 from typing_extensions import final
 
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
     from contextlib import AbstractContextManager
 
-__all__ = ["Choice", "Default", "DispatchTable", "Row", "SchemaSite", "Step"]
+__all__ = ["ChildPosition", "Choice", "Default", "DispatchTable", "Row", "SchemaSite", "Step", "TypedChild"]
 
 ParserT_contra = TypeVar("ParserT_contra", contravariant=True)
 SchemaT = TypeVar("SchemaT")
 ResultT_co = TypeVar("ResultT_co", covariant=True)
+ChildPosition: TypeAlias = Literal["model", "member", "fields", "ref", "key"]
+"""How a site types a child: see ``TypedChild``."""
 
 
 @final
@@ -40,6 +47,23 @@ class SchemaSite(Generic[SchemaT]):
     parent: SchemaT | None = None
     scope: AbstractContextManager[None] | None = None
     """The dynamic scope of a merged ``$ref`` that stands for another schema resource."""
+
+
+@final
+@record(eq=False)
+class TypedChild(Generic[SchemaT]):
+    """A child a site types, or a model its type names.
+
+    ``model``: a ``schema`` typed as a model of its own (a property, item, map value or branch). ``member``: an allOf
+    member ``schema`` merged into the model built from ``into``. ``fields``: the ``schema`` whose properties are the
+    fields of the site's model. ``ref``: a ``$ref`` (``reference``) the type names. ``key``: the resolved key
+    (``reference``) of a model the type names without typing it here.
+    """
+
+    position: ChildPosition
+    schema: SchemaT | None = None
+    reference: str | None = None
+    into: SchemaT | None = None
 
 
 @final
@@ -60,6 +84,8 @@ class Row(Generic[ParserT_contra, SchemaT, ResultT_co]):
     name: str
     applies: Callable[[ParserT_contra, SchemaSite[SchemaT]], bool]
     build: Callable[[ParserT_contra, SchemaSite[SchemaT]], ResultT_co]
+    typed: Callable[[ParserT_contra, SchemaSite[SchemaT]], Iterable[TypedChild[SchemaT]]] | None = None
+    """What the row types at a site where it types other children than its table declares."""
 
 
 @final
@@ -88,6 +114,8 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
 
     entries: tuple[Step[ParserT_contra, SchemaT] | Row[ParserT_contra, SchemaT, ResultT_co], ...]
     default: Default[ParserT_contra, SchemaT, ResultT_co]
+    typed: Callable[[ParserT_contra, SchemaSite[SchemaT]], Iterable[TypedChild[SchemaT]]] | None = None
+    """What a site types where its row declares nothing of its own; ``None``: nothing is declared."""
 
     def choose(self, parser: ParserT_contra, site: SchemaSite[SchemaT]) -> Choice[ParserT_contra, SchemaT, ResultT_co]:
         """Return the first row that applies to the site after the steps before it, else the default."""
@@ -100,3 +128,27 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
             site = entry.rewrite(parser, site)
             steps.append(entry.name)
         return Choice((*steps, self.default.name), self.default.build, site)
+
+    def typed_children(
+        self, parser: ParserT_contra, site: SchemaSite[SchemaT], *, as_parsed: SchemaSite[SchemaT] | None = None
+    ) -> Iterable[TypedChild[SchemaT]]:
+        """Return what the row chosen for the site types there: its own declaration, else the table's.
+
+        ``as_parsed`` is the site as its position reads it before the table chooses (a ``$ref`` merged with its
+        siblings) where the caller reads another. The entries after the last row with a declaration of its own answer
+        with the table's, so they are not read.
+        """
+        chosen = site if as_parsed is None else as_parsed
+        last = max(
+            (index for index, entry in enumerate(self.entries) if isinstance(entry, Row) and entry.typed is not None),
+            default=-1,
+        )
+        for entry in self.entries[: last + 1]:
+            if not entry.applies(parser, chosen):
+                continue
+            if isinstance(entry, Row):
+                if entry.typed is not None:
+                    return entry.typed(parser, site)
+                break
+            chosen = entry.rewrite(parser, chosen)
+        return () if self.typed is None else self.typed(parser, site)

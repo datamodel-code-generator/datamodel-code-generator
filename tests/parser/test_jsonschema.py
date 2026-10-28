@@ -64,6 +64,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY,
     JsonSchemaObject,
     JsonSchemaParser,
+    SchemaSite,
     Types,
     _get_json_value_type,
     _get_union_variant_name,
@@ -5302,14 +5303,12 @@ def test_request_response_schema_graph_helper_edges(tmp_path: Path) -> None:
         "items": [{"type": "string"}, False],
     })
     children = list(
-        parser._iter_rw_model_schema_children(
-            tuple_schema, "#", detect_inline_variant=True, types_map=True, extras=None
-        )
+        parser._DEFINITION_TABLE.typed_children(parser, SchemaSite("", tuple_schema, ["#"], parent=tuple_schema))
     )
 
-    assert len(children) == 1
-    assert children[0][0].type == "string"
-    assert children[0][1] is True
+    assert [child.position for child in children] == ["fields", "model"]
+    assert children[1].schema.type == "string"
+    assert children[1].into is None
 
     property_names = JsonSchemaObject.model_validate({
         "anyOf": [{"$ref": "#/$defs/First"}, {"$ref": "#/$defs/Second"}],

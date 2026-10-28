@@ -190,6 +190,7 @@ from datamodel_code_generator.parser._schema_dispatch import (
     Row,
     SchemaSite,
     Step,
+    TypedChild,
 )
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
@@ -264,7 +265,6 @@ from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
-    from typing import TypeGuard
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
     from pydantic_core import CoreSchema
@@ -3952,6 +3952,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._raw_inherited_fields_cache[resolved_ref] = tuple(result)
         return self._copy_unregistered_fields(result)
 
+    @cached_property
+    def _legacy_rw_variants(self) -> frozenset[str]:
+        """The rows of the request/response split kept: every row without --dedupe-request-response-variants.
+
+        ``legacy-rw-parsed-facts``: the read/write facts and graph node of a key come from a temporary parse of its
+        fields, the walk reads every reference of a key, and every model collects its inherited fields to decide its
+        split. ``legacy-rw-unowned-parent-fields``: the inline models of an allOf parent's own fields are parsed at no
+        owner path.
+        """
+        if self.dedupe_request_response_variants:
+            return frozenset()
+        return frozenset({"legacy-rw-parsed-facts", "legacy-rw-unowned-parent-fields"})
+
     def _collect_all_fields_for_request_response(
         self,
         fields: list[DataModelFieldBase],
@@ -3979,7 +3992,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.read_only_write_only_model_type is None or self._is_base_stand_in(reference):
             return None
-        if not self.dedupe_request_response_variants:
+        if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
             all_fields = self._collect_all_fields_for_request_response(fields, base_classes)
             return all_fields if self._splits_into_rw_model_variants(reference, all_fields, base_classes) else None
         all_fields: list[DataModelFieldBase] | None = None
@@ -4084,12 +4097,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the read/write facts of the effective fields of the raw schema at ``resolved_ref``.
 
         Properties are read in allOf C3 order with their flags joined per name, and required names without a
-        declaration count as unflagged fields; nothing is parsed. Without --dedupe-request-response-variants the facts
-        of a temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
+        declaration count as unflagged fields; nothing is parsed. Under ``legacy-rw-parsed-facts`` the facts of a
+        temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
         """
         if (cached := self._rw_model_field_facts_cache.get(resolved_ref)) is not None:
             return cached
-        if not self.dedupe_request_response_variants:
+        if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
             return self._get_parsed_ref_schema_rw_model_field_facts(resolved_ref)
         flags: dict[str, tuple[bool, bool]] = {}
         reference = self.model_resolver.add_ref(resolved_ref, resolved=True)
@@ -4113,7 +4126,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[bool, bool, bool, bool] | None:
         """Return the read/write facts of the fields a temporary parse of the schema at ``resolved_ref`` gives.
 
-        The facts of 0.86.0, kept without --dedupe-request-response-variants: the parse registers the inline models it
+        The facts of 0.86.0, kept under ``legacy-rw-parsed-facts``: the parse registers the inline models it
         meets. A key whose parse is already in progress, reached again through the models that parse builds, has no
         facts, so the parse never re-enters itself; ``None`` also for a key that names no loadable schema.
         """
@@ -4251,11 +4264,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_rw_model_variant_graph_node(self, resolved_ref: str) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys it references.
 
-        A special path has no raw schema of its own: its split is the one recorded when its model is parsed. Without
-        --dedupe-request-response-variants, the 0.86.0 node: the facts of a temporary parse of the key also split it,
+        A special path has no raw schema of its own: its split is the one recorded when its model is parsed. Under
+        ``legacy-rw-parsed-facts``, the 0.86.0 node: the facts of a temporary parse of the key also split it,
         and the models its parsed fields reference are edges too.
         """
-        if self.dedupe_request_response_variants:
+        if "legacy-rw-parsed-facts" not in self._legacy_rw_variants:
             if SPECIAL_PATH_MARKER in resolved_ref:
                 return False, ()
             return self._get_ref_schema_rw_model_reference_facts(resolved_ref)
@@ -4296,72 +4309,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     return True
         return False
 
-    def _iter_rw_model_schema_children(
-        self,
-        schema: JsonSchemaObject,
-        defining_ref: str,
-        *,
-        detect_inline_variant: bool,
-        types_map: bool,
-        extras: JsonSchemaObject | bool | None,
-    ) -> Iterator[tuple[JsonSchemaObject, bool, bool]]:
-        """Yield the children ``parse_item`` types, whether their inline models are generated and whether they merge.
-
-        The inline allOf members merge into the model of the schema; the values of patternProperties are children only
-        where ``types_map`` or where the patternProperties rules of --generate-schema-validators name them (not a value
-        that is false written as an allOf, ``_is_false_all_of``: the rules forbid its keys), the additionalProperties
-        the model types are ``extras``, and the item positions of an array are those array parsing types
-        (``_get_array_item_schemas``), not the entries it leaves untyped, as the prefixItems of an array with no tail
-        or boolean entry and the entries after a false one. A child typed by a customTypePath names no model
-        (``_site_writes_custom_type``).
-        """
-
-        def site(item: object) -> TypeGuard[JsonSchemaObject]:
-            return isinstance(item, JsonSchemaObject) and not self._site_writes_custom_type(item, defining_ref)
-
-        pattern_properties = schema.patternProperties
-        if self.generate_schema_validators and not types_map and pattern_properties:
-            pattern_properties = {
-                pattern: value for pattern, value in pattern_properties.items() if not _is_false_all_of(value)
-            }
-        mappings = (
-            (schema.properties, pattern_properties)
-            if self.generate_schema_validators
-            else (pattern_properties if types_map else schema.properties,)
-        )
-        yield from (
-            (item, detect_inline_variant, False)
-            for mapping in mappings
-            if mapping
-            for item in mapping.values()
-            if site(item)
-        )
-        if schema.is_array:
-            with self._inherited_ref_context(defining_ref):
-                positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
-            yield from ((item, detect_inline_variant, False) for item in positions.values() if site(item))
-        if site(extras):
-            yield extras, detect_inline_variant, False
-        yield from ((item, detect_inline_variant, False) for item in chain(schema.oneOf, schema.anyOf) if site(item))
-        yield from ((item, detect_inline_variant, True) for item in schema.allOf if isinstance(item, JsonSchemaObject))
-        if self.generate_schema_validators:
-            yield from ((item, detect_inline_variant, False) for item in self._iter_conditional_branches(schema))
-
-    def _extra_items_type_reference_paths(self, extras: JsonSchemaObject) -> tuple[str, ...]:
-        """Return the keys of the models the extra_items type TypedDict writes for ``extras`` names.
-
-        The type is the one ``set_additional_properties`` writes, built by ``_build_lightweight_type``, which generates
-        no model; it is built here only to read its references, so its warnings stay with the model's own build.
-        """
-        with catch_warnings():
-            simplefilter("ignore")
-            data_type = self._build_lightweight_type(extras)
-        if data_type is None:
-            return ()
-        paths = tuple(item.reference.path for item in data_type.all_data_types if item.reference)
-        self._unregister_temporary_type(data_type)
-        return paths
-
     @cached_property
     def _writes_extra_items_type(self) -> bool:
         """Whether TypedDict writes the type of additional properties as extra_items, under --use-closed-typed-dict.
@@ -4379,19 +4326,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[bool, tuple[str, ...]]:
         """Return whether the raw schema at a key declares a flagged property, and else the keys its references name.
 
-        Every schema is read as the one its model is built from (``_merged_ref_model_schemas``), and its flags, its
-        references and its children all from that schema. The walk stops at the first flagged property: the
-        references of a node that needs variants are never read (without --dedupe-request-response-variants it reads
-        them all, as 0.86.0 did). A key that names no loadable schema has neither. patternProperties and propertyNames
-        type the values and keys of an object map, propertyNames only where no patternProperties give the keys; a
-        schema with properties or allOf, and each inline allOf member merged into it, builds a model whose fields hold
-        properties alone, so its map keywords type nothing. A model types the additionalProperties its builder types,
-        as its values where it is a map (``_schema_builds_map_model``) and beside its fields otherwise
-        (``_rw_typed_additional_properties``). TypedDict also records those of the key's model and of each inline model
-        with fields, unless an inline allOf member closes it (``_model_additional_properties``), as their extra_items
-        type (``set_additional_properties``); that type generates no model, so the walk takes the models it names
-        (``_extra_items_type_reference_paths``), and the model splits where one has variants. Those of an inline allOf
-        member type something only where the allOf merges into a map.
+        The walk asks the dispatch tables what the model of the key types (``_DEFINITION_TABLE``,
+        ``_typed_model_children``) and follows what that types in turn. It stops at the first flagged property: the
+        references of a node that needs variants are never read (under ``legacy-rw-parsed-facts`` it reads them all,
+        as 0.86.0 did). A key that names no loadable schema has neither.
         """
         if (cached := self._rw_model_references_cache.get(resolved_ref)) is not None:
             return cached
@@ -4402,100 +4340,143 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         has_inline_variant = False
         references: dict[str, None] = {}
-
-        def add_reference(ref: str | None) -> None:
-            if ref and (nested_ref := self._resolve_rw_model_reference(ref, resolved_ref)):
-                references.setdefault(nested_ref, None)
-
-        stack: list[tuple[JsonSchemaObject, bool, bool | None]] = [(root_schema, True, None)]
+        stack: list[_Site] = [SchemaSite("", root_schema, [resolved_ref])]
         while stack:
-            schema, detect_inline_variant, merged_into_map = stack.pop()
-            if merged_into_map is None:
-                is_key_model = schema is root_schema
-                schema, model_schema = map(
-                    self._read_false_all_of_values, self._merged_ref_model_schemas(schema, resolved_ref)
-                )
-                builds_map = self._schema_builds_map_model(model_schema, resolved_ref)
-                types_map = not (model_schema.properties or model_schema.allOf)
-                extras = self._rw_typed_additional_properties(schema, model_schema, resolved_ref, builds_map=builds_map)
-                if (
-                    (is_key_model or not builds_map)
-                    and self._writes_extra_items_type
-                    and isinstance(extra_items := self._model_additional_properties(model_schema), JsonSchemaObject)
-                ):
-                    with self._inherited_ref_context(resolved_ref):
-                        references.update(dict.fromkeys(self._extra_items_type_reference_paths(extra_items)))
-            else:
-                model_schema = schema
-                builds_map = merged_into_map
-                extras = schema.additionalProperties if merged_into_map else None
-                types_map = False
-            if (
-                detect_inline_variant
-                and not has_inline_variant
-                and self._schema_has_rw_model_fields(schema, resolved_ref)
-            ):
-                if self.dedupe_request_response_variants:
-                    self._rw_model_references_cache[resolved_ref] = result = (True, ())
-                    return result
-                has_inline_variant = True
-            for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
-                add_reference(ref)
-            property_name_refs, property_name_schemas = (
-                self._get_rw_property_name_sources(property_names=schema.propertyNames, defining_ref=resolved_ref)
-                if types_map and not model_schema.patternProperties
-                else ((), ())
-            )
-            for ref in property_name_refs:
-                add_reference(ref)
-            stack.extend((item, True, None) for item in property_name_schemas)
-            stack.extend(
-                (item, detect, builds_map if merged else None)
-                for item, detect, merged in self._iter_rw_model_schema_children(
-                    schema,
-                    resolved_ref,
-                    detect_inline_variant=detect_inline_variant,
-                    types_map=types_map,
-                    extras=extras,
-                )
-            )
+            for child in self._DEFINITION_TABLE.typed_children(self, stack.pop()):
+                match child.position:
+                    case "fields":
+                        if has_inline_variant or not self._schema_has_rw_model_fields(
+                            cast("JsonSchemaObject", child.schema), resolved_ref
+                        ):
+                            continue
+                        if "legacy-rw-parsed-facts" not in self._legacy_rw_variants:
+                            self._rw_model_references_cache[resolved_ref] = result = (True, ())
+                            return result
+                        has_inline_variant = True
+                    case "ref":
+                        if nested_ref := self._resolve_rw_model_reference(cast("str", child.reference), resolved_ref):
+                            references.setdefault(nested_ref, None)
+                    case "key":
+                        references.setdefault(cast("str", child.reference), None)
+                    case _:
+                        stack.append(
+                            SchemaSite("", cast("JsonSchemaObject", child.schema), [resolved_ref], parent=child.into)
+                        )
         self._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
         return result
 
-    def _rw_typed_additional_properties(
-        self, schema: JsonSchemaObject, model_schema: JsonSchemaObject, defining_ref: str, *, builds_map: bool
-    ) -> JsonSchemaObject | bool | None:
-        """Return the additionalProperties the model built from ``model_schema`` types.
+    def _typed_model_children(self, site: _Site) -> Iterator[TypedChild[JsonSchemaObject]]:  # noqa: PLR0912
+        """Return what the model built from a schema types: the children and keys of the definition table's sites.
 
-        The patternProperties rules of --generate-schema-validators type the value that
-        ``_pattern_rule_additional_properties`` picks. Otherwise a map types those of the model as its values, except
-        where patternProperties give its values: there they type only the keys no pattern matches, where
-        ``_other_keys_schema`` says so. A model with fields types them in its typed extra field, where
-        ``_typed_extra_field_schema`` writes it. Those of the model are read from ``schema``, like its other children.
+        ``site.path`` holds the key the schema is defined under; with a ``parent``, the site is an inline allOf member
+        merged into the model built from ``parent``. A schema is read as the one its model is built from
+        (``_merged_ref_model_schemas``), and its properties, its references and its children all from that schema.
+        patternProperties and propertyNames type the values and keys of an object map, propertyNames only where no
+        patternProperties give the keys; a schema with properties or allOf, and each inline allOf member merged into it,
+        builds a model whose fields hold properties alone, so its map keywords type nothing. Under
+        --generate-schema-validators the properties and the patternProperties its rules name are children (not a value
+        that is false written as an allOf, ``_is_false_all_of``: the rules forbid its keys), and so are the conditional
+        branches. The item positions of an array are those array parsing types (``_get_array_item_schemas``), not the
+        entries it leaves untyped. A model types the additionalProperties its builder types: those the patternProperties
+        rules pick (``_pattern_rule_additional_properties``), as its values where it is a map
+        (``_schema_builds_map_model``) except where patternProperties give the values and ``_other_keys_schema`` types
+        no other key, and in its typed extra field otherwise (``_typed_extra_field_schema``); those of an inline allOf
+        member type something only where the allOf merges into a map. TypedDict also records those of the key's model
+        and of each inline model with fields, unless an inline allOf member closes it
+        (``_model_additional_properties``), as their extra_items type (``set_additional_properties``); that type
+        generates no model, so the site names the keys of the models it names (``_extra_items_type``, row
+        ``legacy-rw-extra-items-as-written``: as written, its false allOf values not read). Each property, item, value
+        and branch is a field site, typed as the row ``parse_item`` chooses for it declares (``_typed_field_site``).
         """
-        with self._inherited_ref_context(defining_ref):
-            if self._has_pattern_properties_validator(model_schema):
-                if (rule_extras := self._pattern_rule_additional_properties(model_schema)) is None:
-                    return None
-                _, source, value = rule_extras
-                return schema.additionalProperties if source is model_schema else value
-            if builds_map:
-                if model_schema.patternProperties and self._other_keys_schema(model_schema) is None:
-                    return None
-            elif self._typed_extra_field_schema(model_schema) is None:
-                return None
-        return schema.additionalProperties
-
-    def _site_writes_custom_type(self, schema: JsonSchemaObject, defining_ref: str) -> bool:
-        """Return whether ``parse_item`` types a site of ``schema`` by its customTypePath, which names no model.
-
-        A $ref beside it is read merged with the schema it names, and the customTypePath types the site where the
-        merged schema keeps no reference (``_FIELD_TABLE``).
-        """
-        if schema.custom_type_path and _merges_ref_siblings(schema):
+        schema, defining_ref, into = site.obj, site.path[0], site.parent
+        if into is None:
+            is_key_model = schema is self._load_inherited_schema_object(defining_ref)
+            schema, model_schema = map(
+                self._read_false_all_of_values, self._merged_ref_model_schemas(schema, defining_ref)
+            )
+            into = model_schema
+            builds_map = self._schema_builds_map_model(model_schema, defining_ref)
+            types_map = not (model_schema.properties or model_schema.allOf)
+            extras: JsonSchemaObject | bool | None = schema.additionalProperties
             with self._inherited_ref_context(defining_ref):
-                schema = self._merge_ref_with_schema(schema)
-        return bool(schema.custom_type_path and not (schema.ref or schema.recursiveRef or schema.dynamicRef))
+                if self._has_pattern_properties_validator(model_schema):
+                    rule = self._pattern_rule_additional_properties(model_schema)
+                    extras = None if rule is None else extras if rule[1] is model_schema else rule[2]
+                elif (
+                    self._typed_extra_field_schema(model_schema) is None
+                    if not builds_map
+                    else model_schema.patternProperties and self._other_keys_schema(model_schema) is None
+                ):
+                    extras = None
+            if (
+                (is_key_model or not builds_map)
+                and self._writes_extra_items_type
+                and isinstance(extra_items := self._model_additional_properties(model_schema), JsonSchemaObject)
+            ):
+                with self._inherited_ref_context(defining_ref), catch_warnings():
+                    simplefilter("ignore")
+                    data_type = self._extra_items_type(extra_items, reads_false_all_of=False)
+                    keys = (
+                        ()
+                        if data_type is None
+                        else tuple(item.reference.path for item in data_type.all_data_types if item.reference)
+                    )
+                    self._unregister_temporary_type(data_type)
+                yield from (TypedChild("key", reference=key) for key in keys)
+        else:
+            model_schema = schema
+            builds_map = self._schema_builds_map_model(into, defining_ref)
+            types_map = False
+            extras = schema.additionalProperties if builds_map else None
+        yield TypedChild("fields", schema)
+        yield from (
+            TypedChild("ref", reference=ref) for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef) if ref
+        )
+        if types_map and not model_schema.patternProperties:
+            property_name_refs, property_name_schemas = self._get_rw_property_name_sources(
+                property_names=schema.propertyNames, defining_ref=defining_ref
+            )
+            yield from (TypedChild("ref", reference=ref) for ref in property_name_refs)
+            yield from (TypedChild("model", item) for item in property_name_schemas)
+        pattern_properties = schema.patternProperties
+        if self.generate_schema_validators and not types_map and pattern_properties:
+            pattern_properties = {
+                pattern: value for pattern, value in pattern_properties.items() if not _is_false_all_of(value)
+            }
+        for mapping in (
+            (schema.properties, pattern_properties)
+            if self.generate_schema_validators
+            else (pattern_properties if types_map else schema.properties,)
+        ):
+            for item in (mapping or {}).values():
+                yield from self._typed_field_site(item, defining_ref)
+        if schema.is_array:
+            with self._inherited_ref_context(defining_ref):
+                positions = {id(item): item for item in self._get_array_item_schemas(schema)[0]}
+            for item in positions.values():
+                yield from self._typed_field_site(item, defining_ref)
+        for item in (extras, *schema.oneOf, *schema.anyOf):
+            yield from self._typed_field_site(item, defining_ref)
+        yield from (
+            TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
+        )
+        if self.generate_schema_validators:
+            yield from (TypedChild("model", item) for item in self._iter_conditional_branches(schema))
+
+    def _typed_field_site(self, item: object, defining_ref: str) -> Iterable[TypedChild[JsonSchemaObject]]:
+        """Return what a field site of a schema types, as the row ``parse_item`` chooses for it declares.
+
+        Row ``legacy-rw-field-site-as-written``: the row is chosen from the site as written, its $ref merged with its
+        sibling keywords only where the site itself writes a customTypePath.
+        """
+        if not isinstance(item, JsonSchemaObject):
+            return ()
+        site = SchemaSite("", item, [defining_ref])
+        as_parsed = None
+        if item.custom_type_path and _merges_ref_siblings(item):
+            with self._inherited_ref_context(defining_ref):
+                as_parsed = replace(site, obj=self._merge_ref_with_schema(item))
+        return self._FIELD_TABLE.typed_children(self, site, as_parsed=as_parsed)
 
     def _merged_ref_model_schemas(
         self, schema: JsonSchemaObject, defining_ref: str
@@ -4849,7 +4830,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = []
         match self.read_only_write_only_model_type:
             case ReadOnlyWriteOnlyModelType.RequestResponse:
-                if not self.dedupe_request_response_variants:
+                if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
                     self._rw_model_field_facts_cache[reference.path] = facts
                 self._rw_model_variant_requirement_cache[reference.path, "Request"] = True
                 self._rw_model_variant_requirement_cache[reference.path, "Response"] = True
@@ -5410,6 +5391,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return False
         return obj.additionalProperties
 
+    def _extra_items_type(
+        self, additional_properties: JsonSchemaObject, *, reads_false_all_of: bool = True
+    ) -> DataType | None:
+        """Return the type TypedDict writes as extra_items for schema-valued additionalProperties.
+
+        It is their lightweight type (``_build_lightweight_type``), which names models and generates none, with the
+        positions that are false written as an allOf read as false (``_read_false_all_of_values``) unless
+        ``reads_false_all_of`` is off (row ``legacy-rw-extra-items-as-written`` of the request/response walk).
+        """
+        if reads_false_all_of:
+            additional_properties = self._read_false_all_of_values(additional_properties, lightweight=True)
+        return self._build_lightweight_type(additional_properties)
+
     def set_additional_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set additional properties flag in extra template data.
 
@@ -5440,9 +5434,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if not self.use_closed_typed_dict:
                 return
-            additional_props_type = self._build_lightweight_type(
-                self._read_false_all_of_values(additional_properties, lightweight=True)
-            )
+            additional_props_type = self._extra_items_type(additional_properties)
             if additional_props_type:  # pragma: no branch
                 reference_classes = (
                     {
@@ -9306,7 +9298,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             target_python_version=self.target_python_version,
         )
         fields: list[DataModelFieldBase] = []
-        owner_path = [reference.path] if self.dedupe_request_response_variants else []
+        owner_path = [] if "legacy-rw-unowned-parent-fields" in self._legacy_rw_variants else [reference.path]
 
         def parse_inline(source: JsonSchemaObject) -> None:
             if source.properties:
@@ -12564,11 +12556,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 or self._rw_model_writes_variant_beside_fields(reference.path)
             )
         )
-        if self.dedupe_request_response_variants:
+        if "legacy-rw-parsed-facts" not in self._legacy_rw_variants:
             self._check_rw_model_split(reference, splits=splits)
         if splits:
             self._request_response_fields[reference.path] = tuple(self._copy_unregistered_fields(fields))
-            if not self.dedupe_request_response_variants:
+            if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
                 self._rw_model_field_facts_cache[reference.path] = self._get_rw_model_field_facts(fields)
             variants: list[DataModel] = []
             for suffix in ("Request", "Response"):
@@ -14326,13 +14318,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _build_field_data_type(self, site: _Site) -> DataType:
         return self.get_data_type(site.obj)
 
+    def _types_site_model(self, site: _Site) -> Iterator[TypedChild[JsonSchemaObject]]:  # noqa: PLR6301
+        """Type the model built from the schema of a field site, unless its row declares otherwise."""
+        yield TypedChild("model", site.obj)
+
+    def _types_nothing(self, site: _Site) -> Iterator[TypedChild[JsonSchemaObject]]:  # noqa: ARG002, PLR6301
+        """Type no child and name no model: the site is typed by its customTypePath."""
+        yield from ()
+
     _FIELD_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
             Row("constrained-item", _types_item_by_root_model, _parse_constrained_item),
             Row("dynamic-ref", _field_dynamic_ref_applies, _build_field_dynamic_ref),
             Row("ref-nullable-only", _field_ref_nullable_only_applies, _parse_ref_nullable_only_item),
             Row("ref", _field_ref_applies, _build_field_ref),
-            Row("custom-type", _field_custom_type_applies, _parse_custom_type_item),
+            Row("custom-type", _field_custom_type_applies, _parse_custom_type_item, typed=_types_nothing),
             Row(
                 "constrained-type-union",
                 _field_constrained_type_union_applies,
@@ -14362,6 +14362,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             Row("typed-nullable-map", _field_typed_nullable_map_applies, _parse_typed_nullable_map_item),
         ),
         Default("data-type", _build_field_data_type),
+        typed=_types_site_model,
     )
 
     def _join_object_type_array(self, site: _Site, model_type: DataType) -> DataType:
@@ -16826,6 +16827,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             Row("enum", _definition_enum_applies, _then_parse_refs(_build_definition_enum)),
         ),
         Default("root-type", _then_parse_refs(_parse_root_type_site)),
+        typed=_typed_model_children,
     )
 
     def _get_context_source_path_parts(self) -> Iterator[tuple[Source, list[str]]]:
