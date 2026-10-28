@@ -126,3 +126,83 @@ match = "extra_items"
 reason = "0.86.0's extra_items named the local Bar instead of the referenced external Bar (renamed Bar1); a wrong reference is fixed by default"
 decision = "#5022"
 release_note = "TypedDict extra_items names the referenced class under its final name"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_ref_item_constraints.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(TwoItem|TwoMap)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_refs.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\bTwoRefs(Item|Map|Prop)\\b|Model:two_refs_(prop|items):|Model:two_refs_map: .*Pick2"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(ListItem|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_values.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\bPat\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/root_forms.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(Arr|ArrRef|Pat|TwoRefs)\\b|Model:(a|b|p|two_refs): .*\\bM2\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/root_site_null.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(InlineArray|InlineInteger|RefArray|RefIntegers)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/root_value_items_draft07.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(ClosingElsewhere|NullableTags|OwnClosing|TupleLater)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/root_value_keywords.json"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(Bounded|ItemsFirst|ItemsLater|RefBounded|RefItems|RefNoParts|UnevaluatedItems)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "kind", "type", "name-removed" ]
+match = "root_site_null_oas30:(Model:\\w+: .*\\b(InlineArray|RefArray)\\b|(InlineArray|RefArray):)"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection/root_site_null_oas30.yaml"
+aspects = [ "kind", "type", "name-removed" ]
+match = "\\b(InlineArray|RefArray)\\b"
+reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
+decision = "#5401"
+release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
