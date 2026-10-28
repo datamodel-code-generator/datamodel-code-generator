@@ -14,7 +14,13 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from tests.conftest import CHECK_SCHEMA_LOCATIONS_ENV, assert_inputs_not_mutated, assert_output, stored_expected
+from tests.conftest import (
+    CHECK_SCHEMA_GRAPH_ENV,
+    CHECK_SCHEMA_LOCATIONS_ENV,
+    assert_inputs_not_mutated,
+    assert_output,
+    stored_expected,
+)
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
     GRAPHQL_DATA_PATH,
@@ -194,7 +200,7 @@ def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
-@pytest.mark.parametrize("flag", ["check", "report", "off", "fallback", "invalid"])
+@pytest.mark.parametrize("flag", ["check", "report", "off", "fallback"])
 def test_schema_location_of_schemas_a_custom_parser_rewrites(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
 ) -> None:
@@ -202,7 +208,6 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
 
     The check (`1`, as the test suite sets it) raises for them at the end of parsing; `report:<path>` appends them to
     the file as a JSON line instead; with the check off (`0`) or unset, they keep their reference paths. Other values
-    are rejected.
     """
 
     class RewritingParser(OpenAPIParser):
@@ -210,7 +215,7 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
             super().parse_raw_obj(name, json.loads(json.dumps(raw)), path)
 
     report_path = tmp_path / "checks.jsonl"
-    values = {"check": "1", "report": f"report:{report_path}", "off": "0", "invalid": "report:"}
+    values = {"check": "1", "report": f"report:{report_path}", "off": "0"}
     if (value := values.get(flag)) is None:
         monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV, raising=False)
     else:
@@ -220,14 +225,18 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
         with pytest.raises(Error, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "):
             parser.parse(collect_model_metadata=True)
         return
-    if flag == "invalid":
-        with pytest.raises(ValueError, match=r"='report:': expected 0, 1 or report:<path>$"):
-            parser.parse(collect_model_metadata=True)
-        return
     parser.parse(collect_model_metadata=True)
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_a_check_flag_of_the_package_with_an_invalid_value_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A value that is not `0`, `1` or `report:<path>` is rejected when the parse reads the flags of its checks."""
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "report:")
+    parser = OpenAPIParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
+    with pytest.raises(ValueError, match=rf"^{CHECK_SCHEMA_GRAPH_ENV}='report:': expected 0, 1 or report:<path>$"):
+        parser.parse()
 
 
 def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path) -> None:
