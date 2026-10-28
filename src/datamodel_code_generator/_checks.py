@@ -2,7 +2,8 @@
 
 `DATAMODEL_CODE_GENERATOR_CHECK_<AREA>` unset, empty or `0` turns the area off, as in production; `1` raises at the
 first violation; `report:<path>` appends every violation to `<path>` as one JSON line and goes on. `Parser.parse`
-reads every variable once, at its start, with `read_check_flags`; the code it runs asks `check_mode(area)`.
+reads every variable once, at its start, with `read_check_flags`; the code it runs asks `check_mode(area)`. The areas
+that the test suite checks by wrapping the package's internals live in `tests/checks`.
 """
 
 from __future__ import annotations
@@ -55,23 +56,10 @@ class CheckArea(Enum):
     `$recursiveRef` answers from the anchors L1 has registered that differ from the answers of the document's anchor
     tables."""
 
-    STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
-    """After L1, data types, fields and models change their facts only inside store operations."""
-
     RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
     """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
     modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
     with it renders as the type hint then."""
-
-    FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
-    """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
-    freeze point, a write to the graph of facts frozen there fails where it is made."""
-
-    FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
-    """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.
-
-    It widens what ``FACT_FINALITY`` compares and reports nothing itself: ``1`` and ``report:<path>`` both turn it on.
-    """
 
 
 @final

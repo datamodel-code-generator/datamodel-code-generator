@@ -2,17 +2,17 @@
 
 ``Parser`` enters ``DECIDE`` right after ``__apply_generic_base_class`` (B1). When its registry
 (``Parser._DECISION_PASSES``) holds decisions, ``GenerationStore.seal_facts`` builds the one ``FinalFacts`` of the
-parse: the live models of every module, as read-only views (``model/_views.py``). Each ``DecisionPass`` then runs
-inside ``fact_pass`` with the ``PassDecl`` its ``DecisionSpec`` carries, so the finality check holds its writes to the
-facts it declares; it gets ``FinalFacts`` and the writer protocol it names, which ``_DecisionWriter`` implements over
-the store. The decisions run in the order ``parser/_pipeline.py:check_order`` computes from their declarations: a
-decision that reads what another writes runs after it, every other conflict needs an ``After`` edge in ``decl.after``,
-and the registration order breaks ties.
+parse: the live models of every module, typed as the read-only views of ``model/_views.py``. Each ``DecisionPass``
+then runs with the ``PassDecl`` its ``DecisionSpec`` carries, to which the finality check of the test suite
+(``tests/checks/finality.py``) holds its writes; it gets ``FinalFacts`` and the writer protocol it names, which
+``_DecisionWriter`` implements over the store. The decisions run in the order ``parser/_pipeline.py:check_order``
+computes from their declarations: a decision that reads what another writes runs after it, every other conflict needs an
+``After`` edge in ``decl.after``, and the registration order breaks ties.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
 
 from typing_extensions import ReadOnly, TypedDict, final
 
@@ -111,11 +111,10 @@ class DecisionPass(Generic[W]):
 class _DecisionWriter:
     """The one implementation of the writer protocols, over the generation store; it records the models it changes."""
 
-    __slots__ = ("_changed", "_copy", "_store", "_viewed")
+    __slots__ = ("_changed", "_copy", "_store")
 
-    def __init__(self, store: DecisionStore, viewed: Callable[[Any], Any], copy: Callable[[Any], Any]) -> None:
+    def __init__(self, store: DecisionStore, copy: Callable[[Any], Any]) -> None:
         self._store = store
-        self._viewed = viewed
         self._copy = copy
         self._changed: dict[int, DataModel] = {}
 
@@ -125,16 +124,14 @@ class _DecisionWriter:
         Fields share type nodes, so the field gets a copy of its type tree that loses the Nones, and the nodes
         stay as the other fields see them.
         """
-        changed = self._viewed(model)
-        field_ = self._viewed(field)
-        dropped = {id(self._viewed(data_type)) for data_type in data_types}
-        original = field_.data_type
+        dropped = {id(data_type) for data_type in data_types}
+        original: Any = field.data_type
         copied = self._copy(original)
         for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
             if id(source) in dropped:
                 self._store.drop_held_null(target)
-        self._store.replace_field_type(field_, copied)
-        self._changed[id(changed)] = changed
+        self._store.replace_field_type(field, copied)
+        self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:
         """Return the models of ``live_models`` that the writes changed, in their order."""

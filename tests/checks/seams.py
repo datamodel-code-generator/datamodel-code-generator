@@ -3,7 +3,9 @@
 Rules, which ``test_check_seams`` holds:
 
 1. Wrap, never replace: every wrapper calls the original, so the test suite runs and covers every production line.
-2. Prefer class attributes. A seam names the class that defines the attribute.
+2. Prefer class attributes. A seam names the class that defines the attribute. A parser method that a parser
+   subclass may override (``hook``) is wrapped on the class that defines it in the running parser's MRO, when that
+   parser starts a parse, as the call site saw the override; its wrapper acts once per call from the pipeline.
 3. A module function is wrapped in its module and in every module whose globals hold it (``holders``): a module that
    imports it by name holds its own reference. ``test_check_seams`` fails for a loaded module of the package that
    holds the original elsewhere, so a new ``from X import f`` cannot escape the check silently.
@@ -40,6 +42,8 @@ class Seam:
     """``<module of tests.checks>.<function>``: the function that takes the original and returns its wrapper."""
     holders: tuple[str, ...] = ()
     """The other modules whose globals hold the module function."""
+    hook: bool = False
+    """Whether a parser subclass may override the method, which is wrapped on the overriding class too."""
 
     @property
     def name(self) -> str:
@@ -48,8 +52,22 @@ class Seam:
 
 
 _PACKAGE: Final = "datamodel_code_generator"
+_PASSES: Final = f"{_PACKAGE}.parser._passes"
 SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_steps", "parse.run_steps"),
+    Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_pass", "parse.run_pass"),
+    Seam(f"{_PACKAGE}.parser._pipeline", "Runner", "run_decision", "parse.run_decision"),
+    Seam(f"{_PACKAGE}.parser.base", "Parser", "_Parser__enter_parsed", "parse.enter_parsed"),
+    Seam(f"{_PACKAGE}.parser.base", "Parser", "_process_single_module", "parse.process_single_module", hook=True),
+    Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "seal_facts", "parse.seal_facts"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
+    Seam(
+        f"{_PASSES}._shared",
+        None,
+        "get_inherited_constructor_info",
+        "parse.get_inherited_constructor_info",
+        holders=(f"{_PASSES}.modules", f"{_PASSES}.render_prep"),
+    ),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "value", "memos.value"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "derived", "memos.derived"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "keep_union_members", "memos.keep_union_members"),
@@ -86,6 +104,13 @@ def apply(module: ModuleType) -> None:
             setattr(module, seam.attribute, _wrapper(seam, original))
 
 
+def wrap_hook(owner: type, attribute: str) -> None:
+    """Wrap the hook ``attribute`` on ``owner``, the class that defines it in the MRO of a parser, unless it is."""
+    seam = next(seam for seam in SEAMS if seam.hook and seam.attribute == attribute)
+    if not _wrapped(original := vars(owner)[attribute]):
+        setattr(owner, attribute, _wrapper(seam, original))
+
+
 def report() -> str:
     """Describe every seam as installed now, and each module of the package that holds an unwrapped seam function."""
     lines: list[str] = []
@@ -93,7 +118,8 @@ def report() -> str:
     for seam in SEAMS:
         module = import_module(seam.module)
         value = vars(module if seam.owner is None else getattr(module, seam.owner))[seam.attribute]
-        lines.append(f"{seam.name} <- tests.checks.{seam.wrapper}{'' if _wrapped(value) else ' (not wrapped)'}\n")
+        hook = " (and on each parser class that overrides it)" if seam.hook else ""
+        lines.append(f"{seam.name} <- tests.checks.{seam.wrapper}{hook}{'' if _wrapped(value) else ' (not wrapped)'}\n")
         if seam.owner is None:
             originals[id(getattr(value, _MARK, value))] = seam
     lines.extend(

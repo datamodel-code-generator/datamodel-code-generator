@@ -584,9 +584,10 @@ may write the pseudo-fact `STDERR`, the warnings it emits, so that two passes th
 of `parser/_pipeline.py`: a `PassSpec` runs one declared pass, when its condition holds; a `ForEachModule` runs passes
 module by module; a `HookCall` calls an overridable method whose default runs a sub-table; a `Segment` enters a phase
 on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`) and the boundary before it (`PARSED`, B1,
-`DECIDED`, B2), then runs its steps. The `Runner` is the only caller of a pass, inside `fact_pass(DECL)`
-(`parser/_check_scopes.py`) with the models the finality check compares; steps call passes through the parser instance, so
-overrides and `--debug` tracing apply as to any method. The two diagnostics warnings that name the code calling
+`DECIDED`, B2), then runs its steps. The `Runner` is the only caller of a pass; the finality check of the test suite
+(`tests/checks/parse.py`) runs each one inside the scope of its declaration with the models it compares
+(`checked_models`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
+method. The two diagnostics warnings that name the code calling
 `parse()` find that frame however deep the pipeline is (`stacklevel_at_parse_caller`).
 
 The order rule (`parser/_pipeline.py:check_order`): two passes of one segment conflict when one writes what the other
@@ -784,8 +785,8 @@ first.
 
 The decisions run in the order the order rule computes from their declarations (`decision_order`): a decision that
 reads what another writes runs after it, every other conflicting pair needs an `After` edge in `decl.after` (the only
-explicit edges a decision has), and the registration order breaks ties. Each runs inside `fact_pass` with its
-declaration, so the finality check holds its writes to the facts it declares. With the finality check on, `FinalFacts`
+explicit edges a decision has), and the registration order breaks ties. The finality check runs each inside the
+scope of its declaration, so it holds its writes to the facts it declares. With the finality check on, `FinalFacts`
 holds guarded views that report each read of a render fact as `render-read` ([Fact Finality](#fact-finality)).
 `scripts/check_pass_pipeline.py` checks every registry: unique names that no table pass has, global transforms of
 `DECIDE` that read and write facts only, an issue each, writer protocols that `_DecisionWriter` implements, and the
@@ -864,7 +865,7 @@ reach a merged `_internal` module, except for a root model that the `parent` str
 which is removed from the module that holds it: unused roots of other collapses stay in merged modules. Later passes
 change presentation or derive from those facts.
 
-The finality check (`parser/_finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, on in every test) checks
+The finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, on in every test) checks
 this table and the pass declarations while the generator runs. It keeps a fingerprint per model: the values of the
 `fact` rows of `parser/_facts.py` on the model, its fields and the data types of their types and of its bases, holding
 the objects it keys. When a pass ends, it compares the models the pass touched (the models of its module and the models
@@ -889,7 +890,7 @@ check compares the fields of bases that constructor ordering read after the deci
 (`get_inherited_constructor_info` of `parser/_passes/_shared.py`), with the facts `fix_constructor_field_ordering` declares as reads, with those
 fields at B2 (`ordering-input`): render preparation of a later module must not change what an earlier module's
 ordering read. `KNOWN_WRITES` in
-`parser/_finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
+`tests/checks/finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
 witness, the `datamodel-codegen` arguments of one run that makes it; they are reported with `report:<path>` and never
 raise. `python scripts/check_fact_finality.py --witnesses` (and the test suite) run the witnesses and report the entries
 whose witness no longer makes them, so the list only shrinks. Presentation rows, parser state, module imports and
@@ -1014,12 +1015,12 @@ The checker does not follow these forms, so they must not be used for model writ
 `obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
 field)`, and `functools.partial(setattr, obj)`.
 
-The runtime write guard (`parser/_finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same rule
-while the generator runs, for writes the scan cannot follow. `Parser.parse` arms it at the end of L1: `DataType`,
-`DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
+The runtime write guard (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same
+rule while the generator runs in the test suite, for writes the scan cannot follow. It arms at the end of L1:
+`DataType`, `DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
 `ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared where the originals were shared; they
 are not `list` exactly and outlive the parse, acting as plain lists afterwards), each store operation named in a row's
-`store_ops` runs in a write scope, and the pipeline of `parser/_passes/_tables.py` opens pass scopes (`pass_scope(name, phase)`:
+`store_ops` runs in a write scope, and the pipeline of `parser/_passes/_tables.py` runs in pass scopes (`ParseChecks.scope`:
 `_build_module_structure` in STRUCTURE, the `plan` segment in PLAN, each `_process_single_module` in MODULES, the
 `cross_module` and `generic_base_class` segments in CROSS_MODULE, the `decide` segment in DECIDE, the
 `render_preparation` segment, `_finalize_modules` included, in RENDER_PREPARATION, the `finish` segment in IMPORTS and the
@@ -1030,9 +1031,9 @@ accepts any guarded write, and the phase is not checked: which operation and pha
 to the finality checks. With the area off nothing is installed. The guard does
 not see writes through `object.__setattr__`, through `__dict__`, into dict attributes, or into a list an object got
 outside a store operation after L1. The guards, the guarded lists and the store-operation scopes belong to the checks
-of one parse (`parse_checks`, armed by `arm_parse_checks`), which the finality check shares: `Parser.parse` imports
-`parser/_finality.py` and installs them only when either area is on, and the guard reports writes only when `STORE_WRITES` is on, while the finality check uses them to
-learn which models a pass touched.
+of one parse (`parse_checks`, armed by `ParseChecks.arm`), which the finality check shares: a parse loads
+`tests/checks/finality.py` and installs them only when either area is on, and the guard reports writes only when
+`STORE_WRITES` is on, while the finality check uses them to learn which models a pass touched.
 
 The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
 process, and after each test the checker names each write of the package by the function that contains the reported
@@ -1333,11 +1334,10 @@ backends, while shared-model modules must remain neutral: they cannot import a c
 which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema
 graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,
-`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the check hooks of `_check_scopes` (the
-finality checks of `_finality` load only when a check area is on), the
-pipeline steps of `_pipeline` with the declarations of `_pass_decls`, `_facts` and `_phases`, and each other, not even
-for typing: a pass of one layer is a function in that layer's module (`settle.py`, `structure.py`, `plans.py`,
-`modules.py`, `cross_module.py`, `decide.py`, `render_prep.py`, `imports.py`) that takes the parser through the layer's
+`_python_type_imports`, the leaf modules `_graph_ids` and `_model_shapes`, the pipeline steps of `_pipeline` with the
+declarations of `_pass_decls`, `_facts` and `_phases`, and each other, not even for typing: a pass of one layer is a
+function in that layer's module (`settle.py`, `structure.py`, `plans.py`, `modules.py`, `cross_module.py`, `decide.py`,
+`render_prep.py`, `imports.py`) that takes the parser through the layer's
 `Protocol` (`SettleHost`, `StructureHost`, `PlansHost`, `ModulesHost`, `CrossModuleHost`, `DecideHost`,
 `RenderPrepHost`, `ImportsHost`; the parse segment takes `ParseHost`, in `modules.py` importing other modules' models,
 reuse, collapse, discriminator tags, the module loop and the rule aliases take the narrower `ImportFromHost`,

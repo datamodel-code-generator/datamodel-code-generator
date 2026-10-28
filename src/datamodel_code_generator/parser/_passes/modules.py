@@ -65,8 +65,6 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, IntEnum, Member, StrEnum, _enum_class, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._check_scopes import module_checkpoint, pass_scope
-from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL, skips_root_model
@@ -3647,17 +3645,16 @@ def process_each_module(
     ]
     for position, (module_, models) in enumerate(module_models, 1):
         parser._defers_tagged_unions = position < len(module_models)  # noqa: SLF001
-        with pass_scope("Parser._process_single_module", Phase.MODULES), module_checkpoint(models):
-            ctx = parser._process_single_module(  # noqa: SLF001
-                module_,
-                models,
-                run.module_results,
-                run.config,
-                run.internal_modules,
-                run.model_path_to_module_name,
-                require_update_action_models,
-                run.unused_models,
-            )
+        ctx = parser._process_single_module(  # noqa: SLF001
+            module_,
+            models,
+            run.module_results,
+            run.config,
+            run.internal_modules,
+            run.model_path_to_module_name,
+            require_update_action_models,
+            run.unused_models,
+        )
         run.module_to_import[module_] = ctx.imports
         run.contexts.append(ctx)
     settle_update_actions(parser, require_update_action_models, _context_models(run.contexts))

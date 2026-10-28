@@ -102,7 +102,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
-    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
@@ -1701,19 +1700,13 @@ class GenerationStore:  # noqa: PLR0904
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
-    def seal_facts(  # noqa: PLR6301
-        self,
-        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
-        view: Callable[[DataModel], ModelView] | None = None,
-    ) -> FinalFacts:
+    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]]) -> FinalFacts:  # noqa: PLR6301
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        ``view`` gives the view a decision reads of each model (the guarded view of the finality check); without it,
-        the view is the model. This is the only construction of ``FinalFacts``.
+        A decision reads each model as its view (``model/_views.py``). This is the only construction of
+        ``FinalFacts``.
         """
-        module_facts = tuple(
-            ModuleFacts(module, tuple(models if view is None else map(view, models))) for module, models in modules
-        )
+        module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)

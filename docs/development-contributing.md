@@ -314,12 +314,12 @@ wins: `0` runs the tests without that area and `report:<path>` collects the viol
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
-`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `src/datamodel_code_generator/parser/_finality.py`
-does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
+`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
 list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
-`Parser`, whose runner runs it inside `fact_pass(DECL)`; the same script checks the declarations,
+`Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same script
+checks the declarations,
 `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 

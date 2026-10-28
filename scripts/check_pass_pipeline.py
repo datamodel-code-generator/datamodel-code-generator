@@ -41,8 +41,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 PACKAGE = SRC / "datamodel_code_generator"
 
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+for path in (SRC, ROOT):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from typing_extensions import get_protocol_members  # noqa: E402
 
@@ -53,17 +54,12 @@ from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
     ModelView,
     ReferenceView,
 )
-from datamodel_code_generator.parser._check_scopes import (  # noqa: E402, PLC2701
-    MODULE_TRACE_MARK,
-    recording_pass_trace,
-)
 from datamodel_code_generator.parser._facts import (  # noqa: E402, PLC2701
     ATTRIBUTE_FACTS,
     Fact,
     Phase,
     RenderFact,
 )
-from datamodel_code_generator.parser._finality import _reads_render_fact  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._pass_decls import (  # noqa: E402, PLC2701
     PASS_DECLS,
     After,
@@ -91,6 +87,8 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     segment_bodies,
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
+from tests.checks.finality import _reads_render_fact  # noqa: E402, PLC2701
+from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence

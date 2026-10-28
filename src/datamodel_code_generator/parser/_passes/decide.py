@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator.parser._check_scopes import decision_views, viewed
 from datamodel_code_generator.parser._passes._shared import _copy_data_type
 from datamodel_code_generator.parser._phases import _DecisionWriter
 from datamodel_code_generator.parser._pipeline import decision_order
@@ -46,8 +45,8 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
         return
     unused = {id(model) for model in run.unused_models}
     modules = [(ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in run.contexts]
-    facts = parser.generation_store.seal_facts(modules, decision_views())
-    writer = _DecisionWriter(parser._graph_builder, viewed, _copy_data_type)  # noqa: SLF001
+    facts = parser.generation_store.seal_facts(modules)
+    writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001
     for decision in decision_order(decisions):
         runner.run_decision(decision, facts, writer)
     run.decisions = writer.outcome(model for _, models in modules for model in models)

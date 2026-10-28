@@ -4,8 +4,8 @@ The tables of ``parser/_passes/_tables.py`` hold the pipeline, which ``Parser`` 
 pass (``parser/_pass_decls.py``);
 a ``ForEachModule`` runs passes once per output module; a ``HookCall`` calls an overridable parser method whose default
 runs a sub-table; a ``Segment`` runs the steps of one phase, entering the phase and the boundary before it. The
-``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is false and runs every other one inside
-``fact_pass`` (``parser/_check_scopes.py``), with the models the finality check compares after it. A ``DecisionPhase``
+``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is false and runs every other one. A
+``DecisionPhase``
 runs the decision passes of the parser's registry (``parser/_phases.py``), in the order ``decision_order`` computes.
 
 ``check_order`` is the order rule of the tables. For two passes of one segment, a pass that reads what an earlier pass
@@ -18,7 +18,6 @@ the code that called ``Parser.parse()`` however deep in the pipeline it is emitt
 from __future__ import annotations
 
 import sys
-from contextlib import nullcontext
 from contextvars import ContextVar
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
@@ -26,7 +25,6 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Protocol, TypeVar, cast
 from typing_extensions import ParamSpec, final
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator.parser._check_scopes import fact_pass, pass_scope
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -65,8 +63,6 @@ S = TypeVar("S")
 M = TypeVar("M")
 P_contra = TypeVar("P_contra", contravariant=True)
 S_contra = TypeVar("S_contra", contravariant=True)
-
-_NO_SCOPE: Final = nullcontext()
 
 
 @unique
@@ -216,8 +212,7 @@ class Segment(Generic[P, R, S]):
             runner.enter_phase(self.phase)
         if self.enter is not None:
             runner.enter_boundary(self.enter)
-        with _NO_SCOPE if self.scope_name is None else pass_scope(self.scope_name, self.phase):
-            runner.run_steps(self.steps, parser, self.view(state))
+        runner.run_steps(self.steps, parser, self.view(state))
 
     def passes(self) -> Iterator[PassDecl]:
         """Yield the declarations of the steps."""
@@ -237,18 +232,16 @@ class Runner:
     boundary_hooks: Mapping[Boundary, Callable[[], None]]
 
     def run_pass(self, spec: PassSpec[P, S], parser: P, state: S) -> None:  # noqa: PLR6301
-        """Run one pass inside its ``fact_pass`` scope, unless its ``when`` is false."""
+        """Run one pass, unless its ``when`` is false."""
         if spec.when is not None and not spec.when(parser, state):
             return
-        with fact_pass(spec.decl, None if spec.checked_models is None else spec.checked_models(parser, state)):
-            spec.run(parser, state)
+        spec.run(parser, state)
 
     def run_decision(  # noqa: PLR6301
         self, decision: DecisionPass[DecisionWriter], facts: FinalFacts, writer: DecisionWriter
     ) -> None:
-        """Run one decision inside the ``fact_pass`` scope of its declaration."""
-        with fact_pass(decision.spec["decl"]):
-            decision.run(facts, writer)
+        """Run one decision."""
+        decision.run(facts, writer)
 
     def run_steps(self, steps: Iterable[StepLike[P, S]], parser: P, state: S) -> None:
         """Run ``steps`` in order on ``state``."""

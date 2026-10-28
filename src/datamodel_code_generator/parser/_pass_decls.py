@@ -1,9 +1,9 @@
 """What each pass of ``Parser.parse()`` reads and writes, in today's execution order.
 
 One ``PassDecl`` per pass: the methods and named steps of ``parser/base.py`` that the pipeline tables of ``Parser``
-run. ``reads`` and ``writes`` use the facts of ``parser/_facts.py``. The pipeline runs every pass inside
-``fact_pass(DECL)`` (``parser/_finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the
-writes against the declaration and a pass trace records the pass. The writes of ``fact`` rows are checked at run time;
+run. ``reads`` and ``writes`` use the facts of ``parser/_facts.py``. The test suite runs every pass inside the scope
+of its declaration (``tests/checks/finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the
+writes against it and a pass trace records the pass. The writes of ``fact`` rows are checked at run time;
 reads and the writes of presentation rows are declared from the code; ``after`` edges order the passes whose facts
 conflict (``parser/_pipeline.py:check_order``). ``PASS_DECLS`` lists every declaration in execution order and is the
 source of the generated pass table in ``docs/architecture.md``.

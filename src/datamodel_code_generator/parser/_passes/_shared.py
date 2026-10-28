@@ -48,7 +48,6 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._check_scopes import record_ordering_inputs
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._keys import (
@@ -1643,8 +1642,6 @@ def get_inherited_constructor_info(
         return None
     if not (inherited_models := constructor_base_models(host, model, early=early)):
         return None
-    if not early:
-        record_ordering_inputs(model, inherited_models, host._base_stand_ins)  # noqa: SLF001
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()

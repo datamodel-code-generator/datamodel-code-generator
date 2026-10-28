@@ -64,6 +64,8 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/api_generation/support/generated_packages.py::datamodel_code_generator._runtime",
     ),
     "invariant-checks": (
+        "normal-path-mock:tests/checks/finality.py",
+        "private-import:tests/checks/finality.py",
         "private-import:tests/checks/memos.py",
         "private-import:tests/checks/parse.py",
         "private-import:tests/checks/requirements.py",
