@@ -62,6 +62,8 @@ untyped_object	behaviour_diff_script/example_value[untyped_object].txt	= main/em
 	behaviour_diff_script/first_import_errors.txt
 [test_gate]
 	behaviour_diff_script/gate.txt
+[test_gate_projects_and_option_sets]
+	behaviour_diff_script/gate_projects_and_option_sets.txt
 [test_opt_in_reason]
 flag_before_option	behaviour_diff_script/opt_in_reason[flag_before_option].txt
 known	behaviour_diff_script/opt_in_reason[known].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt

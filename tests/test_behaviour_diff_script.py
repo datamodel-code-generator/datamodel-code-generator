@@ -916,3 +916,99 @@ EXAMPLE_CASES: dict[str, dict[str, Any]] = {
 def test_example_value(case: str) -> None:
     """The probe value of a validator's own schema reaches every property, map value and item."""
     assert_output(json.dumps(example_value(EXAMPLE_CASES[case])) + "\n")
+
+
+def _git(*args: str, cwd: Path) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+def test_gate_projects_and_option_sets(tmp_path: Path) -> None:
+    """The nightly tier adds option sets, TypedDict payload cells and the projects of a manifest.
+
+    Each project is checked out at its pinned commit: a later commit changes the schema, and the gate still runs the
+    pinned one.
+    """
+    repo = tmp_path / "repo"
+    (repo / "schemas").mkdir(parents=True)
+    (repo / "schemas" / "pet.json").write_text(
+        json.dumps({"title": "Pet", "type": "object", "properties": {"name": {"type": "string"}}}), encoding="utf-8"
+    )
+    (repo / "README").write_text("not checked out\n", encoding="utf-8")
+    _git("init", "-q", cwd=repo)
+    _git("add", ".", cwd=repo)
+    _git("commit", "-qm", "pinned", cwd=repo)
+    sha = _git("rev-parse", "HEAD", cwd=repo)
+    (repo / "schemas" / "pet.json").write_text("not a schema", encoding="utf-8")
+    _git("commit", "-qam", "later", cwd=repo)
+    manifest = tmp_path / "projects.json"
+    job = {"input": "schemas/pet.json", "input_file_type": "jsonschema", "args": ["--use-annotated"]}
+    manifest.write_text(
+        json.dumps({
+            "projects": [
+                {
+                    "name": "fake",
+                    "repo": "example/fake",
+                    "url": str(repo),
+                    "sha": sha,
+                    "license": "MIT",
+                    "paths": ["schemas/pet.json"],
+                    "jobs": [{**job, "name": "pydantic", "output_model_type": "pydantic_v2.BaseModel"}],
+                }
+            ]
+        }),
+        encoding="utf-8",
+    )
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text('base = "0.0.0"\n', encoding="utf-8")
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main([
+            "gate",
+            "0.0.0",
+            str(ROOT),
+            "--tier",
+            "nightly",
+            "--types",
+            "pydantic_v2.BaseModel,typing.TypedDict",
+            "--base-python",
+            sys.executable,
+            "--candidate-python",
+            sys.executable,
+            "--cache-dir",
+            str(tmp_path / "cache"),
+            "--allowlist",
+            str(allowlist),
+            "--projects",
+            str(manifest),
+            "--select",
+            "tests/data/jsonschema/person.json",
+            "--select",
+            "project:*",
+            "--select",
+            "payload:jsonschema/collapse_root_models_tuple_items.json",
+            "--json",
+            str(tmp_path / "cells.jsonl"),
+            "--check",
+            "-j",
+            "2",
+        ])
+    rows = [json.loads(line) for line in (tmp_path / "cells.jsonl").read_text(encoding="utf-8").splitlines()]
+    cells = sorted(
+        f"{row['kind']} | {row['input']} | {row['type']} | "
+        f"{'<harness arguments>' if row['kind'] == 'payload' else row['options']} | {row['class']}"
+        for row in rows
+        if row["kind"] in {"default", "option-set", "project", "payload"}
+    )
+    checkout = sorted(
+        path.relative_to(tmp_path / "cache" / "projects").as_posix()
+        for path in (tmp_path / "cache" / "projects").rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    )
+    assert_output(f"exit={code}\n" + "\n".join([*cells, *checkout]).replace(sha[:12], "<sha>") + "\n")
