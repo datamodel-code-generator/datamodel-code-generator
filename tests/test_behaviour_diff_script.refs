@@ -5,8 +5,10 @@ decisions	behaviour_diff_script/allowlist_problems[decisions].txt	= main/generat
 empty_other_base	behaviour_diff_script/allowlist_problems[empty_other_base].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 missing_decision	behaviour_diff_script/allowlist_problems[missing_decision].txt
 missing_input	behaviour_diff_script/allowlist_problems[missing_input].txt
-other_base	behaviour_diff_script/allowlist_problems[other_base].txt
+newer_base	behaviour_diff_script/allowlist_problems[newer_base].txt
+other_base	behaviour_diff_script/allowlist_problems[other_base].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 private_decision	behaviour_diff_script/allowlist_problems[private_decision].txt
+unreleased_base	behaviour_diff_script/allowlist_problems[unreleased_base].txt
 valid	behaviour_diff_script/allowlist_problems[valid].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 [test_classify_cell]
 accepted_beside_crash_fix	behaviour_diff_script/classify_cell[accepted_beside_crash_fix].txt
