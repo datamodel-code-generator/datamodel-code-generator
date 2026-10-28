@@ -23,7 +23,8 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
 public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`. With `--check` the run fails
-on a violation, on an entry without such a decision and on a table whose base is not BASE; in the nightly and
+on a violation, on an entry without such a decision and on a table whose base is neither BASE nor an older
+release (an older table accepts nothing: BASE contains its changes); in the nightly and
 release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
 the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
 Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the

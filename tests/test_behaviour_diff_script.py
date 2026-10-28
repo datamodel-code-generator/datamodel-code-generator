@@ -324,12 +324,14 @@ ALLOWLIST_CASES = {
     "decisions": ("0.86.0", [{**PROPERTY_NAMES_ENTRY, "decision": "#5291, #5283"}]),
     "other_base": ("0.85.0", [PROPERTY_NAMES_ENTRY]),
     "empty_other_base": ("0.85.0", []),
+    "newer_base": ("0.87.0", [PROPERTY_NAMES_ENTRY]),
+    "unreleased_base": ("main", [PROPERTY_NAMES_ENTRY]),
 }
 
 
 @pytest.mark.parametrize("case", sorted(ALLOWLIST_CASES))
 def test_allowlist_problems(case: str) -> None:
-    """An entry needs public decision references, and a table with entries belongs to one base release."""
+    """An entry needs public decision references; a table with entries belongs to the base release or an older one."""
     base, entries = ALLOWLIST_CASES[case]
     assert_output("\n".join(Allowlist(base, entries).problems("0.86.0")) + "\n")
 
