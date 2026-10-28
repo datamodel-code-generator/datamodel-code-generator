@@ -40,7 +40,7 @@ zero-weight	ci_shards/zero-weight.txt
 2	ci_shards/round-trip.txt
 3	ci_shards/round-trip.txt
 [test_test_part_option_partitions_one_node]
-	ci_shards/test-part.txt
+	select_ci_test_shard_script/test_part_option_partitions_one_node.txt
 [test_test_shard_option_partitions_collection]
 all	ci_shards/test-shard-all.txt
 keyword	ci_shards/test-shard-keyword.txt	= ci_shards/test-shard-all.txt

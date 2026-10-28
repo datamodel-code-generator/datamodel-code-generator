@@ -1297,6 +1297,7 @@ jobs:
         part_args=()
         part_pattern='^(.+)@[1-9][0-9]*/[1-9][0-9]*$'
         while IFS= read -r test_path; do
+          test_path="${test_path%$'\r'}"
           if [[ "$test_path" =~ $part_pattern ]]; then
             part_args+=("--test-part=$test_path")
             test_path="${BASH_REMATCH[1]}"

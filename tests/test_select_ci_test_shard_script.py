@@ -115,7 +115,6 @@ def test_test_part_option_partitions_one_node() -> None:
             sort_keys=True,
         )
         + "\n",
-        EXPECTED / "test-part.txt",
     )
 
 
