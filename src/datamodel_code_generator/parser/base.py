@@ -48,7 +48,7 @@ from datamodel_code_generator import (
     ReuseScope,
     cached_path_exists,
 )
-from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode, read_check_flags
+from datamodel_code_generator._checks import read_check_flags
 from datamodel_code_generator._constraint_applicability import (
     overridden_declared_constraints,
     resplit_overridden_constraints,
@@ -3423,8 +3423,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         result: list[str] = []
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
-        if (mode := check_mode(CheckArea.MODULE_IMPORTS)) is not None:
-            self._check_module_imports(mode, ctx)
 
         if config.all_exports_scope is not None and ctx.module[-1] == "__init__.py":
             child_exports = self._collect_exports_for_init(ctx.module, contexts, config.all_exports_scope)
@@ -3599,38 +3597,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 "models": [cls._model_metadata(model, module, model_identities[model]) for model, module in models],
             },
             tuple(redact_reference(model_identities[model]) for model, _ in models),
-        )
-
-    def _check_module_imports(self, mode: CheckMode, ctx: ModuleContext) -> None:
-        """Report the shared imports and the module's imports where they differ from the replay of their ledger.
-
-        Such a difference is a write that did not go through ``parser/_imports_plan.py:ModuleImportLedger``. The
-        module's import plan (``imports.plan_module_imports``) must also hold what the module writes for each model it
-        names and every import of another module's model; a report file also gets how many it compared.
-        """
-        for label, imports in (("shared imports", self.imports), (f"imports of {'/'.join(ctx.module)}", ctx.imports)):
-            if differences := self._import_ledger.differences(imports):
-                mode.violation(
-                    Error,
-                    f"{label} differ from the replay of their ledger in {', '.join(differences)}",
-                    imports=label,
-                    parts=list(differences),
-                )
-        module, plan = "/".join(ctx.module), self._import_ledger.plan_of(ctx.imports)
-        if differences := plan.differences(self._import_ledger.replay_without(ctx.imports, "field-name-bindings")):
-            mode.violation(
-                Error,
-                f"the models {module} names differ from its import plan: {'; '.join(differences)}",
-                imports=module,
-                parts=list(differences),
-            )
-        mode.record(
-            f"{CheckArea.MODULE_IMPORTS.value}: compared {len(plan.uses)} model names of {module} with its import "
-            f"plan, which imports {len(plan.references)}",
-            kind="import-plan",
-            imports=module,
-            uses=len(plan.uses),
-            references=len(plan.references),
         )
 
     def _close_http_fetch_session(self) -> None:

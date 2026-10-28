@@ -29,12 +29,6 @@ _REPORT_PREFIX: Final = "report:"
 class CheckArea(Enum):
     """A family of debug checks; the value is the environment variable that sets its mode."""
 
-    MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
-    """The imports of every module, and those all modules share, equal the replay of their import ledger when the
-    module's import text is written; the module writes for each model it names what its import plan, made from the
-    final names, writes, and its imports bind every model of another module the plan imports. With a report file, it
-    also records how many model names of each module it compared."""
-
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
     """The models that an order or a graph is built over by model key never share a key, a reference whose key names
     one of them names it by its path too, and a lookup by path, for the references whose key names none of them, never
@@ -49,11 +43,6 @@ class CheckArea(Enum):
     keeps a fingerprint of each schema object it validates and shares. With a report file, it also records the
     `$dynamicRef` and `$recursiveRef` answers from the anchors L1 has registered that differ from the answers of the
     document's anchor tables."""
-
-    RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
-    """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
-    modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
-    with it renders as the type hint then."""
 
 
 @final

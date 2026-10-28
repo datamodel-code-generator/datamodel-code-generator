@@ -511,7 +511,7 @@ for class names and reuse keys as in 0.86.0, while the import block leaves them 
 `Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
 compares each module's imports with the replay of their entries when the import text is written, so a write that
 bypasses the ledger fails the check, which the test suite turns on. The names the module's `ModelResolver` gives its
-imports are asked for through the ledger too (`NameLog`). After the last rename, `parser/_passes/imports.py:plan_module_imports` plans
+imports are asked for through the ledger too (`NameLog`). After the last rename, `tests/checks/module_imports.py` plans
 the models each module names from the final names (`NameTable`): `ModuleImportPlan` holds the imports of other modules'
 models, named by `allocate_bindings` in the order the module asked for them (row `legacy.alias-order`), and what the
 module writes for each model. Nothing is written from the plan yet; under the same check, the module must write what

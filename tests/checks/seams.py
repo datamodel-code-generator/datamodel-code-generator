@@ -70,6 +70,14 @@ SEAMS: Final = (
         "parse.get_inherited_constructor_info",
         holders=(f"{_PASSES}.modules", f"{_PASSES}.render_prep"),
     ),
+    Seam(f"{_PACKAGE}.parser.base", "Parser", "_get_module_future_imports", "module_imports.get_module_future_imports"),
+    Seam(f"{_PACKAGE}.parser._imports_plan", "ModuleImportLedger", "add_name", "module_imports.add_name"),
+    Seam(f"{_PACKAGE}.parser._imports_plan", "ModuleImportLedger", "release_names", "module_imports.release_names"),
+    Seam(f"{_PASSES}.imports", None, "render", "module_imports.render"),
+    Seam(f"{_PASSES}.render_prep", None, "freeze_field_render_plans", "render_plans.freeze_field_render_plans"),
+    Seam(
+        f"{_PACKAGE}.model.base", "DataModel", "_refresh_field_render_plans", "render_plans.refresh_field_render_plans"
+    ),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "value", "memos.value"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "derived", "memos.derived"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "keep_union_members", "memos.keep_union_members"),

@@ -92,7 +92,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -1655,19 +1654,6 @@ def _nested_render_inputs(items: tuple[Any, ...]) -> tuple[RenderInputs, ...]:
 def _holds_render_inputs(value: object) -> bool:
     """Return whether a render plan reads inside ``value``: a container, or a type or constraints, not a reference."""
     return isinstance(value, _HOLDERS) and not isinstance(value, Reference)
-
-
-def _check_render_plan_accounting(
-    mode: CheckMode, model: DataModel, field: PlannedField, plan: FieldRenderPlan
-) -> None:
-    """Report a frozen or rebuilt plan that drops a declared item without a reason or writes an undeclared one."""
-    missing, extra = plan.unaccounted(field._declared_render_items())  # noqa: SLF001
-    if missing or extra:
-        mode.violation(
-            Error,
-            f"the render plan of {model.class_name}.{field.name} leaves {sorted(missing)} unaccounted and "
-            f"accounts for undeclared {sorted(extra)}",
-        )
 
 
 _PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
@@ -3737,18 +3723,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self.rendered_fields
 
     def _refresh_field_render_plans(self) -> None:
-        """Rebuild the frozen plan of each field whose contents changed since, as ``render`` may change them.
-
-        A rebuilt plan must account for every item its field declares, as a frozen one, under
-        ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
-        """
+        """Rebuild the frozen plan of each field whose contents changed since, as ``render`` may change them."""
         if (ready := RENDER_READY.get()) is None:
             return
         for field in cast("list[PlannedField]", self.fields):
-            if (plan := ready.refreshed(field)) is not None and (
-                mode := check_mode(CheckArea.RENDER_PLANS)
-            ) is not None:
-                _check_render_plan_accounting(mode, self, field, plan)
+            ready.refreshed(field)
 
     def _template_description(self, *, use_custom_template: bool) -> str | None:
         """Return a description safe for the selected template convention."""

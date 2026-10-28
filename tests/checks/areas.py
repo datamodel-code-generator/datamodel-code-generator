@@ -33,6 +33,17 @@ class Area(Enum):
     """The model graph that the generation store records keeps its invariants (``model_graph.py``). The package
     itself still runs the checks of the area that compare an answer with the computation it replaced."""
 
+    MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
+    """The imports of every module, and those all modules share, equal the replay of their import ledger when the
+    module's import text is written; the module writes for each model it names what its import plan, made from the
+    final names, writes, and its imports bind every model of another module the plan imports. With a report file, it
+    also records how many model names of each module it compared (``module_imports.py``)."""
+
+    RENDER_PLANS = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
+    """Every field render plan frozen at B2 writes or omits each item its field declares, and renders, when the
+    modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
+    with it renders as the type hint then (``render_plans.py``)."""
+
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations (``finality.py``)."""
 
