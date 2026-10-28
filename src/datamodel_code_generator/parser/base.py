@@ -103,6 +103,7 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
+    _bind_builtin_names,
     _keyed_answer,
     _model_key_of_model,
     _overlay_constraints,
@@ -197,7 +198,7 @@ from datamodel_code_generator.parser._passes._state import (
     _StructureState,
 )
 from datamodel_code_generator.parser._passes._tables import FINALIZE_SEGMENTS, MODULE_BODY, PIPELINE, STRUCTURE_BODY
-from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS
+from datamodel_code_generator.parser._passes.imports import _FUTURE_IMPORTS, builtin_name_bindings
 from datamodel_code_generator.parser._passes.render_prep import (
     _apply_constructor_field_adjustments as _moved_apply_constructor_field_adjustments,
 )
@@ -3152,13 +3153,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
+        forwarder_modules: Collection[ModulePath],
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module.
 
         The pipeline runs it after the generic base class, the decision phase and the render preparation of each
         module, which ``_process_single_module`` hands over.
         """
-        state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
+        state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import, forwarder_modules)
         render_ready = (
             RENDER_READY.set(RenderReady(type(self), self.generation_store._memo))  # noqa: SLF001
             if RENDER_READY.get() is None
@@ -3453,6 +3455,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 result += [export_imports.dump_all(multiline=True) + "\n"]
 
             module_code = self.data_model_type.render_module_code(ctx.models)
+            if module_code and (bindings := builtin_name_bindings(self._import_ledger, ctx.imports)):
+                module_code = _bind_builtin_names(module_code, bindings)
             if module_code:
                 module_code_insertion_index = self.data_model_type.get_module_code_insertion_index(ctx.models)
                 if module_code_insertion_index:

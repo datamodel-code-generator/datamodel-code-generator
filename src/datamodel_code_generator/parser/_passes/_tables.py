@@ -48,7 +48,7 @@ from datamodel_code_generator.parser._pipeline import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Collection, Iterable, Sequence
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import, Imports
@@ -149,6 +149,7 @@ class PipelineHost(
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
+        forwarder_modules: Collection[ModulePath],
     ) -> None:
         """Finish the render preparation of every module and collect the imports of each module."""
 
@@ -540,6 +541,11 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 checked_models=_all_models,
             ),
             PassSpec(
+                decls.ALIAS_BUILTINS_HIDDEN_BY_SUBMODULES,
+                late(imports.alias_builtins_hidden_by_submodules),
+                checked_models=_all_models,
+            ),
+            PassSpec(
                 decls.BIND_MODULE_FIELD_NAMES,
                 late(imports.bind_module_field_names),
                 checked_models=_all_models,
@@ -846,7 +852,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             HookCall(
                 "finalize_modules",
                 lambda self, run: self._finalize_modules(
-                    run.contexts, run.unused_models, run.model_to_module_models, run.module_to_import
+                    run.contexts, run.unused_models, run.model_to_module_models, run.module_to_import, run.forwarder_map
                 ),
                 FINALIZE_SEGMENTS,
             ),
