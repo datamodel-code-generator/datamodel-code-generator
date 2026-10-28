@@ -6885,6 +6885,17 @@ msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec
 msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin[msgspec]/
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin[dataclass].payloads.txt
 pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin[pydantic-v2]/
+[test_main_jsonschema_module_import_named_like_builtin_package]
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass].payloads.txt
+dataclass	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass]/
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[msgspec].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass].payloads.txt
+msgspec	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[msgspec]/
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[pydantic-v2].payloads.txt	= main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[dataclass].payloads.txt
+pydantic-v2	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[pydantic-v2]/
+pydantic-v2-schema-validators	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[pydantic-v2-schema-validators].payloads.txt
+pydantic-v2-schema-validators	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package[pydantic-v2-schema-validators]/
+[test_main_jsonschema_module_import_named_like_builtin_package_keeps_local_names]
+	main/jsonschema/main_jsonschema/module_import_named_like_builtin_package_keeps_local_names/
 [test_main_jsonschema_module_import_named_like_builtin_type_alias]
 	main/jsonschema/main_jsonschema/module_import_named_like_builtin_type_alias/
 [test_main_jsonschema_msgspec_enum_value_base_kept]

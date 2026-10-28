@@ -13,11 +13,14 @@ A cell is one input x output model type x option set. Tiers:
   pr       inputs changed since BASE, inputs named by the allowlist and a fixed sample of 300 fixtures,
            x {pydantic_v2.BaseModel, msgspec.Struct}, default options
   nightly  every fixture and payload case x 5 types (default options), every fixture x the released presets,
-           and every `@pytest.mark.cli_doc` example
+           every fixture x 5 types x each option set of OPTION_SETS, every `@pytest.mark.cli_doc` example, and the
+           projects tier: each job of scripts/behaviour_diff_projects.json (a project's own arguments on its own
+           schemas, checked out shallowly at the pinned commit into the cache directory)
   release  nightly (the option tiers of the design come later)
 
 Cells whose bytes differ get a behaviour signature per side (scripts/_behaviour_signature.py, a fresh process per
-tree) and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts each cell into one class. A cell
+tree; each module of a package is also imported first in a process of its own) with a validation probe per name
+and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts each cell into one class. A cell
 that uses an option, value or input type BASE does not have is `opt-in` and is not generated.
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
@@ -87,6 +90,16 @@ PRESET_PYTHON_OLDER = "py312"
 PAYLOAD_VALID = 10
 PAYLOAD_INVALID = 12
 PAYLOAD_DRAW_TIMEOUT = 90
+EXCLUDED_OPTIONS = frozenset({"--watch"})
+OPTION_SETS = (
+    ("--strip-default-none",),
+    ("--strip-default-none", "--keyword-only"),
+    ("--strip-default-none", "--use-default-factory-for-optional-nested-models"),
+)
+DEFAULT_PROJECTS = Path(__file__).with_name("behaviour_diff_projects.json")
+PROJECT_COMMON_ARGS = ("--disable-timestamp",)
+PROJECT_REPO = "{repo}"
+FETCH_TRIES = 3
 DEFAULT_RECORDS = compare_release._default_cache_dir().parent / "behaviour-records"  # ruff: ignore[private-member-access]
 ERA_PYTHONS = ("3.14", "3.13", "3.12", "3.11")
 ERA_EXTRAS = "graphql,http,protobuf"
@@ -133,6 +146,7 @@ class Cell:
     options: tuple[str, ...] = ()
     kind: str = "default"
     payload_key: str | None = None
+    stubs: tuple[tuple[str, str], ...] = ()
 
     @property
     def option_label(self) -> str:
@@ -140,7 +154,7 @@ class Cell:
         return " ".join(self.options) or "default"
 
     def args(self) -> list[str]:
-        """Return the generation arguments without `--output`."""
+        """Return the generation arguments without `--output`; a project's own arguments keep its formatters."""
         return [
             "--input",
             str(self.input),
@@ -148,7 +162,7 @@ class Cell:
             self.file_type,
             "--output-model-type",
             self.backend,
-            *compare_release.COMMON_ARGS,
+            *(PROJECT_COMMON_ARGS if self.kind == "project" else compare_release.COMMON_ARGS),
             *self.options,
         ]
 
@@ -172,6 +186,76 @@ class Result:
 
 
 @dataclass
+class Project:
+    """A project that runs datamodel-codegen on its own schemas, pinned to one commit (behaviour_diff_projects.json)."""
+
+    name: str
+    url: str
+    sha: str
+    paths: tuple[str, ...]
+    root: Path
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def fetch(self) -> None:
+        """Check out the pinned commit's `paths` into `root` once (shallow, sparse, blobless)."""
+        with self.lock:
+            if (self.root / ".complete").exists():
+                return
+            for _ in range(FETCH_TRIES):
+                shutil.rmtree(self.root, ignore_errors=True)
+                self.root.mkdir(parents=True)
+                steps = [
+                    ["init", "-q"],
+                    ["remote", "add", "origin", self.url],
+                    ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", self.sha],
+                    ["sparse-checkout", "set", "--no-cone", *self.paths],
+                    ["-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"],
+                ]
+                if all(_isolated_git(step, self.root) for step in steps):
+                    (self.root / ".complete").touch()
+                    return
+            msg = f"cannot fetch {self.url} at {self.sha}"
+            raise RuntimeError(msg)
+
+
+def load_projects(manifest: Path, cache_dir: Path) -> tuple[dict[str, Project], list[Cell]]:
+    """Return the projects of a manifest and one cell per job: the project's own arguments on its own schema."""
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    projects: dict[str, Project] = {}
+    cells = []
+    for entry in data["projects"]:
+        paths_key = _stable(json.dumps(entry["paths"]))[:8]
+        root = cache_dir / "projects" / f"{entry['name']}-{entry['sha'][:12]}-{paths_key}"
+        projects[entry["name"]] = Project(
+            entry["name"],
+            entry.get("url") or f"https://github.com/{entry['repo']}.git",
+            entry["sha"],
+            tuple(entry["paths"]),
+            root,
+        )
+        cells += [
+            Cell(
+                root / job["input"],
+                f"project:{entry['name']}/{job['name']}",
+                job["input_file_type"],
+                job["output_model_type"],
+                tuple(arg.replace(PROJECT_REPO, str(root)) for arg in job["args"]),
+                "project",
+                stubs=tuple(sorted(job.get("stubs", {}).items())),
+            )
+            for job in entry["jobs"]
+        ]
+    return projects, cells
+
+
+def project_of(gate: Gate, cell: Cell) -> Project | None:
+    """Return the project a cell of the projects tier belongs to."""
+    if cell.kind != "project":
+        return None
+    return gate.projects[cell.label.removeprefix("project:").partition("/")[0]]
+
+
+@dataclass
 class Gate:
     """Everything one gate run needs."""
 
@@ -186,6 +270,7 @@ class Gate:
     payload_root: Path
     candidate_info: Candidate
     signature_python: Path | None = None
+    projects: dict[str, Project] = field(default_factory=dict)
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -193,6 +278,12 @@ class Gate:
 def _git(*args: str, cwd: Path = ROOT) -> str | None:
     result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=False)
     return result.stdout if result.returncode == 0 else None
+
+
+def _isolated_git(args: list[str], cwd: Path) -> bool:
+    """Run git in `cwd` without the caller's repository settings (a hook's GIT_DIR) or an interactive prompt."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")} | {"GIT_TERMINAL_PROMPT": "0"}
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, env=env, check=False).returncode == 0
 
 
 def latest_tag() -> str:
@@ -393,11 +484,13 @@ def _without(args: list[str], option: str) -> tuple[list[str], str | None]:
 
 
 def anchor_cells(root: Path, types: list[str]) -> list[Cell]:
-    """Return one cell per cli_doc example and output model type it documents."""
+    """Return one cell per cli_doc example and output model type it documents; `--watch` examples never finish."""
     cells: dict[tuple[str, str, tuple[str, ...]], Cell] = {}
     for example in cli_doc_examples(root):
         schema = root / "tests" / "data" / example["input_schema"]
         if not schema.exists():
+            continue
+        if EXCLUDED_OPTIONS.intersection(example["cli_args"]):
             continue
         args, backend = _without(example["cli_args"], "--output-model-type")
         args, file_type = _without(args, "--input-file-type")
@@ -509,6 +602,13 @@ def payloads_for(gate: Gate, cell: Cell) -> Path | None:
 
 def run_cell(gate: Gate, cell: Cell) -> Result:
     """Generate one cell on both sides and classify it."""
+    if (project := project_of(gate, cell)) is not None:
+        try:
+            project.fetch()
+        except RuntimeError as exc:
+            return Result(cell, Verdict("violation", (f"project checkout failed: {exc}",)))
+        if not cell.input.exists():
+            return Result(cell, Verdict("violation", (f"project input missing in the checkout: {cell.input.name}",)))
     args = cell.args()
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
@@ -528,7 +628,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             sides = [
                 Side(
                     generated=True,
-                    signature=signature(gate, _write_tree(outcome.tree, tmp / f"sig-{side}"), cell.backend, payloads),
+                    signature=signature(
+                        gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
+                    ),
                 )
                 for side, outcome in (("base", base), ("cand", candidate))
             ]
@@ -565,7 +667,15 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
             for backend, options in preset_option_sets(presets, types)
             for name, file_type in inputs
         ]
+        cells += [
+            Cell(candidate.root / name, name, file_type, backend, options, "option-set")
+            for options in OPTION_SETS
+            for backend in types
+            for name, file_type in inputs
+        ]
         cells += [cell for cell in anchor_cells(candidate.root, types) if _selected(cell.label, ns.select)]
+        gate.projects, projects = load_projects(ns.projects, ns.cache_dir.absolute())
+        cells += [cell for cell in projects if cell.backend in types and _selected(cell.label, ns.select)]
         if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
             cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
     return cells
@@ -590,9 +700,16 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
         "--select",
         action="append",
         default=[],
-        help="only inputs matching this glob (payload cases: 'payload:<case id>'); replaces the PR sample",
+        help="only cells whose input or label matches this glob (payload cases: 'payload:<case id>'; project jobs: "
+        "'project:<project>/<job>'); replaces the PR sample",
     )
     parser.add_argument("--allowlist", type=Path, default=DEFAULT_ALLOWLIST)
+    parser.add_argument(
+        "--projects",
+        type=Path,
+        default=DEFAULT_PROJECTS,
+        help="manifest of the projects tier (nightly and release): repository, pinned commit, license, jobs",
+    )
     parser.add_argument("--base-python", type=Path, help="interpreter with the release already installed")
     parser.add_argument("--candidate-python", type=Path, help="interpreter for the candidate")
 
@@ -1138,7 +1255,11 @@ def guide_main(ns: argparse.Namespace) -> int:
 
 
 def _payload_cases(root: Path, out: Path) -> None:
-    """Write every payload-validation case of the checkout at `root` and an index of their arguments."""
+    """Write every payload-validation case of the checkout at `root` and an index of their arguments.
+
+    The harness has no TypedDict backend (a TypedDict validates nothing by itself); TypedDict cells use the
+    dataclass arguments, and their payload verdicts come from the TypedDict's pydantic TypeAdapter.
+    """
     sys.path.insert(0, str(root))
     from tests.main.payload_validation import SCHEMA_CASES  # ruff: ignore[import-outside-top-level]
     from tests.main.payload_validation.codegen import (  # ruff: ignore[import-outside-top-level]
@@ -1161,6 +1282,7 @@ def _payload_cases(root: Path, out: Path) -> None:
                 options, _ = _without(options, option)
             options, formatters = _without(options, "--formatters")
             args[backend.output_model_type] = [opt for opt in options if opt != formatters]
+        args["typing.TypedDict"] = args[PayloadBackend.DATACLASSES.output_model_type]
         index.append({
             "key": key,
             "case_id": case.id,

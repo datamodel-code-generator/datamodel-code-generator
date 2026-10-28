@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[type] Child:uuidValue: uuid.UUID -> str"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[type] Child:uuidValue: uuid.UUID -> str"
+  ]
+}
