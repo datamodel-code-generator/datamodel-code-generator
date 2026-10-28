@@ -225,10 +225,6 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         """Return the model a reference names, or None when it names no model."""
         raise NotImplementedError
 
-    def admits_null(self, model: ModelT) -> bool:
-        """Return whether every type naming the model admits None, as its schema admits null."""
-        raise NotImplementedError
-
     def identity(self, reference: ReferenceT) -> Hashable:
         """Return what tells apart the models that references name: the model key."""
         raise NotImplementedError
@@ -347,26 +343,14 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             for reference in self._compared_references(model)
         )
 
-    def hands_null(self, canonical: ModelT, duplicate: ModelT) -> bool:
-        """Return whether removing a duplicate for a canonical model makes the types naming it admit None.
-
-        A type that names a model admitting null admits None, so a duplicate whose schema rejects null is never
-        removed for one whose schema admits it. A duplicate admitting null may go to one that does not: the types
-        naming it keep their None.
-        """
-        return self.source.admits_null(canonical) and not self.source.admits_null(duplicate)
-
-    def iter_matching_duplicates(
-        self, models: Iterable[ModelT], *, keyed: bool, removes: Callable[[ModelT], bool] | None = None
-    ) -> Iterator[tuple[ModelT, ModelT]]:
+    def iter_matching_duplicates(self, models: Iterable[ModelT], *, keyed: bool) -> Iterator[tuple[ModelT, ModelT]]:
         """Pair each model with the earlier model of the same key whose content and references both match.
 
         Without ``keyed`` every model shares one key, for models the caller already grouped by :meth:`key`. Earlier
         unmatched models of a key never match each other, so at most one matches. A model that references the very
         same models as one of them is paired at once. Otherwise it is compared in full only with those whose
         referenced models render alike, so many equally rendered models with different references are not compared
-        pairwise. Referenced models are rendered only for keys with a model that is not paired at once. A model that
-        the caller ``removes`` for its match is paired only with one it can be removed for (:meth:`hands_null`).
+        pairwise. Referenced models are rendered only for keys with a model that is not paired at once.
         """
         by_references: dict[tuple[object, ...], ModelT] = {}
         by_shapes: defaultdict[tuple[object, ...], list[ModelT]] = defaultdict(list)
@@ -374,24 +358,14 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         for model in models:
             key = self.key(model) if keyed else None
             references = (key, *map(id, self._compared_references(model)))
-            removed = removes is not None and removes(model)
-            if (
-                (canonical := by_references.get(references)) is None or (removed and self.hands_null(canonical, model))
-            ) and (pending := unshaped.get(key)) is not None:
+            if (canonical := by_references.get(references)) is None and (pending := unshaped.get(key)) is not None:
                 for candidate in pending:
                     by_shapes[key, self._referenced_shapes(candidate)].append(candidate)
                 pending.clear()
                 candidates = by_shapes[key, self._referenced_shapes(model)]
-                canonical = next(
-                    (
-                        c
-                        for c in candidates
-                        if not (removed and self.hands_null(c, model)) and self.references_match(c, model)
-                    ),
-                    None,
-                )
+                canonical = next((c for c in candidates if self.references_match(c, model)), None)
             if canonical is None:
                 unshaped.setdefault(key, []).append(model)
-                by_references.setdefault(references, model)
+                by_references[references] = model
                 continue
             yield canonical, model

@@ -13,27 +13,29 @@ class Home(Struct):
     street: str | UnsetType = UNSET
 
 
-class Work(Struct):
-    street: str | UnsetType = UNSET
-
-
 class Office(Struct):
     floor: int | UnsetType = UNSET
+
+
+class HomeVisit(Struct):
+    address: Home | None
+
+
+class WorkVisit(Struct):
+    address: Home
 
 
 class First(Struct):
     code: str | UnsetType = UNSET
 
 
-class Second(Struct):
-    code: str | UnsetType = UNSET
-
-
 class Person(Struct):
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
     first: Annotated[First, Meta(title='Badge')] | None
-    second: Annotated[Second, Meta(title='Badge')]
-    works: list[Work] | UnsetType = UNSET
+    second: Annotated[First, Meta(title='Badge')]
+    homeVisit: HomeVisit
+    workVisit: WorkVisit
+    works: list[Home] | UnsetType = UNSET

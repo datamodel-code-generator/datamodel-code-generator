@@ -127,31 +127,32 @@ reason = "0.86.0's extra_items named the local Bar instead of the referenced ext
 decision = "#5022"
 release_note = "TypedDict extra_items names the referenced class under its final name"
 
-# --- #5407: a model whose schema rejects null is not merged into an equal nullable one (owner decision 2026-10-28) ---
+# --- #5407: a reference admits null only when the schema it names does (owner decision 2026-10-28) ---
 # Since 0.84.0 --strict-nullable --reuse-model --collapse-reuse-models (the practical presets) and same-name
-# deduplication merged a non-nullable object model into an equally shaped nullable one, so every reference to it
-# accepted null; the non-nullable model is kept apart again and its references reject null, as in 0.83.0.
+# deduplication merged a non-nullable object model into an equally shaped nullable one, and every reference to it
+# took the None of the nullable model. The models are merged as before; the references reject null again as in
+# 0.83.0, and a model that was merged only for that None stays apart.
 
 [[accepted]]
 input = "tests/data/openapi/ref_nullable.yaml"
-aspects = [ "bases", "type" ]
+aspects = [ "type" ]
 match = "NullableChild"
-reason = "NonNullableChild was merged into the nullable NullableChild, so nonNullableChild accepted null (0.84.0 regression)"
+reason = "nonNullableChild named NonNullableChild, merged into the nullable NullableChild, and accepted null (0.84.0 regression)"
 decision = "#5407"
-release_note = "a model whose schema rejects null is no longer merged into an equal nullable model by --collapse-reuse-models or same-name deduplication, so its references reject null again as in 0.83.0"
+release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"
 
 [[accepted]]
 input = "tests/data/openapi/schema_intersection/null_multiple_types_oas30.yaml"
 aspects = [ "type" ]
 match = "Model:w:"
-reason = "the object member of W was merged into the nullable U, so the required w accepted null (0.84.0 regression)"
+reason = "the object member of W named the nullable U it was merged into, so the w accepted null (0.84.0 regression)"
 decision = "#5407"
-release_note = "a model whose schema rejects null is no longer merged into an equal nullable model by --collapse-reuse-models or same-name deduplication, so its references reject null again as in 0.83.0"
+release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"
 
 [[accepted]]
 input = "tests/data/*/nullable_reuse_collapse.*"
 aspects = [ "type" ]
-match = "Person:(work|works|second):"
-reason = "Work and the second Badge were merged into the nullable Home and Badge, so work, works items and second accepted null"
+match = "Person:(work|works|second|work_visit|workVisit):"
+reason = "work, works items and second named Work and the second Badge, merged into the nullable Home and Badge, and accepted null; WorkVisit was merged into HomeVisit only for that null"
 decision = "#5407"
-release_note = "a model whose schema rejects null is no longer merged into an equal nullable model by --collapse-reuse-models or same-name deduplication, so its references reject null again as in 0.83.0"
+release_note = "a reference whose schema rejects null rejects it again, as in 0.83.0, after --collapse-reuse-models or same-name deduplication merges its model into an equal nullable one"

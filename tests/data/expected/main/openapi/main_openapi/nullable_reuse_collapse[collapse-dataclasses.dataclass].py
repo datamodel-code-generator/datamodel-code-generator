@@ -13,13 +13,18 @@ class Home:
 
 
 @dataclass
-class Work:
-    street: str | None = None
+class Office:
+    floor: int | None = None
 
 
 @dataclass
-class Office:
-    floor: int | None = None
+class HomeVisit:
+    address: Home | None
+
+
+@dataclass
+class WorkVisit:
+    address: Home
 
 
 @dataclass
@@ -28,16 +33,13 @@ class First:
 
 
 @dataclass
-class Second:
-    code: str | None = None
-
-
-@dataclass
 class Person:
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
     first: First | None
-    second: Second
-    works: list[Work] | None = None
+    second: First
+    homeVisit: HomeVisit
+    workVisit: WorkVisit
+    works: list[Home] | None = None

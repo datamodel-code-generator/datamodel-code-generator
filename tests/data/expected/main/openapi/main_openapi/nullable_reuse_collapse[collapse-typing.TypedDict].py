@@ -13,27 +13,29 @@ class Home(TypedDict):
     street: NotRequired[str]
 
 
-class Work(TypedDict):
-    street: NotRequired[str]
-
-
 class Office(TypedDict):
     floor: NotRequired[int]
+
+
+class HomeVisit(TypedDict):
+    address: Home | None
+
+
+class WorkVisit(TypedDict):
+    address: Home
 
 
 class First(TypedDict):
     code: NotRequired[str]
 
 
-class Second(TypedDict):
-    code: NotRequired[str]
-
-
 class Person(TypedDict):
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
-    works: NotRequired[list[Work]]
+    works: NotRequired[list[Home]]
     first: First | None
-    second: Second
+    second: First
+    homeVisit: HomeVisit
+    workVisit: WorkVisit

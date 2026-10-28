@@ -13,15 +13,7 @@ class First(Struct):
     code: str | UnsetType = UNSET
 
 
-class Second(Struct):
-    code: str | UnsetType = UNSET
-
-
 class Home(Struct):
-    street: str | UnsetType = UNSET
-
-
-class Work(Struct):
     street: str | UnsetType = UNSET
 
 
@@ -31,9 +23,9 @@ class Office(Struct):
 
 class Person(Struct):
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
     first: Annotated[First | None, Meta(title='Badge')] | None
-    second: Annotated[Second, Meta(title='Badge')]
-    works: list[Work] | UnsetType = UNSET
+    second: Annotated[First, Meta(title='Badge')]
+    works: list[Home] | UnsetType = UNSET

@@ -905,13 +905,6 @@ class _ModelShapeSource:
         """Return the model a reference names, or None when it names no model."""
         return source if isinstance(source := reference.source, DataModel) else None
 
-    def admits_null(self, model: DataModel) -> bool:  # noqa: PLR6301
-        """Return whether every type naming the model admits None: its schema admits null and it is no type alias.
-
-        A type alias holds its None in its value, which its dedup key renders (``DataType.names_nullable_model``).
-        """
-        return model.nullable and not model.is_alias
-
     def identity(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
         """Return what tells apart the models that references name: the model key."""
         return model_key_of(reference)

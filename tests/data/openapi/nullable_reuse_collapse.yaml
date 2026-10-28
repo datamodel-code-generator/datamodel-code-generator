@@ -27,6 +27,20 @@ components:
       properties:
         floor:
           type: integer
+    HomeVisit:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: '#/components/schemas/Home'
+    WorkVisit:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: '#/components/schemas/Work'
     Person:
       type: object
       required:
@@ -36,6 +50,8 @@ components:
         - shop
         - first
         - second
+        - homeVisit
+        - workVisit
       properties:
         home:
           $ref: '#/components/schemas/Home'
@@ -62,3 +78,7 @@ components:
           properties:
             code:
               type: string
+        homeVisit:
+          $ref: '#/components/schemas/HomeVisit'
+        workVisit:
+          $ref: '#/components/schemas/WorkVisit'

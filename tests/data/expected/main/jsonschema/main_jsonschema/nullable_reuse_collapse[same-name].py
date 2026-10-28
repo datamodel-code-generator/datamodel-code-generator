@@ -11,10 +11,6 @@ class Badge(BaseModel):
     code: str | None = None
 
 
-class Badge1(BaseModel):
-    code: str | None = None
-
-
 class Home(BaseModel):
     street: str | None = None
 
@@ -38,4 +34,4 @@ class Person(BaseModel):
     shop: Shop | None
     works: list[Work] | None = None
     first: Badge | None = Field(..., title='Badge')
-    second: Badge1 = Field(..., title='Badge')
+    second: Badge = Field(..., title='Badge')

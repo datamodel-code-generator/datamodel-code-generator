@@ -1538,6 +1538,9 @@ collapse-pydantic_v2.BaseModel	main/openapi/main_openapi/nullable_reuse_collapse
 collapse-pydantic_v2.dataclass	main/openapi/main_openapi/nullable_reuse_collapse[collapse-pydantic_v2.dataclass].py
 collapse-typing.TypedDict	main/openapi/main_openapi/nullable_reuse_collapse[collapse-typing.TypedDict].py
 same-name	main/openapi/main_openapi/nullable_reuse_collapse[same-name].py
+[test_main_openapi_nullable_reuse_tree]
+collapse	main/openapi/main_openapi/nullable_reuse_tree[collapse]/
+typed-dict	main/openapi/main_openapi/nullable_reuse_tree[typed-dict]/
 [test_main_openapi_nullable_strict_nullable]
 	main/openapi/nullable_strict_nullable.py
 [test_main_openapi_nullable_use_union_operator]

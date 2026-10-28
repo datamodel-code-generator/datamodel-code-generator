@@ -11,27 +11,29 @@ class Home(BaseModel):
     street: str | None = None
 
 
-class Work(BaseModel):
-    street: str | None = None
-
-
 class Office(BaseModel):
     floor: int | None = None
+
+
+class HomeVisit(BaseModel):
+    address: Home | None
+
+
+class WorkVisit(BaseModel):
+    address: Home
 
 
 class First(BaseModel):
     code: str | None = None
 
 
-class Second(BaseModel):
-    code: str | None = None
-
-
 class Person(BaseModel):
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
-    works: list[Work] | None = None
+    works: list[Home] | None = None
     first: First | None = Field(..., title='Badge')
-    second: Second = Field(..., title='Badge')
+    second: First = Field(..., title='Badge')
+    homeVisit: HomeVisit
+    workVisit: WorkVisit

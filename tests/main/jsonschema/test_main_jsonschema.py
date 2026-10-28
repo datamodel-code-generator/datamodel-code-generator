@@ -4230,11 +4230,10 @@ def test_main_reuse_model_collapse_nested(output_file: Path) -> None:
 def test_main_jsonschema_nullable_reuse_collapse(
     output_file: Path, output_model_type: str, extra_args: list[str]
 ) -> None:
-    """Keep a model whose type list leaves out null apart from an equal one that admits it when duplicates are removed.
+    """Keep a reference rejecting null when its schema does, after its model is merged into one whose types hold null.
 
-    ``Work`` is not removed for ``Home``, whose types include null, so ``work`` stays ``Work`` and rejects null;
-    ``Shop`` is still removed for ``Office`` and ``shop`` keeps its None. The two inline ``Badge`` objects stay two
-    classes too.
+    ``work``, the items of ``works`` and ``second`` name ``Home`` and ``Badge`` and reject null, as in 0.83.0; ``shop``
+    keeps the None of ``Shop``, whose types hold null, merged into ``Office``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "nullable_reuse_collapse.json",

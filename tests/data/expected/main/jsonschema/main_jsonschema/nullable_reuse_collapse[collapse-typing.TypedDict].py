@@ -13,15 +13,7 @@ class First(TypedDict):
     code: NotRequired[str]
 
 
-class Second(TypedDict):
-    code: NotRequired[str]
-
-
 class Home(TypedDict):
-    street: NotRequired[str]
-
-
-class Work(TypedDict):
     street: NotRequired[str]
 
 
@@ -31,9 +23,9 @@ class Office(TypedDict):
 
 class Person(TypedDict):
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
-    works: NotRequired[list[Work]]
+    works: NotRequired[list[Home]]
     first: First | None
-    second: Second
+    second: First

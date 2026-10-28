@@ -5122,6 +5122,41 @@ def test_main_openapi_nullable_map_value_layout_modules(output_dir: Path) -> Non
 @pytest.mark.parametrize(
     ("output_model_type", "extra_args"),
     [
+        pytest.param("pydantic_v2.BaseModel", ["--collapse-reuse-models"], id="collapse"),
+        pytest.param("typing.TypedDict", [], id="typed-dict"),
+    ],
+)
+def test_main_openapi_nullable_reuse_tree(output_dir: Path, output_model_type: str, extra_args: list[str]) -> None:
+    """Keep a reference rejecting null as its schema does after tree-scope reuse merges its model into a nullable one.
+
+    ``a.Person.place`` names the ``a.Place`` that rejects null, removed for the nullable ``b.Place`` of the shared
+    module, so it rejects null; ``b.Person.place`` keeps its None.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_reuse_tree.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strict-nullable",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            *extra_args,
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
         *(
             pytest.param(model_type, ["--reuse-model", "--collapse-reuse-models"], id=f"collapse-{model_type}")
             for model_type in (
@@ -5136,11 +5171,11 @@ def test_main_openapi_nullable_map_value_layout_modules(output_dir: Path) -> Non
     ],
 )
 def test_main_openapi_nullable_reuse_collapse(output_file: Path, output_model_type: str, extra_args: list[str]) -> None:
-    """Keep a model whose schema rejects null apart from an equal one that admits it when duplicates are removed.
+    """Keep a reference rejecting null when its schema does, after its model is merged into an equal nullable one.
 
-    ``Work`` is not removed for the nullable ``Home``, so ``work`` stays ``Work`` and rejects null, as in 0.83.0; the
-    nullable ``Shop`` is still removed for ``Office`` and ``shop`` keeps its None. The two inline ``Badge`` objects stay
-    two classes too.
+    ``work``, the items of ``works`` and ``second`` name ``Home`` and ``First`` and reject null, as in 0.83.0; ``shop``
+    keeps the None of the nullable ``Shop`` merged into ``Office``. ``WorkVisit`` stays apart from ``HomeVisit``, as
+    its ``address`` rejects null.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "nullable_reuse_collapse.yaml",

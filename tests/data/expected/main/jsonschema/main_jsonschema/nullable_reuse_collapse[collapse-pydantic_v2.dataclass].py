@@ -14,17 +14,7 @@ class First:
 
 
 @dataclass
-class Second:
-    code: str | None = None
-
-
-@dataclass
 class Home:
-    street: str | None = None
-
-
-@dataclass
-class Work:
     street: str | None = None
 
 
@@ -36,9 +26,9 @@ class Office:
 @dataclass
 class Person:
     home: Home | None
-    work: Work
+    work: Home
     office: Office
     shop: Office | None
-    works: list[Work] | None = None
+    works: list[Home] | None = None
     first: First | None = Field(..., title='Badge')
-    second: Second = Field(..., title='Badge')
+    second: First = Field(..., title='Badge')
