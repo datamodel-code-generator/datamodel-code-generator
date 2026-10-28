@@ -7,13 +7,13 @@ import json
 from pathlib import Path
 
 SHARD_COUNTS = {
-    "py315-parallel": 10,
-    "py314-parallel": 9,
-    "py313-parallel": 19,
-    "py312-parallel": 24,
-    "py311-parallel": 24,
-    "py310-parallel": 19,
-    "client-e2e": 4,
+    "py315-parallel": 8,
+    "py314-parallel": 8,
+    "py313-parallel": 13,
+    "py312-parallel": 17,
+    "py311-parallel": 18,
+    "py310-parallel": 14,
+    "client-e2e": 3,
 }
 COVERAGE_ENVS = (
     "migration-legacy",

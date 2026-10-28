@@ -1,156 +1,156 @@
-pydantic_v2.BaseModel default tuple_later ["a"] rejected
-pydantic_v2.BaseModel default tuple_later [] rejected
+pydantic_v2.BaseModel default tuple_later ["a"] accepted
+pydantic_v2.BaseModel default tuple_later [] accepted
 pydantic_v2.BaseModel default tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel default tuple_later [1] rejected
-pydantic_v2.BaseModel default closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel default closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel default closing_elsewhere [1] rejected
-pydantic_v2.BaseModel default own_closing ["a"] rejected
-pydantic_v2.BaseModel default own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel default own_closing ["a"] accepted
+pydantic_v2.BaseModel default own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel default own_closing [] rejected
 pydantic_v2.BaseModel default own_closing [1] rejected
-pydantic_v2.BaseModel default nullable_tags ["a"] rejected
+pydantic_v2.BaseModel default nullable_tags ["a"] accepted
 pydantic_v2.BaseModel default nullable_tags null accepted
 pydantic_v2.BaseModel default nullable_tags [1] rejected
-pydantic_v2.dataclass default tuple_later ["a"] rejected
-pydantic_v2.dataclass default tuple_later [] rejected
+pydantic_v2.dataclass default tuple_later ["a"] accepted
+pydantic_v2.dataclass default tuple_later [] accepted
 pydantic_v2.dataclass default tuple_later ["a", "b"] rejected
 pydantic_v2.dataclass default tuple_later [1] rejected
-pydantic_v2.dataclass default closing_elsewhere ["a"] rejected
+pydantic_v2.dataclass default closing_elsewhere ["a"] accepted
 pydantic_v2.dataclass default closing_elsewhere [1] rejected
-pydantic_v2.dataclass default own_closing ["a"] rejected
-pydantic_v2.dataclass default own_closing ["a", "b"] rejected
+pydantic_v2.dataclass default own_closing ["a"] accepted
+pydantic_v2.dataclass default own_closing ["a", "b"] accepted
 pydantic_v2.dataclass default own_closing [] rejected
 pydantic_v2.dataclass default own_closing [1] rejected
-pydantic_v2.dataclass default nullable_tags ["a"] rejected
+pydantic_v2.dataclass default nullable_tags ["a"] accepted
 pydantic_v2.dataclass default nullable_tags null accepted
 pydantic_v2.dataclass default nullable_tags [1] rejected
-msgspec.Struct default tuple_later ["a"] rejected
-msgspec.Struct default tuple_later [] rejected
+msgspec.Struct default tuple_later ["a"] accepted
+msgspec.Struct default tuple_later [] accepted
 msgspec.Struct default tuple_later ["a", "b"] rejected
 msgspec.Struct default tuple_later [1] rejected
-msgspec.Struct default closing_elsewhere ["a"] rejected
+msgspec.Struct default closing_elsewhere ["a"] accepted
 msgspec.Struct default closing_elsewhere [1] rejected
-msgspec.Struct default own_closing ["a"] rejected
-msgspec.Struct default own_closing ["a", "b"] rejected
+msgspec.Struct default own_closing ["a"] accepted
+msgspec.Struct default own_closing ["a", "b"] accepted
 msgspec.Struct default own_closing [] rejected
 msgspec.Struct default own_closing [1] rejected
-msgspec.Struct default nullable_tags ["a"] rejected
+msgspec.Struct default nullable_tags ["a"] accepted
 msgspec.Struct default nullable_tags null accepted
 msgspec.Struct default nullable_tags [1] rejected
-pydantic_v2.BaseModel --field-constraints tuple_later ["a"] rejected
-pydantic_v2.BaseModel --field-constraints tuple_later [] rejected
+pydantic_v2.BaseModel --field-constraints tuple_later ["a"] accepted
+pydantic_v2.BaseModel --field-constraints tuple_later [] accepted
 pydantic_v2.BaseModel --field-constraints tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --field-constraints tuple_later [1] rejected
-pydantic_v2.BaseModel --field-constraints closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --field-constraints closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --field-constraints closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --field-constraints own_closing ["a"] rejected
-pydantic_v2.BaseModel --field-constraints own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --field-constraints own_closing ["a"] accepted
+pydantic_v2.BaseModel --field-constraints own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --field-constraints own_closing [] rejected
 pydantic_v2.BaseModel --field-constraints own_closing [1] rejected
-pydantic_v2.BaseModel --field-constraints nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --field-constraints nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --field-constraints nullable_tags null accepted
 pydantic_v2.BaseModel --field-constraints nullable_tags [1] rejected
-pydantic_v2.BaseModel --use-annotated tuple_later ["a"] rejected
-pydantic_v2.BaseModel --use-annotated tuple_later [] rejected
+pydantic_v2.BaseModel --use-annotated tuple_later ["a"] accepted
+pydantic_v2.BaseModel --use-annotated tuple_later [] accepted
 pydantic_v2.BaseModel --use-annotated tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --use-annotated tuple_later [1] rejected
-pydantic_v2.BaseModel --use-annotated closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --use-annotated closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --use-annotated closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --use-annotated own_closing ["a"] rejected
-pydantic_v2.BaseModel --use-annotated own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --use-annotated own_closing ["a"] accepted
+pydantic_v2.BaseModel --use-annotated own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --use-annotated own_closing [] rejected
 pydantic_v2.BaseModel --use-annotated own_closing [1] rejected
-pydantic_v2.BaseModel --use-annotated nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --use-annotated nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --use-annotated nullable_tags null accepted
 pydantic_v2.BaseModel --use-annotated nullable_tags [1] rejected
-pydantic_v2.BaseModel --collapse-root-models tuple_later ["a"] rejected
-pydantic_v2.BaseModel --collapse-root-models tuple_later [] rejected
+pydantic_v2.BaseModel --collapse-root-models tuple_later ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models tuple_later [] accepted
 pydantic_v2.BaseModel --collapse-root-models tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --collapse-root-models tuple_later [1] rejected
-pydantic_v2.BaseModel --collapse-root-models closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --collapse-root-models closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --collapse-root-models own_closing ["a"] rejected
-pydantic_v2.BaseModel --collapse-root-models own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --collapse-root-models own_closing ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --collapse-root-models own_closing [] rejected
 pydantic_v2.BaseModel --collapse-root-models own_closing [1] rejected
-pydantic_v2.BaseModel --collapse-root-models nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --collapse-root-models nullable_tags null accepted
 pydantic_v2.BaseModel --collapse-root-models nullable_tags [1] rejected
-msgspec.Struct --collapse-root-models tuple_later ["a"] rejected
-msgspec.Struct --collapse-root-models tuple_later [] rejected
+msgspec.Struct --collapse-root-models tuple_later ["a"] accepted
+msgspec.Struct --collapse-root-models tuple_later [] accepted
 msgspec.Struct --collapse-root-models tuple_later ["a", "b"] rejected
 msgspec.Struct --collapse-root-models tuple_later [1] rejected
-msgspec.Struct --collapse-root-models closing_elsewhere ["a"] rejected
+msgspec.Struct --collapse-root-models closing_elsewhere ["a"] accepted
 msgspec.Struct --collapse-root-models closing_elsewhere [1] rejected
-msgspec.Struct --collapse-root-models own_closing ["a"] rejected
-msgspec.Struct --collapse-root-models own_closing ["a", "b"] rejected
+msgspec.Struct --collapse-root-models own_closing ["a"] accepted
+msgspec.Struct --collapse-root-models own_closing ["a", "b"] accepted
 msgspec.Struct --collapse-root-models own_closing [] rejected
 msgspec.Struct --collapse-root-models own_closing [1] rejected
-msgspec.Struct --collapse-root-models nullable_tags ["a"] rejected
+msgspec.Struct --collapse-root-models nullable_tags ["a"] accepted
 msgspec.Struct --collapse-root-models nullable_tags null accepted
 msgspec.Struct --collapse-root-models nullable_tags [1] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later ["a"] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later [] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs tuple_later [1] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing ["a"] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing [] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs own_closing [1] rejected
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_tags null accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_tags [1] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later ["a"] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later [] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later ["a", "b"] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs tuple_later [1] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs closing_elsewhere ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closing_elsewhere ["a"] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs closing_elsewhere [1] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing ["a"] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing ["a", "b"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing ["a", "b"] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing [] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs own_closing [1] rejected
-pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_tags ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_tags ["a"] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_tags null accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_tags [1] rejected
-msgspec.Struct --use-site-models-for-constrained-refs tuple_later ["a"] rejected
-msgspec.Struct --use-site-models-for-constrained-refs tuple_later [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs tuple_later ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs tuple_later [] accepted
 msgspec.Struct --use-site-models-for-constrained-refs tuple_later ["a", "b"] rejected
 msgspec.Struct --use-site-models-for-constrained-refs tuple_later [1] rejected
-msgspec.Struct --use-site-models-for-constrained-refs closing_elsewhere ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs closing_elsewhere ["a"] accepted
 msgspec.Struct --use-site-models-for-constrained-refs closing_elsewhere [1] rejected
-msgspec.Struct --use-site-models-for-constrained-refs own_closing ["a"] rejected
-msgspec.Struct --use-site-models-for-constrained-refs own_closing ["a", "b"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs own_closing ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs own_closing ["a", "b"] accepted
 msgspec.Struct --use-site-models-for-constrained-refs own_closing [] rejected
 msgspec.Struct --use-site-models-for-constrained-refs own_closing [1] rejected
-msgspec.Struct --use-site-models-for-constrained-refs nullable_tags ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_tags ["a"] accepted
 msgspec.Struct --use-site-models-for-constrained-refs nullable_tags null accepted
 msgspec.Struct --use-site-models-for-constrained-refs nullable_tags [1] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later ["a"] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later [] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tuple_later [1] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing ["a"] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing [] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own_closing [1] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_tags null accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_tags [1] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later ["a"] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later [] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later ["a", "b"] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tuple_later [1] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closing_elsewhere ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closing_elsewhere ["a"] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closing_elsewhere [1] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing ["a"] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing ["a", "b"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing ["a", "b"] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing [] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own_closing [1] rejected
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_tags ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_tags ["a"] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_tags null accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_tags [1] rejected

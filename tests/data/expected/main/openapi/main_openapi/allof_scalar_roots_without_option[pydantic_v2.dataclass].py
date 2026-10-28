@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from re import compile
 from typing import Annotated
 
 from pydantic import Field
@@ -88,9 +89,12 @@ class Cat(Pet):
     pass
 
 
-@dataclass
-class TwoPatterns:
-    pass
+TwoPatterns = TypeAliasType(
+    "TwoPatterns",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
 
 
 @dataclass

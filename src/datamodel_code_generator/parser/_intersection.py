@@ -107,8 +107,9 @@ LEGACY_ROWS: Final = {
         "the patterns of the parts are joined by lookaheads, unwarned; an allOf member merge keeps the later pattern"
     ),
     "legacy-all-of-site-form": (
-        "an allOf site of value parts keeps its earlier form, unwarned where they conflict, and a `$ref` member's "
-        "sibling `enum` or `const` does not narrow its literals"
+        "an allOf site of value parts keeps its earlier form, unwarned where they conflict (a model without fields "
+        "only where their intersection admits an object), and a `$ref` member's sibling `enum` or `const` does not "
+        "narrow its literals"
     ),
     "legacy-all-of-null-as-written": (
         "null is read as written where parts meet: a `type` without null keeps the null members beside it and those "

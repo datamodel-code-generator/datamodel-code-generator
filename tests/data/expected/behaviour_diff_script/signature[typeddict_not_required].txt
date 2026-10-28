@@ -34,5 +34,8 @@
   },
   "names": [
     "Model"
-  ]
+  ],
+  "probes": {
+    "Model": "accept"
+  }
 }

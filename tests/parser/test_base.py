@@ -2042,6 +2042,8 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
         [collapsed_root],
         {collapsed_root: (("output.py",), models)},
         {("output.py",): imports},
+        (),
+        True,
     )
 
     assert models == [surviving_model]

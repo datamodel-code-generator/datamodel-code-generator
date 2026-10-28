@@ -779,8 +779,8 @@ other properties separate.
                 extra: str | None = None
 
 
-            class ConstraintWithItems(BaseModel):
-                pass
+            class ConstraintWithItems(RootModel[StringDatatype]):
+                root: StringDatatype = Field(..., description='Constraint item has items.')
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
@@ -799,8 +799,10 @@ other properties separate.
                 root: list[str]
 
 
-            class RefToArrayAllOf(BaseModel):
-                pass
+            class RefToArrayAllOf(RootModel[list[str]]):
+                root: list[str] = Field(
+                    ..., description='Ref to array - not a root model.', min_length=1
+                )
 
 
             class ObjectNoPropsDatatype(BaseModel):
@@ -950,8 +952,8 @@ other properties separate.
                 extra: str | None = None
 
 
-            class ConstraintWithItems(BaseModel):
-                pass
+            class ConstraintWithItems(RootModel[StringDatatype]):
+                root: StringDatatype = Field(..., description='Constraint item has items.')
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
@@ -970,8 +972,10 @@ other properties separate.
                 root: list[str]
 
 
-            class RefToArrayAllOf(BaseModel):
-                pass
+            class RefToArrayAllOf(RootModel[list[str]]):
+                root: list[str] = Field(
+                    ..., description='Ref to array - not a root model.', min_length=1
+                )
 
 
             class ObjectNoPropsDatatype(BaseModel):

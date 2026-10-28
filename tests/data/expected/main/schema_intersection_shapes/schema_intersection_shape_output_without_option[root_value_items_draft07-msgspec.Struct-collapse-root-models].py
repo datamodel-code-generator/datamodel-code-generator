@@ -3,31 +3,17 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 Tags: TypeAlias = list[str]
 
 
-class TupleLater(Struct):
-    pass
-
-
-class ClosingElsewhere(Struct):
-    pass
-
-
-class OwnClosing(Struct):
-    pass
-
-
-class NullableTags(Struct):
-    pass
-
-
 class M(Struct):
-    tuple_later: TupleLater | UnsetType = UNSET
-    closing_elsewhere: ClosingElsewhere | UnsetType = UNSET
-    own_closing: OwnClosing | UnsetType = UNSET
-    nullable_tags: NullableTags | None | UnsetType = UNSET
+    tuple_later: Annotated[list[str], Meta(max_length=1)] | UnsetType = UNSET
+    closing_elsewhere: list[str] | UnsetType = UNSET
+    own_closing: Annotated[list[str], Meta(min_length=1)] | UnsetType = UNSET
+    nullable_tags: (
+        Annotated[Tags, Meta(description='Tags or null.')] | None | UnsetType
+    ) = UNSET

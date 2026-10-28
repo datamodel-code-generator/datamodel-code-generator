@@ -6,7 +6,8 @@
 - `same`: equal output bytes
 - `no-behaviour`: the output differs, the signatures and payload verdicts do not
 - `crash-fix`: the release failed to generate or import, or every change is on a name the release could not use
-  (no validator, failed introspection, dcg's internal placeholder as a value) or on a payload it crashed on
+  (no validator, a validator that raised on its own schema's example value where the candidate's does not, failed
+  introspection, dcg's internal placeholder as a value) or on a payload it crashed on
 - `accepted`: every behaviour change matches an owner-approved allowlist entry
 - `violation`: any other behaviour change, or the candidate fails where the release worked
 - `both-fail`: both sides fail
@@ -17,6 +18,7 @@ Pure functions only: no file system access apart from `Allowlist.load`.
 from __future__ import annotations
 
 import fnmatch
+import json
 import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -147,7 +149,12 @@ def _modules(signature: dict[str, Any]) -> dict[str, Any]:
 
 
 def import_paths(signature: dict[str, Any]) -> dict[str, set[str]]:
-    """Return the names importable from each module: its own public names and its re-exports."""
+    """Return the names importable from each module: its own public names and its re-exports.
+
+    A submodule bound in a module (`from .app import list`) is importable by that name, so its binding counts;
+    `diff` leaves it to `module-removed` when the module itself is gone, and drops it when the release used the module
+    as a type (the binding was the bug).
+    """
     return {
         module.removesuffix(".__init__"): set(sig.get("items", {})) | set(sig.get("exports", {}))
         for module, sig in _modules(signature).items()
@@ -160,13 +167,21 @@ def diff(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
         return module_changes("__init__", old, new)
     old_modules, new_modules = _modules(old), _modules(new)
     old_paths, new_paths = import_paths(old), import_paths(new)
+    new_names = {module.removesuffix(".__init__") for module in new_modules}
     changes = []
     for module in sorted(old_paths):
+        old_sig = old_modules.get(module) or old_modules.get(f"{module}.__init__") or {}
+        old_exports, old_text = old_sig.get("exports", {}), json.dumps(old_sig.get("items", {}))
         for name in sorted(old_paths[module] - new_paths.get(module, set())):
+            source = old_exports.get(name, "")
             reported_as_removed = (
                 module in new_modules
                 and name in old_modules.get(module, {}).get("items", {})
                 and name not in new_modules[module].get("items", {})
+            ) or (
+                source.startswith("<module ")
+                and (target := source[len("<module ") : -1])
+                and (target not in new_names or f".{target}>" in old_text)
             )
             if not reported_as_removed:
                 changes.append(Change(module, name, "import-path-removed", f"from {module} import {name}"))
@@ -193,6 +208,46 @@ def unusable_items(signature: dict[str, Any]) -> set[tuple[str, str]]:
             unusable |= {(module, name) for name, status in (sig.get(key) or {}).items() if status != "ok"}
         unusable |= {(module, name) for name, item in sig.get("items", {}).items() if item.get("kind") == "error"}
     return unusable
+
+
+def probe_fixed(old: dict[str, Any], new: dict[str, Any]) -> set[tuple[str, str]]:
+    """Return the names whose validator raised on the probe value in the release and no longer does (or is gone).
+
+    A validator that raises on both sides, e.g. pydantic on a TypedDict whose `extra_items` it cannot resolve, gives no
+    evidence: the change is judged like any other.
+    """
+    new_modules = _modules(new)
+    fixed = set()
+    for module, sig in _modules(old).items():
+        new_probes = (new_modules.get(module) or {}).get("probes") or {}
+        fixed |= {
+            (module, name)
+            for name, probe in (sig.get("probes") or {}).items()
+            if probe.startswith("error:")
+            and (
+                name not in (new_modules.get(module) or {}).get("items", {})
+                or (name in new_probes and not new_probes[name].startswith("error:"))
+            )
+        }
+    return fixed
+
+
+def probe_changes(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
+    """Return the names whose validator now raises on, or rejects, the probe value the release accepted (`probe`)."""
+    old_modules, new_modules = _modules(old), _modules(new)
+    changes = []
+    for module in sorted(set(old_modules) & set(new_modules)):
+        old_probes, new_probes = old_modules[module].get("probes") or {}, new_modules[module].get("probes") or {}
+        changes += [
+            Change(module, name, "probe", f"{old_probes[name]} -> {probe}")
+            for name, probe in sorted(new_probes.items())
+            if name in old_probes
+            and (
+                (probe.startswith("error:") and not old_probes[name].startswith("error:"))
+                or (probe == "reject" and old_probes[name] == "accept")
+            )
+        ]
+    return changes
 
 
 def payload_changes(old: dict[str, Any], new: dict[str, Any]) -> list[Change]:
@@ -262,9 +317,17 @@ class Allowlist:
             for index, entry in enumerate(self.entries)
             if (decision := entry.get("decision")) and not DECISION.fullmatch(decision)
         ]
-        if self.entries and self.base != version:
+        if self.entries and self.base != version and not _released_before(self.base, version):
             found.append(f"allowlist base {self.base} is not {version}: replace the table when the base moves")
         return found
+
+
+def _released_before(base: str, version: str) -> bool:
+    """Return whether `base` is a release before `version`, whose changes `version` already contains."""
+    try:
+        return tuple(map(int, base.split("."))) < tuple(map(int, version.split(".")))
+    except ValueError:
+        return False
 
 
 @dataclass(frozen=True)
@@ -310,13 +373,11 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
         return Verdict("violation", (f"import now fails: {new_errors[new_only[0]][:160]}",))
     if fixed := sorted(set(old_errors) - set(new_errors)):
         return Verdict("crash-fix", (f"import fixed: {old_errors[fixed[0]][:120]}",))
-    if old_errors:
-        return Verdict("both-fail")
     payloads = payload_changes(old, new)
-    changes = [change for change in diff(old, new) if change.behaviour] + payloads
+    changes = [change for change in diff(old, new) if change.behaviour] + probe_changes(old, new) + payloads
     if not changes:
-        return Verdict("no-behaviour")
-    unusable = unusable_items(old)
+        return Verdict("both-fail" if old_errors else "no-behaviour")
+    unusable = unusable_items(old) | probe_fixed(old, new)
     rejected_valid = (
         {f"payload {key}" for key in valid_payloads}
         if payloads and rejects_every_valid_payload(old, valid_payloads)

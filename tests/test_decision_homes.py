@@ -37,7 +37,7 @@ ALLOWED = """
 "sample.keyword-table" = { home = "sample", count = 1, audit = "X-8" }
 
 [allow."other.py"."read_keys"]
-"sample.read-key" = { home = "sample", count = 5, audit = "X-9" }
+"sample.read-key" = { home = "sample", count = 4, audit = "X-9" }
 
 [allow."adapter.py"."Adapter.read_again"]
 "sample.read-flag" = { home = "sample", count = 1, audit = "X-1" }
@@ -102,6 +102,40 @@ what = "defines a merge function"
 audit = "X-5"
 """
     assert_output(_scan_report(FIXTURE_CONFIG + later))
+
+
+def test_decision_home_key_signature_skips_assigned_and_deleted_keys() -> None:
+    """A key signature counts the keys a function reads, not the subscripts it assigns or deletes."""
+    keys_only = """
+[homes.keys]
+decision = "the keys of a raw document"
+core = ["core.py"]
+
+[homes.keys.signatures.read-key]
+kind = "key"
+keys = ["type", "items"]
+paths = ["other.py:read_keys"]
+what = "reads a key of a raw document"
+audit = "X-9"
+"""
+    assert_output(_scan_report(keys_only))
+
+
+def test_decision_home_signature_paths_outside_planned_places_must_exist() -> None:
+    """A signature path is exempt from the existence check only where it names a planned place or its file."""
+    misspelled = """
+[homes.later]
+decision = "a decision whose core a later change creates"
+planned = ["future.py", "other.py:later_core"]
+
+[homes.later.signatures.merge-function]
+kind = "function"
+pattern = "^_merge_nothing"
+paths = ["future.py:anything", "future.py", "other.py:later_core.inner", "other.py:later_cor", "core.py:decid"]
+what = "defines a merge function"
+audit = "X-5"
+"""
+    assert_output(_scan_report(misspelled))
 
 
 def test_decision_home_allowlist_reports_stale_entries() -> None:

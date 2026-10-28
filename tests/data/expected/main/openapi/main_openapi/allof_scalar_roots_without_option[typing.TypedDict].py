@@ -65,8 +65,7 @@ class Cat(Pet):
     pass
 
 
-class TwoPatterns(TypedDict):
-    pass
+TwoPatterns: TypeAlias = str
 
 
 class MismatchAlias(Mismatch):

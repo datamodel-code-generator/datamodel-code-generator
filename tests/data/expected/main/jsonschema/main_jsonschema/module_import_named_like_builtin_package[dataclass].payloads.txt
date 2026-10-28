@@ -1,0 +1,3 @@
+{"tags": ["a"], "counts": {"x": 1}, "pop": {"key": "k"}, "names": ["n"]}: accepted
+{"tags": ["a", "a"]}: accepted
+{"counts": {"x": "one"}}: rejected ValidationError
