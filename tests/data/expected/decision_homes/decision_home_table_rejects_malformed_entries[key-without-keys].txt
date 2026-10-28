@@ -1,0 +1,1 @@
+signature a.s: keys must be a non-empty list of strings

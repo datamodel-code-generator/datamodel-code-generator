@@ -22,8 +22,11 @@
 	decision_homes/decision_home_function_scoped_paths_check_that_function.txt	= decision_homes/decision_home_detector_reports_every_signature_kind.txt
 [test_decision_home_legacy_rows_are_named_planned_and_documented]
 	decision_homes/decision_home_legacy_rows_are_named_planned_and_documented.txt
+[test_decision_home_planned_places_cover_hits_until_they_exist]
+	decision_homes/decision_home_planned_places_cover_hits_until_they_exist.txt
 [test_decision_home_table_rejects_malformed_entries]
 entry-not-a-table	decision_homes/decision_home_table_rejects_malformed_entries[entry-not-a-table].txt
+key-without-keys	decision_homes/decision_home_table_rejects_malformed_entries[key-without-keys].txt
 no-audit	decision_homes/decision_home_table_rejects_malformed_entries[no-audit].txt
 no-core	decision_homes/decision_home_table_rejects_malformed_entries[no-core].txt
 paths-not-a-list	decision_homes/decision_home_table_rejects_malformed_entries[paths-not-a-list].txt

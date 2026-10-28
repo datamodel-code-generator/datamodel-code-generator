@@ -18,9 +18,15 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
 * ``keyword-set``: a set, tuple, list or dict literal holding at least ``min`` distinct strings of ``keywords``.
+* ``key``: a subscript ``x["k"]`` or a call ``x.get("k")`` / ``x.pop("k")`` / ``x.setdefault("k", ...)`` whose string
+  key is in ``keys`` (``names`` and ``mentions`` match names, not strings, so a raw read of a loaded document is
+  invisible to them).
 
-A hit counts as at home when its file and enclosing function are covered by the home's ``core`` or ``adapters``
-(``file`` or ``file:Qualified.function``; a directory ends in ``/``). Every other hit must be in the allowlist, the
+A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
+``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
+place is the
+core a later change creates: it need not exist yet, and the check fails once it does, so that the change moves it to
+``core``. Every other hit must be in the allowlist, the
 section of the toml after ``ALLOWLIST_MARKER``, keyed by (file, function, signature) with a count, the home and the
 entry of ``docs`` / the audit it belongs to. A new hit fails, and so does an entry whose count is higher than what the
 scan finds (the list only shrinks). ``--write-allowlist`` lowers it after hits were routed to their home and refuses
@@ -64,15 +70,16 @@ DOCS_PATH = Path("docs/architecture.md")
 CONFIG_PATH = Path("scripts/decision_homes.toml")
 COMPILED_TEMPLATE_DIRECTORY = store.COMPILED_TEMPLATE_DIRECTORY
 ALLOWLIST_MARKER = "# ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ===="
-SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set"})
+SIGNATURE_KINDS = frozenset({"name", "call", "function", "compare-in", "number", "keyword-set", "key"})
 CONTEXTS = {"load": ast.Load, "store": ast.Store}
 LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])")
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
 FIX_FORMAT = re.compile(r"#\d+|keep|[A-Z]{1,4}-?\d+[a-z]?(?:-\d+)?")
 ALLOWLIST_START = re.compile(rf"^(?:{re.escape(ALLOWLIST_MARKER)}|\[allow\.)", re.MULTILINE)
-STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "values", "receivers"})
+STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "values", "receivers", "keys"})
 INTEGER_OPTIONS = frozenset({"powers", "literals"})
-REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "keywords"}
+REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "keywords", "key": "keys"}
+KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
 
@@ -122,15 +129,16 @@ class Home:
     decision: str
     core: tuple[Place, ...]
     adapters: tuple[Place, ...]
+    planned: tuple[Place, ...] = ()
 
     def covers(self, file: str, function: str) -> bool:
-        """Return whether the hit is in the core or an adapter."""
-        return any(place.covers(file, function) for place in (*self.core, *self.adapters))
+        """Return whether the hit is in the core, an adapter or a planned place."""
+        return any(place.covers(file, function) for place in (*self.core, *self.adapters, *self.planned))
 
     @property
     def where(self) -> str:
-        """The core places, as messages name them."""
-        return ", ".join(str(place) for place in self.core)
+        """The core places (the planned ones when none exists yet), as messages name them."""
+        return ", ".join(str(place) for place in self.core or self.planned)
 
 
 @dataclass(frozen=True)
@@ -282,11 +290,14 @@ def parse_config(text: str) -> Config:
     homes: dict[str, Home] = {}
     signatures: dict[str, Signature] = {}
     for home_id, table in data.get("homes", {}).items():
+        owner = f"home {home_id}"
+        planned = tuple(Place.parse(item) for item in _strings(table, "planned", owner))
         homes[home_id] = Home(
             id=home_id,
             decision=str(table.get("decision", "")),
-            core=tuple(Place.parse(item) for item in _strings(table, "core", f"home {home_id}", required=True)),
-            adapters=tuple(Place.parse(item) for item in _strings(table, "adapters", f"home {home_id}")),
+            core=tuple(Place.parse(item) for item in _strings(table, "core", owner, required=not planned)),
+            adapters=tuple(Place.parse(item) for item in _strings(table, "adapters", owner)),
+            planned=planned,
         )
         for name, signature in table.get("signatures", {}).items():
             signatures[f"{home_id}.{name}"] = _signature(home_id, name, signature)
@@ -331,6 +342,16 @@ def _string_elements(node: ast.AST) -> Iterator[str]:
     for item in items:
         if isinstance(item, ast.Constant) and isinstance(item.value, str):
             yield item.value
+
+
+def _key_read(node: ast.AST) -> str | None:
+    """Return the string key that ``x["k"]``, ``x.get("k")``, ``x.pop("k")`` or ``x.setdefault("k", ...)`` reads."""
+    match node:
+        case ast.Subscript(slice=ast.Constant(value=str() as key)):
+            return key
+        case ast.Call(func=ast.Attribute(attr=method), args=[ast.Constant(value=str() as key), *_]):
+            return key if method in KEY_METHODS else None
+    return None
 
 
 def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-many-return-statements]
@@ -382,6 +403,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
                 ):
                     return power in options.get("powers", ()) and base == (2 if isinstance(op, ast.Pow) else 1)
             return False
+        case "key":
+            return _key_read(node) in options["keys"]
     return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
         set(_string_elements(node)) & set(options["keywords"])
     ) >= options.get("min", 3)
@@ -394,6 +417,7 @@ NODE_TYPES = {
     "compare-in": (ast.Compare,),
     "number": (ast.Constant, ast.BinOp),
     "keyword-set": (ast.Set, ast.Tuple, ast.List, ast.Dict),
+    "key": (ast.Subscript, ast.Call),
 }
 
 
@@ -473,7 +497,7 @@ def apply_allowlist(config: Config, scan: Scan, source_root: Path | None = None)
 
 @cache
 def _function_names(path: Path) -> frozenset[str]:
-    """Return the qualified name of every function in ``path``, named as ``store.function_at`` names them."""
+    """Return the qualified name of every function and class in ``path``, named as ``store.function_at`` names them."""
     names: set[str] = set()
     pending: list[tuple[ast.AST, tuple[str, ...]]] = [(ast.parse(path.read_text(encoding="utf-8")), ())]
     while pending:
@@ -481,8 +505,7 @@ def _function_names(path: Path) -> frozenset[str]:
         for child in ast.iter_child_nodes(node):
             if isinstance(child, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 inner = (*scope, child.name)
-                if not isinstance(child, ast.ClassDef):
-                    names.add(".".join(inner))
+                names.add(".".join(inner))
                 pending.append((child, inner))
             else:
                 pending.append((child, scope))
@@ -506,11 +529,17 @@ def table_problems(config: Config, source_root: Path | None = None) -> list[Prob
             for place in (*home.core, *home.adapters)
             if not _place_exists(place, root)
         )
+        problems.extend(
+            Problem(f"home {home.id}: planned place {place} exists now; move it to core or adapters")
+            for place in home.planned
+            if _place_exists(place, root)
+        )
+    planned = {place.file for home in config.homes.values() for place in home.planned}
     problems.extend(
         Problem(f"signature {signature.id}: {place} does not exist")
         for signature in config.signatures.values()
         for place in signature.paths
-        if not _place_exists(place, root)
+        if place.file not in planned and not _place_exists(place, root)
     )
     problems.extend(
         Problem(

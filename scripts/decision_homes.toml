@@ -3,7 +3,8 @@
 #
 # [homes.<id>]: `decision` in words, `core` (the pure function or module that decides) and `adapters` (code that reads
 # live objects and calls the core, or is declared to decide for a position). A place is `file`, `dir/` or
-# `file:Qualified.function` below src/datamodel_code_generator/.
+# `file:Qualified.function` or `file:Class` below src/datamodel_code_generator/. `planned` lists the core that a later change creates:
+# it covers its hits like the core, need not exist yet, and the check fails once it does (move it to `core`).
 # [homes.<id>.signatures.<name>]: an AST shape that means "this code decides it" (kinds: see the script's docstring).
 # The `audit` entry is the id the site was filed under in the DRY audit of 0.87.0 (D-L1-nn, D-PP-nn, D-X-nn).
 # [legacy_rows."<row id>"]: every `legacy-*` / `legacy.*` row id that src/ names, with its home and `fix` ("#nnnn" the
@@ -240,6 +241,7 @@ adapters = [
     "model/base.py:DataModelFieldBase._field_null_source",
     "types.py:DataType._materialize_render_state",
 ]
+planned = ["_target_types.py:admits_none", "_target_types.py:without_none", "_target_types.py:freeze_type"]
 
 [homes.H24]
 decision = "what the class body writes after a field's annotation and what that gives the constructor"
@@ -250,6 +252,361 @@ adapters = ["model/base.py:DataModel._field_assignment_facts"]
 decision = "module imports, bindings and final names"
 core = ["parser/_imports_plan.py"]
 adapters = []
+
+# Target homes (docs/architecture.md, "Targets"; design: targets-parse-once, T0). The client and server targets read an
+# OpenAPI document once, in the API walk, and read model facts only through the homes. A place under `planned` is the
+# core a later T PR creates; `audit` ids are the rows of that design (R-nn raw reads, M-nn model facts, C-nn twin
+# planning decisions). Each T PR routes its sites and lowers the allowlist.
+
+[homes.T-wire]
+decision = "what an API object of an OpenAPI document says: read once, where the API walk visits it"
+core = ["parser/openapi_scope.py"]
+adapters = ["_fastapi/source_document.py"]
+planned = ["_target_walk.py"]
+
+[homes.T-wire.signatures.raw-value]
+kind = "name"
+names = ["YamlValue"]
+paths = [
+    "_target_binding.py",
+    "_target_contract.py",
+    "_target_module.py",
+    "_target_types.py",
+    "_target_operations.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_client/",
+    "_fastapi/",
+]
+what = "handles a value of a loaded document after the API walk; read the walk's records"
+
+[homes.T-wire.signatures.raw-value.audit]
+default = "R-01"
+"_target_binding.py:_Contracts.statuses" = "R-03"
+"_target_binding.py:_Contracts.named" = "R-03"
+"_target_binding.py:_Contracts.parameter" = "R-02"
+"_target_binding.py:_Contracts.media" = "R-02"
+"_target_binding.py:_Contracts.headers" = "R-02"
+"_target_binding.py:_Contracts.response" = "R-02"
+"_target_binding.py:_Contracts.declared" = "R-02"
+"_target_binding.py:_Contracts.metadata" = "R-04"
+"_target_binding.py:_Documents" = "R-04"
+"_target_binding.py:_pristine" = "R-04"
+"_target_binding.py:TargetApiOpenAPIParser.load_document" = "R-04"
+"_target_binding.py:TargetApiOpenAPIParser._resolve_api_object" = "R-04"
+"_target_binding.py:_Reader.whole" = "R-06"
+"_target_binding.py:_default" = "R-06"
+"_target_binding.py:_keywords" = "R-06"
+"_target_binding.py:_json_types" = "R-07"
+"_target_binding.py:_valued_types" = "R-07"
+"_target_binding.py:_json_type" = "R-07"
+"_target_binding.py:_Reader.raw_bytes" = "R-10"
+"_target_binding.py:_Reader._subschemas" = "R-10"
+"_target_binding.py:_spelled" = "R-10"
+"_target_binding.py:_Reader.node" = "R-11"
+"_target_binding.py:_SchemaNode" = "R-11"
+"_target_binding.py:_descend" = "R-11"
+"_target_binding.py:_source_member" = "R-11"
+"_target_binding.py:_schema_branches" = "R-11"
+
+[homes.T-wire.signatures.raw-key]
+kind = "key"
+keys = [
+    "$ref",
+    "$dynamicRef",
+    "$id",
+    "$anchor",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "properties",
+    "additionalProperties",
+    "patternProperties",
+    "items",
+    "prefixItems",
+    "type",
+    "format",
+    "enum",
+    "const",
+    "nullable",
+    "readOnly",
+    "writeOnly",
+    "content",
+    "schema",
+    "itemSchema",
+    "encoding",
+    "headers",
+    "links",
+    "responses",
+    "requestBody",
+    "parameters",
+    "callbacks",
+    "servers",
+    "security",
+    "securitySchemes",
+    "contentMediaType",
+    "contentEncoding",
+]
+paths = [
+    "_target_binding.py",
+    "_target_types.py",
+    "_target_operations.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_client/",
+    "_fastapi/",
+]
+what = "reads a key of a raw OpenAPI object; read the walk's records"
+
+[homes.T-wire.signatures.raw-key.audit]
+default = "R-02"
+"_target_binding.py:_Contracts.operation" = "R-01"
+"_target_binding.py:_Contracts.security_schemes" = "R-05"
+"_target_binding.py:_Contracts.metadata" = "R-04"
+"_target_binding.py:_Reader.whole" = "R-06"
+"_target_binding.py:_Reader.kinds" = "R-07"
+"_target_binding.py:_json_types" = "R-07"
+"_target_binding.py:_valued_types" = "R-07"
+"_target_binding.py:_Reader._shape" = "R-08"
+"_target_binding.py:_Reader.parts" = "R-09"
+"_target_binding.py:_Reader.part" = "R-09"
+"_target_binding.py:_spelled" = "R-10"
+"_target_binding.py:_SchemaNode" = "R-11"
+"_client/security.py" = "R-23"
+"_client/plan.py:_variables" = "R-23"
+"_fastapi/source_document.py" = "R-21"
+"_fastapi/callbacks.py" = "R-22"
+
+[homes.T-resolver]
+decision = "where a $ref or a JSON pointer of a loaded document leads"
+core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]
+adapters = ["_target_documents.py"]
+
+[homes.T-resolver.signatures.own-resolution]
+kind = "call"
+names = ["urljoin", "unquote"]
+paths = ["_target_binding.py", "_target_walk.py", "_client/", "_fastapi/"]
+what = "resolves a reference itself; use the parser's edge (SchemaGraphBuilder.target) or API-object resolver"
+audit = "R-04"
+
+[homes.H23.signatures.target-null-member]
+kind = "call"
+names = ["isinstance"]
+mentions = ["NoneType"]
+paths = [
+    "_target_binding.py",
+    "_target_operations.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_target_module.py",
+    "_client/",
+    "_fastapi/",
+]
+what = "decides whether a type admits None by its members; call _target_types.admits_none (H23)"
+audit = "M-01"
+
+[homes.H23.signatures.target-null-function]
+kind = "function"
+pattern = "^_?(takes_null|has_null|nonnull|without_none|nullable|annotation_null|preexisting_null|alias_nullable|written_null|present)$"
+paths = ["_target_binding.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
+what = "a function that decides null itself; call _target_types.admits_none (H23)"
+audit = "M-01"
+
+[homes.T-kind]
+decision = "the JSON and lexical kind of a model type's values, as text and JSON codecs read them"
+core = ["_openapi_wire_plan.py:LexicalKinds"]
+adapters = ["model/_decisions/enum_kind.py:literal_value_kind"]
+planned = ["_target_types.py:lexical_kind", "_target_types.py:json_kinds"]
+
+[homes.T-kind.signatures.kind-table]
+kind = "keyword-set"
+keywords = ["string", "number", "integer", "boolean", "array", "object", "null"]
+min = 3
+paths = [
+    "_target_binding.py",
+    "_target_operations.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_client/",
+    "_fastapi/",
+]
+what = "lists JSON kinds itself; call _target_types.lexical_kind / json_kinds"
+audit = "M-02"
+
+[homes.H08.signatures.target-value-kind]
+kind = "function"
+pattern = "^_?(literal_scalar|literal_kind|value_kind|valued_types|json_types?)$"
+paths = [
+    "_target_binding.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_client/codec_plan.py",
+    "_client/model_facts.py",
+    "_client/pagination.py",
+]
+what = "decides the kind of an enum or const value itself; call literal_value_kind (H08)"
+audit = "M-12"
+
+[homes.H11.signatures.target-tag-function]
+kind = "function"
+pattern = "^_?(discriminator|selector|reused_discriminator)$"
+paths = ["_target_binding.py", "_client/codec_plan.py", "_fastapi/source_document.py"]
+what = "decides which value tags a union variant; read the H11 tag plan (variant_tags, mapped_tags)"
+audit = "M-09"
+
+[homes.H11.signatures.target-tag-key]
+kind = "key"
+keys = ["discriminator", "propertyName", "mapping"]
+paths = ["_target_binding.py", "_client/", "_fastapi/", "_openapi_codec_plan.py", "_openapi_wire_plan.py"]
+what = "reads a discriminator of a raw schema; read the H11 tag plan (variant_tags, mapped_tags)"
+audit = "M-09"
+
+[homes.H14]
+decision = "the method resolution order of generated models and the fields a model has with its bases"
+core = ["model/base.py:linearize_data_models", "model/base.py:c3_merge"]
+adapters = ["model/base.py:DataModel.iter_all_fields", "parser/_passes/settle.py:sort_base_classes_for_mro"]
+
+[homes.H14.signatures.mro-function]
+kind = "function"
+pattern = "^_?(c3|linearize|parent_first|mro)"
+paths = ["_target_binding.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
+what = "computes a method resolution order itself; call model/base.py:linearize_data_models"
+audit = "M-04"
+
+[homes.H14.signatures.member-enumeration]
+kind = "function"
+pattern = "^_?(field_bindings|property_members|form_members|form_model)$"
+paths = ["_target_binding.py", "_openapi_wire_plan.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
+what = "enumerates the effective fields of a model itself; read the model's fields through the H14 adapter"
+audit = "M-04"
+
+[homes.H24.signatures.render-data-read]
+kind = "call"
+names = ["_get_field_data", "_get_field_data_and_default_factory", "_get_constructor_default_info"]
+paths = ["_target_binding.py", "_openapi_codec_plan.py", "_client/", "_fastapi/"]
+what = "reads a field's render data back; read its FieldRenderPlan and _field_assignment_facts"
+audit = "M-05"
+
+[homes.H24.signatures.default-and-settings-function]
+kind = "function"
+pattern = "^_?(emitted_default|constructor_keywords|qualifiers|setting|model_settings|settings|model_facts)$"
+paths = ["_target_binding.py"]
+what = "decides defaults, constructor keywords or settings of a field itself; read its FieldRenderPlan (H24)"
+audit = "M-05"
+
+[homes.H24.signatures.default-function]
+kind = "function"
+pattern = "^_?default$"
+paths = ["_client/plan.py", "_fastapi/plan.py"]
+what = "decides a default itself; read the default of the FieldRenderPlan or the operation plan"
+audit = "M-05"
+
+[homes.Hx-closedness]
+decision = "Pydantic extra, closedness and by-name configuration of a model through its bases"
+planned = ["model/_decisions/closedness.py"]
+
+[homes.Hx-closedness.signatures.closedness-function]
+kind = "function"
+pattern = "^_?(extras_symbols|keeps_extras|extra|own_extra|allows_extras|by_name|configured)$"
+paths = ["_openapi_codec_plan.py", "_openapi_wire_plan.py", "_fastapi/"]
+what = "decides closedness or by-name configuration itself; read the closedness home"
+audit = "M-06"
+
+[homes.Hx-closedness.signatures.by-name-config]
+kind = "name"
+names = ["populate_by_name", "validate_by_name"]
+ctx = "any"
+paths = ["_target_binding.py", "_openapi_codec_plan.py", "_openapi_wire_plan.py", "_client/", "_fastapi/"]
+what = "reads by-name configuration of a model itself; read the closedness home"
+audit = "M-06"
+
+[homes.T-type]
+decision = "the structure and spelling of a model type in target code: the model's TypeExpr, frozen at the seam"
+core = ["types.py:type_expr_of", "types.py:render_type_expr"]
+adapters = ["_target_module.py:TargetModule", "_target_module.py:TypeComposer"]
+planned = ["_target_types.py:freeze_type"]
+
+[homes.T-type.signatures.view-construction]
+kind = "call"
+names = [
+    "UnionType",
+    "GenericType",
+    "NoneType",
+    "LiteralType",
+    "ConstructorType",
+    "GeneratedSymbolType",
+    "ImportedType",
+    "BuiltinType",
+    "BoundType",
+]
+paths = [
+    "_target_binding.py",
+    "_target_operations.py",
+    "_openapi_codec_plan.py",
+    "_openapi_wire_plan.py",
+    "_client/",
+    "_fastapi/",
+]
+what = "builds a type view itself; freeze the model's TypeExpr or compose text with TargetModule"
+audit = "M-08"
+
+[homes.T-operation]
+decision = "the operation plan both targets read: groups, names, arguments, defaults, media, bodies, responses, forms, statuses"
+planned = ["_target_operations.py"]
+
+[homes.T-operation.signatures.status-number]
+kind = "number"
+literals = [100, 199, 200, 204, 205, 299, 300, 304, 399, 400, 499, 500, 599]
+paths = ["_client/", "_fastapi/", "_openapi_wire_plan.py"]
+what = "decides a status class or a bodyless status; read ResponseSpec of the operation plan"
+audit = "C-11"
+
+[homes.T-operation.signatures.twin-planner]
+kind = "function"
+pattern = "^_?(tag_namespaces|groups|group_name|group_key|operation_names|named|alias|selected|resolved|check_statuses|declaring|registration|primary_decision|success_media|default_media|normalized|essence|media_range|reachable|form_read|form_plan|part_media|sent|received|json_members|typed_members|planned|requirements|scheme)$"
+paths = [
+    "_client/plan.py",
+    "_client/security.py",
+    "_client/streams.py",
+    "_fastapi/plan.py",
+    "_fastapi/routes.py",
+    "_fastapi/render.py",
+]
+what = "plans what both targets plan; move it into _target_operations.py (a policy row for a divergence)"
+
+[homes.T-operation.signatures.twin-planner.audit]
+default = "C-01"
+"_client/plan.py:Planner.named" = "C-02"
+"_fastapi/plan.py:Planner.operation_names" = "C-02"
+"_client/plan.py:Planner._alias" = "C-03"
+"_fastapi/plan.py:Planner.alias" = "C-03"
+"_client/plan.py:Planner.resolved" = "C-04"
+"_fastapi/plan.py:Planner.selected" = "C-04"
+"_client/plan.py:media_range" = "C-08"
+"_client/plan.py:_essence" = "C-08"
+"_client/plan.py:reachable" = "C-08"
+"_client/plan.py:success_media" = "C-08"
+"_client/streams.py:_essence" = "C-08"
+"_fastapi/plan.py:default_media" = "C-08"
+"_fastapi/plan.py:_normalized" = "C-08"
+"_client/plan.py:Planner.part_media" = "C-10"
+"_client/plan.py:Planner._received" = "C-10"
+"_client/plan.py:Planner._sent" = "C-10"
+"_fastapi/plan.py:Planner.form_plan" = "C-10"
+"_fastapi/plan.py:Planner.form_read" = "C-10"
+"_fastapi/plan.py:_json_members" = "C-10"
+"_fastapi/plan.py:_typed_members" = "C-10"
+"_fastapi/plan.py:_planned" = "C-10"
+"_client/plan.py:Planner.check_statuses" = "C-11"
+"_fastapi/plan.py:_declaring" = "C-11"
+"_fastapi/plan.py:_primary_decision" = "C-11"
+"_fastapi/plan.py:_registration" = "C-11"
+"_client/security.py" = "C-12"
+"_fastapi/plan.py:Planner.scheme" = "C-12"
+"_fastapi/plan.py:_requirements" = "C-12"
+"_fastapi/plan.py:_scheme" = "C-12"
+"_fastapi/render.py:_scheme" = "C-12"
+"_fastapi/render.py:_registration" = "C-13"
 
 # Option forks of 0.87.0 (audit 2.F): an option is read where the decision it forks is made. `core` is that place (for a
 # fork spread over several functions, the one place the audit plans to fold it into); every other read of the option is
@@ -747,14 +1104,627 @@ fix = "RP15b"
 
 # ==== allowlist (shrink-only; `--write-allowlist` rewrites everything below this line) ====
 
+[allow."src/datamodel_code_generator/_client/caching.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."<module>"]
+"T-kind.kind-table" = { home = "T-kind", count = 2, audit = "M-02" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.discriminator"]
+"H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.flattened"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.shape"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."_Planner.union"]
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_client/codec_plan.py"."_literal_kind"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+
+[allow."src/datamodel_code_generator/_client/config.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/model_facts.py"."ModelFacts.json_types"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_client/model_facts.py"."ModelFacts.nullable"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/model_facts.py"."_present"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/model_facts.py"."_without_none"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/pagination.py"."_Pages.items"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/pagination.py"."_Pages.present"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/pagination.py"."_json_type"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 7, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner._alias"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-03" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner._received"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner._sent"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner._takes_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.check_statuses"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.named"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-02" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.part_media"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.resolved"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-04" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.servers"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."Planner.tag_namespaces"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."_default"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"H24.default-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."_essence"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."_success"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."_variables"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."media_range"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."reachable"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_client/plan.py"."success_media"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_client/polling.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/polling.py"."_Polls.immediate"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/polling.py"."_Polls.result"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/polling.py"."_nonnull"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+"H23.target-null-member" = { home = "H23", count = 2, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_client/polling.py"."_response"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.cache"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.statuses.status"]
+"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/protocols.py"."_Validator.stream"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/render.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_client/render.py"."_Helpers.plan"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/render.py"."_Helpers.stream_plan"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/render.py"."_Helpers.upload"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/security.py"."_flows"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
+
+[allow."src/datamodel_code_generator/_client/security.py"."_scheme"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
+
+[allow."src/datamodel_code_generator/_client/sockets.py"."_references"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/streams.py"."_Streams.terminal"]
+"H11.target-tag-key" = { home = "H11", count = 2, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/streams.py"."_discriminated"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/streams.py"."_essence"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_client/streams.py"."_events"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/target.py"."_named"]
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.event"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_client/webhooks.py"."_Webhooks.plan"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_client/webhooks.py"."webhook_uses"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_fastapi/config.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 2, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 6, audit = "C-11" }
+"T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.alias"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-03" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.by_name"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.form_model"]
+"H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.form_plan"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.form_read"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.group_name"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.groups"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.kind"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.member"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.operation_names"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-02" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.scheme"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.selected"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."Planner.takes_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_constrained"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_declaring"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_default"]
+"H24.default-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_json_members"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_normalized"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_planned"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_primary_decision"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_registration"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_requirements"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_scheme"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."_typed_members"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-10" }
+
+[allow."src/datamodel_code_generator/_fastapi/plan.py"."default_media"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."<module>"]
+"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_keeps_extras"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_nullable"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_registration"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-13" }
+
+[allow."src/datamodel_code_generator/_fastapi/render.py"."_scheme"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
+
+[allow."src/datamodel_code_generator/_fastapi/routes.py"."group_key"]
+"T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-01" }
+
+[allow."src/datamodel_code_generator/_fastapi/routes.py"."route_path"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 2, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.__init__"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.discriminator"]
+"H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
+"H11.target-tag-key" = { home = "H11", count = 2, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.index"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.mapping"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.resolve"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 2, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.served"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_fastapi/source_document.py"."SourceDocument.subtyped"]
+"H11.target-tag-key" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_allows_extras"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_extra"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_own_extra"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."_written_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."extras_symbols"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."keeps_extras"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_codec_plan.py"."takes_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds._leaves"]
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds.configured"]
+"Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."LexicalKinds.member"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."_present"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."form_members"]
+"H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_openapi_wire_plan.py"."property_members"]
+"H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
+
 [allow."src/datamodel_code_generator/_recommend/_signals.py"."<module>"]
 "Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."<module>"]
+"T-type.view-construction" = { home = "T-type", count = 12, audit = "M-08" }
+"T-wire.raw-value" = { home = "T-wire", count = 5, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.__init__"]
+"T-wire.raw-value" = { home = "T-wire", count = 3, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._acquire_item_schema"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._acquire_schema"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._anchor_locations"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._free"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._parse_specification"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._reads_media_type"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._resolve_api_object"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._walk_api_operation"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser._walk_callback"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
 
 [allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.get_object_field"]
 "H06.schema-nullable-read" = { home = "H06", count = 1, audit = "D-PP-17" }
 
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.load_document"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."TargetApiOpenAPIParser.nullable"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.declared"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.headers"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.media"]
+"T-wire.raw-key" = { home = "T-wire", count = 2, audit = "R-02" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.metadata"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-04" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.named"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-03" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.operation"]
+"T-wire.raw-key" = { home = "T-wire", count = 4, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.parameter"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.raw"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.response"]
+"T-wire.raw-key" = { home = "T-wire", count = 3, audit = "R-02" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-02" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.security_schemes"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Contracts.statuses"]
+"T-wire.raw-value" = { home = "T-wire", count = 3, audit = "R-03" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Documents.__init__"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Documents.borrow"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Hints.of"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.alias_nullable"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.field_bindings"]
+"H14.member-enumeration" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.parent_first"]
+"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.preexisting_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Models.reused_discriminator"]
+"H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._atomic"]
+"T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._base"]
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._container"]
+"T-type.view-construction" = { home = "T-type", count = 10, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._imports"]
+"T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._project"]
+"T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._reference_value"]
+"T-type.view-construction" = { home = "T-type", count = 3, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector._structural"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+"T-type.view-construction" = { home = "T-type", count = 5, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector.declaration"]
+"T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Projector.selector"]
+"H11.target-tag-function" = { home = "H11", count = 1, audit = "M-09" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.__init__"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader._shape"]
+"T-wire.raw-key" = { home = "T-wire", count = 2, audit = "R-08" }
+
 [allow."src/datamodel_code_generator/_target_binding.py"."_Reader._subschemas"]
 "Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.borrow"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.kinds"]
+"T-wire.raw-key" = { home = "T-wire", count = 3, audit = "R-07" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.node"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-11" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.part"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-09" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.parts"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-09" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.raw_bytes"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.resolved"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_Reader.whole"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-06" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_SchemaLocations.target"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_SchemaNode.of"]
+"T-wire.raw-key" = { home = "T-wire", count = 11, audit = "R-11" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-11" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_SchemaUses.held"]
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_annotation_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_c3"]
+"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_constrained_base"]
+"T-type.view-construction" = { home = "T-type", count = 2, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_constructor_keywords"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+"H24.render-data-read" = { home = "H24", count = 2, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_default"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_descend"]
+"T-wire.raw-value" = { home = "T-wire", count = 3, audit = "R-11" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_emitted_default"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+"H24.render-data-read" = { home = "H24", count = 2, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_facts"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_has_null"]
+"H23.target-null-function" = { home = "H23", count = 1, audit = "M-01" }
+"H23.target-null-member" = { home = "H23", count = 1, audit = "M-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_json_type"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_json_types"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-07" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-07" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_keywords"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-06" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_linearize"]
+"H14.mro-function" = { home = "H14", count = 1, audit = "M-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_literal_scalar"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_mapping"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-01" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_model_facts"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_model_settings"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_ordered_union"]
+"T-type.view-construction" = { home = "T-type", count = 1, audit = "M-08" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_pointer_tokens"]
+"T-resolver.own-resolution" = { home = "T-resolver", count = 1, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_pristine"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-04" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_qualifiers"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_schema_branches"]
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-11" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_setting"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_settings"]
+"H24.default-and-settings-function" = { home = "H24", count = 1, audit = "M-05" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_source_member"]
+"T-wire.raw-value" = { home = "T-wire", count = 2, audit = "R-11" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_spelled"]
+"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-10" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-10" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_value_kind"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+
+[allow."src/datamodel_code_generator/_target_binding.py"."_valued_types"]
+"H08.target-value-kind" = { home = "H08", count = 1, audit = "M-12" }
+"T-wire.raw-key" = { home = "T-wire", count = 2, audit = "R-07" }
+"T-wire.raw-value" = { home = "T-wire", count = 1, audit = "R-07" }
 
 [allow."src/datamodel_code_generator/input_model.py"."<module>"]
 "Hx-schema-positions.keyword-table" = { home = "Hx-schema-positions", count = 1, audit = "D-X-01" }

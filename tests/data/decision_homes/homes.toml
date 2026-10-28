@@ -52,6 +52,12 @@ keywords = ["a", "b", "c", "d"]
 what = "lists the keywords itself"
 audit = "X-8"
 
+[homes.sample.signatures.read-key]
+kind = "key"
+keys = ["type", "items"]
+what = "reads a key of a raw document"
+audit = "X-9"
+
 [legacy_rows."legacy-fixture-row"]
 home = "sample"
 fix = "#12"
