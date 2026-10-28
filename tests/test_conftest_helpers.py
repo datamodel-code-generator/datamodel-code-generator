@@ -667,6 +667,34 @@ def test_test_part_and_shard_options_partition_collection(ledger: LedgerProject)
     assert sorted(nodeid for shard in shards for nodeid in shard) == sorted(every)
 
 
+@pytest.mark.parametrize("narrow_first", [True, False])
+def test_test_part_gives_each_test_to_its_most_specific_part(ledger: LedgerProject, narrow_first: bool) -> None:
+    """Nested --test-part node ids select each test under the longest one, whatever the option order."""
+    ledger.write(
+        "test_m.py",
+        """
+        import pytest
+
+
+        @pytest.mark.parametrize("case", range(4))
+        def test_heavy(case):
+            pass
+
+
+        def test_light():
+            pass
+        """,
+    )
+    broad, narrow = "--test-part=suite/test_m.py@1/2", "--test-part=suite/test_m.py::test_heavy@2/2"
+    result = ledger.run("--collect-only", "-q", "suite", *((narrow, broad) if narrow_first else (broad, narrow)))
+    selected = sorted(line for line in result.stdout.lines if "::" in line)
+    assert selected == [
+        "suite/test_m.py::test_heavy[1]",
+        "suite/test_m.py::test_heavy[3]",
+        "suite/test_m.py::test_light",
+    ]
+
+
 def test_ledger_creates_derived_output_and_records_it(ledger: LedgerProject) -> None:
     """A local run stores output under the test's name and records it; later runs only compare it."""
     ledger.write(

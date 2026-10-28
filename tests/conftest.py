@@ -509,6 +509,7 @@ def select_test_parts(
 ) -> list[pytest.Item]:
     """Keep each ``NODEID@INDEX/TOTAL`` part of the items under its node id, split like ``--test-shard``.
 
+    Each item belongs to the longest listed node id it is under.
     Items under no listed node id stay selected, so a CI shard runs whole files beside parts of heavy ones.
     """
     wanted: dict[str, list[tuple[int, int]]] = {}
@@ -519,7 +520,7 @@ def select_test_parts(
     groups: dict[str, list[pytest.Item]] = {base: [] for base in wanted}
     selected: set[str] = set()
     for item in items:
-        if (base := next((base for base in wanted if _is_under(item.nodeid, base)), None)) is None:
+        if (base := max(filter(lambda base: _is_under(item.nodeid, base), wanted), key=len, default=None)) is None:
             selected.add(item.nodeid)
         else:
             groups[base].append(item)

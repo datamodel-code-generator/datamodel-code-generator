@@ -299,5 +299,25 @@
       "1",
       "3"
     ]
+  },
+  "parts-exceed-shards": {
+    "items": [
+      {
+        "nodeid": "test_x@1/3",
+        "weight": 2
+      },
+      {
+        "nodeid": "test_x@2/3",
+        "weight": 2
+      },
+      {
+        "nodeid": "test_x@3/3",
+        "weight": 2
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
   }
 }

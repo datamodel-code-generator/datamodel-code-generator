@@ -8,6 +8,7 @@ import json
 import math
 import os
 import re
+from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -245,6 +246,10 @@ def _assign_shards(weights: Mapping[str, int], shard_total: int) -> tuple[list[l
     shards: list[list[str]] = [[] for _ in range(shard_total)]
     shard_weights = [0] * shard_total
     holders: dict[str, set[int]] = {}
+
+    if crowded := sorted(base for base, count in Counter(map(_part_base, weights)).items() if count > shard_total):
+        msg = f"more parts than {shard_total} shards: {', '.join(crowded)}"
+        raise SystemExit(msg)
 
     for item, weight in sorted(weights.items(), key=lambda item: (-item[1], item[0])):
         held = holders.setdefault(_part_base(item), set())

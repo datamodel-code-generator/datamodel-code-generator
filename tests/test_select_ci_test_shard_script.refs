@@ -29,6 +29,7 @@ not-list	ci_shards/not-list.txt	= ci_shards/empty.txt
 ordered	ci_shards/ordered.txt
 parted	ci_shards/parted.txt
 parts-apart	ci_shards/parts-apart.txt
+parts-exceed-shards	ci_shards/parts-exceed-shards.txt
 second	ci_shards/second.txt
 unsupported	ci_shards/unsupported.txt
 zero-count	ci_shards/zero-count.txt
