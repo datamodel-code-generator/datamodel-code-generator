@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import concurrent.futures
 import contextlib
 import dataclasses
 import enum
@@ -27,7 +28,7 @@ import importlib
 import importlib.util
 import inspect
 import json
-import os
+import subprocess
 import sys
 import types
 import typing
@@ -554,11 +555,17 @@ def defined_names(tree: ast.Module) -> list[str]:
 TREE_ROOT = [""]
 
 
+def _error_text(kind: str, message: str, limit: int) -> str:
+    """Return the exception class name and the first line of its message, the tree's location written as `<tree>`."""
+    if TREE_ROOT[0]:
+        message = message.replace(TREE_ROOT[0], "<tree>")
+    text = message.splitlines()[0][:limit] if message else ""
+    return f"{kind}: {text}"
+
+
 def _short_error(exc: BaseException, limit: int = 80) -> str:
     """Return the exception's class and first line, the tree's location written as `<tree>`."""
-    message = str(exc).replace(TREE_ROOT[0], "<tree>") if TREE_ROOT[0] else str(exc)
-    text = message.splitlines()[0][:limit] if message else ""
-    return f"{type(exc).__name__}: {text}"
+    return _error_text(type(exc).__name__, str(exc), limit)
 
 
 STRING_FORMATS = {
@@ -846,38 +853,44 @@ def _import_file(path: Path) -> types.ModuleType:
 
 
 PRELOADED = ("pydantic", "msgspec", "typing_extensions")
+FIRST_IMPORT_CODE = """
+import contextlib, importlib, json, sys
+sys.dont_write_bytecode = True
+sys.path.insert(0, sys.argv[1])
+for name in sys.argv[3:]:
+    with contextlib.suppress(ImportError):
+        importlib.import_module(name)
+result = {}
+try:
+    importlib.import_module(sys.argv[2])
+except Exception as exc:
+    result = {"kind": type(exc).__name__, "message": str(exc)}
+sys.stdout.write("\\n" + json.dumps(result) + "\\n")
+"""
+FIRST_IMPORT_WORKERS = 4
 
 
-def first_import_errors(names: list[str]) -> dict[str, str]:
+def _first_import_error(root: str, name: str) -> str:
+    """Import `name` in a fresh interpreter that has only the preloaded libraries and return the error text, if any."""
+    completed = subprocess.run(
+        [sys.executable, "-c", FIRST_IMPORT_CODE, root, name, *PRELOADED],
+        capture_output=True,
+        check=False,
+    )
+    result = json.loads(completed.stdout.decode("utf-8", "replace").splitlines()[-1])
+    return _error_text(result["kind"], result["message"], 200) if result else ""
+
+
+def first_import_errors(names: list[str], root: str) -> dict[str, str]:
     """Return the error of each module that fails when it is the first module of the package a process imports.
 
-    Each module is imported in a fork of this process taken before any generated module is imported, so a module that
-    only imports after a sibling put the right modules into `sys.modules` first is caught.
+    Each module is imported in a fresh interpreter, started with `subprocess` so that it works without `fork`, that
+    has imported only the generated code's libraries, so a module that only imports after a sibling put the right
+    modules into `sys.modules` first is caught.
     """
-    if not hasattr(os, "fork"):
-        return {}
-    for name in PRELOADED:
-        with contextlib.suppress(ImportError):
-            importlib.import_module(name)
-    errors = {}
-    for name in names:
-        read, write = os.pipe()
-        if (pid := os.fork()) == 0:
-            os.close(read)
-            message = ""
-            try:
-                importlib.import_module(name)
-            except Exception as exc:  # ruff: ignore[blind-except] - the failure is the result
-                message = _short_error(exc, 200)
-            os.write(write, message.encode())
-            os._exit(0)
-        os.close(write)
-        with os.fdopen(read, "rb") as reader:
-            message = reader.read().decode()
-        os.waitpid(pid, 0)
-        if message:
-            errors[name] = message
-    return errors
+    with concurrent.futures.ThreadPoolExecutor(FIRST_IMPORT_WORKERS) as pool:
+        messages = list(pool.map(lambda name: _first_import_error(root, name), names))
+    return {name: message for name, message in zip(names, messages, strict=False) if message}
 
 
 def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -903,7 +916,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
                 ".".join([path.name, *(part for part in relative.parts if part != "__init__")]),
                 file,
             )
-    first = first_import_errors([name for name, _ in modules.values()])
+    first = first_import_errors([name for name, _ in modules.values()], str(path.parent))
     package = {}
     for key, (name, file) in modules.items():
         if name in first:

@@ -776,7 +776,6 @@ FIRST_IMPORT_TREE = {
 }
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the first-import check forks; the gate runs on POSIX only")
 def test_first_import_errors(tmp_path: Path) -> None:
     """A module that imports only after a sibling (0.86.0 output of a cycle below a package) fails imported first."""
     signature = _tree_signature(FIRST_IMPORT_TREE, "pydantic_v2.BaseModel", tmp_path)
