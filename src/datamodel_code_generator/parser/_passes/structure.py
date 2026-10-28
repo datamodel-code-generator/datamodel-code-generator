@@ -443,6 +443,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
             reuse_allowed
             and (original_model := model_class_names.get(class_name)) is not None
             and parser._reuse_optimization_context.allows_model(original_model)  # noqa: SLF001
+            and not shapes.hands_null(original_model, model)
             and renders_as_duplicate(parser, model, original_model, shapes)
         ):
             if shapes.references_match(original_model, model):
@@ -487,6 +488,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                     for canonical, dup in shapes.iter_matching_duplicates(
                         parser._typed_map_values_last(group),  # noqa: SLF001
                         keyed=False,
+                        removes=lambda _: True,
                     )
                     if dup not in models_to_remove
                 ]
@@ -592,11 +594,14 @@ def find_duplicate_models_across_modules(
         for model in parser._reuse_optimization_context.eligible_models(models)  # noqa: SLF001
     }
     shapes = parser._model_shapes(TREE_SCOPE)  # noqa: SLF001
+    removes_all = parser.collapse_reuse_models or not parser.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
+    typed_map_values = parser._typed_map_value_reference_ids  # noqa: SLF001
     return [
         (model_modules[model], model, model_modules[canonical], canonical)
         for canonical, model in shapes.iter_matching_duplicates(
             parser._typed_map_values_last(list(model_modules)),  # noqa: SLF001
             keyed=True,
+            removes=lambda model: removes_all or isinstance(model, Enum) or id(model.reference) in typed_map_values,
         )
     ]
 

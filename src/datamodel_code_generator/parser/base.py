@@ -905,6 +905,10 @@ class _ModelShapeSource:
         """Return the model a reference names, or None when it names no model."""
         return source if isinstance(source := reference.source, DataModel) else None
 
+    def admits_null(self, model: DataModel) -> bool:  # noqa: PLR6301
+        """Return whether the model's schema admits null, so every type naming the model admits None."""
+        return model.nullable
+
     def identity(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
         """Return what tells apart the models that references name: the model key."""
         return model_key_of(reference)

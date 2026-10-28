@@ -4212,6 +4212,49 @@ def test_main_reuse_model_collapse_nested(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        *(
+            pytest.param(model_type, ["--reuse-model", "--collapse-reuse-models"], id=f"collapse-{model_type}")
+            for model_type in (
+                "pydantic_v2.BaseModel",
+                "pydantic_v2.dataclass",
+                "dataclasses.dataclass",
+                "typing.TypedDict",
+                "msgspec.Struct",
+            )
+        ),
+        pytest.param("pydantic_v2.BaseModel", ["--use-title-as-name"], id="same-name"),
+    ],
+)
+def test_main_jsonschema_nullable_reuse_collapse(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Keep a model whose type list leaves out null apart from an equal one that admits it when duplicates are removed.
+
+    ``Work`` is not removed for ``Home``, whose types include null, so ``work`` stays ``Work`` and rejects null;
+    ``Shop`` is still removed for ``Office`` and ``shop`` keeps its None. The two inline ``Badge`` objects stay two
+    classes too.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "nullable_reuse_collapse.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strict-nullable",
+            *extra_args,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     "collapse_reuse_model_args",
     [[], ["--collapse-reuse-models"]],
 )

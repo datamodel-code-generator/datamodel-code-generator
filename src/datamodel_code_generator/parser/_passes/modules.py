@@ -1756,10 +1756,19 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
     typed_map_values = parser._typed_map_value_reference_ids  # noqa: SLF001
     canonical_models: dict[int, DataModel] = {}
     shapes = parser._model_shapes(REUSE_MODEL)  # noqa: SLF001
-    for first_model, duplicate_model in shapes.iter_matching_duplicates(reuse_candidates, keyed=True):
+    collapse = parser.collapse_reuse_models
+    for first_model, duplicate_model in shapes.iter_matching_duplicates(
+        reuse_candidates,
+        keyed=True,
+        removes=lambda model: collapse or isinstance(model, Enum) or id(model.reference) in typed_map_values,
+    ):
         cached_model = canonical_models.get(id(first_model), first_model)
         model = duplicate_model
-        if id(cached_model.reference) in typed_map_values and id(model.reference) not in typed_map_values:
+        if (
+            id(cached_model.reference) in typed_map_values
+            and id(model.reference) not in typed_map_values
+            and not shapes.hands_null(model, cached_model)
+        ):
             cached_model, model = model, cached_model
             canonical_models[id(first_model)] = cached_model
         cached_model_reference = cached_model.reference
