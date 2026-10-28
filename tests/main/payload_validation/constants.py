@@ -370,6 +370,13 @@ EXCLUDED_CASES: dict[str, str] = {
         "a top-level type list holding object is a model beside the root model that holds it, and the payload type "
         "is the model; test_schema_intersection_shape_payloads checks them through Model",
     ),
+    **dict.fromkeys(
+        (
+            "openapi/nullable_reuse_collapse.yaml::components.schemas.Home",
+            "openapi/nullable_reuse_collapse.yaml::components.schemas.Shop",
+        ),
+        "top-level nullable object components need a wrapper policy; nullable refs are covered via Person",
+    ),
     "openapi/type_overrides_constructor_order.yaml::components.schemas.Nullable": (
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_type_overrides_constructor_order imports the models that reference it"
@@ -476,6 +483,9 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     "jsonschema/prefix_items_closed_length.json": dict.fromkeys(PayloadBackend, ("--use-tuple-for-closed-arrays",)),
     "openapi/nullable_object_maps.yaml::components.schemas.ValueRoot": dict.fromkeys(
         PayloadBackend, ("--use-single-dict-for-object-maps",)
+    ),
+    "jsonschema/nullable_reuse_collapse.json": dict.fromkeys(
+        PayloadBackend, ("--strict-nullable", "--reuse-model", "--collapse-reuse-models")
     ),
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {

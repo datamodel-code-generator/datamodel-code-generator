@@ -668,7 +668,7 @@ def redirect_collapsed_reuse_users(
     A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
     the tags of the kept model.
     """
-    users = builder.redirect_reference_users(duplicate.reference, canonical.reference)
+    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
     for user in users:
         collapsed_users.setdefault(id(user), (user, duplicate.reference))
     collapsed_models.setdefault(id(canonical), []).append(duplicate)
