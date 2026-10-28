@@ -74,6 +74,12 @@ def test_decision_home_allowlist_accepts_known_sites_only() -> None:
     assert_output(_scan_report(FIXTURE_CONFIG + lowered), name="beyond")
 
 
+def test_decision_home_function_scoped_paths_check_that_function() -> None:
+    """A signature whose `paths` names a function reports the hits in that function and its nested functions."""
+    scoped = FIXTURE_CONFIG.replace('paths = ["other.py", "core.py"]', 'paths = ["other.py:_merge_values"]')
+    assert_output(_scan_report(scoped))
+
+
 def test_decision_home_allowlist_reports_stale_entries() -> None:
     """Require an entry to go when its site was routed to the home, lowered or renamed."""
     stale = (

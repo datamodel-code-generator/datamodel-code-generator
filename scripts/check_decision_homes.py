@@ -94,13 +94,20 @@ class Place:
         file, _, function = text.partition(":")
         return cls(file, function or None)
 
+    def in_file(self, file: str) -> bool:
+        """Return whether ``file`` holds this place."""
+        return file.startswith(self.file) if self.file.endswith("/") else file == self.file
+
     def covers(self, file: str, function: str) -> bool:
         """Return whether a hit of ``function`` in ``file`` is inside this place."""
-        if self.file.endswith("/"):
-            return file.startswith(self.file)
-        if file != self.file:
+        if not self.in_file(file):
             return False
-        return self.function is None or function == self.function or function.startswith(f"{self.function}.")
+        return (
+            self.file.endswith("/")
+            or self.function is None
+            or function == self.function
+            or function.startswith(f"{self.function}.")
+        )
 
     def __str__(self) -> str:
         """Return the place as the table writes it."""
@@ -370,10 +377,9 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
                 ):
                     return power in options.get("powers", ()) and base == (2 if isinstance(op, ast.Pow) else 1)
             return False
-        case _:
-            return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
-                set(_string_elements(node)) & set(options["keywords"])
-            ) >= options.get("min", 3)
+    return isinstance(node, ast.Set | ast.Tuple | ast.List | ast.Dict) and len(
+        set(_string_elements(node)) & set(options["keywords"])
+    ) >= options.get("min", 3)
 
 
 NODE_TYPES = {
@@ -403,7 +409,7 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
         file = path.relative_to(root).as_posix()
         scan.scanned.add(file)
         signatures = {
-            node_type: [item for item in items if not item.paths or any(place.covers(file, "") for place in item.paths)]
+            node_type: [item for item in items if not item.paths or any(place.in_file(file) for place in item.paths)]
             for node_type, items in by_type.items()
         }
         if not any(signatures.values()):
@@ -412,6 +418,8 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)
+                    if signature.paths and not any(place.covers(file, function) for place in signature.paths):
+                        continue
                     if not config.homes[signature.home].covers(file, function):
                         scan.hits.append(Hit(file, function, signature.id, node.lineno, node.col_offset))
     return scan
