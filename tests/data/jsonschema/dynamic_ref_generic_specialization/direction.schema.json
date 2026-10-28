@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "direction.schema.json",
+  "title": "ParameterisedDirection",
+  "$ref": "./parameterised.schema.json",
+  "$defs": {
+    "leaf": {
+      "$dynamicAnchor": "T",
+      "type": "string",
+      "enum": [
+        "increase",
+        "decrease"
+      ]
+    }
+  }
+}

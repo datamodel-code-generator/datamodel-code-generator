@@ -1,0 +1,99 @@
+[
+  {
+    "name": "ArgumentsRoot",
+    "fields": [
+      "box",
+      "choice",
+      "pair"
+    ],
+    "annotations_equal": {
+      "box": false,
+      "choice": false,
+      "pair": false
+    },
+    "type_identity": {
+      "box": false,
+      "choice": false,
+      "pair": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": [
+              {
+                "count": 1
+              }
+            ]
+          },
+          "choice": {
+            "value": "x"
+          },
+          "pair": {
+            "first": 1,
+            "second": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              0,
+              "count"
+            ],
+            "missing"
+          ],
+          [
+            [
+              "choice",
+              "value"
+            ],
+            "literal_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": [
+              {
+                "count": 1
+              }
+            ]
+          },
+          "choice": {
+            "value": "x"
+          },
+          "pair": {
+            "first": 1,
+            "second": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              0,
+              "count"
+            ],
+            "missing"
+          ],
+          [
+            [
+              "choice",
+              "value"
+            ],
+            "enum"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": false,
+      "choice": false,
+      "pair": false
+    }
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "valid": {
+    "amount": "1.25",
+    "clock": "10:00",
+    "label": "x",
+    "blob": "YWI=",
+    "kind": "ab",
+    "version": 3,
+    "prices": [
+      "1.5"
+    ],
+    "pair": [
+      "a",
+      1
+    ],
+    "count": 1,
+    "name": "n"
+  },
+  "invalid": {
+    "amount": "-1",
+    "clock": "",
+    "label": "",
+    "blob": "",
+    "prices": [
+      "-1"
+    ],
+    "count": -1,
+    "name": ""
+  }
+}

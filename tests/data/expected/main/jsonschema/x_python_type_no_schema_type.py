@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypedDict
+from typing import Optional, TypedDict, Union
 
 from typing_extensions import NotRequired
 
 
 class Model(TypedDict):
     callback: NotRequired[Callable[[str], str]]
+    optionalValue: NotRequired[Optional[str]]
+    unionValue: NotRequired[Union[str, int]]

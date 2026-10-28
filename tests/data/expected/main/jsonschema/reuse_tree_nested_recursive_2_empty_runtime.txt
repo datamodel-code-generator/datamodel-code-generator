@@ -1,0 +1,35 @@
+[
+  {
+    "root": 2,
+    "fields": [
+      "data2",
+      "next"
+    ],
+    "dump": {
+      "data2": null,
+      "next": null
+    }
+  },
+  {
+    "root": 0,
+    "fields": [
+      "data0",
+      "next"
+    ],
+    "dump": {
+      "data0": null,
+      "next": null
+    }
+  },
+  {
+    "root": 1,
+    "fields": [
+      "data1",
+      "next"
+    ],
+    "dump": {
+      "data1": null,
+      "next": null
+    }
+  }
+]

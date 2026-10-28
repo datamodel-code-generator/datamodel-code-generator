@@ -1,0 +1,187 @@
+{
+  "name": "schema values",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "item": {
+        "type": "object",
+        "default": {
+          "$dynamicRef": "#/$defs/Value"
+        }
+      },
+      "sequence": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "default": [
+          {
+            "$ref": "#/definitions/Value"
+          }
+        ]
+      },
+      "constant": {
+        "type": "object",
+        "const": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "enumerated": {
+        "type": "object",
+        "enum": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "sample": {
+        "type": "object",
+        "examples": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "default": {
+        "$ref": "#/$defs/Value"
+      },
+      "const": {
+        "$ref": "#/$defs/Value"
+      },
+      "enum": {
+        "$ref": "#/$defs/Value"
+      },
+      "examples": {
+        "$ref": "#/$defs/Value"
+      },
+      "values": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "combined": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "nested": {
+        "$ref": "#/$defs/Nested"
+      }
+    },
+    "$defs": {
+      "Allowed": true,
+      "Value": {
+        "type": "string"
+      },
+      "Nested": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/Value"
+          },
+          "item": {
+            "type": "object",
+            "default": {
+              "$dynamicRef": "#/$defs/Value"
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "item": {
+        "type": "object",
+        "default": {
+          "$dynamicRef": "#/$defs/Value"
+        }
+      },
+      "sequence": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "default": [
+          {
+            "$ref": "#/definitions/Value"
+          }
+        ]
+      },
+      "constant": {
+        "type": "object",
+        "const": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "enumerated": {
+        "type": "object",
+        "enum": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "sample": {
+        "type": "object",
+        "examples": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "default": {
+        "$ref": "#/$defs/Value"
+      },
+      "const": {
+        "$ref": "#/$defs/Value"
+      },
+      "enum": {
+        "$ref": "#/$defs/Value"
+      },
+      "examples": {
+        "$ref": "#/$defs/Value"
+      },
+      "values": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "combined": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "nested": {
+        "$ref": "#/$defs/Nested"
+      }
+    },
+    "$defs": {
+      "Allowed": true,
+      "Value": {
+        "type": "string"
+      },
+      "Nested": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/Value"
+          },
+          "item": {
+            "type": "object",
+            "default": {
+              "$dynamicRef": "#/$defs/Value"
+            }
+          }
+        }
+      }
+    }
+  }
+}

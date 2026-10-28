@@ -1,0 +1,17 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "type": "integer",
+      "format": "int32"
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "number"
+    }
+  }
+}

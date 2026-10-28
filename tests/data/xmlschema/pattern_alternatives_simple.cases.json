@@ -1,0 +1,17 @@
+{
+  "alias": {"valid": "ABC", "invalid": "ABC\n"},
+  "base": {
+    "value": "ABC"
+  },
+  "values": {
+    "value": [
+      "ABC",
+      "123",
+      "abc",
+      "A1",
+      "ABC\n",
+      "aABC",
+      ""
+    ]
+  }
+}

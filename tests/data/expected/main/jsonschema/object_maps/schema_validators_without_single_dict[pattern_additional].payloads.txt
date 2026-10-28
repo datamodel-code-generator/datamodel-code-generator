@@ -1,0 +1,13 @@
+valid: accepted
+invalid pMatrix: rejected (string_type)
+invalid rMatrix: rejected (dict_type)
+invalid iMatrix: rejected (list_type)
+invalid pSame: rejected (int_parsing)
+invalid rSame: rejected (int_parsing)
+invalid iSame: rejected (int_parsing)
+invalid mSame: rejected (int_parsing)
+invalid pNames: accepted
+invalid rNames: rejected (int_parsing)
+invalid pAnyOther: rejected (int_parsing)
+invalid pNoPatternKeys: rejected (int_parsing)
+invalid rNoPatternKeys: rejected (value_error)

@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info: {title: Native settings, version: "1.0"}
+paths:
+  /named:
+    post:
+      operationId: postNamed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Named"}
+      responses:
+        "204": {description: Done.}
+  /titled:
+    post:
+      operationId: postTitled
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Titled"}
+      responses:
+        "204": {description: Done.}
+  /strict:
+    post:
+      operationId: postStrict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Strict"}
+      responses:
+        "204": {description: Done.}
+  /wrapped:
+    post:
+      operationId: postWrapped
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Holder"}
+      responses:
+        "204": {description: Done.}
+  /loose:
+    get:
+      operationId: getLoose
+      responses:
+        "200":
+          description: A loose value.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Loose"}
+components:
+  schemas:
+    Named:
+      type: object
+      required: [my-name]
+      properties:
+        my-name: {type: string}
+    Titled:
+      type: object
+      required: [title]
+      properties:
+        title: {type: string}
+    Strict:
+      type: object
+      required: [count]
+      properties:
+        count: {type: integer, strict: true}
+    Holder:
+      type: object
+      required: [amount, extra]
+      properties:
+        amount: {$ref: "#/components/schemas/Amount"}
+        extra: {type: object}
+    Amount: {type: string, x-python-type: "decimal.Decimal"}
+    Loose:
+      type: object
+      properties:
+        name: {type: string}

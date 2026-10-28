@@ -1,0 +1,13 @@
+{
+  "title": "ExternalTyped",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string",
+      "x-python-type": "datetime.datetime"
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

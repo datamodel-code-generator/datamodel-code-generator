@@ -76,6 +76,10 @@ def test_normalize_validators_accepts_supported_shapes() -> None:
             [{"field": "name", "function": "myapp.validators.validate_name", "mode": "during"}],
             "validators.0.mode: must be one of: 'before', 'after', 'wrap', 'plain'",
         ),
+        (
+            [{"field": "name", "function": "myapp.validators.validate_name", "mode": None}],
+            "validators.0.mode: must be one of: 'before', 'after', 'wrap', 'plain'",
+        ),
     ],
 )
 def test_normalize_validators_rejects_invalid_shapes(validators: object, expected_message: str) -> None:

@@ -1,0 +1,15 @@
+[
+  {
+    "name": "duplicate",
+    "aliases": {
+      "ApiChildSchema.x": "same",
+      "ApiChildSchema.y": "same"
+    }
+  },
+  {
+    "name": "reserved",
+    "aliases": {
+      "ApiChildSchema.x": "model_config"
+    }
+  }
+]

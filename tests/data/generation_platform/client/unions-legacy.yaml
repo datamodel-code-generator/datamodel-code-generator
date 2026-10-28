@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: Union members beside legacy references
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /holders:
+    get:
+      operationId: getHolder
+      responses:
+        "200":
+          description: A holder whose union members are components.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefHolder"
+  /inline:
+    get:
+      operationId: getInline
+      responses:
+        "200":
+          description: A holder whose union members only a dropped sibling of its reference declares.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InlineHolder"
+  /shapes:
+    get:
+      operationId: getShape
+      responses:
+        "200":
+          description: A shape told apart by its required properties.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Circle"
+                  - $ref: "#/components/schemas/Square"
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        b:
+          type: integer
+    RefHolder:
+      $ref: "#/components/schemas/Base"
+      properties:
+        shape:
+          oneOf:
+            - $ref: "#/components/schemas/Circle"
+            - $ref: "#/components/schemas/Square"
+    InlineHolder:
+      $ref: "#/components/schemas/Base"
+      properties:
+        shape:
+          oneOf:
+            - type: object
+              required: [radius]
+              properties:
+                radius:
+                  type: integer
+            - type: object
+              required: [side]
+              properties:
+                side:
+                  type: integer
+    Circle:
+      type: object
+      required: [radius]
+      properties:
+        radius:
+          type: integer
+    Square:
+      type: object
+      required: [side]
+      properties:
+        side:
+          type: integer

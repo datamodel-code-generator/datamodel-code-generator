@@ -1,0 +1,27 @@
+{
+  "title": "RequiredRefCoverage",
+  "$defs": {
+    "First": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "first"
+      ]
+    }
+  },
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/First"
+    },
+    {
+      "required": [
+        "first"
+      ]
+    }
+  ]
+}

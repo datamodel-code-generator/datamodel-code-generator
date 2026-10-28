@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "speed": {"$ref": "speed.json"},
+    "direction": {"$ref": "direction.json"}
+  }
+}

@@ -1,0 +1,40 @@
+returncode: 0
+stdout:
+0.64.1,main
+stderr:
+selection:
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T00:00:00Z",
+  "package": "datamodel-code-generator",
+  "strategy": "explicit",
+  "history_days": 365,
+  "limit": 1,
+  "selected_versions": [
+    "0.64.1",
+    "main"
+  ],
+  "releases": [
+    {
+      "version": "0.64.1",
+      "uploaded_at": "2026-06-19T00:00:00Z",
+      "downloads": 25,
+      "first_seen": "2026-06-19",
+      "last_seen": "2026-06-20"
+    }
+  ],
+  "download_stats": {
+    "source": "clickpy",
+    "window_days": "365",
+    "versions_with_downloads": "4",
+    "window_downloads": "1975",
+    "pypistats": {
+      "source": "pypistats.org",
+      "last_day": 12,
+      "last_week": 789,
+      "last_month": 3456,
+      "timeseries_days": 2,
+      "timeseries_downloads": 300
+    }
+  }
+}

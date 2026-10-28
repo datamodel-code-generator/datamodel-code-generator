@@ -1,0 +1,30 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  not analysed (input-model input)
+
+Start from  --preset standard-py312-20261027
+
+Add  nothing on top of the preset
+
+Trial  2 candidates generated in memory without formatting; nothing written
+  candidate  classes  problems  numbered  long  doubled  displaced  median  unconstrained
+  current          1  0 (0.0%)         0     0        0          0       4              0
+  preset           1  0 (0.0%)         0     0        0          0       4              0   selected
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> preset)
+  0 of 1 class matched by schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Notes
+  - Only the preset is recommended: --input-model inputs are not analysed; the rules cover OpenAPI,
+    AsyncAPI, and JSON Schema documents.
+
+Command
+  datamodel-codegen --input-model tests.data.python.input_model.pydantic_models:User --preset standard-py312-20261027 --target-python-version 3.12
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input-model = ["tests.data.python.input_model.pydantic_models:User"]
+  preset = "standard-py312-20261027"
+  target-python-version = "3.12"

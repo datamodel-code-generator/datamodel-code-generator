@@ -1,0 +1,5 @@
+interface A { a: String! }
+interface B implements A { a: String! }
+interface D implements A { a: String! }
+type Payload implements A & B & D { a: String! c: Int! }
+type Query { payload: Payload }

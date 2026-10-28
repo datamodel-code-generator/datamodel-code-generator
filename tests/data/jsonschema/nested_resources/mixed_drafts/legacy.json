@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "legacy.json",
+  "type": "object",
+  "definitions": {
+    "Child": {
+      "id": "legacy-child.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "definitions": {
+        "Value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

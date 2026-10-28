@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Models of modules before and after the module of a model that inherits a component with x-python-import
+  version: '1'
+paths: {}
+components:
+  schemas:
+    aaa.Grand:
+      allOf:
+        - $ref: '#/components/schemas/pkg.Branch'
+        - required:
+            - kids
+            - leaf
+    pkg.Branch:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+    zzz.Grand:
+      allOf:
+        - $ref: '#/components/schemas/pkg.Branch'
+        - required:
+            - kids
+            - leaf
+    Twig:
+      type: object
+      x-python-import:
+        module: python_import_grandchild.models
+        name: Twig
+      properties:
+        id:
+          type: integer
+        kids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+        leaf:
+          $ref: '#/components/schemas/Leaf'
+      required:
+        - id
+    Leaf:
+      type: object
+      x-python-import:
+        module: python_import_grandchild.models
+        name: Leaf
+      properties:
+        color:
+          type: string

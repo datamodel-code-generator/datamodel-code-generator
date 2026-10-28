@@ -1,0 +1,41 @@
+{
+  "convert": {
+    "le": null,
+    "multiple_of": null,
+    "lt": 10,
+    "ge": 0,
+    "gt": 4,
+    "c": 3
+  },
+  "decode": {
+    "le": null,
+    "multiple_of": null,
+    "lt": 10,
+    "ge": 0,
+    "gt": 4,
+    "c": 3
+  },
+  "fields": [
+    "le",
+    "multiple_of",
+    "lt",
+    "ge",
+    "gt",
+    "c"
+  ],
+  "bases": [
+    "B",
+    "D"
+  ],
+  "mro": [
+    "Payload",
+    "B",
+    "D",
+    "A",
+    "IntType",
+    "Type",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

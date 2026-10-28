@@ -1,0 +1,30 @@
+{
+  "valid": {
+    "weight": 0.5,
+    "quantity": "abc",
+    "tags": [
+      "a"
+    ],
+    "step": 2
+  },
+  "invalid": [
+    {
+      "weight": -1
+    },
+    {
+      "weight": "heavy"
+    },
+    {
+      "quantity": -1
+    },
+    {
+      "quantity": "abcd"
+    },
+    {
+      "tags": []
+    },
+    {
+      "step": -1
+    }
+  ]
+}

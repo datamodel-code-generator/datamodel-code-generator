@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "imported_difflib": true,
+  "imported_pydantic": false,
+  "stderr": "usage: \n  datamodel-codegen [options]\ndatamodel-codegen: error: unrecognized arguments: --output-model-tipe\nDid you mean: --output-model-type?\n"
+}

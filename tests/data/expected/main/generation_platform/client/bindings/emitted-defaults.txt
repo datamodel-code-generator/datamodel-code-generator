@@ -1,0 +1,104 @@
+# emitted-defaults
+render pydantic_v2.BaseModel plain
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/plain
+change pydantic_v2.BaseModel plain scope-noise
+  @@ -17,0 +18,15 @@
+  +
+  +
+  +
+  +
+  +    """missing: Optional[str] = None is documentation, not a declaration."""
+  +
+  +    def _binding_example(self):
+  +        missing: str = "local only"
+  +        return missing
+  +
+  +    class Nested:
+  +        missing: str = "nested only"
+  +
+  +class Unrelated:
+  +    missing: str = "unrelated only"
+render pydantic_v2.BaseModel annotated
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/plain
+render pydantic_v2.dataclass plain
+  models.py
+  model_bindings.py pydantic_v2_dataclass/plain
+change pydantic_v2.dataclass plain scope-noise
+  @@ -20,0 +21,12 @@
+  +
+  +    """missing: Optional[str] = None is documentation, not a declaration."""
+  +
+  +    def _binding_example(self):
+  +        missing: str = "local only"
+  +        return missing
+  +
+  +    class Nested:
+  +        missing: str = "nested only"
+  +
+  +class Unrelated:
+  +    missing: str = "unrelated only"
+render pydantic_v2.dataclass annotated
+  models.py
+  model_bindings.py pydantic_v2_dataclass/plain
+render dataclasses.dataclass plain
+  models.py
+  model_bindings.py dataclasses_dataclass/plain
+change dataclasses.dataclass plain scope-noise
+  @@ -19,0 +20,12 @@
+  +
+  +    """missing: Optional[str] = None is documentation, not a declaration."""
+  +
+  +    def _binding_example(self):
+  +        missing: str = "local only"
+  +        return missing
+  +
+  +    class Nested:
+  +        missing: str = "nested only"
+  +
+  +class Unrelated:
+  +    missing: str = "unrelated only"
+render dataclasses.dataclass annotated
+  models.py
+  model_bindings.py dataclasses_dataclass/plain
+render typing.TypedDict plain
+  models.py
+  model_bindings.py typing_TypedDict/plain
+change typing.TypedDict plain scope-noise
+  @@ -17,0 +18,12 @@
+  +
+  +    """missing: Optional[str] = None is documentation, not a declaration."""
+  +
+  +    def _binding_example(self):
+  +        missing: str = "local only"
+  +        return missing
+  +
+  +    class Nested:
+  +        missing: str = "nested only"
+  +
+  +class Unrelated:
+  +    missing: str = "unrelated only"
+render typing.TypedDict annotated
+  models.py
+  model_bindings.py typing_TypedDict/plain
+render msgspec.Struct plain
+  models.py
+  model_bindings.py msgspec_Struct/plain
+change msgspec.Struct plain scope-noise
+  @@ -18,0 +19,12 @@
+  +
+  +    """missing: Optional[str] = None is documentation, not a declaration."""
+  +
+  +    def _binding_example(self):
+  +        missing: str = "local only"
+  +        return missing
+  +
+  +    class Nested:
+  +        missing: str = "nested only"
+  +
+  +class Unrelated:
+  +    missing: str = "unrelated only"
+render msgspec.Struct annotated
+  models.py
+  model_bindings.py msgspec_Struct/plain

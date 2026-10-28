@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Binary media
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: storeFile
+      parameters:
+        - {name: digest, in: query, schema: {type: string, format: byte}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: The thumbnail.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                pages:
+                  type: array
+                  items: {type: string, format: binary}
+                icon: {type: string, contentMediaType: image/png}
+                record: {$ref: '#/components/schemas/Record'}
+      responses:
+        '204':
+          description: Stored.
+  /marks:
+    post:
+      operationId: storeMark
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Mark'}
+      responses:
+        '200':
+          description: The stored mark.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Mark'}
+  /stamps:
+    post:
+      operationId: storeStamp
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary, maxLength: 4}
+      responses:
+        '200':
+          description: The stored stamp.
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary, maxLength: 4}
+  /records:
+    post:
+      operationId: storeRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Record'}
+      responses:
+        '200':
+          description: The stored record.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Record'}
+components:
+  schemas:
+    Record:
+      type: object
+      required: [checksum]
+      properties:
+        checksum: {type: string, format: byte}
+        image: {type: string, contentMediaType: image/png}
+        secret: {type: string, format: password}
+        stage: {$ref: '#/components/schemas/Mark'}
+    Mark: {type: string, format: binary, enum: [draft, final]}

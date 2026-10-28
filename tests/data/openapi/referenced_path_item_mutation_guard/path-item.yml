@@ -1,0 +1,20 @@
+paths:
+  /items:
+    parameters:
+      - name: pathLevel
+        in: query
+        schema:
+          type: string
+    get:
+      parameters:
+        - name: operationLevel
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: ./openapi.yaml#/components/schemas/Item

@@ -1,0 +1,10 @@
+return=0
+stdout:
+Updated <tmp>/doc.md
+stderr:
+content:
+Before
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: example.write -->
+new
+<!-- END AUTO-GENERATED DOC EXAMPLE: example.write -->
+After

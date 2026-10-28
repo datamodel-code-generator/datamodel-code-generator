@@ -1,0 +1,2 @@
+https://example.test/child.json#/$defs/AnchoredChild
+https://example.test/child.json#/$defs/AnchoredChild

@@ -1,0 +1,10 @@
+{
+  "root_type": "list",
+  "sequence": true,
+  "values": [],
+  "length": 0,
+  "slice_type": "list",
+  "iteration_matches_root": true,
+  "first_matches_root": true,
+  "count": 0
+}

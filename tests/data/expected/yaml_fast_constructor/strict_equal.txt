@@ -1,0 +1,3 @@
+type_mismatch=False
+mapping_order_mismatch=False
+nan_equal=True

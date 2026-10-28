@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: Pet photos
+  version: "1.0"
+paths:
+  /pets/{petId}/photo:
+    put:
+      operationId: uploadPhoto
+      tags: [photos]
+      security:
+        - bearer: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/PhotoUpload"}
+      responses:
+        "201":
+          description: Stored.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Photo"}
+    get:
+      operationId: getPhoto
+      tags: [photos]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          description: The photo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Photo"}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  schemas:
+    PhotoUpload:
+      type: object
+      required: [file]
+      properties:
+        file: {type: string, format: binary}
+        caption: {type: string}
+    Photo:
+      type: object
+      required: [petId, size, owner]
+      properties:
+        petId: {type: integer}
+        size: {type: integer}
+        owner: {type: string}
+        caption: {type: string}

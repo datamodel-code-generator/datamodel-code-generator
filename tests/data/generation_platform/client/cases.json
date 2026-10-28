@@ -1,0 +1,5510 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": {
+      "pydantic_v2.BaseModel": true,
+      "pydantic_v2.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "dataclasses.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "typing.TypedDict": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "msgspec.Struct": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    }
+  },
+  "pets-protocols": {
+    "input": "pets-protocols.yaml",
+    "references": [
+      "protocols/pets-protocols.json"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "protocols": "protocols/pets-protocols.json"
+    }
+  },
+  "pets-protocols-unpack": {
+    "input": "pets-protocols.yaml",
+    "references": [
+      "protocols/pets-protocols.json"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "protocols": "protocols/pets-protocols.json",
+      "signature_style": "unpack"
+    }
+  },
+  "pets-unpack": {
+    "input": "pets.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "pets",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "pets",
+        "photos",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "pets",
+        "photos",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "signature_style": "unpack"
+    }
+  },
+  "media": {
+    "input": "media.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": [
+        [
+          "client",
+          "_async_client.py"
+        ],
+        [
+          "client",
+          "_client.py"
+        ],
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "_operations.py"
+        ],
+        [
+          "client",
+          "resources",
+          "documents",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "resources",
+          "documents",
+          "_async.py"
+        ],
+        [
+          "client",
+          "resources",
+          "documents",
+          "_sync.py"
+        ],
+        [
+          "client",
+          "resources",
+          "files",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "resources",
+          "files",
+          "_async.py"
+        ],
+        [
+          "client",
+          "resources",
+          "files",
+          "_sync.py"
+        ],
+        [
+          "client",
+          "resources",
+          "forms",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "resources",
+          "forms",
+          "_async.py"
+        ],
+        [
+          "client",
+          "resources",
+          "forms",
+          "_sync.py"
+        ],
+        [
+          "client",
+          "types",
+          "documents",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "types",
+          "documents",
+          "_operations.py"
+        ],
+        [
+          "client",
+          "types",
+          "files",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "types",
+          "files",
+          "_operations.py"
+        ],
+        [
+          "client",
+          "types",
+          "forms",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "types",
+          "forms",
+          "_operations.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "typing.TypedDict": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    },
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1documents/post",
+          "request_media_type": "application/json",
+          "runtime": {
+            "success_statuses": [
+              302
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "multipart-split": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {}
+  },
+  "multipart-kinds": {
+    "input": "multipart-kinds.yaml",
+    "config": {}
+  },
+  "servers": {
+    "input": "servers.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ],
+    "config": {
+      "server_base_url": "https://api.example.com/root/"
+    }
+  },
+  "servers-single-value-enum": {
+    "input": "single-value-enum-servers.yaml",
+    "model": {"use_single_value_enum_as_const": true},
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "default-server": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/base"
+    }
+  },
+  "implicit-server": {
+    "input": "default-server.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ],
+    "config": {
+      "server_base_url": "https://implicit.example.com/api/"
+    }
+  },
+  "names": {
+    "input": "names.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "users",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "admin",
+        "users",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "ユーザー",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "ユーザー",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "ユーザー",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "admin",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "admin",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "admin",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "admin",
+        "users",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "store",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "store",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "ユーザー",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "ユーザー",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1files~1{fileName}.{ext}/get",
+          "parameter_names": [
+            {
+              "in_": "header",
+              "name": "2fa",
+              "python_name": "two_factor"
+            }
+          ]
+        }
+      ],
+      "resource_names": [
+        {
+          "tag": "Pet Store",
+          "namespace": "store"
+        }
+      ]
+    }
+  },
+  "names-unpack": {
+    "input": "names.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "store",
+        "_sync.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1files~1{fileName}.{ext}/get",
+          "parameter_names": [
+            {
+              "in_": "header",
+              "name": "2fa",
+              "python_name": "two_factor"
+            }
+          ]
+        }
+      ],
+      "resource_names": [
+        {
+          "tag": "Pet Store",
+          "namespace": "store"
+        }
+      ],
+      "signature_style": "unpack"
+    }
+  },
+  "name-errors": {
+    "input": "name-errors.yaml",
+    "model": {"aliases": {"petId": "pet id"}},
+    "config": {
+      "operations": [
+        {"ref": "/paths/~1close/get", "name": "with_options"},
+        {
+          "ref": "/paths/~1view/get",
+          "parameter_names": [
+            {"in_": "query", "name": "body", "python_name": "options"},
+            {"in_": "query", "name": "user-id", "python_name": "uid"},
+            {"in_": "header", "name": "user_id", "python_name": "uid"}
+          ]
+        }
+      ]
+    }
+  },
+  "method-collisions-suffix": {
+    "input": "method-collisions.yaml",
+    "model": {"duplicate_name_suffix": {"model": "Variant"}},
+    "modules": [["client", "types", "default", "_operations.py"]]
+  },
+  "child-collision": {
+    "input": "names.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1admin~1users/post",
+          "name": "users"
+        }
+      ]
+    }
+  },
+  "media-errors": {
+    "input": "media-errors.yaml"
+  },
+  "form-name-errors": {
+    "input": "form-name-errors.yaml"
+  },
+  "form-name-kept": {
+    "input": "form-name-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts",
+        "/absorbing-kept-wrapped"
+      ]
+    }
+  },
+  "server-errors": {
+    "input": "server-errors.yaml"
+  },
+  "codec-errors": {
+    "input": "codec-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ]
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "type_mappings": [
+        "password=binary",
+        "string+byte=binary"
+      ]
+    }
+  },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
+  },
+  "header-names": {
+    "input": "header-names.yaml"
+  },
+  "setting-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "absent",
+              "python_name": "absent"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets/post",
+          "request_media_type": "application/xml"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "image/png",
+          "runtime": {
+            "success_statuses": [
+              301
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "naming": {
+    "input": "naming.yaml",
+    "model": {"aliases": {"NewItem.itemCount": "count", "itemCount": "flat_count"}},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
+  "naming-snake": {
+    "input": "naming.yaml",
+    "model": {"snake_case_field": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
+  "naming-parent-prefixed": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "parent-prefixed"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-full-path": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "full-path"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-primary-first": {
+    "input": "naming-refs.yaml",
+    "references": ["naming-refs-shared.yaml"],
+    "model": {"naming_strategy": "primary-first"},
+    "modules": false
+  },
+  "naming-default": {
+    "input": "naming-default.yaml",
+    "modules": [["client", "_operations.py"]]
+  },
+  "naming-default-moved": {
+    "input": "naming-default.yaml",
+    "config": {"operations": [{"ref": "/paths/~1defaults/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "naming-device-moved": {
+    "input": "naming-device.yaml",
+    "config": {"operations": [{"ref": "/paths/~1consoles/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "method-collisions": {
+    "input": "method-collisions.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "reference-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "resource_names": [
+        {"tag": "pets", "namespace": "animals"},
+        {"tag": "nope", "namespace": "other"}
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1missing/get"
+        },
+        {
+          "ref": "/paths/~1pets/get"
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/get"
+          }
+        }
+      ]
+    }
+  },
+  "empty": {
+    "input": "pets.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/none"
+      ]
+    }
+  },
+  "empty-security": {
+    "input": "empty-security.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
+  "evolution": {
+    "input": "evolution.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "orders",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "orders",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "orders",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "orders",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "orders",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "evolution-forbid": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "forbid",
+      "use_generic_base_class": true
+    }
+  },
+  "evolution-allow": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "allow",
+      "enum_field_as_literal": "all"
+    }
+  },
+  "querystring": {
+    "input": "querystring.yaml",
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "references": {
+    "input": "references.yaml",
+    "references": [
+      "references-library.yaml",
+      "references-metadata.yaml"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "self-references": {
+    "input": "self-references.yaml",
+    "references": [
+      "references-library.yaml",
+      "references-metadata.yaml"
+    ],
+    "modules": false,
+    "model": {
+      "input_filename": "references.yaml"
+    }
+  },
+  "paths": {
+    "input": "paths.yaml"
+  },
+  "pagination-paths": {
+    "input": "pagination-paths.yaml",
+    "references": [
+      "protocols/pagination-paths.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-paths.json"
+    }
+  },
+  "keywords": {
+    "input": "keywords.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
+  "validation-ambiguous": {
+    "input": "evolution.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
+  "fields": {
+    "input": "fields.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "msgspec.Struct"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": [
+        [
+          "client",
+          "_async_client.py"
+        ],
+        [
+          "client",
+          "_client.py"
+        ],
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "_operations.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_async.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_sync.py"
+        ],
+        [
+          "client",
+          "types",
+          "default",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "types",
+          "default",
+          "_operations.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "pydantic_v2.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "msgspec.Struct": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    },
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ]
+    }
+  },
+  "fields-structural": {
+    "input": "fields.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ],
+    "modules": {
+      "dataclasses.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "_operations.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_async.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_sync.py"
+        ],
+        [
+          "client",
+          "types",
+          "default",
+          "__init__.py"
+        ],
+        [
+          "client",
+          "types",
+          "default",
+          "_operations.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "typing.TypedDict": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    },
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ]
+    }
+  },
+  "fields-unpack": {
+    "input": "fields.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
+    "config": {
+      "body_arguments": "both",
+      "signature_style": "unpack",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ]
+    }
+  },
+  "fields-errors": {
+    "input": "fields.yaml",
+    "model": {"aliases": {"NewPet.owner": "media_type"}},
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "id",
+              "python_name": "pet_id"
+            },
+            {
+              "media_type": "application/xml",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "Application/JSON",
+              "name": "absent",
+              "python_name": "absent"
+            },
+            {
+              "media_type": "application/json",
+              "name": "birthDate",
+              "python_name": "tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "body_field_names": [
+            {
+              "media_type": "text/plain",
+              "name": "q",
+              "python_name": "query"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1records/put",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "name",
+              "python_name": "pet_name"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "fields-both": {
+    "input": "fields.yaml",
+    "modules": false,
+    "model": {
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ]
+    }
+  },
+  "fields-cycle": {
+    "input": "fields-cycle.yaml",
+    "modules": false,
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "fields-optional-models": {
+    "input": "fields.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "model": {
+      "force_optional_for_required_fields": true,
+      "openapi_include_paths": [
+        "/pets*",
+        "/owners"
+      ]
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ]
+    }
+  },
+  "type-spellings": {
+    "input": "type-spellings.yaml",
+    "model": {
+      "use_enum_values_in_discriminator": true
+    },
+    "config": {
+      "body_arguments": "both"
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-exact": {
+    "input": "type-spellings-exact.yaml",
+    "references": [
+      "protocols/type-spellings-exact.json"
+    ],
+    "cwd": true,
+    "model": {
+      "output": "models",
+      "use_exact_imports": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-exact.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-legacy": {
+    "input": "type-spellings-legacy.yaml",
+    "references": [
+      "protocols/type-spellings-legacy.json"
+    ],
+    "model": {
+      "use_union_operator": false,
+      "use_standard_collections": false
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-legacy.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-reuse": {
+    "input": "type-spellings-reuse.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-cycle": {
+    "input": "type-spellings-cycle.yaml",
+    "cwd": true,
+    "model": {
+      "output": "models"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "retries": {
+    "input": "retries.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "retry",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "retry",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "retry",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "retry",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "retry",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1keyed/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1key-only/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1never/post",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1keyed-safe/get",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-headers": {
+    "input": "retry-headers.json",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "headers",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "headers",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "headers",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "headers",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "headers",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1cookie/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "session"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "token"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1ignored/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Authorization"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1direction/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            },
+            "retry_after_ms_header": "X-Idempotency",
+            "should_retry_header": "X-Retry-Control",
+            "request_id_header": "X-Idempotency"
+          }
+        },
+        {
+          "ref": "/paths/~1unused/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Auth-Key"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-header-conflicts": {
+    "input": "retry-headers.json",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1parameter/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "x-request-key"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1api-key/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "x-auth-key"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1bearer/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "authorization"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1oauth/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "AUTHORIZATION"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1openid/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Authorization"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-security-context": {
+    "input": "retry-security-context.yaml",
+    "references": [
+      "retry-security-context-external.yaml"
+    ],
+    "modules": false,
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1inherited/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1explicit/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1aliased-query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-inherited/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-explicit/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-security-context-conflicts": {
+    "input": "retry-security-context.yaml",
+    "references": [
+      "retry-security-context-external.yaml"
+    ],
+    "modules": false,
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1actual-header/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1aliased-header/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "auth": {
+    "input": "auth.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "auth",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "auth",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "auth",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "auth",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "auth",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "auth-unobserved.yaml"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1challenge-less/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        },
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1signed-multipart/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "model": {
+      "input_filename": "auth.yaml"
+    }
+  },
+  "auth-no-root": {
+    "input": "auth-no-root.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "auth",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "auth",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "auth",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "auth",
+        "_operations.py"
+      ]
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1absent/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        }
+      ]
+    }
+  },
+  "auth-errors": {
+    "input": "auth-errors.yaml"
+  },
+  "auth-wire-conflicts": {
+    "input": "auth-wire-conflicts.yaml"
+  },
+  "credential-name-errors": {
+    "input": "credential-name-errors.yaml",
+    "modules": [["client", "_client.py"], ["client", "auth.py"]]
+  },
+  "auth-context": {
+    "input": "auth-context.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "retry-security-context-external.yaml"
+    ]
+  },
+  "helpers": {
+    "input": "helpers.yaml",
+    "modules": [
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "helpers-external.yaml"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    }
+  },
+  "protocols-disabled": {
+    "input": "helpers.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "helpers-external.yaml",
+      "protocols/disabled.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/disabled.json"
+    }
+  },
+  "protocols-relative": {
+    "input": "helpers.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "helpers-external.yaml",
+      "protocols/disabled.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": {
+        "relative": "protocols/disabled.json"
+      }
+    },
+    "expected": "protocols-disabled",
+    "cwd": true
+  },
+  "protocols-empty": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/empty.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/empty.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "events",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "jobs",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "records",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "tags",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "events",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "jobs",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "records",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "tags",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "protocols-unsupported-kinds": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/unsupported-kinds.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/unsupported-kinds.json"
+    },
+    "modules": false
+  },
+  "protocols-deep-limit": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/deep-limit.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/deep-limit.json"
+    },
+    "modules": false,
+    "expected": "protocols-empty"
+  },
+  "protocols-names": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/names.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/names.json"
+    },
+    "modules": false
+  },
+  "protocols-shared-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/shared-errors.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/shared-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-pagination-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/pagination-errors.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/pagination-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-polling-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/polling-errors.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/polling-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-stream-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/stream-errors.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/stream-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-references": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/references.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/references.json"
+    },
+    "modules": false
+  },
+  "protocols-unsupported": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/unsupported.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/unsupported.json",
+      "operations": [
+        {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        },
+        {
+          "ref": "/paths/~1labels/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "items",
+              "python_name": "item_limit"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "body_arguments": "both"
+        }
+      ]
+    },
+    "modules": false
+  },
+  "protocols-querystring": {
+    "input": "querystring.yaml",
+    "references": [
+      "protocols/querystring.json"
+    ],
+    "modules": false,
+    "config": {
+      "protocols": "protocols/querystring.json"
+    }
+  },
+  "pagination": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "archive",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "archive",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "archive",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "labels",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "loose",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "loose",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "loose",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "nested",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "nested",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "nested",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "secure",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "secure",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "secure",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "statuses",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "resources",
+        "statuses",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "statuses",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "users",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "archive",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "archive",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "labels",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "loose",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "loose",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "nested",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "nested",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "secure",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "secure",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "statuses",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "statuses",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "types",
+        "users",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    }
+  },
+  "protocols-pagination-checks": {
+    "input": "pagination-checks.yaml",
+    "references": [
+      "protocols/pagination-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-checks.json"
+    },
+    "modules": false
+  },
+  "pagination-plans": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json"
+    ],
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "pagination-root": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination-root.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-root.json"
+    }
+  },
+  "pagination-documents": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination-documents.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-documents.json"
+    }
+  },
+  "pagination-limits": {
+    "input": "pagination-limits.yaml",
+    "references": [
+      "protocols/pagination-limits.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-limits.json"
+    }
+  },
+  "pagination-querystring": {
+    "input": "querystring.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_async.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "references": [
+      "protocols/pagination-querystring.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-querystring.json"
+    }
+  },
+  "pagination-targets": {
+    "input": "pagination-targets.yaml",
+    "references": [
+      "protocols/pagination-targets.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-targets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-querystring-checks": {
+    "input": "querystring.yaml",
+    "references": [
+      "protocols/pagination-querystring-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-querystring-checks.json"
+    },
+    "modules": false
+  },
+  "querystring-targets": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-targets.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-targets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-querystring-target-checks": {
+    "input": "querystring-targets.yaml",
+    "references": [
+      "protocols/querystring-target-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/querystring-target-checks.json"
+    },
+    "modules": false
+  },
+  "webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "sha256.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "sha512.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "shapes",
+        "drawn.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "callbacks",
+        "delivered.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "callbacks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "shapes",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
+      ]
+    ]
+  },
+  "protocols-webhook-errors": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-errors.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-webhook-checks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-checks.json"
+    },
+    "modules": false
+  },
+  "webhooks-typing": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-typing.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-typing.json"
+    }
+  },
+  "webhooks-schema": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-typing.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-typing.json"
+    },
+    "modules": false
+  },
+  "webhooks-public-keys": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-public-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-public-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc8032",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "wycheproof",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ]
+  },
+  "webhooks-adapters": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-adapters.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-adapters.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "plain.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "__init__.py"
+      ]
+    ]
+  },
+  "webhooks-unsigned": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-unsigned.json"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-unsigned.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ]
+    ]
+  },
+  "unions": {
+    "input": "unions.yaml",
+    "config": {}
+  },
+  "unions-tagged": {
+    "input": "unions.yaml",
+    "model": {
+      "openapi_include_paths": [
+        "/pets"
+      ]
+    }
+  },
+  "unions-mapped": {
+    "input": "unions-mapped.yaml",
+    "config": {}
+  },
+  "unions-legacy": {
+    "input": "unions-legacy.yaml",
+    "config": {}
+  },
+  "unions-split": {
+    "input": "unions-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {}
+  },
+  "pagination-counts": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-counts.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-count-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-count-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-count-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-pagination-wrapper-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-wrapper-checks.json"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "config": {
+      "protocols": "protocols/pagination-wrapper-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-pagination-strict-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.json"
+    ],
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/pagination-counts.json"
+    },
+    "modules": false
+  },
+  "pagination-links": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-links.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-links.json",
+      "operations": [
+        {
+          "ref": "/paths/~1searches/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-link-checks": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-link-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-link-checks.json"
+    },
+    "modules": false
+  },
+  "pagination-resume": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume.json"
+    }
+  },
+  "protocols-pagination-resume-checks": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume-checks.json"
+    },
+    "modules": false
+  },
+  "polling": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/jobs*",
+        "/reports*",
+        "/exports*",
+        "/notes"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/polling.json"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "polling-plans": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/jobs*",
+        "/reports*",
+        "/exports*",
+        "/notes"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/polling.json"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-polling-checks": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/polling-checks.json"
+    },
+    "modules": false
+  },
+  "uploads": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.json"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.json"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "uploads-plans": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.json"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.json"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-upload-checks": {
+    "input": "upload-checks.yaml",
+    "references": [
+      "protocols/upload-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/upload-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-upload-errors": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/upload-errors.json"
+    ],
+    "config": {
+      "protocols": "protocols/upload-errors.json"
+    },
+    "modules": false
+  },
+  "streams": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/streams.json"
+    ],
+    "config": {
+      "protocols": "protocols/streams.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-stream-checks": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/stream-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-stream-scope": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-scope.json"
+    ],
+    "config": {
+      "protocols": "protocols/stream-scope.json"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "api"
+      ]
+    }
+  },
+  "streams-mixed": {
+    "input": "streams-mixed.yaml",
+    "references": [
+      "protocols/streams-mixed.json"
+    ],
+    "config": {
+      "protocols": "protocols/streams-mixed.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ]
+    ]
+  },
+  "ndjson": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson.json"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "ndjson-split": {
+    "input": "ndjson-split.yaml",
+    "references": [
+      "protocols/ndjson-split.json"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "protocols": "protocols/ndjson-split.json"
+    }
+  },
+  "protocols-ndjson-checks": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson-checks.json"
+    },
+    "modules": false
+  },
+  "stream-resume": {
+    "input": "stream-resume.yaml",
+    "references": [
+      "protocols/stream-resume.json"
+    ],
+    "config": {
+      "protocols": "protocols/stream-resume.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-stream-resume-checks": {
+    "input": "stream-resume.yaml",
+    "references": [
+      "protocols/stream-resume-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/stream-resume-checks.json"
+    },
+    "modules": false
+  },
+  "no-success": {
+    "input": "no-success.yaml",
+    "config": {}
+  },
+  "no-success-unpack": {
+    "input": "no-success.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
+  "modelless-bodies": {
+    "input": "modelless-bodies.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "config": {}
+  },
+  "caching": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "caching-backends": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": false
+  },
+  "protocols-cache-checks": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/cache-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-checks.json",
+      "operations": [
+        {
+          "ref": "/paths/~1items~1{id}/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "id",
+              "python_name": "query_id"
+            }
+          ]
+        }
+      ]
+    },
+    "modules": false
+  },
+  "protocols-cache-errors": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/cache-errors.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-errors.json"
+    },
+    "modules": false
+  },
+  "caching-typing": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": false
+  },
+  "sockets": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.json"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-socket-checks": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-checks.json"
+    ],
+    "config": {
+      "protocols": "protocols/socket-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-socket-errors": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/socket-errors.json"
+    ],
+    "config": {
+      "protocols": "protocols/socket-errors.json"
+    },
+    "modules": false
+  },
+  "protocols-socket-scope": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-scope.json"
+    ],
+    "config": {
+      "protocols": "protocols/socket-scope.json"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "api"
+      ]
+    }
+  },
+  "protocols-unmodeled": {
+    "input": "unmodeled-messages.yaml",
+    "references": [
+      "protocols/unmodeled.json"
+    ],
+    "config": {
+      "protocols": "protocols/unmodeled.json"
+    },
+    "modules": false
+  },
+  "compression": {
+    "input": "compression.yaml",
+    "references": [
+      "protocols/compression.json"
+    ],
+    "config": {
+      "protocols": "protocols/compression.json",
+      "operations": [
+        {
+          "ref": "/paths/~1items/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1items/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1blobs/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1feed/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1events/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "uploads-compression": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.json"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.json",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}/patch",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
+  },
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
+    "references": [
+      "protocols/uploads-oauth.json"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-oauth.json",
+      "operations": [
+        {
+          "ref": "/paths/~1files/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "input-cycle-dict": {
+    "input": "input-cycle-dict.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-list": {
+    "input": "input-cycle-list.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-mutual": {
+    "input": "input-cycle-mutual.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-aliases": {
+    "input": "input-aliases.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-reference": {
+    "input": "input-cycle-reference.yaml",
+    "references": [
+      "input-cycle-reference-model.yaml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model_only": true
+  },
+  "allowreserved-path-30": {
+    "input": "allowreserved-path-30.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-31": {
+    "input": "allowreserved-path-31.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-32": {
+    "input": "allowreserved-path-32.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "native-boundaries": {
+    "input": "native-boundaries.yaml",
+    "model": {
+      "use_standard_primitive_types": true,
+      "output_datetime_class": "datetime"
+    },
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "missing-sentinel": {
+    "input": "missing-sentinel.yaml"
+  },
+  "nullable-enums": {
+    "input": "nullable-enums.yaml"
+  },
+  "nullable-parameters": {
+    "input": "nullable-parameters.yaml"
+  },
+  "parameter-kinds": {
+    "input": "parameter-kinds.yaml"
+  },
+  "parameter-kinds-decimal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "use_decimal_for_multiple_of": true
+    }
+  },
+  "parameter-kinds-literal": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "enum_field_as_literal": "all"
+    }
+  },
+  "parameter-kinds-strict": {
+    "input": "parameter-kinds.yaml",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    }
+  },
+  "docstrings": {
+    "input": "docstrings.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "use_schema_description": true,
+      "use_single_line_docstring": true
+    }
+  },
+  "route-text": {
+    "input": "route-text.yaml",
+    "references": [
+      "protocols/route-text.json"
+    ],
+    "config": {
+      "protocols": "protocols/route-text.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "templates": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/custom/client/client.jinja2",
+      "templates/custom/client/facade.jinja2",
+      "templates/custom/client/readme.jinja2",
+      "templates/custom/client/resource.jinja2",
+      "templates/custom/client/runtime.jinja2",
+      "templates/custom/client/types.jinja2"
+    ],
+    "modules": [
+      [
+        "client",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "pets",
+        "_operations.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
+    }
+  },
+  "templates-helpers": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json",
+      "templates/custom/client/helper_plans.jinja2",
+      "templates/custom/client/helpers.jinja2",
+      "templates/custom/client/model_bindings.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
+    }
+  },
+  "templates-webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json",
+      "templates/custom/client/webhook.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
+    }
+  },
+  "type-checking-imports": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking"
+    }
+  },
+  "type-checking-imports-on": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": true
+    }
+  },
+  "type-checking-imports-off": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "pets",
+          "namespace": "pets"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": false
+    }
+  },
+  "templates-missing": {
+    "input": "pets.yaml",
+    "modules": [
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "expected": "empty",
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/missing",
+      "openapi_include_paths": [
+        "/none"
+      ]
+    }
+  },
+  "templates-invalid": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/invalid/client/resource.jinja2"
+    ],
+    "publish": true,
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/invalid"
+    }
+  },
+  "templates-not-found": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/not-found/client/readme.jinja2"
+    ],
+    "publish": true,
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/not-found"
+    }
+  },
+  "api-scope-required": {
+    "input": "pets.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "caching-oauth": {
+    "input": "caching-oauth.json",
+    "references": [
+      "caching.yaml",
+      "protocols/caching.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/carts/current",
+        "/secure/users/*",
+        "/oauth"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/caching.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ],
+    "expected": "caching"
+  },
+  "discriminator-copies": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-variants": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-reuse": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    },
+    "model": {
+      "reuse_model": true
+    }
+  },
+  "parameter-content-defaults-30": {
+    "input": "parameter-content-defaults-30.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "parameter-content-defaults-31": {
+    "input": "parameter-content-defaults-31.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "media-item-parts": {
+    "input": "media-item-parts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-referenced-items": {
+    "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "fingerprint-nested": {
+    "input": "fingerprint-nested.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "fingerprint-write-only": {
+    "input": "fingerprint-write-only.yaml",
+    "references": [
+      "protocols/fingerprint-write-only.json"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "protocols": "protocols/fingerprint-write-only.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "fingerprint-nested-changed": {
+    "input": "fingerprint-nested-changed.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "type-spellings-bound": {
+    "input": "type-spellings-bound.yaml",
+    "model": {
+      "collapse_root_models": true,
+      "use_annotated": true,
+      "use_standard_collections": false,
+      "field_constraints": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "typeddict-target-keys": {
+    "input": "typeddict-target-keys.yaml",
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "model": {
+      "target_python_version": "3.11"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "ref-instance-data": {
+    "input": "ref-instance-data.yaml",
+    "model": {
+      "field_extra_keys": [
+        "x-note"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "ref-name-positions": {
+    "input": "ref-name-positions.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  }
+}

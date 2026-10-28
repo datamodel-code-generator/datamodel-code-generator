@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SchemaNames",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "#/$defs/Node", "type": "object"},
+    "pair": {"$ref": "#/$defs/First", "type": "object"}
+  },
+  "required": ["value", "pair"],
+  "$defs": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "default": {"$ref": "#/$defs/Node"},
+        "const": {"$ref": "#/$defs/Node"},
+        "enum": {"$ref": "#/$defs/Node"},
+        "examples": {"$ref": "#/$defs/Node"}
+      }
+    },
+    "First": {
+      "type": "object",
+      "properties": {"other": {"$ref": "#/$defs/Second"}}
+    },
+    "Second": {
+      "type": "object",
+      "properties": {"items": {"type": "array", "items": {"$ref": "#/$defs/First"}}}
+    }
+  }
+}

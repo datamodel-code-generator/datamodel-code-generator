@@ -4,9 +4,10 @@
 
 | Option | Description |
 |--------|-------------|
-| [`--aliases`](#aliases) | Apply custom field and class name aliases from JSON file. |
+| [`--aliases`](#aliases) | Apply custom field and class name aliases via inline JSON or... |
 | [`--capitalize-enum-members`](#capitalize-enum-members) | Capitalize enum member names to UPPER_CASE format. |
-| [`--default-values`](#default-values) | Override field default values from external JSON file. |
+| [`--default-values`](#default-values) | Override field default values via inline JSON or a JSON file... |
+| [`--deserialize-default-values`](#deserialize-default-values) | Deserialize selected direct scalar field defaults into their... |
 | [`--empty-enum-field-name`](#empty-enum-field-name) | Name for empty string enum field values. |
 | [`--extra-fields`](#extra-fields) | Configure how generated models handle extra fields not defin... |
 | [`--field-constraints`](#field-constraints) | Generate Field() with validation constraints from schema. |
@@ -14,11 +15,14 @@
 | [`--field-extra-keys-without-x-prefix`](#field-extra-keys-without-x-prefix) | Include schema extension keys in Field() without requiring '... |
 | [`--field-include-all-keys`](#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydan... |
+| [`--infer-union-variant-names`](#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of the... |
 | [`--no-alias`](#no-alias) | Disable Field alias generation for non-Python-safe property ... |
+| [`--no-deserialize-default-values`](#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing sel... |
+| [`--omit-redundant-constraints`](#omit-redundant-constraints) | Do not write a constraint again beside a type that already e... |
 | [`--original-field-name-delimiter`](#original-field-name-delimiter) | Specify delimiter for original field names when using snake-... |
 | [`--remove-special-field-name-prefix`](#remove-special-field-name-prefix) | Remove the special prefix from field names. |
-| [`--serialization-aliases`](#serialization-aliases) | Apply custom Pydantic v2 serialization aliases from JSON fil... |
-| [`--set-default-enum-member`](#set-default-enum-member) | Set the first enum member as the default value for enum fiel... |
+| [`--serialization-aliases`](#serialization-aliases) | Apply custom Pydantic v2 serialization aliases via inline JS... |
+| [`--set-default-enum-member`](#set-default-enum-member) | Use the legacy flag for deserializing enum defaults. |
 | [`--snake-case-field`](#snake-case-field) | Convert field names to snake_case format. |
 | [`--special-field-name-prefix`](#special-field-name-prefix) | Prefix to add to special field names (like reserved keywords... |
 | [`--use-attribute-docstrings`](#use-attribute-docstrings) | Generate field descriptions as attribute docstrings instead ... |
@@ -29,15 +33,33 @@
 | [`--use-schema-description`](#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing ... |
 | [`--use-single-line-docstring`](#use-single-line-docstring) | Emit short docstrings on a single line. |
+| [`--use-site-models-for-constrained-refs`](#use-site-models-for-constrained-refs) | Give an allOf of `$ref` members whose other parts add assert... |
+| [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what ... |
 | [`--use-title-as-name`](#use-title-as-name) | Use schema title as the generated class name. |
+
+---
+
+## 🍳 Recipes
+
+### Normalize incoming field names
+
+Convert source names to Python identifiers while preserving explicit alias data for runtime IO.
+
+**Options:** [`--snake-case-field`](#snake-case-field), [`--original-field-name-delimiter`](#original-field-name-delimiter), [`--aliases`](#aliases)
+
+### Carry schema documentation into models
+
+Promote schema and field descriptions into generated docstrings or field metadata.
+
+**Options:** [`--use-schema-description`](#use-schema-description), [`--use-field-description`](#use-field-description), [`--use-field-description-example`](#use-field-description-example)
 
 ---
 
 ## `--aliases` {#aliases}
 
-Apply custom field and class name aliases from JSON file.
+Apply custom field and class name aliases via inline JSON or a JSON file path.
 
-The `--aliases` option allows renaming fields and classes via a JSON mapping file,
+The `--aliases` option allows renaming fields and classes via an inline JSON object or JSON mapping file,
 providing fine-grained control over generated names independent of schema definitions.
 
 **See also:** [Field Aliases](../aliases.md)
@@ -45,7 +67,7 @@ providing fine-grained control over generated names independent of schema defini
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
+    datamodel-codegen --input api.yaml --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--aliases` - the option documented here
@@ -242,6 +264,8 @@ providing fine-grained control over generated names independent of schema defini
 
         === "msgspec"
 
+            <!-- fmt: off -->
+
             ```python
             # generated by datamodel-codegen:
             #   filename:  api.yaml
@@ -313,6 +337,8 @@ providing fine-grained control over generated names independent of schema defini
                 event: Event | UnsetType = UNSET
             ```
 
+            <!-- fmt: on -->
+
     === "JSON Schema"
 
         **Input Schema:**
@@ -356,6 +382,8 @@ providing fine-grained control over generated names independent of schema defini
 
         **Output:**
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  hierarchical_aliases.json
@@ -382,6 +410,8 @@ providing fine-grained control over generated names independent of schema defini
             address: Address | None = Field(None, title='Address')
         ```
 
+        <!-- fmt: on -->
+
     === "GraphQL"
 
         **Input Schema:**
@@ -396,6 +426,8 @@ providing fine-grained control over generated names independent of schema defini
         ```
 
         **Output:**
+
+        <!-- fmt: off -->
 
         ```python
         # generated by datamodel-codegen:
@@ -432,6 +464,8 @@ providing fine-grained control over generated names independent of schema defini
             )
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--capitalize-enum-members` {#capitalize-enum-members}
@@ -442,12 +476,12 @@ The `--capitalize-enum-members` flag converts enum member names to
 UPPER_CASE format (e.g., `active` becomes `ACTIVE`), following Python
 naming conventions for constants.
 
-**Aliases:** `--capitalise-enum-members` | **Related:** [`--snake-case-field`](field-customization.md#snake-case-field)
+**Aliases:** `--capitalise-enum-members` | **Related:** [`--snake-case-field`](#snake-case-field)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --capitalize-enum-members # (1)!
+    datamodel-codegen --input many_case_enum.json --capitalize-enum-members # (1)!
     ```
 
     1. :material-arrow-left: `--capitalize-enum-members` - the option documented here
@@ -471,6 +505,8 @@ naming conventions for constants.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  many_case_enum.json
@@ -488,19 +524,21 @@ naming conventions for constants.
         UPPERCASE = 'UPPERCASE'
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--default-values` {#default-values}
 
-Override field default values from external JSON file.
+Override field default values via inline JSON or a JSON file path.
 
-The `--default-values` option allows specifying default values for fields via a JSON file.
+The `--default-values` option allows specifying default values for fields via an inline JSON object or JSON file.
 Supports scoped format (ClassName.field) for hierarchical overrides.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --default-values default_values/scoped_defaults.json # (1)!
+    datamodel-codegen --input default_values_override.json --default-values default_values/scoped_defaults.json # (1)!
     ```
 
     1. :material-arrow-left: `--default-values` - the option documented here
@@ -534,6 +572,8 @@ Supports scoped format (ClassName.field) for hierarchical overrides.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  default_values_override.json
@@ -556,6 +596,184 @@ Supports scoped format (ClassName.field) for hierarchical overrides.
         page: int | None = 1
     ```
 
+    <!-- fmt: on -->
+
+---
+
+## `--deserialize-default-values` {#deserialize-default-values}
+
+Deserialize selected direct scalar field defaults into their generated Python types.
+
+The `--deserialize-default-values` option accepts an explicit list of generated value types. For example,
+`--deserialize-default-values decimal` emits a direct Decimal field's valid string default as a `Decimal` value,
+while `--deserialize-default-values enum` emits matching scalar and list defaults as enum members. Defaults that
+cannot be deserialized remain serialized so the generated module stays importable.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input serialized_decimal_defaults.json --deserialize-default-values decimal --target-python-version 3.10 # (1)!
+    ```
+
+    1. :material-arrow-left: `--deserialize-default-values` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "string",
+          "format": "decimal",
+          "default": "12.340"
+        },
+        "invalid_amount": {
+          "type": "string",
+          "format": "decimal",
+          "default": "not-a-decimal"
+        },
+        "nullable_amount": {
+          "type": ["string", "null"],
+          "format": "decimal",
+          "default": null
+        },
+        "label": {
+          "type": "string",
+          "default": "retail"
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "Pydantic v2"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialized_decimal_defaults.json
+
+        from __future__ import annotations
+
+        from decimal import Decimal
+
+        from pydantic import BaseModel
+
+
+        class Invoice(BaseModel):
+            amount: Decimal | None = Decimal('12.340')
+            invalid_amount: Decimal | None = 'not-a-decimal'
+            nullable_amount: Decimal | None = None
+            label: str | None = 'retail'
+        ```
+
+        <!-- fmt: on -->
+
+    === "Pydantic v2 dataclass"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialized_decimal_defaults.json
+
+        from __future__ import annotations
+
+        from decimal import Decimal
+
+        from pydantic.dataclasses import dataclass
+
+
+        @dataclass
+        class Invoice:
+            amount: Decimal | None = Decimal('12.340')
+            invalid_amount: Decimal | None = 'not-a-decimal'
+            nullable_amount: Decimal | None = None
+            label: str | None = 'retail'
+        ```
+
+        <!-- fmt: on -->
+
+    === "dataclass"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialized_decimal_defaults.json
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+        from decimal import Decimal
+
+
+        @dataclass
+        class Invoice:
+            amount: Decimal | None = Decimal('12.340')
+            invalid_amount: Decimal | None = 'not-a-decimal'
+            nullable_amount: Decimal | None = None
+            label: str | None = 'retail'
+        ```
+
+        <!-- fmt: on -->
+
+    === "TypedDict"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialized_decimal_defaults.json
+
+        from __future__ import annotations
+
+        from decimal import Decimal
+        from typing import TypedDict
+
+        from typing_extensions import NotRequired
+
+
+        class Invoice(TypedDict):
+            amount: NotRequired[Decimal]
+            invalid_amount: NotRequired[Decimal]
+            nullable_amount: NotRequired[Decimal | None]
+            label: NotRequired[str]
+        ```
+
+        <!-- fmt: on -->
+
+    === "msgspec"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialized_decimal_defaults.json
+
+        from __future__ import annotations
+
+        from decimal import Decimal
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Invoice(Struct):
+            amount: Decimal | UnsetType = Decimal('12.340')
+            invalid_amount: Decimal | UnsetType = 'not-a-decimal'
+            nullable_amount: Decimal | None | UnsetType = UNSET
+            label: str | UnsetType = 'retail'
+        ```
+
+        <!-- fmt: on -->
+
 ---
 
 ## `--empty-enum-field-name` {#empty-enum-field-name}
@@ -567,7 +785,7 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --empty-enum-field-name empty # (1)!
+    datamodel-codegen --input special_enum.json --empty-enum-field-name empty # (1)!
     ```
 
     1. :material-arrow-left: `--empty-enum-field-name` - the option documented here
@@ -596,6 +814,8 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  special_enum.json
@@ -623,6 +843,8 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
         root: ModelEnum | None = None
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--extra-fields` {#extra-fields}
@@ -636,7 +858,7 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields allow # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --extra-fields allow # (1)!
     ```
 
     1. :material-arrow-left: `--extra-fields` - the option documented here
@@ -791,6 +1013,8 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
     ```
 
     **Output:**
+
+    <!-- fmt: off -->
 
     ```python
     # generated by datamodel-codegen:
@@ -972,6 +1196,8 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
     Person.model_rebuild()
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--field-constraints` {#field-constraints}
@@ -988,7 +1214,7 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--field-constraints` - the option documented here
@@ -1235,6 +1461,8 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 
         === "Pydantic v2"
 
+            <!-- fmt: off -->
+
             ```python
             # generated by datamodel-codegen:
             #   filename:  api_constrained.yaml
@@ -1324,6 +1552,8 @@ validation constraints (min/max length, pattern, etc.) from the schema.
                 event: Event | None = None
             ```
 
+            <!-- fmt: on -->
+
     === "JSON Schema"
 
         **Input Schema:**
@@ -1383,6 +1613,8 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 
         **Output:**
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  strict_types.json
@@ -1415,6 +1647,8 @@ validation constraints (min/max length, pattern, etc.) from the schema.
             photo: StrictBytes | None = Field(None, min_length=100)
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--field-extra-keys` {#field-extra-keys}
@@ -1426,7 +1660,7 @@ The `--field-extra-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys` - the option documented here
@@ -1481,6 +1715,8 @@ The `--field-extra-keys` flag configures the code generation behavior.
 
     === "Pydantic v2"
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  extras.json
@@ -1503,6 +1739,8 @@ The `--field-extra-keys` flag configures the code generation behavior.
             status: str | None = Field(None, examples=['active'])
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--field-extra-keys-without-x-prefix` {#field-extra-keys-without-x-prefix}
@@ -1517,7 +1755,7 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys-without-x-prefix` - the option documented here
@@ -1572,6 +1810,8 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
 
     === "Pydantic v2"
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  extras.json
@@ -1607,6 +1847,8 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
             status: str | None = Field(None, examples=['active'])
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--field-include-all-keys` {#field-include-all-keys}
@@ -1618,7 +1860,7 @@ The `--field-include-all-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys # (1)!
+    datamodel-codegen --input person.json --field-include-all-keys # (1)!
     ```
 
     1. :material-arrow-left: `--field-include-all-keys` - the option documented here
@@ -1658,6 +1900,8 @@ The `--field-include-all-keys` flag configures the code generation behavior.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  person.json
@@ -1680,6 +1924,8 @@ The `--field-include-all-keys` flag configures the code generation behavior.
         comment: None = Field(None)
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--field-type-collision-strategy` {#field-type-collision-strategy}
@@ -1693,7 +1939,7 @@ to preserve the original field name, instead of renaming the field and adding an
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
+    datamodel-codegen --input field_has_same_name.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
     ```
 
     1. :material-arrow-left: `--field-type-collision-strategy` - the option documented here
@@ -1722,6 +1968,8 @@ to preserve the original field name, instead of renaming the field and adding an
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  field_has_same_name.json
@@ -1740,6 +1988,136 @@ to preserve the original field name, instead of renaming the field and adding an
         TestObject: TestObject_1 | None = Field(None, title='TestObject')
     ```
 
+    <!-- fmt: on -->
+
+---
+
+## `--infer-union-variant-names` {#infer-union-variant-names}
+
+Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` + `type: "cat"` -> `PetCat`) instead of `Pet1`, `Pet2`.
+
+The `--infer-union-variant-names` flag uses branch-local `const` values or
+single-value enums on a shared discriminator-style property to name generated
+inline union models. This is useful when inline union branches would otherwise
+receive position-based names such as `Event` and `Event1`.
+
+The literal value can also come from a single-value enum or an internal `$ref`.
+At least two branches need distinct values on the field; to also name a union's
+only tagged branch and branches tagged by their only key, use
+`--use-tag-as-union-variant-name`.
+Existing generated output is preserved unless this option is enabled.
+
+**Related:** [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name), [`--use-title-as-name`](#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input infer_union_variant_names.json --infer-union-variant-names # (1)!
+    ```
+
+    1. :material-arrow-left: `--infer-union-variant-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WebhookEnvelope",
+      "type": "object",
+      "required": ["event"],
+      "properties": {
+        "event": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "id"],
+              "properties": {
+                "type": {"const": "message.created"},
+                "id": {"type": "string"}
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "reason"],
+              "properties": {
+                "type": {"const": "message.failed"},
+                "reason": {"type": "string"}
+              }
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  infer_union_variant_names.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel
+
+
+        class EventMessageCreated(BaseModel):
+            type: Literal['message.created']
+            id: str
+
+
+        class EventMessageFailed(BaseModel):
+            type: Literal['message.failed']
+            reason: str
+
+
+        class WebhookEnvelope(BaseModel):
+            event: EventMessageCreated | EventMessageFailed
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  infer_union_variant_names.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Literal
+
+        from pydantic import BaseModel
+
+
+        class Event(BaseModel):
+            type: Literal['message.created']
+            id: str
+
+
+        class Event1(BaseModel):
+            type: Literal['message.failed']
+            reason: str
+
+
+        class WebhookEnvelope(BaseModel):
+            event: Event | Event1
+        ```
+
+        <!-- fmt: on -->
+
 ---
 
 ## `--no-alias` {#no-alias}
@@ -1756,7 +2134,7 @@ With this flag, only Python-safe names are used without aliases.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-alias # (1)!
+    datamodel-codegen --input no_alias.json --no-alias # (1)!
     ```
 
     1. :material-arrow-left: `--no-alias` - the option documented here
@@ -1789,6 +2167,8 @@ With this flag, only Python-safe names are used without aliases.
 
     === "With Option"
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  no_alias.json
@@ -1805,7 +2185,11 @@ With this flag, only Python-safe names are used without aliases.
             email_address: str | None = None
         ```
 
+        <!-- fmt: on -->
+
     === "Without Option"
+
+        <!-- fmt: off -->
 
         ```python
         # generated by datamodel-codegen:
@@ -1823,6 +2207,382 @@ With this flag, only Python-safe names are used without aliases.
             email_address: str | None = None
         ```
 
+        <!-- fmt: on -->
+
+---
+
+## `--no-deserialize-default-values` {#no-deserialize-default-values}
+
+Keep serialized schema defaults instead of deserializing selected types.
+
+The `--no-deserialize-default-values` flag explicitly disables default-value deserialization, including when a
+preset enables it. Compatibility warnings still identify direct scalar defaults whose serialized form does not
+match the generated Python type.
+
+**Related:** [`--deserialize-default-values`](#deserialize-default-values), [`--preset`](base-options.md#preset)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input serialized_decimal_defaults.json --preset standard-py310-20260826 --no-deserialize-default-values --disable-timestamp --formatters builtin # (1)!
+    ```
+
+    1. :material-arrow-left: `--no-deserialize-default-values` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "string",
+          "format": "decimal",
+          "default": "12.340"
+        },
+        "invalid_amount": {
+          "type": "string",
+          "format": "decimal",
+          "default": "not-a-decimal"
+        },
+        "nullable_amount": {
+          "type": ["string", "null"],
+          "format": "decimal",
+          "default": null
+        },
+        "label": {
+          "type": "string",
+          "default": "retail"
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  serialized_decimal_defaults.json
+
+    from __future__ import annotations
+
+    from decimal import Decimal
+
+    from pydantic import BaseModel, ConfigDict
+
+
+    class Invoice(BaseModel):
+        model_config = ConfigDict(
+            populate_by_name=True,
+        )
+        amount: Decimal = '12.340'
+        invalid_amount: Decimal = 'not-a-decimal'
+        nullable_amount: Decimal | None = None
+        label: str = 'retail'
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--omit-redundant-constraints` {#omit-redundant-constraints}
+
+Do not write a constraint again beside a type that already enforces it.
+
+In the field forms (`--field-constraints`, `--use-annotated`), a zero-bound class from
+`--use-non-positive-negative-number-constrained-types`, such as `NonNegativeInt`, enforces its bound, so a nullable
+field, a root model or an item writes `NonNegativeInt | None` instead of repeating `Field(ge=0)`; under
+`--strict-types` the field writes the bound beside `StrictInt` instead of a strict `conint`. The `Literal` of a const
+or an enum enforces the length and number constraints beside it by its values: values that violate them are left
+out and the field writes none of them, and a const branch of a oneOf or anyOf whose constraints its value meets stays
+a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check cannot decide stay written.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input redundant_constraints.json --use-annotated --use-non-positive-negative-number-constrained-types --use-single-value-enum-as-const --omit-redundant-constraints # (1)!
+    ```
+
+    1. :material-arrow-left: `--omit-redundant-constraints` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "RedundantConstraints",
+      "type": "object",
+      "$defs": {
+        "Count": {"type": "integer", "minimum": 0},
+        "NullableCount": {"type": ["integer", "null"], "minimum": 0},
+        "Bounded": {"type": "integer", "minimum": 0, "maximum": 9},
+        "Ratio": {"type": "number", "exclusiveMinimum": 0},
+        "ModelIds": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "string", "enum": ["gpt-live-1"]}]},
+        "ConstIds": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "string", "const": "gpt-live-1"}]},
+        "Code": {"type": "string", "const": "abc", "minLength": 1},
+        "Level": {"type": "string", "enum": ["a", "bb", "ccc"], "minLength": 2}
+      },
+      "properties": {
+        "count": {"type": ["integer", "null"], "minimum": 0},
+        "plain": {"type": "integer", "minimum": 0},
+        "negative": {"type": ["integer", "null"], "exclusiveMaximum": 0},
+        "positive": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "both": {"type": ["integer", "null"], "minimum": 0, "maximum": 10},
+        "counts": {"type": "array", "items": {"type": ["integer", "null"], "minimum": 0}},
+        "root_count": {"$ref": "#/$defs/Count"},
+        "nullable_count": {"$ref": "#/$defs/NullableCount"},
+        "bounded": {"$ref": "#/$defs/Bounded"},
+        "ratio": {"$ref": "#/$defs/Ratio"},
+        "model": {"$ref": "#/$defs/ModelIds", "minLength": 1},
+        "const_model": {"$ref": "#/$defs/ConstIds", "minLength": 1},
+        "direct": {"type": "string", "const": "abc", "minLength": 1},
+        "number": {"type": "integer", "const": 5, "minimum": 1},
+        "codes": {"type": "array", "items": {"type": "string", "const": "abc", "minLength": 2}},
+        "code": {"$ref": "#/$defs/Code"},
+        "level": {"$ref": "#/$defs/Level"},
+        "unmet": {"type": "string", "const": "abc", "maxLength": 2},
+        "ratios": {"type": "array", "items": {"type": "number", "const": 1.5, "minimum": 1}},
+        "patterned": {"type": "array", "items": {"type": "string", "const": "abc", "pattern": "^a", "minLength": 1}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  redundant_constraints.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Annotated, Literal
+
+        from pydantic import (
+            BaseModel,
+            Field,
+            NegativeInt,
+            NonNegativeInt,
+            PositiveFloat,
+            RootModel,
+        )
+
+
+        class Count(RootModel[NonNegativeInt | None]):
+            root: NonNegativeInt | None
+
+
+        class Model(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ConstModel(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class Ratio1(RootModel[float]):
+            root: Annotated[float, Field(ge=1.0)]
+
+
+        class CountModel(RootModel[NonNegativeInt]):
+            root: NonNegativeInt
+
+
+        class NullableCount(RootModel[NonNegativeInt | None]):
+            root: NonNegativeInt | None
+
+
+        class Bounded(RootModel[NonNegativeInt]):
+            root: Annotated[NonNegativeInt, Field(le=9)]
+
+
+        class Ratio(RootModel[PositiveFloat]):
+            root: PositiveFloat
+
+
+        class ModelIds1(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ModelIds(RootModel[ModelIds1 | Literal['gpt-live-1']]):
+            root: ModelIds1 | Literal['gpt-live-1']
+
+
+        class ConstIds1(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ConstIds(RootModel[ConstIds1 | Literal['gpt-live-1']]):
+            root: ConstIds1 | Literal['gpt-live-1']
+
+
+        class Code(RootModel[Literal['abc']]):
+            root: Literal['abc']
+
+
+        class Level(Enum):
+            bb = 'bb'
+            ccc = 'ccc'
+
+
+        class RedundantConstraints(BaseModel):
+            count: NonNegativeInt | None = None
+            plain: NonNegativeInt | None = None
+            negative: NegativeInt | None = None
+            positive: PositiveFloat | None = None
+            both: Annotated[NonNegativeInt | None, Field(le=10)] = None
+            counts: list[Count | None] | None = None
+            root_count: CountModel | None = None
+            nullable_count: NullableCount | None = None
+            bounded: Bounded | None = None
+            ratio: Ratio | None = None
+            model: Model | Literal['gpt-live-1'] | None = None
+            const_model: ConstModel | Literal['gpt-live-1'] | None = None
+            direct: Literal['abc'] | None = None
+            number: Literal[5] | None = None
+            codes: list[Literal['abc']] | None = None
+            code: Code | None = None
+            level: Level | None = None
+            unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
+            ratios: list[Ratio1] | None = None
+            patterned: list[Literal['abc']] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  redundant_constraints.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Annotated, Literal
+
+        from pydantic import (
+            BaseModel,
+            Field,
+            NegativeInt,
+            NonNegativeInt,
+            PositiveFloat,
+            RootModel,
+        )
+
+
+        class Count(RootModel[NonNegativeInt | None]):
+            root: Annotated[NonNegativeInt | None, Field(ge=0)]
+
+
+        class Model(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class Model1(RootModel[Literal['gpt-live-1']]):
+            root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]
+
+
+        class ConstModel(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ConstModel1(RootModel[Literal['gpt-live-1']]):
+            root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]
+
+
+        class Code(RootModel[Literal['abc']]):
+            root: Annotated[Literal['abc'], Field(min_length=2)]
+
+
+        class Ratio1(RootModel[float]):
+            root: Annotated[float, Field(ge=1.0)]
+
+
+        class PatternedItem(RootModel[Literal['abc']]):
+            root: Annotated[Literal['abc'], Field(min_length=1, pattern='^a')]
+
+
+        class CountModel(RootModel[NonNegativeInt]):
+            root: Annotated[NonNegativeInt, Field(ge=0)]
+
+
+        class NullableCount(RootModel[NonNegativeInt | None]):
+            root: Annotated[NonNegativeInt | None, Field(ge=0)]
+
+
+        class Bounded(RootModel[NonNegativeInt]):
+            root: Annotated[NonNegativeInt, Field(ge=0, le=9)]
+
+
+        class Ratio(RootModel[PositiveFloat]):
+            root: Annotated[PositiveFloat, Field(gt=0)]
+
+
+        class ModelIds1(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ModelIds(RootModel[ModelIds1 | Literal['gpt-live-1']]):
+            root: ModelIds1 | Literal['gpt-live-1']
+
+
+        class ConstIds1(RootModel[str]):
+            root: Annotated[str, Field(min_length=1)]
+
+
+        class ConstIds(RootModel[ConstIds1 | Literal['gpt-live-1']]):
+            root: ConstIds1 | Literal['gpt-live-1']
+
+
+        class CodeModel(RootModel[Literal['abc']]):
+            root: Annotated[Literal['abc'], Field(min_length=1)]
+
+
+        class Level(Enum):
+            bb = 'bb'
+            ccc = 'ccc'
+
+
+        class RedundantConstraints(BaseModel):
+            count: Annotated[NonNegativeInt | None, Field(ge=0)] = None
+            plain: NonNegativeInt | None = None
+            negative: Annotated[NegativeInt | None, Field(lt=0)] = None
+            positive: Annotated[PositiveFloat | None, Field(gt=0)] = None
+            both: Annotated[NonNegativeInt | None, Field(ge=0, le=10)] = None
+            counts: list[Count | None] | None = None
+            root_count: CountModel | None = None
+            nullable_count: NullableCount | None = None
+            bounded: Bounded | None = None
+            ratio: Ratio | None = None
+            model: Model | Model1 | None = None
+            const_model: ConstModel | ConstModel1 | None = None
+            direct: Annotated[Literal['abc'] | None, Field(min_length=1)] = None
+            number: Annotated[Literal[5] | None, Field(ge=1)] = None
+            codes: list[Code] | None = None
+            code: CodeModel | None = None
+            level: Level | None = None
+            unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
+            ratios: list[Ratio1] | None = None
+            patterned: list[PatternedItem] | None = None
+        ```
+
+        <!-- fmt: on -->
+
 ---
 
 ## `--original-field-name-delimiter` {#original-field-name-delimiter}
@@ -1834,10 +2594,14 @@ the delimiter used in original field names. This is useful when field names cont
 delimiters like spaces or hyphens that should be treated as word boundaries during
 snake_case conversion.
 
+**Option relationships:**
+
+- **Requires:** [`--snake-case-field`](field-customization.md#snake-case-field) enabled - `--original-field-name-delimiter` can not be used without `--snake-case-field`.
+
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --original-field-name-delimiter " " # (1)!
+    datamodel-codegen --input space_field_enum.json --snake-case-field --original-field-name-delimiter " " # (1)!
     ```
 
     1. :material-arrow-left: `--original-field-name-delimiter` - the option documented here
@@ -1868,6 +2632,8 @@ snake_case conversion.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  space_field_enum.json
@@ -1888,6 +2654,8 @@ snake_case conversion.
         space_if: SpaceIF | None = Field(None, alias='SpaceIF')
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--remove-special-field-name-prefix` {#remove-special-field-name-prefix}
@@ -1899,7 +2667,7 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --remove-special-field-name-prefix # (1)!
+    datamodel-codegen --input special_prefix_model.json --remove-special-field-name-prefix # (1)!
     ```
 
     1. :material-arrow-left: `--remove-special-field-name-prefix` - the option documented here
@@ -1932,6 +2700,8 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  special_prefix_model.json
@@ -1950,11 +2720,13 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
         profile: str | None = None
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--serialization-aliases` {#serialization-aliases}
 
-Apply custom Pydantic v2 serialization aliases from JSON file.
+Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 
 The `--serialization-aliases` option lets Pydantic v2 models keep input aliases
 or validation aliases while using separate output-only names for serialization.
@@ -1962,7 +2734,7 @@ or validation aliases while using separate output-only names for serialization.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input serialization_aliases.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--serialization-aliases` - the option documented here
@@ -2145,6 +2917,8 @@ or validation aliases while using separate output-only names for serialization.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  serialization_aliases.json
@@ -2250,18 +3024,22 @@ or validation aliases while using separate output-only names for serialization.
         requiredOnlyRecursiveEmpty: RequiredOnlyRecursiveEmptyMessage | None = None
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--set-default-enum-member` {#set-default-enum-member}
 
-Set the first enum member as the default value for enum fields.
+Use the legacy flag for deserializing enum defaults.
 
-The `--set-default-enum-member` flag configures the code generation behavior.
+The `--set-default-enum-member` flag is deprecated. Use `--deserialize-default-values enum` instead.
+
+**Deprecated:** --set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --set-default-enum-member # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model --set-default-enum-member # (1)!
     ```
 
     1. :material-arrow-left: `--set-default-enum-member` - the option documented here
@@ -2326,6 +3104,8 @@ The `--set-default-enum-member` flag configures the code generation behavior.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  duplicate_enum.json
@@ -2362,6 +3142,8 @@ The `--set-default-enum-member` flag configures the code generation behavior.
         )
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--snake-case-field` {#snake-case-field}
@@ -2372,12 +3154,12 @@ The `--snake-case-field` flag converts camelCase or PascalCase field names
 to snake_case format in the generated Python code, following Python naming
 conventions (PEP 8).
 
-**Related:** [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members)
+**Related:** [`--capitalize-enum-members`](#capitalize-enum-members)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field # (1)!
+    datamodel-codegen --input invalid_enum_name.json --snake-case-field # (1)!
     ```
 
     1. :material-arrow-left: `--snake-case-field` - the option documented here
@@ -2404,6 +3186,8 @@ conventions (PEP 8).
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  invalid_enum_name.json
@@ -2423,6 +3207,8 @@ conventions (PEP 8).
         mro_ = 'mro'
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--special-field-name-prefix` {#special-field-name-prefix}
@@ -2434,7 +3220,7 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --special-field-name-prefix special # (1)!
+    datamodel-codegen --input special_enum.json --special-field-name-prefix special # (1)!
     ```
 
     1. :material-arrow-left: `--special-field-name-prefix` - the option documented here
@@ -2463,6 +3249,8 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  special_enum.json
@@ -2490,6 +3278,8 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
         root: ModelEnum | None = None
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--use-attribute-docstrings` {#use-attribute-docstrings}
@@ -2501,12 +3291,12 @@ format (PEP 224 attribute docstrings) rather than in Field(..., description=...)
 This provides better IDE support for hovering over attributes. Requires
 `--use-field-description` to be enabled.
 
-**Related:** [`--use-field-description`](field-customization.md#use-field-description)
+**Related:** [`--use-field-description`](#use-field-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
+    datamodel-codegen --input use_attribute_docstrings_test.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
     ```
 
     1. :material-arrow-left: `--use-attribute-docstrings` - the option documented here
@@ -2536,6 +3326,8 @@ This provides better IDE support for hovering over attributes. Requires
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  use_attribute_docstrings_test.json
@@ -2560,6 +3352,8 @@ This provides better IDE support for hovering over attributes. Requires
         """
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--use-enum-values-in-discriminator` {#use-enum-values-in-discriminator}
@@ -2571,7 +3365,7 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input discriminator_enum.yaml --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-enum-values-in-discriminator` - the option documented here
@@ -2625,6 +3419,8 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  discriminator_enum.yaml
@@ -2660,6 +3456,8 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
         root: RequestV1 | RequestV2 = Field(..., discriminator='version')
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--use-field-description` {#use-field-description}
@@ -2670,12 +3468,12 @@ The `--use-field-description` flag extracts the `description` property from
 schema fields and includes them as docstrings or Field descriptions in the
 generated models, preserving documentation from the original schema.
 
-**Related:** [`--use-inline-field-description`](field-customization.md#use-inline-field-description), [`--use-schema-description`](field-customization.md#use-schema-description)
+**Related:** [`--use-inline-field-description`](#use-inline-field-description), [`--use-schema-description`](#use-schema-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-type-alias --use-field-description # (1)!
+    datamodel-codegen --input type_alias.json --use-type-alias --use-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description` - the option documented here
@@ -2870,6 +3668,8 @@ generated models, preserving documentation from the original schema.
 
         **Output:**
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  api_multiline_docstrings.yaml
@@ -2945,6 +3745,8 @@ generated models, preserving documentation from the original schema.
             event: Event | None = None
         ```
 
+        <!-- fmt: on -->
+
     === "JSON Schema"
 
         **Input Schema:**
@@ -2989,6 +3791,8 @@ generated models, preserving documentation from the original schema.
 
         **Output:**
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  type_alias.json
@@ -3028,6 +3832,8 @@ generated models, preserving documentation from the original schema.
             annotated_field: AnnotatedType | None = None
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--use-field-description-example` {#use-field-description-example}
@@ -3038,12 +3844,12 @@ The `--use-field-description-example` flag adds the `example` or `examples`
 property from schema fields as docstrings. This provides documentation that
 is visible in IDE intellisense.
 
-**Related:** [`--use-field-description`](field-customization.md#use-field-description), [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
+**Related:** [`--use-field-description`](#use-field-description), [`--use-inline-field-description`](#use-inline-field-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description-example # (1)!
+    datamodel-codegen --input extras.json --use-field-description-example # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description-example` - the option documented here
@@ -3096,6 +3902,8 @@ is visible in IDE intellisense.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  extras.json
@@ -3123,6 +3931,8 @@ is visible in IDE intellisense.
         """
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--use-inline-field-description` {#use-inline-field-description}
@@ -3133,12 +3943,12 @@ The `--use-inline-field-description` flag adds the `description` property from
 schema fields as inline comments after each field definition. This provides
 documentation without using Field() wrappers.
 
-**Related:** [`--use-field-description`](field-customization.md#use-field-description), [`--use-schema-description`](field-customization.md#use-schema-description)
+**Related:** [`--use-field-description`](#use-field-description), [`--use-schema-description`](#use-schema-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-inline-field-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-inline-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-inline-field-description` - the option documented here
@@ -3333,6 +4143,8 @@ documentation without using Field() wrappers.
 
         **Output:**
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  api_multiline_docstrings.yaml
@@ -3414,6 +4226,8 @@ documentation without using Field() wrappers.
             event: Event | None = None
         ```
 
+        <!-- fmt: on -->
+
     === "JSON Schema"
 
         **Input Schema:**
@@ -3434,6 +4248,8 @@ documentation without using Field() wrappers.
         ```
 
         **Output:**
+
+        <!-- fmt: off -->
 
         ```python
         # generated by datamodel-codegen:
@@ -3459,6 +4275,8 @@ documentation without using Field() wrappers.
             """
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--use-schema-description` {#use-schema-description}
@@ -3469,12 +4287,12 @@ The `--use-schema-description` flag extracts the `description` property from
 schema definitions and adds it as a docstring to the generated class. This is
 useful for preserving documentation from your schema in the generated code.
 
-**Related:** [`--use-field-description`](field-customization.md#use-field-description), [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
+**Related:** [`--use-field-description`](#use-field-description), [`--use-inline-field-description`](#use-inline-field-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-schema-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-schema-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-schema-description` - the option documented here
@@ -3667,6 +4485,8 @@ useful for preserving documentation from your schema in the generated code.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  api_multiline_docstrings.yaml
@@ -3747,6 +4567,8 @@ useful for preserving documentation from your schema in the generated code.
         event: Event | None = None
     ```
 
+    <!-- fmt: on -->
+
 ---
 
 ## `--use-serialization-alias` {#use-serialization-alias}
@@ -3760,7 +4582,7 @@ serializing to the original JSON property name.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input no_alias.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialization-alias` - the option documented here
@@ -3793,6 +4615,8 @@ serializing to the original JSON property name.
 
     === "With Option"
 
+        <!-- fmt: off -->
+
         ```python
         # generated by datamodel-codegen:
         #   filename:  no_alias.json
@@ -3809,7 +4633,11 @@ serializing to the original JSON property name.
             email_address: str | None = None
         ```
 
+        <!-- fmt: on -->
+
     === "Without Option"
+
+        <!-- fmt: off -->
 
         ```python
         # generated by datamodel-codegen:
@@ -3827,6 +4655,8 @@ serializing to the original JSON property name.
             email_address: str | None = None
         ```
 
+        <!-- fmt: on -->
+
 ---
 
 ## `--use-single-line-docstring` {#use-single-line-docstring}
@@ -3837,12 +4667,12 @@ The `--use-single-line-docstring` flag formats docstrings that fit on one line
 as compact single-line docstrings while keeping the historical multi-line
 format as the default.
 
-**Related:** [`--use-field-description`](field-customization.md#use-field-description), [`--use-schema-description`](field-customization.md#use-schema-description)
+**Related:** [`--use-field-description`](#use-field-description), [`--use-schema-description`](#use-schema-description)
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description --use-single-line-docstring # (1)!
+    datamodel-codegen --input person.json --use-field-description --use-single-line-docstring # (1)!
     ```
 
     1. :material-arrow-left: `--use-single-line-docstring` - the option documented here
@@ -3882,6 +4712,8 @@ format as the default.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  person.json
@@ -3905,6 +4737,428 @@ format as the default.
         comment: None = Field(None)
     ```
 
+    <!-- fmt: on -->
+
+---
+
+## `--use-site-models-for-constrained-refs` {#use-site-models-for-constrained-refs}
+
+Give an allOf of `$ref` members whose other parts add assertions its own model.
+
+Without the option such an allOf is written as the referenced type, which leaves out the constraints, the enum values
+or the type its other parts add: `allOf: [{$ref: Quantity}], maximum: 10` accepts 11. With the option the site gets
+its own model of the values all parts admit (`conint(ge=1, le=10)`), named after the site, and an allOf of enum
+references gets an enum of the members they share. The referenced type stays where it enforces what the parts enforce
+together in the output (dataclasses and TypedDict check no constraints, so only types and literals count there), and
+msgspec writes the added constraints beside the reference where its `Meta` takes them. A model-level
+`--type-overrides` entry of the referenced model applies to its site models too.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input site_models_for_constrained_refs.json --use-site-models-for-constrained-refs # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-site-models-for-constrained-refs` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Order",
+      "type": "object",
+      "properties": {
+        "quantity": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            }
+          ],
+          "maximum": 10
+        },
+        "sizes": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Size"
+              },
+              {
+                "enum": [
+                  "m",
+                  "l"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "$defs": {
+        "Quantity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "Size": {
+          "type": "string",
+          "enum": [
+            "s",
+            "m",
+            "l"
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  site_models_for_constrained_refs.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel, conint
+
+
+        class Quantity1(RootModel[conint(ge=1, le=10)]):
+            root: conint(ge=1, le=10)
+
+
+        class Size2(Enum):
+            m = 'm'
+            l = 'l'
+
+
+        class Order(BaseModel):
+            quantity: Quantity1 | None = None
+            sizes: list[Size2] | None = None
+
+
+        class Quantity(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Size(Enum):
+            s = 's'
+            m = 'm'
+            l = 'l'
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  site_models_for_constrained_refs.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel, conint
+
+
+        class Quantity(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Size(Enum):
+            s = 's'
+            m = 'm'
+            l = 'l'
+
+
+        class Order(BaseModel):
+            quantity: Quantity | None = None
+            sizes: list[Size] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-tag-as-union-variant-name` {#use-tag-as-union-variant-name}
+
+Name inline oneOf/anyOf branch models after their tag: what `--infer-union-variant-names` does, skipping tags whose class names collide, plus single-branch unions (`type: "exec"` -> `LocalShellActionExec`) and single-key branches (`{"granular": ...}` -> `AskForApprovalGranular`).
+
+`--infer-union-variant-names` needs at least two branches with distinct literals
+on one field, so a union with one tagged branch keeps a position-based name that
+changes once a second branch is added, and a branch tagged by its only key, as in
+externally tagged enums, is never named. `--use-tag-as-union-variant-name` gives
+the names `--infer-union-variant-names` gives wherever that option names a union
+with distinct class names, and in the other unions also names:
+
+- the branches after a literal field that only one branch carries or that the key
+  branches below lack, picked like `--infer-union-variant-names` picks it (the
+  `discriminator` property first, then property order) except that a field the
+  union schema itself fixes to a single literal is skipped; a branch that is a
+  union itself is not named this way;
+- a key branch after its key: its only own property (one the union schema does
+  not declare), required and not a single literal, when the branch has no
+  `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union
+  schema's `allOf` is shared by every branch), and fixes no field the union
+  declares without a literal to a single literal, unless the union is one branch
+  beside `null`.
+
+String enum branches and branches with several untagged properties keep
+position-based names. Names are compared as the class names they become, so
+`foo-bar` and `fooBar` (both `FooBar`) collide: a literal field whose names
+collide is skipped for the next one, and literal names win over key names, so a
+key name that collides with a literal name or another key name is dropped and
+its branch keeps a position-based name.
+
+Under `--naming-strategy parent-prefixed` or `full-path`, a model in the value
+of a branch named after its key is named as if the branch were not in its path,
+so the key is not repeated: the branch `ItemEditedChangesFieldValue` holds
+`ItemEditedFieldValue`, not `ItemEditedChangesFieldValueFieldValue`, numbered
+like any other name when another model has it.
+
+| Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
+|----------|---------|-------------------------------|-----------------------------------|
+| Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |
+| Single branch (`type: "exec"`) | `LocalShellAction1` | `LocalShellAction1` | `LocalShellActionExec` |
+| Single-key branch (`{"granular": ...}`) | `AskForApproval2` | `AskForApproval2` | `AskForApprovalGranular` |
+
+**Related:** [`--infer-union-variant-names`](#infer-union-variant-names), [`--use-title-as-name`](#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input use_tag_as_union_variant_name.json --use-tag-as-union-variant-name # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-tag-as-union-variant-name` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Session",
+      "type": "object",
+      "required": ["pet", "action", "approval"],
+      "properties": {
+        "pet": {"$ref": "#/definitions/Pet"},
+        "action": {"$ref": "#/definitions/LocalShellAction"},
+        "approval": {"$ref": "#/definitions/AskForApproval"}
+      },
+      "definitions": {
+        "Pet": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "meows"],
+              "properties": {
+                "type": {"const": "cat"},
+                "meows": {"type": "boolean"}
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "barks"],
+              "properties": {
+                "type": {"const": "dog"},
+                "barks": {"type": "boolean"}
+              }
+            }
+          ]
+        },
+        "LocalShellAction": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["command", "type"],
+              "properties": {
+                "command": {"type": "array", "items": {"type": "string"}},
+                "type": {"type": "string", "enum": ["exec"]}
+              }
+            }
+          ]
+        },
+        "AskForApproval": {
+          "oneOf": [
+            {"type": "string", "enum": ["untrusted", "never"]},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["granular"],
+              "properties": {
+                "granular": {
+                  "type": "object",
+                  "required": ["sandbox"],
+                  "properties": {
+                    "sandbox": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  use_tag_as_union_variant_name.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class PetCat(BaseModel):
+            type: Literal['cat']
+            meows: bool
+
+
+        class PetDog(BaseModel):
+            type: Literal['dog']
+            barks: bool
+
+
+        class Pet(RootModel[PetCat | PetDog]):
+            root: PetCat | PetDog
+
+
+        class Type(Enum):
+            exec = 'exec'
+
+
+        class LocalShellActionExec(BaseModel):
+            command: list[str]
+            type: Type
+
+
+        class LocalShellAction(RootModel[LocalShellActionExec]):
+            root: LocalShellActionExec
+
+
+        class AskForApproval1(Enum):
+            untrusted = 'untrusted'
+            never = 'never'
+
+
+        class Granular(BaseModel):
+            sandbox: bool
+
+
+        class AskForApprovalGranular(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            granular: Granular
+
+
+        class AskForApproval(RootModel[AskForApproval1 | AskForApprovalGranular]):
+            root: AskForApproval1 | AskForApprovalGranular
+
+
+        class Session(BaseModel):
+            pet: Pet
+            action: LocalShellAction
+            approval: AskForApproval
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  use_tag_as_union_variant_name.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class Pet1(BaseModel):
+            type: Literal['cat']
+            meows: bool
+
+
+        class Pet2(BaseModel):
+            type: Literal['dog']
+            barks: bool
+
+
+        class Pet(RootModel[Pet1 | Pet2]):
+            root: Pet1 | Pet2
+
+
+        class Type(Enum):
+            exec = 'exec'
+
+
+        class LocalShellAction1(BaseModel):
+            command: list[str]
+            type: Type
+
+
+        class LocalShellAction(RootModel[LocalShellAction1]):
+            root: LocalShellAction1
+
+
+        class AskForApproval1(Enum):
+            untrusted = 'untrusted'
+            never = 'never'
+
+
+        class Granular(BaseModel):
+            sandbox: bool
+
+
+        class AskForApproval2(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            granular: Granular
+
+
+        class AskForApproval(RootModel[AskForApproval1 | AskForApproval2]):
+            root: AskForApproval1 | AskForApproval2
+
+
+        class Session(BaseModel):
+            pet: Pet
+            action: LocalShellAction
+            approval: AskForApproval
+        ```
+
+        <!-- fmt: on -->
+
 ---
 
 ## `--use-title-as-name` {#use-title-as-name}
@@ -3920,7 +5174,7 @@ This is useful when schemas have descriptive titles that should be preserved.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-title-as-name # (1)!
+    datamodel-codegen --input titles.json --use-title-as-name # (1)!
     ```
 
     1. :material-arrow-left: `--use-title-as-name` - the option documented here
@@ -4025,6 +5279,8 @@ This is useful when schemas have descriptive titles that should be preserved.
 
     **Output:**
 
+    <!-- fmt: off -->
+
     ```python
     # generated by datamodel-codegen:
     #   filename:  titles.json
@@ -4091,5 +5347,7 @@ This is useful when schemas have descriptive titles that should be preserved.
 
     ProcessingTaskTitle.model_rebuild()
     ```
+
+    <!-- fmt: on -->
 
 ---

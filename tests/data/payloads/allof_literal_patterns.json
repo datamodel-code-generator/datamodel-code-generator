@@ -1,0 +1,289 @@
+[
+  {
+    "name": "split",
+    "valid": [
+      "ab",
+      "ba",
+      "a\nb"
+    ],
+    "invalid": [
+      "a",
+      "b",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "suffix",
+    "valid": [
+      "ba",
+      "aba",
+      "baba"
+    ],
+    "invalid": [
+      "a",
+      "b",
+      "ab"
+    ],
+    "normal": false
+  },
+  {
+    "name": "unicode",
+    "valid": [
+      "猫犬",
+      "犬猫",
+      "猫\n犬"
+    ],
+    "invalid": [
+      "猫",
+      "犬",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "punctuation",
+    "valid": [
+      "-_",
+      "_-",
+      "-\n_"
+    ],
+    "invalid": [
+      "-",
+      "_",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "newline",
+    "valid": [
+      "a\nb",
+      "ba\n"
+    ],
+    "invalid": [
+      "a\n",
+      "ab",
+      "b"
+    ],
+    "normal": false
+  },
+  {
+    "name": "prefix",
+    "valid": [
+      "ab",
+      "cab"
+    ],
+    "invalid": [
+      "a",
+      "ba",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "reverse_prefix",
+    "valid": [
+      "ab",
+      "cab"
+    ],
+    "invalid": [
+      "a",
+      "ba",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "identical",
+    "valid": [
+      "a",
+      "ba"
+    ],
+    "invalid": [
+      "b",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "empty",
+    "valid": [
+      "a",
+      "ba"
+    ],
+    "invalid": [
+      "b",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "anchored",
+    "valid": [
+      "ab",
+      "abc"
+    ],
+    "invalid": [
+      "a",
+      "ba",
+      "a\nb"
+    ],
+    "normal": true
+  },
+  {
+    "name": "right_anchor",
+    "valid": [
+      "a",
+      "ab"
+    ],
+    "invalid": [
+      "ba",
+      "b",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "character_class",
+    "valid": [
+      "b",
+      "ab"
+    ],
+    "invalid": [
+      "a",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "single",
+    "valid": [
+      "a",
+      "ba"
+    ],
+    "invalid": [
+      "b",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "escaped_dot",
+    "valid": [
+      "x.",
+      ".x"
+    ],
+    "invalid": [
+      "x",
+      ".",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "escaped_dollar",
+    "valid": [
+      "x$",
+      "$x"
+    ],
+    "invalid": [
+      "x",
+      "$",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "escaped_metacharacters",
+    "valid": [
+      "x\\.^$*+?{}[]|()",
+      "\\.^$*+?{}[]|()x"
+    ],
+    "invalid": [
+      "x",
+      "\\.^$*+?{}[]|()",
+      ""
+    ],
+    "normal": false
+  },
+  {
+    "name": "escaped_prefix",
+    "valid": [
+      ".x",
+      "a.x"
+    ],
+    "invalid": [
+      ".",
+      "x",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "escaped_reverse_prefix",
+    "valid": [
+      ".x",
+      "a.x"
+    ],
+    "invalid": [
+      ".",
+      "x",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "escaped_identical",
+    "valid": [
+      ".",
+      "x."
+    ],
+    "invalid": [
+      "x",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "unknown_escape",
+    "valid": [
+      "1",
+      "a1"
+    ],
+    "invalid": [
+      "2",
+      "x",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "unknown_newline_escape",
+    "valid": [
+      "\n",
+      "x\n"
+    ],
+    "invalid": [
+      "n",
+      "x",
+      ""
+    ],
+    "normal": true
+  },
+  {
+    "name": "triple",
+    "valid": [
+      "abc",
+      "cba",
+      "b\nc\na"
+    ],
+    "invalid": [
+      "ab",
+      "ac",
+      "bc",
+      ""
+    ],
+    "normal": false
+  }
+]

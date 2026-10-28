@@ -1,0 +1,41 @@
+{
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/Child"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

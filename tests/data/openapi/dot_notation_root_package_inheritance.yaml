@@ -1,0 +1,29 @@
+openapi: "3.0.0"
+info:
+  title: Test API with inheritance from the root package
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    Animal:
+      type: object
+      description: Base animal in the root package (__init__.py)
+      properties:
+        species:
+          type: string
+    v0.mammal.Dog:
+      description: Dog inheriting from the root package (2 levels up)
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          properties:
+            breed:
+              type: string
+    v0.mammal.canine.Puppy:
+      description: Puppy inheriting from the root package (3 levels up)
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          properties:
+            age_weeks:
+              type: integer

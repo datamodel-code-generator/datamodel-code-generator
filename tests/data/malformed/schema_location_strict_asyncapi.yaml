@@ -1,0 +1,17 @@
+asyncapi: 3.0.0
+info:
+  title: Version-specific features
+  version: '1.0'
+channels:
+  user/signup:
+    address: user/signup
+    messages:
+      UserSignedUp:
+        payload:
+          type: string
+components:
+  schemas:
+    a/b:
+      type: number
+      maximum: 10
+      exclusiveMaximum: true

@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, Field, conint
+
+
+class Person(BaseModel):
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    age: Optional[conint(ge=0)] = None
+    friends: Optional[List[Any]] = None
+    comment: None = Field(None)

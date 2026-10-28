@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Discriminator field aliases",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Cat": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "ordinary"
+          },
+          "meow": {
+            "type": "string"
+          }
+        }
+      },
+      "Dog": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "ordinary"
+          },
+          "bark": {
+            "type": "string"
+          }
+        }
+      },
+      "Pet": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "petType",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Unrelated": {
+        "type": "object",
+        "properties": {
+          "petType": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

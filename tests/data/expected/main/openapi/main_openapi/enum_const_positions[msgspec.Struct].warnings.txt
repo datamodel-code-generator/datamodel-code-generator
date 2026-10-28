@@ -1,0 +1,2 @@
+The schema at enum_const_positions.yaml#/components/schemas/Holder/properties/kind admits only its const 'a' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.yaml#/components/schemas/Holder/properties/kinds/items admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.

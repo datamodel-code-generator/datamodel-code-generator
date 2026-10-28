@@ -1,0 +1,37 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Marker references", "version": "1"},
+  "paths": {"/p": {"get": {
+    "parameters": [
+      {"name": "q1", "in": "query", "schema": {
+        "$ref": "#/components/schemas/Holder/properties/s#-datamodel-code-generator-#-a", "maxLength": 5
+      }},
+      {"name": "q2", "in": "query", "schema": {"allOf": [
+        {"$ref": "#/components/schemas/Holder/properties/o#-datamodel-code-generator-#-a"},
+        {"$ref": "#/components/schemas/B"}
+      ]}},
+      {"name": "q3", "in": "query", "schema": {"allOf": [
+        {"$ref": "#/components/schemas/Holder/properties/u#-datamodel-code-generator-#-a"},
+        {"type": "object", "properties": {"y": {"type": "string"}}}
+      ]}},
+      {"name": "q4", "in": "query", "schema": {"type": "array", "items": {"type": "string"}, "allOf": [
+        {"$ref": "#/components/schemas/Holder/properties/s#-datamodel-code-generator-#-a", "maxLength": 3}
+      ]}},
+      {"name": "q5", "in": "query", "schema": {"type": "array", "items": {"type": "string"}, "allOf": [
+        {"$ref": "#/components/schemas/Arr", "items": {
+          "$ref": "#/components/schemas/Holder/properties/s#-datamodel-code-generator-#-a"
+        }}
+      ]}}
+    ],
+    "responses": {"200": {"description": "ok"}}
+  }}},
+  "components": {"schemas": {
+    "Holder": {"type": "object", "properties": {
+      "s#-datamodel-code-generator-#-a": {"type": "string"},
+      "o#-datamodel-code-generator-#-a": {"type": "object", "properties": {"x": {"type": "string"}}},
+      "u#-datamodel-code-generator-#-a": {"anyOf": [{"type": "string"}, {"type": "integer"}]}
+    }},
+    "B": {"type": "object", "properties": {"x": {"type": "integer"}}},
+    "Arr": {"type": "array", "items": {"type": "string"}}
+  }}
+}

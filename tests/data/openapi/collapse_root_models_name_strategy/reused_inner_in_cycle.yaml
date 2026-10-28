@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: collapse root models
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Dup:
+      type: object
+      properties:
+        x:
+          type: string
+    a.Inner:
+      type: object
+      properties:
+        x:
+          type: string
+    b.Wrapper:
+      $ref: '#/components/schemas/a.Inner'
+    a.User:
+      type: object
+      properties:
+        w:
+          $ref: '#/components/schemas/b.Wrapper'

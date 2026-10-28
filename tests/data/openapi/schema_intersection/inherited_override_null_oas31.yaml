@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: t
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Dog:
+      type: object
+      properties:
+        n:
+          type: integer
+    Cat:
+      type: object
+      required: [lives]
+      properties:
+        kind:
+          anyOf:
+            - type: string
+            - type: "null"
+        kind2:
+          type: [string, "null"]
+        kind3:
+          anyOf:
+            - type: string
+            - type: "null"
+        kind4:
+          type: [string, "null"]
+        ckind:
+          anyOf:
+            - type: string
+            - type: "null"
+        lives:
+          type: integer
+    NamedCat:
+      allOf:
+        - $ref: '#/components/schemas/Cat'
+        - type: object
+          required: [kind, kind4, ckind, direct, direct_obj, direct_obj_first, list_null_first]
+          properties:
+            kind:
+              type: string
+            kind2:
+              type: string
+            kind3:
+              nullable: false
+            kind4:
+              type: string
+              nullable: false
+            ckind:
+              type: string
+              minLength: 2
+            name:
+              type: string
+            direct:
+              type: string
+              anyOf:
+                - type: string
+                - type: "null"
+            direct_obj:
+              type: object
+              anyOf:
+                - $ref: '#/components/schemas/Dog'
+                - type: "null"
+            direct_obj_first:
+              type: object
+              anyOf:
+                - type: "null"
+                - $ref: '#/components/schemas/Dog'
+            only_null:
+              type: string
+              anyOf:
+                - type: "null"
+            list_null_first:
+              type: string
+              anyOf:
+                - type: ["null"]
+                - type: string

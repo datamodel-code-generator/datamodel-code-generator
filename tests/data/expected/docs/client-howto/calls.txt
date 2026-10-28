@@ -1,0 +1,10 @@
+exit 0
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+id=1 name='Mimi' tag='cat'
+> GET https://eu.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret
+> GET https://eu.shelter.example/v1/pets?limit=5&tag=cat authorization: Bearer s3cret
+> GET https://eu.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret
+> POST https://eu.shelter.example/v1/pets content-type: application/json authorization: Bearer s3cret {"name":"Kiki"}
+id=3 name='Kiki' tag=None
+> POST https://eu.shelter.example/v1/pets content-type: application/json authorization: Bearer s3cret {"name":"Kiki","tag":"bird"}
+id=3 name='Kiki' tag='bird'

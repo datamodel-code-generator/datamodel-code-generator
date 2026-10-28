@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "profile": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "credentials": {
+          "type": "object",
+          "properties": {
+            "password": {
+              "type": "string",
+              "writeOnly": true
+            },
+            "user": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

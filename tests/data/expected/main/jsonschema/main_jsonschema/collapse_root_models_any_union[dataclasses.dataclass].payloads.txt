@@ -1,0 +1,8 @@
+valid {"direct": {"types@a": 1}}: accepted
+valid {"items": [1, "x", null, {"types@b": [1]}]}: accepted
+valid {"values": {"k": null, "l": {"types@c": "y"}}}: accepted
+valid {"patterns": {"#a": {"types@c": "y"}, "#b": 2}}: accepted
+invalid {"items": {"a": 1}}: rejected
+invalid {"values": [1]}: rejected
+invalid {"patterns": {"a": 1}}: accepted
+invalid {"patterns": [1]}: rejected

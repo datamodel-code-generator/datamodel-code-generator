@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "default": "first"
+    },
+    "item": {
+      "$ref": "#/$defs/Derived"
+    },
+    "choice": {
+      "$ref": "#/$defs/ChoiceRoot"
+    }
+  },
+  "required": [
+    "item",
+    "choice"
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "second": {
+          "type": "integer"
+        },
+        "first": {
+          "type": "string"
+        }
+      }
+    },
+    "Derived": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "third": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      ]
+    },
+    "Choice": {
+      "type": "string",
+      "enum": [
+        "last",
+        "first"
+      ]
+    },
+    "ChoiceRoot": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Choice"
+        }
+      ]
+    },
+    "Mapping": {
+      "allOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      ]
+    }
+  }
+}

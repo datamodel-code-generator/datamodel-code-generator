@@ -61,13 +61,26 @@ class Pet(BaseModel):
 class Model(BaseModel):
     pets: list[Pet]
     status: int
-
 ```
+
+## Supported Input Shapes
+
+| Input type | Generation behavior |
+|------------|---------------------|
+| JSON object/array samples | Infers JSON Schema with GenSON, then generates models |
+| YAML sample data | Parsed as sample data, then inferred like JSON |
+| CSV files | Infers columns from rows and generates a tabular model |
+
+## Limitations
+
+Raw data input is inference-based. Optionality, unions, numeric ranges, and exact constraints depend on the sample
+values you provide, so small or incomplete samples may produce broader models than a hand-authored schema.
 
 ---
 
 ## 📖 See Also
 
+- 🚀 [Getting Started](getting-started.md) - Installation and first model
 - 📋 [Generate from JSON Schema](jsonschema.md) - JSON Schema input documentation
 - 🖥️ [CLI Reference](cli-reference/index.md) - Complete CLI options reference
 - 📊 [Supported Data Types](supported-data-types.md) - Data type support details

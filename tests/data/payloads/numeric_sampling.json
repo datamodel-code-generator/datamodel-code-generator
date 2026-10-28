@@ -1,0 +1,242 @@
+{
+  "fractional": {
+    "type": "number",
+    "multipleOf": 0.25
+  },
+  "decimal_fraction": {
+    "type": "number",
+    "multipleOf": 0.3
+  },
+  "positive": {
+    "type": "number",
+    "multipleOf": 2.5,
+    "minimum": 2.5,
+    "maximum": 12.5
+  },
+  "negative": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": -3,
+    "maximum": -0.25
+  },
+  "exclusive": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "exclusiveMinimum": 1,
+    "exclusiveMaximum": 2.5
+  },
+  "draft4": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": -0.5,
+    "maximum": 0.5,
+    "exclusiveMinimum": true,
+    "exclusiveMaximum": true
+  },
+  "draft4_inclusive": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": -0.5,
+    "maximum": 0.5,
+    "exclusiveMinimum": false,
+    "exclusiveMaximum": false
+  },
+  "integer_float_multiple": {
+    "type": "integer",
+    "multipleOf": 0.5,
+    "minimum": -10,
+    "maximum": 10
+  },
+  "integer_multiple": {
+    "type": "integer",
+    "multipleOf": 2,
+    "minimum": -10,
+    "maximum": 10
+  },
+  "integral_float_multiple": {
+    "type": "number",
+    "multipleOf": 1.0,
+    "minimum": -10,
+    "maximum": 10
+  },
+  "plain_number": {
+    "type": "number",
+    "minimum": -10,
+    "maximum": 10
+  },
+  "positive_large": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": 1e+100,
+    "maximum": 2e+100
+  },
+  "negative_large": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": -2e+100,
+    "maximum": -1e+100
+  },
+  "tiny_multiple": {
+    "type": "number",
+    "multipleOf": 1e-300,
+    "minimum": -1e-20,
+    "maximum": 1e-20
+  },
+  "subnormal_multiple": {
+    "type": "number",
+    "multipleOf": 5e-324,
+    "minimum": -5e-323,
+    "maximum": 5e-323
+  },
+  "constant": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "const": 1e+100
+  },
+  "enum": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "enum": [
+      2.5,
+      -2.5,
+      0
+    ]
+  },
+  "schema_positions": {
+    "type": "object",
+    "properties": {
+      "default": {
+        "type": "number",
+        "multipleOf": 0.25
+      },
+      "examples": {
+        "type": "number",
+        "multipleOf": 2.5
+      },
+      "value": {
+        "$ref": "#/$defs/Number"
+      }
+    },
+    "$defs": {
+      "Number": {
+        "type": "number",
+        "multipleOf": 0.5
+      }
+    },
+    "required": [
+      "default",
+      "examples",
+      "value"
+    ],
+    "additionalProperties": false,
+    "default": {
+      "type": "number",
+      "multipleOf": 0.25
+    },
+    "examples": [
+      {
+        "type": "number",
+        "multipleOf": 0.25
+      }
+    ]
+  },
+  "array": {
+    "type": "array",
+    "items": {
+      "type": "number",
+      "multipleOf": 0.25
+    },
+    "minItems": 1,
+    "maxItems": 3
+  },
+  "allof": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "allOf": [
+          {
+            "type": "number",
+            "multipleOf": 0.25
+          },
+          {
+            "type": "number",
+            "multipleOf": 0.5
+          }
+        ]
+      }
+    },
+    "required": [
+      "value"
+    ],
+    "additionalProperties": false
+  },
+  "anyof": {
+    "anyOf": [
+      {
+        "type": "number",
+        "multipleOf": 0.25
+      },
+      {
+        "type": "string"
+      }
+    ]
+  },
+  "positive_limit": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": 2.2471164185778946e+307
+  },
+  "negative_limit": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "maximum": -2.2471164185778946e+307
+  },
+  "irrelevant_numeric_keywords": {
+    "type": "string",
+    "multipleOf": 1e-310,
+    "minimum": 10000000000.0
+  },
+  "decimal_singleton": {
+    "type": "number",
+    "minimum": 0.3,
+    "maximum": 0.3,
+    "multipleOf": 0.1
+  },
+  "negative_decimal_singleton": {
+    "type": "number",
+    "minimum": -0.3,
+    "maximum": -0.3,
+    "multipleOf": 0.1
+  },
+  "nested_decimal_singleton": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "type": "number",
+        "minimum": 0.3,
+        "maximum": 0.3,
+        "multipleOf": 0.1
+      }
+    },
+    "required": [
+      "value"
+    ],
+    "additionalProperties": false
+  },
+  "unbounded_number_integer_multiple": {
+    "type": "number",
+    "multipleOf": 2
+  },
+  "unbounded_integer_multiple": {
+    "type": "integer",
+    "multipleOf": 2
+  },
+  "number_singleton_beyond_sampling_range": {
+    "type": "number",
+    "multipleOf": 1,
+    "minimum": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+    "maximum": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  }
+}

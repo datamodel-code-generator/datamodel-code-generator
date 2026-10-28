@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Invalid operation beside null schemas
+  version: '1.0'
+paths:
+  /pets:
+    post:
+      parameters:
+        - name: limit
+          in: query
+          schema: null
+      requestBody:
+        content:
+          application/json:
+            schema: null
+          application/jsonl:
+            itemSchema: null
+      responses: 5

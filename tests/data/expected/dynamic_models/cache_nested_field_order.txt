@@ -1,0 +1,106 @@
+{
+  "first_then_second": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Record": true,
+      "NestedEnvelope": true
+    },
+    "cached_followup_model_order": [
+      "Record",
+      "NestedEnvelope"
+    ],
+    "uncached_followup_model_order": [
+      "Record",
+      "NestedEnvelope"
+    ],
+    "cached_followup_fields": {
+      "Record": [
+        "second",
+        "first"
+      ],
+      "NestedEnvelope": [
+        "metadata",
+        "records"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Record": [
+        "second",
+        "first"
+      ],
+      "NestedEnvelope": [
+        "metadata",
+        "records"
+      ]
+    },
+    "cached_followup_json": {
+      "Record": "{\"second\":4,\"first\":\"nested\"}",
+      "NestedEnvelope": "{\"metadata\":\"batch\",\"records\":[{\"second\":4,\"first\":\"nested\"}]}"
+    },
+    "uncached_followup_json": {
+      "Record": "{\"second\":4,\"first\":\"nested\"}",
+      "NestedEnvelope": "{\"metadata\":\"batch\",\"records\":[{\"second\":4,\"first\":\"nested\"}]}"
+    }
+  },
+  "second_then_first": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Record": true,
+      "NestedEnvelope": true
+    },
+    "cached_followup_model_order": [
+      "Record",
+      "NestedEnvelope"
+    ],
+    "uncached_followup_model_order": [
+      "Record",
+      "NestedEnvelope"
+    ],
+    "cached_followup_fields": {
+      "Record": [
+        "first",
+        "second"
+      ],
+      "NestedEnvelope": [
+        "metadata",
+        "records"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Record": [
+        "first",
+        "second"
+      ],
+      "NestedEnvelope": [
+        "metadata",
+        "records"
+      ]
+    },
+    "cached_followup_json": {
+      "Record": "{\"first\":\"nested\",\"second\":4}",
+      "NestedEnvelope": "{\"metadata\":\"batch\",\"records\":[{\"first\":\"nested\",\"second\":4}]}"
+    },
+    "uncached_followup_json": {
+      "Record": "{\"first\":\"nested\",\"second\":4}",
+      "NestedEnvelope": "{\"metadata\":\"batch\",\"records\":[{\"first\":\"nested\",\"second\":4}]}"
+    }
+  }
+}

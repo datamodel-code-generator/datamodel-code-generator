@@ -1,0 +1,34 @@
+ServerEvent valid {"type": "audio.delta", "delta": "AAAA"}: accepted
+ServerEvent valid {"type": "audio.delta", "delta": "AAAA", "stream_id": "s1"}: accepted
+ServerEvent valid {"type": "audio.done", "stream_id": "s1"}: accepted
+ServerEvent invalid {"type": "audio.delta"}: rejected
+ServerEvent invalid {"type": "audio.stop"}: rejected
+ServerEvent invalid {"type": "0#-datamodel-code-generator-#-allOf-#-special-#", "delta": "AAAA"}: rejected
+ServerEvent invalid {}: rejected
+MixedEvent valid {"type": "audio.delta", "delta": "AAAA", "channel": 1}: accepted
+MixedEvent valid {"type": "ping"}: accepted
+MixedEvent invalid {"type": "audio.done"}: rejected
+MixedEvent invalid {"type": "audio.delta", "delta": "AAAA", "channel": "one"}: rejected
+LiveEvent valid {"type": "started"}: accepted
+LiveEvent valid {"type": "updated", "count": 2}: accepted
+LiveEvent invalid {"type": "stopped"}: rejected
+LiveEvent invalid {"type": "updated", "count": "two"}: rejected
+LiveEvent invalid {}: rejected
+ClashingEvent valid {"type": "audio.done"}: accepted
+ClashingEvent valid {"type": "audio.done", "clash": true}: accepted
+ClashingEvent invalid {"type": "ping"}: rejected
+ClashingEvent invalid {"type": "audio.delta", "delta": "AAAA"}: rejected
+SharedAEvent valid {"type": "audio.done"}: accepted
+SharedAEvent valid {"type": "audio.done", "shared": true}: accepted
+SharedAEvent valid {"type": "ping"}: accepted
+SharedAEvent invalid {"type": "audio.delta", "delta": "AAAA"}: rejected
+SharedAEvent invalid {"type": "audio.done", "shared": 3}: rejected
+SharedBEvent valid {"type": "audio.done"}: accepted
+SharedBEvent valid {"type": "audio.done", "shared": true}: accepted
+SharedBEvent invalid {"type": "ping"}: rejected
+SharedBEvent invalid {"type": "audio.delta", "delta": "AAAA"}: rejected
+UntypedEvent valid {"type": "Untyped"}: accepted
+UntypedEvent valid {"type": "Untyped", "label": "a", "extra": 1}: accepted
+UntypedEvent invalid {}: rejected
+UntypedEvent invalid {"type": 1}: rejected
+UntypedEvent invalid {"type": "Untyped", "label": 2}: rejected

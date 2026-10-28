@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-millis"
+      },
+      "default": 9223372036854775807
+    }
+  ]
+}

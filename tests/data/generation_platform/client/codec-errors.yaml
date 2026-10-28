@@ -1,0 +1,231 @@
+openapi: 3.1.0
+info:
+  title: Codec errors
+  version: 1.0.0
+servers:
+  - url: https://codecs.example.com
+paths:
+  /forms:
+    post:
+      operationId: submit
+      parameters:
+        - name: ids
+          in: query
+          style: spaceDelimited
+          schema: {type: integer}
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: string}
+      responses:
+        '204':
+          description: Unplannable wire forms.
+  /unnamed-encoding:
+    post:
+      operationId: submitUnnamedEncoding
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+            encoding:
+              other: {style: form}
+      responses:
+        '204':
+          description: An encoding of no member.
+  /xml-member:
+    post:
+      operationId: submitXmlMember
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                meta: {type: object}
+            encoding:
+              meta: {contentType: application/xml}
+      responses:
+        '204':
+          description: A member content no builtin codec writes.
+  /deep-array:
+    post:
+      operationId: submitDeepArray
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items: {type: string}
+            encoding:
+              tags: {style: deepObject}
+      responses:
+        '204':
+          description: A style its member's shape has no form for.
+  /spread-clash:
+    post:
+      operationId: submitSpreadClash
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                opts:
+                  type: object
+                  properties:
+                    term: {type: string}
+            encoding:
+              opts: {style: form, explode: true}
+      responses:
+        '204':
+          description: An exploded member naming another member.
+  /spread-parts:
+    post:
+      operationId: submitSpreadParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                opts:
+                  type: object
+                  properties:
+                    term: {type: string}
+            encoding:
+              opts: {explode: true}
+      responses:
+        '204':
+          description: An exploded form-data member naming another member.
+  /members:
+    post:
+      operationId: submitMembers
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                location: {type: object, properties: {x: {type: integer}}}
+                stops: {type: array, items: {type: object, properties: {x: {type: integer}}}}
+                level: {type: [integer, boolean]}
+      responses:
+        '204':
+          description: Members whose values no text of one kind writes.
+  /inherited:
+    post:
+      operationId: submitInherited
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Base'}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        '204':
+          description: An inherited member whose values no text of one kind writes.
+  /extras:
+    post:
+      operationId: submitExtras
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: object, properties: {x: {type: integer}}}
+      responses:
+        '204':
+          description: Other properties whose values no text of one kind writes.
+  /extra-lists:
+    post:
+      operationId: submitExtraLists
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {type: object, properties: {x: {type: integer}}}}
+      responses:
+        '204':
+          description: Other properties whose items no text of one kind writes.
+  /extra-kinds:
+    post:
+      operationId: submitExtraKinds
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: [integer, boolean]}
+      responses:
+        '204':
+          description: Other properties whose values are text of several kinds.
+  /extra-bases:
+    post:
+      operationId: submitExtraBases
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Others'}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        '204':
+          description: Inherited other properties whose values no text of one kind writes.
+  /extra-patterns:
+    post:
+      operationId: submitExtraPatterns
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              patternProperties: {'^x-': {type: string}}
+              additionalProperties: {type: object, properties: {x: {type: integer}}}
+      responses:
+        '204':
+          description: Other properties beside patterns whose values no text of one kind writes.
+  /cycle:
+    get:
+      operationId: getCycle
+      parameters:
+        - name: q
+          in: query
+          schema: {$ref: '#/components/schemas/Loop'}
+      responses:
+        '204':
+          description: A parameter schema whose branches lead back to it.
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        loc: {type: object, properties: {x: {type: integer}}}
+    Others:
+      type: object
+      properties:
+        base: {type: string}
+      additionalProperties: {type: object, properties: {x: {type: integer}}}
+    Loop:
+      anyOf: [{$ref: '#/components/schemas/Back'}]
+    Back:
+      allOf: [{$ref: '#/components/schemas/Loop'}]

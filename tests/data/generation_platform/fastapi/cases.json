@@ -1,0 +1,492 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "runtime": [
+      "pydantic_v2.BaseModel"
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "parameters": {
+    "input": "parameters.yaml",
+    "package_snapshots": []
+  },
+  "bodies": {
+    "input": "bodies.yaml",
+    "config": {
+      "server_body_modes": {
+        "/paths/~1raw/post": "request"
+      }
+    },
+    "package_snapshots": []
+  },
+  "request": {
+    "input": "bodies.yaml",
+    "model": {
+      "openapi_include_paths": [
+        "/json",
+        "/text"
+      ]
+    },
+    "config": {
+      "server_include_request": true,
+      "server_body_mode": "request",
+      "server_body_modes": {
+        "/paths/~1json/post": "typed"
+      }
+    },
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "responses": {
+    "input": "responses.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_primary_responses": {
+        "/paths/~1created/post": {
+          "status_code": 201,
+          "media_type": "application/vnd.thing+json"
+        }
+      }
+    },
+    "package_snapshots": []
+  },
+  "names": {
+    "input": "names.yaml",
+    "config": {
+      "server_operation_names": {
+        "/paths/~1health/get": "health_check"
+      },
+      "server_router_names": {
+        "default": "misc"
+      },
+      "server_parameter_names": {
+        "/paths/~1files~1{file.name}~1{dcg_p0}/get": {
+          "query:limit": "page_size"
+        }
+      }
+    },
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "names-default": {
+    "input": "naming-default.yaml",
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "single": {
+    "input": "pets.yaml",
+    "config": {
+      "server_layout": "single"
+    },
+    "package_snapshots": []
+  },
+  "encoding": {
+    "input": "server-parameters-latin1.yaml",
+    "model": {
+      "encoding": "latin-1"
+    },
+    "package_snapshots": []
+  },
+  "route-errors": {
+    "input": "route-errors.yaml"
+  },
+  "name-errors": {
+    "input": "name-errors.yaml",
+    "config": {
+      "server_operation_names": {
+        "/paths/~1one/get": "x1",
+        "/paths/~1two/get": "x1"
+      }
+    }
+  },
+  "group-errors": {
+    "input": "group-errors.yaml",
+    "config": {
+      "server_router_names": {
+        "tag:four": "OPERATIONS"
+      }
+    }
+  },
+  "repeat-32": {
+    "input": "repeat-32.yaml"
+  },
+  "media-errors": {
+    "input": "media-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "media-kept": {
+    "input": "media-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts",
+        "/absorbing-kept-wrapped"
+      ]
+    }
+  },
+  "parameter-errors": {
+    "input": "parameter-errors.yaml",
+    "model": {
+      "strict_types": [
+        "bytes"
+      ],
+      "field_constraints": true
+    }
+  },
+  "selector-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "server_operation_names": {
+        "/paths/~1missing/get": "missing",
+        "/paths/~1pets/get": "all_pets",
+        "#/paths/~1pets/get": "every_pet"
+      },
+      "server_body_modes": {
+        "/paths/~1pets/delete": "request"
+      },
+      "server_router_names": {
+        "tag:pets": "animals",
+        "tag:Pets": "other",
+        "untagged": "misc"
+      }
+    }
+  },
+  "primary-errors": {
+    "input": "responses.yaml",
+    "config": {
+      "server_primary_responses": {
+        "/paths/~1created/post": {
+          "status_code": 201,
+          "media_type": "application/xml"
+        },
+        "/paths/~1download/get": {
+          "status_code": 204
+        },
+        "/paths/~1optional/get": {
+          "status_code": 200,
+          "media_type": "not a media type"
+        }
+      }
+    }
+  },
+  "backend-errors": {
+    "input": "pets.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "types": {
+    "input": "types.yaml",
+    "model": {
+      "use_annotated": true,
+      "field_constraints": true,
+      "output_datetime_class": "datetime"
+    },
+    "package_snapshots": []
+  },
+  "unbound": {
+    "input": "unbound.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "api"
+      ]
+    },
+    "package_snapshots": []
+  },
+  "methods": {
+    "input": "methods.yaml",
+    "package_snapshots": []
+  },
+  "codec-errors": {
+    "input": "codec-errors.yaml"
+  },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "config": {
+      "server_body_mode": "request"
+    }
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    }
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "model": {
+      "type_mappings": [
+        "password=binary",
+        "string+byte=binary"
+      ]
+    }
+  },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
+  },
+  "header-names": {
+    "input": "header-names.yaml"
+  },
+  "native": {
+    "input": "native.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": []
+  },
+  "required-alias-order": {
+    "input": "required-alias-order.yaml",
+    "backends": [
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": []
+  },
+  "native-settings": {
+    "input": "native-settings.yaml",
+    "model": {
+      "allow_population_by_field_name": true,
+      "aliases": {
+        "title": [
+          "title",
+          "heading"
+        ]
+      },
+      "use_missing_sentinel": true,
+      "target_pydantic_version": "2.14",
+      "field_include_all_keys": true
+    },
+    "package_snapshots": []
+  },
+  "native-readonly": {
+    "input": "bodies.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response",
+      "openapi_include_paths": [
+        "/json/envelope"
+      ]
+    },
+    "package_snapshots": []
+  },
+  "native-custom": {
+    "input": "custom-models.yaml",
+    "model": {
+      "base_class": "app.bases.Base"
+    },
+    "package_snapshots": []
+  },
+  "native-generator": {
+    "input": "custom-models.yaml",
+    "model": {
+      "alias_generator": "to_camel"
+    },
+    "package_snapshots": []
+  },
+  "unbound-body": {
+    "input": "unbound-body.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "api"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  "argument-errors": {
+    "input": "argument-errors.yaml",
+    "model": {
+      "aliases": {
+        "sort": "sort by",
+        "me": "self"
+      }
+    },
+    "config": {
+      "server_include_request": true,
+      "server_parameter_names": {
+        "/paths/~1items/get": {
+          "query:req": "request",
+          "query:page": "limit",
+          "header:size": "limit"
+        }
+      }
+    }
+  },
+  "security": {
+    "input": "server-security.yaml",
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1maybe/get": "async",
+        "/paths/~1custom/get": "async"
+      }
+    },
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "security-errors": {
+    "input": "security-errors.yaml"
+  },
+  "references": {
+    "input": "references.yaml",
+    "files": [
+      "references-library.yaml",
+      "references-metadata.yaml"
+    ],
+    "config": {
+      "server_layout": "single"
+    }
+  },
+  "self-references": {
+    "input": "self-references.yaml",
+    "files": [
+      "references-library.yaml",
+      "references-metadata.yaml"
+    ],
+    "expected": "references",
+    "model": {
+      "input_filename": "references.yaml"
+    },
+    "config": {
+      "server_layout": "single"
+    }
+  },
+  "reference-errors": {
+    "input": "reference-errors.yaml"
+  },
+  "link-errors": {
+    "input": "link-errors.yaml",
+    "files": [
+      "link-errors-latin1.yaml"
+    ]
+  },
+  "info": {
+    "input": "info.yaml",
+    "config": {
+      "server_layout": "single"
+    },
+    "package_snapshots": []
+  },
+  "callbacks": {
+    "input": "callbacks.yaml",
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "scheme-names": {
+    "input": "scheme-names.yaml"
+  },
+  "services": {
+    "input": "services.yaml",
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1health/get": "async"
+      }
+    },
+    "package_snapshots": []
+  },
+  "empty": {
+    "input": "services.yaml",
+    "package_snapshots": [],
+    "model": {
+      "openapi_include_paths": [
+        "/none"
+      ]
+    },
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "docstrings": {
+    "input": "docstrings.yaml",
+    "config": {
+      "server_layout": "single"
+    },
+    "model": {
+      "use_schema_description": true,
+      "use_single_line_docstring": true
+    }
+  },
+  "templates": {
+    "input": "pets.yaml",
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it.",
+          "team": "the platform team"
+        }
+      }
+    },
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "template-invalid": {
+    "input": "pets.yaml",
+    "model": {
+      "custom_template_dir": "templates/invalid"
+    }
+  },
+  "template-missing": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "runtime": [
+      "pydantic_v2.BaseModel"
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "custom_template_dir": "templates/missing"
+    },
+    "expected": "pets",
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "relative-override": {
+    "input": "relative-override.yaml",
+    "model": {
+      "collapse_root_models": true,
+      "import_overrides": {
+        "date": ".local"
+      }
+    }
+  }
+}

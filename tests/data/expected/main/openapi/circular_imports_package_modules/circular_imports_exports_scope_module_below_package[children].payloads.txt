@@ -1,0 +1,19 @@
+x.thing {}: schema accepts, model accepts
+x.thing {"other": {"other": {}}}: schema accepts, model accepts
+x.thing {"other": {"other": 1}}: schema rejects, model rejects
+x.thing {"leaf": {"a": "one"}}: schema accepts, model accepts
+x.thing {"leaf": {"a": 1}}: schema rejects, model rejects
+y.thing {}: schema accepts, model accepts
+y.thing {"other": {"leaf": {"a": "one"}}}: schema accepts, model accepts
+y.thing {"other": []}: schema rejects, model rejects
+p.t.leaf {}: schema accepts, model accepts
+p.t.leaf {"a": "one"}: schema accepts, model accepts
+p.t.leaf {"a": 1}: schema rejects, model rejects
+p.item {}: schema accepts, model accepts
+p.item {"a": "one"}: schema accepts, model accepts
+p.item {"a": 1}: schema rejects, model rejects
+p.u.user {}: schema accepts, model accepts
+p.u.user {"thing": {"other": {}}}: schema accepts, model accepts
+p.u.user {"thing": {"leaf": {"a": "one"}}}: schema accepts, model accepts
+p.u.user {"thing": {"leaf": {"a": 1}}}: schema rejects, model rejects
+p.u.user {"thing": []}: schema rejects, model rejects

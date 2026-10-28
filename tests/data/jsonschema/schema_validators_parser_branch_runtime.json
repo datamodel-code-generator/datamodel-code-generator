@@ -1,0 +1,51 @@
+{
+  "title": "RuntimeBranchCoverage",
+  "$defs": {
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "BaseWithScalarItems": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/$defs/Child"
+    },
+    "listOverride": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseWithScalarItems"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array"
+            }
+          }
+        }
+      ]
+    },
+    "inlinePattern": {
+      "type": "object",
+      "patternProperties": {
+        "^item_[0-9]+$": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

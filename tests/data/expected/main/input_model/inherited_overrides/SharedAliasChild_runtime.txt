@@ -1,0 +1,61 @@
+[
+  {
+    "bases": [
+      "SharedAliasParent"
+    ],
+    "fields": [
+      "shared"
+    ]
+  },
+  {
+    "payload": {
+      "shared": [
+        1,
+        1
+      ]
+    },
+    "source": {
+      "shared": [
+        1,
+        1
+      ]
+    },
+    "generated": {
+      "shared": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "payload": {
+      "shared": []
+    },
+    "source": {
+      "shared": []
+    },
+    "generated": {
+      "shared": []
+    }
+  },
+  {
+    "payload": {
+      "shared": [
+        1,
+        2
+      ]
+    },
+    "source": {
+      "shared": [
+        1,
+        2
+      ]
+    },
+    "generated": {
+      "shared": [
+        1,
+        2
+      ]
+    }
+  }
+]

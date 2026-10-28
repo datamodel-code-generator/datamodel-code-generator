@@ -1,0 +1,16 @@
+{
+  "fields": [
+    "model_validate_custom",
+    "b"
+  ],
+  "attribute": "A",
+  "dump": {
+    "model_validate_custom": "A",
+    "b": 1
+  },
+  "dump_by_alias": {
+    "a": "A",
+    "b": 1
+  },
+  "config": {}
+}

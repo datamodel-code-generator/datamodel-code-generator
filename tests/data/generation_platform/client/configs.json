@@ -1,0 +1,354 @@
+{
+  "defaults": {
+    "options": {}
+  },
+  "values": {
+    "options": {
+      "resource_names": {
+        "pets": "store.pets"
+      },
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "store",
+          "name": "list_all",
+          "parameter_names": {
+            "query:limit": "page_size"
+          },
+          "response_media_type": "application/json",
+          "runtime": {
+            "request_id_header": "X-Request-Id",
+            "success_statuses": [
+              302,
+              304
+            ]
+          },
+          "description": "List them."
+        }
+      },
+      "default_base_url": "https://api.example.com/v1",
+      "server_base_url": "http://localhost:8080",
+      "signature_style": "unpack"
+    }
+  },
+  "invalid-values": {
+    "options": {
+      "resource_names": {
+        "pets": "store.close"
+      },
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "store.",
+          "name": "List",
+          "parameter_names": {
+            "query:limit": "not an identifier"
+          },
+          "request_media_type": "json",
+          "response_media_type": 5,
+          "runtime": {
+            "request_id_header": "X Request",
+            "success_statuses": [
+              200,
+              true,
+              301,
+              301
+            ]
+          },
+          "description": 5
+        }
+      },
+      "default_base_url": "ftp://example.com",
+      "server_base_url": "https://user@example.com:0/"
+    }
+  },
+  "invalid-urls": {
+    "options": {
+      "default_base_url": "https://example.com/v1?key=1",
+      "server_base_url": "https://example.com/v1#top"
+    }
+  },
+  "invalid-shapes": {
+    "options": {
+      "default_base_url": "https://[invalid"
+    }
+  },
+  "invalid-parameter-names": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "parameter_names": "limit"
+        }
+      }
+    }
+  },
+  "body-fields": {
+    "options": {
+      "body_arguments": "both",
+      "operations": {
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "body_arguments": "body"
+        },
+        "/paths/~1pets/post": {
+          "body_field_names": {
+            "application/json": {
+              "tag": "pet_tag"
+            }
+          }
+        }
+      }
+    }
+  },
+  "body-fields-invalid": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "body_arguments": "fields"
+        },
+        "/paths/~1pets/post": {
+          "body_arguments": []
+        }
+      }
+    }
+  },
+  "body-field-names-invalid": {
+    "options": {
+      "body_arguments": "both",
+      "operations": {
+        "/paths/~1pets/post": {
+          "body_arguments": "body",
+          "body_field_names": {
+            "application/json": {
+              "tag": "pet_tag"
+            }
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "body_field_names": {
+            "json": {
+              "": "Tag"
+            },
+            "application/json": {
+              "tag": "pet_tag"
+            },
+            "Application/JSON": {
+              "tag": "label"
+            }
+          }
+        }
+      }
+    }
+  },
+  "retry-values": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_safety": "method_default",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "retry_safety": "idempotent",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "retry_safety": "never",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        }
+      }
+    }
+  },
+  "retry-invalid": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_safety": null
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "retry_safety": "safe"
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "retry_after_ms_header": ""
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "should_retry_header": "bad name"
+          }
+        },
+        "/paths/~1pets/get": {
+          "runtime": {
+            "idempotency": {
+              "header_name": "bad name"
+            }
+          }
+        }
+      }
+    }
+  },
+  "retry-conflicting-controls": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_after_ms_header": "X-Retry",
+            "should_retry_header": "x-retry"
+          }
+        }
+      }
+    }
+  },
+  "retry-unknown-field": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "secret": "not-permitted"
+            }
+          }
+        }
+      }
+    }
+  },
+  "auth-values": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "auth_challenge_less_401": false
+          }
+        },
+        "/paths/~1pets/post": {
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        }
+      }
+    }
+  },
+  "auth-invalid": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "auth_challenge_less_401": null
+          }
+        },
+        "/paths/~1pets~1{petId}/get": {
+          "runtime": {
+            "auth_challenge_less_401": 1
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "auth_challenge_less_401": "yes"
+          }
+        }
+      }
+    }
+  },
+  "auth-unknown": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "security": []
+          }
+        }
+      }
+    }
+  },
+  "compression-values": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "GZIP"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "compression-invalid": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "br"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "identity"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip",
+              "GZIP"
+            ]
+          }
+        },
+        "/paths/~1pets/get": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "not token"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "accepted_content_encodings": "gzip"
+          }
+        }
+      }
+    }
+  },
+  "reserved-type-name": {
+    "options": {
+      "resource_names": {
+        "pets": "JSONValue"
+      },
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "JSONValue.listing"
+        },
+        "/paths/~1pets~1{petId}/get": {
+          "resource": "lookup.JSONValue"
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "resource": "lookup.Aux"
+        }
+      }
+    }
+  }
+}

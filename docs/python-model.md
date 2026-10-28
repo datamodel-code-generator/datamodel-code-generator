@@ -101,6 +101,7 @@ datamodel-codegen --input-model schemas:USER_SCHEMA --input-file-type jsonschema
 ```python
 from pydantic import BaseModel
 
+
 class User(BaseModel):
     name: str
     age: int
@@ -146,6 +147,7 @@ class User(TypedDict):
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class User:
     name: str
@@ -156,11 +158,24 @@ class User:
 datamodel-codegen --input-model ./mymodule.py:User --output model.py
 ```
 
+**✨ Generated model.py**
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str
+    age: int
+```
+
 ### TypedDict {#typeddict}
 
 **mymodule.py**
 ```python
 from typing import TypedDict
+
 
 class User(TypedDict):
     name: str
@@ -169,6 +184,18 @@ class User(TypedDict):
 
 ```bash
 datamodel-codegen --input-model ./mymodule.py:User --output model.py
+```
+
+**✨ Generated model.py**
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class User(BaseModel):
+    name: str = Field(..., title="Name")
+    age: int = Field(..., title="Age")
 ```
 
 ### Dict Schema (JSON Schema) {#dict-jsonschema}
@@ -187,6 +214,18 @@ USER_SCHEMA = {
 
 ```bash
 datamodel-codegen --input-model ./mymodule.py:USER_SCHEMA --input-file-type jsonschema --output model.py
+```
+
+**✨ Generated model.py**
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class Model(BaseModel):
+    name: str
+    age: int
 ```
 
 !!! warning "Dict requires --input-file-type"
@@ -216,6 +255,18 @@ OPENAPI_SPEC = {
 
 ```bash
 datamodel-codegen --input-model ./mymodule.py:OPENAPI_SPEC --input-file-type openapi --output model.py
+```
+
+**✨ Generated model.py**
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str | None = None
+    age: int | None = None
 ```
 
 ---
@@ -250,11 +301,15 @@ from collections import defaultdict
 from typing import Any, Annotated
 from pydantic import BaseModel, Field, WithJsonSchema
 
+
 class Config(BaseModel):
-    data: Annotated[
-        defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]],
-        WithJsonSchema({'type': 'object', 'x-python-type': 'defaultdict[str, dict[str, Any]]'})
-    ] | None = None
+    data: (
+        Annotated[
+            defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]],
+            WithJsonSchema({"type": "object", "x-python-type": "defaultdict[str, dict[str, Any]]"}),
+        ]
+        | None
+    ) = None
 ```
 
 ```bash
@@ -277,6 +332,12 @@ class Config(TypedDict):
 
 !!! tip "Fully Qualified Paths"
     You can also use fully qualified paths in `x-python-type` (e.g., `collections.defaultdict`), which are always resolved correctly regardless of the static mapping.
+    A dotted value of a `Literal` of three names or more, such as `Literal[http.HTTPStatus.OK]`, is a member, such as an
+    enum member, of what the names before it import: `from http import HTTPStatus` and `HTTPStatus.OK`, or the
+    submodule `client` of `Literal[http.client.OK]`. A msgspec `Literal` holds only None, bool, int and str values, so
+    msgspec cannot decode an enum member there, an `IntEnum` member included, while it decodes a plain constant such as
+    `Literal[http.client.HTTP_PORT]`. `msgspec.Struct` output warns about an enum member that `--input-model` or
+    `x-python-import` symbols transport, and conditionally about a dotted value, which may be either.
 
 ---
 
@@ -288,10 +349,27 @@ class Config(TypedDict):
 - `--url` (URL input)
 - `--watch` (file watching)
 
+## Supported Python Model Features {#supported-python-model-features}
+
+| Input type | Generation behavior |
+|------------|---------------------|
+| Pydantic v2 `BaseModel` | Uses `model_json_schema()` |
+| Standard dataclasses | Uses Pydantic TypeAdapter to derive schema |
+| Pydantic dataclasses | Uses Pydantic schema support |
+| TypedDict | Uses Pydantic TypeAdapter to derive schema |
+| Dict schemas | Treated as JSON Schema or OpenAPI based on `--input-file-type` |
+
+## Limitations {#limitations}
+
+Python model input imports and evaluates the specified object, so the target module must be importable and safe to
+import in your environment. Raw dict input requires `--input-file-type` because the generator cannot infer whether the
+dict is JSON Schema, OpenAPI, or another schema profile.
+
 ---
 
 ## 📖 See Also
 
+- 🚀 [Getting Started](getting-started.md) - Installation and first model
 - 🖥️ [CLI Reference](cli-reference/index.md) - Complete CLI options reference
 - 📁 [CLI Reference: Base Options](cli-reference/base-options.md#input-model) - `--input-model` option details
 - 📋 [Generate from JSON Schema](jsonschema.md) - JSON Schema input documentation

@@ -32,8 +32,8 @@ class Config(BaseConfig, ExtendedConfig):
     pass
 
 
-class Metadata(BaseModel):
-    pass
+class Metadata(RootModel[dict[str, constr(min_length=1)]]):
+    root: dict[str, constr(min_length=1)]
 
 
 class ProjectedItem(BaseModel):
@@ -48,6 +48,6 @@ class Item(ProjectedItem):
     extra: str | None = None
     id: int
     code: StringConstraint
-    score: confloat(ge=0.0, le=100.0)
-    config: BaseConfig
-    metadata: dict[str, str]
+    score: Score
+    config: Config
+    metadata: Metadata

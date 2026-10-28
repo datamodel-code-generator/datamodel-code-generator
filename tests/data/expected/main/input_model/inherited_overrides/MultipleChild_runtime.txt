@@ -1,0 +1,45 @@
+[
+  {
+    "bases": [
+      "DefaultParent"
+    ],
+    "fields": [
+      "before",
+      "value",
+      "after",
+      "other"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "other": "other",
+      "value": 4,
+      "before": 10,
+      "after": 30
+    },
+    "generated": {
+      "before": 10,
+      "value": 4,
+      "after": 30,
+      "other": "other"
+    }
+  },
+  {
+    "payload": {
+      "value": 8
+    },
+    "source": {
+      "other": "other",
+      "value": 8,
+      "before": 10,
+      "after": 30
+    },
+    "generated": {
+      "before": 10,
+      "value": 8,
+      "after": 30,
+      "other": "other"
+    }
+  }
+]

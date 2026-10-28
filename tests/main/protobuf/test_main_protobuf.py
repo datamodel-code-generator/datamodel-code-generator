@@ -2,18 +2,33 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
+from copy import deepcopy
+from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import black
+import msgspec
 import pytest
+import yaml
+from google.protobuf import descriptor_pool, json_format, message_factory
+from pydantic import ValidationError
 
-from datamodel_code_generator import Error, InputFileType, generate, infer_input_type
+from datamodel_code_generator import DataModelType, Error, InputFileType, SchemaParseError, generate, infer_input_type
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import assert_output
+from datamodel_code_generator.parser.protobuf import WELL_KNOWN_SCHEMAS, ProtobufParser, convert_protobuf_schema_data
+from tests.conftest import assert_mutable_copy_is_isolated, assert_output
 from tests.main.conftest import (
+    BACKEND_GOLDEN_CASES,
+    BACKEND_GOLDEN_TARGET_ARGS,
+    DATA_PATH,
     EXPECTED_PROTOBUF_PATH,
     PROTOBUF_DATA_PATH,
+    _generated_model,
+    _model_json_validator,
     assert_input_file_type,
+    run_generate_and_assert,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
@@ -35,6 +50,59 @@ def test_main_protobuf_complex_proto3(output_file: Path) -> None:
         importable_module_name="generated_protobuf",
         importable_module_attribute="ExampleShopV1Order",
     )
+
+
+@pytest.mark.parametrize(("output_model_type", "expected_name"), BACKEND_GOLDEN_CASES)
+def test_main_protobuf_output_model_types(
+    output_file: Path,
+    recwarn: pytest.WarningsRecorder,
+    output_model_type: str,
+    expected_name: str,
+) -> None:
+    """Generate representative Protocol Buffers models across supported output backends.
+
+    msgspec takes no int bound beyond the 64-bit range, so its uint64 and fixed64 fields go without their upper bound
+    and decode.
+    """
+    run_main_and_assert(
+        input_path=PROTOBUF_DATA_PATH / "complex_proto3.proto",
+        output_path=output_file,
+        input_file_type="protobuf",
+        assert_func=assert_file_content,
+        expected_file=f"output_model_types/complex_proto3_{expected_name}.py",
+        extra_args=[
+            *BACKEND_GOLDEN_TARGET_ARGS,
+            "--output-model-type",
+            output_model_type,
+            "--set-default-enum-member",
+            "--use-field-description",
+        ],
+        force_exec_validation=True,
+        importable_module_name=f"generated_protobuf_{expected_name}",
+        importable_module_attribute="ExampleShopV1Order",
+    )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    if output_model_type not in {
+        DataModelType.PydanticV2BaseModel.value,
+        DataModelType.MsgspecStruct.value,
+    }:
+        return
+    with _generated_model(output_file, f"default_protobuf_{expected_name}", "ExampleShopV1Order") as model:
+        match model().status:
+            case Enum(name="STATUS_UNSPECIFIED"):
+                pass
+            case value:  # pragma: no cover
+                pytest.fail(f"Expected enum member default, got {value!r}")
+        if output_model_type == DataModelType.MsgspecStruct.value:
+            msgspec.json.decode(
+                b'{"uint64_value": 18446744073709551615, "fixed64_value": 18446744073709551615}', type=model
+            )
 
 
 def test_main_protobuf_infer_input_file_type(output_file: Path) -> None:
@@ -82,6 +150,63 @@ def test_main_protobuf_well_known_wrappers(output_file: Path) -> None:
     )
 
 
+def _mutate_first_any_of_schema(value: object) -> None:
+    any_of = cast("list[dict[str, Any]]", cast("dict[str, Any]", value)["anyOf"])
+    any_of[0]["x-mutated"] = True
+
+
+def test_convert_protobuf_schema_data_isolates_well_known_schema_templates() -> None:
+    """Keep converted well-known schemas independent from module-level templates."""
+    original_templates = deepcopy(WELL_KNOWN_SCHEMAS)
+    proto = (PROTOBUF_DATA_PATH / "well_known_wrappers.proto").read_text(encoding="utf-8")
+
+    try:
+        converted = convert_protobuf_schema_data(proto)
+        properties = converted["definitions"]["example__wkt__WrapperBucket"]["properties"]
+        assert_mutable_copy_is_isolated(
+            original=WELL_KNOWN_SCHEMAS["google.protobuf.StringValue"],
+            copied=properties["string_value"],
+            mutate_copied=_mutate_first_any_of_schema,
+            label="Protobuf StringValue well-known schema",
+        )
+    finally:
+        WELL_KNOWN_SCHEMAS.clear()
+        WELL_KNOWN_SCHEMAS.update(original_templates)
+
+
+def test_convert_protobuf_schema_data_preserves_yaml_safe_non_finite_defaults() -> None:
+    """Keep public Protocol Buffers conversion results serializable by PyYAML."""
+    proto = (PROTOBUF_DATA_PATH / "spec_proto2.proto").read_text(encoding="utf-8")
+    converted_schemas = (
+        convert_protobuf_schema_data(proto),
+        ProtobufParser(proto).convert_to_json_schema_data(),
+    )
+
+    assert_output(
+        "".join(
+            yaml.safe_dump(
+                [
+                    schema["definitions"]["example__spec__proto2__SpecProto2"]["properties"][field_name]["default"]
+                    for field_name in ("pos_inf", "neg_inf", "not_a_number")
+                ],
+                sort_keys=False,
+            )
+            for schema in converted_schemas
+        ),
+        EXPECTED_PROTOBUF_PATH / "converted_non_finite_defaults.txt",
+    )
+
+
+def test_protobuf_parser_renders_non_finite_defaults() -> None:
+    """Render source-safe non-finite defaults through the internal parser path."""
+    parser = ProtobufParser(DATA_PATH / "parser/protobuf/non_finite_defaults.proto")
+
+    assert_output(
+        f"{parser.parse(format_=False)}\n",
+        DATA_PATH / "expected/parser/protobuf/non_finite_defaults.py",
+    )
+
+
 def test_main_protobuf_spec_proto3(output_file: Path) -> None:
     """Generate models for proto3 constructs from the language specification."""
     run_main_and_assert(
@@ -103,6 +228,24 @@ def test_main_protobuf_spec_proto2(output_file: Path) -> None:
         extra_args=["--schema-version", "proto2"],
         assert_func=assert_file_content,
         expected_file="spec_proto2.py",
+    )
+
+
+def test_main_protobuf_custom_template_non_finite_raw(output_file: Path) -> None:
+    """Keep non-finite defaults valid in legacy raw custom templates."""
+    run_main_and_assert(
+        input_path=PROTOBUF_DATA_PATH / "spec_proto2.proto",
+        output_path=output_file,
+        input_file_type="protobuf",
+        extra_args=[
+            "--schema-version",
+            "proto2",
+            "--custom-template-dir",
+            str(DATA_PATH / "templates_non_finite_raw"),
+        ],
+        assert_func=assert_file_content,
+        expected_file="custom_template_non_finite_raw.py",
+        force_exec_validation=True,
     )
 
 
@@ -163,13 +306,13 @@ def test_generate_api_protobuf_definition_key_collision() -> None:
 
 def test_generate_api_protobuf_from_path_list() -> None:
     """Generate Protocol Buffers models from a list of .proto file paths."""
-    result = generate(
-        cast(Any, [(PROTOBUF_DATA_PATH / "spec_proto3.proto").resolve()]),  # noqa: TC006
+    run_generate_and_assert(
+        input_=cast(Any, [(PROTOBUF_DATA_PATH / "spec_proto3.proto").resolve()]),  # noqa: TC006
         input_file_type=InputFileType.Protobuf,
         disable_timestamp=True,
+        expected_file=EXPECTED_PROTOBUF_PATH / "spec_proto3_list_input.py",
+        assert_input_unchanged=True,
     )
-
-    assert_output(result, EXPECTED_PROTOBUF_PATH / "spec_proto3_list_input.py")
 
 
 def test_generate_api_protobuf_rejects_dict_input() -> None:
@@ -218,6 +361,27 @@ def test_main_protobuf_parse_error(capsys: pytest.CaptureFixture[str], tmp_path:
     )
 
 
+@pytest.mark.allow_direct_assert
+@pytest.mark.parametrize("absolute", [False, True])
+def test_protobuf_weak_import_cannot_escape_temporary_directory(
+    absolute: bool, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Reject weak imports that would write outside their temporary sandbox."""
+    temp_root = tmp_path / "temporary"
+    temp_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(temp_root))
+    victim = tmp_path / "victim.txt"
+    victim.write_text("preserve me", encoding="utf-8")
+    import_path = str(victim) if absolute else "../../victim.txt"
+    input_path = tmp_path / "malicious.proto"
+    input_path.write_text(f'syntax = "proto3";\nimport weak "{import_path}";\nmessage Example {{}}\n', encoding="utf-8")
+
+    with pytest.raises(SchemaParseError, match="Invalid Protocol Buffers weak import path"):
+        ProtobufParser(input_path)._compile_descriptor_set()
+
+    assert victim.read_text(encoding="utf-8") == "preserve me"
+
+
 def test_main_protobuf_invalid_schema_version(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
     """Report invalid Protocol Buffers schema version values through the CLI."""
     run_main_and_assert(
@@ -262,3 +426,142 @@ def test_main_protobuf_empty_directory_error(
         expected_stderr_contains="No .proto files found in input",
         output_should_not_exist=True,
     )
+
+
+REFERENCED_STANDARD_CASES = ["nullvalue", "standard_enum", "standard_message", "unused_standard", "user_namespace"]
+REFERENCED_STANDARD_INVALID = {"unused_standard": "user_namespace"}
+REFERENCED_STANDARD_BACKENDS = [
+    DataModelType.PydanticV2BaseModel,
+    DataModelType.PydanticV2Dataclass,
+    DataModelType.DataclassesDataclass,
+    DataModelType.TypingTypedDict,
+    DataModelType.MsgspecStruct,
+]
+
+
+@pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
+def test_native_referenced_standard_types(name: str) -> None:
+    """Confirm actual protoc descriptors and ProtoJSON accept and reject the external cases."""
+    path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
+    descriptors, _ = ProtobufParser(path)._compile_descriptor_set()
+    pool = descriptor_pool.DescriptorPool()
+    for descriptor in descriptors.file:
+        pool.Add(descriptor)
+    full_name = "google.protobuf.Payload" if name == "user_namespace" else "Payload"
+    model = message_factory.GetMessageClass(pool.FindMessageTypeByName(full_name))
+    payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
+    value = json_format.Parse((payloads / f"{name}_valid.json").read_text(), model())
+    with pytest.raises(json_format.ParseError):
+        json_format.Parse(
+            (payloads / f"{REFERENCED_STANDARD_INVALID.get(name, name)}_invalid.json").read_text(), model()
+        )
+    if name == "nullvalue":
+        json_format.Parse((payloads / "nullvalue_null.json").read_text(), model())
+        assert_output(
+            json.dumps(json_format.MessageToDict(value), indent=2) + "\n",
+            EXPECTED_PROTOBUF_PATH / "referenced_standard/native_nullvalue.txt",
+        )
+
+
+@pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
+def test_referenced_standard_definition_order(name: str) -> None:
+    """Materialize exactly the referenced closure and preserve defaults and comments."""
+    path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
+    schema = convert_protobuf_schema_data(path.read_text(), base_path=path.parent)
+    assert_output(json.dumps(schema, indent=2) + "\n", EXPECTED_PROTOBUF_PATH / "referenced_standard" / f"{name}.txt")
+
+
+@pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
+@pytest.mark.parametrize("strict", [False, True])
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_referenced_standard_generation(name: str, strict: bool, entrypoint: str, output_file: Path) -> None:
+    """Resolve real CLI/API references while preserving normal output and validation."""
+    path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
+    expected = f"referenced_standard/{name}.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=path,
+            output_path=output_file,
+            input_file_type="protobuf",
+            extra_args=["--disable-timestamp", "--use-field-description", *(["--strict-refs"] if strict else [])],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=path,
+            output_path=output_file,
+            input_file_type=InputFileType.Protobuf,
+            strict_refs=strict,
+            disable_timestamp=True,
+            use_field_description=True,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    class_name = "GoogleProtobufPayload" if name == "user_namespace" else "Payload"
+    payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
+    with _generated_model(output_file, f"standard_{name}_{entrypoint}_{strict}", class_name) as model:
+        validate = _model_json_validator(model)
+        validate((payloads / f"{name}_valid.json").read_text())
+        with pytest.raises(ValidationError):
+            validate((payloads / f"{REFERENCED_STANDARD_INVALID.get(name, name)}_invalid.json").read_text())
+
+
+@pytest.mark.parametrize("backend", REFERENCED_STANDARD_BACKENDS)
+@pytest.mark.parametrize("strict", [False, True])
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoint: str, output_file: Path) -> None:
+    """Preserve enum names and backend null handling without claiming ProtoJSON serialization."""
+    path = DATA_PATH / "protobuf_referenced_standard/nullvalue.proto"
+    expected = f"referenced_standard/nullvalue_{backend.name}.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=path,
+            output_path=output_file,
+            input_file_type="protobuf",
+            extra_args=[
+                "--disable-timestamp",
+                "--output-model-type",
+                backend.value,
+                *(["--strict-refs"] if strict else []),
+            ],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=path,
+            output_path=output_file,
+            input_file_type=InputFileType.Protobuf,
+            strict_refs=strict,
+            output_model_type=backend,
+            disable_timestamp=True,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
+    with _generated_model(output_file, f"nullvalue_{backend.name}_{entrypoint}_{strict}", "Payload") as model:
+        valid = (payloads / "nullvalue_valid.json").read_text()
+        invalid = (payloads / "nullvalue_invalid.json").read_text()
+        null = (payloads / "nullvalue_null.json").read_text()
+        if backend == DataModelType.MsgspecStruct:
+            result = msgspec.json.decode(valid, type=model)
+            with pytest.raises(msgspec.ValidationError):
+                msgspec.json.decode(null, type=model)
+            with pytest.raises(msgspec.ValidationError):
+                msgspec.json.decode(invalid, type=model)
+        else:
+            validate = _model_json_validator(model)
+            result = validate(valid)
+            if backend == DataModelType.TypingTypedDict:
+                with pytest.raises(ValidationError):
+                    validate(null)
+            else:
+                validate(null)
+            with pytest.raises(ValidationError):
+                validate(invalid)
+        value = result["value"] if isinstance(result, dict) else result.value
+        assert_output(
+            json.dumps(value.value if isinstance(value, Enum) else value) + "\n",
+            EXPECTED_PROTOBUF_PATH / "referenced_standard/enum_value.txt",
+        )

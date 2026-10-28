@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Headers",
+      "name": "Headers",
+      "module": "",
+      "source_ref": "strict_pattern_maps.json#/properties/headers",
+      "source_path": [
+        "properties",
+        "headers"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "x_id",
+          "alias": "x-id",
+          "original_name": "x-id",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Labels",
+      "name": "Labels",
+      "module": "",
+      "source_ref": "strict_pattern_maps.json#/properties/labels",
+      "source_path": [
+        "properties",
+        "labels"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "dict[str, Any]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "",
+      "source_ref": "strict_pattern_maps.json#",
+      "source_path": [],
+      "title": "Model",
+      "fields": [
+        {
+          "name": "headers",
+          "alias": "headers",
+          "original_name": "headers",
+          "type": "Headers | None",
+          "required": false
+        },
+        {
+          "name": "labels",
+          "alias": "labels",
+          "original_name": "labels",
+          "type": "Labels | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

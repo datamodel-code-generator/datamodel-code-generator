@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "x": {
+      "$ref": "#/definitions/Entry"
+    }
+  },
+  "definitions": {
+    "Entry": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/definitions/Conditions"
+        }
+      ]
+    },
+    "Conditions": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+$": {
+          "$ref": "#/definitions/Entry"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,49 @@
+# nullable-3-0-strict
+serve pydantic_v2.BaseModel
+service DefaultService: post_anything, post_choice, post_color, post_draft, post_extended, post_id, post_item, post_list, post_name, post_note, post_text, post_value
+service DefaultService without its methods: TypeError
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=NotesPostRequest(text='a', replies=None))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /notes
+  post_note(body=NotesPostRequest(text='a', replies=[None, Reply(text='b')]))
+< 204 - b''
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=ExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+serve pydantic_v2.dataclass
+service DefaultService: post_anything, post_choice, post_color, post_draft, post_extended, post_id, post_item, post_list, post_name, post_note, post_text, post_value
+service DefaultService without its methods: TypeError
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=NotesPostRequest(text='a', replies=MISSING))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /notes
+  post_note(body=NotesPostRequest(text='a', replies=[None, Reply(text='b')]))
+< 204 - b''
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=ExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]

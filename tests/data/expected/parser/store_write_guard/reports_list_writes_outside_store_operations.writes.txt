@@ -1,0 +1,6 @@
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "reverse", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "__setitem__", "key": "slice", "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "__setitem__", "key": "index", "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "pop", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "insert", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "fields", "operation": "sort", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}

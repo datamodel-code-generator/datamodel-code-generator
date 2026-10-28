@@ -1,0 +1,288 @@
+{
+  "name": "positions",
+  "inputSchema": {
+    "type": "object",
+    "$ref": "#/$defs/Value",
+    "properties": {
+      "default": {
+        "$ref": "#/$defs/Value"
+      },
+      "const": {
+        "$ref": "#/$defs/Value"
+      },
+      "enum": {
+        "$ref": "#/$defs/Value"
+      },
+      "examples": {
+        "$ref": "#/$defs/Value"
+      },
+      "$ref": {
+        "$ref": "#/$defs/Value"
+      },
+      "$defs": {
+        "$ref": "#/$defs/Value"
+      },
+      "legacy": {
+        "items": [
+          {
+            "$ref": "#/$defs/Value"
+          },
+          false
+        ],
+        "extends": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ],
+        "definitions": {
+          "default": {
+            "$ref": "#/$defs/Value"
+          }
+        },
+        "$defs": {
+          "enum": {
+            "$ref": "#/$defs/Value"
+          }
+        }
+      },
+      "external": {
+        "$ref": "https://example.com/schema.json#/$defs/Value"
+      },
+      "anchor": {
+        "$ref": "#anchor"
+      }
+    },
+    "patternProperties": {
+      "default": {
+        "$ref": "#/$defs/Value"
+      },
+      "$ref": {
+        "$ref": "#/$defs/Value"
+      }
+    },
+    "dependentSchemas": {
+      "examples": {
+        "$ref": "#/$defs/Value"
+      },
+      "$ref": {
+        "$ref": "#/$defs/Value"
+      }
+    },
+    "dependencies": {
+      "enum": {
+        "$ref": "#/$defs/Value"
+      },
+      "$ref": [
+        "default",
+        "const"
+      ]
+    },
+    "default": {
+      "$ref": "#/$defs/Value",
+      "nested": [
+        {
+          "default": {
+            "$ref": "#/$defs/Allowed"
+          },
+          "const": {
+            "$ref": "#/definitions/Value"
+          },
+          "enum": [
+            {
+              "$ref": "#/$defs/Value"
+            }
+          ],
+          "examples": [
+            {
+              "$ref": "#/$defs/Value"
+            }
+          ],
+          "$defs": {
+            "Value": {
+              "$ref": "#/$defs/Value"
+            }
+          }
+        }
+      ]
+    },
+    "const": {
+      "$ref": "#/$defs/Value",
+      "nested": [
+        {
+          "default": {
+            "$ref": "#/$defs/Allowed"
+          },
+          "const": {
+            "$ref": "#/definitions/Value"
+          },
+          "enum": [
+            {
+              "$ref": "#/$defs/Value"
+            }
+          ],
+          "examples": [
+            {
+              "$ref": "#/$defs/Value"
+            }
+          ],
+          "$defs": {
+            "Value": {
+              "$ref": "#/$defs/Value"
+            }
+          }
+        }
+      ]
+    },
+    "enum": [
+      {
+        "$ref": "#/$defs/Value",
+        "nested": [
+          {
+            "default": {
+              "$ref": "#/$defs/Allowed"
+            },
+            "const": {
+              "$ref": "#/definitions/Value"
+            },
+            "enum": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "examples": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "$defs": {
+              "Value": {
+                "$ref": "#/$defs/Value"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "$ref": "#/$defs/Value",
+        "nested": [
+          {
+            "default": {
+              "$ref": "#/$defs/Allowed"
+            },
+            "const": {
+              "$ref": "#/definitions/Value"
+            },
+            "enum": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "examples": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "$defs": {
+              "Value": {
+                "$ref": "#/$defs/Value"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "x-metadata": {
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "$ref": "#/$defs/Unused",
+      "items": [
+        {
+          "$ref": "#/$defs/Value"
+        }
+      ]
+    },
+    "$defs": {
+      "Unused": true,
+      "Value": {
+        "type": "string"
+      },
+      "BooleanUser": {
+        "$ref": "#/$defs/Allowed"
+      },
+      "Allowed": true,
+      "IgnoredNonSchema": null
+    },
+    "additionalItems": {
+      "$ref": "#/$defs/Value"
+    },
+    "additionalProperties": {
+      "$ref": "#/$defs/Value"
+    },
+    "contains": {
+      "$ref": "#/$defs/Value"
+    },
+    "contentSchema": {
+      "$ref": "#/$defs/Value"
+    },
+    "else": {
+      "$ref": "#/$defs/Value"
+    },
+    "if": {
+      "$ref": "#/$defs/Value"
+    },
+    "not": {
+      "$ref": "#/$defs/Value"
+    },
+    "propertyNames": {
+      "$ref": "#/$defs/Value"
+    },
+    "then": {
+      "$ref": "#/$defs/Value"
+    },
+    "unevaluatedItems": {
+      "$ref": "#/$defs/Value"
+    },
+    "unevaluatedProperties": {
+      "$ref": "#/$defs/Value"
+    },
+    "extends": {
+      "$ref": "#/$defs/Value"
+    },
+    "items": {
+      "$ref": "#/$defs/Value"
+    },
+    "allOf": [
+      {
+        "$ref": "#/$defs/Value"
+      },
+      true,
+      false
+    ],
+    "anyOf": [
+      {
+        "$ref": "#/$defs/Value"
+      },
+      true,
+      false
+    ],
+    "oneOf": [
+      {
+        "$ref": "#/$defs/Value"
+      },
+      true,
+      false
+    ],
+    "prefixItems": [
+      {
+        "$ref": "#/$defs/Value"
+      },
+      true,
+      false
+    ]
+  }
+}

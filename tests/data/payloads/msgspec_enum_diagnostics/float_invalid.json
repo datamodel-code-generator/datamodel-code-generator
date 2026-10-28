@@ -1,0 +1,8 @@
+[
+  {
+    "amount": "wrong"
+  },
+  {
+    "amount": true
+  }
+]

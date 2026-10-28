@@ -1,0 +1,7 @@
+{
+  "default_value": {"text": "default", "code": 1},
+  "const_value": {"$ref": "#/$defs/BaseConst", "text": "const", "code": 2},
+  "enum_value": {"$ref": "#/$defs/BaseEnum", "text": "enum", "code": 3},
+  "examples_value": {"text": "examples", "code": 4},
+  "metadata_value": {"text": "metadata", "code": 5, "values": [1, 2]}
+}

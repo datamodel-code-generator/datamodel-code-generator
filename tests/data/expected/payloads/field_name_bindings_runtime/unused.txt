@@ -1,0 +1,10 @@
+{
+  "fields": [
+    "list",
+    "Field"
+  ],
+  "values": {
+    "list": "list",
+    "Field": "list"
+  }
+}

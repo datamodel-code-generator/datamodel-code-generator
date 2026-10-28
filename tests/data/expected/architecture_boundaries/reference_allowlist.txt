@@ -1,0 +1,3 @@
+Architecture boundary violations found:
+tests/data/architecture_boundaries/reference/symbol_specific.py:0:0: [stale-allowlist] reference-backend-import:datamodel_code_generator.model.field_name.PydanticFieldNameResolver: remove or reduce this allowlist entry; expected 1 legacy occurrence(s), found 0. Reason: fixture for symbol-specific compatibility import (in load_unrelated_backend_symbol)
+tests/data/architecture_boundaries/reference/symbol_specific.py:2:5: [reference-backend-import] datamodel_code_generator.model.field_name.MsgspecFieldNameResolver: reference code must not import concrete output backends except bounded compatibility exports (in load_unrelated_backend_symbol)

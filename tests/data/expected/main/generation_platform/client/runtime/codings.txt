@@ -1,0 +1,85 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding gzip = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding x-gzip ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='invalid_syntax') [operation_id='getPet', body_bytes=b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb2R0\xd6QP\xcaK\xccM\x052\x95\xd2\xf2+\x94j\x01\xa1\xfb\xdb7\x18\x00\x00\x00', truncated=False, cause=1 validation error for Pet
+  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'\x1f\x8b\x08\x00\x00\x0...fb\xdb7\x18\x00\x00\x00', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding deflate = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding stacked = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding identity = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding members ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='invalid_syntax') [operation_id='getPet', body_bytes=b'{"id"', truncated=False, cause=1 validation error for Pet
+  Invalid JSON: EOF while parsing an object at line 1 column 5 [type=json_invalid, input_value=b'{"id"', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding layers ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] malformed_coding
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding unknown ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect header check')] malformed_coding
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding truncated = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding corrupt ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] malformed_coding
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding deflate trailing = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding gzip trailing = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding expanding to 2 MiB, decoded uncapped = 2097152
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding pre-read = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding chunked = 4000
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding error ! InternalServerError: Error code: 500 - {"code": 7, "message": "boom"} [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding error truncated ! InternalServerError: Error code: 500 - {"code": 7, "message": "boom"} [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding redirect ! APIStatusError: Error code: 302 - moved [operation_id='listPets', status_code=302, body=b'moved', body_bytes=b'moved', truncated=False] unexpected_status
+  > DELETE https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  coding bodyless = None
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding stacked = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding identity = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding truncated = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding pre-read = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding corrupt ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='malformed_coding') [operation_id='getPet', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: incorrect data check')] malformed_coding

@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Union members beside legacy references
+  version: "1"
+paths:
+  /inline:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InlineHolder"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        b:
+          type: integer
+    InlineHolder:
+      $ref: "#/components/schemas/Base"
+      properties:
+        shape:
+          oneOf:
+            - type: object
+              required: [radius]
+              properties:
+                radius:
+                  type: integer
+            - type: object
+              required: [side]
+              properties:
+                side:
+                  type: integer

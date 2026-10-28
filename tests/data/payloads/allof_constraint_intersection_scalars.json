@@ -1,0 +1,12 @@
+{
+  "valid": {
+    "integer": 1,
+    "string": "a",
+    "number": 1.5
+  },
+  "invalid": {
+    "integer": 3,
+    "string": "z",
+    "number": 3.5
+  }
+}

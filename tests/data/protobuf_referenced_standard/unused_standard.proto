@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "google/protobuf/type.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+enum UserState { UNKNOWN = 0; READY = 1; }
+message Payload {
+  UserState state = 1;
+  google.protobuf.Timestamp created = 2;
+  google.protobuf.Struct metadata = 3;
+}

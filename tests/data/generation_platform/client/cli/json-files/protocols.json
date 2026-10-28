@@ -1,0 +1,37 @@
+{
+  "pets.all": {
+    "kind": "pagination",
+    "operation": {
+      "pointer": "/paths/~1pets/get",
+      "document": "options.yaml"
+    },
+    "items": {
+      "from": "body",
+      "pointer": "/data"
+    },
+    "item_schema": {
+      "pointer": "/components/schemas/Pet",
+      "document": "options.yaml"
+    },
+    "continuation": {
+      "kind": "cursor",
+      "read": {
+        "from": "body",
+        "pointer": "/next_cursor"
+      },
+      "write": {
+        "in": "query",
+        "name": "cursor"
+      },
+      "end": [
+        {
+          "kind": "missing"
+        },
+        {
+          "kind": "null"
+        }
+      ],
+      "empty_string": "end"
+    }
+  }
+}

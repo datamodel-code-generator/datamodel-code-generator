@@ -1,0 +1,3 @@
+class {{ class_name }}(BaseModel):
+{% for index in range(130) %}{% set included %}{% include "unused-" ~ index ~ ".jinja2" ignore missing %}{% endset %}{% if included %}{{ included }}
+{% endif %}{% endfor %}    first: str

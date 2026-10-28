@@ -1,0 +1,125 @@
+[
+  {
+    "name": "external",
+    "schema": "external",
+    "options": {
+      "use_root_model_sequence_interface": true
+    }
+  },
+  {
+    "name": "external_exact",
+    "schema": "external",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_exact_imports": true
+    }
+  },
+  {
+    "name": "external_generic",
+    "schema": "external",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_generic_container_types": true
+    }
+  },
+  {
+    "name": "external_legacy",
+    "schema": "external",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_standard_collections": false
+    }
+  },
+  {
+    "name": "external_no_sequence",
+    "schema": "external",
+    "options": {
+      "use_root_model_sequence_interface": false
+    }
+  },
+  {
+    "name": "integers",
+    "schema": "integers.json",
+    "options": {
+      "use_root_model_sequence_interface": true
+    }
+  },
+  {
+    "name": "integers_set",
+    "schema": "integers.json",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_unique_items_as_set": true
+    }
+  },
+  {
+    "name": "any",
+    "schema": "any.json",
+    "options": {
+      "use_root_model_sequence_interface": true
+    }
+  },
+  {
+    "name": "any_set",
+    "schema": "any.json",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_unique_items_as_set": true
+    }
+  },
+  {
+    "name": "union",
+    "schema": "union.json",
+    "options": {
+      "use_root_model_sequence_interface": true
+    }
+  },
+  {
+    "name": "union_set",
+    "schema": "union.json",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_unique_items_as_set": true
+    }
+  },
+  {
+    "name": "nested",
+    "schema": "nested.json",
+    "options": {
+      "use_root_model_sequence_interface": true
+    },
+    "payload": "[]"
+  },
+  {
+    "name": "nested_set",
+    "schema": "nested.json",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "use_unique_items_as_set": true
+    },
+    "payload": "[]"
+  },
+  {
+    "name": "reuse",
+    "schema": "reuse.json",
+    "payload": "[]",
+    "runtime": "nested",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    }
+  },
+  {
+    "name": "reuse_validators",
+    "schema": "reuse.json",
+    "payload": "[]",
+    "runtime": "nested",
+    "options": {
+      "use_root_model_sequence_interface": true,
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "generate_schema_validators": true
+    }
+  }
+]

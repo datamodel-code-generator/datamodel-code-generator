@@ -1,0 +1,1 @@
+enum_ref_consts.json#/properties/none: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `enum`, `const`; the generated code keeps its earlier `enum`, `const`.

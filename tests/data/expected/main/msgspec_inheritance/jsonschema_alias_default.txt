@@ -1,0 +1,29 @@
+{
+  "convert": {
+    "a-value": "a",
+    "note": "saved",
+    "c": 3
+  },
+  "decode": {
+    "a-value": "a",
+    "note": "saved",
+    "c": 3
+  },
+  "fields": [
+    "a_value",
+    "note",
+    "c"
+  ],
+  "bases": [
+    "A",
+    "B"
+  ],
+  "mro": [
+    "Payload",
+    "A",
+    "B",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

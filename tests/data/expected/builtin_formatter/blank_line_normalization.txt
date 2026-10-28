@@ -1,0 +1,6 @@
+class Model:
+    pass
+
+
+class OtherModel:
+    pass

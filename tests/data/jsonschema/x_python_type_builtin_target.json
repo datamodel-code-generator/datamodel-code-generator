@@ -1,0 +1,15 @@
+{
+  "title": "BuiltinTargetModel",
+  "type": "object",
+  "properties": {
+    "builtins": {
+      "type": "string",
+      "x-python-type": "tuple[property, ExceptionGroup, enum.property]"
+    },
+    "enum_helpers": {
+      "type": "string",
+      "x-python-type": "tuple[auto, member, nonmember, verify]"
+    }
+  },
+  "required": ["builtins", "enum_helpers"]
+}

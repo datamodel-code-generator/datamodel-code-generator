@@ -1,0 +1,22 @@
+[
+  {
+    "payload": -1,
+    "native": true,
+    "generated": true
+  },
+  {
+    "payload": 0,
+    "native": true,
+    "generated": true
+  },
+  {
+    "payload": 1,
+    "native": true,
+    "generated": true
+  },
+  {
+    "payload": 1.5,
+    "native": false,
+    "generated": false
+  }
+]

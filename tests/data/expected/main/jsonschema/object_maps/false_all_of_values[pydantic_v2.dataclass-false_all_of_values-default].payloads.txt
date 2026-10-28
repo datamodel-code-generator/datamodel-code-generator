@@ -1,0 +1,13 @@
+valid: accepted
+invalid m: rejected (too_long)
+invalid n: rejected (too_long)
+invalid v: accepted
+invalid u: accepted
+invalid p: rejected (string_pattern_mismatch)
+invalid w: accepted
+invalid l: rejected (too_long)
+invalid t: rejected (too_long)
+invalid e: rejected (unexpected_keyword_argument)
+invalid s: rejected (too_long)
+invalid r: accepted
+invalid i: accepted

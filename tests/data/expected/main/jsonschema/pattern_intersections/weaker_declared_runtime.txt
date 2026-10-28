@@ -1,0 +1,86 @@
+[
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x": 2
+    }
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x": 3
+    }
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  }
+]

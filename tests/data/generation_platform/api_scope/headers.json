@@ -1,0 +1,86 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "Free": true,
+      "Never": false,
+      "Normal": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "AllOfNoRef": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      },
+      "Derived": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Normal"
+          }
+        ]
+      }
+    },
+    "responses": {
+      "Shared": {
+        "headers": {
+          "X-Component": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "Ignored": {
+        "content": {
+          "application/x-www-form-urlencoded": {
+            "encoding": {
+              "value": {
+                "headers": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/items": {
+      "get": {
+        "responses": {
+          "200": {
+            "headers": {
+              "X-Trace": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "201": {
+            "headers": {
+              "X-Trace": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

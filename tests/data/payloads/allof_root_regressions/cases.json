@@ -1,0 +1,101 @@
+{
+  "nonfinite": {
+    "source": "nonfinite.yaml",
+    "variants": false,
+    "models": [
+      "Root"
+    ],
+    "payloads": [
+      Infinity,
+      -Infinity,
+      NaN,
+      1.5,
+      2,
+      true,
+      "1.5",
+      null
+    ]
+  },
+  "cycle": {
+    "source": "cycle.json",
+    "variants": false,
+    "models": [
+      "Root"
+    ],
+    "payloads": [
+      [],
+      [
+        []
+      ],
+      [
+        [
+          []
+        ]
+      ],
+      1,
+      [
+        1
+      ],
+      [
+        [
+          1
+        ]
+      ]
+    ]
+  },
+  "variants": {
+    "source": "variants.json",
+    "variants": true,
+    "models": [
+      "RootRequest",
+      "RootResponse"
+    ],
+    "payloads": [
+      [
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      [
+        {
+          "x": 1,
+          "y": 3
+        }
+      ],
+      [],
+      [
+        {
+          "y": 2
+        }
+      ],
+      null
+    ]
+  },
+  "array_union": {
+    "source": "array_union.json",
+    "variants": false,
+    "models": [
+      "Root"
+    ],
+    "payloads": [
+      "text",
+      [
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [],
+      [
+        2
+      ],
+      [
+        true
+      ],
+      1,
+      null
+    ]
+  }
+}

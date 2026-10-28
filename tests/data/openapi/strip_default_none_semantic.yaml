@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: strip default none semantic
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    SemanticNoneModel:
+      type: object
+      properties:
+        implicitNone:
+          type: string
+        stringNoneDefault:
+          type: string
+          default: "None"
+        explicitDefault:
+          type: string
+          default: active

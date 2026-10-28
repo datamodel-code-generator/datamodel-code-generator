@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: A cycle inside a package, which imports a module below that package
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    # a and a.b form the cycle that a/_internal.py merges; every merged module is a or below it.
+    a.x:
+      type: object
+      properties:
+        y:
+          $ref: '#/components/schemas/a.b.y'
+        z:
+          $ref: '#/components/schemas/a.c.z'
+
+    a.b.y:
+      type: object
+      properties:
+        x:
+          $ref: '#/components/schemas/a.x'
+
+    # a.c stays a module of its own: a runs before it does.
+    a.c.z:
+      type: object
+      properties:
+        code:
+          type: integer

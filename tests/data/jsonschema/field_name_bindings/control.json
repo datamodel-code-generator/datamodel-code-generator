@@ -1,0 +1,53 @@
+{
+  "title": "Record",
+  "description": "Field Optional list metadata",
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string"
+    },
+    "list_aliased": {
+      "type": "string"
+    },
+    "list_aliased_1": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "field_label": {
+      "type": "string"
+    },
+    "count": {
+      "type": "integer",
+      "description": "Field list"
+    },
+    "optional_label": {
+      "type": "string"
+    },
+    "choice": {
+      "type": "string",
+      "enum": [
+        "list",
+        "Optional",
+        "Field"
+      ]
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

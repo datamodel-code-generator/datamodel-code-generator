@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value cycle reuse
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Entry:
+      type: object
+      properties:
+        id:
+          type: integer
+    a.Item:
+      type: object
+      properties:
+        entry:
+          $ref: "#/components/schemas/Entry"
+        labels:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              name:
+                type: string
+    Holder:
+      type: object
+      properties:
+        value:
+          $ref: "#/components/schemas/a.Value"
+    Attrs:
+      type: object
+      properties:
+        name:
+          type: string
+    a.Value:
+      type: object
+      properties:
+        name:
+          type: string

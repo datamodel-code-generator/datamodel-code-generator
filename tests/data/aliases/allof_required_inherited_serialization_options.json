@@ -1,0 +1,8 @@
+{
+  "BaseFirst.x-field": "base-out",
+  "DerivedBaseFirst.x-field": "derived-out",
+  "ScopedDerivedBaseFirst.x-field": "scoped-derived-out",
+  "ForwardBase.x-field": "forward-base-out",
+  "ForwardDerived.x-field": "forward-derived-out",
+  "ForwardScopedDerived.x-field": "forward-scoped-derived-out"
+}

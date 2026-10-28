@@ -1,0 +1,50 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Flagged"
+      }
+    },
+    "Merged": {
+      "$ref": "#/$defs/Base",
+      "additionalProperties": {
+        "$ref": "#/$defs/Flagged"
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "holder": {
+      "$ref": "#/$defs/Holder"
+    },
+    "merged": {
+      "$ref": "#/$defs/Merged"
+    }
+  }
+}

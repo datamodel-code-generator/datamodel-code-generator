@@ -1,0 +1,22 @@
+[
+  {
+    "native": true,
+    "dump": []
+  },
+  {
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "native": true,
+    "dump": [
+      {
+        "x": "bb"
+      }
+    ]
+  },
+  {
+    "native": false,
+    "error": "ValidationError"
+  }
+]

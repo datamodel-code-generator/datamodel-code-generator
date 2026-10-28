@@ -1,0 +1,14 @@
+Cat {"petType": "cat", "meows": 1}: schema accepts, model accepts
+Cat {"petType": "Cat"}: schema rejects, model rejects
+Cat {"petType": "dog"}: schema rejects, model rejects
+Dog {"petType": "dog", "barks": 1.5}: schema accepts, model accepts
+Dog {"petType": "Dog"}: schema rejects, model rejects
+Dog {"petType": "cat"}: schema rejects, model rejects
+Pet {"petType": "cat"}: schema accepts, model accepts
+Pet {"petType": "dog"}: schema accepts, model accepts
+Pet {"petType": "Cat"}: schema rejects, model rejects
+Pet {"petType": "bird"}: schema rejects, model rejects
+Owner {"pet": {"petType": "cat"}}: schema accepts, model accepts
+Owner {"pet": {"petType": "dog"}}: schema accepts, model accepts
+Owner {"pet": {"petType": "Dog"}}: schema rejects, model rejects
+Owner {}: schema accepts, model accepts

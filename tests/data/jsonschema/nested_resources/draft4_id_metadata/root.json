@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/definitions/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "definitions": {
+    "Value": {
+      "type": "string"
+    },
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "$id": "nested.json"
+    }
+  }
+}

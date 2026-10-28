@@ -1,0 +1,3 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" xmlns:alias="urn:one">
+  <xs:import namespace="urn:one" schemaLocation="one.xsd"/><xs:complexType name="Text"><xs:simpleContent><xs:extension base="xs:string"><xs:attributeGroup ref="one:fields"/></xs:extension></xs:simpleContent></xs:complexType><xs:element name="root" type="Text"/>
+</xs:schema>

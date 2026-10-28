@@ -1,0 +1,2 @@
+# legacy
+SchemaParseError Error at schema path 'legacy.yaml/#/paths//legacy/get/parameters/0': API_INVALID_OBJECT: parameter/header content must have one medium

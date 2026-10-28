@@ -29,12 +29,14 @@ datamodel-codegen --input schema.json --output model.py
 ```python
 # Duplicate enums for animal and pet fields
 class Animal(Enum):
-    dog = 'dog'
-    cat = 'cat'
+    dog = "dog"
+    cat = "cat"
+
 
 class Pet(Enum):  # Duplicate!
-    dog = 'dog'
-    cat = 'cat'
+    dog = "dog"
+    cat = "cat"
+
 
 class User(BaseModel):
     animal: Optional[Animal] = None
@@ -47,16 +49,43 @@ class User(BaseModel):
 datamodel-codegen --input schema.json --output model.py --reuse-model
 ```
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-model.output -->
+<!-- fmt: off -->
+
 ```python
-# Single shared enum
+from __future__ import annotations
+
+from enum import Enum
+
+from pydantic import BaseModel, Field, RootModel
+
+
 class Animal(Enum):
     dog = 'dog'
     cat = 'cat'
+    snake = 'snake'
+
+
+class RedistributeEnum(Enum):
+    static = 'static'
+    connected = 'connected'
+
 
 class User(BaseModel):
-    animal: Optional[Animal] = None
-    pet: Optional[Animal] = None  # Reuses Animal
+    name: str | None = None
+    animal: Animal | None = 'dog'
+    pet: Animal | None = 'cat'
+    redistribute: list[RedistributeEnum] | None = None
+
+
+class Redistribute(RootModel[list[RedistributeEnum]]):
+    root: list[RedistributeEnum] = Field(
+        ..., description='Redistribute type for routes.'
+    )
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-model.output -->
 
 ### Benefits
 
@@ -95,27 +124,81 @@ schemas/
 └── order.json     # also defines identical SharedModel
 ```
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-scope-tree.output -->
 **Output with `--reuse-scope tree`:**
+
+<!-- fmt: off -->
+
 ```text
 models/
-├── __init__.py
-├── user.py        # imports from shared
-├── order.py       # imports from shared
-└── shared.py      # SharedModel defined once
+|-- __init__.py
+|-- schema_a.py
+|-- schema_b.py
+`-- shared.py
 ```
+
+<!-- fmt: on -->
+
+**models/__init__.py:**
+_No code beyond the generated header._
+
+**models/schema_a.py:**
+
+<!-- fmt: off -->
 
 ```python
-# models/user.py
-from .shared import SharedModel
+from __future__ import annotations
 
-class User(BaseModel):
-    data: Optional[SharedModel] = None
+from pydantic import BaseModel
 
-# models/shared.py
-class SharedModel(BaseModel):
-    id: Optional[int] = None
-    name: Optional[str] = None
+from .shared import SharedModel as SharedModel_1
+
+
+class SharedModel(SharedModel_1):
+    pass
+
+
+class Model(BaseModel):
+    data: SharedModel | None = None
 ```
+
+<!-- fmt: on -->
+
+**models/schema_b.py:**
+
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+from . import shared
+
+
+class Model(BaseModel):
+    info: shared.SharedModel | None = None
+```
+
+<!-- fmt: on -->
+
+**models/shared.py:**
+
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class SharedModel(BaseModel):
+    id: int | None = None
+    name: str | None = None
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-scope-tree.output -->
 
 ---
 
@@ -148,6 +231,7 @@ Inline root model definitions instead of creating separate wrapper classes.
 ```python
 class UserId(BaseModel):
     __root__: str
+
 
 class User(BaseModel):
     id: UserId
@@ -254,39 +338,67 @@ Without using `$ref`, each class gets its own inline field definition:
 
 ```python
 class ClassA(BaseModel):
-    place_name: Annotated[str, Field(alias='placeName')]  # Duplicate!
+    place_name: Annotated[str, Field(alias="placeName")]  # Duplicate!
+
 
 class ClassB(BaseModel):
-    place_name: Annotated[str, Field(alias='placeName')]  # Duplicate!
+    place_name: Annotated[str, Field(alias="placeName")]  # Duplicate!
 ```
 
 ### Solution: Use `$defs` with `--use-type-alias`
 
 **Step 1: Define the shared type in `$defs`**
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.schema -->
+<!-- fmt: off -->
+
 ```json
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
   "$defs": {
     "PlaceName": {
       "type": "string",
       "title": "PlaceName",
-      "description": "A place name"
+      "description": "A place name with alias",
+      "examples": ["Tokyo", "New York"]
     },
     "ClassA": {
       "type": "object",
+      "title": "ClassA",
       "properties": {
-        "place_name": { "$ref": "#/$defs/PlaceName" }
-      }
+        "place_name": {
+          "$ref": "#/$defs/PlaceName"
+        },
+        "other_field": {
+          "type": "integer"
+        }
+      },
+      "required": ["place_name"]
     },
     "ClassB": {
       "type": "object",
+      "title": "ClassB",
       "properties": {
-        "place_name": { "$ref": "#/$defs/PlaceName" }
-      }
+        "place_name": {
+          "$ref": "#/$defs/PlaceName"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": ["place_name"]
     }
-  }
+  },
+  "anyOf": [
+    {"$ref": "#/$defs/ClassA"},
+    {"$ref": "#/$defs/ClassB"}
+  ]
 }
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.schema -->
 
 **Step 2: Generate with `--use-type-alias`**
 
@@ -299,20 +411,46 @@ datamodel-codegen \
 
 ### Result: Single TypeAlias reused across classes
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.output -->
+<!-- fmt: off -->
+
 ```python
+from __future__ import annotations
+
+from typing import Annotated
+
+from pydantic import BaseModel, Field
+from typing_extensions import TypeAliasType
+
 PlaceName = TypeAliasType(
     "PlaceName",
-    Annotated[str, Field(..., description='A place name', title='PlaceName')],
+    Annotated[
+        str,
+        Field(
+            ...,
+            description='A place name with alias',
+            examples=['Tokyo', 'New York'],
+            title='PlaceName',
+        ),
+    ],
 )
 
 
 class ClassA(BaseModel):
-    place_name: PlaceName  # Reuses the TypeAlias
+    place_name: PlaceName
+    other_field: int | None = None
 
 
 class ClassB(BaseModel):
-    place_name: PlaceName  # Reuses the TypeAlias
+    place_name: PlaceName
+    description: str | None = None
+
+
+Model = TypeAliasType("Model", Annotated[ClassA | ClassB, Field(..., title='Model')])
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.output -->
 
 ### Benefits
 
@@ -338,4 +476,4 @@ This pattern is ideal when:
 - [CLI Reference: `--collapse-root-models`](cli-reference/model-customization.md#collapse-root-models)
 - [CLI Reference: `--use-type-alias`](cli-reference/typing-customization.md#use-type-alias)
 - [Root Models and Type Aliases](root-model-and-type-alias.md)
-- [FAQ: Performance](faq.md#-performance)
+- [FAQ: Performance](faq.md#performance)

@@ -1,0 +1,7 @@
+# cyclic metadata pydantic_v2.BaseModel
+render
+cyclic YAML input rejected
+files []
+generate
+cyclic YAML input rejected
+files []

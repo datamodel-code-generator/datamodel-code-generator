@@ -1,0 +1,4 @@
+create-server-decode: native Tally(name='votes') json={"name":"votes"}
+create-server-decode-invalid-extra: native Tally(name='votes') json={"name":"votes"}
+created-server-encode: native Tally(name='votes') json={"name":"votes"}
+created-server-snapshot: native Tally(name='votes') json={"name":"votes"}

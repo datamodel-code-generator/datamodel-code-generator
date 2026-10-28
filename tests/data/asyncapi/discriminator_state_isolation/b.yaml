@@ -1,0 +1,16 @@
+asyncapi: 3.0.0
+info:
+  title: Second
+  version: 1.0.0
+channels: {}
+operations: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name: {type: string}
+    Holder:
+      type: object
+      properties:
+        pet: {$ref: '#/components/schemas/Pet'}

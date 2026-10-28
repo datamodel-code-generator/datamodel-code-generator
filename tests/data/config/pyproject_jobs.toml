@@ -1,0 +1,16 @@
+[tool.datamodel-codegen]
+disable-timestamp = true
+enable-version-header = false
+input-file-type = "jsonschema"
+
+[tool.datamodel-codegen.profiles.strict]
+snake-case-field = true
+
+[tool.datamodel-codegen.jobs.plain]
+input = "$PERSON_SCHEMA"
+output = "$PLAIN_OUTPUT"
+
+[tool.datamodel-codegen.jobs.strict]
+profile = "strict"
+input = "$PERSON_SCHEMA"
+output = "$STRICT_OUTPUT"

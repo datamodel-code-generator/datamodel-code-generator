@@ -1,0 +1,5 @@
+{
+  "default": {},
+  "explicit": {"numbers": [8, 5], "strings": ["explicit"]},
+  "invalid": {"numbers": ["invalid"]}
+}

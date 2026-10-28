@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: Structs that redefine the tag field of a tagged base as a field of their own, in its module and others
+  version: "1"
+paths: {}
+components:
+  schemas:
+    app.Kitten:
+      allOf:
+        - $ref: "#/components/schemas/zoo.Cat"
+        - type: object
+          properties:
+            kind:
+              type: string
+              maxLength: 10
+    app.Parrot:
+      allOf:
+        - $ref: "#/components/schemas/zoo.Bird"
+        - type: object
+          properties:
+            kind:
+              enum: [parrot, macaw]
+    app.ToyRobot:
+      allOf:
+        - $ref: "#/components/schemas/zoo.RobotDog"
+        - type: object
+          properties:
+            kind:
+              const: toy
+    app.Shelter:
+      type: object
+      properties:
+        resident:
+          anyOf:
+            - $ref: "#/components/schemas/app.Kitten"
+            - $ref: "#/components/schemas/zoo.Cat"
+    zoo.Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    zoo.Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    zoo.Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        wings:
+          type: integer
+    zoo.RobotDog:
+      allOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+            model:
+              type: string
+    zoo.Pets:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - $ref: "#/components/schemas/zoo.Cat"
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: "#/components/schemas/zoo.Dog"
+          cat: "#/components/schemas/zoo.Cat"
+    zoo.Flock:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - $ref: "#/components/schemas/zoo.Bird"
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: "#/components/schemas/zoo.Dog"
+          bird: "#/components/schemas/zoo.Bird"
+    zoo.Yard:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Cat"
+        - $ref: "#/components/schemas/zoo.Bird"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/zoo.Cat"
+          bird: "#/components/schemas/zoo.Bird"

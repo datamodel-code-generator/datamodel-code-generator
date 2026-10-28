@@ -1,0 +1,26 @@
+[
+  [
+    "number_to_words",
+    null
+  ],
+  [
+    "number_to_words",
+    "3"
+  ],
+  [
+    "singular_noun",
+    null
+  ],
+  [
+    "singular_noun",
+    "children"
+  ],
+  [
+    "plural_noun",
+    null
+  ],
+  [
+    "plural_noun",
+    "mouse"
+  ]
+]

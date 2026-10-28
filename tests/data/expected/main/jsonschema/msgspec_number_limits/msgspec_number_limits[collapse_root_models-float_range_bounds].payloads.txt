@@ -1,0 +1,7 @@
+valid: accepted
+valid: accepted
+invalid {"above": 1.5}: accepted
+invalid {"nullable": -1.5}: accepted
+invalid {"divisor": 1}: accepted
+invalid {"finite": -1.5}: rejected
+invalid {"finite": 1.7e+308}: rejected

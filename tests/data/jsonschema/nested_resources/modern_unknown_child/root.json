@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "child.json"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "definitions": {
+    "Child": {
+      "$schema": "https://schemas.example.invalid/custom/schema",
+      "id": "child.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "definitions": {
+        "Value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

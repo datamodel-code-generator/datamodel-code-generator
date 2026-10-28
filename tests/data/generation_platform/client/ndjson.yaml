@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: Records
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /records:
+    get:
+      operationId: streamRecords
+      tags: [records]
+      parameters:
+        - name: topic
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: The records of a topic, one JSON value a line.
+          content:
+            application/x-ndjson:
+              schema: {$ref: '#/components/schemas/Record'}
+        '404':
+          description: The topic does not exist.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /search:
+    post:
+      operationId: search
+      tags: [search]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchQuery'}
+      responses:
+        '200':
+          description: The matches, one JSON value a line.
+          content:
+            application/jsonl; charset=utf-8:
+              schema: {type: string}
+  /status:
+    get:
+      operationId: getStatus
+      tags: [status]
+      responses:
+        '200':
+          description: The service's status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Record'}
+components:
+  schemas:
+    Record:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string}
+    Created:
+      type: object
+      required: [type, id]
+      properties:
+        type: {type: string}
+        id: {type: string}
+    Deleted:
+      type: object
+      required: [type, id]
+      properties:
+        type: {type: string, const: deleted}
+        id: {type: string}
+    Failure:
+      type: object
+      required: [type, message]
+      properties:
+        type: {type: string}
+        message: {type: string}
+    Problem:
+      type: object
+      properties:
+        detail: {type: string}
+    SearchQuery:
+      type: object
+      properties:
+        text: {type: string}
+    Secret:
+      type: object
+      required: [id, token]
+      properties:
+        id: {type: string}
+        token: {type: string, writeOnly: true}

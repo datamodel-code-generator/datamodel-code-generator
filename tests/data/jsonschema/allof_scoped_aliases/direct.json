@@ -1,0 +1,48 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base"
+      ]
+    },
+    "Child": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "integer"
+        },
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "integer",
+          "default": 2
+        },
+        "z": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "base",
+        "x"
+      ]
+    }
+  }
+}

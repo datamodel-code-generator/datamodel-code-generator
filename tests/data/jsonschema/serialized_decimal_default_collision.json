@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecimalCollision",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "string",
+      "format": "decimal",
+      "default": "12.340"
+    },
+    "invalid_amount_1": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-1"
+    },
+    "invalid_amount_2": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-2"
+    },
+    "invalid_amount_3": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-3"
+    },
+    "invalid_amount_4": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-4"
+    },
+    "invalid_amount_5": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-5"
+    },
+    "invalid_amount_6": {
+      "type": "string",
+      "format": "decimal",
+      "default": "invalid-6"
+    },
+    "Decimal": {
+      "type": "string",
+      "default": "shadow"
+    },
+    "Decimal_default": {
+      "type": "string",
+      "default": "shadow-default"
+    }
+  }
+}

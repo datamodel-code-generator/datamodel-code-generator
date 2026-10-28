@@ -1,0 +1,14 @@
+{
+  "fields": [
+    "base",
+    "renamed",
+    "y",
+    "z"
+  ],
+  "data": {
+    "base": 1,
+    "x": "ok",
+    "y": 2,
+    "z": true
+  }
+}

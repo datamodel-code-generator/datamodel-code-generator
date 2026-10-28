@@ -1,0 +1,49 @@
+StrM1 {"k": "s1"}: schema accepts, model accepts
+StrM1 {"k": "s1", "extra": 1}: schema accepts, model accepts
+StrM1 {"k": "s2"}: schema rejects, model rejects
+StrM1 {}: schema rejects, model rejects
+StrM1 {"k": 1}: schema rejects, model rejects
+StrM2 {"k": "s2"}: schema accepts, model accepts
+StrM2 {"k": "s1"}: schema rejects, model rejects
+IntM1 {"k": 1}: schema accepts, model accepts
+IntM1 {"k": 2}: schema rejects, model rejects
+IntM1 {"k": "1"}: schema rejects, model rejects
+IntM2 {"k": 2}: schema accepts, model accepts
+IntM2 {"k": 1}: schema rejects, model rejects
+EnumM1 {"k": "m"}: schema accepts, model accepts
+EnumM1 {"k": "n"}: schema rejects, model rejects
+EnumM1 {"k": "o"}: schema rejects, model rejects
+EnumM2 {"k": "n"}: schema accepts, model accepts
+EnumM2 {"k": "m"}: schema rejects, model rejects
+OptM1 {"k": "o1", "a": "x"}: schema accepts, model accepts
+OptM1 {"k": "o1"}: schema accepts, model accepts
+OptM1 {"a": "x"}: schema rejects, model rejects
+OptM1 {"k": "o2"}: schema rejects, model rejects
+OptM2 {"k": "o2"}: schema accepts, model accepts
+OptM2 {"k": "o1"}: schema rejects, model rejects
+ChainM1 {"k": "c1", "b": "x"}: schema accepts, model accepts
+ChainM1 {"k": "c2"}: schema rejects, model rejects
+ChainM2 {"k": "c2"}: schema accepts, model accepts
+ChainM2 {"k": "c1"}: schema rejects, model rejects
+ChainM1a {"k": "c1", "x": 1}: schema accepts, model accepts
+ChainM1a {"k": "c1", "x": "one"}: schema rejects, model rejects
+ChainM1a {"k": "c2"}: schema rejects, model rejects
+MixM1 {"k": "x1"}: schema accepts, model accepts
+MixM1 {"k": "x2"}: schema rejects, model rejects
+MixM2 {"k": "x2"}: schema accepts, model accepts
+MixM2 {"k": "x1"}: schema rejects, model rejects
+OneM1 {"k": "n1"}: schema accepts, model accepts
+OneM1 {"k": "n2"}: schema rejects, model rejects
+OneM2 {"k": "n2"}: schema accepts, model accepts
+OneM2 {"k": "n1"}: schema rejects, model rejects
+pets {"k": "pet", "name": "Tom"}: schema accepts, model accepts
+pets {"k": "other"}: schema accepts, model accepts
+pets {"k": "cat"}: schema rejects, model rejects
+pets {"name": "Tom"}: schema rejects, model rejects
+tagged_chain {"k": "z", "y": 1}: schema accepts, model type refused by msgspec
+tagged_chain {"k": "zo"}: schema accepts, model type refused by msgspec
+tagged_chain {"k": "z", "y": "one"}: schema rejects, model type refused by msgspec
+tagged_chain {"k": "q"}: schema rejects, model type refused by msgspec
+zs {"k": "z"}: schema accepts, model type refused by msgspec
+zs {"k": "zo"}: schema accepts, model type refused by msgspec
+zs {"k": "other"}: schema rejects, model type refused by msgspec

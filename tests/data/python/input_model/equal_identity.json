@@ -1,0 +1,387 @@
+{
+  "Both": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "b"
+      }
+    },
+    "fields": [
+      "left",
+      "right"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "Reversed": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "b"
+      }
+    },
+    "fields": [
+      "right",
+      "left"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "Shared": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "a"
+      }
+    },
+    "fields": [
+      "left",
+      "right"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "Child": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "b"
+      }
+    },
+    "fields": [
+      "left",
+      "right"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "UnionRoot": {
+    "valid": {
+      "item": {
+        "value": "a"
+      }
+    },
+    "fields": [
+      "item"
+    ],
+    "invalid": {
+      "item": {
+        "value": "z"
+      }
+    }
+  },
+  "RecursiveRoot": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "b"
+      }
+    },
+    "fields": [
+      "left",
+      "right"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "EnumRoot": {
+    "valid": {
+      "left": "ok",
+      "right": "ok"
+    },
+    "fields": [
+      "left",
+      "right"
+    ]
+  },
+  "AliasRoot": {
+    "valid": {
+      "left": {
+        "value": "a"
+      },
+      "right": {
+        "value": "b"
+      }
+    },
+    "fields": [
+      "left",
+      "right"
+    ],
+    "invalid": {
+      "left": {
+        "value": "b"
+      },
+      "right": {
+        "value": "a"
+      }
+    }
+  },
+  "definition_collisions": {
+    "nested": {
+      "roots": [
+        "RootA",
+        "RootB"
+      ],
+      "payloads": [
+        {
+          "first": 1,
+          "data": {
+            "id": 2,
+            "child": {
+              "id": 3
+            }
+          }
+        },
+        {
+          "second": "b",
+          "data": {
+            "name": "b",
+            "child": {
+              "name": "c"
+            }
+          },
+          "shared": {
+            "id": 4
+          },
+          "reserved": {
+            "reserved": true
+          }
+        }
+      ]
+    },
+    "roots": {
+      "roots": [
+        "Root",
+        "Root"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "id": 1,
+            "child": {
+              "id": 2
+            }
+          }
+        },
+        {
+          "data": {
+            "name": "b",
+            "child": {
+              "name": "c"
+            }
+          }
+        }
+      ]
+    },
+    "shared": {
+      "roots": [
+        "RootA",
+        "SharedRoot"
+      ],
+      "payloads": [
+        {
+          "first": 1,
+          "data": {
+            "id": 2
+          }
+        },
+        {
+          "first": 3,
+          "shared": {
+            "id": 4
+          }
+        }
+      ]
+    },
+    "plain": {
+      "roots": [
+        "PlainA",
+        "PlainB"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "id": 1
+          },
+          "kind": "a",
+          "mode": "mode-a"
+        },
+        {
+          "data": {
+            "name": "b"
+          },
+          "kind": "b",
+          "mode": "mode-b"
+        }
+      ]
+    },
+    "identical": {
+      "roots": [
+        "SameRootA",
+        "SameRootB"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "value": "a"
+          }
+        },
+        {
+          "data": {
+            "value": "b"
+          }
+        }
+      ]
+    },
+    "metadata": {
+      "roots": [
+        "ExtraDefinitions",
+        "EmptyDefinitions"
+      ],
+      "payloads": [
+        {
+          "first": 1
+        },
+        {
+          "second": "b"
+        }
+      ]
+    },
+    "recursive": {
+      "roots": [
+        "Recursive",
+        "Recursive"
+      ],
+      "payloads": [
+        {
+          "first": 1,
+          "id": 2,
+          "child": {
+            "first": 3,
+            "id": 4
+          }
+        },
+        {
+          "second": "a",
+          "name": "b",
+          "child": {
+            "second": "c",
+            "name": "d"
+          }
+        }
+      ]
+    },
+    "generic": {
+      "roots": [
+        "GenericRootA",
+        "GenericRootB"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "value": 1
+          }
+        },
+        {
+          "data": {
+            "value": "b"
+          }
+        }
+      ]
+    },
+    "suffixes": {
+      "roots": [
+        "PlainA",
+        "PlainB",
+        "PlainC"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "id": 1
+          },
+          "kind": "a",
+          "mode": "mode-a"
+        },
+        {
+          "data": {
+            "name": "b"
+          },
+          "kind": "b",
+          "mode": "mode-b"
+        },
+        {
+          "data": {
+            "score": 3
+          },
+          "kind": "c",
+          "mode": "mode-c"
+        }
+      ]
+    },
+    "suffix_roots": {
+      "roots": [
+        "Root",
+        "Root",
+        "Root"
+      ],
+      "payloads": [
+        {
+          "data": {
+            "id": 1
+          }
+        },
+        {
+          "data": {
+            "name": "b"
+          }
+        },
+        {
+          "data": {
+            "score": 3
+          }
+        }
+      ]
+    }
+  }
+}

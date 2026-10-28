@@ -1,0 +1,6 @@
+both_entered=True
+first_exited=True
+second_still_holds=True
+first_joined=True
+second_joined=True
+restored_after_workers=True

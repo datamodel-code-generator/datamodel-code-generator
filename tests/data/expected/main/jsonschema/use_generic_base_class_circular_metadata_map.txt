@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Friend",
+      "name": "Friend",
+      "module": "_internal",
+      "source_ref": "use_generic_base_class_circular.json#/$defs/Friend",
+      "source_path": [
+        "$defs",
+        "Friend"
+      ],
+      "title": "Friend",
+      "fields": [
+        {
+          "name": "nickname",
+          "alias": "nickname",
+          "original_name": "nickname",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "person",
+          "alias": "person",
+          "original_name": "person",
+          "type": "Person | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Person",
+      "name": "Person",
+      "module": "_internal",
+      "source_ref": "use_generic_base_class_circular.json#/$defs/Person",
+      "source_path": [
+        "$defs",
+        "Person"
+      ],
+      "title": "Person",
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "best_friend",
+          "alias": "best_friend",
+          "original_name": "best_friend",
+          "type": "Friend | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "model",
+      "source_ref": "use_generic_base_class_circular.json#",
+      "source_path": [],
+      "title": null,
+      "fields": []
+    }
+  ]
+}

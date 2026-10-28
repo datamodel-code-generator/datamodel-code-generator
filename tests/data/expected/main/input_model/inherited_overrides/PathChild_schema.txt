@@ -1,0 +1,30 @@
+{
+  "$defs": {
+    "PathParent": {
+      "properties": {
+        "value": {
+          "default": 1,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "title": "PathParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/PathParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "default": 2,
+      "title": "Value",
+      "type": "integer"
+    }
+  },
+  "title": "PathChild",
+  "type": "object"
+}

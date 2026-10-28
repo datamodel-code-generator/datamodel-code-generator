@@ -1,0 +1,19 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "allOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

@@ -1,0 +1,37 @@
+returncode: 0
+stdout:
+stderr:
+Wrote <tmp>/release-benchmarks.json
+merged:
+{
+  "schema_version": 1,
+  "metadata": {
+    "main_snapshot_generated_at": "2026-06-23T00:00:00Z",
+    "main_snapshot_workflow_run_id": "new-run",
+    "main_snapshot_collector_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generated_at": "2026-06-23T00:01:00Z",
+    "workflow_run_id": "new-run",
+    "collector_sha": "collector-sha",
+    "workflow": "",
+    "os": "ubuntu-24.04",
+    "python_version": "",
+    "runs_per_case": "",
+    "selection_strategy": "",
+    "selected_versions": "0.64.1,main",
+    "release_dates": {}
+  },
+  "entries": [
+    {
+      "version": "0.64.1",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    },
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    }
+  ]
+}

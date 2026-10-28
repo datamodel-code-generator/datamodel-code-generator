@@ -1,0 +1,24 @@
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "u": {"$ref": "#/$defs/AUnion"},
+    "m": {"$ref": "#/$defs/AMap"},
+    "v": {"$ref": "#/$defs/AValues"},
+    "l": {"$ref": "#/$defs/AList"},
+    "p": {"$ref": "#/$defs/ARef"},
+    "lu": {"type": "array", "items": {"$ref": "#/$defs/AUnion"}}
+  },
+  "$defs": {
+    "AUnion": {"anyOf": [{"$ref": "#/$defs/Kind"}, {"type": "integer"}]},
+    "AMap": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/Kind"},
+      "additionalProperties": {"type": "integer"}
+    },
+    "AValues": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Kind"}},
+    "AList": {"type": "array", "items": {"$ref": "#/$defs/Kind"}},
+    "ARef": {"$ref": "#/$defs/Kind"},
+    "Kind": {"type": "string", "enum": ["a", "b"], "const": "b"}
+  }
+}

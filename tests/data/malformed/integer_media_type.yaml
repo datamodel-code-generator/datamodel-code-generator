@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Integer media type
+  version: '1.0'
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            1:
+              schema:
+                type: string

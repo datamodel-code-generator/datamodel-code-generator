@@ -1,0 +1,1 @@
+template.jinja2: template source cannot be resolved (permission denied); update the standalone template compiler or move the source under the template directory

@@ -1,0 +1,2 @@
+requires_claude=true
+skip_changelog=false

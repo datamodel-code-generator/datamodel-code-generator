@@ -1,0 +1,315 @@
+{
+  "target": {
+    "lower": {
+      "valid": 10,
+      "invalid": [
+        5
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "lower"
+      ]
+    },
+    "lower_reverse": {
+      "valid": 10,
+      "invalid": [
+        5
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "lower_reverse"
+      ]
+    },
+    "upper": {
+      "valid": 2,
+      "invalid": [
+        3
+      ],
+      "error_type": "less_than_equal",
+      "attribute_path": [
+        "upper"
+      ]
+    },
+    "upper_reverse": {
+      "valid": 2,
+      "invalid": [
+        3
+      ],
+      "error_type": "less_than_equal",
+      "attribute_path": [
+        "upper_reverse"
+      ]
+    },
+    "exclusive_lower": {
+      "valid": 11,
+      "invalid": [
+        5
+      ],
+      "error_type": "greater_than",
+      "attribute_path": [
+        "exclusive_lower"
+      ]
+    },
+    "exclusive_upper": {
+      "valid": 1,
+      "invalid": [
+        3
+      ],
+      "error_type": "less_than",
+      "attribute_path": [
+        "exclusive_upper"
+      ]
+    },
+    "negative": {
+      "valid": -9,
+      "invalid": [
+        -15
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "negative"
+      ]
+    },
+    "large": {
+      "valid": 9007199254740993,
+      "invalid": [
+        9007199254740992
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "large"
+      ]
+    },
+    "shortest": {
+      "valid": "abc",
+      "invalid": [
+        "ab"
+      ],
+      "error_type": "string_too_short",
+      "attribute_path": [
+        "shortest"
+      ]
+    },
+    "longest": {
+      "valid": "ab",
+      "invalid": [
+        "abc"
+      ],
+      "error_type": "string_too_long",
+      "attribute_path": [
+        "longest"
+      ]
+    },
+    "fewest": {
+      "valid": [
+        1,
+        2
+      ],
+      "invalid": [
+        [
+          1
+        ]
+      ],
+      "error_type": "too_short",
+      "attribute_path": [
+        "fewest"
+      ]
+    },
+    "most": {
+      "valid": [
+        1,
+        2
+      ],
+      "invalid": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "error_type": "too_long",
+      "attribute_path": [
+        "most"
+      ]
+    },
+    "choice": {
+      "valid": "shared",
+      "invalid": [
+        "last",
+        "other"
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "choice",
+        "value"
+      ]
+    },
+    "number_choice": {
+      "valid": 2,
+      "invalid": [
+        1,
+        4
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "number_choice",
+        "value"
+      ]
+    },
+    "nested": {
+      "valid": {
+        "minimum": 10,
+        "enum": "b"
+      },
+      "invalid": [
+        {
+          "minimum": 5,
+          "enum": "b"
+        }
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "nested",
+        "minimum"
+      ],
+      "attribute_value": 10
+    },
+    "nested_items": {
+      "valid": [
+        10
+      ],
+      "invalid": [
+        [
+          5
+        ]
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": []
+    },
+    "fewest_properties": {
+      "valid": {
+        "a": 1,
+        "b": 2
+      },
+      "invalid": [
+        {
+          "a": 1
+        }
+      ],
+      "error_type": "too_short",
+      "attribute_path": []
+    },
+    "most_properties": {
+      "valid": {
+        "a": 1,
+        "b": 2
+      },
+      "invalid": [
+        {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      ],
+      "error_type": "too_long",
+      "attribute_path": []
+    },
+    "subset_choice": {
+      "valid": "shared",
+      "invalid": [
+        "other"
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "subset_choice",
+        "value"
+      ]
+    }
+  },
+  "ordinary": {
+    "value": {
+      "valid": 10,
+      "invalid": [
+        5
+      ],
+      "error_type": "greater_than_equal",
+      "attribute_path": [
+        "value"
+      ]
+    },
+    "choice": {
+      "valid": "b",
+      "invalid": [
+        "c"
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "choice",
+        "value"
+      ]
+    }
+  },
+  "complex": {
+    "value": {
+      "valid": {
+        "kind": [
+          true,
+          1
+        ]
+      },
+      "invalid": [
+        {
+          "other": []
+        },
+        {
+          "extra": []
+        }
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "value",
+        "value"
+      ]
+    },
+    "equal": {
+      "valid": {
+        "a": 1
+      },
+      "invalid": [
+        {
+          "a": 2
+        }
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "equal",
+        "value"
+      ]
+    },
+    "nullable": {
+      "valid": "b",
+      "invalid": [
+        null,
+        "a",
+        "c"
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "nullable",
+        "value"
+      ]
+    },
+    "number": {
+      "valid": 1,
+      "invalid": [
+        2,
+        3
+      ],
+      "error_type": "enum",
+      "attribute_path": [
+        "number",
+        "value"
+      ]
+    }
+  }
+}

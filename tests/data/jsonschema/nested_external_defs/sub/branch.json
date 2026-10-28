@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Branch": {
+      "oneOf": [
+        {"$ref": "deep/leaf.json#/$defs/Leaf"},
+        {"type": "string"}
+      ]
+    }
+  }
+}

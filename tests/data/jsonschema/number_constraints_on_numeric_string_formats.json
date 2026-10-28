@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnNumericStringFormats",
+  "type": "object",
+  "properties": {
+    "decimal_minimum": {
+      "type": "string",
+      "format": "decimal",
+      "minimum": 5
+    },
+    "integer_maximum": {
+      "type": "string",
+      "format": "integer",
+      "maximum": 10
+    },
+    "unixtime_exclusive_minimum": {
+      "type": "string",
+      "format": "unixtime",
+      "exclusiveMinimum": 5
+    },
+    "nullable_decimal_multiple_of": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "decimal",
+      "multipleOf": 2
+    }
+  }
+}

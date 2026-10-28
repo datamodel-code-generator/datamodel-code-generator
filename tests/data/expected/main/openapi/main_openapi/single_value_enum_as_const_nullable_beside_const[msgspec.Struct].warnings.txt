@@ -1,0 +1,1 @@
+The schema at enum_const_nullable.yaml#/components/schemas/Holder/properties/nullable admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.

@@ -1,0 +1,23 @@
+{
+  "messages": {
+    "Payload": [
+      [
+        "text",
+        "x(y),z"
+      ],
+      [
+        "second",
+        "a]b\\'\""
+      ],
+      [
+        "marker",
+        "option (unknown) = \"x\"; // /* [,"
+      ],
+      [
+        "count",
+        "7"
+      ]
+    ]
+  },
+  "comments": []
+}

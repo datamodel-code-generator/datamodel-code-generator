@@ -1,0 +1,11 @@
+{
+  "disable_timestamp": true,
+  "field_constraints": true,
+  "formatters": [
+    "builtin"
+  ],
+  "output_model_type": "msgspec.Struct",
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11",
+  "use_annotated": true
+}

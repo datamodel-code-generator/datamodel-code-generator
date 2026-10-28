@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AliasFromImport",
+  "type": "object",
+  "properties": {
+    "direct_amount": {
+      "type": "string",
+      "format": "decimal",
+      "default": "12.34"
+    },
+    "constrained_amount": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 56.78
+    },
+    "Decimal": {
+      "type": "string",
+      "default": "shadow"
+    }
+  }
+}

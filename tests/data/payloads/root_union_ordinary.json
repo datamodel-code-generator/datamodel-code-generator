@@ -1,0 +1,25 @@
+{
+  "members": [
+    "Second",
+    "Other"
+  ],
+  "roots": [
+    "Query",
+    "Mutation",
+    "Subscription"
+  ],
+  "query": "{ choice { __typename ... on Other { value } ... on Second { value self { value } } } }",
+  "samples": [
+    {
+      "__typename": "Second",
+      "value": "second",
+      "self": {
+        "value": "nested"
+      }
+    },
+    {
+      "__typename": "Other",
+      "value": "ok"
+    }
+  ]
+}

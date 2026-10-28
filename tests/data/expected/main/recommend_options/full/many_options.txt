@@ -1,0 +1,148 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
+  components                       4, 0 operations
+  inline objects / enums           15 / 5, nesting depth 1
+  shared property names            2 (status x3, owner x2)
+  inline names = component names   0
+  repeated inline objects / enums  11 of 1 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    5 objects, most repeated 5 (Address x5)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (2 of 4); 2 dotted in 2 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+  root schema                      object model 1, title words 0
+
+Start from  --preset standard-py314-20261027
+
+Add (7 options)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 2, e.g. status x3, owner
+      x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on
+      parse order and shift when the schema grows; full-path names each inline model after its
+      parent.
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+      trial: recommended - naming-strategy -> recommended: classes 10 -> 10, problem names 1 -> 0; 7
+      of 10 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
+        Owner1 -> ShippingShipmentOwner   at $defs/shipping.Shipment > owner
+        Customer -> ManyOptionsCustomer   at $defs/Customer
+  --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
+      Most enums are inline value sets of one property (inline enums: 5 of 5). As Enum classes they
+      add one class name each, the longest and most numbered names; Literal types keep the values
+      without a class.
+      measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
+      measured: Stripe API description: problem names 348 -> 158
+      measured: SchemaStore workflow schema: Type1 to Type19 disappear
+      trial: recommended - enum-shape -> recommended: classes 15 -> 10, problem names 0 -> 0; 0 of
+      10 classes matched by schema location renamed (0 only renumbered), 5 removed, 0 added
+  --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]
+      The schema repeats shapes (inline objects repeating a shape: 11, in 1 shapes; inline enums
+      repeating a value set: 0, in 0 sets; union branches that only constrain their parent's
+      properties, which generation copies per branch: 0). Reuse emits each shape once, and collapse
+      refers to it instead of an empty subclass.
+      measured: GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663
+      measured: Stripe API description: 2512 -> 2022 types
+      measured: SchemaStore workflow schema: the step branches' copies With1 to With11 became one
+      With1
+      trial: recommended - reuse -> recommended: classes 20 -> 10, problem names 0 -> 0; 0 of 10
+      classes matched by schema location renamed (0 only renumbered), 10 removed, 0 added
+  --class-name ManyOptions   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: none), and full-path prefixes that name onto root-level
+      models. The suggested name comes from the input file name; replace it with the name the
+      project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+      trial: recommended - root-name -> recommended: classes 10 -> 10, problem names 1 -> 0; 5 of 10
+      classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        ModelCustomer -> ManyOptionsCustomer   at $defs/Customer
+        ModelStore -> ManyOptionsStore   at $defs/Store
+        Model -> ManyOptions   at (root)
+  --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]
+      Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As
+      modules, cycle members move to _internal.py, where same-named classes of different namespaces
+      get _1 suffixes; flat names avoid that.
+      measured: Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153
+      measured: Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32
+      flat)
+      trial: recommended - dotted-keys -> recommended: classes 11 -> 10, problem names 1 -> 0; 5 of
+      10 classes matched by schema location renamed (0 only renumbered), 1 removed, 0 added, e.g.
+        Invoice -> BillingInvoice   at $defs/billing.Invoice
+        BillingAddress -> BillingInvoiceBillingAddress   at $defs/billing.Invoice > billingAddress
+        Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
+  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+      sibling shares: 2; objects with one required key: 0); otherwise they are named after their
+      parent and a number.
+      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+      (Changes23 -> ChangesBody)
+      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+      WorkflowDispatchInputString, Boolean, ...)
+      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+      schemas without tagged or key branches: no change
+
+Not recommended
+  --use-title-as-name   [titles.keys-when-titles-collide]
+      Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
+      another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0
+      of 0). Titles as class names would number components, or rename them when a title changes;
+      names from the keys avoid both.
+      measured: GitHub REST API description: 53 shared component titles numbered components
+      (page-deployment became GitHubPages1, Actor2)
+      measured: OpenAI API description: 503 problem names with titles off, 544 with titles on
+      measured: Stripe API description: 17% of component titles changed in four months; class names
+      from keys renamed 0.0% of locations
+
+Trial  8 candidates generated in memory without formatting; nothing written
+  candidate                      classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                             25  4 (16.0%)         3     0        0          0       7              0
+  preset                              25  4 (16.0%)         3     0        0          0       7              0
+  recommended                         10   0 (0.0%)         0     0        0          0      19              0   selected
+  recommended - naming-strategy       10  1 (10.0%)         1     0        0          0      11              0
+  recommended - enum-shape            15   0 (0.0%)         0     0        0          0      20              0
+  recommended - reuse                 20   0 (0.0%)         0     0        0          0      23              0
+  recommended - root-name             10  1 (10.0%)         0     0        0          0      16              0
+  recommended - dotted-keys           11   1 (9.1%)         1     0        0          0      14              0
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> recommended)
+  9 of 9 classes matched by schema location renamed (0 only renumbered), 16 removed, 1 added, e.g.
+    Payment -> ManyOptionsPaymentCard   at (root) > payment > oneOf 0
+    Payment1 -> ManyOptionsPaymentBank   at (root) > payment > oneOf 1
+    Customer -> ManyOptionsCustomer   at $defs/Customer
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+  - The trial compares at most 8 candidates, so 1 was left out; the options they would measure show
+    no trial result.
+
+Command
+  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261027 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "ManyOptions"
+  collapse-reuse-models = true
+  enum-field-as-literal = "all"
+  input = "many_options.json"
+  naming-strategy = "full-path"
+  preset = "standard-py314-20261027"
+  reuse-model = true
+  target-python-version = "3.14"
+  treat-dot-as-module = false
+  use-tag-as-union-variant-name = true

@@ -1,0 +1,17 @@
+{
+  "title": "PropertyChildIntermediate",
+  "allOf": [
+    {
+      "$ref": "required_intermediate.json"
+    },
+    {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "child": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

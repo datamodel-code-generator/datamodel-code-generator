@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "record",
+        "name": "Child",
+        "fields": [
+          {
+            "name": "data",
+            "type": "bytes"
+          }
+        ]
+      },
+      "default": {
+        "data": "\u0100"
+      }
+    }
+  ]
+}

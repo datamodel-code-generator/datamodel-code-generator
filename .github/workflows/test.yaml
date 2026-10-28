@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 9 * * *"
@@ -13,114 +12,1891 @@ concurrency:
   group: test-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTEST_COVERAGE_REPORT: ""
+
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: >-
-      ${{ matrix.py || matrix.name }} on
-      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
+  test-coverage:
+    name: ${{ matrix.name }} on Ubuntu
+    # Mid-stack layers are covered by the lowest unmerged and top layers of the same stack.
+    if: &full-test-run >-
+      github.event.pull_request.stack == null
+      || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+      || github.event.pull_request.stack.position == github.event.pull_request.stack.size
     strategy:
       fail-fast: false
       matrix:
-        py: ["3.14", "3.13", "3.12", "3.11", "3.10"]
-        os: [ubuntu-24.04, windows-latest, macos-latest]
-        tox_env: ['']
         include:
-          - tox_env: py312-blacklatest-parallel
-            name: py312-black-latest
-          - tox_env: py312-black24-parallel
-            name: py312-black24
-          - tox_env: py312-black23-parallel
-            name: py312-black23
-          - tox_env: py312-black22-parallel
-            name: py312-black22
-          - tox_env: py312-isort8-parallel
-            name: py312-isort8
-          - tox_env: py312-isort7-parallel
-            name: py312-isort7
-          - tox_env: py312-isort6-parallel
-            name: py312-isort6
-          - tox_env: py312-isort5-parallel
-            name: py312-isort5
+          - tox_env: migration-legacy
+            name: migration-legacy
+            coverage_name: migration-legacy
+          - tox_env: migration-boundary
+            name: migration-boundary
+            coverage_name: migration-boundary
+          - tox_env: pydantic200
+            name: pydantic200
+            coverage_name: pydantic200
           - tox_env: pydantic20
             name: pydantic20
+            coverage_name: pydantic20
           - tox_env: pydantic25
             name: pydantic25
-    runs-on: ${{ matrix.os == '' && 'ubuntu-24.04' || matrix.os }}
+            coverage_name: pydantic25
+          - tox_env: pydantic212
+            name: pydantic212
+            coverage_name: pydantic212
+          - tox_env: pydantic213
+            name: pydantic213
+            coverage_name: pydantic213
+          - tox_env: pydantic214
+            name: pydantic214
+            coverage_name: pydantic214
+          - tox_env: graphqlcore33
+            name: graphqlcore33
+            coverage_name: graphqlcore33
+    runs-on: ubuntu-24.04
     env:
-      OS: ${{ matrix.os == '' && 'ubuntu-24.04' || matrix.os}}
+      OS: ubuntu-24.04
+      TOX_ENV: ${{ matrix.tox_env }}
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        fetch-depth: 0
+        fetch-depth: 1
         persist-credentials: false
     - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       with:
         enable-cache: true
-        cache-suffix: "${{ matrix.py || matrix.tox_env }}"
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}"
     - name: Install tox
       run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-    - name: Set tox environment
-      run: |
-        if [ -n "${{ matrix.py }}" ]; then
-          TOX_ENV="py${{ matrix.py }}-parallel"
-          TOX_ENV="${TOX_ENV//.}"
-          if [ "${{ matrix.os }}" = "windows-latest" ] || [ "${{ matrix.os }}" = "macos-latest" ]; then
-            TOX_ENV="${TOX_ENV/-parallel/-nocov-parallel}"
-          fi
-        else
-          TOX_ENV="${{ matrix.tox_env }}"
-        fi
-        echo "TOX_ENV=$TOX_ENV" >> "$GITHUB_ENV"
-      shell: bash
     - name: Setup Python test environment
       run: |
-        tox run -vv --notest --skip-missing-interpreters false -e $TOX_ENV
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
       shell: bash
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Run test suite
       run: |
-        tox run --skip-uv-sync --skip-pkg-install -e $TOX_ENV
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+        PYTEST_ADDOPTS: -n auto --dist=worksteal
+    - name: Rename coverage report file
+      run: |
+        import os
+
+        os.rename(
+            f".tox/.coverage.{os.environ['TOX_ENV']}",
+            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
+        )
+      shell: python
+    - name: Record coverage provenance
+      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
+    - name: Upload coverage data
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
+        path: ".tox/.coverage.*"
+        retention-days: 3
+
+  test-formatter-coverage:
+    name: ${{ matrix.name }} coverage on Ubuntu
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py312-blacklatest-parallel
+            name: py312-black-latest
+            coverage_name: py312-black-latest
+            pytest_workers: 0
+          - tox_env: py312-black22-parallel
+            name: py312-black22
+            coverage_name: py312-black22
+            pytest_workers: auto
+    runs-on: ubuntu-24.04
+    env:
+      OS: ubuntu-24.04
+      TOX_ENV: ${{ matrix.tox_env }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-coverage"
+    - name: Install tox
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup Python test environment
+      run: |
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Select formatter coverage tests
+      run: |
+        case "$TOX_ENV" in
+          py312-blacklatest-parallel)
+            cat > .tox/formatter-coverage-tests.txt <<'EOF'
+        tests/test_main_kr.py::test_main_no_file
+        EOF
+            ;;
+          py312-black22-parallel)
+            cat > .tox/formatter-coverage-tests.txt <<'EOF'
+        tests/test_types.py
+        tests/main/jsonschema/test_main_jsonschema.py::test_main_keep_model_order_matrix_keep_model_order_field_references[3.13-True-False]
+        tests/main/jsonschema/test_main_jsonschema.py::test_main_combined_array
+        tests/main/jsonschema/test_main_jsonschema.py::test_main_strict_types_all
+        tests/main/openapi/test_main_openapi.py::test_pyproject
+        tests/main/openapi/test_main_openapi.py::test_main_use_generic_container_types
+        tests/main/openapi/test_main_openapi.py::test_main_use_generic_container_types_standard_collections
+        tests/main/openapi/test_main_openapi.py::test_main_openapi_enum_models_as_literal_all
+        tests/main/openapi/test_main_openapi.py::test_main_openapi_enum_models_as_literal
+        tests/parser/test_openapi.py::test_openapi_parser_with_query_parameters
+        tests/parser/test_openapi.py::test_openapi_parser_with_include_path_parameters
+        tests/test_main_kr.py::test_main_no_file
+        tests/test_main_kr.py::test_pyproject
+        EOF
+            ;;
+          *)
+            echo "Unsupported formatter coverage tox env: $TOX_ENV" >&2
+            exit 1
+            ;;
+        esac
+      shell: bash
+    - name: Run formatter coverage tests
+      run: |
+        mapfile -t test_paths < .tox/formatter-coverage-tests.txt
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
+          -n "${{ matrix.pytest_workers }}" \
+          --dist=worksteal \
+          --color=yes \
+          -m "not perf" \
+          --cov datamodel_code_generator \
+          --cov tests \
+          --cov-config=pyproject.toml \
+          --cov-fail-under=0 \
+          --no-cov-on-fail \
+          --cov-report= \
+          "${test_paths[@]}"
       shell: bash
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Rename coverage report file
-      if: matrix.py == '' || (matrix.os != 'windows-latest' && matrix.os != 'macos-latest')
       run: |
-        import os; import sys
-        py = "${{ matrix.py }}"
-        if py:
-            env_name = f"py{py.replace('.', '')}-parallel"
-            base_name = py
-        else:
-            env_name = "${{ matrix.tox_env }}"
-            base_name = "${{ matrix.tox_env }}"
-        os.rename(f".tox/.coverage.{env_name}", f".tox/.coverage.{base_name}-${{ matrix.os }}")
+        import os
+
+        os.rename(
+            f".tox/.coverage.{os.environ['TOX_ENV']}",
+            f".tox/.coverage.${{ matrix.coverage_name }}-{os.environ['OS']}",
+        )
       shell: python
+    - name: Record coverage provenance
+      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
     - name: Upload coverage data
-      if: matrix.py == '' || (matrix.os != 'windows-latest' && matrix.os != 'macos-latest')
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         include-hidden-files: true
-        name: .coverage.${{ matrix.py || matrix.tox_env }}-${{ matrix.os == '' && 'ubuntu-24.04' || matrix.os }}
+        name: .coverage.${{ matrix.coverage_name }}-ubuntu-24.04
         path: ".tox/.coverage.*"
         retention-days: 3
+
+  test-http-backends:
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}${{
+      matrix.shard && format(' shard {0}/{1}', matrix.shard, matrix.shard_total) || '' }}
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: httpx-e2e
+            name: HTTPX HTTP(S) e2e
+            os: ubuntu-24.04
+            coverage: true
+          - tox_env: httpx2-min-e2e
+            name: HTTPX2 minimum HTTP(S) e2e
+            os: ubuntu-24.04
+            coverage: true
+          - tox_env: fastapi-e2e
+            name: FastAPI server e2e
+            os: ubuntu-24.04
+            coverage: true
+          - tox_env: client-e2e
+            name: Client e2e
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 3
+          - tox_env: client-e2e
+            name: Client e2e
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 3
+          - tox_env: client-e2e
+            name: Client e2e
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 3
+          - tox_env: client-py311-e2e
+            name: Client deadlines Python 3.11
+            os: ubuntu-24.04
+            coverage: true
+    runs-on: ${{ matrix.os }}
+    env: &test-http-backends-env
+      OS: ${{ matrix.os }}
+      TOX_ENV: ${{ matrix.tox_env }}
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ matrix.shard_total }}
+      RUN_NAME: ${{ matrix.tox_env }}${{ matrix.shard && format('-shard{0}', matrix.shard) || '' }}-${{ matrix.os }}
+    steps: &test-http-backends-steps
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-${{ matrix.os }}"
+        save-cache: ${{ !matrix.shard || matrix.shard == 1 }}
+    - name: Install tox
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup HTTP backend e2e environment
+      run: tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Run HTTP backend e2e suite
+      run: |
+        shard_args=""
+        shard_suffix=""
+        if [ -n "$SHARD_TOTAL" ]; then
+          shard_args=" --test-shard=$SHARD_INDEX/$SHARD_TOTAL"
+          shard_suffix="-shard$SHARD_INDEX"
+        fi
+        status=0
+        IFS=, read -ra tox_envs <<< "$TOX_ENV"
+        for tox_env in "${tox_envs[@]}"; do
+          PYTEST_ADDOPTS="--junitxml=.tox/junit.$tox_env$shard_suffix-$OS.xml$shard_args" \
+            tox run --skip-uv-sync --skip-pkg-install -e "$tox_env" || status=1
+        done
+        exit "$status"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Upload test durations
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: junit.${{ env.RUN_NAME }}
+        path: ".tox/junit.*"
+        retention-days: 3
+    - name: Rename coverage report file
+      if: matrix.coverage == true
+      run: |
+        import os
+
+        os.rename(
+            f".tox/.coverage.{os.environ['TOX_ENV']}",
+            f".tox/.coverage.{os.environ['RUN_NAME']}",
+        )
+      shell: python
+    - name: Record coverage provenance
+      if: matrix.coverage == true
+      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ env.RUN_NAME }}
+    - name: Upload coverage data
+      if: matrix.coverage == true
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: .coverage.${{ env.RUN_NAME }}
+        path: ".tox/.coverage.*"
+        retention-days: 3
+
+  test-http-backends-nocov:
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}${{
+      matrix.shard && format(' shard {0}/{1}', matrix.shard, matrix.shard_total) || '' }}
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: httpx2-max-nocov-e2e,client-httpx2-max-nocov-e2e
+            name: HTTPX2 latest HTTP(S) and client HTTP/1.1 and HTTP/2 e2e
+            os: windows-latest
+            coverage: false
+          - tox_env: httpx-both-nocov-e2e,client-httpx2-min-nocov-e2e
+            name: HTTPX + HTTPX2 HTTP(S) and client HTTPX2 minimum HTTP/1.1 and HTTP/2 e2e
+            os: macos-latest
+            coverage: false
+          - tox_env: client-py312-nocov-e2e,client-py314-nocov-e2e,client-py315-nocov-e2e
+            name: Client deadlines Python 3.12, 3.14 and 3.15
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: fastapi-py315-nocov-e2e,fastapi-install-nocov-e2e,client-install-nocov-e2e
+            name: FastAPI server e2e Python 3.15 and server and client installation e2e
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: typing-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 4
+          - tox_env: typing-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 4
+          - tox_env: typing-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e
+            os: ubuntu-24.04
+            coverage: false
+            shard: 3
+            shard_total: 4
+          - tox_env: typing-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e
+            os: ubuntu-24.04
+            coverage: false
+            shard: 4
+            shard_total: 4
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 4
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 4
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 3
+            shard_total: 4
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 4
+            shard_total: 4
+    runs-on: ${{ matrix.os }}
+    env: *test-http-backends-env
+    steps: *test-http-backends-steps
+
+  test-shard:
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
+      shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 8
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 8
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 8
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 8
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 13
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 13
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 15
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 16
+            shard_total: 17
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 17
+            shard_total: 17
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 15
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 16
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 17
+            shard_total: 18
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 18
+            shard_total: 18
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 14
+    runs-on: ${{ matrix.os }}
+    env: &test-shard-env
+      OS: ${{ matrix.os }}
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ matrix.shard_total }}
+      TOX_ENV: ${{ matrix.tox_env }}
+      EXTRA_TESTS: ${{ matrix.extra_tests }}
+      EXCLUDE_TESTS: ${{ matrix.exclude_tests }}
+      SHARD_PROFILE: ${{ matrix.profile }}
+      WINDOWS_TOX_UV_VERSION: "1.35.2"
+      WINDOWS_TOX_VERSION: "4.56.1"
+      WINDOWS_UV_VERSION: "0.13.4"
+    steps: &test-shard-steps
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install uv (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        version: ${{ env.WINDOWS_UV_VERSION }}
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-python: true
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "windows-${{ matrix.tox_env }}-uv${{ env.WINDOWS_UV_VERSION }}-tox${{ env.WINDOWS_TOX_VERSION }}-toxuv${{ env.WINDOWS_TOX_UV_VERSION }}"
+        save-cache: ${{ matrix.shard == 1 }}
+    - name: Install the latest version of uv
+      if: matrix.os != 'windows-latest'
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-${{ matrix.os }}-shard"
+        save-cache: ${{ matrix.shard == 1 }}
+    - name: Install tox (Windows)
+      if: matrix.os == 'windows-latest'
+      run: uv tool install --python-preference only-managed --python 3.13 "tox==${{ env.WINDOWS_TOX_VERSION }}" --with "tox-uv==${{ env.WINDOWS_TOX_UV_VERSION }}"
+    - name: Install tox
+      if: matrix.os != 'windows-latest'
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup Python test environment
+      run: |
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Select test shard
+      run: |
+        exclude_args=()
+        if [ -n "$EXCLUDE_TESTS" ]; then
+          exclude_args=(--exclude "$EXCLUDE_TESTS")
+        fi
+        python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" "${exclude_args[@]}" --write-recipe .tox/ci-shard-recipe.json
+        python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
+          --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
+        if [ -n "$EXTRA_TESTS" ]; then
+          printf '%s\n' "$EXTRA_TESTS" >> .tox/ci-shard-tests.txt
+        fi
+      shell: bash
+    - name: Run sharded test suite
+      run: |
+        test_paths=()
+        part_args=()
+        part_pattern='^(.+)@[1-9][0-9]*/[1-9][0-9]*$'
+        while IFS= read -r test_path; do
+          test_path="${test_path%$'\r'}"
+          if [[ "$test_path" =~ $part_pattern ]]; then
+            part_args+=("--test-part=$test_path")
+            test_path="${BASH_REMATCH[1]}"
+          fi
+          test_paths+=("$test_path")
+        done < .tox/ci-shard-tests.txt
+        if [ "${#test_paths[@]}" -eq 0 ]; then
+          echo "No tests selected for this shard." >&2
+          exit 1
+        fi
+        coverage_args=()
+        if [ "${{ matrix.coverage }}" = "true" ]; then
+          coverage_args=(
+            --cov datamodel_code_generator
+            --cov tests
+            --cov scripts.ci_coverage
+            --cov scripts.select_ci_test_shard
+            --cov-config=pyproject.toml
+            --cov-fail-under=0
+            --no-cov-on-fail
+            --cov-report=
+          )
+        fi
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
+          -n auto \
+          --dist=worksteal \
+          --color=yes \
+          -m "not perf" \
+          --junitxml ".tox/junit.$TOX_ENV-shard$SHARD_INDEX-$OS.xml" \
+          "${coverage_args[@]}" \
+          "${part_args[@]}" \
+          "${test_paths[@]}"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Upload test durations
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+        path: ".tox/junit.*"
+        retention-days: 3
+    - name: Rename coverage report file
+      if: matrix.coverage == true
+      run: |
+        import os
+
+        os.rename(
+            f".tox/.coverage.{os.environ['TOX_ENV']}",
+            f".tox/.coverage.{os.environ['TOX_ENV']}-shard{os.environ['SHARD_INDEX']}-{os.environ['OS']}",
+        )
+      shell: python
+    - name: Record coverage provenance
+      if: matrix.coverage == true
+      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+    - name: Upload coverage data
+      if: matrix.coverage == true
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+        path: ".tox/.coverage.*"
+        retention-days: 3
+
+  test-shard-nocov:
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
+      shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 5
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 5
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 5
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 5
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 5
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 4
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 4
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 4
+          - tox_env: py310-nocov-parallel
+            name: "3.10"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 4
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py312-blacklatest-nocov-parallel
+            name: "py312-black-latest"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+    runs-on: ${{ matrix.os }}
+    env: *test-shard-env
+    steps: *test-shard-steps
+
+  test-shard-nocov-main:
+    # Windows and macOS on Python 3.11 to 3.14 run after merging; pull requests test them on 3.10 and 3.15.
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
+      shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 6
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 6
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 6
+            shard_total: 7
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 7
+            shard_total: 7
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 5
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 5
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 5
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 5
+          - tox_env: py314-nocov-parallel
+            name: "3.14"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 5
+            shard_total: 5
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 4
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 4
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 4
+          - tox_env: py313-nocov-parallel
+            name: "3.13"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 4
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 4
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 4
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 4
+          - tox_env: py312-nocov-parallel
+            name: "3.12"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 4
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 4
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 4
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 4
+          - tox_env: py311-nocov-parallel
+            name: "3.11"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 4
+            shard_total: 4
+    runs-on: ${{ matrix.os }}
+    env: *test-shard-env
+    steps: *test-shard-steps
+
+  test-formatter-subset:
+    name: ${{ matrix.name }} subset on Ubuntu shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: *full-test-run
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py312-black24-nocov-parallel
+            name: py312-black24
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 2
+          - tox_env: py312-black24-nocov-parallel
+            name: py312-black24
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 2
+          - tox_env: py312-isort7-nocov-parallel
+            name: py312-isort7
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 2
+          - tox_env: py312-isort7-nocov-parallel
+            name: py312-isort7
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 2
+          - tox_env: py312-isort6-nocov-parallel
+            name: py312-isort6
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 2
+          - tox_env: py312-isort6-nocov-parallel
+            name: py312-isort6
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 2
+    runs-on: ${{ matrix.os }}
+    env:
+      OS: ${{ matrix.os }}
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ matrix.shard_total }}
+      TOX_ENV: ${{ matrix.tox_env }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-subset"
+        save-cache: ${{ matrix.shard == 1 }}
+    - name: Install tox
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup Python test environment
+      run: |
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Run formatter subset
+      run: |
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
+          -n auto \
+          --dist=worksteal \
+          --color=yes \
+          -m "not perf" \
+          "--test-shard=$SHARD_INDEX/$SHARD_TOTAL" \
+          tests/test_format.py \
+          tests/main/jsonschema/test_main_jsonschema.py \
+          tests/main/openapi \
+          tests/main/graphql \
+          tests/main/avro \
+          tests/main/protobuf \
+          tests/main/xmlschema \
+          tests/main/asyncapi \
+          tests/main/test_main_general.py \
+          tests/test_main_kr.py
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
 
   coverage:
     name: combine coverage
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - test-coverage
+      - test-formatter-coverage
+      - test-http-backends
+      - test-shard
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-local-path: .tox/uv-cache
+          cache-dependency-glob: |
+            pyproject.toml
+            tox.ini
+            uv.lock
+          cache-suffix: coverage
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
       - name: Setup coverage tool
@@ -128,31 +1904,40 @@ jobs:
         env:
           UV_PYTHON_PREFERENCE: only-managed
       - name: Download coverage data
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          path: .tox
+          path: .tox/coverage-input
           pattern: .coverage.*
-          merge-multiple: true
+          merge-multiple: false
+      - name: Validate coverage inputs
+        run: python scripts/ci_coverage.py prepare .tox/coverage-input --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
       - name: Combine and report coverage
         id: coverage
-        run: tox run -e coverage --skip-uv-sync --skip-pkg-install
+        run: |
+          .tox/coverage/bin/coverage combine
+          .tox/coverage/bin/coverage xml -o .tox/coverage.xml
+          .tox/coverage/bin/diff-cover --compare-branch "${DIFF_AGAINST:-origin/main}" .tox/coverage.xml
+          .tox/coverage/bin/coverage report --fail-under=100 --skip-covered --show-missing
         continue-on-error: true
         env:
-          UV_PYTHON_PREFERENCE: only-managed
+          COVERAGE_FILE: .tox/.coverage
       - name: Show uncovered lines on failure
         if: steps.coverage.outcome == 'failure'
         run: |
           echo "::error::Coverage check failed. Lines not covered:"
           COVERAGE_FILE=.tox/.coverage .tox/coverage/bin/coverage report --show-missing --fail-under=0 | grep -v "100%"
+      - name: Generate HTML report on failure
+        if: steps.coverage.outcome == 'failure'
+        run: COVERAGE_FILE=.tox/.coverage .tox/coverage/bin/coverage html --fail-under=0 -d .tox/htmlcov
       - name: Upload HTML report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.coverage.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: html-report
           path: .tox/htmlcov
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7
         with:
           flags: unittests
           files: .tox/coverage.xml
@@ -164,61 +1949,137 @@ jobs:
         run: exit 1
 
   check:
-    name: ${{ matrix.tox_env }}
+    name: checks
+    if: *full-test-run
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        tox_env:
-          - type
-          - docs
-          - pkg_meta
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-local-path: .tox/uv-cache
+          cache-dependency-glob: |
+            pyproject.toml
+            tox.ini
+            uv.lock
+          cache-suffix: check
+      - name: Setup docs Python
+        run: uv python install 3.14.6
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup check suite
-        run: tox r -vv --notest --skip-missing-interpreters false -e ${{ matrix.tox_env }}
+      - name: Setup check suites
+        id: setup-check-suites
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          failed=0
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
+            if ! tox r -vv --notest --skip-missing-interpreters false -e "$tox_env"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Run check for ${{ matrix.tox_env }}
-        run: tox run --skip-uv-sync --skip-pkg-install -e ${{ matrix.tox_env }}
+      - name: Run check suites
+        id: run-check-suites
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          failed=0
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
+            if ! tox run --skip-uv-sync --skip-pkg-install -e "$tox_env"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
+      - name: Check compiled templates
+        id: compiled-templates
+        continue-on-error: true
+        run: tox exec -e type -- python scripts/compile_builtin_templates.py --check
+      - name: Fail if any check suite failed
+        if: always()
+        run: |
+          setup_outcome='${{ steps.setup-check-suites.outcome }}'
+          run_outcome='${{ steps.run-check-suites.outcome }}'
+          compiled_templates_outcome='${{ steps.compiled-templates.outcome }}'
 
-  w3c-xmlschema-e2e:
-    name: W3C XML Schema e2e
+          echo "setup check suites: ${setup_outcome}"
+          echo "run check suites: ${run_outcome}"
+          echo "compiled templates: ${compiled_templates_outcome}"
+
+          [ "${setup_outcome}" = "success" ] || exit 1
+          [ "${run_outcome}" = "success" ] || exit 1
+          [ "${compiled_templates_outcome}" = "success" ] || exit 1
+
+  e2e:
+    name: e2e
+    if: *full-test-run
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-local-path: .tox/uv-cache
+          cache-dependency-glob: |
+            pyproject.toml
+            tox.ini
+            uv.lock
+          cache-suffix: e2e
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup W3C XML Schema e2e suite
-        run: tox r -vv --notest --skip-missing-interpreters false -e w3c-xmlschema-e2e
+      - name: Setup e2e suites
+        id: setup-e2e-suites
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          failed=0
+          for tox_env in \
+            w3c-xmlschema-e2e \
+            jsonschema-suite-conformance \
+            asyncapi-spec-json-schemas-e2e \
+            apache-avro-schema-pass-e2e \
+            protobuf-official-e2e; do
+            if ! tox r -vv --notest --skip-missing-interpreters false -e "$tox_env"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Cache W3C XML Schema Test Suite
+      - name: Restore W3C XML Schema Test Suite
         id: cache-w3c-xsdtests
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tox/w3c-xsdtests
           key: e2e-xsdtests-7bc3365c652a322f3d762021b3879eb92dae7e30
       - name: Checkout W3C XML Schema Test Suite
+        id: checkout-w3c-xsdtests
         if: steps.cache-w3c-xsdtests.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git clone --filter=blob:none https://github.com/w3c/xsdtests.git .tox/w3c-xsdtests
           git -C .tox/w3c-xsdtests checkout 7bc3365c652a322f3d762021b3879eb92dae7e30
+      - name: Save W3C XML Schema Test Suite
+        if: steps.cache-w3c-xsdtests.outputs.cache-hit != 'true' && steps.checkout-w3c-xsdtests.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tox/w3c-xsdtests
+          key: e2e-xsdtests-7bc3365c652a322f3d762021b3879eb92dae7e30
       - name: Run W3C XML Schema e2e suite
+        id: run-w3c-xmlschema-e2e
+        continue-on-error: true
         run: |
           tox run --skip-uv-sync --skip-pkg-install -e w3c-xmlschema-e2e -- \
             .tox/w3c-xsdtests \
@@ -226,180 +2087,187 @@ jobs:
             --expected-unique-documents 5283
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-
-  jsonschema-suite-conformance:
-    name: JSON-Schema-Test-Suite conformance
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Restore JSON-Schema-Test-Suite
+        id: cache-json-schema-test-suite
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup JSON-Schema-Test-Suite conformance
-        run: tox r -vv --notest --skip-missing-interpreters false -e jsonschema-suite-conformance
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
+          path: .tox/json-schema-test-suite
+          key: e2e-json-schema-test-suite-fe8c2f0de2041943975932b6bf4bd882625b6cfb
       - name: Checkout JSON-Schema-Test-Suite
+        id: checkout-json-schema-test-suite
+        if: steps.cache-json-schema-test-suite.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git clone --filter=blob:none https://github.com/json-schema-org/JSON-Schema-Test-Suite.git .tox/json-schema-test-suite
           git -C .tox/json-schema-test-suite checkout fe8c2f0de2041943975932b6bf4bd882625b6cfb
+      - name: Save JSON-Schema-Test-Suite
+        if: steps.cache-json-schema-test-suite.outputs.cache-hit != 'true' && steps.checkout-json-schema-test-suite.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tox/json-schema-test-suite
+          key: e2e-json-schema-test-suite-fe8c2f0de2041943975932b6bf4bd882625b6cfb
       - name: Run JSON-Schema-Test-Suite conformance
+        id: run-jsonschema-suite-conformance
+        continue-on-error: true
         run: |
           tox run --skip-uv-sync --skip-pkg-install -e jsonschema-suite-conformance -- \
             .tox/json-schema-test-suite
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-
-  asyncapi-spec-json-schemas-e2e:
-    name: AsyncAPI spec JSON Schemas e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup AsyncAPI spec JSON Schemas e2e suite
-        run: tox r -vv --notest --skip-missing-interpreters false -e asyncapi-spec-json-schemas-e2e
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Cache AsyncAPI spec JSON Schemas
+      - name: Restore AsyncAPI spec JSON Schemas
         id: cache-asyncapi-spec-json-schemas
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tox/asyncapi-spec-json-schemas
           key: e2e-asyncapi-spec-json-schemas-469c2b2bf5ed88e0cdf1e48975b93a87c710d229
       - name: Checkout AsyncAPI spec JSON Schemas
+        id: checkout-asyncapi-spec-json-schemas
         if: steps.cache-asyncapi-spec-json-schemas.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git clone --filter=blob:none https://github.com/asyncapi/spec-json-schemas.git .tox/asyncapi-spec-json-schemas
           git -C .tox/asyncapi-spec-json-schemas checkout 469c2b2bf5ed88e0cdf1e48975b93a87c710d229
+      - name: Save AsyncAPI spec JSON Schemas
+        if: steps.cache-asyncapi-spec-json-schemas.outputs.cache-hit != 'true' && steps.checkout-asyncapi-spec-json-schemas.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tox/asyncapi-spec-json-schemas
+          key: e2e-asyncapi-spec-json-schemas-469c2b2bf5ed88e0cdf1e48975b93a87c710d229
       - name: Run AsyncAPI spec JSON Schemas e2e suite
+        id: run-asyncapi-spec-json-schemas-e2e
+        continue-on-error: true
         run: |
           tox run --skip-uv-sync --skip-pkg-install -e asyncapi-spec-json-schemas-e2e -- \
             .tox/asyncapi-spec-json-schemas/schemas \
             --expected-schemas 12
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-
-  apache-avro-schema-pass-e2e:
-    name: Apache Avro schema pass e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup Apache Avro schema pass e2e suite
-        run: tox r -vv --notest --skip-missing-interpreters false -e apache-avro-schema-pass-e2e
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Cache Apache Avro
+      - name: Restore Apache Avro
         id: cache-apache-avro
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tox/apache-avro
           key: e2e-apache-avro-9110c693767c1dde2665b2b57939333478b12036
       - name: Checkout Apache Avro
+        id: checkout-apache-avro
         if: steps.cache-apache-avro.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git clone --filter=blob:none https://github.com/apache/avro.git .tox/apache-avro
           git -C .tox/apache-avro checkout 9110c693767c1dde2665b2b57939333478b12036
+      - name: Save Apache Avro
+        if: steps.cache-apache-avro.outputs.cache-hit != 'true' && steps.checkout-apache-avro.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tox/apache-avro
+          key: e2e-apache-avro-9110c693767c1dde2665b2b57939333478b12036
       - name: Run Apache Avro schema pass e2e suite
+        id: run-apache-avro-schema-pass-e2e
+        continue-on-error: true
         run: |
           tox run --skip-uv-sync --skip-pkg-install -e apache-avro-schema-pass-e2e -- \
             .tox/apache-avro/lang/c/tests/schema_tests/pass \
             --expected-schemas 28
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-
-  protobuf-official-e2e:
-    name: Protocol Buffers official e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup Protocol Buffers official e2e suite
-        run: tox r -vv --notest --skip-missing-interpreters false -e protobuf-official-e2e
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Cache Protocol Buffers
+      - name: Restore Protocol Buffers
         id: cache-protobuf
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tox/protobuf
           key: e2e-protobuf-4376cba55d9e2f44f7e317d9c10e0259d145f8cf
       - name: Checkout Protocol Buffers
+        id: checkout-protobuf
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git clone --filter=blob:none --no-checkout https://github.com/protocolbuffers/protobuf.git .tox/protobuf
           git -C .tox/protobuf sparse-checkout init --cone
           git -C .tox/protobuf sparse-checkout set src conformance benchmarks
           git -C .tox/protobuf checkout 4376cba55d9e2f44f7e317d9c10e0259d145f8cf
+      - name: Save Protocol Buffers
+        if: steps.cache-protobuf.outputs.cache-hit != 'true' && steps.checkout-protobuf.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tox/protobuf
+          key: e2e-protobuf-4376cba55d9e2f44f7e317d9c10e0259d145f8cf
       - name: Run Protocol Buffers official e2e suite
+        id: run-protobuf-official-e2e
+        continue-on-error: true
         run: |
           tox run --skip-uv-sync --skip-pkg-install -e protobuf-official-e2e -- \
             .tox/protobuf \
             --expected-schemas 65
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
+      - name: Fail if any e2e suite failed
+        if: always()
+        run: |
+          failed=0
+          check_outcome() {
+            label="$1"
+            outcome="$2"
+
+            echo "${label}: ${outcome}"
+            case "$outcome" in
+              success|skipped)
+                return
+                ;;
+            esac
+
+            failed=1
+          }
+
+          check_outcome "setup e2e suites" '${{ steps.setup-e2e-suites.outcome }}'
+          check_outcome "checkout W3C XML Schema Test Suite" '${{ steps.checkout-w3c-xsdtests.outcome }}'
+          check_outcome "run W3C XML Schema e2e suite" '${{ steps.run-w3c-xmlschema-e2e.outcome }}'
+          check_outcome "checkout JSON-Schema-Test-Suite" '${{ steps.checkout-json-schema-test-suite.outcome }}'
+          check_outcome "run JSON-Schema-Test-Suite conformance" '${{ steps.run-jsonschema-suite-conformance.outcome }}'
+          check_outcome "checkout AsyncAPI spec JSON Schemas" '${{ steps.checkout-asyncapi-spec-json-schemas.outcome }}'
+          check_outcome "run AsyncAPI spec JSON Schemas e2e suite" '${{ steps.run-asyncapi-spec-json-schemas-e2e.outcome }}'
+          check_outcome "checkout Apache Avro" '${{ steps.checkout-apache-avro.outcome }}'
+          check_outcome "run Apache Avro schema pass e2e suite" '${{ steps.run-apache-avro-schema-pass-e2e.outcome }}'
+          check_outcome "checkout Protocol Buffers" '${{ steps.checkout-protobuf.outcome }}'
+          check_outcome "run Protocol Buffers official e2e suite" '${{ steps.run-protobuf-official-e2e.outcome }}'
+
+          exit "$failed"
 
   test-gate:
     name: test-gate
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - test
+      - test-coverage
+      - test-formatter-coverage
+      - test-http-backends
+      - test-http-backends-nocov
+      - test-shard
+      - test-shard-nocov
+      - test-shard-nocov-main
+      - test-formatter-subset
       - coverage
       - check
-      - w3c-xmlschema-e2e
-      - jsonschema-suite-conformance
-      - asyncapi-spec-json-schemas-e2e
-      - apache-avro-schema-pass-e2e
-      - protobuf-official-e2e
+      - e2e
     steps:
       - name: Fail if any test workflow job failed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          FULL_TEST_RUN: >-
+            ${{ github.event.pull_request.stack == null
+            || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+            || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
+          MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-nocov-main' || '' }}
         run: |
-          test_result='${{ needs.test.result }}'
-          coverage_result='${{ needs.coverage.result }}'
-          check_result='${{ needs.check.result }}'
-          w3c_xmlschema_e2e_result='${{ needs.w3c-xmlschema-e2e.result }}'
-          jsonschema_suite_conformance_result='${{ needs.jsonschema-suite-conformance.result }}'
-          asyncapi_spec_json_schemas_e2e_result='${{ needs.asyncapi-spec-json-schemas-e2e.result }}'
-          apache_avro_schema_pass_e2e_result='${{ needs.apache-avro-schema-pass-e2e.result }}'
-          protobuf_official_e2e_result='${{ needs.protobuf-official-e2e.result }}'
+          import json
+          import os
+          import sys
 
-          echo "test: ${test_result}"
-          echo "coverage: ${coverage_result}"
-          echo "check: ${check_result}"
-          echo "w3c xmlschema e2e: ${w3c_xmlschema_e2e_result}"
-          echo "jsonschema suite conformance: ${jsonschema_suite_conformance_result}"
-          echo "asyncapi spec json schemas e2e: ${asyncapi_spec_json_schemas_e2e_result}"
-          echo "apache avro schema pass e2e: ${apache_avro_schema_pass_e2e_result}"
-          echo "protobuf official e2e: ${protobuf_official_e2e_result}"
-
-          [ "${test_result}" = "success" ] || exit 1
-          [ "${coverage_result}" = "success" ] || exit 1
-          [ "${check_result}" = "success" ] || exit 1
-          [ "${w3c_xmlschema_e2e_result}" = "success" ] || exit 1
-          [ "${jsonschema_suite_conformance_result}" = "success" ] || exit 1
-          [ "${asyncapi_spec_json_schemas_e2e_result}" = "success" ] || exit 1
-          [ "${apache_avro_schema_pass_e2e_result}" = "success" ] || exit 1
-          [ "${protobuf_official_e2e_result}" = "success" ] || exit 1
+          results = {name: job["result"] for name, job in json.loads(os.environ["NEEDS"]).items()}
+          print(json.dumps(results, sort_keys=True))
+          expected = "success" if os.environ.get("FULL_TEST_RUN", "true") == "true" else "skipped"
+          main_only = set(os.environ.get("MAIN_ONLY_JOBS", "").split())
+          sys.exit(
+              not results
+              or any(result != ("skipped" if name in main_only else expected) for name, result in results.items())
+          )
+        shell: python

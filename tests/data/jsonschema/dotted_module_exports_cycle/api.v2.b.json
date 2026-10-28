@@ -1,0 +1,9 @@
+{
+  "title": "Banana",
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "api.v1.a.json"
+    }
+  }
+}

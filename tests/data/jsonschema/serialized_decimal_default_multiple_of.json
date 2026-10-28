@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecimalMultipleOf",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "number",
+      "multipleOf": 0.25,
+      "default": 1.25
+    },
+    "Decimal": {
+      "type": "string",
+      "default": "shadow"
+    }
+  }
+}

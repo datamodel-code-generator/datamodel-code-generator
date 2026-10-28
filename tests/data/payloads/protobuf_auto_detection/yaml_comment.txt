@@ -1,0 +1,8 @@
+# syntax = "proto3";
+# edition = '2023';
+message: value
+title: Model
+type: object
+properties:
+  value:
+    type: string

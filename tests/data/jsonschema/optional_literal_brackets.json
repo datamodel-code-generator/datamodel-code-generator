@@ -1,0 +1,14 @@
+{
+  "title": "OptionalLiteralBrackets",
+  "type": "object",
+  "properties": {
+    "value": {
+      "oneOf": [
+        {"const": "]"},
+        {"const": "quote['\"]"},
+        {"type": "null"},
+        {"type": "integer"}
+      ]
+    }
+  }
+}

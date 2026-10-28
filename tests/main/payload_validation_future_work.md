@@ -6,6 +6,27 @@ These cases are not simple fixture omissions. They need either better payload
 generation, an explicit backend compatibility policy, or a careful generator
 change that avoids surprising existing users.
 
+## Nightly Runtime Fixture Compatibility
+
+The nightly matrix also discovers regression fixtures that exercise existing output
+limitations. `tests/data/payloads/runtime_compatibility/` contains deterministic
+source-valid witnesses for the cases classified after issue #4061:
+
+- msgspec cannot convert unions with multiple string-like dictionary key types or
+  heterogeneous Enum values. Its assignment-based key aliases can also retain
+  unresolved forward references; that exclusion does not apply to PEP 695 aliases.
+- Some generated msgspec property-name aliases attach string constraints to
+  non-string types, and null-only aliases retain unrelated constraint metadata.
+  Numeric schemas with date-time formats can generate string aliases with numeric
+  bounds. These generator gaps need focused changes with output compatibility tests.
+- Pydantic before 2.5 lacks the regex behavior needed by lookaround patterns and
+  can warn while serializing enum dictionary keys.
+
+These cases retain explicit backend or version-specific reasons. E2E tests generate
+the modules and verify the runtime failures, so an exclusion that becomes obsolete
+fails a regression test. Supported null aliases remain in the matrix, and the
+array/object union fixtures use `--field-constraints` for both Pydantic backends.
+
 ## Payload Generator Limitations
 
 The following cases have valid payloads in principle, but `hypothesis-jsonschema`
@@ -162,8 +183,14 @@ Current Pydantic 2.0 compatibility fixes:
 Current version-specific exclusions:
 
 - Pydantic before 2.5.0 does not support generated `regex_engine="python-re"` for
-  lookaround pattern validators, so the Pydantic v2 BaseModel payload runtime
-  matrix skips only the classified lookaround pattern cases under older
+  lookaround pattern validators, so the Pydantic v2 BaseModel and dataclass
+  payload runtime matrices skip only the classified lookaround pattern cases
+  under older runtimes.
+- The payload target of Pydantic before 2.11.0 is `2`, which predates compiled
+  patterns (Pydantic 2.8) and keeps string lookaround patterns in generated type
+  aliases. Every generated model or dataclass that reaches such an alias selects
+  the engine, but a bare alias has no model config, so the Pydantic v2 dataclass
+  payload runtime matrix skips only the classified bare alias cases under those
   runtimes.
 - Pydantic before 2.5.0 can reject schema-valid Decimal `multipleOf` values near
   float-originated boundaries, so only the classified Decimal `multipleOf` cases
@@ -171,6 +198,13 @@ Current version-specific exclusions:
 - Pydantic before 2.5.0 can emit JSON-mode serializer warnings for enum
   dictionary keys during dump, so only the affected round-trip cases are skipped
   under older runtimes; acceptance coverage remains enabled for those schemas.
+- Pydantic 2.0.x can emit JSON-mode serializer warnings for object unions
+  distinguished by boolean `Literal` fields during dump, so only the affected
+  round-trip case is skipped under that older runtime; acceptance coverage
+  remains enabled for that schema.
+- Pydantic before 2.10.0 cannot fill generated nested `TypeAliasType` aliases
+  while constructing dataclass schemas, so only the affected dataclass payload
+  runtime case is skipped under older runtimes.
 
 Future work:
 
@@ -179,6 +213,8 @@ Future work:
   behavior.
 - Revisit the Decimal `multipleOf` and enum-key dump skips if older Pydantic
   runtimes can be supported without changing newer runtime behavior.
+- Revisit the nested `TypeAliasType` dataclass skip if support for Pydantic
+  versions before 2.10.0 is required.
 
 ## Round-Trip Dump Limits
 
@@ -275,3 +311,34 @@ Future work:
   class names, exported types, annotations, and user imports.
 - Consider limiting any new behavior to a schema-faithful or strict nullable mode
   if preserving existing class-based output is more important for default usage.
+
+## Exact JSON Numeric Oracle and Native Float Contract
+
+The payload oracle interprets the canonical JSON serialization of the original
+schema and payload as exact decimal numbers. Fractions stay inside this oracle;
+actual generated models receive the original Python values. This avoids binary
+`multipleOf` false positives and false negatives in jsonschema without changing
+source constraints, annotations, instance values, or the example budget.
+
+Only `MultipleOfBase.decimal_multiple_field` has a native float contract. Its
+original source fragment must exactly match the external contract fixture. The
+intersection of multiples of 0.2 and 0.3 is independently specified as multiples
+of 0.6. A minimal native Pydantic float validator supplies expected runtime
+errors, and the generated model must match the complete error records, including
+location and constraint context. Source-valid values accepted by the native
+validator must be accepted and retain source validity after JSON-mode dumping.
+Deterministic external witnesses detect weaker, stronger, missing, wrong-type,
+wrong-path, and wrong-context generated constraints. No native or generated
+acceptance result filters sampled payloads. The registered case unions fresh
+copies of external source-valid witnesses with its existing strategy, so the
+ordinary acceptance and round-trip tests also exercise native rejections.
+
+Root numeric `const` and wholly numeric `enum` strategies sample their original
+immutable declared values before exact source filtering. In particular, `1e100`
+must remain a float: converting it to either its binary integer expansion or the
+canonical decimal integer changes native enum lookup behavior. Other shapes keep
+the existing hypothesis-jsonschema strategy. This does not establish general
+sampling completeness: bounded singleton decimal-multiple intervals such as
+10066330.8 can still be unsatisfiable in hypothesis-jsonschema despite exact
+source validity. Deterministic conformance witnesses cover these values directly;
+no additional fixture exclusion or generalized structural normalization is added.

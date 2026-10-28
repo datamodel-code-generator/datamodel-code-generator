@@ -1,0 +1,36 @@
+{
+  "title": "Root",
+  "type": "object",
+  "description": "Keep annotation and field order.",
+  "properties": {
+    "flag": {
+      "description": "Untyped condition value."
+    },
+    "a": {
+      "type": "string"
+    },
+    "b": {
+      "type": "string"
+    }
+  },
+  "if": {
+    "properties": {
+      "flag": {
+        "const": "yes"
+      }
+    },
+    "required": [
+      "flag"
+    ]
+  },
+  "then": {
+    "required": [
+      "a"
+    ]
+  },
+  "else": {
+    "required": [
+      "b"
+    ]
+  }
+}

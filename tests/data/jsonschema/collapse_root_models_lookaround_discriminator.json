@@ -1,0 +1,55 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/Cat"
+        },
+        {
+          "$ref": "#/definitions/Dog"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "cat": "#/definitions/Cat",
+          "dog": "#/definitions/Dog"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Kind": {
+      "type": "string",
+      "pattern": "^(?!x)[a-z]+$"
+    },
+    "Cat": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/Kind"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z]+$"
+        }
+      }
+    },
+    "Dog": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/Kind"
+        }
+      }
+    }
+  }
+}

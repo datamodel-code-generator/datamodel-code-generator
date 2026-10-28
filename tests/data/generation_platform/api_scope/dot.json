@@ -1,0 +1,7 @@
+{
+  "openapi": "3.1.1",
+  "components": {"schemas": {
+    "alpha.Foo": {"type": "object", "properties": {"value": {"type": "integer"}}},
+    "beta.Bar": {"type": "object", "properties": {"foo": {"$ref": "#/components/schemas/alpha.Foo"}}}
+  }}
+}

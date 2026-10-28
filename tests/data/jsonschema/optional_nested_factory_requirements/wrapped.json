@@ -1,0 +1,25 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/ItemAlias"
+    }
+  },
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "ItemAlias": {
+      "$ref": "#/$defs/Item"
+    }
+  }
+}

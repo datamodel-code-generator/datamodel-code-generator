@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "tuple_later": {"$ref": "#/definitions/TupleLater"},
+    "closing_elsewhere": {"$ref": "#/definitions/ClosingElsewhere"},
+    "own_closing": {"$ref": "#/definitions/OwnClosing"},
+    "nullable_tags": {"$ref": "#/definitions/NullableTags"}
+  },
+  "definitions": {
+    "Tags": {"type": "array", "items": {"type": "string"}},
+    "TupleLater": {"allOf": [{"type": "array"}, {"items": [{"type": "string"}], "additionalItems": false}]},
+    "ClosingElsewhere": {"allOf": [{"type": "array", "items": [{"type": "string"}]}, {"additionalItems": false}]},
+    "OwnClosing": {"allOf": [{"type": "array", "items": [{"type": "string"}]}, {"minItems": 1}], "additionalItems": false},
+    "NullableTags": {"allOf": [{"$ref": "#/definitions/Tags"}, {"description": "Tags or null."}], "type": ["array", "null"]}
+  }
+}

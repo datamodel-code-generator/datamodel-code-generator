@@ -164,17 +164,28 @@ def Pane(
 
 def OptionControl(*, option: dict[str, Any], children: Template = t"") -> Template:
     dest = option["dest"]
+    control_id = f"option-{dest.replace('_', '-')}"
     choices = option.get("choices") or []
+    docs_url = option.get("docs_url") or ""
     note = (
         t"""<span class="option-note">{reason}</span>""" if (reason := option.get("unsupported_reason") or "") else t""
+    )
+    docs_link = (
+        t"""
+        <a class="option-doc-link" href="{docs_url}" target="_blank" rel="noreferrer" aria-label="Open documentation for {option["name"]}">
+          Docs
+        </a>
+        """
+        if docs_url
+        else t""
     )
 
     match option["control"]:
         case "checkbox":
-            control = t"""<input type="checkbox" name="{dest}" value="true" data-option="{dest}" />"""
+            control = t"""<input id="{control_id}" type="checkbox" name="{dest}" value="true" data-option="{dest}" />"""
         case "boolean":
             control = t"""
-            <select name="{dest}" data-option="{dest}">
+            <select id="{control_id}" name="{dest}" data-option="{dest}">
               <option value="">Default</option>
               <option value="true">True</option>
               <option value="false">False</option>
@@ -182,27 +193,28 @@ def OptionControl(*, option: dict[str, Any], children: Template = t"") -> Templa
             """
         case "select":
             control = t"""
-            <select name="{dest}" data-option="{dest}">
+            <select id="{control_id}" name="{dest}" data-option="{dest}">
               <option value="">Default</option>
               {[t'<option value="{choice}">{choice}</option>' for choice in choices]}
             </select>
             """
         case "number":
-            control = t"""<input type="number" name="{dest}" data-option="{dest}" />"""
+            control = t"""<input id="{control_id}" type="number" name="{dest}" data-option="{dest}" />"""
         case "list":
-            control = t"""<textarea class="option-list" rows="2" name="{dest}" data-option="{dest}"></textarea>"""
+            control = t"""<textarea id="{control_id}" class="option-list" rows="2" name="{dest}" data-option="{dest}"></textarea>"""
         case _:
-            control = t"""<input type="text" name="{dest}" data-option="{dest}" />"""
+            control = t"""<input id="{control_id}" type="text" name="{dest}" data-option="{dest}" />"""
 
     return t"""
-    <label class="option-row option-control-{option["control"]}" title="{option["help"]}">
-      <span class="option-label">
+    <div class="option-row option-control-{option["control"]}" title="{option["help"]}">
+      <label class="option-label" for="{control_id}">
         <code>{option["name"]}</code>
         <span>{option["help"]}</span>
-      </span>
+      </label>
+      {docs_link}
       <span class="option-widget">{control}</span>
       {note}
-    </label>
+    </div>
     """
 
 
@@ -280,7 +292,7 @@ def App(
       <header class="topbar">
         <div class="topbar-title">
           <h1>
-            <a href="https://github.com/koxudaxi/datamodel-code-generator" target="_blank" rel="noreferrer">datamodel-code-generator</a>
+            <a href="https://github.com/datamodel-code-generator/datamodel-code-generator" target="_blank" rel="noreferrer">datamodel-code-generator</a>
             <span>Browser</span>
           </h1>
         </div>

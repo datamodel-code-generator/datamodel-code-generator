@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "a": {"$ref": "#/definitions/A"},
+    "b": {"$ref": "#/definitions/B"}
+  },
+  "definitions": {
+    "A": {"type": ["string", "null"]},
+    "B": {"type": ["string", "null"]}
+  }
+}

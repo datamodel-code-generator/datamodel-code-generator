@@ -1,0 +1,4 @@
+{"pass_name": "<IMPORTS>", "rule": "frozen", "row": "DataModelFieldBase.data_type", "facts": ["FIELD_TYPES"], "model": "Person", "phase": "IMPORTS", "known": false}
+{"pass_name": "<IMPORTS>", "rule": "unattributed", "row": "DataModelFieldBase.data_type", "facts": ["FIELD_TYPES"], "model": "Person", "phase": "IMPORTS", "known": false}
+{"pass_name": "<IMPORTS>", "rule": "frozen", "row": "DataType.data_types", "facts": ["FIELD_TYPES"], "model": "Person", "phase": "IMPORTS", "known": false}
+{"pass_name": "<IMPORTS>", "rule": "unattributed", "row": "DataType.data_types", "facts": ["FIELD_TYPES"], "model": "Person", "phase": "IMPORTS", "known": false}

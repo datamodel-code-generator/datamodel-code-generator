@@ -1,0 +1,44 @@
+{
+  "title": "CollisionModel",
+  "type": "object",
+  "$defs": {
+    "PurePath": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "string"}
+      },
+      "required": ["value"]
+    },
+    "ExternalCallable": {
+      "x-python-import": {
+        "module": "collections.abc",
+        "name": "Callable"
+      }
+    }
+  },
+  "properties": {
+    "local": {
+      "$ref": "#/$defs/PurePath"
+    },
+    "paths": {
+      "type": "string",
+      "x-python-type": "tuple[pathlib.PurePath, pathlib.PurePath, PurePathModel]"
+    },
+    "callback": {
+      "type": "string",
+      "x-python-type": "typing.Callable[[str], str]"
+    },
+    "external": {
+      "$ref": "#/$defs/ExternalCallable"
+    },
+    "PurePath": {
+      "type": "string",
+      "x-python-type": "pathlib.PurePath"
+    },
+    "patterns": {
+      "type": "string",
+      "x-python-type": "tuple[typing.Pattern[str], re.Pattern[str]]"
+    }
+  },
+  "required": ["local", "paths", "callback", "external", "PurePath", "patterns"]
+}

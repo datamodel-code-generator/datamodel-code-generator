@@ -1,6 +1,6 @@
 """Update GitHub Action version references in documentation.
 
-Updates all occurrences of `koxudaxi/datamodel-code-generator@X.Y.Z`
+Updates all occurrences of `datamodel-code-generator/datamodel-code-generator@X.Y.Z`
 to use the latest GitHub release version.
 
 Usage:
@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
 README_FILE = ROOT_DIR / "README.md"
-PATTERN = re.compile(r"(koxudaxi/datamodel-code-generator@)(\d+\.\d+\.\d+)")
+PATTERN = re.compile(r"(datamodel-code-generator/datamodel-code-generator@)(\d+\.\d+\.\d+)")
 
 
 def get_latest_release_version() -> str:

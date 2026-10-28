@@ -1,0 +1,24 @@
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+class {{ class_name }}({{ base_class }}):
+{%- if extensions is defined and extensions.get('x-enum-missing-default') %}
+    # x-enum-missing-default: {{ extensions['x-enum-missing-default'] }}
+{%- endif %}
+{%- if description %}
+    {{ description }}
+{%- endif %}
+{%- for field in fields %}
+    {{ field.name }} = {{ field.default }}
+    {%- if field.docstring %}
+    {{ field.docstring }}
+{%- if field.use_inline_field_description and not loop.last %}
+
+{% endif %}
+    {%- elif field.inline_field_docstring %}
+    {{ field.inline_field_docstring }}
+{%- if not loop.last %}
+
+{% endif %}
+    {%- endif %}
+{%- endfor -%}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "BaseModelModel",
+      "name": "BaseModelModel",
+      "module": "",
+      "source_ref": "model_metadata_base_model_name.json#/$defs/BaseModel",
+      "source_path": [
+        "$defs",
+        "BaseModel"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "value",
+          "alias": "value",
+          "original_name": "value",
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Container",
+      "name": "Container",
+      "module": "",
+      "source_ref": "model_metadata_base_model_name.json#",
+      "source_path": [],
+      "title": "Container",
+      "fields": [
+        {
+          "name": "base_model",
+          "alias": "base_model",
+          "original_name": "base_model",
+          "type": "BaseModelModel",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

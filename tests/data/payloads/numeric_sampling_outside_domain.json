@@ -1,0 +1,54 @@
+{
+  "minimum_outside": {
+    "type": "number",
+    "multipleOf": 1e-310,
+    "minimum": 10000000000.0,
+    "examples": [
+      20240225330731
+    ]
+  },
+  "maximum_outside": {
+    "type": "number",
+    "multipleOf": 1e-310,
+    "maximum": -10000000000.0,
+    "examples": [
+      -20240225330731
+    ]
+  },
+  "exclusive_minimum_outside": {
+    "type": "number",
+    "multipleOf": 1e-310,
+    "exclusiveMinimum": 10000000000.0,
+    "examples": [
+      20240225330731
+    ]
+  },
+  "exclusive_maximum_outside": {
+    "type": "number",
+    "multipleOf": 1e-310,
+    "exclusiveMaximum": -10000000000.0,
+    "examples": [
+      -20240225330731
+    ]
+  },
+  "draft4_minimum_outside": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "number",
+    "multipleOf": 0.25,
+    "minimum": 2.2471164185778946e+307,
+    "exclusiveMinimum": true,
+    "examples": [
+      4.4942328371557893e+307
+    ]
+  },
+  "draft4_maximum_outside": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "number",
+    "multipleOf": 0.25,
+    "maximum": -2.2471164185778946e+307,
+    "exclusiveMaximum": true,
+    "examples": [
+      -4.4942328371557893e+307
+    ]
+  }
+}

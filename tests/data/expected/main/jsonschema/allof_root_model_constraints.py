@@ -51,8 +51,8 @@ class MultiRefAllOf(BaseModel):
     pass
 
 
-class NoConstraintAllOf(BaseModel):
-    pass
+class NoConstraintAllOf(RootModel[StringDatatype]):
+    root: StringDatatype = Field(..., description='No constraints added.')
 
 
 class IncompatibleTypeAllOf(BaseModel):
@@ -63,8 +63,8 @@ class ConstraintWithProperties(BaseModel):
     extra: str | None = None
 
 
-class ConstraintWithItems(BaseModel):
-    pass
+class ConstraintWithItems(RootModel[StringDatatype]):
+    root: StringDatatype = Field(..., description='Constraint item has items.')
 
 
 class NumberIntegerCompatible(RootModel[conint(ge=0)]):
@@ -83,8 +83,10 @@ class ArrayDatatype(RootModel[list[str]]):
     root: list[str]
 
 
-class RefToArrayAllOf(BaseModel):
-    pass
+class RefToArrayAllOf(RootModel[list[str]]):
+    root: list[str] = Field(
+        ..., description='Ref to array - not a root model.', min_length=1
+    )
 
 
 class ObjectNoPropsDatatype(BaseModel):
@@ -103,12 +105,14 @@ class RefToPatternPropsAllOf(BaseModel):
     pass
 
 
-class NestedAllOfDatatype(BaseModel):
-    pass
+class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
 
 
-class RefToNestedAllOfAllOf(NestedAllOfDatatype):
-    pass
+class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
+    root: constr(min_length=1, max_length=100) = Field(
+        ..., description='Ref to nested allOf root model.'
+    )
 
 
 class ConstraintsOnlyDatatype(RootModel[Any]):

@@ -1,0 +1,22 @@
+{
+  "result": {
+    "x": "X:first:first:second:any:other",
+    "y": "Y:plain:wrap",
+    "validate_validator": "required",
+    "validate_validator_1": "also required",
+    "other": {
+      "value": "O:second"
+    },
+    "child": {
+      "value": "C:first:second"
+    }
+  },
+  "fields": [
+    "x",
+    "y",
+    "validate_validator",
+    "validate_validator_1",
+    "other",
+    "child"
+  ]
+}

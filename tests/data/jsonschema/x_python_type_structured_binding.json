@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "handler": {
+      "type": "string",
+      "x-python-type": "Callable[[foo.Bar, foo.Bar, Literal['foo.Bar']], baz.Qux]"
+    },
+    "record": {
+      "type": "string",
+      "x-python-type": "NamedTuple"
+    }
+  }
+}

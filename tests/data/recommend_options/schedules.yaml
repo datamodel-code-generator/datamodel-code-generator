@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Schedules API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    a.Item:
+      type: object
+      properties:
+        opens_at:
+          type: number
+          format: time
+          multipleOf: 60
+    b.Item:
+      type: object
+      properties:
+        opens_at:
+          type: number
+          format: time
+          multipleOf: 60
+    c.Thing:
+      type: object
+      properties:
+        opens_at:
+          type: number
+          format: time
+          multipleOf: 60
+    Shipment:
+      type: object
+      properties:
+        ships_at:
+          type: number
+          format: time
+          multipleOf: 60
+    Booking.V2.1:
+      type: object
+      properties:
+        shipment:
+          type: object
+          properties:
+            ships_at:
+              type: number
+              format: time
+              multipleOf: 60
+    BookingRequest:
+      type: object
+      properties:
+        shipment:
+          $ref: '#/components/schemas/Shipment'
+        booking:
+          $ref: '#/components/schemas/Booking.V2.1'

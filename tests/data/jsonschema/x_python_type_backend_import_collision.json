@@ -1,0 +1,11 @@
+{
+  "title": "BackendCollisionModel",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string",
+      "title": "Value title",
+      "x-python-type": "typing.Annotated[str, dataclasses.Field]"
+    }
+  }
+}

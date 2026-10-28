@@ -1,0 +1,19 @@
+{
+  "code": 0,
+  "files": [
+    "SKILL.md",
+    "references",
+    "references/cli-options.md",
+    "references/troubleshooting.md",
+    "references/workflows.md"
+  ],
+  "imported_config": false,
+  "imported_format": false,
+  "imported_model": false,
+  "imported_pydantic": false,
+  "imported_reference": false,
+  "imported_types": false,
+  "imported_validators": false,
+  "stderr": "",
+  "stdout": "Installed datamodel-code-generator skill at <target>\n"
+}

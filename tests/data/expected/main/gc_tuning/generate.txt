@@ -1,0 +1,4 @@
+mapping_size=4
+disabled_scope_unchanged=True
+tuned_during_generation=True
+restored_after_generation=True

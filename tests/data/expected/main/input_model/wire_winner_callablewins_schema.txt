@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "shared": {
+      "title": "Shared",
+      "type": "string",
+      "x-python-type": "Callable[[int], int]"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "shared",
+    "shared",
+    "last"
+  ],
+  "title": "CallableWins",
+  "type": "object"
+}

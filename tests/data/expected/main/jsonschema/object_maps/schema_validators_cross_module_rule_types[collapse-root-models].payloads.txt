@@ -1,0 +1,5 @@
+valid: accepted
+invalid holder: rejected (int_parsing)
+invalid holder: rejected (string_too_long)
+invalid labels: rejected (int_parsing)
+invalid labels: rejected (too_short)

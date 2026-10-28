@@ -1,0 +1,467 @@
+=== Enum.jinja2
+@decorator
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value = 'value'
+    """field \ \" quote
+next"""
+
+
+    other = 'value'
+    """field \ \" quote
+next"""
+=== end Enum.jinja2 ===
+=== PydanticV2TypeAlias.jinja2
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", str)  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+=== end PydanticV2TypeAlias.jinja2 ===
+=== ScalarTypeAliasAnnotation.jinja2
+Unicodeモデル: TypeAlias = str
+"""description こんにちは \ \" {braces}
+next"""
+=== end ScalarTypeAliasAnnotation.jinja2 ===
+=== ScalarTypeAliasType.jinja2
+Unicodeモデル = TypeAliasType("Unicodeモデル", str)
+"""description こんにちは \ \" {braces}
+next"""
+=== end ScalarTypeAliasType.jinja2 ===
+=== ScalarTypeStatement.jinja2
+type Unicodeモデル = str
+"""description こんにちは \ \" {braces}
+next"""
+=== end ScalarTypeStatement.jinja2 ===
+=== TypeAliasAnnotation.jinja2
+
+Unicodeモデル: TypeAlias = str  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+=== end TypeAliasAnnotation.jinja2 ===
+=== TypeAliasType.jinja2
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", str)  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+=== end TypeAliasType.jinja2 ===
+=== TypeStatement.jinja2
+
+type Unicodeモデル = str  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+=== end TypeStatement.jinja2 ===
+=== TypedDict.jinja2
+
+
+    """description こんにちは \ \" {braces}
+next"""
+Unicodeモデル = TypedDict('Unicodeモデル', {
+    'value': str,
+    """field \ \" quote
+next"""
+
+
+    'other': list[str],
+    """field \ \" quote
+next"""}, total=False)
+
+=== end TypedDict.jinja2 ===
+=== TypedDictClass.jinja2
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+=== end TypedDictClass.jinja2 ===
+=== TypedDictFunction.jinja2
+
+    """description こんにちは \ \" {braces}
+next"""
+Unicodeモデル = TypedDict('Unicodeモデル', {
+    'value': str,
+    """field \ \" quote
+next"""
+
+
+    'other': list[str],
+    """field \ \" quote
+next"""}, total=False)
+
+=== end TypedDictFunction.jinja2 ===
+=== UnionTypeAliasAnnotation.jinja2
+
+# """description こんにちは \ \" {braces}
+# next"""
+Unicodeモデル: TypeAlias = Union[
+        'value',
+        'other',
+    ]
+=== end UnionTypeAliasAnnotation.jinja2 ===
+=== UnionTypeAliasType.jinja2
+
+# """description こんにちは \ \" {braces}
+# next"""
+Unicodeモデル = TypeAliasType("Unicodeモデル", Union[
+    'value',
+    'other',
+])
+=== end UnionTypeAliasType.jinja2 ===
+=== UnionTypeStatement.jinja2
+
+# """description こんにちは \ \" {braces}
+# next"""
+type Unicodeモデル = Union[
+    'value',
+    'other',
+]
+=== end UnionTypeStatement.jinja2 ===
+=== dataclass.jinja2
+@decorator
+
+@dataclass(frozen=True)
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+=== end dataclass.jinja2 ===
+=== msgspec.jinja2
+@decorator
+
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+=== end msgspec.jinja2 ===
+=== pydantic_v2/BaseModel.jinja2
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='after')
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        return validate_value(v, info)
+=== end pydantic_v2/BaseModel.jinja2 ===
+=== pydantic_v2/ConfigDict.jinja2
+model_config = ConfigDict(
+    extra='allow',
+)
+=== end pydantic_v2/ConfigDict.jinja2 ===
+=== pydantic_v2/RootModel.jinja2
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[str], Sequence[str]):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    root: str
+    """field \ \" quote
+next"""
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.root)
+
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> str:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> list[str]:
+        pass
+
+    def __getitem__(self, index: SupportsIndex | slice) -> str | list[str]:
+        return self.root[index]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+    def generated(self) -> str:
+        return "ok"
+=== end pydantic_v2/RootModel.jinja2 ===
+=== pydantic_v2/RootModelTypeAlias.jinja2
+Unicodeモデル = RootModel[str]  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+=== end pydantic_v2/RootModelTypeAlias.jinja2 ===
+=== pydantic_v2/dataclass.jinja2
+@decorator
+
+@dataclass(frozen=True, config=ConfigDict(frozen=True))
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+=== end pydantic_v2/dataclass.jinja2 ===
+=== pydantic_v2/schema_runtime_validation.jinja2
+
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+=== end pydantic_v2/schema_runtime_validation.jinja2 ===
+=== pydantic_v2/schema_runtime_validation_helpers.jinja2
+class _RuntimeBase(BaseModel):
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+        data = cls._validate_json_schema_pattern_properties(data)
+        data = cls._validate_json_schema_required_groups(
+            data,
+            required_group_rules=cls.__json_schema_one_of_required_groups__,
+            require_exactly_one=True,
+        )
+        data = cls._validate_json_schema_required_groups(
+            data,
+            required_group_rules=cls.__json_schema_any_of_required_groups__,
+            require_exactly_one=False,
+        )
+        data = cls._validate_json_schema_conditional_required(data)
+        return data
+
+    @classmethod
+    def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        values = data
+        for rule in cls.__json_schema_pattern_properties__:
+            pattern_adapters = None
+            additional_adapter = None
+            for key, value in data.items():
+                if key in rule['declared_properties']:
+                    continue
+                if any(
+                    re.search(pattern, key) for pattern in rule['rejected_patterns']
+                ):
+                    raise ValueError(
+                        f'Property {key!r} is not allowed by patternProperties'
+                    )
+                matched = False
+                for index, (pattern, value_type) in enumerate(
+                    rule['pattern_properties'],
+                ):
+                    if not re.search(pattern, key):
+                        continue
+                    matched = True
+                    if pattern_adapters is None:
+                        pattern_adapters = {}
+                    if (adapter := pattern_adapters.get(index)) is None:
+                        adapter = TypeAdapter(value_type)
+                        pattern_adapters[index] = adapter
+                    value = adapter.validate_python(value)
+                if matched:
+                    if values is data:
+                        values = dict(data)
+                    values[key] = value
+                    continue
+                if rule['additional_property_type'] is not None:
+                    if additional_adapter is None:
+                        additional_adapter = TypeAdapter(
+                            rule['additional_property_type'],
+                        )
+                    if values is data:
+                        values = dict(data)
+                    values[key] = additional_adapter.validate_python(value)
+                    continue
+                if not rule['allow_unmatched']:
+                    raise ValueError(f'Unexpected property {key!r}')
+        return values
+
+    @classmethod
+    def _validate_json_schema_required_groups(
+        cls,
+        data: Any,
+        *,
+        required_group_rules: tuple[Any, ...],
+        require_exactly_one: bool,
+    ) -> Any:
+        if not required_group_rules:
+            return data
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for required_groups in required_group_rules:
+            matches = sum(
+                all(any(name in data for name in names) for names in group)
+                for group in required_groups
+            )
+            if require_exactly_one:
+                if matches != 1:
+                    raise ValueError(
+                        'Expected exactly one required property group to be present'
+                    )
+            elif matches == 0:
+                raise ValueError(
+                    'Expected at least one required property group to be present'
+                )
+        return data
+
+    @classmethod
+    def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for rule in cls.__json_schema_conditional_required__:
+            condition_matches = all(
+                any(name in data and data[name] in expected for name in names)
+                for names, expected in rule['condition']
+            )
+            required_groups = (
+                rule['then_required_groups']
+                if condition_matches
+                else rule['else_required_groups']
+            )
+            for group in required_groups:
+                if all(any(name in data for name in names) for names in group):
+                    continue
+                raise ValueError('Conditional required properties are missing')
+        return data
+
+
+
+=== end pydantic_v2/schema_runtime_validation_helpers.jinja2 ===

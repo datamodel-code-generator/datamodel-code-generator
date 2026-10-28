@@ -1,0 +1,73 @@
+{%- macro signature(method) -%}
+{% if method.coroutine %}async {% endif %}def {{ method.name }}(
+        self,
+{%- for parameter in method.positional %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+        *,
+{%- for parameter in method.keywords %}
+        {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+    ) -> {{ method.returns }}:
+{%- endmacro -%}
+{%- macro call(method) -%}
+return {% if method.coroutine %}await {% endif %}{{ method.function }}(
+{%- for argument in method.arguments %}
+            {% if argument.keyword %}{{ argument.keyword }}={% endif %}{{ argument.value }},
+{%- endfor %}
+        )
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for group in namespaces %}
+
+
+class {{ group.name }}:
+    """{{ group.docstring }}"""
+
+    def __init__(self, core: {{ group.core }}) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = {% if group.wrap %}{{ group.wrap }}.from_client(core){% else %}core{% endif %}
+{%- for child in group.children %}
+
+    @{{ cached_property }}
+    def {{ child.attribute }}(self) -> {{ child.class_name }}:
+        """{{ child.docstring }}"""
+        return {{ child.class_name }}(self._core)
+{%- endfor %}
+{%- endfor %}
+{%- for helper in helpers %}
+
+
+class {{ helper.name }}:
+    """{{ helper.docstring }}"""
+
+    def __init__(self, core: {{ core }}) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def __repr__(self) -> str:
+        """Name the helper, as the support team asks: {{ support }}"""
+        return "{{ helper.name }}()"
+{%- for method in helper.methods %}
+
+    {{ signature(method) }}
+        """{{ method.docstring }}"""
+        {{ call(method) }}
+{%- endfor %}
+{%- if helper.handle %}
+
+
+class {{ helper.handle.name }}({{ helper.handle.base }}):
+    """{{ helper.handle.docstring }}"""
+
+    __slots__ = ()
+
+    {% if asynchronous %}async {% endif %}def cancel_remote(self) -> {{ helper.handle.receipt }}:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return {% if asynchronous %}await {% endif %}self._cancel_remote({{ helper.handle.plan }})
+{%- endif %}
+{%- endfor %}

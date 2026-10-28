@@ -1,0 +1,16 @@
+syntax = "proto2";
+import "google/protobuf/descriptor.proto";
+message Config {
+  optional string note = 1;
+  repeated int32 numbers = 2;
+  optional Config child = 3;
+}
+extend google.protobuf.FileOptions {
+  optional Config config = 50001;
+}
+extend google.protobuf.MessageOptions {
+  optional string message_note = 50001;
+}
+extend google.protobuf.FieldOptions {
+  optional Config field_note = 50001;
+}

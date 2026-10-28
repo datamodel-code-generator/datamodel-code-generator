@@ -1,0 +1,4 @@
+usage:
+  datamodel-codegen [options]
+pytest: error: unrecognized arguments: --output-model-tipe --input-file-tipe
+Did you mean: --output-model-type, --input-file-type?

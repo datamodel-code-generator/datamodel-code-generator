@@ -1,0 +1,18 @@
+{
+  "local_record": {
+    "local_value": 1,
+    "next": {
+      "local_value": 2
+    }
+  },
+  "chosen": {
+    "local_value": 3
+  },
+  "qualified_record": {
+    "local_value": 4
+  },
+  "local_enum": "LOCAL",
+  "local_fixed": "A",
+  "mixed_definition": "B",
+  "enum_reference": "SECOND"
+}

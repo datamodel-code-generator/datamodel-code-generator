@@ -1,0 +1,1 @@
+EXTRA: __init__.py (no longer generated)

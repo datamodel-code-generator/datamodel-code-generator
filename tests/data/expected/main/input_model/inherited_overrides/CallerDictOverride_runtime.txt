@@ -1,0 +1,25 @@
+[
+  {
+    "bases": [
+      "DefaultParent"
+    ],
+    "fields": [
+      "before",
+      "value",
+      "after"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "before": 10,
+      "value": 2,
+      "after": 30
+    },
+    "generated": {
+      "before": 10,
+      "value": 2,
+      "after": 30
+    }
+  }
+]

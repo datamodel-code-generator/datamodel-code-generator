@@ -1,0 +1,85 @@
+openapi: "3.1.0"
+info:
+  title: No-merge recursive inherited constraints
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    RecursiveNode:
+      type: object
+      required:
+        - name
+        - count
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+        next:
+          anyOf:
+            - $ref: "#/components/schemas/RecursiveNode"
+            - type: "null"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecursiveNode"
+
+    RecursiveBase:
+      type: object
+      required:
+        - nextValue
+        - childrenValue
+        - deepValue
+      properties:
+        nextValue:
+          $ref: "#/components/schemas/RecursiveNode"
+        childrenValue:
+          $ref: "#/components/schemas/RecursiveNode"
+        deepValue:
+          $ref: "#/components/schemas/RecursiveNode"
+
+    RecursiveChild:
+      allOf:
+        - $ref: "#/components/schemas/RecursiveBase"
+        - type: object
+          properties:
+            nextValue:
+              type: object
+              properties:
+                next:
+                  type: object
+                  nullable: false
+                  properties:
+                    name:
+                      type: string
+                      minLength: 2
+            childrenValue:
+              type: object
+              properties:
+                children:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        minLength: 2
+            deepValue:
+              type: object
+              properties:
+                next:
+                  type: object
+                  nullable: false
+                  properties:
+                    children:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          next:
+                            type: object
+                            nullable: false
+                            properties:
+                              name:
+                                type: string
+                                minLength: 2

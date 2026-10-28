@@ -1,0 +1,32 @@
+openapi: 3.0.0
+info:
+  title: Pattern Properties Rule Across Merged Modules
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    a.Services:
+      type: object
+      properties:
+        name:
+          type: string
+      patternProperties:
+        '^svc_':
+          $ref: '#/components/schemas/b.Service'
+    a.Owner:
+      type: object
+      properties:
+        other:
+          $ref: '#/components/schemas/b.Other'
+    b.Service:
+      type: object
+      properties:
+        owner:
+          $ref: '#/components/schemas/a.Owner'
+    b.Other:
+      type: object
+      properties:
+        id:
+          type: string

@@ -1,0 +1,33 @@
+Constraints identity: True
+PatternConstraints identity: True
+Field identity: True
+ConstraintsBase identity: True
+UnionIntFloat identity: True
+Constraints:
+  repr: <class 'datamodel_code_generator.model.pydantic_base.Constraints'>
+  module: datamodel_code_generator.model.pydantic_base
+  qualname: Constraints
+  doc: 'Pydantic field constraints (gt, ge, lt, le, regex, etc.).'
+  mro: ['datamodel_code_generator.model.pydantic_base.Constraints', 'datamodel_code_generator.model.base.ConstraintsBase', 'datamodel_code_generator.reference._BaseModel', 'pydantic.main.BaseModel', 'builtins.object']
+  annotations: {'gt': 'Optional[UnionIntFloat]', 'ge': 'Optional[UnionIntFloat]', 'lt': 'Optional[UnionIntFloat]', 'le': 'Optional[UnionIntFloat]', 'multiple_of': 'Optional[float]', 'min_items': 'Optional[int]', 'max_items': 'Optional[int]', 'min_length': 'Optional[int]', 'max_length': 'Optional[int]', 'regex': 'Optional[str]'}
+  resolved_annotations: ['_exclude_fields', '_pass_fields', 'ge', 'gt', 'le', 'lt', 'max_items', 'max_length', 'min_items', 'min_length', 'multiple_of', 'regex', 'unique_items']
+  fields: [('unique_items', 'uniqueItems'), ('gt', 'exclusiveMinimum'), ('ge', 'minimum'), ('lt', 'exclusiveMaximum'), ('le', 'maximum'), ('multiple_of', 'multipleOf'), ('min_items', 'minItems'), ('max_items', 'maxItems'), ('min_length', 'minLength'), ('max_length', 'maxLength'), ('regex', 'pattern')]
+  dump: {'minimum': 1, 'minItems': 2, 'pattern': 'x'}
+  schema_sha256: b62938b01628cfbb1dadd7241b470e7b8476ba68a27e604ab3fdf0886d969b65
+  pickle_path: True
+  pickle_identity: True
+  pickle_dump: {'minimum': 1, 'minItems': 2, 'pattern': 'x'}
+PatternConstraints:
+  repr: <class 'datamodel_code_generator.model.pydantic_base.PatternConstraints'>
+  module: datamodel_code_generator.model.pydantic_base
+  qualname: PatternConstraints
+  doc: None
+  mro: ['datamodel_code_generator.model.pydantic_base.PatternConstraints', 'datamodel_code_generator.model.pydantic_base.Constraints', 'datamodel_code_generator.model.base.ConstraintsBase', 'datamodel_code_generator.reference._BaseModel', 'pydantic.main.BaseModel', 'builtins.object']
+  annotations: {'regex': 'Optional[str]', 'pattern': 'Optional[str]'}
+  resolved_annotations: ['_exclude_fields', '_pass_fields', 'ge', 'gt', 'le', 'lt', 'max_items', 'max_length', 'min_items', 'min_length', 'multiple_of', 'pattern', 'regex', 'unique_items']
+  fields: [('unique_items', 'uniqueItems'), ('gt', 'exclusiveMinimum'), ('ge', 'minimum'), ('lt', 'exclusiveMaximum'), ('le', 'maximum'), ('multiple_of', 'multipleOf'), ('min_items', 'minItems'), ('max_items', 'maxItems'), ('min_length', 'minLength'), ('max_length', 'maxLength'), ('regex', 'regex'), ('pattern', 'pattern')]
+  dump: {'minimum': 1, 'minItems': 2, 'pattern': 'x'}
+  schema_sha256: 2ddfd965e7edbd2218523c966890e93df7e316fbdbefda6c6453b5ef545e9b74
+  pickle_path: True
+  pickle_identity: True
+  pickle_dump: {'minimum': 1, 'minItems': 2, 'pattern': 'x'}

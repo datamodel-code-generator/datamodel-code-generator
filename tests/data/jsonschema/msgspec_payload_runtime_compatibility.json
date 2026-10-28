@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PayloadRuntimeCompatibility",
+  "type": "object",
+  "required": ["schemaVersion", "event", "statusCode", "flagged", "partialTagged", "optionalTagged", "refEvent"],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0",
+      "type": "string"
+    },
+    "negated": {
+      "const": true,
+      "type": "boolean"
+    },
+    "event": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "id"],
+          "properties": {
+            "type": {"const": "message.created"},
+            "id": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "reason"],
+          "properties": {
+            "type": {"const": "message.failed"},
+            "reason": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "statusCode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["code", "value"],
+          "properties": {
+            "code": {"const": 7},
+            "value": {"type": "integer"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": {"const": 8},
+            "message": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "flagged": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["flag", "name"],
+          "properties": {
+            "flag": {"const": true},
+            "name": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["flag", "count"],
+          "properties": {
+            "flag": {"const": false},
+            "count": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "partialTagged": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"const": "alpha"},
+            "value": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "count"],
+          "properties": {
+            "kind": {"const": "beta"},
+            "count": {"type": "integer"}
+          }
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "optionalTagged": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["mode", "name"],
+          "properties": {
+            "mode": {"const": "alpha"},
+            "name": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["count"],
+          "properties": {
+            "mode": {"const": "beta"},
+            "count": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "refEvent": {
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "ref.created": "#/$defs/RefCreated",
+          "ref.failed": "#/$defs/RefFailed"
+        }
+      },
+      "oneOf": [
+        {"$ref": "#/$defs/RefCreated"},
+        {"$ref": "#/$defs/RefFailed"}
+      ]
+    }
+  },
+  "$defs": {
+    "RefCreated": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"const": "ref.created"},
+        "id": {"type": "string"}
+      }
+    },
+    "RefFailed": {
+      "type": "object",
+      "required": ["kind", "reason"],
+      "properties": {
+        "kind": {"const": "ref.failed"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}

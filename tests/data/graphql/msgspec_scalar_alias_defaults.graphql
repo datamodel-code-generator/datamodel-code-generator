@@ -1,0 +1,14 @@
+input ScalarDefaults {
+  numbers: [Int!]! = [3, 1, 2]
+  strings: [String!]! = ["z", "a"]
+  flags: [Boolean!]! = [true, false]
+  floats: [Float!]! = [2.5, 1.25]
+  ids: [ID!]! = ["id2", "id1"]
+  empty: [Int!]! = []
+  number: Int! = 4
+  text: String! = "unchanged"
+}
+
+type Query {
+  value(input: ScalarDefaults): String
+}

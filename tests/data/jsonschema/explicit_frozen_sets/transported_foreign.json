@@ -1,0 +1,32 @@
+{
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "x-python-type": "set[Item]"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "x-python-type": "tests.data.python.unique_model_sets.transported_values.date"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

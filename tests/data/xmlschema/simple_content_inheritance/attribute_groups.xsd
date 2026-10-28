@@ -1,0 +1,26 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:attribute name="id" type="xs:int"/>
+  <xs:attributeGroup name="BaseAttrs">
+    <xs:attribute ref="id" use="required"/>
+    <xs:attribute name="label" type="xs:string" default="base"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="RestrictedAttrs">
+    <xs:attribute ref="id" use="required"/>
+    <xs:attribute name="label" type="xs:string" use="prohibited"/>
+  </xs:attributeGroup>
+  <xs:complexType name="Base">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attributeGroup ref="BaseAttrs"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:restriction base="Base">
+        <xs:attributeGroup ref="RestrictedAttrs"/>
+      </xs:restriction>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

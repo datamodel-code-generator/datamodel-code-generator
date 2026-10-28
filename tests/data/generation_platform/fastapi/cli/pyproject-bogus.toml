@@ -1,0 +1,2 @@
+[tool.datamodel-codegen]
+server-layout = "bogus"

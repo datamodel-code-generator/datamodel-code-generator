@@ -1,0 +1,1 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"><xs:element name="root"><xs:complexType mixed="true"><xs:sequence><xs:element name="value" type="xs:int"/></xs:sequence></xs:complexType></xs:element></xs:schema>

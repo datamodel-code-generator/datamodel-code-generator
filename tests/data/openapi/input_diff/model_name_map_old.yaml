@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: Pets before the owner rename
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        owner:
+          type: object
+          properties:
+            name:
+              type: string

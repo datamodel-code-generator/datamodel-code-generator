@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "last"
+  ],
+  "title": "AllSkipped",
+  "type": "object"
+}

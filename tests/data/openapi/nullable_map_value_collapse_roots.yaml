@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value collapse roots
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Label:
+      type: string
+      minLength: 1
+      description: A non-empty label.
+    Holder:
+      type: object
+      properties:
+        labels:
+          type: [object, "null"]
+          additionalProperties:
+            $ref: "#/components/schemas/Label"
+    Inner:
+      type: [object, "null"]
+      additionalProperties:
+        type: integer
+    Outer:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Inner"
+    Nested:
+      type: object
+      properties:
+        o:
+          $ref: "#/components/schemas/Outer"

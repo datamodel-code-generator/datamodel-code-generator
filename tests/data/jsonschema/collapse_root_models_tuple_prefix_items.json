@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "Flag": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "boolean"}
+      ]
+    },
+    "Label": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "pair": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/Flag"},
+        {"type": "string"}
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "triple": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "number"},
+        {"$ref": "#/$defs/Label"},
+        {"type": "boolean"}
+      ],
+      "items": false,
+      "minItems": 3
+    }
+  }
+}

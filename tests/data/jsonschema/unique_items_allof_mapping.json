@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AllOfMapping",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "own": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "patternProperties": {
+        "^pattern": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

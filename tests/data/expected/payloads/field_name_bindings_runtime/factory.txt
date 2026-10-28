@@ -1,0 +1,16 @@
+{
+  "fields": [
+    "items",
+    "Optional",
+    "choice"
+  ],
+  "items_annotation": true,
+  "items": {
+    "first": [
+      1,
+      2
+    ]
+  },
+  "Optional": "Optional Field list — 名前",
+  "choice": "Optional"
+}

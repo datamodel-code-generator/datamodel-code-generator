@@ -1,0 +1,30 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "x-python-type": "Callable[[int], int]"
+            }
+          ],
+          "title": "Inner choice"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "int | Callable[[int], int] | str"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "AnnotatedUnion",
+  "type": "object"
+}

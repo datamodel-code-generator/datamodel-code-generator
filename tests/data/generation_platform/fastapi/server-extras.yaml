@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info: {title: Server extras, version: "1.0"}
+paths:
+  /stats:
+    post:
+      operationId: echoStats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Stats"}
+      responses:
+        "200":
+          description: The stats it received.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Stats"}
+  /bags:
+    post:
+      operationId: echoBag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Bag"}
+      responses:
+        "201":
+          description: The bag it received.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Bag"}
+  /labels:
+    post:
+      operationId: echoLabels
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: "#/components/schemas/Labels"}
+      responses:
+        "200":
+          description: The labels it received.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Labels"}
+  /trees:
+    get:
+      operationId: getTree
+      responses:
+        "200":
+          description: A tree without extra members.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Tree"}
+components:
+  schemas:
+    Stats: {type: object, additionalProperties: true}
+    Counts: {type: object, additionalProperties: {type: integer}}
+    Named:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: true
+    NamedCounts:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {type: integer}
+    Bag:
+      type: object
+      additionalProperties: false
+      properties:
+        stats: {$ref: "#/components/schemas/Stats"}
+        counts: {$ref: "#/components/schemas/Counts"}
+        named: {$ref: "#/components/schemas/Named"}
+        namedCounts: {$ref: "#/components/schemas/NamedCounts"}
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/Named"}
+    Labels:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {type: string}
+    Tree:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string}
+        children:
+          type: array
+          items: {$ref: "#/components/schemas/Tree"}

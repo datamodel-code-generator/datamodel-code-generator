@@ -1,0 +1,19 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Conditional origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Choice": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}},
+      "if": {"properties": {"enabled": {"const": true}}},
+      "then": {
+        "properties": {
+          "ship-to": {"type": "object", "properties": {"postal-code": {"type": "string"}}}
+        },
+        "required": ["ship-to"]
+      },
+      "else": {"properties": {"reason": {"type": "string"}}}
+    }
+  }}
+}

@@ -1,0 +1,8 @@
+{
+  "child": {
+    "base": 1,
+    "wire": "ok",
+    "y": 2,
+    "z": true
+  }
+}

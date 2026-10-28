@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+disable-timestamp = false
+input = "schema with spaces.json"
+use-closed-typed-dict = false
+use-union-operator = false

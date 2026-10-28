@@ -1,0 +1,3 @@
+items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems instead. Schema path: schema_location_strict_draft2020.json#/properties/pair
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_draft2020.json#/$defs/a~1b
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_draft2020.json#/$defs/a~1b

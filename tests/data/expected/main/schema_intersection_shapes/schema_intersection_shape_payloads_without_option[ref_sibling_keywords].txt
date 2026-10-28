@@ -1,0 +1,384 @@
+pydantic_v2.BaseModel default unique [1, 2] accepted
+pydantic_v2.BaseModel default unique [1, 1] accepted
+pydantic_v2.BaseModel default count_number 3 accepted
+pydantic_v2.BaseModel default count_number 2.5 accepted
+pydantic_v2.BaseModel default count_number -1 rejected
+pydantic_v2.BaseModel default code_or_null null accepted
+pydantic_v2.BaseModel default code_or_null 3 accepted
+pydantic_v2.BaseModel default code_or_null "x" rejected
+pydantic_v2.BaseModel default disjoint "a" accepted
+pydantic_v2.BaseModel default disjoint "c" accepted
+pydantic_v2.BaseModel default named "b" accepted
+pydantic_v2.BaseModel default named "a" accepted
+pydantic_v2.BaseModel default const_conflict "a" rejected
+pydantic_v2.BaseModel default const_conflict "b" accepted
+pydantic_v2.BaseModel default closed {"a": "x"} accepted
+pydantic_v2.BaseModel default closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel default int_values {"k": 1} accepted
+pydantic_v2.BaseModel default int_values {"k": "x"} accepted
+pydantic_v2.BaseModel default any_values {"k": "x"} accepted
+pydantic_v2.BaseModel default any_values "x" rejected
+pydantic_v2.BaseModel default small_items [10] accepted
+pydantic_v2.BaseModel default small_items [15] accepted
+pydantic_v2.BaseModel default small_property {"n": 10} accepted
+pydantic_v2.BaseModel default small_property {"n": 15} accepted
+pydantic_v2.BaseModel default crossed 3 rejected
+pydantic_v2.BaseModel default crossed 5 rejected
+pydantic_v2.BaseModel default const_enum "a" rejected
+pydantic_v2.BaseModel default const_enum "c" accepted
+pydantic_v2.BaseModel default enum_const "a" accepted
+pydantic_v2.BaseModel default enum_const "b" rejected
+pydantic_v2.BaseModel default self_crossed 4 rejected
+pydantic_v2.BaseModel default self_crossed 5 rejected
+pydantic_v2.dataclass default unique [1, 2] accepted
+pydantic_v2.dataclass default unique [1, 1] accepted
+pydantic_v2.dataclass default count_number 3 accepted
+pydantic_v2.dataclass default count_number 2.5 accepted
+pydantic_v2.dataclass default count_number -1 rejected
+pydantic_v2.dataclass default code_or_null null accepted
+pydantic_v2.dataclass default code_or_null 3 accepted
+pydantic_v2.dataclass default code_or_null "x" rejected
+pydantic_v2.dataclass default disjoint "a" accepted
+pydantic_v2.dataclass default disjoint "c" accepted
+pydantic_v2.dataclass default named "b" accepted
+pydantic_v2.dataclass default named "a" accepted
+pydantic_v2.dataclass default const_conflict "a" rejected
+pydantic_v2.dataclass default const_conflict "b" accepted
+pydantic_v2.dataclass default closed {"a": "x"} accepted
+pydantic_v2.dataclass default closed {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass default int_values {"k": 1} accepted
+pydantic_v2.dataclass default int_values {"k": "x"} accepted
+pydantic_v2.dataclass default any_values {"k": "x"} accepted
+pydantic_v2.dataclass default any_values "x" rejected
+pydantic_v2.dataclass default small_items [10] accepted
+pydantic_v2.dataclass default small_items [15] accepted
+pydantic_v2.dataclass default small_property {"n": 10} accepted
+pydantic_v2.dataclass default small_property {"n": 15} accepted
+pydantic_v2.dataclass default crossed 3 rejected
+pydantic_v2.dataclass default crossed 5 rejected
+pydantic_v2.dataclass default const_enum "a" rejected
+pydantic_v2.dataclass default const_enum "c" accepted
+pydantic_v2.dataclass default enum_const "a" accepted
+pydantic_v2.dataclass default enum_const "b" rejected
+pydantic_v2.dataclass default self_crossed 4 rejected
+pydantic_v2.dataclass default self_crossed 5 rejected
+msgspec.Struct default unique [1, 2] accepted
+msgspec.Struct default unique [1, 1] accepted
+msgspec.Struct default count_number 3 accepted
+msgspec.Struct default count_number 2.5 accepted
+msgspec.Struct default count_number -1 rejected
+msgspec.Struct default code_or_null null accepted
+msgspec.Struct default code_or_null 3 accepted
+msgspec.Struct default code_or_null "x" rejected
+msgspec.Struct default disjoint "a" accepted
+msgspec.Struct default disjoint "c" accepted
+msgspec.Struct default named "b" accepted
+msgspec.Struct default named "a" accepted
+msgspec.Struct default const_conflict "a" rejected
+msgspec.Struct default const_conflict "b" accepted
+msgspec.Struct default closed {"a": "x"} accepted
+msgspec.Struct default closed {"a": "x", "b": "y"} accepted
+msgspec.Struct default int_values {"k": 1} accepted
+msgspec.Struct default int_values {"k": "x"} accepted
+msgspec.Struct default any_values {"k": "x"} accepted
+msgspec.Struct default any_values "x" rejected
+msgspec.Struct default small_items [10] accepted
+msgspec.Struct default small_items [15] accepted
+msgspec.Struct default small_property {"n": 10} accepted
+msgspec.Struct default small_property {"n": 15} accepted
+msgspec.Struct default crossed 3 rejected
+msgspec.Struct default crossed 5 rejected
+msgspec.Struct default const_enum "a" accepted
+msgspec.Struct default const_enum "c" rejected
+msgspec.Struct default enum_const "a" rejected
+msgspec.Struct default enum_const "b" accepted
+msgspec.Struct default self_crossed 4 rejected
+msgspec.Struct default self_crossed 5 rejected
+pydantic_v2.BaseModel --field-constraints unique [1, 2] accepted
+pydantic_v2.BaseModel --field-constraints unique [1, 1] accepted
+pydantic_v2.BaseModel --field-constraints count_number 3 accepted
+pydantic_v2.BaseModel --field-constraints count_number 2.5 accepted
+pydantic_v2.BaseModel --field-constraints count_number -1 rejected
+pydantic_v2.BaseModel --field-constraints code_or_null null accepted
+pydantic_v2.BaseModel --field-constraints code_or_null 3 accepted
+pydantic_v2.BaseModel --field-constraints code_or_null "x" rejected
+pydantic_v2.BaseModel --field-constraints disjoint "a" accepted
+pydantic_v2.BaseModel --field-constraints disjoint "c" accepted
+pydantic_v2.BaseModel --field-constraints named "b" accepted
+pydantic_v2.BaseModel --field-constraints named "a" accepted
+pydantic_v2.BaseModel --field-constraints const_conflict "a" rejected
+pydantic_v2.BaseModel --field-constraints const_conflict "b" accepted
+pydantic_v2.BaseModel --field-constraints closed {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints int_values {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints any_values "x" rejected
+pydantic_v2.BaseModel --field-constraints small_items [10] accepted
+pydantic_v2.BaseModel --field-constraints small_items [15] accepted
+pydantic_v2.BaseModel --field-constraints small_property {"n": 10} accepted
+pydantic_v2.BaseModel --field-constraints small_property {"n": 15} accepted
+pydantic_v2.BaseModel --field-constraints crossed 3 rejected
+pydantic_v2.BaseModel --field-constraints crossed 5 rejected
+pydantic_v2.BaseModel --field-constraints const_enum "a" rejected
+pydantic_v2.BaseModel --field-constraints const_enum "c" accepted
+pydantic_v2.BaseModel --field-constraints enum_const "a" accepted
+pydantic_v2.BaseModel --field-constraints enum_const "b" rejected
+pydantic_v2.BaseModel --field-constraints self_crossed 4 rejected
+pydantic_v2.BaseModel --field-constraints self_crossed 5 rejected
+pydantic_v2.BaseModel --use-annotated unique [1, 2] accepted
+pydantic_v2.BaseModel --use-annotated unique [1, 1] accepted
+pydantic_v2.BaseModel --use-annotated count_number 3 accepted
+pydantic_v2.BaseModel --use-annotated count_number 2.5 accepted
+pydantic_v2.BaseModel --use-annotated count_number -1 rejected
+pydantic_v2.BaseModel --use-annotated code_or_null null accepted
+pydantic_v2.BaseModel --use-annotated code_or_null 3 accepted
+pydantic_v2.BaseModel --use-annotated code_or_null "x" rejected
+pydantic_v2.BaseModel --use-annotated disjoint "a" accepted
+pydantic_v2.BaseModel --use-annotated disjoint "c" accepted
+pydantic_v2.BaseModel --use-annotated named "b" accepted
+pydantic_v2.BaseModel --use-annotated named "a" accepted
+pydantic_v2.BaseModel --use-annotated const_conflict "a" rejected
+pydantic_v2.BaseModel --use-annotated const_conflict "b" accepted
+pydantic_v2.BaseModel --use-annotated closed {"a": "x"} accepted
+pydantic_v2.BaseModel --use-annotated closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-annotated int_values {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --use-annotated any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --use-annotated any_values "x" rejected
+pydantic_v2.BaseModel --use-annotated small_items [10] accepted
+pydantic_v2.BaseModel --use-annotated small_items [15] accepted
+pydantic_v2.BaseModel --use-annotated small_property {"n": 10} accepted
+pydantic_v2.BaseModel --use-annotated small_property {"n": 15} accepted
+pydantic_v2.BaseModel --use-annotated crossed 3 rejected
+pydantic_v2.BaseModel --use-annotated crossed 5 rejected
+pydantic_v2.BaseModel --use-annotated const_enum "a" rejected
+pydantic_v2.BaseModel --use-annotated const_enum "c" accepted
+pydantic_v2.BaseModel --use-annotated enum_const "a" accepted
+pydantic_v2.BaseModel --use-annotated enum_const "b" rejected
+pydantic_v2.BaseModel --use-annotated self_crossed 4 rejected
+pydantic_v2.BaseModel --use-annotated self_crossed 5 rejected
+pydantic_v2.BaseModel --collapse-root-models unique [1, 2] accepted
+pydantic_v2.BaseModel --collapse-root-models unique [1, 1] accepted
+pydantic_v2.BaseModel --collapse-root-models count_number 3 accepted
+pydantic_v2.BaseModel --collapse-root-models count_number 2.5 accepted
+pydantic_v2.BaseModel --collapse-root-models count_number -1 rejected
+pydantic_v2.BaseModel --collapse-root-models code_or_null null accepted
+pydantic_v2.BaseModel --collapse-root-models code_or_null 3 accepted
+pydantic_v2.BaseModel --collapse-root-models code_or_null "x" rejected
+pydantic_v2.BaseModel --collapse-root-models disjoint "a" accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint "c" accepted
+pydantic_v2.BaseModel --collapse-root-models named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models named "a" accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict "a" rejected
+pydantic_v2.BaseModel --collapse-root-models const_conflict "b" accepted
+pydantic_v2.BaseModel --collapse-root-models closed {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models int_values {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models any_values "x" rejected
+pydantic_v2.BaseModel --collapse-root-models small_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models small_items [15] accepted
+pydantic_v2.BaseModel --collapse-root-models small_property {"n": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models small_property {"n": 15} accepted
+pydantic_v2.BaseModel --collapse-root-models crossed 3 rejected
+pydantic_v2.BaseModel --collapse-root-models crossed 5 rejected
+pydantic_v2.BaseModel --collapse-root-models const_enum "a" rejected
+pydantic_v2.BaseModel --collapse-root-models const_enum "c" accepted
+pydantic_v2.BaseModel --collapse-root-models enum_const "a" accepted
+pydantic_v2.BaseModel --collapse-root-models enum_const "b" rejected
+pydantic_v2.BaseModel --collapse-root-models self_crossed 4 rejected
+pydantic_v2.BaseModel --collapse-root-models self_crossed 5 rejected
+msgspec.Struct --collapse-root-models unique [1, 2] accepted
+msgspec.Struct --collapse-root-models unique [1, 1] accepted
+msgspec.Struct --collapse-root-models count_number 3 accepted
+msgspec.Struct --collapse-root-models count_number 2.5 accepted
+msgspec.Struct --collapse-root-models count_number -1 rejected
+msgspec.Struct --collapse-root-models code_or_null null accepted
+msgspec.Struct --collapse-root-models code_or_null 3 accepted
+msgspec.Struct --collapse-root-models code_or_null "x" rejected
+msgspec.Struct --collapse-root-models disjoint "a" accepted
+msgspec.Struct --collapse-root-models disjoint "c" accepted
+msgspec.Struct --collapse-root-models named "b" accepted
+msgspec.Struct --collapse-root-models named "a" accepted
+msgspec.Struct --collapse-root-models const_conflict "a" rejected
+msgspec.Struct --collapse-root-models const_conflict "b" accepted
+msgspec.Struct --collapse-root-models closed {"a": "x"} accepted
+msgspec.Struct --collapse-root-models closed {"a": "x", "b": "y"} accepted
+msgspec.Struct --collapse-root-models int_values {"k": 1} accepted
+msgspec.Struct --collapse-root-models int_values {"k": "x"} accepted
+msgspec.Struct --collapse-root-models any_values {"k": "x"} accepted
+msgspec.Struct --collapse-root-models any_values "x" rejected
+msgspec.Struct --collapse-root-models small_items [10] accepted
+msgspec.Struct --collapse-root-models small_items [15] accepted
+msgspec.Struct --collapse-root-models small_property {"n": 10} accepted
+msgspec.Struct --collapse-root-models small_property {"n": 15} accepted
+msgspec.Struct --collapse-root-models crossed 3 rejected
+msgspec.Struct --collapse-root-models crossed 5 rejected
+msgspec.Struct --collapse-root-models const_enum "a" accepted
+msgspec.Struct --collapse-root-models const_enum "c" rejected
+msgspec.Struct --collapse-root-models enum_const "a" rejected
+msgspec.Struct --collapse-root-models enum_const "b" accepted
+msgspec.Struct --collapse-root-models self_crossed 4 rejected
+msgspec.Struct --collapse-root-models self_crossed 5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unique [1, 2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs unique [1, 1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs count_number 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs count_number 2.5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs count_number -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_or_null null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_or_null 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_or_null "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint "c" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_conflict "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_conflict "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed {"a": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_values {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_values "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs small_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs small_items [15] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs small_property {"n": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs small_property {"n": 15} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs crossed 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs crossed 5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_enum "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_enum "c" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_const "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs enum_const "b" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs self_crossed 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs self_crossed 5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unique [1, 2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs unique [1, 1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs count_number 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs count_number 2.5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs count_number -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_or_null null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_or_null 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_or_null "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint "c" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_conflict "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_conflict "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed {"a": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_values {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_values {"k": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_values {"k": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_values "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs small_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs small_items [15] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs small_property {"n": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs small_property {"n": 15} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs crossed 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs crossed 5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_enum "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_enum "c" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_const "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs enum_const "b" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs self_crossed 4 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs self_crossed 5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs unique [1, 2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs unique [1, 1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs count_number 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs count_number 2.5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs count_number -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs code_or_null null accepted
+msgspec.Struct --use-site-models-for-constrained-refs code_or_null 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs code_or_null "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint "c" accepted
+msgspec.Struct --use-site-models-for-constrained-refs named "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs named "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs const_conflict "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs const_conflict "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs closed {"a": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs closed {"a": "x", "b": "y"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs int_values {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs int_values {"k": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs any_values {"k": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs any_values "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs small_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs small_items [15] accepted
+msgspec.Struct --use-site-models-for-constrained-refs small_property {"n": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs small_property {"n": 15} accepted
+msgspec.Struct --use-site-models-for-constrained-refs crossed 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs crossed 5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs const_enum "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs const_enum "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs enum_const "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs enum_const "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs self_crossed 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs self_crossed 5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unique [1, 2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs unique [1, 1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count_number 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count_number 2.5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count_number -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_or_null null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_or_null 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_or_null "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint "c" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_conflict "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_conflict "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_values {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_values "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs small_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs small_items [15] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs small_property {"n": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs small_property {"n": 15} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs crossed 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs crossed 5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_enum "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_enum "c" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_const "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs enum_const "b" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs self_crossed 4 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs self_crossed 5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unique [1, 2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs unique [1, 1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count_number 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count_number 2.5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs count_number -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_or_null null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_or_null 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_or_null "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint "c" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_conflict "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_conflict "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_values {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_values {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_values {"k": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_values "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs small_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs small_items [15] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs small_property {"n": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs small_property {"n": 15} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs crossed 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs crossed 5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_enum "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_enum "c" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_const "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs enum_const "b" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs self_crossed 4 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs self_crossed 5 rejected

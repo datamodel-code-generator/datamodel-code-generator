@@ -1,0 +1,51 @@
+{
+  "base": {
+    "word": "\u00b2\u00bd",
+    "uri": "https://example.com",
+    "nonword": "\u203f\u200c",
+    "tilde": "~",
+    "token": "123",
+    "tokens": [
+      "ABC",
+      "123"
+    ]
+  },
+  "cases": [
+    {
+      "valid": {},
+      "invalid": {
+        "word": "\u00b2\u00bd\n"
+      }
+    },
+    {
+      "valid": {
+        "word": "ABC",
+        "uri": "http://example.com",
+        "nonword": "Q",
+        "tilde": "a~b",
+        "token": "ABC",
+        "tokens": [
+          "123"
+        ]
+      },
+      "invalid": {
+        "word": "ABC",
+        "uri": "http://example.com",
+        "nonword": "Q",
+        "tilde": "a~b",
+        "token": "ABC",
+        "tokens": [
+          "123\n"
+        ]
+      }
+    },
+    {
+      "valid": {
+        "mirror": "\u00b2\u00bd"
+      },
+      "invalid": {
+        "mirror": "!"
+      }
+    }
+  ]
+}

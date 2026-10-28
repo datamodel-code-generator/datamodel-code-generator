@@ -1,0 +1,3 @@
+# field-ownership-cycle
+render pydantic_v2.BaseModel default
+  diagnostic Error: Generated model inheritance cycle: A (field-ownership-cycle.json#/components/schemas/A) -> B (field-ownership-cycle.json#/components/schemas/B) -> A (field-ownership-cycle.json#/components/schemas/A)

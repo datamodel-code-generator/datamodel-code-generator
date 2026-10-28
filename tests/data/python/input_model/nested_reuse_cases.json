@@ -1,0 +1,131 @@
+[
+  {
+    "name": "nested",
+    "sources": [
+      "nested_reuse:NestedRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "value": 1
+        },
+        "leaf": {
+          "label": "a"
+        },
+        "kind": "first",
+        "record": {
+          "number": 2
+        },
+        "node": {
+          "value": 3,
+          "child": {
+            "value": 4
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "direct",
+    "sources": [
+      "nested_reuse_exports:DirectRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "value": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "export",
+    "sources": [
+      "nested_reuse_exports:ExportRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "value": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "alias",
+    "sources": [
+      "nested_reuse_alias:AliasRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "value": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "multiple",
+    "sources": [
+      "nested_reuse:NestedRoot",
+      "nested_reuse_other:OtherRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "value": 1
+        },
+        "leaf": {
+          "label": "a"
+        },
+        "kind": "first",
+        "record": {
+          "number": 2
+        },
+        "node": {
+          "value": 3,
+          "child": {
+            "value": 4
+          }
+        }
+      },
+      {
+        "child": {
+          "label": "b"
+        }
+      }
+    ]
+  },
+  {
+    "name": "reverse",
+    "sources": [
+      "nested_reuse_other:OtherRoot",
+      "nested_reuse:NestedRoot"
+    ],
+    "payloads": [
+      {
+        "child": {
+          "label": "b"
+        }
+      },
+      {
+        "child": {
+          "value": 1
+        },
+        "leaf": {
+          "label": "a"
+        },
+        "kind": "first",
+        "record": {
+          "number": 2
+        },
+        "node": {
+          "value": 3,
+          "child": {
+            "value": 4
+          }
+        }
+      }
+    ]
+  }
+]

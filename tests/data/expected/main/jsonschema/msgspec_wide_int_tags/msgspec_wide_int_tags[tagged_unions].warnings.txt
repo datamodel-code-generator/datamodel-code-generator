@@ -1,0 +1,5 @@
+Discriminator 'k' of Model cannot be represented as msgspec tags: Wide cannot take exactly one tag for it; its variants are left untagged.
+Discriminator 'kind' of Model cannot be represented as msgspec tags: a base or derived struct of Cat keeps 'kind' as a field; its variants are left untagged.
+msgspec cannot decode Wide.k: its Literal value 9223372036854775808 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode BigCat.kind: its Literal value -9223372036854775809 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the union Model.animal: its Struct types BigCat, Mouse are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

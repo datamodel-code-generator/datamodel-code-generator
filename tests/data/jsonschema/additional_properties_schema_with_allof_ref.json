@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AllOfInheritedAndExtra",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    }
+  ],
+  "additionalProperties": {
+    "type": "integer"
+  },
+  "definitions": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

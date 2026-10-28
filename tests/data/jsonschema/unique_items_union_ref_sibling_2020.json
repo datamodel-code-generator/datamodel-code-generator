@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionRefSibling2020",
+  "anyOf": [
+    {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+    {"$ref": "#/$defs/AnyArray", "const": "ignored"}
+  ],
+  "$defs": {"AnyArray": {"type": "array", "items": {"type": "integer"}}}
+}

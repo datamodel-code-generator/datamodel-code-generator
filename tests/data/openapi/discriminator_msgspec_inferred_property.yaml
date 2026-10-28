@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info:
+  title: Discriminator beside a property every variant holds a literal for
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        u:
+          oneOf:
+            - $ref: '#/components/schemas/A'
+            - $ref: '#/components/schemas/B'
+          discriminator:
+            propertyName: kind
+            mapping:
+              a: '#/components/schemas/A'
+              b: '#/components/schemas/B'
+    A:
+      type: object
+      properties:
+        kind:
+          type: string
+        v:
+          const: x
+      required:
+        - kind
+        - v
+    B:
+      type: object
+      properties:
+        kind:
+          type: string
+        v:
+          const: y
+      required:
+        - kind
+        - v

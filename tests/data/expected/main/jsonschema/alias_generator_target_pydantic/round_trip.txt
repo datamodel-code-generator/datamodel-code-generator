@@ -1,0 +1,17 @@
+{
+  "firstName": "Ada",
+  "userID": 1,
+  "first_name": "Lovelace",
+  "Name": "Analytical",
+  "HTTPResponse": 200,
+  "kebab-case": "engine",
+  "owner": {
+    "displayName": "Babbage",
+    "owner_id": 7
+  },
+  "tags": [
+    "engine",
+    "notes"
+  ],
+  "nick_name": "Countess"
+}

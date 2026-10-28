@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: A $ref cycle between two components with another alias of the cycle
+  version: "1"
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: "#/components/schemas/B"
+      minProperties: 1
+    B:
+      $ref: "#/components/schemas/A"
+      description: hi
+    Alias:
+      $ref: "#/components/schemas/A"
+    H:
+      type: object
+      properties:
+        a:
+          $ref: "#/components/schemas/A"
+        ok:
+          type: string

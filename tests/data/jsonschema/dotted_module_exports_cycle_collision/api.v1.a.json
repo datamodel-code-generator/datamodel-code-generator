@@ -1,0 +1,9 @@
+{
+  "title": "Node",
+  "type": "object",
+  "properties": {
+    "b": {
+      "$ref": "api.v2.b.json"
+    }
+  }
+}

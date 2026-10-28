@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "RootMixed": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^(?=a).*$"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "uniqueItems": true
+        }
+      ]
+    }
+  },
+  "title": "AModel",
+  "type": "object",
+  "properties": {
+    "mixed": {
+      "$ref": "#/$defs/RootMixed"
+    }
+  },
+  "required": [
+    "mixed"
+  ]
+}

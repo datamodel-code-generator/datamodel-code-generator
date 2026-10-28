@@ -1,0 +1,23 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "c": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "waiting"
+      ]
+    }
+  },
+  "required": [
+    "c"
+  ],
+  "customBasePath": [
+    "msgspec.Struct",
+    "contextlib.ContextDecorator"
+  ]
+}

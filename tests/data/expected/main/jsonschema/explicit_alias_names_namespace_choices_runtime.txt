@@ -1,0 +1,16 @@
+{
+  "fields": [
+    "model_foo",
+    "b"
+  ],
+  "attribute": "A",
+  "dump": {
+    "model_foo": "A",
+    "b": 1
+  },
+  "dump_by_alias": {
+    "model_foo": "A",
+    "b": 1
+  },
+  "config": {}
+}

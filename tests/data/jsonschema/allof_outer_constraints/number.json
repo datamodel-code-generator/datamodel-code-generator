@@ -1,0 +1,19 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "minimum": 0,
+      "maximum": 10
+    }
+  ],
+  "maximum": 5,
+  "definitions": {
+    "Base": {
+      "type": "integer",
+      "maximum": 20
+    }
+  }
+}

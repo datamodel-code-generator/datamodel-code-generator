@@ -1,0 +1,1 @@
+TemporalDefaults(day=datetime.date(1970, 1, 2), clock=datetime.time(0, 0, 1))

@@ -1,0 +1,2 @@
+valid: accepted
+invalid m: rejected (string_type)

@@ -1,0 +1,60 @@
+openapi: 3.1.0
+info:
+  title: Contacts
+  version: "1"
+paths:
+  /contacts:
+    post:
+      operationId: createContact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Contact"
+      responses:
+        "201":
+          description: The stored contact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+  /contacts/search:
+    post:
+      operationId: searchContacts
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [nickname]
+              properties:
+                nickname:
+                  type: string
+                  pattern: "^[a-z]+$"
+      responses:
+        "200":
+          description: The nickname that matched.
+          content:
+            application/json:
+              schema:
+                type: string
+components:
+  schemas:
+    Contact:
+      type: object
+      required: [id, mail]
+      properties:
+        id:
+          type: string
+          format: ulid
+        mail:
+          type: string
+          format: email
+        born:
+          type: string
+          format: date
+        nickname:
+          type: string
+          pattern: "^[a-z]+$"

@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+custom-file-header = "say \"hi\" on C:\\tmp\nnext"
+http-headers = ["Authorization: Bearer \"abc\"", "X-Path: C:\\tmp"]
+input = "schema.yaml"
+

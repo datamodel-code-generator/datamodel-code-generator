@@ -1,0 +1,131 @@
+{
+  "duplicate": {
+    "a": "same",
+    "b": "same"
+  },
+  "existing": {
+    "b": "a"
+  },
+  "scoped_duplicate": {
+    "AliasNames.a": "same",
+    "AliasNames.b": "same"
+  },
+  "keyword": {
+    "a": "class"
+  },
+  "invalid": {
+    "a": "not-valid"
+  },
+  "empty": {
+    "a": ""
+  },
+  "reserved_config": {
+    "a": "model_config"
+  },
+  "reserved_validate": {
+    "a": "model_validate"
+  },
+  "reserved_msgspec": {
+    "a": "field",
+    "b": "other"
+  },
+  "normal": {},
+  "global": {
+    "a": "CamelName",
+    "b": "count"
+  },
+  "scoped": {
+    "a": "model_config",
+    "AliasNames.a": "value",
+    "AliasNames.b": "count"
+  },
+  "choices": {
+    "a": [
+      "first",
+      "alternate"
+    ],
+    "b": "count"
+  },
+  "neutral_reserved": {
+    "a": "model_config",
+    "b": "model_validate"
+  },
+  "snake_duplicate": {
+    "a": "FooBar",
+    "b": "foo_bar"
+  },
+  "nfkc_duplicate": {
+    "a": "K",
+    "b": "K"
+  },
+  "snake_config": {
+    "a": "ModelConfig"
+  },
+  "msgspec_field": {
+    "a": "field"
+  },
+  "shadow_dict": {
+    "a": "dict"
+  },
+  "shadow_json": {
+    "a": "json"
+  },
+  "shadow_copy": {
+    "a": "copy"
+  },
+  "shadow_schema": {
+    "a": "schema"
+  },
+  "shadow_validate": {
+    "a": "validate"
+  },
+  "shadow_model_fields": {
+    "a": "model_fields"
+  },
+  "unicode": {
+    "a": "café"
+  },
+  "snake_existing": {
+    "a": "B"
+  },
+  "namespace_warning": {
+    "a": "model_validate_custom"
+  },
+  "namespace_prefix": {
+    "a": "model_foo"
+  },
+  "namespace_scoped": {
+    "a": "model_config",
+    "AliasNames.a": "model_foo"
+  },
+  "namespace_choices": {
+    "a": [
+      "model_foo",
+      "alt"
+    ]
+  },
+  "scoped_empty_choices": {
+    "a": "value",
+    "AliasNames.a": []
+  },
+  "discriminator_invalid": {
+    "pet_type": "not-valid"
+  },
+  "discriminator_keyword": {
+    "pet_type": "class"
+  },
+  "discriminator_reserved": {
+    "pet_type": "model_config"
+  },
+  "discriminator_scoped_invalid": {
+    "ApiDog.pet_type": "not-valid",
+    "ApiCat.pet_type": "not-valid"
+  },
+  "reserved_legacy": {
+    "a": "model_fields"
+  },
+  "discriminator_modular_collision": {
+    "AliasNames.a": "K",
+    "pet_type": "K"
+  }
+}

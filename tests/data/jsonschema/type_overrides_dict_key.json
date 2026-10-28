@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Key": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "secondary"
+      ]
+    },
+    "ValueMap": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/definitions/Key"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "values": {
+      "$ref": "#/definitions/ValueMap"
+    }
+  }
+}

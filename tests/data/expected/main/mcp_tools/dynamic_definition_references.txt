@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "$defs": {
+    "DynamicInputValueSpaceName": {
+      "type": "string",
+      "title": "DynamicInputValueSpaceName"
+    },
+    "DynamicInputOuter": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#/$defs/DynamicInputValueSpaceName"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "DynamicInputOuter"
+    },
+    "DynamicInputAllowed": true,
+    "DynamicInput": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#/$defs/DynamicInputValueSpaceName"
+        },
+        "nested": {
+          "$ref": "#/$defs/DynamicInputOuter"
+        },
+        "allowed": {
+          "$dynamicRef": "#/$defs/DynamicInputAllowed"
+        }
+      },
+      "required": [
+        "value",
+        "nested"
+      ],
+      "title": "DynamicInput"
+    },
+    "DynamicOutputValueSpaceName": {
+      "type": "string",
+      "title": "DynamicOutputValueSpaceName"
+    },
+    "DynamicOutputOuter": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#/$defs/DynamicOutputValueSpaceName"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "DynamicOutputOuter"
+    },
+    "DynamicOutputAllowed": true,
+    "DynamicOutput": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#/$defs/DynamicOutputValueSpaceName"
+        },
+        "nested": {
+          "$ref": "#/$defs/DynamicOutputOuter"
+        },
+        "allowed": {
+          "$dynamicRef": "#/$defs/DynamicOutputAllowed"
+        }
+      },
+      "required": [
+        "value",
+        "nested"
+      ],
+      "title": "DynamicOutput"
+    }
+  }
+}

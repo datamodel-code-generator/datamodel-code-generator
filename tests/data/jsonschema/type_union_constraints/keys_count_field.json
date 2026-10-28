@@ -1,0 +1,28 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "before": {
+      "type": "boolean",
+      "default": true
+    },
+    "value": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "minProperties": 1
+    },
+    "after": {
+      "type": "integer",
+      "default": 7
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "definitions": {
+    "UserState": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "READY"
+      ],
+      "title": "UserState",
+      "description": "User enum retains its declaration order.",
+      "x-enum-varnames": [
+        "UNKNOWN",
+        "READY"
+      ]
+    },
+    "Payload": {
+      "type": "object",
+      "title": "Payload",
+      "properties": {
+        "syntax": {
+          "$ref": "#/definitions/google__protobuf__Syntax",
+          "description": "Referenced top-level standard enum."
+        },
+        "kind": {
+          "$ref": "#/definitions/google__protobuf__Field__Kind"
+        },
+        "descriptor_type": {
+          "$ref": "#/definitions/google__protobuf__FieldDescriptorProto__Type"
+        },
+        "state": {
+          "$ref": "#/definitions/UserState"
+        },
+        "syntaxes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__Syntax"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "google__protobuf__Syntax": {
+      "type": "string",
+      "enum": [
+        "SYNTAX_PROTO2",
+        "SYNTAX_PROTO3",
+        "SYNTAX_EDITIONS"
+      ],
+      "title": "Syntax",
+      "description": "The syntax in which a protocol buffer element is defined.",
+      "x-enum-varnames": [
+        "SYNTAX_PROTO2",
+        "SYNTAX_PROTO3",
+        "SYNTAX_EDITIONS"
+      ],
+      "x-enum-descriptions": [
+        "Syntax `proto2`.",
+        "Syntax `proto3`.",
+        "Syntax `editions`."
+      ]
+    },
+    "google__protobuf__Field__Kind": {
+      "type": "string",
+      "enum": [
+        "TYPE_UNKNOWN",
+        "TYPE_DOUBLE",
+        "TYPE_FLOAT",
+        "TYPE_INT64",
+        "TYPE_UINT64",
+        "TYPE_INT32",
+        "TYPE_FIXED64",
+        "TYPE_FIXED32",
+        "TYPE_BOOL",
+        "TYPE_STRING",
+        "TYPE_GROUP",
+        "TYPE_MESSAGE",
+        "TYPE_BYTES",
+        "TYPE_UINT32",
+        "TYPE_ENUM",
+        "TYPE_SFIXED32",
+        "TYPE_SFIXED64",
+        "TYPE_SINT32",
+        "TYPE_SINT64"
+      ],
+      "title": "Kind",
+      "description": "Basic field types.",
+      "x-enum-varnames": [
+        "TYPE_UNKNOWN",
+        "TYPE_DOUBLE",
+        "TYPE_FLOAT",
+        "TYPE_INT64",
+        "TYPE_UINT64",
+        "TYPE_INT32",
+        "TYPE_FIXED64",
+        "TYPE_FIXED32",
+        "TYPE_BOOL",
+        "TYPE_STRING",
+        "TYPE_GROUP",
+        "TYPE_MESSAGE",
+        "TYPE_BYTES",
+        "TYPE_UINT32",
+        "TYPE_ENUM",
+        "TYPE_SFIXED32",
+        "TYPE_SFIXED64",
+        "TYPE_SINT32",
+        "TYPE_SINT64"
+      ],
+      "x-enum-descriptions": [
+        "Field type unknown.",
+        "Field type double.",
+        "Field type float.",
+        "Field type int64.",
+        "Field type uint64.",
+        "Field type int32.",
+        "Field type fixed64.",
+        "Field type fixed32.",
+        "Field type bool.",
+        "Field type string.",
+        "Field type group. Proto2 syntax only, and deprecated.",
+        "Field type message.",
+        "Field type bytes.",
+        "Field type uint32.",
+        "Field type enum.",
+        "Field type sfixed32.",
+        "Field type sfixed64.",
+        "Field type sint32.",
+        "Field type sint64."
+      ]
+    },
+    "google__protobuf__FieldDescriptorProto__Type": {
+      "type": "string",
+      "enum": [
+        "TYPE_DOUBLE",
+        "TYPE_FLOAT",
+        "TYPE_INT64",
+        "TYPE_UINT64",
+        "TYPE_INT32",
+        "TYPE_FIXED64",
+        "TYPE_FIXED32",
+        "TYPE_BOOL",
+        "TYPE_STRING",
+        "TYPE_GROUP",
+        "TYPE_MESSAGE",
+        "TYPE_BYTES",
+        "TYPE_UINT32",
+        "TYPE_ENUM",
+        "TYPE_SFIXED32",
+        "TYPE_SFIXED64",
+        "TYPE_SINT32",
+        "TYPE_SINT64"
+      ],
+      "title": "Type",
+      "x-enum-varnames": [
+        "TYPE_DOUBLE",
+        "TYPE_FLOAT",
+        "TYPE_INT64",
+        "TYPE_UINT64",
+        "TYPE_INT32",
+        "TYPE_FIXED64",
+        "TYPE_FIXED32",
+        "TYPE_BOOL",
+        "TYPE_STRING",
+        "TYPE_GROUP",
+        "TYPE_MESSAGE",
+        "TYPE_BYTES",
+        "TYPE_UINT32",
+        "TYPE_ENUM",
+        "TYPE_SFIXED32",
+        "TYPE_SFIXED64",
+        "TYPE_SINT32",
+        "TYPE_SINT64"
+      ],
+      "x-enum-descriptions": [
+        "0 is reserved for errors.\nOrder is weird for historical reasons.",
+        "",
+        "Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if\nnegative values are likely.",
+        "",
+        "Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if\nnegative values are likely.",
+        "",
+        "",
+        "",
+        "",
+        "Tag-delimited aggregate.\nGroup type is deprecated and not supported after google.protobuf. However, Proto3\nimplementations should still be able to parse the group wire format and\ntreat group fields as unknown fields.  In Editions, the group wire format\ncan be enabled via the `message_encoding` feature.",
+        "Length-delimited aggregate.",
+        "New in version 2.",
+        "",
+        "",
+        "",
+        "",
+        "Uses ZigZag encoding.",
+        "Uses ZigZag encoding."
+      ]
+    }
+  }
+}

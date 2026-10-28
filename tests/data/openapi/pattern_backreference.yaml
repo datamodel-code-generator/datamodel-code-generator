@@ -1,0 +1,23 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Backreference patterns
+paths: {}
+components:
+  schemas:
+    Doubled:
+      type: string
+      pattern: '^(a)\1$'
+    Plain:
+      type: string
+      pattern: '^[a-z]+$'
+    Info:
+      type: object
+      properties:
+        pair:
+          type: string
+          pattern: '^(?P<letter>[a-z])(?P=letter)$'
+        doubled:
+          $ref: '#/components/schemas/Doubled'
+        plain:
+          $ref: '#/components/schemas/Plain'

@@ -1,0 +1,8 @@
+{
+  "dump": {
+    "first": 2,
+    "second": "default"
+  },
+  "rejects_invalid": true,
+  "root_model": false
+}

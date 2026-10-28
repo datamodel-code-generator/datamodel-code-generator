@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimpleFields",
+  "type": "object",
+  "required": ["identifier", "profile"],
+  "properties": {
+    "identifier": {"type": "integer"},
+    "display-name": {"type": "string"},
+    "active": {"type": "boolean", "default": true},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "profile": {"$ref": "#/$defs/Profile"},
+    "limited": {"type": "string", "minLength": 1},
+    "constant": {"type": "string", "const": "fixed"}
+  },
+  "$defs": {
+    "Profile": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "email": {"type": "string"},
+        "score": {"type": "number", "default": 0}
+      }
+    }
+  }
+}

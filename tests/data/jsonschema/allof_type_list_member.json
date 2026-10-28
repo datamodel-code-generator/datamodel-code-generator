@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "p": {"$ref": "#/$defs/S"},
+    "q": {"$ref": "#/$defs/Q"},
+    "r": {"$ref": "#/$defs/R"},
+    "s": {"$ref": "#/$defs/Same"},
+    "d": {"$ref": "#/$defs/Disjoint"},
+    "n": {"$ref": "#/$defs/NumberOrString"},
+    "m": {"$ref": "#/$defs/MixedMembers"},
+    "x": {"$ref": "#/$defs/SharedNumber"},
+    "e": {"$ref": "#/$defs/Enclosed"}
+  },
+  "$defs": {
+    "T": {"type": "string"},
+    "N": {"type": ["string", "null"]},
+    "S": {"allOf": [{"$ref": "#/$defs/T"}, {"type": ["string", "null"]}]},
+    "Q": {"allOf": [{"$ref": "#/$defs/N"}, {"type": "string"}]},
+    "R": {"allOf": [{"$ref": "#/$defs/N"}, {"type": ["null", "string", "integer"]}, {"type": ["string", "null"], "minLength": 2}]},
+    "Disjoint": {"allOf": [{"$ref": "#/$defs/T"}, {"type": ["integer", "null"]}]},
+    "NumberOrString": {"allOf": [{"$ref": "#/$defs/NumberString"}, {"type": ["integer", "string"]}]},
+    "NumberString": {"type": ["number", "string"]},
+    "MixedMembers": {"allOf": [{"$ref": "#/$defs/NumberNull"}, {"type": ["integer", "null"]}, {"type": ["number", "string"]}]},
+    "SharedNumber": {"allOf": [{"$ref": "#/$defs/NumberString"}, {"type": ["number", "boolean"]}]},
+    "Enclosed": {"type": "string", "allOf": [{"$ref": "#/$defs/NumberString"}, {"type": ["integer", "string"]}]},
+    "NumberNull": {"type": ["number", "null"]},
+    "Same": {"allOf": [{"$ref": "#/$defs/N"}, {"type": ["string", "null"], "maxLength": 5}]}
+  }
+}

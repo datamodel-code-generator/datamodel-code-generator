@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Variants that discriminated unions map to different tags
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Animal:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          feline: "#/components/schemas/Cat"
+          canine: "#/components/schemas/Dog"
+    Fish:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Reptile:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: reptile
+    Pond:
+      oneOf:
+        - $ref: "#/components/schemas/Fish"
+        - $ref: "#/components/schemas/Reptile"
+      discriminator:
+        propertyName: kind
+    Sea:
+      oneOf:
+        - $ref: "#/components/schemas/Fish"
+        - $ref: "#/components/schemas/Reptile"
+      discriminator:
+        propertyName: kind
+        mapping:
+          fin: "#/components/schemas/Fish"
+          scale: "#/components/schemas/Reptile"
+    Circle:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Square:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Figure:
+      oneOf:
+        - $ref: "#/components/schemas/Circle"
+        - $ref: "#/components/schemas/Square"
+      discriminator:
+        propertyName: shape
+        mapping:
+          circle: "#/components/schemas/Circle"
+          round: "#/components/schemas/Circle"
+          square: "#/components/schemas/Square"
+    Drawing:
+      oneOf:
+        - $ref: "#/components/schemas/Circle"
+        - $ref: "#/components/schemas/Square"
+      discriminator:
+        propertyName: shape
+        mapping:
+          disc: "#/components/schemas/Circle"
+          square: "#/components/schemas/Square"
+    Eel:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Shell:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: shell
+    Ocean:
+      oneOf:
+        - $ref: "#/components/schemas/Eel"
+        - $ref: "#/components/schemas/Shell"
+      discriminator:
+        propertyName: kind
+        mapping:
+          swim: "#/components/schemas/Eel"
+          shell: "#/components/schemas/Shell"
+    Lake:
+      oneOf:
+        - $ref: "#/components/schemas/Eel"
+        - $ref: "#/components/schemas/Shell"
+      discriminator:
+        propertyName: kind
+    Ring:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Star:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Badge:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          ring: "#/components/schemas/Ring"
+          hoop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"
+    Emblem:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          band: "#/components/schemas/Ring"
+          loop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"
+    Seal:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          ring: "#/components/schemas/Ring"
+          hoop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"

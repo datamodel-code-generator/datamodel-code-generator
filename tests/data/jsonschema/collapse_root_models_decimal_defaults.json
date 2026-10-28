@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Invoice",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "$ref": "#/$defs/Amount"
+    },
+    "bounded": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "amount"
+  ],
+  "$defs": {
+    "Amount": {
+      "type": "number",
+      "format": "decimal",
+      "default": "1.23"
+    }
+  }
+}

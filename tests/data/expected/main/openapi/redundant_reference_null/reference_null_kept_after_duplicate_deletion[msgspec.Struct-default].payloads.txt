@@ -1,0 +1,4 @@
+valid: accepted
+parsed: Model2(item=None)
+invalid kind: rejected
+invalid item: rejected

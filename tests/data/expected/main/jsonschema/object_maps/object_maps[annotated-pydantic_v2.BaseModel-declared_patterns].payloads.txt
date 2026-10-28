@@ -1,0 +1,18 @@
+valid: accepted
+invalid ab: accepted
+invalid pDeclared: accepted
+invalid rDeclared: accepted
+invalid iDeclared: accepted
+invalid mDeclared: accepted
+invalid pAny: accepted
+invalid rAny: accepted
+invalid iAny: accepted
+invalid mAny: accepted
+invalid pImplied: rejected (greater_than_equal)
+invalid rImplied: rejected (greater_than_equal)
+invalid pItems: rejected (greater_than_equal)
+invalid rItems: rejected (greater_than_equal)
+invalid pConst: rejected (literal_error)
+invalid rConst: rejected (literal_error)
+invalid pRef: rejected (greater_than_equal)
+invalid rRef: rejected (greater_than_equal)

@@ -1,0 +1,17 @@
+{
+  "title": "Root",
+  "type": "object",
+  "maxProperties": 0,
+  "properties": {
+    "x": {
+      "type": "integer"
+    }
+  },
+  "patternProperties": {
+    "^x": {
+      "type": "integer",
+      "minimum": 2
+    }
+  },
+  "additionalProperties": false
+}

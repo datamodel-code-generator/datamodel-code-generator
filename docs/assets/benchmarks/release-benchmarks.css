@@ -1,0 +1,146 @@
+.release-benchmark-app {
+  display: block;
+}
+
+.release-benchmark-app__status {
+  color: var(--md-default-fg-color--light, #6b7280);
+}
+
+.release-benchmark-chart-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.release-benchmark-chart {
+  display: block;
+  position: relative;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--md-default-fg-color--lightest, #e5e7eb);
+  border-radius: 0.5rem;
+  background: var(--md-code-bg-color, #ffffff);
+}
+
+.release-benchmark-chart canvas {
+  display: block;
+  width: 100%;
+  height: 420px;
+}
+
+.release-benchmark-chart__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.release-benchmark-chart__controls-label {
+  color: var(--md-default-fg-color--light, #6b7280);
+  font-weight: 700;
+}
+
+.release-benchmark-chart__range-button {
+  min-height: 1.85rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--md-default-fg-color--lightest, #d1d5db);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--md-default-fg-color, #111827);
+  cursor: pointer;
+  font: inherit;
+}
+
+.release-benchmark-chart__range-button[aria-pressed="true"] {
+  border-color: var(--md-accent-fg-color, #0288d1);
+  background: var(--md-accent-fg-color, #0288d1);
+  color: var(--md-primary-bg-color, #ffffff);
+}
+
+.release-benchmark-chart__range-button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color, #0288d1);
+  outline-offset: 2px;
+}
+
+.release-benchmark-chart__range-info,
+.release-benchmark-chart__main-snapshot {
+  display: block;
+  color: var(--md-default-fg-color--light, #6b7280);
+  font-size: 0.72rem;
+}
+
+.release-benchmark-chart__main-snapshot {
+  margin-top: 0.15rem;
+}
+
+.release-benchmark-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+}
+
+.release-benchmark-chart__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.release-benchmark-chart__legend-label {
+  color: var(--md-default-fg-color--light, #6b7280);
+  font-weight: 700;
+}
+
+.release-benchmark-chart__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+}
+
+.release-benchmark-chart__status {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--md-default-fg-color--light, #6b7280);
+  font-size: 0.72rem;
+}
+
+.release-benchmark-chart__status[hidden] {
+  display: none;
+}
+
+.release-benchmark-chart__tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(18rem, calc(100% - 2rem));
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.3rem;
+  background: var(--md-default-bg-color, #ffffff);
+  box-shadow: 0 0.25rem 0.9rem rgb(15 23 42 / 18%);
+  color: var(--md-default-fg-color, #111827);
+  font-size: 0.72rem;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.6rem));
+  white-space: normal;
+}
+
+.release-benchmark-version-note {
+  color: var(--md-accent-fg-color, #dc2626);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
+@media screen and (max-width: 42rem) {
+  .release-benchmark-chart {
+    padding: 0.75rem;
+  }
+
+  .release-benchmark-chart canvas {
+    height: 320px;
+  }
+
+  .release-benchmark-chart__controls {
+    gap: 0.3rem;
+  }
+}

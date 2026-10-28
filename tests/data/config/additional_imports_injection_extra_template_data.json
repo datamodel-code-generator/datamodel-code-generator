@@ -1,0 +1,5 @@
+{
+  "Person": {
+    "additional_imports": ["collections.deque\nINJECTION_MARKER = 1"]
+  }
+}

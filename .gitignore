@@ -1,6 +1,7 @@
 .tox/
 .*_cache
 __pycache__
+src/datamodel_code_generator/_version.py
 coverage.xml
 .coverage
 .idea/

@@ -1,0 +1,66 @@
+{
+  "valid": {
+    "mode": "a",
+    "value": "ok",
+    "pattern": {
+      "mode": "a"
+    },
+    "additional": {
+      "marker": 1,
+      "extra": 2
+    },
+    "closed": {},
+    "unevaluated": {
+      "marker": 1
+    }
+  },
+  "invalid": {
+    "mode": "a"
+  },
+  "sibling_cases": [
+    {
+      "payload": {
+        "mode": "a",
+        "value": "ok",
+        "pattern": {
+          "item_bad": "bad"
+        }
+      },
+      "valid": false,
+      "error_type": "int_parsing"
+    },
+    {
+      "payload": {
+        "mode": "a",
+        "value": "ok",
+        "additional": {
+          "extra": "bad"
+        }
+      },
+      "valid": false,
+      "error_type": "int_parsing"
+    },
+    {
+      "payload": {
+        "mode": "a",
+        "value": "ok",
+        "closed": {
+          "extra": 1
+        }
+      },
+      "valid": false,
+      "error_type": "value_error"
+    },
+    {
+      "payload": {
+        "mode": "a",
+        "value": "ok",
+        "unevaluated": {
+          "extra": 1
+        }
+      },
+      "valid": false,
+      "error_type": "value_error"
+    }
+  ]
+}

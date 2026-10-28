@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NumericConstraints",
+  "type": "object",
+  "properties": {
+    "integer_greater": {
+      "type": "integer",
+      "exclusiveMinimum": 1
+    },
+    "integer_less": {
+      "type": "integer",
+      "exclusiveMaximum": 5
+    },
+    "integer_multiple": {
+      "type": "integer",
+      "multipleOf": 2
+    },
+    "number_greater": {
+      "type": "number",
+      "exclusiveMinimum": 1
+    },
+    "number_less": {
+      "type": "number",
+      "exclusiveMaximum": 5
+    },
+    "number_multiple": {
+      "type": "number",
+      "multipleOf": 2
+    },
+    "fractional_multiple": {
+      "type": "number",
+      "multipleOf": 0.125
+    },
+    "fractional_bound": {
+      "type": "integer",
+      "exclusiveMinimum": 1.5
+    },
+    "integral_float": {
+      "type": "number",
+      "exclusiveMaximum": 3.0
+    },
+    "exact_large_integer": {
+      "type": "integer",
+      "exclusiveMinimum": 18014398509481984
+    },
+    "negative_exact": {
+      "type": "integer",
+      "exclusiveMaximum": -18014398509481984
+    },
+    "ordered_data": {
+      "type": "integer",
+      "default": 7,
+      "examples": [
+        9,
+        7,
+        8
+      ],
+      "multipleOf": 1
+    }
+  },
+  "required": [
+    "integer_greater",
+    "integer_less",
+    "integer_multiple",
+    "number_greater",
+    "number_less",
+    "number_multiple",
+    "fractional_multiple",
+    "fractional_bound",
+    "integral_float",
+    "exact_large_integer",
+    "negative_exact"
+  ]
+}

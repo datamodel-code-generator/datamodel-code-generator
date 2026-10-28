@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+strict-refs = true
+disable-timestamp = true
+formatters = ["builtin"]

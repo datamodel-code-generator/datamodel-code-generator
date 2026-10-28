@@ -1,0 +1,3 @@
+msgspec cannot decode the union Pair: its Struct types A, B are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.nested: its Struct types A, B, C are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.beside_alias: its Struct types A, B are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

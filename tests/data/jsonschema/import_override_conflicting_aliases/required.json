@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "first": {
+      "$ref": "referenced_a.json"
+    },
+    "second": {
+      "$ref": "referenced_b.json"
+    }
+  },
+  "required": [
+    "first",
+    "second"
+  ]
+}

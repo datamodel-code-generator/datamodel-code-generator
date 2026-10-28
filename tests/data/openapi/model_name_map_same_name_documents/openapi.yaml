@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Same name in three documents
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        first:
+          $ref: 'first.yaml#/components/schemas/Pet'
+        second:
+          $ref: 'second.yaml#/components/schemas/Pet'
+        third:
+          $ref: 'third.yaml#/components/schemas/Pet'

@@ -1,0 +1,9 @@
+{
+  "syntax": "SYNTAX_PROTO3",
+  "kind": "TYPE_STRING",
+  "descriptor_type": "TYPE_INT32",
+  "state": "READY",
+  "syntaxes": [
+    "SYNTAX_PROTO2"
+  ]
+}

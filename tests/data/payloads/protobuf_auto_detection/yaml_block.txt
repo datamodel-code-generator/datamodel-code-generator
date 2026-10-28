@@ -1,0 +1,9 @@
+example: |
+  syntax = "proto3";
+  // note: value
+  message M { string value = 1; }
+title: Model
+type: object
+properties:
+  value:
+    type: string

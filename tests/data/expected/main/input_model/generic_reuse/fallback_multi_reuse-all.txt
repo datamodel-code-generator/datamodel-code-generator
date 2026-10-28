@@ -1,0 +1,171 @@
+[
+  {
+    "name": "MixedFutureRoot",
+    "fields": [
+      "mixed"
+    ],
+    "annotations_equal": {
+      "mixed": true
+    },
+    "type_identity": {
+      "mixed": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "mixed": {
+            "fallback": {
+              "first": 4,
+              "second": {
+                "count": 1
+              }
+            },
+            "defaulted": {
+              "value": 4,
+              "label": "kept"
+            },
+            "ordinary": {
+              "value": 1
+            },
+            "qualified": {
+              "value": 1
+            },
+            "alias": {
+              "value": 4
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "mixed",
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "mixed": {
+            "fallback": {
+              "first": 4,
+              "second": {
+                "count": 1
+              }
+            },
+            "defaulted": {
+              "value": 4,
+              "label": "kept"
+            },
+            "ordinary": {
+              "value": 1
+            },
+            "qualified": {
+              "value": 1
+            },
+            "alias": {
+              "value": 4
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "mixed",
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "mixed": true
+    }
+  },
+  {
+    "name": "RepeatedRoot",
+    "fields": [
+      "first",
+      "second",
+      "strings",
+      "items"
+    ],
+    "annotations_equal": {
+      "first": true,
+      "second": true,
+      "strings": true,
+      "items": true
+    },
+    "type_identity": {
+      "first": true,
+      "second": true,
+      "strings": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "first": true,
+      "second": true,
+      "strings": true,
+      "items": true
+    }
+  }
+]

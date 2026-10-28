@@ -8,8 +8,9 @@ See: _should_skip_exec() in conftest.py for the skip logic that these tests bypa
 
 from __future__ import annotations
 
+import shutil
 import sys
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
@@ -25,9 +26,6 @@ from .conftest import (
     get_current_version_args,
     run_main_and_assert,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 _CURRENT_PY_VERSION = PythonVersion(CURRENT_PYTHON_VERSION)
 _SKIP_BLACK = pytest.mark.skipif(
@@ -62,6 +60,11 @@ class _FakeInterpreters:
         return interpreter
 
 
+@pytest.fixture(autouse=True)
+def _reset_subinterpreter_unsupported(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main_conftest, "_SUBINTERPRETER_UNSUPPORTED", [])
+
+
 @_SKIP_BLACK
 def test_openapi_api_exec_current_version(output_file: Path) -> None:
     """Test that api.yaml schema generates executable code on current Python."""
@@ -72,6 +75,38 @@ def test_openapi_api_exec_current_version(output_file: Path) -> None:
         skip_code_validation=False,
         force_exec_validation=True,
     )
+
+
+@_SKIP_BLACK
+def test_openapi_modular_relative_output_exec_current_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that a relative package output is imported from the working directory of each run."""
+    for name in ("first", "second"):
+        (tmp_path / name).mkdir()
+        monkeypatch.chdir(tmp_path / name)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "modular.yaml",
+            output_path=Path("model"),
+            extra_args=get_current_version_args("--output-model-type", "pydantic_v2.BaseModel"),
+            skip_code_validation=False,
+        )
+        shutil.rmtree("model")
+
+
+@_SKIP_BLACK
+def test_jsonschema_nested_packages_exec_current_version(tmp_path: Path) -> None:
+    """Test that the nested packages of each output are imported from that output."""
+    for name in ("exact_imports_collapse_root_models_title", "exact_imports_collapse_root_models"):
+        (tmp_path / name).mkdir()
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / name,
+            output_path=tmp_path / name / "model",
+            input_file_type="jsonschema",
+            extra_args=get_current_version_args(
+                *("--output-model-type", "pydantic_v2.BaseModel", "--use-exact-imports", "--collapse-root-models"),
+                *("--use-title-as-name", "--snake-case-field"),
+            ),
+            skip_code_validation=False,
+        )
 
 
 @_SKIP_BLACK
@@ -151,6 +186,25 @@ def test_validate_output_files_imports_generated_file(tmp_path: Path, monkeypatc
 
 
 @pytest.mark.allow_direct_assert
+def test_validate_output_files_uses_successful_subinterpreter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test generated single-file outputs skip normal import after subinterpreter validation."""
+    sentinel = tmp_path / "sentinel.txt"
+    output_file = tmp_path / "output.py"
+    output_file.write_text(
+        f"from pathlib import Path\nPath({str(sentinel)!r}).write_text('imported', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    fake_interpreters = _FakeInterpreters()
+    monkeypatch.setattr(main_conftest, "_get_concurrent_interpreters_module", lambda: fake_interpreters)
+
+    _validate_output_files(output_file, get_current_version_args(), force_exec_validation=True)
+
+    assert not sentinel.exists()
+    assert output_file.name in fake_interpreters.instances[0].executed_code
+    assert fake_interpreters.instances[0].closed
+
+
+@pytest.mark.allow_direct_assert
 def test_validate_output_files_imports_generated_package_modules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -194,6 +248,22 @@ def test_try_import_generated_output_falls_back_for_unsupported_subinterpreter_e
     monkeypatch.setattr(main_conftest, "_get_concurrent_interpreters_module", lambda: fake_interpreters)
 
     assert not _try_import_generated_output_in_subinterpreter(output_file)
+    assert fake_interpreters.instances[0].closed
+
+
+@pytest.mark.allow_direct_assert
+def test_try_import_generated_output_caches_unsupported_subinterpreter_extension(
+    output_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test subinterpreter-incompatible extensions are detected once per worker."""
+    fake_interpreters = _FakeInterpreters(
+        RuntimeError("ImportError: module _pydantic_core does not support loading in subinterpreter")
+    )
+    monkeypatch.setattr(main_conftest, "_get_concurrent_interpreters_module", lambda: fake_interpreters)
+
+    assert not _try_import_generated_output_in_subinterpreter(output_file)
+    assert not _try_import_generated_output_in_subinterpreter(output_file)
+    assert len(fake_interpreters.instances) == 1
     assert fake_interpreters.instances[0].closed
 
 

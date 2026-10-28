@@ -1,0 +1,9 @@
+{
+  "title": "WatchedChild",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  }
+}

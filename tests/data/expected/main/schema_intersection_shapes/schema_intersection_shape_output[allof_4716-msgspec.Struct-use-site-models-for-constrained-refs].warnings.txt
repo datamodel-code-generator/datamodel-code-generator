@@ -1,0 +1,1 @@
+msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Measurement.pp is generated without these constraints.

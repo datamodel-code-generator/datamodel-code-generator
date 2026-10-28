@@ -1,0 +1,3 @@
+# fields-cycle
+render pydantic_v2.BaseModel
+  Error: Generated model inheritance cycle: Base (fields-cycle.yaml#/components/schemas/Base) -> Thing (fields-cycle.yaml#/components/schemas/Thing) -> Base (fields-cycle.yaml#/components/schemas/Base)

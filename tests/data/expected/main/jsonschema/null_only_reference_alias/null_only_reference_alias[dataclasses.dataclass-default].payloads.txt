@@ -1,0 +1,23 @@
+{}: schema rejects, model rejects
+{"plain": null}: schema accepts, model accepts
+{"plain": "x"}: schema rejects, model rejects
+{"plain": null, "value": null}: schema accepts, model accepts
+{"plain": null, "value": 1}: schema rejects, model rejects
+{"plain": null, "items": [null, null]}: schema accepts, model accepts
+{"plain": null, "items": [1]}: schema rejects, model rejects
+{"plain": null, "mapped": {"a": null}}: schema accepts, model accepts
+{"plain": null, "mapped": {"a": 1}}: schema rejects, model rejects
+{"plain": null, "mixed": null}: schema accepts, model accepts
+{"plain": null, "mixed": "x"}: schema accepts, model accepts
+{"plain": null, "mixed": 1}: schema rejects, model rejects
+{"plain": null, "both": null}: schema accepts, model accepts
+{"plain": null, "both": "x"}: schema rejects, model rejects
+{"plain": null, "chained": null}: schema accepts, model accepts
+{"plain": null, "chained": "x"}: schema rejects, model rejects
+{"plain": null, "maybe": "x"}: schema accepts, model accepts
+{"plain": null, "maybe": null}: schema accepts, model accepts
+{"plain": null, "maybe": 1}: schema rejects, model rejects
+{"plain": null, "pair": null}: schema accepts, model accepts
+{"plain": null, "pair": [null, null]}: schema accepts, model accepts
+{"plain": null, "pair": [null]}: schema rejects, model rejects
+{"plain": null, "pair": [null, 1]}: schema rejects, model rejects

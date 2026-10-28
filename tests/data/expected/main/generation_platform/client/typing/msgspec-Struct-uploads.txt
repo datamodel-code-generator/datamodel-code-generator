@@ -1,0 +1,43 @@
+mypy pets and uploads.py: clean
+pyright pets and uploads.py: clean
+ty pets and uploads.py: clean
+uploads_negative.py 12 marked lines
+mypy uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
+  20 assignment
+  21 arg-type
+  22 arg-type
+  23 arg-type
+  24 call-arg
+  25 arg-type
+  26 call-arg
+  27 assignment
+  28 assignment
+  29 arg-type
+  30 call-arg
+  31 misc
+pyright uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
+  20 reportAssignmentType
+  21 reportArgumentType
+  22 reportArgumentType
+  23 reportArgumentType
+  24 reportCallIssue
+  25 reportArgumentType
+  26 reportCallIssue
+  27 reportAssignmentType
+  28 reportAssignmentType
+  29 reportArgumentType
+  30 reportCallIssue
+  31 reportAttributeAccessIssue
+ty uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
+  20 invalid-assignment
+  21 invalid-argument-type
+  22 invalid-argument-type
+  23 invalid-argument-type
+  24 missing-argument
+  25 invalid-argument-type
+  26 unknown-argument
+  27 invalid-assignment
+  28 invalid-assignment
+  29 invalid-argument-type
+  30 too-many-positional-arguments
+  31 invalid-assignment

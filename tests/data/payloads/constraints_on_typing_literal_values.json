@@ -1,0 +1,14 @@
+{
+  "valid": {
+    "floats_on_string": 2.5,
+    "numbers_on_string": 2.5,
+    "booleans_on_string": true,
+    "boolean_on_string": true
+  },
+  "invalid": {
+    "floats_on_string": 1.5,
+    "numbers_on_string": 1,
+    "booleans_on_string": false,
+    "boolean_on_string": true
+  }
+}

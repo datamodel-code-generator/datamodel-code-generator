@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inherited",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "required": [
+        "Bar"
+      ]
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "base": {
+      "type": "object",
+      "properties": {
+        "Bar": {
+          "$ref": "#/$defs/Bar"
+        }
+      }
+    }
+  }
+}

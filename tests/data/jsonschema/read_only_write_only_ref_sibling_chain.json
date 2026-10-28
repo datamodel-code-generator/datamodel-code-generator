@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/D0",
+  "$defs": {
+    "D0": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/D1",
+          "required": [
+            "v"
+          ],
+          "description": "link 0"
+        }
+      }
+    },
+    "D1": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/D2",
+          "required": [
+            "v"
+          ],
+          "description": "link 1"
+        }
+      }
+    },
+    "D2": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: paths)
+  components                       0, 1 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 1 (1 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   1
+
+Start from  --preset standard-py314-20261017
+
+Add (1 option)
+  --openapi-as-definitions paths-bodies ref-components   [openapi.paths-bodies-as-definitions]
+      Request or response bodies of the paths or webhooks scope are object schemas that generation
+      types inline or models differently from their schema definitions (2), such as a type array
+      [object, null] or a type: object map of patternProperties or propertyNames. With them modeled
+      as definitions, each body gets that model, and a document whose only bodies are such schemas
+      generates models instead of failing with 'Models not found in the input data'. The same
+      principle gives a component written as a $ref to a recursive schema with sibling keywords the
+      root model a definitions entry of that schema gets, as the 20261027 presets do.
+      measured: OpenAPI request body {type: [object, null], additionalProperties: {...}} under
+      --openapi-scopes paths: 'Models not found in the input data' without the option, a
+      PetsPostRequest root model of dict[str, ...] | None with it
+      measured: OpenAPI response body of the same shape: 'Models not found in the input data'
+      without the option, a PetsGetResponse root model with it
+      measured: nullable_map_value_types.yaml test input: the POST /scores request body [object,
+      null] gains ScoresPostRequest; every other model is unchanged
+
+Optional (validation; not in the command)
+  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]
+      The models leave out checks the schema declares (uniqueItems: 0; patternProperties that a
+      typed map cannot express, beside declared properties, with several patterns, or with other
+      keys allowed: 1 of 1): duplicate items pass, and those properties are checked wrongly or not
+      at all. The experimental schema validators check both when a model validates.
+      caveat: Experimental: on some schemas the generated validators reject valid data or fail to
+      import; validate sample data with the generated models before adopting it.
+      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked
+      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with
+      x- extension keys rejected), 0 with the validators
+      measured: Six patternProperties shapes a typed map cannot express (other keys allowed, several
+      patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0
+      with the validators; one pattern on a closed object without declared properties is exact
+      without them
+
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 1 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
+Your configuration
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261027
+
+Command
+  datamodel-codegen --input paths_bodies_object_map.yaml --openapi-as-definitions paths-bodies ref-components --openapi-scopes paths --preset standard-py314-20261017
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "paths_bodies_object_map.yaml"
+  openapi-as-definitions = ["paths-bodies", "ref-components"]
+  openapi-scopes = ["paths"]
+  preset = "standard-py314-20261017"

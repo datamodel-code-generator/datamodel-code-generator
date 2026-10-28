@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info: {title: Legacy wire plan, version: "1"}
+paths:
+  /items:
+    get:
+      parameters:
+        - {name: limit, in: query, required: true, schema: {type: integer, minimum: 1, exclusiveMinimum: true, maximum: 100, exclusiveMaximum: false}}
+        - {name: q, in: query, allowReserved: true, schema: {type: string, nullable: true}}
+        - {name: flags, in: query, style: spaceDelimited, explode: false, schema: {type: array, items: {type: boolean}}}
+        - {name: page, in: query, style: form, explode: false, schema: {type: object, properties: {size: {type: integer}}, additionalProperties: {type: string}}}
+        - {name: X-Id, in: header, required: true, schema: {type: array, items: {type: integer}}}
+        - {name: pref, in: cookie, schema: {type: object, properties: {theme: {type: string}}}}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Item"}
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id: {type: integer, minimum: 0, exclusiveMinimum: true}
+        name: {type: string, nullable: true, x-extra: {keep: me}}
+        tag: {$ref: "#/components/schemas/Tag"}
+        other:
+          $ref: "#/components/schemas/Tag"
+          nullable: true
+        score: {type: number, maximum: 10, exclusiveMaximum: true}
+        choice: {type: string, nullable: true, enum: [a, b]}
+        untyped: {nullable: true}
+        lonely: {exclusiveMinimum: true}
+    Tag:
+      type: string
+      minLength: 1

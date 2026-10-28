@@ -1,0 +1,9 @@
+{% extends class_name ~ ".layout.jinja2" %}
+{% block fields -%}
+{% import "macros.jinja2" as helpers -%}
+{{ helpers.marker() }}
+{% from "shared.jinja2" import shared -%}
+{{ shared() }}
+{% include [class_name ~ ".preferred.jinja2", "body.jinja2"] %}
+{% include "optional.jinja2" ignore missing %}
+{% endblock %}

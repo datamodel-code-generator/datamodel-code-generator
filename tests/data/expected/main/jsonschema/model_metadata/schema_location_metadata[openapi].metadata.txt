@@ -1,0 +1,437 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Owner",
+      "name": "Owner",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Pet/properties/owner",
+      "source_path": [
+        "components",
+        "schemas",
+        "Pet",
+        "properties",
+        "owner"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Pet",
+      "name": "Pet",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Pet",
+      "source_path": [
+        "components",
+        "schemas",
+        "Pet"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "secret",
+          "alias": "secret",
+          "original_name": "secret",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "owner",
+          "alias": "owner",
+          "original_name": "owner",
+          "type": "Owner | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PetRequest",
+      "name": "PetRequest",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/PetRequest",
+      "source_path": [
+        "components",
+        "schemas",
+        "PetRequest"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "note",
+          "alias": "note",
+          "original_name": "note",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "FooBar",
+      "name": "FooBar",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Foo~1Bar",
+      "source_path": [
+        "components",
+        "schemas",
+        "Foo/Bar"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "fb",
+          "alias": "fb",
+          "original_name": "fb",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "TildeName",
+      "name": "TildeName",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Tilde~0Name",
+      "source_path": [
+        "components",
+        "schemas",
+        "Tilde~Name"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "t",
+          "alias": "t",
+          "original_name": "t",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "AnyValue",
+      "name": "AnyValue",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/AnyValue",
+      "source_path": [
+        "components",
+        "schemas",
+        "AnyValue"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Filter",
+      "name": "Filter",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1pets~1{id}/get/parameters/0/schema",
+      "source_path": [
+        "paths",
+        "/pets/{id}",
+        "get",
+        "parameters",
+        "0",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "f",
+          "alias": "f",
+          "original_name": "f",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PetsIdGetParametersQuery",
+      "name": "PetsIdGetParametersQuery",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1pets~1{id}/get",
+      "source_path": [
+        "paths",
+        "/pets/{id}",
+        "get"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "filter",
+          "alias": "filter",
+          "original_name": "filter",
+          "type": "Filter | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PetsIdGetResponse",
+      "name": "PetsIdGetResponse",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "paths",
+        "/pets/{id}",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PetsIdGetResponse1",
+      "name": "PetsIdGetResponse1",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/responses/NotFound/content/application~1json/schema",
+      "source_path": [
+        "components",
+        "responses",
+        "NotFound",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "msg",
+          "alias": "msg",
+          "original_name": "msg",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PetsIdPostRequest",
+      "name": "PetsIdPostRequest",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/requestBodies/PetBody/content/application~1json/schema",
+      "source_path": [
+        "components",
+        "requestBodies",
+        "PetBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "rb",
+          "alias": "rb",
+          "original_name": "rb",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Q",
+      "name": "Q",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/pathItems/Owners/get/parameters/0/schema",
+      "source_path": [
+        "components",
+        "pathItems",
+        "Owners",
+        "get",
+        "parameters",
+        "0",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "OwnersGetParametersQuery",
+      "name": "OwnersGetParametersQuery",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/pathItems/Owners/get",
+      "source_path": [
+        "components",
+        "pathItems",
+        "Owners",
+        "get"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "q",
+          "alias": "q",
+          "original_name": "q",
+          "type": "Q | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "OwnersGetResponse",
+      "name": "OwnersGetResponse",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/pathItems/Owners/get/responses/200/content/application~1json/schema",
+      "source_path": [
+        "components",
+        "pathItems",
+        "Owners",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "owner",
+          "alias": "owner",
+          "original_name": "owner",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "StreamsGetParametersQuery",
+      "name": "StreamsGetParametersQuery",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1streams/get",
+      "source_path": [
+        "paths",
+        "/streams",
+        "get"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "limit",
+          "alias": "limit",
+          "original_name": "limit",
+          "type": "int | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "StreamsGetResponseItem",
+      "name": "StreamsGetResponseItem",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1streams/get/responses/200/content/application~1jsonl/itemSchema",
+      "source_path": [
+        "paths",
+        "/streams",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/jsonl",
+        "itemSchema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "event",
+          "alias": "event",
+          "original_name": "event",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "StreamsGetResponse",
+      "name": "StreamsGetResponse",
+      "module": "",
+      "source_ref": "schema_location.yaml#/paths/~1streams/get/responses/200/content/application~1jsonl",
+      "source_path": [
+        "paths",
+        "/streams",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/jsonl"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "list[StreamsGetResponseItem]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "NewPetPostRequest",
+      "name": "NewPetPostRequest",
+      "module": "",
+      "source_ref": "schema_location.yaml#/webhooks/newPet/post/requestBody/content/application~1json/schema",
+      "source_path": [
+        "webhooks",
+        "newPet",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "w",
+          "alias": "w",
+          "original_name": "w",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

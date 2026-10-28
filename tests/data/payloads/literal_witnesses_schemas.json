@@ -1,0 +1,39 @@
+{
+  "unicode": {
+    "title": "Root",
+    "allOf": [
+      {
+        "$ref": "#/definitions/Base"
+      },
+      {
+        "type": "string",
+        "pattern": "犬"
+      }
+    ],
+    "definitions": {
+      "Base": {
+        "type": "string",
+        "pattern": "猫"
+      }
+    }
+  },
+  "pattern_without_literal": {
+    "type": "string",
+    "pattern": "^[a-z]{2}$"
+  },
+  "nested_literal": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "pattern": "猫"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "plain": {
+    "type": "integer"
+  }
+}

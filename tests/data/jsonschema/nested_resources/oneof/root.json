@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "chosen": {
+      "oneOf": [
+        {
+          "$id": "choice.json",
+          "type": "object",
+          "properties": {
+            "left": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "left"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "right": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "right"
+          ]
+        }
+      ]
+    },
+    "again": {
+      "$ref": "choice.json"
+    }
+  },
+  "required": [
+    "chosen",
+    "again"
+  ]
+}

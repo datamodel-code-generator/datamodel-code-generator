@@ -1,0 +1,46 @@
+# copied-field-origins
+render pydantic_v2.BaseModel all
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all
+render pydantic_v2.BaseModel constraints
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all
+render pydantic_v2.BaseModel none
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all
+render pydantic_v2.dataclass all
+  models.py
+  model_bindings.py pydantic_v2_dataclass/all
+render pydantic_v2.dataclass constraints
+  models.py
+  model_bindings.py pydantic_v2_dataclass/all
+render pydantic_v2.dataclass none
+  models.py
+  model_bindings.py pydantic_v2_dataclass/all
+render dataclasses.dataclass all
+  models.py
+  model_bindings.py dataclasses_dataclass/all
+render dataclasses.dataclass constraints
+  models.py
+  model_bindings.py dataclasses_dataclass/all
+render dataclasses.dataclass none
+  models.py
+  model_bindings.py dataclasses_dataclass/all
+render typing.TypedDict all
+  models.py
+  model_bindings.py typing_TypedDict/all
+render typing.TypedDict constraints
+  models.py
+  model_bindings.py typing_TypedDict/all
+render typing.TypedDict none
+  models.py
+  model_bindings.py typing_TypedDict/all
+render msgspec.Struct all
+  models.py
+  model_bindings.py msgspec_Struct/all
+render msgspec.Struct constraints
+  models.py
+  model_bindings.py msgspec_Struct/all
+render msgspec.Struct none
+  models.py
+  model_bindings.py msgspec_Struct/all

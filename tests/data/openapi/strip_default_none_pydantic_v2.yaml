@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: strip default none regression
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Issue1816Model:
+      type: object
+      properties:
+        metadataOnly:
+          type: string
+          description: Optional field with metadata only.
+        nullableMetadata:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Nullable field with metadata.
+        explicitDefault:
+          type: string
+          description: Optional field with a non-None default.
+          default: active
+        stringNoneDefault:
+          type: string
+          description: Optional field with a string None default.
+          default: "None"
+        plainOptional:
+          type: string

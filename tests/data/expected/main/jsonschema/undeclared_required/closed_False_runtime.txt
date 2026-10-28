@@ -1,0 +1,47 @@
+[
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": {
+      "x": 2
+    },
+    "identity": "Root",
+    "json": {
+      "x": 2
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  }
+]

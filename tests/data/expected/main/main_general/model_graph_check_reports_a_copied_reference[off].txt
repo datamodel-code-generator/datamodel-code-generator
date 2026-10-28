@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class Top(BaseModel):
+    child: Child = Field(..., description='d')
+    name: str
+
+
+class Child(BaseModel):
+    parent: Optional[Top] = None

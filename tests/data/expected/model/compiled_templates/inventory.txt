@@ -1,0 +1,38 @@
+template count: 23
+Enum.jinja2
+PydanticV2TypeAlias.jinja2
+ScalarTypeAliasAnnotation.jinja2
+ScalarTypeAliasType.jinja2
+ScalarTypeStatement.jinja2
+TypeAliasAnnotation.jinja2
+TypeAliasType.jinja2
+TypeStatement.jinja2
+TypedDict.jinja2
+TypedDictClass.jinja2
+TypedDictFunction.jinja2
+UnionTypeAliasAnnotation.jinja2
+UnionTypeAliasType.jinja2
+UnionTypeStatement.jinja2
+dataclass.jinja2
+msgspec.jinja2
+pydantic_v2/BaseModel.jinja2
+pydantic_v2/ConfigDict.jinja2
+pydantic_v2/RootModel.jinja2
+pydantic_v2/RootModelTypeAlias.jinja2
+pydantic_v2/dataclass.jinja2
+pydantic_v2/schema_runtime_validation.jinja2
+pydantic_v2/schema_runtime_validation_helpers.jinja2
+
+nodes: And, Assign, Call, Compare, Concat, Const, Dict, Filter, FilterBlock, For, Getattr, Getitem, If, Include, Keyword, List, Macro, NSRef, Name, Not, Operand, Or, Output, Template, TemplateData, Test, Tuple
+filters: default, indent, join, length, list, pprint, replace, repr, selectattr
+tests: defined, equalto, false, none
+globals: namespace
+loop_attributes: last
+assignments: NSRef, Name
+for_targets: Name, Tuple[Name, Name]
+macros: get_type_annotation(_field); defaults=0; caller=False; kwargs=False; varargs=False, get_type_hint(_fields, use_base_type); defaults=0; caller=False; kwargs=False; varargs=False
+includes: ConfigDict.jinja2, TypeAliasAnnotation.jinja2, TypeAliasType.jinja2, TypedDictClass.jinja2, TypedDictFunction.jinja2, schema_runtime_validation.jinja2
+imports_and_inheritance:
+undefined_usage: default filter, defined test
+namespaces: attribute mutation, creation
+mapping_dot_accesses: fields_str, function_name, method_name, mode, mode_str

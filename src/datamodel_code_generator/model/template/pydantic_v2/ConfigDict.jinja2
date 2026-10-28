@@ -1,5 +1,5 @@
 model_config = ConfigDict(
-{%- for field_name, value in config.dict(exclude_unset=True).items() %}
+{%- for field_name, value in config_items %}
     {{ field_name }}={{ value }},
 {%- endfor %}
 )

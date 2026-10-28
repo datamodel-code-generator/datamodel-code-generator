@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "height": 1
+  },
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "height": 1.5
+  },
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "height": 300
+  },
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "weight": 1
+  },
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "weight": 1.5
+  },
+  {
+    "id": 1,
+    "name": "test",
+    "uid": 1,
+    "weight": 1000
+  }
+]

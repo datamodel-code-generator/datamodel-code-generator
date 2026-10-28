@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "ref_array": {"$ref": "#/$defs/RefArray"},
+    "ref_integers": {"$ref": "#/$defs/RefIntegers"},
+    "inline_array": {"$ref": "#/$defs/InlineArray"},
+    "inline_integer": {"$ref": "#/$defs/InlineInteger"}
+  },
+  "$defs": {
+    "Tags": {"type": "array", "items": {"type": "string"}},
+    "Small": {"type": "integer", "maximum": 5},
+    "Big": {"type": "integer", "minimum": 3},
+    "RefArray": {"allOf": [{"$ref": "#/$defs/Tags"}, {"minItems": 1}], "type": ["array", "null"]},
+    "RefIntegers": {"allOf": [{"$ref": "#/$defs/Small"}, {"$ref": "#/$defs/Big"}], "type": ["integer", "null"]},
+    "InlineArray": {
+      "allOf": [{"type": "array", "items": {"type": "string"}}, {"minItems": 1}],
+      "type": ["array", "null"]
+    },
+    "InlineInteger": {"allOf": [{"type": "integer"}, {"minimum": 3}, {"maximum": 5}], "type": ["integer", "null"]}
+  }
+}

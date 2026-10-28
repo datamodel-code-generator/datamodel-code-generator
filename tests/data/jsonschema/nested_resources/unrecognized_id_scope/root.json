@@ -1,0 +1,36 @@
+{
+  "id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/definitions/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "definitions": {
+    "Value": {
+      "type": "string"
+    },
+    "Child": {
+      "id": "child.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "definitions": {
+        "Value": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "$schema": "https://schemas.example.invalid/custom/schema"
+}

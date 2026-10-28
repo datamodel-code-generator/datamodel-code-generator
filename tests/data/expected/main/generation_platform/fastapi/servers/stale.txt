@@ -1,0 +1,14 @@
+# stale
+serve pydantic_v2.BaseModel
+LeftoverFilesWarning: <root>/stale_basemodel: These Python files are not generated and are left in place: <root>/stale_basemodel/routers/pets.py, <root>/stale_basemodel/routers/store.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in <root>/services.
+service DefaultService: get_value
+service DefaultService without its methods: TypeError
+> GET /values/7
+  get_value(id=7, at=None, tags=None)
+< 200 application/json {"id":7}
+> GET /pets
+< 404 application/json {"detail":"Not Found"}
+> GET /store/inventory
+< 404 application/json {"detail":"Not Found"}
+stale routers/pets.py: file True; imported False
+stale routers/store.py: file True; imported False

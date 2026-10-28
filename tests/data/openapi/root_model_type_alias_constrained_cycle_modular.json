@@ -1,0 +1,7 @@
+{"openapi":"3.0.0","info":{"title":"t","version":"1"},"paths":{},"components":{"schemas":{
+"foo.A":{"type":"array","minItems":1,"items":{"$ref":"#/components/schemas/foo.B"}},
+"foo.B":{"type":"array","items":{"$ref":"#/components/schemas/foo.C"}},
+"foo.C":{"type":"array","maxItems":2,"items":{"$ref":"#/components/schemas/foo.A"}},
+"bar.X":{"type":"array","minItems":1,"items":{"$ref":"#/components/schemas/bar.Y"}},
+"bar.Y":{"type":"array","items":{"$ref":"#/components/schemas/bar.X"}},
+"bar.Z":{"type":"object","properties":{"a":{"$ref":"#/components/schemas/foo.A"},"x":{"$ref":"#/components/schemas/bar.X"}}}}}}

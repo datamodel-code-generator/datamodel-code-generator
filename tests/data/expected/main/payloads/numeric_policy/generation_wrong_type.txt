@@ -1,0 +1,30 @@
+{
+  "absent": {
+    "source_valid": true,
+    "matches_native": true
+  },
+  "ordinary": {
+    "source_valid": true,
+    "matches_native": false
+  },
+  "another_multiple": {
+    "source_valid": true,
+    "matches_native": false
+  },
+  "weakened_constraint": {
+    "source_valid": false,
+    "matches_native": false
+  },
+  "moderate_native_rejection": {
+    "source_valid": true,
+    "matches_native": false
+  },
+  "large_native_rejection": {
+    "source_valid": true,
+    "matches_native": false
+  },
+  "source_false_positive": {
+    "source_valid": false,
+    "matches_native": false
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External discriminator base",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Dog": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bark": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Cat": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "meow": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

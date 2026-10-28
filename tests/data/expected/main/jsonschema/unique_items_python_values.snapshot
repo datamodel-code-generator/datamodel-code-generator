@@ -1,0 +1,7 @@
+decimals=[Decimal('1'), Decimal('2')]
+nested_decimals=[[Decimal('1')], [Decimal('2')]]
+bool_decimal=[True, Decimal('1')]
+permuted_objects=720
+permuted_object_fingerprints=720
+array_like=['_ArrayLikeEquality', '_ArrayLikeEquality']
+raising=['_RaisingEquality', '_RaisingEquality']

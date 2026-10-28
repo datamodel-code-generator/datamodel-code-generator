@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": -719163
+    }
+  ]
+}

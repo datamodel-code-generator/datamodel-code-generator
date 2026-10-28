@@ -1,0 +1,7 @@
+{
+  "AliasNames": {
+    "config": {
+      "protected_namespaces": ["model_"]
+    }
+  }
+}

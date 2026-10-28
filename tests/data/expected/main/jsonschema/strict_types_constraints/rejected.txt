@@ -1,0 +1,8 @@
+stamp
+seal
+code
+count
+even
+ratio
+step
+flag

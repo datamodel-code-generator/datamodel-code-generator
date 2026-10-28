@@ -1,0 +1,136 @@
+{
+  "string_inline": {
+    "valid": "ok",
+    "invalid": {},
+    "error_type": "string_type",
+    "constraint_invalid": "",
+    "constraint_error_type": "string_too_short",
+    "attribute_path": [
+      "root"
+    ]
+  },
+  "string_ref": {
+    "valid": "ok",
+    "invalid": {},
+    "error_type": "string_type",
+    "constraint_invalid": "",
+    "constraint_error_type": "string_too_short",
+    "attribute_path": [
+      "root",
+      "root"
+    ]
+  },
+  "integer_inline": {
+    "valid": 3,
+    "invalid": {},
+    "error_type": "int_type",
+    "constraint_invalid": 1,
+    "constraint_error_type": "greater_than_equal",
+    "attribute_path": [
+      "root"
+    ]
+  },
+  "integer_ref": {
+    "valid": 3,
+    "invalid": {},
+    "error_type": "int_type",
+    "constraint_invalid": 1,
+    "constraint_error_type": "greater_than_equal",
+    "attribute_path": [
+      "root",
+      "root"
+    ]
+  },
+  "array_inline": {
+    "valid": [
+      1,
+      2
+    ],
+    "invalid": {},
+    "error_type": "list_type",
+    "constraint_invalid": [],
+    "constraint_error_type": "too_short",
+    "attribute_path": [
+      "root"
+    ]
+  },
+  "array_ref": {
+    "valid": [
+      1,
+      2
+    ],
+    "invalid": {},
+    "error_type": "list_type",
+    "constraint_invalid": [],
+    "constraint_error_type": "too_short",
+    "attribute_path": [
+      "root",
+      "root"
+    ]
+  },
+  "nullable_inline": {
+    "valid": 3,
+    "invalid": {},
+    "error_type": "int_type",
+    "constraint_invalid": 1,
+    "constraint_error_type": "greater_than_equal",
+    "attribute_path": [
+      "root"
+    ]
+  },
+  "nullable_ref": {
+    "valid": 3,
+    "invalid": {},
+    "error_type": "int_type",
+    "constraint_invalid": 1,
+    "constraint_error_type": "greater_than_equal",
+    "attribute_path": [
+      "root",
+      "root"
+    ]
+  },
+  "string_external": {
+    "valid": "ok",
+    "invalid": {},
+    "error_type": "string_type",
+    "constraint_invalid": "",
+    "constraint_error_type": "string_too_short",
+    "attribute_path": [
+      "root",
+      "root"
+    ]
+  },
+  "defaults_inline": {
+    "valid": "outer",
+    "invalid": {},
+    "error_type": "string_type",
+    "constraint_invalid": "",
+    "constraint_error_type": "string_too_short",
+    "attribute_path": [
+      "root"
+    ]
+  },
+  "ordinary": {
+    "valid": {
+      "name": "first",
+      "item": {
+        "second": 2,
+        "first": "one"
+      },
+      "choice": "last"
+    },
+    "invalid": [],
+    "error_type": "model_type",
+    "constraint_invalid": {
+      "item": {
+        "second": "bad"
+      },
+      "choice": "last"
+    },
+    "constraint_error_type": "int_parsing",
+    "attribute_path": [
+      "name"
+    ],
+    "attribute_value": "first"
+  }
+}

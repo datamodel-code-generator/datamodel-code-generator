@@ -1,0 +1,20 @@
+[
+  {
+    "schema_valid": false,
+    "generated": {
+      "x": 1
+    }
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x": 2
+    }
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x": 2
+    }
+  }
+]

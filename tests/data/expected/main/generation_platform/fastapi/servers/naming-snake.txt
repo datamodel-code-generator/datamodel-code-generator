@@ -1,0 +1,36 @@
+# naming-snake
+serve pydantic_v2.BaseModel
+service CloseService: get_health
+service CloseService without its methods: TypeError
+service Default1Service: list_defaults
+service Default1Service without its methods: TypeError
+service Default2Service: list_upper_defaults
+service Default2Service without its methods: TypeError
+service DefaultService: x1, x_1
+service DefaultService without its methods: TypeError
+service ItemStore1Service: delete_items_by_item_id_tags
+service ItemStore1Service without its methods: TypeError
+service ItemStoreService: get_item, get_item_1
+service ItemStoreService without its methods: TypeError
+service UntaggedService: list_untagged
+service UntaggedService without its methods: TypeError
+> GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5
+  get_item(item_id=1, item_id_1=2, item_id_2=3, x_request_id='rid', page_size_=10, field_2fa='t', class_='c', request_1='r', body_1='b', self_1='s', session_id='sid', item_id_1_1=5)
+< 204 - b''
+> POST /items?name=q
+  get_item_1(name='q', body=NewItem(name='n', item_count=2))
+< 204 - b''
+> DELETE /items/4/tags
+  delete_items_by_item_id_tags(item_id=4)
+< 204 - b''
+> GET /x1
+  x1()
+< 204 - b''
+> GET /x_1
+  x_1()
+< 204 - b''
+> GET /health
+  get_health()
+< 204 - b''
+> GET /items/x?itemId=y&page[size]=z&itemId_1=w
+< 422 application/json [{"type": "int_parsing", "loc": ["path", "itemId"]}, {"type": "int_parsing", "loc": ["query", "itemId"]}, {"type": "int_parsing", "loc": ["query", "page[size]"]}, {"type": "int_parsing", "loc": ["query", "itemId_1"]}, {"type": "int_parsing", "loc": ["header", "itemId"]}]

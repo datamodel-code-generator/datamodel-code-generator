@@ -1,0 +1,210 @@
+{
+  "type": "record",
+  "name": "Root",
+  "fields": [
+    {
+      "name": "global_record",
+      "type": {
+        "type": "record",
+        "name": "Thing",
+        "fields": [
+          {
+            "name": "global_value",
+            "type": "string"
+          },
+          {
+            "name": "next",
+            "type": [
+              "null",
+              "Thing"
+            ],
+            "default": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "global_enum",
+      "type": {
+        "type": "enum",
+        "name": "Tone",
+        "symbols": [
+          "GLOBAL",
+          "OTHER"
+        ]
+      }
+    },
+    {
+      "name": "global_fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Token",
+        "size": 2
+      }
+    },
+    {
+      "name": "global_mixed",
+      "type": {
+        "type": "enum",
+        "name": "Mixed",
+        "symbols": [
+          "GLOBAL"
+        ]
+      }
+    },
+    {
+      "name": "container",
+      "type": {
+        "type": "record",
+        "name": "ns.Container",
+        "fields": [
+          {
+            "name": "local_record",
+            "type": {
+              "type": "record",
+              "name": "Thing",
+              "fields": [
+                {
+                  "name": "local_value",
+                  "type": "int"
+                },
+                {
+                  "name": "next",
+                  "type": [
+                    "null",
+                    "Thing"
+                  ],
+                  "default": null
+                }
+              ]
+            }
+          },
+          {
+            "name": "chosen",
+            "type": "Thing"
+          },
+          {
+            "name": "qualified_record",
+            "type": "ns.Thing"
+          },
+          {
+            "name": "local_enum",
+            "type": {
+              "type": "enum",
+              "name": "Tone",
+              "symbols": [
+                "LOCAL",
+                "SECOND"
+              ]
+            }
+          },
+          {
+            "name": "enum_reference",
+            "type": "Tone",
+            "default": "LOCAL"
+          },
+          {
+            "name": "qualified_enum",
+            "type": "ns.Tone",
+            "default": "SECOND"
+          },
+          {
+            "name": "local_fixed",
+            "type": {
+              "type": "fixed",
+              "name": "Token",
+              "size": 1
+            }
+          },
+          {
+            "name": "fixed_reference",
+            "type": "Token",
+            "default": "ÿ"
+          },
+          {
+            "name": "qualified_fixed",
+            "type": "ns.Token",
+            "default": "A"
+          },
+          {
+            "name": "fixed_array",
+            "type": {
+              "type": "array",
+              "items": "Token"
+            },
+            "default": [
+              "ÿ",
+              "A"
+            ]
+          },
+          {
+            "name": "fixed_map",
+            "type": {
+              "type": "map",
+              "values": "Token"
+            },
+            "default": {
+              "z": "ÿ",
+              "a": "A"
+            }
+          },
+          {
+            "name": "record_default",
+            "type": "Thing",
+            "default": {
+              "local_value": 7,
+              "next": null
+            }
+          },
+          {
+            "name": "record_array",
+            "type": {
+              "type": "array",
+              "items": "Thing"
+            },
+            "default": [
+              {
+                "local_value": 8,
+                "next": null
+              }
+            ]
+          },
+          {
+            "name": "mixed_definition",
+            "type": {
+              "type": "fixed",
+              "name": "Mixed",
+              "size": 1
+            }
+          },
+          {
+            "name": "mixed_reference",
+            "type": "Mixed",
+            "default": "ÿ"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unqualified_global",
+      "type": "Thing"
+    },
+    {
+      "name": "qualified_local",
+      "type": "ns.Thing"
+    },
+    {
+      "name": "fallback",
+      "type": {
+        "type": "record",
+        "name": "other.Fallback",
+        "fields": [
+          {
+            "name": "unqualified",
+            "type": "Thing"
+          }
+        ]
+      }
+    }
+  ]
+}

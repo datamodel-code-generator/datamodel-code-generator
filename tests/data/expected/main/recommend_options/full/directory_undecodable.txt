@@ -1,0 +1,31 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  not analysed (directory input)
+
+Start from  --preset standard-py310-20261027
+
+Add  nothing on top of the preset
+
+Trial  2 candidates generated in memory without formatting; nothing written
+  candidate  classes  problems  numbered  long  doubled  displaced  median  unconstrained
+  current    rejected: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 14: ordinal not in range(128)
+  preset     rejected: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 14: ordinal not in range(128)
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Notes
+  - Target Python is not set: the recommendation assumes 3.10, the default. Set
+    --target-python-version to start from the preset of the Python version the project runs.
+  - Only the preset is recommended: a directory input is not analysed; the rules cover OpenAPI,
+    AsyncAPI, and JSON Schema documents.
+  - Every candidate on the preset failed to generate, so the options are the rules' recommendation
+    alone.
+
+Command
+  datamodel-codegen --encoding ascii --input . --preset standard-py310-20261027
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  encoding = "ascii"
+  input = "."
+  preset = "standard-py310-20261027"

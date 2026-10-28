@@ -1,0 +1,31 @@
+{
+  "x.thing": [
+    {},
+    {"other": {"other": {}}},
+    {"other": {"other": 1}},
+    {"leaf": {"a": "one"}},
+    {"leaf": {"a": 1}}
+  ],
+  "y.thing": [
+    {},
+    {"other": {"leaf": {"a": "one"}}},
+    {"other": []}
+  ],
+  "p.t.leaf": [
+    {},
+    {"a": "one"},
+    {"a": 1}
+  ],
+  "p.item": [
+    {},
+    {"a": "one"},
+    {"a": 1}
+  ],
+  "p.u.user": [
+    {},
+    {"thing": {"other": {}}},
+    {"thing": {"leaf": {"a": "one"}}},
+    {"thing": {"leaf": {"a": 1}}},
+    {"thing": []}
+  ]
+}

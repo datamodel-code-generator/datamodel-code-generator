@@ -1,0 +1,22 @@
+[
+  {
+    "convert": {},
+    "decode": {}
+  },
+  {
+    "convert": {
+      "amount": 1
+    },
+    "decode": {
+      "amount": 1
+    }
+  },
+  {
+    "convert": {
+      "amount": 2
+    },
+    "decode": {
+      "amount": 2
+    }
+  }
+]

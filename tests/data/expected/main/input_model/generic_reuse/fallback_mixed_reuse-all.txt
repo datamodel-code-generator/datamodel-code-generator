@@ -1,0 +1,131 @@
+[
+  {
+    "name": "FutureMixedRoot",
+    "fields": [
+      "fallback",
+      "defaulted",
+      "ordinary",
+      "qualified",
+      "alias"
+    ],
+    "annotations_equal": {
+      "fallback": false,
+      "defaulted": false,
+      "ordinary": true,
+      "qualified": true,
+      "alias": true
+    },
+    "type_identity": {
+      "fallback": false,
+      "defaulted": false,
+      "ordinary": true,
+      "qualified": true,
+      "alias": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {
+            "value": 4,
+            "label": "kept"
+          },
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ],
+        "extra_invalid": [
+          [
+            [
+              [
+                "ordinary",
+                "value"
+              ],
+              "value_error"
+            ]
+          ],
+          [
+            [
+              [
+                "defaulted",
+                "value"
+              ],
+              "value_error"
+            ]
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {
+            "value": 4,
+            "label": "kept"
+          },
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ],
+        "extra_invalid": [
+          [
+            [
+              [
+                "ordinary",
+                "value"
+              ],
+              "value_error"
+            ]
+          ],
+          null
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "fallback": false,
+      "defaulted": false,
+      "ordinary": true,
+      "qualified": true,
+      "alias": true
+    }
+  }
+]

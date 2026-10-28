@@ -1,0 +1,23 @@
+{
+  "equal": true,
+  "field_order": true,
+  "native_dump": true,
+  "native_json_dump": true,
+  "pairs": [
+    {
+      "equal": true,
+      "equal_hash": true,
+      "membership": true,
+      "size": 1
+    },
+    {
+      "equal": true,
+      "equal_hash": true,
+      "membership": true,
+      "size": 1
+    }
+  ],
+  "generated_size": 1,
+  "native_size": 1,
+  "container_dump": true
+}

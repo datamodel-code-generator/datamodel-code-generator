@@ -1,0 +1,8 @@
+{
+  "definitions": {
+    "Invalid": {
+      "type": "object",
+      "required": "name"
+    }
+  }
+}

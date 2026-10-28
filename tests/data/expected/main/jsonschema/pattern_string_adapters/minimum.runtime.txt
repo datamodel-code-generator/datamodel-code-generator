@@ -1,0 +1,26 @@
+[
+  {
+    "native": true,
+    "dump": []
+  },
+  {
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "native": true,
+    "dump": [
+      {
+        "x": "bb"
+      }
+    ]
+  },
+  {
+    "native": true,
+    "dump": [
+      {
+        "x": "cccc"
+      }
+    ]
+  }
+]

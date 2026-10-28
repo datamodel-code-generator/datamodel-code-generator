@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External discriminator base",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "species": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "species"
+        ],
+        "discriminator": {
+          "propertyName": "species",
+          "mapping": {
+            "cat": "./variants.json#/components/schemas/Cat",
+            "dog": "./variants.json#/components/schemas/Dog"
+          }
+        }
+      }
+    }
+  }
+}

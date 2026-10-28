@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/get'].body_arguments: body_arguments must be 'body', 'both', or None; --client-operations['/paths/~1pets/post'].body_arguments: body_arguments must be 'body', 'both', or None

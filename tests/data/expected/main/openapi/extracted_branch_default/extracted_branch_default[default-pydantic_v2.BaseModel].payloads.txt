@@ -1,0 +1,8 @@
+empty: accepted
+valid: accepted
+invalid weight: rejected (greater_than_equal)
+invalid weight: rejected (float_parsing)
+invalid quantity: rejected (greater_than_equal)
+invalid quantity: rejected (int_parsing)
+invalid tags: accepted
+invalid step: rejected (greater_than_equal)

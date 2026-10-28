@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "UniqueObject": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "RootUniqueItems": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {}
+    },
+    "UniqueItemsPayload": {
+      "type": "object",
+      "minProperties": 4,
+      "properties": {
+        "strings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "objects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/UniqueObject"
+          }
+        },
+        "jsonValues": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {}
+        },
+        "nested": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {}
+          }
+        },
+        "tupleItems": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {}
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "tupleItemsTail": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {}
+          }
+        },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {}
+          }
+        },
+        "nullableAnyOf": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unconstrainedArrayAnyOf": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "nullableOneOf": {
+          "oneOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "strings",
+        "objects",
+        "jsonValues",
+        "nested"
+      ]
+    }
+  },
+  "$ref": "#/$defs/UniqueItemsPayload"
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NullForms",
+  "type": "object",
+  "properties": {
+    "nullable": {"type": "string", "enum": ["x"], "nullable": true},
+    "type_list": {"type": ["string", "null"], "enum": ["x"]},
+    "null_branch": {"anyOf": [{"enum": ["x"]}, {"type": "null"}]},
+    "x_nullable": {"type": "string", "enum": ["x"], "x-nullable": true}
+  },
+  "required": ["nullable", "type_list", "null_branch", "x_nullable"]
+}

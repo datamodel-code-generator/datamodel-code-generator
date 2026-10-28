@@ -1,0 +1,4 @@
+valid: accepted
+invalid entry: rejected (dict_type)
+invalid entry: rejected (string_pattern_mismatch)
+invalid entry: rejected (dict_type)

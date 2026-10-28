@@ -1,0 +1,2 @@
+Grade(): rejected (float_type)
+Grade(None): accepted

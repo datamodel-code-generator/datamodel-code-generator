@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    a.Foo:
+      type: object
+      properties:
+        name: {type: string}
+        secret: {type: string, writeOnly: true}
+      additionalProperties: {$ref: '#/components/schemas/b.Bar'}
+    b.Bar:
+      type: object
+      properties:
+        x: {type: string}
+        w: {type: string, writeOnly: true}
+

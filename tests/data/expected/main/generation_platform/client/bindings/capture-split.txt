@@ -1,0 +1,9 @@
+# capture-split
+render pydantic_v2.BaseModel default
+  models/__init__.py
+  models/base.py
+  models/base_request.py
+  models/item.py
+  models/item_request.py
+  models/item_response.py
+  model_bindings.py pydantic_v2_BaseModel/default

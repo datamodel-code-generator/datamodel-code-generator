@@ -1,0 +1,23 @@
+exit=0
+manifest: 20 schemas (14 calibration, 6 holdout), 23 pinned files
+grid: 64 configurations over title-source, naming-strategy, enum-shape, reuse, union-variant-names
+github: openapi, calibration, MIT, module; 2026-06-12 17e90ee011db, 2026-10-14 02a2bc3d6b42
+stripe: openapi, calibration, MIT, package; 2026-05-23 fbd00919865b, 2026-09-29 bcfd59f49dca
+openai: openapi, calibration, MIT, module; 2026-05-13 5162af98d314, 2026-10-14 0fce13ce4646
+k8s-apps-v1: openapi, calibration, Apache-2.0, package; 2026-09-23 f78e722310e5
+petstore: openapi, calibration, Apache-2.0, module; 2026-08-17 d57941e8fe95
+train-travel: openapi, calibration, CC-BY-NC-SA-4.0, module, external refs stubbed; 2026-09-22 ff649fc37814
+schemastore-package: jsonschema, calibration, Apache-2.0, module, external refs stubbed; 2026-10-16 0500f757f7e8
+schemastore-tsconfig: jsonschema, calibration, Apache-2.0, module; 2026-10-16 0500f757f7e8
+schemastore-github-workflow: jsonschema, calibration, Apache-2.0, module; 2026-10-16 0500f757f7e8
+compose-spec: jsonschema, calibration, Apache-2.0, module; 2026-10-14 de28432802a3
+box: openapi, calibration, Apache-2.0, module; 2026-10-16 a4f3e23d5bd0
+xero-accounting: openapi, calibration, MIT, module; 2026-10-01 fd9d44b04bf4
+asyncapi-streetlights: asyncapi, calibration, Apache-2.0, module; 2026-01-31 b3fac5bb5227
+schemastore-dependabot: jsonschema, calibration, Apache-2.0, module; 2026-09-15 b3525279d823
+discord: openapi, holdout, MIT, module; 2026-10-14 ed014089afa9
+twilio-api-v2010: openapi, holdout, MIT, package; 2026-10-06 157fb094bd08
+spotify: openapi, holdout, MIT, module; 2026-05-31 39207c4ba600
+asyncapi-slack-rtm: asyncapi, holdout, Apache-2.0, module; 2026-01-31 b3fac5bb5227
+vega-lite: jsonschema, holdout, BSD-3-Clause, module; 2024-12-10 b60b1cbd5ded
+cyclonedx-bom: jsonschema, holdout, Apache-2.0, module, external refs stubbed; 2026-02-25 0bd48c88d1b1

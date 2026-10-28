@@ -1,0 +1,1488 @@
+[
+  {
+    "name": "required_pydantic_v2_BaseModel",
+    "schema": "required",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "required_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "normal_pydantic_v2_BaseModel",
+    "schema": "normal",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "custom_root.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "default_required_pydantic_v2_BaseModel",
+    "schema": "default_required",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "default_required_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inherited_pydantic_v2_BaseModel",
+    "schema": "inherited",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "inherited_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_pydantic_v2_BaseModel",
+    "schema": "override",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "override_pydantic_v2_BaseModel.py",
+    "expected_values": "classvar_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inner_pydantic_v2_BaseModel",
+    "schema": "inner",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "leaf"
+      ]
+    ],
+    "required_model": "Leaf",
+    "expected_code": "inner_pydantic_v2_BaseModel.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "classvar_pydantic_v2_BaseModel",
+    "schema": "pydantic_classvar",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "field_extra_keys": [
+        "x-is-classvar"
+      ]
+    },
+    "cli": [
+      "--field-extra-keys",
+      "x-is-classvar"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "classvar_pydantic_v2_BaseModel.py",
+    "expected_values": "classvar_msgspec_Struct.txt"
+  },
+  {
+    "name": "union_pydantic_v2_BaseModel",
+    "schema": "union",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "union_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "explicit_pydantic_v2_BaseModel",
+    "schema": "explicit",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "explicit_pydantic_v2_BaseModel.py",
+    "expected_values": "explicit_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "default_used_pydantic_v2_BaseModel",
+    "schema": "default_required",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "default_used_pydantic_v2_BaseModel.py",
+    "expected_values": "default_used_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "required_pydantic_v2_dataclass",
+    "schema": "required",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "required_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "normal_pydantic_v2_dataclass",
+    "schema": "normal",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "normal_pydantic_v2_dataclass.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "default_required_pydantic_v2_dataclass",
+    "schema": "default_required",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "default_required_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inherited_pydantic_v2_dataclass",
+    "schema": "inherited",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "inherited_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_pydantic_v2_dataclass",
+    "schema": "override",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "override_pydantic_v2_dataclass.py",
+    "expected_values": "classvar_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inner_pydantic_v2_dataclass",
+    "schema": "inner",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "leaf"
+      ]
+    ],
+    "required_model": "Leaf",
+    "expected_code": "inner_pydantic_v2_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "classvar_pydantic_v2_dataclass",
+    "schema": "pydantic_classvar",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "field_extra_keys": [
+        "x-is-classvar"
+      ]
+    },
+    "cli": [
+      "--field-extra-keys",
+      "x-is-classvar"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "classvar_pydantic_v2_dataclass.py",
+    "expected_values": "classvar_msgspec_Struct.txt"
+  },
+  {
+    "name": "union_pydantic_v2_dataclass",
+    "schema": "union",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "union_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "explicit_pydantic_v2_dataclass",
+    "schema": "explicit",
+    "backend": "pydantic_v2.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "explicit_pydantic_v2_dataclass.py",
+    "expected_values": "explicit_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "default_used_pydantic_v2_dataclass",
+    "schema": "default_required",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "default_used_pydantic_v2_dataclass.py",
+    "expected_values": "default_used_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "required_dataclasses_dataclass",
+    "schema": "required",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "required_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "normal_dataclasses_dataclass",
+    "schema": "normal",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "normal_dataclasses_dataclass.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "default_required_dataclasses_dataclass",
+    "schema": "default_required",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "default_required_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inherited_dataclasses_dataclass",
+    "schema": "inherited",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "inherited_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_dataclasses_dataclass",
+    "schema": "override",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "override_dataclasses_dataclass.py",
+    "expected_values": "classvar_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "inner_dataclasses_dataclass",
+    "schema": "inner",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "leaf"
+      ]
+    ],
+    "required_model": "Leaf",
+    "expected_code": "inner_dataclasses_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "classvar_dataclasses_dataclass",
+    "schema": "classvar",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "field_extra_keys": [
+        "is_classvar"
+      ]
+    },
+    "cli": [
+      "--field-extra-keys",
+      "is_classvar"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "classvar_dataclasses_dataclass.py",
+    "expected_values": "classvar_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "union_dataclasses_dataclass",
+    "schema": "union",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "union_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "explicit_dataclasses_dataclass",
+    "schema": "explicit",
+    "backend": "dataclasses.dataclass",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "explicit_dataclasses_dataclass.py",
+    "expected_values": "explicit_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "default_used_dataclasses_dataclass",
+    "schema": "default_required",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "default_used_dataclasses_dataclass.py",
+    "expected_values": "default_used_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "required_msgspec_Struct",
+    "schema": "required",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "required_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "normal_msgspec_Struct",
+    "schema": "normal",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "normal_msgspec_Struct.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "default_required_msgspec_Struct",
+    "schema": "default_required",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "default_required_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "inherited_msgspec_Struct",
+    "schema": "inherited",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "inherited_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "override_msgspec_Struct",
+    "schema": "override",
+    "backend": "msgspec.Struct",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "override_msgspec_Struct.py",
+    "expected_values": "override_msgspec_Struct.txt"
+  },
+  {
+    "name": "inner_msgspec_Struct",
+    "schema": "inner",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "leaf"
+      ]
+    ],
+    "required_model": "Leaf",
+    "expected_code": "inner_msgspec_Struct.py",
+    "expected_values": "inner_msgspec_Struct.txt"
+  },
+  {
+    "name": "classvar_msgspec_Struct",
+    "schema": "classvar",
+    "backend": "msgspec.Struct",
+    "options": {
+      "field_extra_keys": [
+        "is_classvar"
+      ]
+    },
+    "cli": [
+      "--field-extra-keys",
+      "is_classvar"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "classvar_msgspec_Struct.py",
+    "expected_values": "classvar_msgspec_Struct.txt"
+  },
+  {
+    "name": "union_msgspec_Struct",
+    "schema": "union",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "union_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt",
+    "expected_warnings": "union_msgspec_Struct_warnings.txt"
+  },
+  {
+    "name": "explicit_msgspec_Struct",
+    "schema": "explicit",
+    "backend": "msgspec.Struct",
+    "options": {},
+    "cli": [],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "explicit_msgspec_Struct.py",
+    "expected_values": "explicit_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "default_used_msgspec_Struct",
+    "schema": "default_required",
+    "backend": "msgspec.Struct",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "default_used_msgspec_Struct.py",
+    "expected_values": "default_used_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "init_false_dataclass",
+    "schema": "init_false",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "field_extra_keys": [
+        "init"
+      ]
+    },
+    "cli": [
+      "--field-extra-keys",
+      "init"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "init_false_dataclass.py",
+    "expected_values": "classvar_msgspec_Struct.txt"
+  },
+  {
+    "name": "decorated",
+    "schema": "normal",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "class_decorators": [
+        "@final"
+      ],
+      "additional_imports": [
+        "typing.final"
+      ]
+    },
+    "cli": [
+      "--class-decorators",
+      "final",
+      "--additional-imports",
+      "typing.final"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "decorated.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "opaque_base",
+    "schema": "normal",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "base_class": "pydantic.main.BaseModel"
+    },
+    "cli": [
+      "--base-class",
+      "pydantic.main.BaseModel"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "opaque_base.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "custom_root",
+    "schema": "normal",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "custom_template_dir": "templates_root"
+    },
+    "cli": [
+      "--custom-template-dir",
+      "templates_root"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "custom_root.py",
+    "expected_values": "custom_root.txt"
+  },
+  {
+    "name": "unrelated_template",
+    "schema": "required",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "custom_template_dir": "templates_other"
+    },
+    "cli": [
+      "--custom-template-dir",
+      "templates_other"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": "Item",
+    "expected_code": "required_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "collapsed_pydantic_v2_BaseModel",
+    "schema": "wrapped",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "collapse_root_models": true
+    },
+    "cli": [
+      "--collapse-root-models"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "type_alias_pydantic_v2_BaseModel",
+    "schema": "wrapped",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "use_type_alias": true
+    },
+    "cli": [
+      "--use-type-alias"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "type_alias_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "reused_pydantic_v2_BaseModel",
+    "schema": "reused",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "reused_pydantic_v2_BaseModel.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "collapsed_pydantic_v2_dataclass",
+    "schema": "wrapped",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "collapse_root_models": true
+    },
+    "cli": [
+      "--collapse-root-models"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "type_alias_pydantic_v2_dataclass",
+    "schema": "wrapped",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "use_type_alias": true
+    },
+    "cli": [
+      "--use-type-alias"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "reused_pydantic_v2_dataclass",
+    "schema": "reused",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "reused_pydantic_v2_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "collapsed_dataclasses_dataclass",
+    "schema": "wrapped",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "collapse_root_models": true
+    },
+    "cli": [
+      "--collapse-root-models"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "type_alias_dataclasses_dataclass",
+    "schema": "wrapped",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "use_type_alias": true
+    },
+    "cli": [
+      "--use-type-alias"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "reused_dataclasses_dataclass",
+    "schema": "reused",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "reused_dataclasses_dataclass.py",
+    "expected_values": "collapsed_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "collapsed_msgspec_Struct",
+    "schema": "wrapped",
+    "backend": "msgspec.Struct",
+    "options": {
+      "collapse_root_models": true
+    },
+    "cli": [
+      "--collapse-root-models"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "type_alias_msgspec_Struct",
+    "schema": "wrapped",
+    "backend": "msgspec.Struct",
+    "options": {
+      "use_type_alias": true
+    },
+    "cli": [
+      "--use-type-alias"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "collapsed_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "reused_msgspec_Struct",
+    "schema": "reused",
+    "backend": "msgspec.Struct",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "paths": [
+      [
+        "item"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "reused_msgspec_Struct.py",
+    "expected_values": "collapsed_msgspec_Struct.txt"
+  },
+  {
+    "name": "null_default_pydantic_v2_BaseModel",
+    "schema": "null_default",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_pydantic_v2_BaseModel.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "null_default_pydantic_v2_dataclass",
+    "schema": "null_default",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_pydantic_v2_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "null_default_dataclasses_dataclass",
+    "schema": "null_default",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_dataclasses_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "null_default_msgspec_Struct",
+    "schema": "null_default",
+    "backend": "msgspec.Struct",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_msgspec_Struct.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "strip_optional_none_pydantic_v2_BaseModel",
+    "schema": "null_default",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true,
+      "strip_default_none": true
+    },
+    "cli": [
+      "--use-default",
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_pydantic_v2_BaseModel.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "untyped_null_default_pydantic_v2_BaseModel",
+    "schema": "untyped_null_default",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "untyped_null_default_pydantic_v2_BaseModel.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "strip_optional_none_pydantic_v2_dataclass",
+    "schema": "null_default",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true,
+      "strip_default_none": true
+    },
+    "cli": [
+      "--use-default",
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "null_default_pydantic_v2_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "untyped_null_default_pydantic_v2_dataclass",
+    "schema": "untyped_null_default",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "untyped_null_default_pydantic_v2_dataclass.py",
+    "expected_values": "inner_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "optional_stripped_pydantic_v2_BaseModel",
+    "schema": "optional_stripped",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "strip_default_none": true
+    },
+    "cli": [
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "root_required": true,
+    "expected_code": "optional_stripped_pydantic_v2_BaseModel.py",
+    "expected_values": "optional_stripped_pydantic_v2_BaseModel.txt"
+  },
+  {
+    "name": "optional_stripped_pydantic_v2_dataclass",
+    "schema": "optional_stripped",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "strip_default_none": true
+    },
+    "cli": [
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "root_required": true,
+    "expected_code": "optional_stripped_pydantic_v2_dataclass.py",
+    "expected_values": "optional_stripped_pydantic_v2_dataclass.txt"
+  },
+  {
+    "name": "optional_stripped_dataclasses_dataclass",
+    "schema": "optional_stripped",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "strip_default_none": true
+    },
+    "cli": [
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": "Item",
+    "root_required": true,
+    "expected_code": "optional_stripped_dataclasses_dataclass.py",
+    "expected_values": "optional_stripped_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "optional_stripped_msgspec_Struct",
+    "schema": "optional_stripped",
+    "backend": "msgspec.Struct",
+    "options": {
+      "strip_default_none": true
+    },
+    "cli": [
+      "--strip-default-none"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "root_required": false,
+    "expected_code": "optional_stripped_msgspec_Struct.py",
+    "expected_values": "inner_msgspec_Struct.txt"
+  },
+  {
+    "name": "override_before_base_pydantic_v2_BaseModel",
+    "schema": "override_before_base",
+    "backend": "pydantic_v2.BaseModel",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "override_before_base_pydantic_v2_BaseModel.py",
+    "expected_values": "override_before_base_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_before_base_pydantic_v2_dataclass",
+    "schema": "override_before_base",
+    "backend": "pydantic_v2.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "override_before_base_pydantic_v2_dataclass.py",
+    "expected_values": "override_before_base_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_before_base_dataclasses_dataclass",
+    "schema": "override_before_base",
+    "backend": "dataclasses.dataclass",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "override_before_base_dataclasses_dataclass.py",
+    "expected_values": "override_before_base_dataclasses_dataclass.txt"
+  },
+  {
+    "name": "override_before_base_msgspec_Struct",
+    "schema": "override_before_base",
+    "backend": "msgspec.Struct",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--use-default"
+    ],
+    "paths": [
+      [
+        "item"
+      ],
+      [
+        "item",
+        "value"
+      ]
+    ],
+    "required_model": null,
+    "expected_code": "override_before_base_msgspec_Struct.py",
+    "expected_values": "override_before_base_dataclasses_dataclass.txt"
+  }
+]

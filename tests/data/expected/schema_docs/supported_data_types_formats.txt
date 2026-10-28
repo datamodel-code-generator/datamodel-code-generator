@@ -1,0 +1,82 @@
+
+### Implemented Data Types and Formats
+
+The schema type, format, and default Pydantic v2 type columns below are generated from the parser's schema format registry and the default Pydantic v2 type mapping; keyword and note columns document supplemental schema details.
+
+#### Schema Data Types
+
+| Schema Type | Default Pydantic v2 Type | Supported Keywords |
+|-------------|--------------------------|--------------------|
+| `integer` | `int` | maximum, exclusiveMaximum, minimum, exclusiveMinimum, multipleOf |
+| `number` | `float` | maximum, exclusiveMaximum, minimum, exclusiveMinimum, multipleOf |
+| `string` | `str` | pattern, minLength, maxLength |
+| `boolean` | `bool` | - |
+| `object` | `Dict[str, Any]` | properties, required, additionalProperties, patternProperties |
+| `null` | `None` | - |
+| `array` | `List[Any]` | items, prefixItems, minItems, maxItems, uniqueItems |
+
+#### Common Formats (JSON Schema + OpenAPI)
+
+| Schema Type | Format | Default Pydantic v2 Type | Notes |
+|-------------|--------|--------------------------|-------|
+| `integer` | `default` (no `format`) | `int` | - |
+| `integer` | `int32` | `int` | - |
+| `integer` | `int64` | `int` | - |
+| `integer` | `date-time` | `AwareDatetime` | - |
+| `integer` | `unix-time` | `int` | - |
+| `integer` | `unixtime` | `int` | - |
+| `number` | `default` (no `format`) | `float` | - |
+| `number` | `float` | `float` | - |
+| `number` | `double` | `float` | - |
+| `number` | `decimal` | `Decimal` | - |
+| `number` | `date-time` | `AwareDatetime` | - |
+| `number` | `time` | `time` | - |
+| `number` | `time-delta` | `timedelta` | - |
+| `number` | `unixtime` | `int` | - |
+| `string` | `default` (no `format`) | `str` | - |
+| `string` | `byte` | `Base64Str` | Base64 encoded string |
+| `string` | `date` | `date` | - |
+| `string` | `date-time` | `AwareDatetime` | - |
+| `string` | `timestamp with time zone` | `AwareDatetime` | - |
+| `string` | `date-time-local` | `NaiveDatetime` | - |
+| `string` | `duration` | `timedelta` | - |
+| `string` | `time` | `time` | - |
+| `string` | `time-local` | `time` | - |
+| `string` | `path` | `Path` | - |
+| `string` | `email` | `EmailStr` | Requires email-validator |
+| `string` | `idn-email` | `EmailStr` | Requires email-validator |
+| `string` | `idn-hostname` | `str` | - |
+| `string` | `iri` | `str` | - |
+| `string` | `iri-reference` | `str` | - |
+| `string` | `uuid` | `UUID` | - |
+| `string` | `uuid1` | `UUID1` | - |
+| `string` | `uuid2` | `UUID` | - |
+| `string` | `uuid3` | `UUID3` | - |
+| `string` | `uuid4` | `UUID4` | - |
+| `string` | `uuid5` | `UUID5` | - |
+| `string` | `uri` | `AnyUrl` | - |
+| `string` | `uri-reference` | `str` | - |
+| `string` | `uri-template` | `str` | - |
+| `string` | `json-pointer` | `str` | - |
+| `string` | `relative-json-pointer` | `str` | - |
+| `string` | `regex` | `str` | - |
+| `string` | `hostname` | `str` | - |
+| `string` | `ipv4` | `IPv4Address` | - |
+| `string` | `ipv4-network` | `IPv4Network` | - |
+| `string` | `ipv6` | `IPv6Address` | - |
+| `string` | `ipv6-network` | `IPv6Network` | - |
+| `string` | `decimal` | `Decimal` | - |
+| `string` | `integer` | `int` | - |
+| `string` | `unixtime` | `int` | - |
+| `string` | `ulid` | `ULID` | Requires python-ulid |
+| `boolean` | `default` (no `format`) | `bool` | - |
+| `object` | `default` (no `format`) | `Dict[str, Any]` | - |
+| `null` | `default` (no `format`) | `None` | - |
+| `array` | `default` (no `format`) | `List[Any]` | - |
+
+#### OpenAPI-Only Formats
+
+| Schema Type | Format | Default Pydantic v2 Type | Notes |
+|-------------|--------|--------------------------|-------|
+| `string` | `binary` | `bytes` | File content |
+| `string` | `password` | `SecretStr` | - |

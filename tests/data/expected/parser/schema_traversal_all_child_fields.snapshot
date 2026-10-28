@@ -1,0 +1,15 @@
+#
+#/items
+#/prefixItems/0
+#/additionalProperties
+#/unevaluatedProperties
+#/unevaluatedItems
+#/patternProperties/^value
+#/propertyNames
+#/anyOf/0
+#/allOf/0
+#/oneOf/0
+#/if
+#/then
+#/else
+#/properties/property

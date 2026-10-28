@@ -1,0 +1,27 @@
+"""Implement {{ protocol }} of {{ services }}; {{ entrypoint }} imports {{ name }} from this module.
+
+datamodel-code-generator wrote this module once, with a stub for each method, and never overwrites it. Generating the
+server again updates the Protocol, so type checkers point at the methods to change.
+"""
+
+from __future__ import annotations
+
+{{ imports }}
+
+
+class {{ name }}({{ base }}):
+    """Implement {{ methods }}."""
+{%- for method in protocol_methods %}
+
+    {% if method.asynchronous %}async {% endif %}def {{ method.name }}(
+        self,
+{%- if method.parameters %}
+        *,
+{%- for parameter in method.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+{%- endif %}
+    ) -> {{ method.returns }}:
+        {{ method.docstring }}
+        raise NotImplementedError
+{%- endfor %}

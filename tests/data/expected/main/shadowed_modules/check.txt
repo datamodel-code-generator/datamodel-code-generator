@@ -1,0 +1,2 @@
+EXTRA: pets/__init__.py (no longer generated)
+EXTRA: pets/cats.py (no longer generated)

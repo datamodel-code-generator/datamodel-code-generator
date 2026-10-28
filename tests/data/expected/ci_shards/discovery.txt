@@ -1,0 +1,1 @@
+{"accepts_payload": true, "discovered_payloads": true, "multiple_functions": true, "split_file_excluded": true}

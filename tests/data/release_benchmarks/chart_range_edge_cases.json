@@ -1,0 +1,55 @@
+{
+  "failed_main": {
+    "metadata": {
+      "main_snapshot_generated_at": "2026-09-05T01:02:03Z",
+      "main_snapshot_collector_sha": "abcdef0123456789abcdef0123456789abcdef01"
+    },
+    "entries": [
+      {
+        "version": "0.1.0",
+        "input_type": "jsonschema",
+        "case": "small",
+        "formatter": "default",
+        "status": "ok",
+        "median_ms": 20
+      },
+      {
+        "version": "0.2.0",
+        "input_type": "jsonschema",
+        "case": "small",
+        "formatter": "default",
+        "status": "ok",
+        "median_ms": 40
+      },
+      {
+        "version": "main",
+        "input_type": "jsonschema",
+        "case": "small",
+        "formatter": "default",
+        "status": "failed",
+        "median_ms": null
+      }
+    ]
+  },
+  "empty_timings": {
+    "metadata": {},
+    "entries": [
+      {
+        "version": "0.3.0",
+        "input_type": "jsonschema",
+        "case": "small",
+        "formatter": "default",
+        "status": "failed",
+        "median_ms": null
+      },
+      {
+        "version": "main",
+        "input_type": "jsonschema",
+        "case": "small",
+        "formatter": "default",
+        "status": "failed",
+        "median_ms": null
+      }
+    ]
+  }
+}

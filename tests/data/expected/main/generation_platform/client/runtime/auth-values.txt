@@ -1,0 +1,134 @@
+# auth pydantic_v2.BaseModel
+credentials
+  arguments ('bearer', 'header_key', 'basic', 'query_key', 'cookie_key', 'bearer_alias', 'oauth', 'openid', 'base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'clock', 'http_client')
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  bearer = b'ok'
+  > GET https://api.example.com/inherited
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  inherited = b'ok'
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret-1] b''
+  header key = b'ok'
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret-2] b''
+  header key again = b'ok'
+  > GET https://api.example.com/api-key/query?api_key=q+secret%26
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  query key = b'ok'
+  > GET https://api.example.com/api-key/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: session_key=cookie-secret] b''
+  cookie key = b'ok'
+  > GET https://api.example.com/api-key/cookie-parameters?page=1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-trace: trace, cookie: theme=dark; session_key=cookie-secret] b''
+  cookie beside parameters = b'ok'
+  > GET https://api.example.com/basic
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Basic dXNlcjpwYXNzIHdvcmQ=] b''
+  basic = b'ok'
+  > GET https://api.example.com/and
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret-3, authorization: Bearer token-secret] b''
+  and = b'ok'
+  > GET https://api.example.com/or
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret-4] b''
+  or picks its first alternative = b'ok'
+  > GET https://api.example.com/authorization-or
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Basic dXNlcjpwYXNzIHdvcmQ=] b''
+  basic or bearer = b'ok'
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  anonymous = b'ok'
+  > GET https://api.example.com/empty
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  empty security = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  anonymous first = b'ok'
+  > GET https://api.example.com/optional-token-first
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  token first = b'ok'
+  callable calls=4
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw request = 200
+  > GET https://api.example.com/and
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret-5, authorization: Bearer token-secret] b''
+  credentials replace patches = b'ok'
+selection
+  > GET https://api.example.com/or
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  or falls to bearer = b'ok'
+  alias needs its own credential ! ConfigurationError: ConfigurationError(operation_id='alias_auth', reason='missing_credentials', field_path='auth') [operation_id='alias_auth', field_path=('auth',)] missing_credentials
+  and missing key ! ConfigurationError: ConfigurationError(operation_id='and_auth', reason='missing_credentials', field_path='auth') [operation_id='and_auth', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  optional sends the credential = b'ok'
+  required without credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  anonymous without credentials = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  optional without credentials = b'ok'
+native auth
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: view] b''
+  view auth replaces credentials = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  view auth none = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: call over view] b''
+  call auth over view auth = b'ok'
+  > GET https://api.example.com/and
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: call] b''
+  call auth = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  auth none on anonymous = b'ok'
+  auth none on required ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: client] b''
+  client auth on required = b'ok'
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: client] b''
+  client auth on anonymous = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  root auth none over client auth = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: root] b''
+  root auth = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: root] b''
+  view inherits root auth = b'ok'
+refusals
+  credentials beside client auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
+  credentials beside auth none ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
+  credentials beside native auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
+  credential of no credential type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
+  callable failure ! AuthError reason=provider_failed field_path=None cause=OSError leaked=[]
+  callable of another type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
+  basic of another shape ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]
+  basic of a pair of another size ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]
+  header line break ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
+  cookie separator ! ConfigurationError reason=invalid_value field_path=('cookie_key',) cause=NoneType leaked=[]
+  non-ascii header ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
+  header surrounding space ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
+  bearer without a token ! ConfigurationError reason=invalid_value field_path=('bearer',) cause=NoneType leaked=[]
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret	v2] b''
+  header inner tab = sent
+async
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret-1] b''
+  async bearer = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret-2] b''
+  async bearer again = b'ok'
+  > GET https://api.example.com/api-key/query?api_key=q+secret%26
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async query key = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: async] b''
+  async call auth = b'ok'
+  async required without credentials ! ConfigurationError: ConfigurationError(operation_id='basic', reason='missing_credentials', field_path='auth') [operation_id='basic', field_path=('auth',)] missing_credentials

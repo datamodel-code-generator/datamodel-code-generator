@@ -10,4 +10,7 @@ from pydantic import BaseModel
 
 
 class UseDefaultWithConst(BaseModel):
-    foo: Literal['foo'] = 'foo'
+    foo: Literal['foo'] | None = None
+    bool_default: Literal[True] = False
+    int_default: Literal[3] = 0
+    str_default: Literal['fast'] = ''

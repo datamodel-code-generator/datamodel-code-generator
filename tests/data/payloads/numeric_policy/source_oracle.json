@@ -1,0 +1,15 @@
+{
+  "ordinary_decimal": {"schema": {"multipleOf": 0.2}, "payload": 0.6},
+  "integer_decimal": {"schema": {"type": "integer", "multipleOf": 0.2}, "payload": 3.0},
+  "boolean_is_not_integer": {"schema": {"type": "integer"}, "payload": true},
+  "string_ignores_multiple": {"schema": {"multipleOf": 0.2}, "payload": "0.6"},
+  "small_false_positive": {"schema": {"allOf": [{"multipleOf": 0.2}, {"multipleOf": 0.3}]}, "payload": 1176156745098786.2},
+  "large_valid_decimal": {"schema": {"allOf": [{"multipleOf": 0.2}, {"multipleOf": 0.3}]}, "payload": 1.5901107559605153e24},
+  "bounded_small": {"schema": {"type": "number", "minimum": 0.2, "maximum": 0.2, "multipleOf": 0.2}, "payload": 0.2},
+  "bounded_moderate": {"schema": {"type": "number", "minimum": 10066330.8, "maximum": 10066330.8, "multipleOf": 0.6}, "payload": 10066330.8},
+  "bounded_large": {"schema": {"type": "number", "minimum": 1.5901107559605153e24, "maximum": 1.5901107559605153e24, "multipleOf": 0.6}, "payload": 1.5901107559605153e24},
+  "exclusive_bound": {"schema": {"exclusiveMinimum": 0.6}, "payload": 0.6},
+  "enum": {"schema": {"enum": [0.2, 0.6]}, "payload": 0.6},
+  "const": {"schema": {"const": 0.6}, "payload": 0.6},
+  "nested_reference": {"schema": {"$defs": {"multiple": {"type": "number", "multipleOf": 0.2}}, "type": "object", "properties": {"values": {"type": "array", "items": {"$ref": "#/$defs/multiple"}}}}, "payload": {"values": [0.6, 1.2, 3.0]}}
+}

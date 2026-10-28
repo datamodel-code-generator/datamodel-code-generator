@@ -1,0 +1,32 @@
+{
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  }
+}

@@ -13,8 +13,7 @@ class KnownAndArrayExtra(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[str | int]],
+    }
     name: str
-
-
-KnownAndArrayExtra.__annotations__['__pydantic_extra__'] = Dict[str, list[str | int]]
-KnownAndArrayExtra.model_rebuild(force=True)

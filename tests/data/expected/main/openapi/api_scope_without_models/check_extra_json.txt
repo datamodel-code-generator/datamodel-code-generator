@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "check",
+  "success": false,
+  "content": "EXTRA: <OUTPUT> (no longer generated)",
+  "differences": [
+    {
+      "kind": "extra",
+      "path": "<OUTPUT>",
+      "message": "EXTRA: <OUTPUT> (no longer generated)",
+      "diff": null
+    }
+  ]
+}

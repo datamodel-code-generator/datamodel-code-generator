@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "check",
+  "success": false,
+  "content": "MISSING: <OUTPUT_FILE> (file does not exist but should be generated)",
+  "differences": [
+    {
+      "kind": "missing",
+      "path": "<OUTPUT_FILE>",
+      "message": "MISSING: <OUTPUT_FILE> (file does not exist but should be generated)",
+      "diff": null
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+asyncapi: 3.0.0
+info:
+  title: Tree events
+  version: 1.0.0
+components:
+  schemas:
+    Tree:
+      $dynamicAnchor: node
+      type: object
+      properties:
+        value:
+          type: string
+        children:
+          type: array
+          items:
+            $dynamicRef: '#node'
+    Forest:
+      type: object
+      properties:
+        tree:
+          $ref: shapes.yaml#/components/schemas/Branch
+          description: A tree defined in another document.

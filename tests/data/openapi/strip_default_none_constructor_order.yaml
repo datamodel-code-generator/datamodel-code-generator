@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: strip default none constructor order
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Plain:
+      type: object
+      properties:
+        a:
+          type: string
+    Nullable:
+      type: [object, "null"]
+      properties:
+        a:
+          type: string
+    Kept:
+      type: object
+      required: [r]
+      properties:
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+        p:
+          $ref: '#/components/schemas/Plain'
+        q:
+          type: string
+        r:
+          type: string
+        d:
+          type: string
+          default: x
+        e:
+          type: [string, "null"]
+    Spelling:
+      type: object
+      properties:
+        d:
+          type: string
+          default: x
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+        e:
+          anyOf:
+            - type: string
+            - type: "null"
+        t:
+          type: [string, "null"]
+    SpellingRequired:
+      type: object
+      properties:
+        d:
+          type: string
+          default: x
+        t:
+          type: [string, "null"]
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+        q:
+          type: string
+    M:
+      type: object
+      properties:
+        d:
+          type: string
+          default: x
+        n:
+          $ref: '#/components/schemas/Nullable'
+        q:
+          type: string
+    Earlier:
+      type: object
+      required: [r]
+      properties:
+        d:
+          type: string
+          default: x
+        n:
+          $ref: '#/components/schemas/Nullable'
+        r:
+          type: string
+    Later:
+      type: object
+      required: [r]
+      properties:
+        d:
+          type: string
+          default: x
+        n:
+          $ref: '#/components/schemas/NullableLater'
+        r:
+          type: string
+    UnionMember:
+      type: object
+      properties:
+        u:
+          anyOf:
+            - $ref: '#/components/schemas/Nullable'
+            - type: string
+        l:
+          type: array
+          items:
+            $ref: '#/components/schemas/Nullable'
+        q:
+          type: string
+    Base:
+      type: object
+      properties:
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [r]
+          properties:
+            r:
+              type: string
+            q:
+              type: string
+    AliasedRequired:
+      type: object
+      required: [R-1]
+      properties:
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+        R-1:
+          type: string
+    WithDefault:
+      type: object
+      properties:
+        d:
+          type: string
+          default: x
+    KeptAfterInheritedDefault:
+      allOf:
+        - $ref: '#/components/schemas/WithDefault'
+        - type: object
+          properties:
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+    Cat:
+      type: object
+      required: [lives]
+      properties:
+        kind:
+          anyOf:
+            - type: string
+            - type: "null"
+        lives:
+          type: integer
+    NamedCat:
+      allOf:
+        - $ref: '#/components/schemas/Cat'
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+            name:
+              type: string
+    NullableLater:
+      type: [object, "null"]
+      properties:
+        a:
+          type: string

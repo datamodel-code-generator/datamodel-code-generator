@@ -1,0 +1,76 @@
+[
+  {
+    "name": "RepeatedRoot",
+    "fields": [
+      "first",
+      "second",
+      "strings",
+      "items"
+    ],
+    "annotations_equal": {
+      "first": false,
+      "second": false,
+      "strings": false,
+      "items": false
+    },
+    "type_identity": {
+      "first": false,
+      "second": false,
+      "strings": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "first": false,
+      "second": false,
+      "strings": false,
+      "items": false
+    }
+  }
+]

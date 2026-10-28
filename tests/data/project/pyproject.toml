@@ -1,11 +1,11 @@
 [tool.black]
-skip-string-normalization = false
 line-length = 30
+skip-string-normalization = false
 
 [tool.datamodel-codegen]
 input = "INPUT_PATH"
 output = "OUTPUT_PATH"
-input_file_type = 'openapi'
+input_file_type = "openapi"
 validation = true
 field-constraints = true
 snake-case-field = true

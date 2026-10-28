@@ -1,0 +1,5 @@
+scalar Evil
+
+type Query {
+  evil: Evil!
+}

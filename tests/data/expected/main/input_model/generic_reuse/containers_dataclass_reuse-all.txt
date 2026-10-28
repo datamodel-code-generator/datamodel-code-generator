@@ -1,0 +1,55 @@
+[
+  {
+    "name": "PreservedDataclass",
+    "fields": [
+      "items"
+    ],
+    "annotations_equal": {
+      "items": true
+    },
+    "type_identity": {},
+    "results": {
+      "native": {
+        "valid": {
+          "items": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "items",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "items": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "items",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "items": true
+    }
+  }
+]

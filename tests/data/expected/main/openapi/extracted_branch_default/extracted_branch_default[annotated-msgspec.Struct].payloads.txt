@@ -1,0 +1,8 @@
+empty: accepted
+valid: accepted
+invalid weight: rejected
+invalid weight: rejected
+invalid quantity: rejected
+invalid quantity: rejected
+invalid tags: rejected
+invalid step: rejected

@@ -1,0 +1,2 @@
+[![PyPI](https://img.shields.io/pypi/v/datamodel-code-generator.svg)](https://pypi.org/project/datamodel-code-generator/)
+[![Codecov](https://codecov.io/gh/datamodel-code-generator/datamodel-code-generator/branch/main/graph/badge.svg)](https://codecov.io/gh/datamodel-code-generator/datamodel-code-generator)

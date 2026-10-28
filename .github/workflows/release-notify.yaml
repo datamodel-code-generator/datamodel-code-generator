@@ -14,14 +14,29 @@ jobs:
       issues: write
       pull-requests: write
     env:
-      TARGET_OWNER: koxudaxi
+      TARGET_OWNER: datamodel-code-generator
       TARGET_REPO: datamodel-code-generator
     steps:
       - name: Post release notifications
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Target repo from environment variables (set in jobs.notify.env)
+            const repoOwner = process.env.TARGET_OWNER;
+            const repoName = process.env.TARGET_REPO;
+
+            // Validate environment variables
+            if (!repoOwner || !repoName) {
+              throw new Error('TARGET_OWNER and TARGET_REPO are required');
+            }
+
+            // Verify we're running in the correct repo
+            if (context.repo.owner !== repoOwner || context.repo.repo !== repoName) {
+              console.log(`Skipping: running in ${context.repo.owner}/${context.repo.repo}, not ${repoOwner}/${repoName}`);
+              return;
+            }
+
             // Get tag from the workflow run that triggered this
             let tag = context.payload.workflow_run.head_branch;
 
@@ -70,21 +85,6 @@ jobs:
             const releaseUrl = release.html_url;
             const releaseBody = release.body || '';
 
-            // Target repo from environment variables (set in jobs.notify.env)
-            const repoOwner = process.env.TARGET_OWNER;
-            const repoName = process.env.TARGET_REPO;
-
-            // Validate environment variables
-            if (!repoOwner || !repoName) {
-              throw new Error('TARGET_OWNER and TARGET_REPO are required');
-            }
-
-            // Verify we're running in the correct repo
-            if (context.repo.owner !== repoOwner || context.repo.repo !== repoName) {
-              console.log(`Skipping: running in ${context.repo.owner}/${context.repo.repo}, not ${repoOwner}/${repoName}`);
-              return;
-            }
-
             // Helper: Get all comments with pagination
             async function getAllComments(issueNumber) {
               const comments = [];
@@ -104,12 +104,15 @@ jobs:
               );
             }
 
+            // The old owner is accepted only when reading references to this transferred repository.
+            const referenceRepo = '(?:' + repoOwner + '|koxudaxi)/' + repoName;
+
             // Extract PR numbers from release notes (this repo only, PRs only)
             const prNumbers = new Set();
 
             // Pattern 1: Full PR URL (this repo only)
             const prUrlRegex = new RegExp(
-              'https://github\\.com/' + repoOwner + '/' + repoName + '/pull/(\\d+)', 'gi'
+              'https://github\\.com/' + referenceRepo + '/pull/(\\d+)', 'gi'
             );
             let m;
             while ((m = prUrlRegex.exec(releaseBody)) !== null) {
@@ -118,7 +121,7 @@ jobs:
 
             // Pattern 2: owner/repo#123 (this repo only) - verify it's a PR later
             const repoRefRegex = new RegExp(
-              '(?:^|[\\s({\\[-])' + repoOwner + '/' + repoName + '#(\\d+)', 'gi'
+              '(?<![\\w./-])' + referenceRepo + '#(\\d+)', 'gi'
             );
             while ((m = repoRefRegex.exec(releaseBody)) !== null) {
               prNumbers.add(parseInt(m[1]));
@@ -148,7 +151,7 @@ jobs:
               // Pattern 2: keyword owner/repo#123 (same repo only)
               const crossRepoPattern = new RegExp(
                 '(?:^|\\s|[({\\[-])' + keywordPattern + '\\s*[:#]?\\s*' +
-                repoOwner + '/' + repoName + '#(\\d+)', 'gi'
+                referenceRepo + '#(\\d+)', 'gi'
               );
               while ((m = crossRepoPattern.exec(text)) !== null) {
                 issues.add(parseInt(m[1]));
@@ -157,7 +160,7 @@ jobs:
               // Pattern 3: keyword URL (same repo only)
               const urlPattern = new RegExp(
                 '(?:^|\\s|[({\\[-])' + keywordPattern + '\\s*[:#]?\\s*https://github\\.com/' +
-                repoOwner + '/' + repoName + '/issues/(\\d+)', 'gi'
+                referenceRepo + '/issues/(\\d+)', 'gi'
               );
               while ((m = urlPattern.exec(text)) !== null) {
                 issues.add(parseInt(m[1]));
@@ -214,7 +217,7 @@ jobs:
                 // Find referenced PRs in PR body
                 const referencedPRs = new Set();
                 const prRefUrlPattern = new RegExp(
-                  'https://github\\.com/' + repoOwner + '/' + repoName + '/pull/(\\d+)', 'gi'
+                  'https://github\\.com/' + referenceRepo + '/pull/(\\d+)', 'gi'
                 );
                 let prRefMatch;
                 while ((prRefMatch = prRefUrlPattern.exec(prBody)) !== null) {
@@ -227,7 +230,7 @@ jobs:
                 // Find standalone issue/PR references not in closing/related
                 const standalonePattern = /(?:^|[\s({\[-])#(\d+)(?=[\s,.)\]}\]:;]|$)/g;
                 const issueUrlPattern = new RegExp(
-                  'https://github\\.com/' + repoOwner + '/' + repoName + '/issues/(\\d+)', 'gi'
+                  'https://github\\.com/' + referenceRepo + '/issues/(\\d+)', 'gi'
                 );
                 let standaloneMatch;
                 while ((standaloneMatch = standalonePattern.exec(prBody)) !== null) {

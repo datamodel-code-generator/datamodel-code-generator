@@ -4,17 +4,13 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
 class ObjectMeta(BaseModel):
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    name: str | None = None
+    namespace: str | None = None
 
 
 class PodSpec(BaseModel):
-    metadata: Optional[ObjectMeta] = Field(
-        default_factory=lambda: ObjectMeta.model_validate({})
-    )
+    metadata: ObjectMeta | None = Field({}, validate_default=True)

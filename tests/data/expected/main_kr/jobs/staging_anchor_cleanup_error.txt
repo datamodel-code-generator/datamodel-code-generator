@@ -1,0 +1,1 @@
+Error: could not prepare batch output staging: simulated staging failure; additionally, could not clean batch output staging: simulated anchor cleanup failure; additionally, could not clean batch output staging: simulated anchor cleanup failure

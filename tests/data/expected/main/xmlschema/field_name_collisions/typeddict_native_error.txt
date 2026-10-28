@@ -1,0 +1,1 @@
+typed-dict-version: Please use `typing_extensions.TypedDict` instead of `typing.TypedDict` on Python < 3.12.

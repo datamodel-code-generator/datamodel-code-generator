@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PayloadRoot",
+  "type": "object",
+  "required": ["default_value", "const_value", "enum_value", "examples_value", "metadata_value"],
+  "properties": {
+    "default_value": {
+      "$ref": "#/$defs/BaseDefault",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    },
+    "const_value": {
+      "$ref": "#/$defs/BaseConst",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    },
+    "enum_value": {
+      "$ref": "#/$defs/BaseEnum",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    },
+    "examples_value": {
+      "$ref": "#/$defs/BaseExamples",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    },
+    "metadata_value": {
+      "$ref": "#/$defs/BaseMetadata",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    }
+  },
+  "$defs": {
+    "BaseDefault": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}, "flag": true},
+      "additionalProperties": true,
+      "default": {"$ref": "#/$defs/BaseDefault", "text": "default", "code": 1}
+    },
+    "BaseConst": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}},
+      "const": {"$ref": "#/$defs/BaseConst", "text": "const", "code": 2}
+    },
+    "BaseEnum": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}},
+      "enum": [{"$ref": "#/$defs/BaseEnum", "text": "enum", "code": 3}]
+    },
+    "BaseExamples": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}},
+      "examples": [{"text": "examples", "code": 4, "nested": [{"$ref": "#/$defs/BaseExamples"}]}]
+    },
+    "BaseMetadata": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "values": {"type": "array", "items": {"type": "integer"}}
+      },
+      "x-metadata": {
+        "properties": {"default": {"$ref": "missing-metadata.json#/$defs/Base"}},
+        "$defs": {"const": {"$ref": "#/$defs/BaseMetadata"}}
+      }
+    }
+  }
+}

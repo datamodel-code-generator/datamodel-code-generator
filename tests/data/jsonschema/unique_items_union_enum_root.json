@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionEnumRoot",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "integer"},
+        "uniqueItems": true
+      }
+    },
+    {"enum": ["scalar", 0]}
+  ]
+}

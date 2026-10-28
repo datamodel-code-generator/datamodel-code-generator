@@ -1,0 +1,16 @@
+{
+  "syntax": "proto3",
+  "edition": 0,
+  "messages": {
+    "M": [
+      [
+        "value",
+        ""
+      ],
+      [
+        "count",
+        ""
+      ]
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "value": {
+        "inner": "ok"
+      }
+    },
+    "rejected"
+  ]
+}

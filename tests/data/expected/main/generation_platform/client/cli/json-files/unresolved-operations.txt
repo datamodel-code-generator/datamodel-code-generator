@@ -1,0 +1,1 @@
+Error: --client-operations['missing.yaml#/paths/~1pets/get'].ref: The operation setting '/paths/~1pets/get' in '<root>/api/missing.yaml' selects no root path operation

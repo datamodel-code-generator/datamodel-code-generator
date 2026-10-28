@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import json
+
+from datamodel_code_generator import TargetPydanticVersion
 from datamodel_code_generator.format import PythonVersion, is_supported_in_black
-from tests.main.conftest import CURRENT_PYTHON_VERSION
+from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH, installed_pydantic_runs_target
 from tests.main.payload_validation.models import PayloadBackend
+
+PAYLOAD_CODEGEN_WARNING_FILES: dict[str, str] = json.loads(
+    (DATA_PATH / "payloads/numeric_allof_type_warning_files.json").read_text(encoding="utf-8")
+)
 
 PAYLOAD_CLASS_NAME = "Payload"
 PAYLOAD_CURRENT_PYTHON_VERSION = PythonVersion(CURRENT_PYTHON_VERSION)
@@ -69,22 +76,166 @@ PAYLOAD_FORMAT_ENUMS = {
     "ipv6": ["::1"],
     "uuid": ["00000000-0000-4000-8000-000000000000"],
 }
+SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON = (
+    "focused Decimal-default e2e fixture intentionally emits a compatibility warning in default generation"
+)
 EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/allof_class_hierarchy.json": "intentionally invalid JSON fixture",
+    "jsonschema/allof_inheritance_errors/mro_conflict.json": "generation rejects the inconsistent allOf inheritance",
+    "jsonschema/collapse_root_models_decimal_defaults.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/dataclass_nested_mapping_default_chain.json": (
+        "30-level chain with two references per level: hypothesis-jsonschema time roughly doubles per level "
+        "(10 examples take 47 s at depth 10); test_main_dataclass_nested_mapping_default_chain covers its generation"
+    ),
+    "jsonschema/discriminator_enum_const_outside_enum.json": (
+        "the const lies outside the Enum of the base, so no document is valid; "
+        "test_use_enum_values_in_discriminator_const_outside_enum covers its generation"
+    ),
+    "jsonschema/discriminator_enum_unnamed_tags.json": (
+        "option-only e2e fixture; payload validation intentionally uses default generation, which tags the variants "
+        "by schema name; test_use_enum_values_in_discriminator_without_member validates its payloads"
+    ),
+    "jsonschema/msgspec_number_limits/float_range_bounds.json": (
+        "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
+        "test_msgspec_number_limits validates its msgspec payloads"
+    ),
+    "jsonschema/msgspec_wide_int_enums.json": (
+        "Pydantic refuses JSON ints beyond the 64-bit range as Enum and Literal values (int_parsing_size); "
+        "test_msgspec_wide_int_enums validates its msgspec payloads"
+    ),
+    "jsonschema/msgspec_wide_int_tags.json": (
+        "Pydantic refuses JSON ints beyond the 64-bit range as Literal values (int_parsing_size); "
+        "test_msgspec_wide_int_tags validates its msgspec payloads"
+    ),
     "jsonschema/non_dict_files/list_only.json": "input is JSON data, not a JSON Schema document",
     "jsonschema/non_dict_files/list_only.yaml": "input is YAML data, not a JSON Schema document",
     "jsonschema/non_dict_files/whitespace_only.yaml": "empty YAML fixture",
     "jsonschema/non_json_object.json": "input is JSON data, not a JSON Schema document",
     "jsonschema/null.json": "intentionally invalid JSON fixture",
+    "jsonschema/numeric_constraint_precision/beyond_float_range.json": (
+        "number bounds beyond the float range make hypothesis-jsonschema raise OverflowError; "
+        "test_number_bounds_beyond_float_range validates its payloads"
+    ),
+    "jsonschema/numeric_constraint_precision/non_finite_multiple_of.json": (
+        "a multipleOf beyond the float range has no JSON value for the payload generator; "
+        "test_non_finite_multiple_of_left_out_accepts_non_multiples validates its payloads"
+    ),
     "jsonschema/ref_to_json_list/list.json": "referenced JSON data list, not a schema document",
+    "jsonschema/schema_validators_multiple_aliases_property_count.json": (
+        "opt-in schema-validator e2e fixture; payload validation intentionally uses default generation"
+    ),
+    "jsonschema/type_alias_lookaround/multiple_bases.json": (
+        "msgspec.Struct generation rejects two generated bases with fields; test_type_alias_lookaround validates it"
+    ),
+    "jsonschema/rust_only_syntax.json": (
+        "Rust-only regex syntax that Python's re rejects or warns about; test_main_rust_only_syntax validates it"
+    ),
+    "jsonschema/rust_unsupported_atomic_group.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.11+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_end_of_string.json": (
+        "Python-only regex syntax switches engines only for --target-python-version 3.14+; "
+        "test_main_rust_unsupported_target_python validates the generated models"
+    ),
+    "jsonschema/rust_unsupported_python_rejected.json": (
+        "patterns both regex engines reject fail to import under either engine"
+    ),
+    "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/serialized_decimal_default_alias_from_type.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/serialized_decimal_default_collision.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/serialized_decimal_default_condecimal_collision.json": (
+        SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON
+    ),
+    "jsonschema/serialized_decimal_default_scope.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/serialized_decimal_defaults.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/string_constraints_on_emitted_types.json": (
+        "e2e fixture that intentionally emits generator warnings for the string keywords its types leave out; "
+        "test_main_string_constraints_on_emitted_types validates its payloads"
+    ),
+    "jsonschema/strict_types_constraints.json": (
+        "maxLength of a binary string counts JSON characters while the generated bytes count UTF-8 bytes, as "
+        "without --strict-types; test_main_strict_types_keep_constraints validates its payloads"
+    ),
+    "jsonschema/type_mappings_byte_to_binary.json": (
+        "opt-in --type-mappings string+byte=binary e2e fixture; test_main_jsonschema_type_mappings_byte_to_binary "
+        "decodes its payloads, while hypothesis-jsonschema draws non-base64 text for a byte string in a type union"
+    ),
+    "jsonschema/unique_items_prefix_items_draft7.json": (
+        "opt-in schema-validator dialect e2e fixture; Draft 7 ignores prefixItems, "
+        "which hypothesis-jsonschema cannot satisfy for generic payload validation"
+    ),
     "jsonschema/unknown_format.json": "unknown format fixture intentionally emits a generator warning",
     "openapi/complex_reference.json": "intentionally invalid JSON fixture",
     "openapi/list.json": "input is JSON data, not an OpenAPI document",
     "openapi/not.json": "intentionally invalid JSON fixture",
     "openapi/subclass_enum.json": "intentionally invalid JSON fixture",
 }
+ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
+    (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
+)
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/enum_const_unsatisfiable.json": (
+        "each const is none of its enum values, so no payload holds those properties; "
+        "test_main_jsonschema_enum_const_unsatisfiable pins its output and warnings"
+    ),
+    "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
+        "its const tag is outside its pattern, so the schema accepts no payload; "
+        "test_main_openapi_discriminator_pattern_mismatch pins its source"
+    ),
+    "jsonschema/number_constraints_on_mapped_formats.json": (
+        "the boolean numeric format needs --type-mappings; "
+        "test_main_number_constraints_on_mapped_formats checks the mapped number bound"
+    ),
+    "jsonschema/number_constraints_on_numeric_string_formats.json": (
+        "hypothesis-jsonschema generates arbitrary strings for the decimal, integer and unixtime formats; "
+        "test_main_number_constraints_on_numeric_string_formats checks their generated number bounds"
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/allof_outer_constraints/duration_length.json",
+            "jsonschema/allof_outer_constraints/uuid4_length.json",
+        ),
+        "hypothesis-jsonschema generates arbitrary strings for these outer allOf formats; "
+        "test_allof_outer_constraints checks native duration and UUID4 validation and serialization",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/allof_outer_constraints/mapped_date_time_length.json",
+            "jsonschema/allof_outer_constraints/number_mapped_email_length.json",
+            "jsonschema/allof_outer_constraints/number_mapped_string_length.json",
+        ),
+        "custom type-mapping fixtures require explicit generation options; test_allof_outer_constraints "
+        "checks the configured runtime types and their mapped schema constraints",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/allof_outer_constraints/unknown_format.json",
+            "jsonschema/allof_outer_constraints/unknown_length.json",
+        ),
+        "unknown formats intentionally emit compatibility warnings; test_allof_outer_constraints "
+        "asserts these warnings and the fallback runtime behavior",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/compound_property_names/unsupported_one_sibling.json",
+            "jsonschema/compound_property_names/unsupported_sibling.json",
+        ),
+        "legacy propertyNames model keys cannot validate nonempty dictionaries; "
+        "valid empty dictionaries are covered by test_compound_property_names_compatibility",
+    ),
+    **{
+        f"jsonschema/allof_ref_siblings/{name}.json": (
+            "empty literal intersection, so no payload is valid; test_allof_ref_sibling_empty_intersection pins its "
+            "output and warning"
+        )
+        for name in ALLOF_REF_SIBLING_DIAGNOSTICS
+    },
     "jsonschema/all_of_any_of_base_class_ref.json": "hypothesis-jsonschema cannot satisfy the allOf/anyOf constraints",
+    "jsonschema/additional_properties_schema_with_allof_properties.json": (
+        "hypothesis-jsonschema cannot satisfy the allOf object constraints; typed extras are covered by e2e tests"
+    ),
     "jsonschema/decimal_fractional_constraints.json": (
         "format decimal strings from hypothesis-jsonschema are arbitrary text that Decimal cannot parse"
     ),
@@ -94,8 +245,29 @@ EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/msgspec_decimal_constraints.json": (
         "format decimal strings from hypothesis-jsonschema are arbitrary text that Decimal cannot parse"
     ),
+    **dict.fromkeys(
+        (
+            "jsonschema/nested_resources/draft4_id_scope/root.json",
+            "jsonschema/nested_resources/undeclared_modern_scope/root.json",
+        ),
+        "hypothesis-jsonschema resolves the child resource's local pointer against the outer document, "
+        "producing strings where the source requires integers; test_schema_resource_identifier_versions "
+        "retains the focused generation and runtime checks",
+    ),
+    "jsonschema/nested_resources/undeclared_id_scope/root.json": (
+        "undeclared-dialect compatibility retains legacy id scoping, while jsonschema's default modern "
+        "oracle ignores id; test_schema_resource_identifier_versions covers this compatibility policy"
+    ),
+    "jsonschema/nested_resources/unrecognized_id_scope/root.json": (
+        "unknown-metaschema compatibility has no declared standard oracle; jsonschema warns and selects "
+        "a different modern id policy; test_schema_resource_identifier_versions covers the legacy fallback"
+    ),
     "jsonschema/non_finite_container_defaults.json": (
         "non-finite defaults cannot be represented in the JSON payloads hypothesis-jsonschema generates"
+    ),
+    "jsonschema/non_finite_enum_members.yaml": (
+        "non-finite enum members cannot be represented in the JSON payloads hypothesis-jsonschema generates; "
+        "test_main_jsonschema_non_finite_enum_members imports the output of every backend"
     ),
     "jsonschema/non_finite_number_values.json": (
         "non-finite bounds cannot be satisfied by any JSON payload hypothesis-jsonschema generates"
@@ -114,6 +286,29 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/allof.yaml::components.schemas.AllOfNested3": (
         "hypothesis-jsonschema cannot satisfy the nested allOf component constraints"
+    ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.Anything": (
+        "an allOf of untyped constraint members stays an empty model until flat untyped constraints are fixed"
+    ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
+        "hypothesis-jsonschema seldom draws a string that meets both of its patterns; "
+        "test_schema_intersection_shape_payloads checks the same allOf of two patterns (root_forms)"
+    ),
+    "jsonschema/schema_intersection/allof_values.json": (
+        "pins the 0.85.0 output G01 PR 3 fixes: the root allOf of untyped members is an empty model that "
+        "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/allof_ref_item_constraints.json": (
+        "pins the 0.85.0 output G01 PR 5 fixes: an item allOf of two scalar references is an empty model that "
+        "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/allof_patterns.json": (
+        "hypothesis-jsonschema cannot draw a $ref whose sibling pattern differs from its target's; "
+        "test_schema_intersection_shape_payloads checks the pattern conjunctions"
+    ),
+    "jsonschema/schema_intersection/enum_refs.json": (
+        "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "
+        "test_schema_intersection_shape_output records it"
     ),
     "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
         "hypothesis-jsonschema generates this nested allOf schema inconsistently"
@@ -150,8 +345,158 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/ref_nullable.yaml::components.schemas.NullableChild": (
         "top-level nullable object components need a wrapper policy; nullable refs are covered via Parent"
     ),
+    **dict.fromkeys(
+        (
+            "openapi/strip_default_none_constructor_order.yaml::components.schemas.Nullable",
+            "openapi/strip_default_none_constructor_order.yaml::components.schemas.NullableLater",
+        ),
+        "top-level nullable object components need a wrapper policy; "
+        "test_main_openapi_strip_default_none_constructor_order imports the models that reference them",
+    ),
+    "openapi/redundant_reference_null_oas30.yaml::components.schemas.NullObj": (
+        "top-level nullable object components need a wrapper policy; "
+        "test_redundant_reference_null pins the models that reference it"
+    ),
+    "openapi/strip_default_none_nullable_reference.yaml::components.schemas.S": (
+        "top-level nullable object components need a wrapper policy; "
+        "test_main_openapi_strip_default_none_nullable_reference pins the models that reference it"
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.U",
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.V",
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.W",
+        ),
+        "a top-level type list holding object is a model beside the root model that holds it, and the payload type "
+        "is the model; test_schema_intersection_shape_payloads checks them through Model",
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/nullable_reuse_collapse.yaml::components.schemas.Home",
+            "openapi/nullable_reuse_collapse.yaml::components.schemas.Shop",
+        ),
+        "top-level nullable object components need a wrapper policy; nullable refs are covered via Person",
+    ),
+    "openapi/type_overrides_constructor_order.yaml::components.schemas.Nullable": (
+        "top-level nullable object components need a wrapper policy; "
+        "test_main_openapi_type_overrides_constructor_order imports the models that reference it"
+    ),
+    "jsonschema/collapse_root_models_lookaround_discriminator.json": (
+        "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
+        "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
+    ),
+    "jsonschema/discriminator_mapping_msgspec_tags.json": (
+        "discriminator tags come only from $defs mappings and schema names, which payload sampling does not constrain; "
+        "test_main_msgspec_discriminator_mapping_tags checks the generated tags"
+    ),
+}
+MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
+    "jsonschema/missing_sentinel_payload.json",
+    "openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable",
+)
+TYPE_ALIAS_TYPE_PAYLOAD_ARGS = ("--use-type-alias", "--target-python-version", "3.11")
+"""Write roots as ``TypeAliasType``: Pydantic before 2.10 cannot build models that use ``type`` statements."""
+PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
+    **{
+        f"jsonschema/type_union_constraints/{name}.json": dict.fromkeys(
+            (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS), ("--field-constraints",)
+        )
+        for name in ("keys_field", "keys_root", "keys_count_field", "keys_count_root")
+    },
+    **{
+        case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
+        for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
+    },
+    **{
+        f"jsonschema/type_alias_lookaround/{name}.json": {PayloadBackend.PYDANTIC_V2: TYPE_ALIAS_TYPE_PAYLOAD_ARGS}
+        for name in ("nested", "siblings", "inherited")
+    },
+    "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
+    "jsonschema/redundant_constraints.json": {
+        backend: (
+            "--use-non-positive-negative-number-constrained-types",
+            "--use-single-value-enum-as-const",
+            "--omit-redundant-constraints",
+            form,
+        )
+        for backend, form in (
+            (PayloadBackend.PYDANTIC_V2, "--use-annotated"),
+            (PayloadBackend.PYDANTIC_V2_DATACLASS, "--field-constraints"),
+        )
+    },
+    "jsonschema/decimal_multiple_of_field_forms.json": {
+        PayloadBackend.PYDANTIC_V2: (
+            "--use-decimal-for-multiple-of",
+            "--use-decimal-in-field-forms",
+            "--use-annotated",
+        ),
+        PayloadBackend.PYDANTIC_V2_DATACLASS: (
+            "--use-decimal-for-multiple-of",
+            "--use-decimal-in-field-forms",
+            "--field-constraints",
+        ),
+    },
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
+        for name in (
+            "collapse_root_models_lookaround",
+            "collapse_root_models_lookaround_inheritance",
+            "collapse_root_models_lookaround_root",
+            "collapse_root_models_property_names_reference",
+        )
+    },
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--read-const-beside-enum",))
+        for name in (
+            "enum_const_collapsed_root_models",
+            "enum_const_discriminator_tag",
+            "enum_const_draft_04",
+            "enum_const_forward_positions",
+            "enum_const_hidden_by_field",
+            "enum_const_integral_float",
+            "enum_const_integral_float_literal",
+            "enum_const_non_literal",
+            "enum_const_positions",
+            "enum_const_titles",
+            "enum_const_type_list",
+            "read_as_const_marker_in_document",
+        )
+    },
+    "jsonschema/enum_multiple_of_big_integer.json": dict.fromkeys(PayloadBackend, ("--filter-literal-values",)),
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--keep-enum-member-values",))
+        for name in ("enum_value_base_kinds", "msgspec_enum_value_base_kept")
+    },
+    **{
+        case_id: dict.fromkeys(PayloadBackend, ("--intersect-allof-keywords",))
+        for case_id in (
+            "jsonschema/allof_mapping_every_part_null.json",
+            "openapi/schema_intersection/root_site_null_oas30.yaml::components.schemas.InlineArray",
+        )
+    },
+    "jsonschema/msgspec_boolean_enum_literal.json": {
+        PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
+    },
+    "jsonschema/items_array_additional_items_false.json": dict.fromkeys(
+        PayloadBackend, ("--use-tuple-for-fixed-items", "--use-tuple-for-closed-arrays")
+    ),
+    "jsonschema/prefix_items_closed_length.json": dict.fromkeys(PayloadBackend, ("--use-tuple-for-closed-arrays",)),
+    "openapi/nullable_object_maps.yaml::components.schemas.ValueRoot": dict.fromkeys(
+        PayloadBackend, ("--use-single-dict-for-object-maps",)
+    ),
+    "jsonschema/nullable_reuse_collapse.json": dict.fromkeys(
+        PayloadBackend, ("--strict-nullable", "--reuse-model", "--collapse-reuse-models")
+    ),
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
+    **dict.fromkeys(
+        (
+            "jsonschema/allof_outer_constraints/integer_date_time_bounds.json",
+            "jsonschema/allof_outer_constraints/number_date_time_bounds.json",
+        ),
+        "native Pydantic datetime JSON serialization emits strings for numeric timestamps; "
+        "test_allof_outer_constraints checks the preserved numeric bounds and exact serialized values",
+    ),
     "jsonschema/default_factory_nested_model_with_dict.json": (
         "pydantic union branch normalization can dump a oneOf value into a shape that matches multiple branches"
     ),
@@ -161,51 +506,153 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/nested_json_pointer.json": (
         "schema requires a property absent from properties, so the generated model has no field to dump"
     ),
-    "jsonschema/strict_types_matrix.json": (
+    "jsonschema/one_of_with_sub_schema_array_item.json": (
+        "pydantic serializes URI values in JSON mode, which can collapse distinct source-valid strings and violate "
+        "uniqueItems"
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/decimal_multiple_of_field_forms.json",
+            "jsonschema/strict_types_matrix.json",
+        ),
+        "pydantic serializes Decimal JSON values as strings while the source schema requires number",
+    ),
+    "jsonschema/type_alias_annotated/shadowed_imports.json": (
         "pydantic serializes Decimal JSON values as strings while the source schema requires number"
+    ),
+    "jsonschema/unique_items_schema_validators.json": (
+        "pydantic drops extra nested object properties while dumping, which can collapse distinct uniqueItems values"
+    ),
+    "jsonschema/use_tag_as_union_variant_name_edges.json": (
+        "pydantic union branch normalization can dump a oneOf value into a shape that matches multiple branches"
     ),
     "openapi/allof_array_ref_override.yaml::components.schemas.DataType": (
         "schema requires a property absent from properties, so the generated model has no field to dump"
     ),
-    "openapi/issue_2953.yaml::components.schemas.DataType": (
-        "schema requires a property absent from properties, so the generated model has no field to dump"
-    ),
 }
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION = "2.5.0"
+PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"
+PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION = "2.12.0"
+PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION = "2.10.0"
+PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.5.2"
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.11.0"
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.11.0"
+"""The oldest Pydantic whose payload target, the newest target it runs, writes compiled alias patterns (2.8)."""
+PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
+    "jsonschema/numeric_constraint_precision/ordinary.json",
+    "jsonschema/native_decimal_default_constrained.json",
+    "jsonschema/serialized_decimal_default_multiple_of.json",
+    "jsonschema/msgspec_union_member_constraints.json",
+)
+PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
+    "Pydantic before 2.5.2 rejects schema-valid negative float multipleOf values"
+)
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS = (
+    "jsonschema/msgspec_float_multiple_of.json",
+    "jsonschema/use_decimal_for_multiple_of.json",
+)
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
+    "Pydantic before 2.11.0 rejects schema-valid negative float multipleOf values of steps that floats cannot "
+    "represent exactly, such as 0.1"
+)
+LITERAL_PATTERN_INTERSECTION_CASE_IDS = (
+    "jsonschema/allof_literal_patterns/anchored.json",
+    "jsonschema/allof_literal_patterns/character_class.json",
+    "jsonschema/allof_literal_patterns/empty.json",
+    "jsonschema/allof_literal_patterns/escaped_dollar.json",
+    "jsonschema/allof_literal_patterns/escaped_dot.json",
+    "jsonschema/allof_literal_patterns/escaped_metacharacters.json",
+    "jsonschema/allof_literal_patterns/escaped_prefix.json",
+    "jsonschema/allof_literal_patterns/escaped_reverse_prefix.json",
+    "jsonschema/allof_literal_patterns/newline.json",
+    "jsonschema/allof_literal_patterns/prefix.json",
+    "jsonschema/allof_literal_patterns/punctuation.json",
+    "jsonschema/allof_literal_patterns/reverse_prefix.json",
+    "jsonschema/allof_literal_patterns/right_anchor.json",
+    "jsonschema/allof_literal_patterns/split.json",
+    "jsonschema/allof_literal_patterns/suffix.json",
+    "jsonschema/allof_literal_patterns/triple.json",
+    "jsonschema/allof_literal_patterns/unicode.json",
+    "jsonschema/allof_literal_patterns/unknown_escape.json",
+    "jsonschema/allof_literal_patterns/unknown_newline_escape.json",
+)
+PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
+    *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
+    "jsonschema/lookaround_mixed_constraints.json",
+    "jsonschema/root_alias_constraints/lookaround.json",
+)
+"""Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
+        PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
+        "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
+        "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
+    ),
+}
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
-        "jsonschema/lookaround_anyof_nullable.json": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-        ),
-        "jsonschema/lookaround_dict.json": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-        ),
-        "jsonschema/lookaround_mixed_constraints.json": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-        ),
-        "jsonschema/lookaround_union_types.json": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-        ),
-        "jsonschema/nested_lookaround_array.json": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to nested lookaround pattern validators"
-        ),
-        "openapi/pattern_lookaround.yaml::components.schemas.info": (
-            "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI lookaround pattern validators"
-        ),
-        "jsonschema/use_decimal_for_multiple_of.json": (
-            "Pydantic before 2.5.0 can reject schema-valid Decimal multipleOf values near float boundaries"
-        ),
         "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase": (
             "Pydantic before 2.5.0 can reject schema-valid inherited Decimal multipleOf values"
         ),
     },
 }
+"""Pydantic before 2.5 classifications that no generated construct explains.
+
+Cases whose generation states that their models need a newer Pydantic, such as ``regex_engine`` (2.5), are skipped
+from that statement instead of from a table (``runtime_below_stated_floor``).
+"""
+PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    backend: dict.fromkeys(
+        PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
+        PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+    )
+    for backend in (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS)
+}
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    backend: dict.fromkeys(
+        PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS,
+        PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+    )
+    for backend in (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS)
+}
+PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        "jsonschema/false_reference_fast_path.json": (
+            "Pydantic before 2.10.0 cannot fill nested TypeAliasType aliases while building dataclass schemas"
+        ),
+    },
+}
+PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    PayloadBackend.PYDANTIC_V2: dict.fromkeys(
+        MISSING_SENTINEL_PAYLOAD_CASE_IDS,
+        "Pydantic MISSING sentinel runtime support requires Pydantic 2.12+",
+    )
+}
+PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    PayloadBackend.PYDANTIC_V2: {
+        "jsonschema/msgspec_payload_runtime_compatibility.json": (
+            "Pydantic 2.0.x emits JSON-mode serializer warnings for object unions "
+            "distinguished by boolean Literal fields"
+        ),
+    },
+}
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
+        **dict.fromkeys(
+            (
+                "jsonschema/compound_property_names/enum_oneof.json",
+                "jsonschema/compound_property_names/enum_refs.json",
+                "jsonschema/compound_property_names/extra_enum_disjoint.json",
+            ),
+            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys",
+        ),
         "jsonschema/property_names_anyof_ref.json": (
             "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
         ),
         "jsonschema/property_names_ref_enum.json": (
+            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
+        ),
+        "jsonschema/type_overrides_dict_key.json": (
             "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
         ),
     },
@@ -225,3 +672,10 @@ def _payload_target_python_version() -> str:
 
 
 PAYLOAD_TARGET_PYTHON_VERSION = _payload_target_python_version()
+PAYLOAD_TARGET_PYDANTIC_VERSION = max(
+    (target.value for target in TargetPydanticVersion if installed_pydantic_runs_target(target.value)),
+    key=lambda value: tuple(map(int, value.split("."))),
+)
+"""The newest target the installed Pydantic can run, passed only when it cannot run the output of an unset target."""
+PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION = installed_pydantic_runs_target(None)
+"""Whether the installed Pydantic runs the output of an unset target, so payload models keep the default output."""

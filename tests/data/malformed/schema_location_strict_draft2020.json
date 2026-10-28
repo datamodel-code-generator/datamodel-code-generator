@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pair": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}]
+    }
+  },
+  "$defs": {
+    "a/b": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMinimum": true,
+      "maximum": 10,
+      "exclusiveMaximum": true
+    }
+  }
+}

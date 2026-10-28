@@ -1,0 +1,19 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "minLength": 1
+    }
+  ],
+  "description": "Outer description",
+  "default": "outer",
+  "definitions": {
+    "Base": {
+      "type": "string",
+      "default": "base"
+    }
+  }
+}

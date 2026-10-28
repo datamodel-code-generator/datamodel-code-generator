@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "#/$defs/Value"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "$defs": {
+    "Value": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n"
+      ]
+    }
+  }
+}

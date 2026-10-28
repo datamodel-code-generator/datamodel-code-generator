@@ -1,0 +1,30 @@
+{
+  "contexts": [
+    {
+      "x-vendor-meaning": [
+        "a",
+        {
+          "b": 2
+        }
+      ]
+    }
+  ],
+  "values": [
+    {
+      "native": true,
+      "generated": {}
+    },
+    {
+      "native": true,
+      "generated": "rejected"
+    },
+    {
+      "native": false,
+      "generated": "rejected"
+    },
+    {
+      "native": false,
+      "generated": "rejected"
+    }
+  ]
+}

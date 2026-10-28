@@ -1,0 +1,16 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "anyOf": [
+      false,
+      {
+        "pattern": "^a"
+      },
+      {
+        "pattern": "^b"
+      }
+    ]
+  },
+  "additionalProperties": {}
+}

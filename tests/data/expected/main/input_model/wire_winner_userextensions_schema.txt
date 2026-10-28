@@ -1,0 +1,55 @@
+{
+  "examples": [
+    {
+      "x-datamodel-code-generator-field-name": "example"
+    }
+  ],
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "shared": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Shared",
+      "type": "array",
+      "uniqueItems": true,
+      "x-datamodel-code-generator-field-name": [
+        "user",
+        "property"
+      ],
+      "x-datamodel-code-generator-field-names": false,
+      "x-python-type": "frozenset[int]"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {
+        "x-datamodel-code-generator-field-name": "default"
+      },
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "first",
+    "shared",
+    "last"
+  ],
+  "title": "UserExtensions",
+  "type": "object",
+  "x-datamodel-code-generator-field-name": {
+    "user": "root"
+  },
+  "x-datamodel-code-generator-field-names": [
+    "user",
+    "root"
+  ]
+}

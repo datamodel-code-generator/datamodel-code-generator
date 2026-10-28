@@ -1,0 +1,6 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="root"><xs:complexType>
+    <xs:sequence><xs:element name="code" type="xs:int"/></xs:sequence>
+    <xs:attribute name="code" type="xs:string" use="required"/>
+  </xs:complexType></xs:element>
+</xs:schema>

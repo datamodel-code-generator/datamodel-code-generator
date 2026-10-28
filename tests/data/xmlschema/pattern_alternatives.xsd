@@ -1,0 +1,48 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Token"><xs:restriction base="xs:string">
+    <xs:pattern value="[A-Z]+"/><xs:pattern value="[0-9]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Reversed"><xs:restriction base="xs:string">
+    <xs:pattern value="[0-9]+"/><xs:pattern value="[A-Z]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Branches"><xs:restriction base="xs:string">
+    <xs:pattern value="ab|cd"/><xs:pattern value="xy"/><xs:pattern value="[0-9]{2}"/>
+    <xs:pattern value="xy"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Derived"><xs:restriction base="Token">
+    <xs:pattern value="[A-M]+"/><xs:pattern value="[3-7]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Deeper"><xs:restriction base="Derived">
+    <xs:pattern value="[A-C]+"/><xs:pattern value="[4-5]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="SingleBase"><xs:restriction base="xs:string">
+    <xs:pattern value="[A-Z]{2}|[0-9]{3}"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="SingleDerived"><xs:restriction base="SingleBase">
+    <xs:pattern value="[A-Z]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Empty"><xs:restriction base="xs:string">
+    <xs:pattern value=""/><xs:pattern value="Q"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Escaped"><xs:restriction base="xs:string">
+    <xs:pattern value="a\+b"/><xs:pattern value="x\.y"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Newline"><xs:restriction base="xs:string">
+    <xs:pattern value="A&#10;B"/><xs:pattern value="C"/>
+  </xs:restriction></xs:simpleType>
+  <xs:element name="Root"><xs:complexType><xs:sequence>
+    <xs:element name="token" type="Token"/>
+    <xs:element name="reversed" type="Reversed"/>
+    <xs:element name="branches" type="Branches"/>
+    <xs:element name="derived" type="Derived"/>
+    <xs:element name="deeper" type="Deeper"/>
+    <xs:element name="single_derivation" type="SingleDerived"/>
+    <xs:element name="empty" type="Empty"/>
+    <xs:element name="escaped" type="Escaped"/>
+    <xs:element name="newline" type="Newline"/>
+    <xs:element name="inline"><xs:simpleType><xs:restriction>
+      <xs:simpleType><xs:restriction base="xs:string"><xs:pattern value="[ab]+"/></xs:restriction></xs:simpleType>
+      <xs:pattern value="a+"/><xs:pattern value="b+"/>
+    </xs:restriction></xs:simpleType></xs:element>
+  </xs:sequence></xs:complexType></xs:element>
+</xs:schema>

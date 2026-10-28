@@ -1,0 +1,6 @@
+{
+  "state": "READY",
+  "child": {
+    "name": "ok"
+  }
+}

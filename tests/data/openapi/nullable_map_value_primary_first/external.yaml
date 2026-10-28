@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: External nullable map, version: "1"}
+paths: {}
+components:
+  schemas:
+    Bag:
+      type: object
+      properties:
+        entries:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                type: integer

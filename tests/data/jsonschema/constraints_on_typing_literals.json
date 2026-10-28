@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstraintsOnTypingLiterals",
+  "type": "object",
+  "required": [
+    "strings_on_integer",
+    "integers_on_string",
+    "integer_bound_on_string",
+    "extension_strings",
+    "string_unions",
+    "mixed_values",
+    "strings_with_none",
+    "nested_strings"
+  ],
+  "properties": {
+    "strings_on_integer": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[\"a\", \"bb\"]",
+      "minLength": 2
+    },
+    "integers_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[1, 2, 3]",
+      "multipleOf": 2
+    },
+    "integer_bound_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[1, 2, 3]",
+      "minimum": 2
+    },
+    "extension_strings": {
+      "type": "integer",
+      "x-python-type": "typing_extensions.Literal[\"a\", \"bb\"]",
+      "maxLength": 1
+    },
+    "string_unions": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[\"a\", \"bb\"] | typing.Literal[\"ccc\"]",
+      "pattern": "^b"
+    },
+    "mixed_values": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[\"a\", 1]",
+      "minLength": 2
+    },
+    "strings_with_none": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[\"a\", \"bb\", None]",
+      "minLength": 2
+    },
+    "nested_strings": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[typing.Literal[\"a\", \"bb\"], \"ccc\"]",
+      "minLength": 2
+    }
+  }
+}

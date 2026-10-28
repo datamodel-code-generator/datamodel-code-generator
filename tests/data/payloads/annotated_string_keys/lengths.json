@@ -1,0 +1,25 @@
+{
+  "valid": {
+    "services": {
+      "ab": "ok"
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "a": "ok"
+        }
+      },
+      "error": "string_too_short"
+    },
+    {
+      "value": {
+        "services": {
+          "abcde": "ok"
+        }
+      },
+      "error": "string_too_long"
+    }
+  ]
+}

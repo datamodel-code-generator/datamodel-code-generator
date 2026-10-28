@@ -1,0 +1,30 @@
+{
+  "nested": {
+    "inner": {
+      "text": "ok",
+      "number": 3,
+      "wire-name": "on-wire",
+      "next": {
+        "text": "child",
+        "wire-name": "child-wire"
+      }
+    }
+  },
+  "empty": {},
+  "single": {
+    "modules": [
+      [
+        "schema_a.model",
+        "data"
+      ],
+      [
+        "schema_b.model",
+        "info"
+      ]
+    ],
+    "payload": {
+      "id": 7,
+      "name": "shared"
+    }
+  }
+}

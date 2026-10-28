@@ -1,0 +1,35 @@
+{
+  "contexts": [
+    {
+      "x-notes": {
+        "examples": [
+          1,
+          true,
+          null
+        ]
+      }
+    }
+  ],
+  "values": [
+    {
+      "native": true,
+      "generated": {}
+    },
+    {
+      "native": true,
+      "generated": {
+        "x": {
+          "b": 2
+        }
+      }
+    },
+    {
+      "native": false,
+      "generated": "rejected"
+    },
+    {
+      "native": false,
+      "generated": "rejected"
+    }
+  ]
+}

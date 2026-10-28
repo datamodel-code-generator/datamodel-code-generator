@@ -18,13 +18,10 @@ class KnownAndRefExtra(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, KnownAndRefExtraAdditionalProperty],
+    }
     name: str
-
-
-KnownAndRefExtra.__annotations__['__pydantic_extra__'] = Dict[
-    str, KnownAndRefExtraAdditionalProperty
-]
-KnownAndRefExtra.model_rebuild(force=True)
 
 
 class ExtraValue(BaseModel):

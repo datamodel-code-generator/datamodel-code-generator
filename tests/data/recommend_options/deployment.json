@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deployment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "labels": {
+      "type": "object",
+      "properties": {
+        "team": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x-": {
+          "type": "string"
+        }
+      }
+    },
+    "env": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z_]+$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ports": {
+      "$ref": "#/$defs/PortList",
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "PortList": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: Models referenced by parameters
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Region:
+      type: object
+      properties:
+        code:
+          type: string

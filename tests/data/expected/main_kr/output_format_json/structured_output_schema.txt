@@ -1,15 +1,80 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "BatchJobPayload": {
+      "additionalProperties": false,
+      "description": "One named job result emitted by batch generation.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GenerationPayload"
+            },
+            {
+              "$ref": "#/$defs/CheckOutputPayload"
+            }
+          ],
+          "title": "Result"
+        }
+      },
+      "required": [
+        "name",
+        "result"
+      ],
+      "title": "BatchJobPayload",
+      "type": "object"
+    },
+    "BatchOutputPayload": {
+      "additionalProperties": false,
+      "description": "Structured JSON payload emitted by --job/--all-jobs with --output-format json.",
+      "properties": {
+        "version": {
+          "const": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "format": {
+          "const": "json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "const": "batch",
+          "title": "Kind",
+          "type": "string"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "#/$defs/BatchJobPayload"
+          },
+          "title": "Jobs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "version",
+        "format",
+        "kind",
+        "jobs"
+      ],
+      "title": "BatchOutputPayload",
+      "type": "object"
+    },
     "CheckDifferencePayload": {
       "additionalProperties": false,
-      "description": "One --check difference emitted by --output-format json.",
+      "description": "One generated-output difference emitted by --check or --diff-against.",
       "properties": {
         "kind": {
           "enum": [
             "changed",
             "missing",
-            "extra"
+            "extra",
+            "added",
+            "removed"
           ],
           "title": "Kind",
           "type": "string"
@@ -52,7 +117,7 @@
     },
     "CheckOutputPayload": {
       "additionalProperties": false,
-      "description": "Structured JSON payload emitted by --check --output-format json.",
+      "description": "Structured JSON payload emitted by generated-output comparison commands.",
       "properties": {
         "version": {
           "const": 1,
@@ -65,7 +130,10 @@
           "type": "string"
         },
         "kind": {
-          "const": "check",
+          "enum": [
+            "check",
+            "input-diff"
+          ],
           "title": "Kind",
           "type": "string"
         },
@@ -83,6 +151,11 @@
           },
           "title": "Differences",
           "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/TargetPayload",
+          "description": "The package and runtime dependencies of a server or client generation; absent for models only.",
+          "title": "Target"
         }
       },
       "required": [
@@ -297,6 +370,26 @@
       "title": "DeprecationsOutputPayload",
       "type": "object"
     },
+    "EntrypointPayload": {
+      "additionalProperties": false,
+      "description": "The entrypoint module of a generated server and the import string of the ASGI application it defines.",
+      "properties": {
+        "app": {
+          "title": "App",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app",
+        "path"
+      ],
+      "title": "EntrypointPayload",
+      "type": "object"
+    },
     "ExperimentalItemPayload": {
       "additionalProperties": false,
       "description": "One experimental feature entry emitted by --list-experimental --output-format json.",
@@ -424,6 +517,58 @@
       "title": "GeneratedFilePayload",
       "type": "object"
     },
+    "GeneratedTargetPayload": {
+      "additionalProperties": false,
+      "description": "The package a server or client generation writes, its runtime requirements, and what to do with it next.",
+      "properties": {
+        "package": {
+          "title": "Package",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "implied": {
+          "$ref": "#/$defs/ImpliedPayload",
+          "description": "The settings the target needs that the run left unset and the values it gave them, keyed as pyproject.toml keys them; absent when it implied none.",
+          "title": "Implied"
+        },
+        "readme": {
+          "description": "The README of the package, which describes the next steps.",
+          "title": "Readme",
+          "type": "string"
+        },
+        "entrypoint": {
+          "$ref": "#/$defs/EntrypointPayload",
+          "description": "The module that serves a generated server's application; absent for a client.",
+          "title": "Entrypoint"
+        },
+        "implementation": {
+          "description": "The modules of the user's that a generated server's entrypoint imports; absent for a client.",
+          "items": {
+            "$ref": "#/$defs/ImplementationPayload"
+          },
+          "title": "Implementation",
+          "type": "array"
+        },
+        "usage": {
+          "description": "Code that calls the first operation of a generated client; absent for a server.",
+          "title": "Usage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "package",
+        "dependencies",
+        "readme"
+      ],
+      "title": "GeneratedTargetPayload",
+      "type": "object"
+    },
     "GenerationPayload": {
       "additionalProperties": false,
       "description": "Structured JSON payload emitted by generation mode --output-format json.",
@@ -460,6 +605,11 @@
           },
           "title": "Files",
           "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/GeneratedTargetPayload",
+          "description": "The package and runtime dependencies of a server or client generation; absent for models only.",
+          "title": "Target"
         }
       },
       "required": [
@@ -470,6 +620,77 @@
         "files"
       ],
       "title": "GenerationPayload",
+      "type": "object"
+    },
+    "ImplementationPayload": {
+      "additionalProperties": false,
+      "description": "A module of the user's that a generated server's entrypoint imports, and the class or function it imports.\n\nGeneration writes the module with stubs only while it is missing; `created` says whether this run wrote it.",
+      "properties": {
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "created": {
+          "title": "Created",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "module",
+        "name",
+        "path",
+        "created"
+      ],
+      "title": "ImplementationPayload",
+      "type": "object"
+    },
+    "ImpliedPayload": {
+      "additionalProperties": false,
+      "description": "The model settings a server or client target set because the run left them unset, keyed as pyproject.toml keys.\n\nEach key is absent unless the target set it.",
+      "properties": {
+        "openapi-scopes": {
+          "description": "The scopes, with api added to the default ones.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Openapi-Scopes",
+          "type": "array"
+        },
+        "target-python-version": {
+          "description": "The target Python version, 3.11.",
+          "title": "Target-Python-Version",
+          "type": "string"
+        },
+        "use-missing-sentinel": {
+          "description": "The MISSING sentinel, on for pydantic_v2.dataclass models.",
+          "title": "Use-Missing-Sentinel",
+          "type": "boolean"
+        },
+        "target-pydantic-version": {
+          "description": "The target pydantic version, 2.14, for models with the MISSING sentinel.",
+          "title": "Target-Pydantic-Version",
+          "type": "string"
+        },
+        "use-msgspec-tagged-unions": {
+          "description": "Tagged unions, on for msgspec.Struct models.",
+          "title": "Use-Msgspec-Tagged-Unions",
+          "type": "boolean"
+        },
+        "use-msgspec-nullable-enum-alias": {
+          "description": "Nullable enum aliases, on for msgspec.Struct models.",
+          "title": "Use-Msgspec-Nullable-Enum-Alias",
+          "type": "boolean"
+        }
+      },
+      "title": "ImpliedPayload",
       "type": "object"
     },
     "OptionMetadataPayload": {
@@ -628,6 +849,12 @@
         "help_text": {
           "title": "Help Text",
           "type": "string"
+        },
+        "recommendation": {
+          "additionalProperties": true,
+          "description": "The --recommend-options --output-format json payload for the input schema (experimental; its schema is --output-format-json-schema recommend-options); absent unless the command has --recommend-options.",
+          "title": "Recommendation",
+          "type": "object"
         }
       },
       "required": [
@@ -682,17 +909,923 @@
       ],
       "title": "PyprojectConfigOutputPayload",
       "type": "object"
+    },
+    "RecommendBaselinePayload": {
+      "additionalProperties": false,
+      "description": "The dated preset the recommendation starts from.",
+      "properties": {
+        "preset": {
+          "title": "Preset",
+          "type": "string"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "configured": {
+          "description": "Whether the configuration already selects this preset.",
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "covers": {
+          "description": "Rule outcomes the preset already sets.",
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Covers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "preset",
+        "family",
+        "configured",
+        "covers"
+      ],
+      "title": "RecommendBaselinePayload",
+      "type": "object"
+    },
+    "RecommendCandidatePayload": {
+      "additionalProperties": false,
+      "description": "One compared configuration and the class names it generates, or the error that rejected it.",
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The preset the candidate starts from; null for the configuration as set.",
+          "title": "Preset"
+        },
+        "set": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "description": "Options added on top of the preset, as config values.",
+          "title": "Set",
+          "type": "object"
+        },
+        "arguments": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "selectable": {
+          "description": "False for the configuration as set without the recommended preset.",
+          "title": "Selectable",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "dropped_constraint_warnings": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Fields that dcg warns the candidate generates without some of their constraints; ranked after the class names. Null when the candidate was rejected.",
+          "title": "Dropped Constraint Warnings"
+        },
+        "metrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendNameMetricsPayload"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendNameStabilityPayload"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "preset",
+        "set",
+        "arguments",
+        "selectable",
+        "error",
+        "dropped_constraint_warnings",
+        "metrics",
+        "stability"
+      ],
+      "title": "RecommendCandidatePayload",
+      "type": "object"
+    },
+    "RecommendContextPayload": {
+      "additionalProperties": false,
+      "description": "The output model type and target Python version the recommendation chose presets for.",
+      "properties": {
+        "output_model_type": {
+          "title": "Output Model Type",
+          "type": "string"
+        },
+        "target_python_version": {
+          "title": "Target Python Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "output_model_type",
+        "target_python_version"
+      ],
+      "title": "RecommendContextPayload",
+      "type": "object"
+    },
+    "RecommendDisagreementPayload": {
+      "additionalProperties": false,
+      "description": "A configured value the recommendation keeps although the rules suggest another value.",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "kind": {
+          "description": "explicit: the configuration sets the field; preset: the configured preset sets it and no option undoes it; newer-preset: a newer dated preset of the same family exists.",
+          "enum": [
+            "explicit",
+            "preset",
+            "newer-preset"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "configured": {
+          "title": "Configured"
+        },
+        "recommended": {
+          "title": "Recommended"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rule"
+        }
+      },
+      "required": [
+        "field",
+        "kind",
+        "configured",
+        "recommended",
+        "rule"
+      ],
+      "title": "RecommendDisagreementPayload",
+      "type": "object"
+    },
+    "RecommendInputPayload": {
+      "additionalProperties": false,
+      "description": "The input a recommendation read and whether its schema rules could analyse it.",
+      "properties": {
+        "source": {
+          "enum": [
+            "file",
+            "url",
+            "stdin",
+            "directory",
+            "input-model"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "input_file_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The configured or detected input file type.",
+          "title": "Input File Type"
+        },
+        "document": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The schema format and version, such as OpenAPI 3.1.0; null when not analysed.",
+          "title": "Document"
+        },
+        "analysed": {
+          "title": "Analysed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "source",
+        "input_file_type",
+        "document",
+        "analysed"
+      ],
+      "title": "RecommendInputPayload",
+      "type": "object"
+    },
+    "RecommendNameChangePayload": {
+      "additionalProperties": false,
+      "description": "One class that two candidates name differently at the same schema location.",
+      "properties": {
+        "location": {
+          "description": "Where the class comes from, for people: the document path, then each inline step after '>'. It is not a JSON Pointer and cannot be used as a --model-name-map key.",
+          "title": "Location",
+          "type": "string"
+        },
+        "before": {
+          "title": "Before",
+          "type": "string"
+        },
+        "after": {
+          "title": "After",
+          "type": "string"
+        }
+      },
+      "required": [
+        "location",
+        "before",
+        "after"
+      ],
+      "title": "RecommendNameChangePayload",
+      "type": "object"
+    },
+    "RecommendNameChangesPayload": {
+      "additionalProperties": false,
+      "description": "How the class names of two candidates differ, matching classes by schema location.",
+      "properties": {
+        "matched": {
+          "description": "Locations with one class in both candidates.",
+          "title": "Matched",
+          "type": "integer"
+        },
+        "renamed": {
+          "title": "Renamed",
+          "type": "integer"
+        },
+        "renumbered": {
+          "description": "Renamed classes whose names differ only in digits.",
+          "title": "Renumbered",
+          "type": "integer"
+        },
+        "removed": {
+          "description": "Locations with a class only before.",
+          "title": "Removed",
+          "type": "integer"
+        },
+        "added": {
+          "description": "Locations with a class only after.",
+          "title": "Added",
+          "type": "integer"
+        },
+        "examples": {
+          "description": "Renamed classes from the largest families of numbered names before, then by location.",
+          "items": {
+            "$ref": "#/$defs/RecommendNameChangePayload"
+          },
+          "title": "Examples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "matched",
+        "renamed",
+        "renumbered",
+        "removed",
+        "added",
+        "examples"
+      ],
+      "title": "RecommendNameChangesPayload",
+      "type": "object"
+    },
+    "RecommendNameMetricsPayload": {
+      "additionalProperties": false,
+      "description": "Counts over the class names one candidate generates; problems counts each class once.",
+      "properties": {
+        "types": {
+          "description": "Generated classes.",
+          "title": "Types",
+          "type": "integer"
+        },
+        "component": {
+          "title": "Component",
+          "type": "integer"
+        },
+        "inline": {
+          "title": "Inline",
+          "type": "integer"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "integer"
+        },
+        "readable": {
+          "title": "Readable",
+          "type": "integer"
+        },
+        "numbered": {
+          "title": "Numbered",
+          "type": "integer"
+        },
+        "statuscode": {
+          "title": "Statuscode",
+          "type": "integer"
+        },
+        "generic": {
+          "title": "Generic",
+          "type": "integer"
+        },
+        "long": {
+          "description": "Names longer than 40 characters that are not a component key.",
+          "title": "Long",
+          "type": "integer"
+        },
+        "doubled": {
+          "description": "Names repeating a word the schema does not repeat.",
+          "title": "Doubled",
+          "type": "integer"
+        },
+        "doubled_from_spec": {
+          "title": "Doubled From Spec",
+          "type": "integer"
+        },
+        "other_problems": {
+          "description": "Problem names that are neither numbered nor doubled.",
+          "title": "Other Problems",
+          "type": "integer"
+        },
+        "displaced": {
+          "description": "Components whose name another class took.",
+          "title": "Displaced",
+          "type": "integer"
+        },
+        "inline_like_component": {
+          "title": "Inline Like Component",
+          "type": "integer"
+        },
+        "union_variants": {
+          "title": "Union Variants",
+          "type": "integer"
+        },
+        "union_variants_parent_numbered": {
+          "title": "Union Variants Parent Numbered",
+          "type": "integer"
+        },
+        "union_variants_numbered": {
+          "title": "Union Variants Numbered",
+          "type": "integer"
+        },
+        "median_length": {
+          "title": "Median Length",
+          "type": "integer"
+        },
+        "max_length": {
+          "title": "Max Length",
+          "type": "integer"
+        },
+        "problems": {
+          "title": "Problems",
+          "type": "integer"
+        },
+        "problems_percent": {
+          "title": "Problems Percent",
+          "type": "number"
+        }
+      },
+      "required": [
+        "types",
+        "component",
+        "inline",
+        "operation",
+        "readable",
+        "numbered",
+        "statuscode",
+        "generic",
+        "long",
+        "doubled",
+        "doubled_from_spec",
+        "other_problems",
+        "displaced",
+        "inline_like_component",
+        "union_variants",
+        "union_variants_parent_numbered",
+        "union_variants_numbered",
+        "median_length",
+        "max_length",
+        "problems",
+        "problems_percent"
+      ],
+      "title": "RecommendNameMetricsPayload",
+      "type": "object"
+    },
+    "RecommendNameStabilityPayload": {
+      "additionalProperties": false,
+      "description": "How one candidate's class names move between --diff-against and the input.",
+      "properties": {
+        "fingerprints_matched": {
+          "description": "Classes matched by a unique set of at least two field names.",
+          "title": "Fingerprints Matched",
+          "type": "integer"
+        },
+        "fingerprints_renamed": {
+          "title": "Fingerprints Renamed",
+          "type": "integer"
+        },
+        "fingerprints_renumbered": {
+          "title": "Fingerprints Renumbered",
+          "type": "integer"
+        },
+        "locations": {
+          "$ref": "#/$defs/RecommendNameChangesPayload"
+        }
+      },
+      "required": [
+        "fingerprints_matched",
+        "fingerprints_renamed",
+        "fingerprints_renumbered",
+        "locations"
+      ],
+      "title": "RecommendNameStabilityPayload",
+      "type": "object"
+    },
+    "RecommendOptionPayload": {
+      "additionalProperties": false,
+      "description": "One rule outcome: the config values it sets, the CLI arguments for them, and why.",
+      "properties": {
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "decision": {
+          "title": "Decision",
+          "type": "string"
+        },
+        "set": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "description": "Config fields and values, as pyproject.toml spells them.",
+          "title": "Set",
+          "type": "object"
+        },
+        "arguments": {
+          "description": "The CLI arguments of the values; for not_recommended, the options the rule advises against.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "contested_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Why the schema also argues against the values; set only for consider entries.",
+          "title": "Contested Reason"
+        },
+        "caveats": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caveats",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "trial": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendOptionTrialPayload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What full mode measured for the option; null in quick mode, or when a candidate it needs was rejected or left out."
+        }
+      },
+      "required": [
+        "rule",
+        "decision",
+        "set",
+        "arguments",
+        "reason",
+        "contested_reason",
+        "caveats",
+        "evidence",
+        "trial"
+      ],
+      "title": "RecommendOptionPayload",
+      "type": "object"
+    },
+    "RecommendOptionTrialPayload": {
+      "additionalProperties": false,
+      "description": "The candidates without and with one option, and the class names it changes.",
+      "properties": {
+        "before": {
+          "description": "Label of the candidate without the option.",
+          "title": "Before",
+          "type": "string"
+        },
+        "after": {
+          "description": "Label of the candidate with the option.",
+          "title": "After",
+          "type": "string"
+        },
+        "changes": {
+          "$ref": "#/$defs/RecommendNameChangesPayload"
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "changes"
+      ],
+      "title": "RecommendOptionTrialPayload",
+      "type": "object"
+    },
+    "RecommendOptionsPayload": {
+      "additionalProperties": false,
+      "description": "Structured JSON payload emitted by --recommend-options --output-format json (experimental).",
+      "properties": {
+        "version": {
+          "const": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "format": {
+          "const": "json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "const": "recommend-options",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "quick",
+            "full"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "rules_revision": {
+          "title": "Rules Revision",
+          "type": "string"
+        },
+        "calibrated_presets": {
+          "title": "Calibrated Presets",
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/$defs/RecommendInputPayload"
+        },
+        "context": {
+          "$ref": "#/$defs/RecommendContextPayload"
+        },
+        "signals": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Signals",
+          "type": "object"
+        },
+        "facts": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Facts",
+          "type": "object"
+        },
+        "baseline": {
+          "$ref": "#/$defs/RecommendBaselinePayload"
+        },
+        "recommendations": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Recommendations",
+          "type": "array"
+        },
+        "left_out": {
+          "description": "Options the rules recommend that the candidate full mode selected does not take.",
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Left Out",
+          "type": "array"
+        },
+        "consider": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Consider",
+          "type": "array"
+        },
+        "validation": {
+          "description": "Options for checks the schema declares that the models leave out by default; the user decides, and they are never in arguments or config.",
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Validation",
+          "type": "array"
+        },
+        "policy": {
+          "description": "Options that depend on what input the project accepts rather than on the schema, such as strict types; never in arguments or config.",
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Policy",
+          "type": "array"
+        },
+        "not_recommended": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Not Recommended",
+          "type": "array"
+        },
+        "disagreements": {
+          "items": {
+            "$ref": "#/$defs/RecommendDisagreementPayload"
+          },
+          "title": "Disagreements",
+          "type": "array"
+        },
+        "trial": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendTrialPayload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The candidates full mode compared; null in quick mode."
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "arguments": {
+          "description": "The recommended command's arguments, without the program name; empty when there is no command to run, such as for a Swagger 2.0 document typed as OpenAPI.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "config": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The pyproject.toml keys to write, nested under their table; null when they stay on the command line or there is no command to run.",
+          "title": "Config"
+        },
+        "config_complete": {
+          "description": "Whether config is a complete table, or only the keys to add or change in an existing one.",
+          "title": "Config Complete",
+          "type": "boolean"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "format",
+        "kind",
+        "mode",
+        "rules_revision",
+        "calibrated_presets",
+        "input",
+        "context",
+        "signals",
+        "facts",
+        "baseline",
+        "recommendations",
+        "left_out",
+        "consider",
+        "validation",
+        "policy",
+        "not_recommended",
+        "disagreements",
+        "trial",
+        "notes",
+        "arguments",
+        "config",
+        "config_complete",
+        "content"
+      ],
+      "title": "RecommendOptionsPayload",
+      "type": "object"
+    },
+    "RecommendTrialPayload": {
+      "additionalProperties": false,
+      "description": "The candidates full mode generated and compared, and the one it selected.",
+      "properties": {
+        "metrics_version": {
+          "title": "Metrics Version",
+          "type": "integer"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/RecommendCandidatePayload"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "ranking": {
+          "description": "Candidate labels, best first.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ranking",
+          "type": "array"
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The best selectable candidate; null when every one was rejected.",
+          "title": "Selected"
+        },
+        "current": {
+          "description": "The candidate that runs the configuration as set.",
+          "title": "Current",
+          "type": "string"
+        },
+        "migration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendNameChangesPayload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Class names the selected candidate changes from the current one."
+        },
+        "dropped": {
+          "description": "Candidates beyond the limit of eight that were not generated.",
+          "title": "Dropped",
+          "type": "integer"
+        },
+        "remeasured": {
+          "description": "The last candidates: the selected configuration without or with one option, generated to measure each option on it when it is not the rules' recommendation; never selected.",
+          "title": "Remeasured",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "metrics_version",
+        "candidates",
+        "ranking",
+        "selected",
+        "current",
+        "migration",
+        "dropped",
+        "remeasured"
+      ],
+      "title": "RecommendTrialPayload",
+      "type": "object"
+    },
+    "TargetPayload": {
+      "additionalProperties": false,
+      "description": "The package a server or client generation renders and the requirements it needs at run time.",
+      "properties": {
+        "package": {
+          "title": "Package",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "implied": {
+          "$ref": "#/$defs/ImpliedPayload",
+          "description": "The settings the target needs that the run left unset and the values it gave them, keyed as pyproject.toml keys them; absent when it implied none.",
+          "title": "Implied"
+        }
+      },
+      "required": [
+        "package",
+        "dependencies"
+      ],
+      "title": "TargetPayload",
+      "type": "object"
     }
   },
   "discriminator": {
     "mapping": {
+      "batch": "#/$defs/BatchOutputPayload",
       "check": "#/$defs/CheckOutputPayload",
       "cli-command": "#/$defs/CliCommandOutputPayload",
       "deprecations": "#/$defs/DeprecationsOutputPayload",
       "experimental": "#/$defs/ExperimentalOutputPayload",
       "generation": "#/$defs/GenerationPayload",
+      "input-diff": "#/$defs/CheckOutputPayload",
       "prompt": "#/$defs/PromptPayload",
-      "pyproject-config": "#/$defs/PyprojectConfigOutputPayload"
+      "pyproject-config": "#/$defs/PyprojectConfigOutputPayload",
+      "recommend-options": "#/$defs/RecommendOptionsPayload"
     },
     "propertyName": "kind"
   },
@@ -716,7 +1849,13 @@
       "$ref": "#/$defs/CheckOutputPayload"
     },
     {
+      "$ref": "#/$defs/BatchOutputPayload"
+    },
+    {
       "$ref": "#/$defs/PromptPayload"
+    },
+    {
+      "$ref": "#/$defs/RecommendOptionsPayload"
     }
   ],
   "title": "StructuredOutputPayload",

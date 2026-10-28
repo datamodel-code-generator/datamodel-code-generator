@@ -1,0 +1,12 @@
+$ datamodel-codegen --input pets.yaml --input-file-type openapi --output models.py --generate-server fastapi --server-output server --server-package server --server-model-package models --formatters builtin --disable-timestamp --output-model-type pydantic_v2.dataclass
+--generate-server set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --input pets.yaml --input-file-type openapi --output models.py --generate-server fastapi --server-output server --server-package server --server-model-package models --formatters builtin --disable-timestamp --output-model-type pydantic_v2.dataclass --openapi-scopes schemas api --target-python-version 3.11 --use-missing-sentinel --target-pydantic-version 2.14
+Add the runtime dependencies of server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in services/pets.py, services/store.py, then run the server:
+  uv add uvicorn && uv run uvicorn server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev server/main.py
+See server/README.md.
+--check: --generate-server set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --input pets.yaml --input-file-type openapi --output models.py --generate-server fastapi --server-output server --server-package server --server-model-package models --formatters builtin --disable-timestamp --output-model-type pydantic_v2.dataclass --check --openapi-scopes schemas api --target-python-version 3.11 --use-missing-sentinel --target-pydantic-version 2.14
+models equal those of a model-only run given --openapi-scopes schemas api --target-python-version 3.11 --use-missing-sentinel --target-pydantic-version 2.14: True

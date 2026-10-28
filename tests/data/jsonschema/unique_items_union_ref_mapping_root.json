@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionRefMappingRoot",
+  "$defs": {
+    "UniqueMapping": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "integer"},
+        "uniqueItems": true
+      }
+    }
+  },
+  "anyOf": [
+    {"$ref": "#/$defs/UniqueMapping"},
+    {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "integer"},
+        "uniqueItems": true
+      }
+    }
+  ]
+}

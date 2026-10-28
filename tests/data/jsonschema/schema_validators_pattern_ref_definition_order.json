@@ -1,0 +1,28 @@
+{
+  "title": "Compose",
+  "type": "object",
+  "properties": {
+    "services": {
+      "$ref": "#/definitions/aaa_services"
+    }
+  },
+  "definitions": {
+    "aaa_services": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+$": {
+          "$ref": "#/definitions/zzz_service"
+        }
+      },
+      "additionalProperties": false
+    },
+    "zzz_service": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

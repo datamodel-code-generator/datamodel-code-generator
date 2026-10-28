@@ -1,0 +1,13 @@
+mypy pets and unions.py: clean
+pyright pets and unions.py: clean
+ty pets and unions.py: clean
+unions_negative.py 2 marked lines
+mypy unions_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  10 assignment
+  11 assignment
+pyright unions_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  10 reportAssignmentType
+  11 reportAssignmentType
+ty unions_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  10 invalid-assignment
+  11 invalid-assignment

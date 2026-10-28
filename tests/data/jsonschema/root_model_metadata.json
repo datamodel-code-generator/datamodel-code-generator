@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RootMetadata",
+  "$defs": {
+    "StringRoot": {"type": "string"},
+    "NullableRoot": {"type": ["string", "null"]},
+    "ArrayRoot": {"type": "array", "items": {"type": "integer"}},
+    "NormalObject": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "string"},
+        "": {"type": "integer"},
+        "root": {"type": "boolean"}
+      },
+      "required": ["value", "", "root"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "text": {"$ref": "#/$defs/StringRoot"},
+    "nullable": {"$ref": "#/$defs/NullableRoot"},
+    "values": {"$ref": "#/$defs/ArrayRoot"},
+    "object": {"$ref": "#/$defs/NormalObject"}
+  },
+  "required": ["text", "nullable", "values", "object"]
+}

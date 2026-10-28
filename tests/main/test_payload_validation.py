@@ -2,16 +2,34 @@
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Mapping, Sequence
+from copy import deepcopy
+from dataclasses import replace
+from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
+from hypothesis_jsonschema import from_schema
+from jsonschema import Draft7Validator
+from jsonschema import ValidationError as JsonSchemaValidationError
 from packaging.version import Version
 from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import ValidationError
+
+from datamodel_code_generator.format import PythonVersion
+from tests.conftest import assert_inputs_not_mutated, assert_output
+from tests.main.conftest import (
+    DATA_PATH,
+    EXPECTED_MAIN_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
+    JSON_SCHEMA_DATA_PATH,
+)
+from tests.main.payload_validation.codegen import PayloadAdapterError, generate_payload_runtime
+from tests.main.payload_validation.schema import _schema_exclusion_reason
 
 from .payload_validation import (
     BACKEND_ACCEPTANCE_EXCLUDED_CASES,
@@ -20,9 +38,16 @@ from .payload_validation import (
     BACKEND_UNASSERTED_MUTATION_CONSTRAINTS,
     PAYLOAD_MUTATION_CONSTRAINTS,
     PAYLOAD_VALIDATION_BACKENDS,
+    PYDANTIC_V2_0_RUNTIME_MAX_VERSION,
+    PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
+    PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
+    PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION,
     ROUND_TRIP_EXCLUDED_CASES,
     SCHEMA_CASES,
     GeneratedModelCache,
@@ -31,14 +56,52 @@ from .payload_validation import (
     backend_acceptance_exclusion_reason,
     backend_rejection_exclusion_reason,
     discover_unaccounted_files,
+    generate_payload_adapter,
     has_rejection_oracle_constraints,
     invalid_payload_mutations,
     load_generated_payload_adapter,
     load_generated_payload_runtime,
     payload_strategy,
     rejection_constraint_ids,
+    runtime_below_stated_floor,
     source_schema_validator,
+    stated_pydantic_floor,
     validate_with_source_schema,
+)
+from .payload_validation import codegen as payload_codegen
+from .payload_validation.conformance import _msgspec_type_statement_exclusion_reason
+from .payload_validation.constants import (
+    PAYLOAD_TARGET_PYDANTIC_VERSION,
+    PAYLOAD_TARGET_PYTHON_VERSION,
+    PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
+    PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+    PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS,
+    PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
+)
+from .payload_validation.native_numeric import (
+    NATIVE_NUMERIC_SAMPLING_ADAPTERS,
+    native_float_multiple_errors,
+    pydantic_payload_result,
+)
+from .payload_validation.schema import _schema_for_payload_generation
+from .payload_validation.strategy import (
+    _bound_float_multiples,
+    _regex_agreement_validator,
+    _valid_where_regex_engines_agree,
+)
+
+NATIVE_NUMERIC_EMPTY_ERRORS = (
+    Path(__file__).parents[1] / "data" / "expected" / "payloads" / "native_numeric_empty_errors.txt"
+)
+
+NUMERIC_SAMPLING_PATH = Path(__file__).parents[1] / "data" / "payloads" / "numeric_sampling.json"
+NUMERIC_SAMPLING_SCHEMAS = json.loads(NUMERIC_SAMPLING_PATH.read_text())
+NUMERIC_SAMPLING_OUTSIDE_SCHEMAS = json.loads(
+    NUMERIC_SAMPLING_PATH.with_name("numeric_sampling_outside_domain.json").read_text()
 )
 
 
@@ -78,15 +141,48 @@ MAX_EXAMPLES = _max_examples_from_env()
 BACKEND_CASE_MODE = _backend_case_mode_from_env()
 PYDANTIC_RUNTIME_VERSION = Version(PYDANTIC_VERSION)
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN = Version(PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
+PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES = frozenset({"unbounded_number_integer_multiple"})
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN = Version(PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION)
 PydanticV2LegacyRuntimeExclusions: TypeAlias = Mapping[PayloadBackend, Mapping[str, str]]
-PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_SETS = (PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,)
-PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_SETS = (
-    PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,
-    PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
+PydanticV2LegacyRuntimeExclusionGroups: TypeAlias = Sequence[tuple[Version, PydanticV2LegacyRuntimeExclusions]]
+PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
+    (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN, PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
+)
+PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
+    (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_0_RUNTIME_MAX, PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
+    (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
+    (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
 )
 REJECTION_ORACLE_CASES = [case for case in SCHEMA_CASES if has_rejection_oracle_constraints(case)]
 SCHEMA_CASE_BY_ID = {case.id: case for case in SCHEMA_CASES}
 ROUND_TRIP_CASES = [case for case in SCHEMA_CASES if case.id not in ROUND_TRIP_EXCLUDED_CASES]
+
+
+def _synthetic_schema_case(source_schema: dict[str, Any]) -> SchemaCase:
+    return SchemaCase(
+        id="jsonschema/synthetic_payload_validation_case.json",
+        input_file_type="jsonschema",
+        source_path=Path("synthetic_payload_validation_case.json"),
+        source_schema=source_schema,
+        codegen_schema=source_schema,
+        temp_input_suffix=".json",
+    )
+
+
 BACKEND_ACCEPTANCE_CASE_IDS = {
     PayloadBackend.PYDANTIC_V2_DATACLASS: (
         "jsonschema/pydantic_v2_runtime_value.json",
@@ -104,6 +200,7 @@ BACKEND_ACCEPTANCE_CASE_IDS = {
         "jsonschema/array_field_constraints.json",
         "openapi/api.yaml::components.schemas.Pet",
         "openapi/additional_properties.yaml::components.schemas.Error",
+        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat",
     ),
     PayloadBackend.DATACLASSES: (
         "jsonschema/pydantic_v2_runtime_value.json",
@@ -160,11 +257,11 @@ def _pydantic_v2_legacy_runtime_exclusion_reason(
     case: SchemaCase,
     backend: PayloadBackend,
     runtime_version: Version = PYDANTIC_RUNTIME_VERSION,
-    exclusion_sets: Sequence[PydanticV2LegacyRuntimeExclusions] = PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_SETS,
+    exclusion_groups: PydanticV2LegacyRuntimeExclusionGroups = PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS,
 ) -> str | None:
-    if runtime_version >= PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN:
-        return None
-    for excluded_cases in exclusion_sets:
+    for max_version, excluded_cases in exclusion_groups:
+        if runtime_version >= max_version:
+            continue
         if reason := excluded_cases.get(backend, {}).get(case.id):
             return reason
     return None
@@ -174,9 +271,9 @@ def _pydantic_v2_legacy_runtime_skip_marks(
     case: SchemaCase,
     backend: PayloadBackend,
     runtime_version: Version = PYDANTIC_RUNTIME_VERSION,
-    exclusion_sets: Sequence[PydanticV2LegacyRuntimeExclusions] = PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_SETS,
+    exclusion_groups: PydanticV2LegacyRuntimeExclusionGroups = PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS,
 ) -> tuple[pytest.MarkDecorator, ...]:
-    if reason := _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, runtime_version, exclusion_sets):
+    if reason := _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, runtime_version, exclusion_groups):
         return (pytest.mark.skip(reason=reason),)
     return ()
 
@@ -196,7 +293,7 @@ def _pydantic_v2_round_trip_case_param(case: SchemaCase) -> pytest.ParameterSet:
         marks=_pydantic_v2_legacy_runtime_skip_marks(
             case,
             PayloadBackend.PYDANTIC_V2,
-            exclusion_sets=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_SETS,
+            exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
         ),
     )
 
@@ -229,6 +326,97 @@ BACKEND_REJECTION_CASES = [
 def generated_model_cache(tmp_path_factory: pytest.TempPathFactory) -> GeneratedModelCache:
     """Cache generated Payload adapters across Hypothesis examples."""
     return GeneratedModelCache({"base": tmp_path_factory.mktemp("payload_validation"), "adapters": {}})
+
+
+def test_numeric_payload_sampling_preserves_source_schemas() -> None:
+    """Only actual numeric schemas receive sampling bounds; literals retain their bytes and order."""
+    with assert_inputs_not_mutated({"schemas": NUMERIC_SAMPLING_SCHEMAS}):
+        normalized = {}
+        for name, original in NUMERIC_SAMPLING_SCHEMAS.items():
+            schema = _schema_for_payload_generation(deepcopy(original))
+            _bound_float_multiples(schema)
+            normalized[name] = schema
+        assert_output(
+            json.dumps(normalized, indent=2) + "\n",
+            NUMERIC_SAMPLING_PATH.parents[1] / "expected" / "payloads" / "numeric_sampling.txt",
+        )
+
+
+@pytest.mark.parametrize(
+    ("name", "schema"),
+    [
+        pytest.param(
+            name,
+            schema,
+            marks=pytest.mark.skipif(
+                name in NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES
+                and PYDANTIC_RUNTIME_VERSION < PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN,
+                reason=PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+            ),
+        )
+        for name, schema in NUMERIC_SAMPLING_SCHEMAS.items()
+    ],
+)
+@settings(
+    database=None,
+    deadline=None,
+    derandomize=True,
+    max_examples=100,
+    suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
+)
+@given(data=st.data())
+def test_numeric_payload_sampling_validates_generated_models(
+    name: str,
+    schema: dict[str, Any],
+    generated_model_cache: GeneratedModelCache,
+    data: st.DataObject,
+) -> None:
+    """Finite float multiples remain source-valid before and after generated-model validation."""
+    case = SchemaCase(
+        id=f"numeric_sampling/{name}",
+        input_file_type="jsonschema",
+        source_path=NUMERIC_SAMPLING_PATH,
+        source_schema=schema,
+        codegen_schema=schema,
+        temp_input_suffix=".json",
+    )
+    with assert_inputs_not_mutated({"source": schema, "codegen": case.codegen_schema}):
+        payload = data.draw(payload_strategy(case), label=name)
+        validate_with_source_schema(case, payload)
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        expected_errors = (
+            pydantic_payload_result(native_adapter, payload)[1]
+            if (native_adapter := NATIVE_NUMERIC_SAMPLING_ADAPTERS.get(name)) is not None
+            else []
+        )
+        validated, errors = pydantic_payload_result(adapter, payload)
+        assert_output(
+            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
+            NATIVE_NUMERIC_EMPTY_ERRORS,
+        )
+        if errors:
+            return
+        dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
+        validate_with_source_schema(case, dumped)
+
+
+@pytest.mark.parametrize(("name", "schema"), NUMERIC_SAMPLING_OUTSIDE_SCHEMAS.items())
+def test_numeric_payload_sampling_reports_unrepresentable_interval(name: str, schema: dict[str, Any]) -> None:
+    """An unsupported sampling interval is diagnosed without claiming the source schema is empty."""
+    case = SchemaCase(
+        id=f"numeric_sampling/{name}",
+        input_file_type="jsonschema",
+        source_path=NUMERIC_SAMPLING_PATH.with_name("numeric_sampling_outside_domain.json"),
+        source_schema=schema,
+        codegen_schema=schema,
+        temp_input_suffix=".json",
+    )
+    validate_with_source_schema(case, schema["examples"][0])
+    with (
+        assert_inputs_not_mutated({"source": schema}),
+        pytest.raises(ValueError, match="Numeric interval lies outside the finite multipleOf sampling domain"),
+    ):
+        payload_strategy(case)
 
 
 def test_payload_validation_cases_cover_discovered_schema_files() -> None:
@@ -363,6 +551,129 @@ def test_payload_backend_full_matrix_exclusions_are_classified() -> None:
             )
 
 
+@pytest.mark.parametrize(
+    "case_id",
+    [
+        "jsonschema/constrained_types_keyword_order.json",
+        "jsonschema/allof_constraint_intersections/complex.json",
+        "jsonschema/allof_constraint_intersections/metadata.json",
+        "jsonschema/allof_constraint_intersections/scalars_equal.json",
+        "jsonschema/allof_constraint_intersections/scalars_partial.json",
+        "jsonschema/custom_template_dependencies_many.json",
+        "jsonschema/optional_nested_factory_requirements/union.json",
+        "jsonschema/numeric_constraint_precision/large.json",
+        "jsonschema/exact_imports_collapse_root_models_module_split_oneof.json",
+        "jsonschema/strict_types.json",
+        "jsonschema/type_array_only_null.json",
+        "jsonschema/type_mappings.json",
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_msgspec_schema_runtime_exclusions_cover_known_semantic_gaps(case_id: str) -> None:
+    """Known msgspec runtime semantic gaps must stay outside the full payload matrix."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    assert backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC)
+    assert backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC)
+
+
+@pytest.mark.parametrize(
+    ("case_id", "expected_reason"),
+    [
+        (
+            "jsonschema/unique_items_union_enum_root.json",
+            "msgspec conversion only supports Enum classes with homogeneous str or int values",
+        ),
+        (
+            "jsonschema/unique_items_union_ref_sibling_2020.json",
+            "msgspec conversion rejects unions containing multiple array-like runtime types",
+        ),
+        (
+            "jsonschema/unique_items_union_ref_sibling_draft7.json",
+            "msgspec conversion rejects unions containing multiple array-like runtime types",
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_msgspec_unique_items_runtime_exclusions_match_type_limits(case_id: str, expected_reason: str) -> None:
+    """UniqueItems fixtures preserve msgspec's array, mapping, and Enum union limits."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    assert backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC) == expected_reason
+    assert backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC) == expected_reason
+
+
+@pytest.mark.parametrize(
+    ("case_id", "expected_reason"),
+    [
+        (
+            "jsonschema/unique_items_schema_validators.json",
+            "msgspec conversion rejects unions containing multiple array-like runtime types",
+        ),
+        (
+            "jsonschema/unique_items_union_ref_mapping_root.json",
+            "msgspec conversion rejects unions containing multiple dict-like runtime types",
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_msgspec_pep_695_unique_items_runtime_exclusions_match_target(case_id: str, expected_reason: str) -> None:
+    """PEP 695 aliases make these msgspec unions unsupported only for Python 3.12+ targets."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    current_target = PythonVersion(PAYLOAD_TARGET_PYTHON_VERSION)
+    current_reason = expected_reason if current_target.has_type_statement else None
+
+    assert backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC) == current_reason
+    assert backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC) == current_reason
+    assert _msgspec_type_statement_exclusion_reason(case, PythonVersion.PY_311) is None
+    assert _msgspec_type_statement_exclusion_reason(case, PythonVersion.PY_312) == expected_reason
+
+
+@pytest.mark.allow_direct_assert
+def test_msgspec_schema_runtime_exclusions_ignore_literal_payloads() -> None:
+    """Literal payload values must not be traversed as nested JSON Schemas."""
+    case = _synthetic_schema_case({
+        "type": "object",
+        "properties": {"value": {"type": "string"}},
+        "enum": [{"type": "object", "properties": {"value": {"type": "null"}}}],
+        "default": {"type": "string", "format": "binary"},
+        "examples": [{"type": "number", "multipleOf": 0.5}],
+    })
+
+    assert backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC) is None
+    assert backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC) is None
+
+
+@pytest.mark.allow_direct_assert
+def test_msgspec_schema_runtime_exclusions_detect_untyped_fractional_multiple_of() -> None:
+    """JSON Schema multipleOf remains numeric metadata when type is omitted."""
+    case = _synthetic_schema_case({"multipleOf": 0.5})
+
+    assert backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC)
+    assert backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC)
+
+
+@pytest.mark.allow_direct_assert
+def test_payload_codegen_restores_parsed_source_cache_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Payload codegen restores the parsed-source cache hook after generation failures."""
+    events: list[str] = []
+
+    def enable_cache() -> Any:
+        events.append("enable")
+        return lambda: events.append("restore")
+
+    def fail_codegen(_args: list[str]) -> payload_codegen.Exit:
+        events.append("main")
+        msg = "generation failed"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(payload_codegen, "enable_parsed_source_cache", enable_cache)
+    monkeypatch.setattr(payload_codegen, "main", fail_codegen)
+
+    with pytest.raises(RuntimeError, match="generation failed"):
+        payload_codegen._run_payload_codegen([])
+
+    assert events == ["enable", "main", "restore"]
+
+
 def test_payload_round_trip_exclusions_are_classified() -> None:
     """Round-trip dump exclusions must name existing cases and carry reasons."""
     if missing_reasons := sorted(  # pragma: no cover
@@ -374,42 +685,57 @@ def test_payload_round_trip_exclusions_are_classified() -> None:
         pytest.fail("Payload round-trip exclusions reference unknown cases:\n" + "\n".join(unknown_cases))
 
 
+@pytest.mark.parametrize(
+    "case_id",
+    [
+        "jsonschema/one_of_with_sub_schema_array_item.json",
+        "jsonschema/unique_items_schema_validators.json",
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_pydantic_round_trip_exclusions_cover_unique_items_normalization(case_id: str) -> None:
+    """Pydantic normalization can collapse distinct JSON Schema uniqueItems values."""
+    assert ROUND_TRIP_EXCLUDED_CASES[case_id]
+    assert case_id not in {case.id for case in ROUND_TRIP_CASES}
+
+
 def test_pydantic_v2_legacy_runtime_exclusions_are_classified() -> None:
     """Pydantic-version-specific payload exclusions must name existing cases and carry reasons."""
     known_cases = set(SCHEMA_CASE_BY_ID)
     supported_backends = {PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS}
-    exclusion_sets = {
-        "payload": PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,
-        "round-trip": PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
+    exclusion_groups = {
+        "payload": PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS,
+        "round-trip": PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
     }
-    for exclusion_kind, exclusion_set in exclusion_sets.items():
-        if unsupported_backends := sorted(
-            backend.value for backend in exclusion_set if backend not in supported_backends
-        ):  # pragma: no cover
-            pytest.fail(
-                f"Pydantic legacy runtime {exclusion_kind} exclusions reference unsupported backends:\n"
-                + "\n".join(unsupported_backends)
-            )
+    for exclusion_kind, exclusion_group in exclusion_groups.items():
+        for _, exclusion_set in exclusion_group:
+            if unsupported_backends := sorted(
+                backend.value for backend in exclusion_set if backend not in supported_backends
+            ):  # pragma: no cover
+                pytest.fail(
+                    f"Pydantic legacy runtime {exclusion_kind} exclusions reference unsupported backends:\n"
+                    + "\n".join(unsupported_backends)
+                )
 
-        for backend, excluded_cases in exclusion_set.items():
-            if missing_reasons := sorted(  # pragma: no cover
-                case_id for case_id, reason in excluded_cases.items() if not reason
-            ):
-                pytest.fail(
-                    f"{backend.value}: Pydantic legacy runtime {exclusion_kind} exclusions require reasons:\n"
-                    + "\n".join(missing_reasons)
-                )
-            if unknown_cases := sorted(set(excluded_cases) - known_cases):  # pragma: no cover
-                pytest.fail(
-                    f"{backend.value}: Pydantic legacy runtime {exclusion_kind} exclusions reference unknown cases:\n"
-                    + "\n".join(unknown_cases)
-                )
+            for backend, excluded_cases in exclusion_set.items():
+                if missing_reasons := sorted(  # pragma: no cover
+                    case_id for case_id, reason in excluded_cases.items() if not reason
+                ):
+                    pytest.fail(
+                        f"{backend.value}: Pydantic legacy runtime {exclusion_kind} exclusions require reasons:\n"
+                        + "\n".join(missing_reasons)
+                    )
+                if unknown_cases := sorted(set(excluded_cases) - known_cases):  # pragma: no cover
+                    pytest.fail(
+                        f"{backend.value}: Pydantic {exclusion_kind} exclusions reference unknown cases:\n"
+                        + "\n".join(unknown_cases)
+                    )
 
 
 @pytest.mark.allow_direct_assert
 def test_pydantic_v2_legacy_runtime_exclusions_are_version_gated() -> None:
     """Pydantic 2.0 keeps only version-specific skips; newer runtimes keep full coverage."""
-    case = SCHEMA_CASE_BY_ID["jsonschema/lookaround_anyof_nullable.json"]
+    case = SCHEMA_CASE_BY_ID["openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase"]
     assert _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2, Version("2.0.3"))
     assert (
         _pydantic_v2_legacy_runtime_exclusion_reason(
@@ -422,21 +748,113 @@ def test_pydantic_v2_legacy_runtime_exclusions_are_version_gated() -> None:
     assert not _pydantic_v2_legacy_runtime_skip_marks(
         case, PayloadBackend.PYDANTIC_V2, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN
     )
-    round_trip_case = SCHEMA_CASE_BY_ID["jsonschema/property_names_ref_enum.json"]
-    assert _pydantic_v2_legacy_runtime_exclusion_reason(
-        round_trip_case,
-        PayloadBackend.PYDANTIC_V2,
-        Version("2.0.3"),
-        PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_SETS,
-    )
-    assert (
-        _pydantic_v2_legacy_runtime_exclusion_reason(
+    for round_trip_case_id, max_version in (
+        ("jsonschema/msgspec_payload_runtime_compatibility.json", PYDANTIC_V2_0_RUNTIME_MAX),
+        ("jsonschema/property_names_ref_enum.json", PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
+    ):
+        round_trip_case = SCHEMA_CASE_BY_ID[round_trip_case_id]
+        assert _pydantic_v2_legacy_runtime_exclusion_reason(
             round_trip_case,
             PayloadBackend.PYDANTIC_V2,
             Version("2.0.3"),
+            PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+        )
+        assert (
+            _pydantic_v2_legacy_runtime_exclusion_reason(
+                round_trip_case,
+                PayloadBackend.PYDANTIC_V2,
+                max_version,
+                PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+            )
+            is None
+        )
+        assert (
+            _pydantic_v2_legacy_runtime_exclusion_reason(
+                round_trip_case,
+                PayloadBackend.PYDANTIC_V2,
+                Version("2.0.3"),
+            )
+            is None
+        )
+
+
+@pytest.mark.parametrize(
+    ("backend", "case_id", "legacy_version", "min_version"),
+    [
+        pytest.param(backend, case_id, legacy_version, min_version, id=f"{backend.value}:{case_id}")
+        for backend in (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS)
+        for case_ids, legacy_version, min_version in (
+            (PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS, Version("2.5.1"), PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN),
+            (
+                PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS,
+                Version("2.10.6"),
+                PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN,
+            ),
+        )
+        for case_id in case_ids
+    ],
+)
+@pytest.mark.parametrize(
+    "exclusion_groups",
+    [
+        pytest.param(PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS, id="default"),
+        pytest.param(PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS, id="round-trip"),
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_pydantic_v2_float_multiple_of_exclusions_are_version_gated(
+    backend: PayloadBackend,
+    case_id: str,
+    legacy_version: Version,
+    min_version: Version,
+    exclusion_groups: PydanticV2LegacyRuntimeExclusionGroups,
+) -> None:
+    """Pydantic rejects negative float multiples before 2.5.2, and of inexact steps such as 0.1 before 2.11.0."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, legacy_version, exclusion_groups)
+    exclusion_reason = _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, min_version, exclusion_groups)
+    assert exclusion_reason is None
+
+
+@pytest.mark.parametrize(
+    ("case_id", "legacy_version", "min_version"),
+    [
+        ("jsonschema/false_reference_fast_path.json", Version("2.9.2"), PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN),
+        (
+            "jsonschema/use_decimal_for_multiple_of.json",
+            Version("2.10.6"),
+            PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN,
+        ),
+        (
+            "jsonschema/root_alias_constraints/lookaround.json",
+            Version("2.10.6"),
+            PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
+        ),
+    ],
+)
+@pytest.mark.allow_direct_assert
+def test_pydantic_v2_dataclass_legacy_exclusions_are_version_gated(
+    case_id: str, legacy_version: Version, min_version: Version
+) -> None:
+    """Pydantic v2 dataclass old-runtime exclusions restore coverage at the configured cutoff."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS, legacy_version)
+    assert (
+        _pydantic_v2_legacy_runtime_exclusion_reason(
+            case,
+            PayloadBackend.PYDANTIC_V2_DATACLASS,
+            min_version,
         )
         is None
     )
+
+
+@pytest.mark.allow_direct_assert
+def test_pydantic_v2_dataclass_type_alias_exclusion_is_backend_specific() -> None:
+    """Only the generated dataclass form needs the old Pydantic nested TypeAliasType exclusion."""
+    case = SCHEMA_CASE_BY_ID["jsonschema/false_reference_fast_path.json"]
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS, Version("2.9.2"))
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2, Version("2.9.2")) is None
 
 
 @pytest.mark.parametrize(
@@ -523,58 +941,85 @@ def test_payload_backend_all_case_mode_widens_runtime_validating_backends() -> N
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_ACCEPTANCE_CASES)
-@settings(
-    database=None,
-    deadline=None,
-    derandomize=True,
-    max_examples=MAX_EXAMPLES,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.function_scoped_fixture,
-        HealthCheck.too_slow,
-    ],
-)
-@given(data=st.data())
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
-    data: st.DataObject,
 ) -> None:
-    """Payloads accepted by the source schema should validate against generated code."""
-    payload = data.draw(payload_strategy(case), label=case.id)
-    validate_with_source_schema(case, payload)
-    adapter = load_generated_payload_adapter(case, generated_model_cache)
-    adapter.validate_python(payload)
+    """Check every schema with fresh Hypothesis settings, avoiding parametrization parent chains."""
+
+    @settings(
+        database=None,
+        deadline=None,
+        derandomize=True,
+        max_examples=MAX_EXAMPLES,
+        suppress_health_check=[
+            HealthCheck.filter_too_much,
+            HealthCheck.function_scoped_fixture,
+            HealthCheck.too_slow,
+        ],
+    )
+    @given(data=st.data())
+    def check_acceptance(data: st.DataObject) -> None:
+        """Source-valid payloads preserve acceptance or a proven native float rejection."""
+        payload = data.draw(payload_strategy(case), label=case.id)
+        validate_with_source_schema(case, payload)
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        expected_errors = native_float_multiple_errors(case, payload)
+        validated, errors = pydantic_payload_result(adapter, payload)
+        expected = expected_errors or []
+        assert_output(
+            json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2),
+            NATIVE_NUMERIC_EMPTY_ERRORS,
+        )
+        if expected_errors is not None and not errors:
+            dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
+            validate_with_source_schema(case, dumped)
+
+    check_acceptance()
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_ROUND_TRIP_CASES)
-@settings(
-    database=None,
-    deadline=None,
-    derandomize=True,
-    max_examples=MAX_EXAMPLES,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.function_scoped_fixture,
-        HealthCheck.too_slow,
-    ],
-)
-@given(data=st.data())
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
-    data: st.DataObject,
 ) -> None:
-    """Payloads accepted by generated pydantic v2 code should dump back to source-valid JSON."""
-    payload = data.draw(payload_strategy(case), label=f"{case.id}:round_trip")
-    validate_with_source_schema(case, payload)
-    adapter = load_generated_payload_adapter(case, generated_model_cache)
-    validated_payload = adapter.validate_python(payload)
-    dumped_payload = adapter.dump_python(validated_payload, mode="json", by_alias=True, exclude_unset=True)
-    validate_with_source_schema(case, dumped_payload)
+    """Check every schema with fresh Hypothesis settings, avoiding parametrization parent chains."""
+
+    @settings(
+        database=None,
+        deadline=None,
+        derandomize=True,
+        max_examples=MAX_EXAMPLES,
+        suppress_health_check=[
+            HealthCheck.filter_too_much,
+            HealthCheck.function_scoped_fixture,
+            HealthCheck.too_slow,
+        ],
+    )
+    @given(data=st.data())
+    def check_round_trip(data: st.DataObject) -> None:
+        """Payloads accepted by generated models should dump back to source-valid JSON."""
+        payload = data.draw(payload_strategy(case), label=f"{case.id}:round_trip")
+        validate_with_source_schema(case, payload)
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        expected_errors = native_float_multiple_errors(case, payload) or []
+        validated_payload, errors = pydantic_payload_result(adapter, payload)
+        assert_output(
+            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
+            NATIVE_NUMERIC_EMPTY_ERRORS,
+        )
+        if errors:
+            return
+        dumped_payload = adapter.dump_python(validated_payload, mode="json", by_alias=True, exclude_unset=True)
+        validate_with_source_schema(case, dumped_payload)
+
+    check_round_trip()
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_REJECTION_CASES)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 @settings(
     database=None,
     deadline=None,
@@ -608,29 +1053,33 @@ def test_generated_pydantic_v2_model_rejects_schema_invalid_payloads(
 
 
 @pytest.mark.parametrize(("backend", "case"), BACKEND_ACCEPTANCE_CASES)
-@settings(
-    database=None,
-    deadline=None,
-    derandomize=True,
-    max_examples=MAX_EXAMPLES,
-    suppress_health_check=[
-        HealthCheck.filter_too_much,
-        HealthCheck.function_scoped_fixture,
-        HealthCheck.too_slow,
-    ],
-)
-@given(data=st.data())
 def test_generated_payload_backend_accepts_representative_schema_payloads(
     backend: PayloadBackend,
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
-    data: st.DataObject,
 ) -> None:
-    """Representative non-default backends should accept source-valid payloads."""
-    payload = data.draw(payload_strategy(case), label=f"{backend.value}:{case.id}:valid")
-    validate_with_source_schema(case, payload)
-    runtime = load_generated_payload_runtime(case, generated_model_cache, backend)
-    runtime.validate_python(payload)
+    """Check each backend case with fresh Hypothesis settings, avoiding parametrization parent chains."""
+
+    @settings(
+        database=None,
+        deadline=None,
+        derandomize=True,
+        max_examples=MAX_EXAMPLES,
+        suppress_health_check=[
+            HealthCheck.filter_too_much,
+            HealthCheck.function_scoped_fixture,
+            HealthCheck.too_slow,
+        ],
+    )
+    @given(data=st.data())
+    def check_acceptance(data: st.DataObject) -> None:
+        """Non-default backends should accept source-valid payloads."""
+        payload = data.draw(payload_strategy(case), label=f"{backend.value}:{case.id}:valid")
+        validate_with_source_schema(case, payload)
+        runtime = load_generated_payload_runtime(case, generated_model_cache, backend)
+        runtime.validate_python(payload)
+
+    check_acceptance()
 
 
 @pytest.mark.parametrize(("backend", "case"), BACKEND_REJECTION_CASES)
@@ -664,3 +1113,426 @@ def test_generated_payload_backend_rejects_representative_schema_invalid_payload
 
     runtime = load_generated_payload_runtime(case, generated_model_cache, backend)
     runtime.assert_rejects_python(mutation.payload)
+
+
+LITERAL_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "literal_witnesses_schemas.json"
+
+
+LITERAL_SCHEMAS = json.loads(LITERAL_DATA_PATH.read_text(encoding="utf-8"))
+
+
+LITERAL_CASES = {
+    name: SchemaCase(name, "jsonschema", LITERAL_DATA_PATH, schema, schema, ".json")
+    for name, schema in LITERAL_SCHEMAS.items()
+}
+
+
+@pytest.mark.parametrize("name", LITERAL_CASES)
+@settings(
+    database=None,
+    deadline=None,
+    derandomize=True,
+    max_examples=20,
+    suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
+)
+@given(data=st.data())
+def test_literal_source_payloads(name: str, data: st.DataObject) -> None:
+    """Sample literal intersections, nonliteral regexes, nested schemas and ordinary primitives."""
+    case = LITERAL_CASES[name]
+    with assert_inputs_not_mutated({"schema": case.source_schema}):
+        validate_with_source_schema(case, data.draw(payload_strategy(case)))
+
+
+def test_literal_source_witnesses() -> None:
+    """The unchanged source proves both literal orders and rejects incomplete intersections."""
+    witnesses = json.loads(LITERAL_DATA_PATH.with_name("literal_witnesses_values.json").read_text(encoding="utf-8"))[
+        "unicode"
+    ]
+    with assert_inputs_not_mutated({"schema": LITERAL_CASES["unicode"].source_schema, "witnesses": witnesses}):
+        for payload in witnesses["valid"]:
+            validate_with_source_schema(LITERAL_CASES["unicode"], payload)
+        for payload in witnesses["invalid"]:
+            with pytest.raises(JsonSchemaValidationError):
+                validate_with_source_schema(LITERAL_CASES["unicode"], payload)
+
+
+REGEX_END_ANCHOR_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "regex_end_anchors.json"
+
+
+REGEX_END_ANCHOR_CASES = {
+    name: (SchemaCase(name, "jsonschema", REGEX_END_ANCHOR_DATA_PATH, entry["schema"], entry["schema"], ".json"), entry)
+    for name, entry in json.loads(REGEX_END_ANCHOR_DATA_PATH.read_text(encoding="utf-8")).items()
+}
+
+
+def test_regex_end_anchor_witnesses(generated_model_cache: dict[str, Any]) -> None:
+    """The payload sampler drops what Python's ``$`` accepts before a final newline and the generated model rejects."""
+    results = {}
+    for name, (case, entry) in REGEX_END_ANCHOR_CASES.items():
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        sampler = _regex_agreement_validator(case)
+        results[name] = []
+        for payload in entry["payloads"]:
+            try:
+                adapter.validate_python(payload)
+            except ValidationError:
+                model_accepts = False
+            else:
+                model_accepts = True
+            results[name].append({
+                "payload": payload,
+                "source_valid": source_schema_validator(case).is_valid(payload),
+                "sampled": _valid_where_regex_engines_agree(sampler, payload),
+                "model_accepts": model_accepts,
+            })
+    assert_output(json.dumps(results, indent=2) + "\n")
+
+
+PAYLOAD_UNION_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "union_capabilities_schemas.json"
+
+
+PAYLOAD_UNION_SCHEMAS = json.loads(PAYLOAD_UNION_DATA_PATH.read_text(encoding="utf-8"))
+
+
+PAYLOAD_UNION_CASES = {
+    name: SchemaCase(name, "jsonschema", PAYLOAD_UNION_DATA_PATH, schema, schema, ".json")
+    for name, schema in PAYLOAD_UNION_SCHEMAS.items()
+}
+
+
+@pytest.mark.parametrize("name", ["permissive_union", "required_union", "required_allof"])
+@settings(
+    database=None,
+    deadline=None,
+    derandomize=True,
+    max_examples=20,
+    suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow, HealthCheck.function_scoped_fixture],
+)
+@given(data=st.data())
+def test_union_source_payloads(name: str, generated_model_cache: dict[str, Any], data: st.DataObject) -> None:
+    """Preserve source-valid payloads through actual generated model validation and dumping."""
+    case = PAYLOAD_UNION_CASES[name]
+    with assert_inputs_not_mutated({"schema": case.source_schema}):
+        payload = data.draw(payload_strategy(case))
+        validate_with_source_schema(case, payload)
+        adapter = load_generated_payload_adapter(case, generated_model_cache)
+        validated = adapter.validate_python(payload)
+        validate_with_source_schema(case, adapter.dump_python(validated, mode="json", exclude_unset=True))
+
+
+def test_union_rejection_capabilities() -> None:
+    """A permissive alternative cannot promise rejection of a required-field deletion."""
+    with assert_inputs_not_mutated({"schemas": PAYLOAD_UNION_SCHEMAS}):
+        capabilities = {name: sorted(rejection_constraint_ids(case)) for name, case in PAYLOAD_UNION_CASES.items()}
+        assert_output(
+            json.dumps(capabilities, indent=2) + "\n",
+            PAYLOAD_UNION_DATA_PATH.parents[1] / "expected" / "payloads" / "union_capabilities.txt",
+        )
+
+
+def test_union_native_witnesses(generated_model_cache: dict[str, Any]) -> None:
+    """Missing optional branch fields remain valid while actual object type violations fail."""
+    from jsonschema import ValidationError as SourceValidationError
+
+    witnesses = json.loads(
+        PAYLOAD_UNION_DATA_PATH.with_name("union_capabilities_values.json").read_text(encoding="utf-8")
+    )["permissive_union"]
+    case = PAYLOAD_UNION_CASES["permissive_union"]
+    adapter = load_generated_payload_adapter(case, generated_model_cache)
+    with assert_inputs_not_mutated({"schema": case.source_schema, "witnesses": witnesses}):
+        for payload in witnesses["valid"]:
+            validate_with_source_schema(case, payload)
+            adapter.validate_python(payload)
+        for payload in witnesses["invalid"]:
+            with pytest.raises(ValidationError):
+                adapter.validate_python(payload)
+            with pytest.raises(SourceValidationError):
+                validate_with_source_schema(case, payload)
+
+
+def test_allof_payload_strategy_classification() -> None:
+    """Keep impossible intersections out of acceptance generation while retaining valid controls."""
+    names = json.loads((DATA_PATH / "payloads/allof_payload_strategy_cases.json").read_text())
+    payloads = json.loads((DATA_PATH / "payloads/allof_payload_strategy_values.json").read_text())
+    results = {}
+    for name in names:
+        schema = json.loads((JSON_SCHEMA_DATA_PATH / "numeric_allof_types" / f"{name}.json").read_text())
+        validator = Draft7Validator(schema)
+        with assert_inputs_not_mutated({"schema": schema}):
+            results[name] = {
+                "empty_strategy": from_schema(deepcopy(schema)).is_empty,
+                "classification": _schema_exclusion_reason(schema),
+                "source_acceptance": [validator.is_valid(payload) for payload in payloads],
+            }
+    assert_output(
+        json.dumps(results, indent=2) + "\n", EXPECTED_MAIN_PATH / "allof_payload_strategy_classification.txt"
+    )
+
+
+def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
+    """Keep actual generation errors visible when checking expected warnings."""
+    source = JSON_SCHEMA_DATA_PATH / "payload_generation_missing_reference.json"
+    schema = json.loads(source.read_text())
+    case = SchemaCase(
+        id="jsonschema/payload_generation_missing_reference.json",
+        input_file_type="jsonschema",
+        source_path=source,
+        source_schema=schema,
+        codegen_schema=schema,
+        temp_input_suffix=".json",
+    )
+    with pytest.raises(PayloadAdapterError) as caught:
+        generate_payload_runtime(
+            case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2
+        )
+    assert_output(str(caught.value) + "\n", EXPECTED_MAIN_PATH / "payload_generation_missing_reference.txt")
+
+
+RUNTIME_COMPATIBILITY_PATH = DATA_PATH / "payloads/runtime_compatibility"
+RUNTIME_COMPATIBILITY_EXPECTED = EXPECTED_MAIN_PATH / "runtime_compatibility"
+
+
+@pytest.mark.parametrize(
+    ("case_id", "payloads"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "null_aliases.json").read_text()).items(),
+)
+def test_payload_runtime_null_aliases(tmp_path: Path, case_id: str, payloads: dict[str, Any]) -> None:
+    """Load actual assignment-based null aliases and reuse their cached runtime."""
+    backend = PayloadBackend.MSGSPEC
+    case = replace(
+        SCHEMA_CASE_BY_ID[case_id],
+        backend_extra_args={backend: ("--target-python-version", "3.10")},
+    )
+    cache = GeneratedModelCache({"base": tmp_path, "adapters": {}})
+    with assert_inputs_not_mutated({"schema": case.source_schema, "payloads": payloads}):
+        validate_with_source_schema(case, payloads["valid"])
+        runtime = generate_payload_runtime(case, cache, backend)
+        result = {
+            "value": runtime.validate_python(payloads["valid"]),
+            "cached": generate_payload_runtime(case, cache, backend) is runtime,
+            "acceptance_exclusion": backend_acceptance_exclusion_reason(case, backend),
+        }
+        for payload in payloads["invalid"]:
+            with pytest.raises(JsonSchemaValidationError):
+                validate_with_source_schema(case, payload)
+            runtime.assert_rejects_python(payload)
+        assert_output(json.dumps(result, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "null_aliases.txt")
+
+
+@pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
+@pytest.mark.parametrize(
+    ("case_id", "payload"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "union_cases.json").read_text()).items(),
+)
+def test_payload_runtime_union_options(
+    backend: PayloadBackend, case_id: str, payload: Any, generated_model_cache: dict[str, Any]
+) -> None:
+    """Keep valid array branches in the configured Pydantic model and dataclass matrix."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    with assert_inputs_not_mutated({"schema": case.source_schema, "payload": payload}):
+        validate_with_source_schema(case, payload)
+        runtime = generate_payload_runtime(case, generated_model_cache, backend)
+        runtime.validate_python(payload)
+        assert_output(
+            json.dumps({"options": case.backend_extra_args[backend], "validated": payload}, indent=2) + "\n",
+            RUNTIME_COMPATIBILITY_EXPECTED / f"union_{'field' if case_id.endswith('field.json') else 'root'}.txt",
+        )
+
+
+@pytest.mark.filterwarnings("ignore:msgspec cannot decode the union Payload:UserWarning")
+@pytest.mark.filterwarnings("ignore:msgspec cannot decode the enum:UserWarning")
+def test_payload_runtime_msgspec_gaps(generated_model_cache: dict[str, Any]) -> None:
+    """Prove classified msgspec gaps with source-valid payloads and real generated modules.
+
+    Generation warns about the unions of these gaps that hold an Enum beside another str-like member, and about the
+    enum of mixed values.
+    """
+    payloads = json.loads((RUNTIME_COMPATIBILITY_PATH / "msgspec_gaps.json").read_text())
+    results = {}
+    for case_id, fixture in payloads.items():
+        case = SCHEMA_CASE_BY_ID[case_id]
+        payload = fixture["valid"]
+        with assert_inputs_not_mutated({"schema": case.source_schema, "payload": payload}):
+            validate_with_source_schema(case, payload)
+            runtime = generate_payload_runtime(case, generated_model_cache, PayloadBackend.MSGSPEC)
+            with pytest.raises(TypeError, match=fixture["error"]) as caught:
+                runtime.validate_python(payload)
+            results[case_id] = {
+                "acceptance": backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC),
+                "rejection": backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC),
+                "error": type(caught.value).__name__,
+            }
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "msgspec_gaps.txt")
+
+
+def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
+    """Gate unresolved assignment aliases on generated syntax and verify the supported syntax."""
+    case = SCHEMA_CASE_BY_ID["jsonschema/compound_property_names/ref_then_any.json"]
+    backend = PayloadBackend.MSGSPEC
+    results = {
+        target.value: _msgspec_type_statement_exclusion_reason(case, target)
+        for target in (PythonVersion.PY_311, PythonVersion.PY_312)
+    }
+    runtime = generate_payload_runtime(case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), backend)
+    payload = json.loads((RUNTIME_COMPATIBILITY_PATH / "legacy_alias.json").read_text())
+    validate_with_source_schema(case, payload)
+    if PythonVersion(PAYLOAD_TARGET_PYTHON_VERSION).has_type_statement:
+        runtime.validate_python(payload)
+    else:
+        with pytest.raises(TypeError, match="ForwardRef"):
+            runtime.validate_python(payload)
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "legacy_alias.txt")
+
+
+def test_payload_runtime_version_policies(tmp_path: Path) -> None:
+    """Retain modern Pydantic coverage while classifying old-runtime and bare-alias limits.
+
+    Each witness also records the Pydantic release that its generation states for target 2 on Python 3.11.
+    """
+    results = {}
+    for case_id, witness in json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()).items():
+        case = SCHEMA_CASE_BY_ID[case_id]
+        directory = tmp_path / str(len(results))
+        directory.mkdir()
+        results[case_id] = {
+            "floor": stated_pydantic_floor(
+                case,
+                directory,
+                PayloadBackend.PYDANTIC_V2,
+                *witness.get("args", ()),
+                "--target-pydantic-version",
+                "2",
+                "--target-python-version",
+                "3.11",
+            ),
+            **{
+                version: {
+                    "acceptance": _pydantic_v2_legacy_runtime_exclusion_reason(
+                        case, PayloadBackend.PYDANTIC_V2, Version(version)
+                    ),
+                    "round_trip": _pydantic_v2_legacy_runtime_exclusion_reason(
+                        case,
+                        PayloadBackend.PYDANTIC_V2,
+                        Version(version),
+                        PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+                    ),
+                }
+                for version in ("2.0.3", "2.5.0")
+            },
+        }
+        results[case_id]["dataclass"] = backend_acceptance_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS)
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "versions.txt")
+
+
+@pytest.mark.parametrize(
+    ("backend", "case_id", "witness"),
+    [
+        *(
+            pytest.param(PayloadBackend.PYDANTIC_V2, case_id, witness, id=case_id)
+            for case_id, witness in json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()).items()
+        ),
+        *(
+            pytest.param(
+                PayloadBackend(backend),
+                case_id,
+                {"valid": payloads["valid"], "invalid": [payloads["invalid"]]},
+                id=f"alias:{backend}:{case_id}",
+            )
+            for backend, cases in json.loads(
+                (RUNTIME_COMPATIBILITY_PATH / "alias_version_cases.json").read_text()
+            ).items()
+            for case_id, payloads in cases.items()
+        ),
+    ],
+)
+def test_payload_runtime_pydantic_version_witnesses(
+    backend: PayloadBackend, case_id: str, witness: dict[str, Any], tmp_path: Path
+) -> None:
+    """The installed Pydantic runs the generated models fully exactly when it is not older than the stated floor.
+
+    Each witness is generated for the newest target the installed Pydantic runs, given explicitly, and the
+    generation states the release its models need above that target. Below it the models fail to build, or accept
+    the schema-invalid payloads that the newer release rejects; from it on they validate the payload, reject the
+    invalid ones and dump schema-valid data. Lookaround patterns that a model's ``regex_engine`` serves, also through
+    a type alias it reaches, need 2.5, an alias of a model or a ``type`` statement needs 2.10, a pattern on a union of
+    ``str`` and ``bytes`` 2.2, and a pattern on bytes 2.14. A limit that no generated construct explains, such as a
+    bare dataclass alias whose string pattern no model config serves, keeps its exclusion reason.
+    """
+    case = SCHEMA_CASE_BY_ID[case_id]
+    args = (*case.backend_extra_args.get(backend, ()), *witness.get("args", ()))
+    case = replace(
+        case,
+        backend_extra_args={
+            **case.backend_extra_args,
+            backend: (*args, "--target-pydantic-version", PAYLOAD_TARGET_PYDANTIC_VERSION),
+        },
+    )
+    cache = GeneratedModelCache({"base": tmp_path, "adapters": {}})
+    validate_with_source_schema(case, witness["valid"])
+    if _pydantic_v2_legacy_runtime_exclusion_reason(case, backend):
+        with pytest.raises(PayloadAdapterError, match=r"look-around|backreferences"):
+            generate_payload_runtime(case, cache, backend)
+        return
+    try:
+        adapter = generate_payload_adapter(case, cache, backend)
+    except PayloadAdapterError:
+        if runtime_below_stated_floor(case, cache, backend) is None:
+            raise
+        return
+    if runtime_below_stated_floor(case, cache, backend) is not None:
+        for invalid_payload in witness["invalid"]:
+            adapter.validate_python(invalid_payload)
+        return
+    validated = adapter.validate_python(witness["valid"])
+    for invalid_payload in witness["invalid"]:
+        with pytest.raises(ValidationError):
+            adapter.validate_python(invalid_payload)
+    if _pydantic_v2_legacy_runtime_exclusion_reason(
+        case,
+        backend,
+        exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+    ):
+        with pytest.raises(UserWarning, match="serializer warnings"):
+            adapter.dump_python(validated, mode="json")
+        return
+    validate_with_source_schema(case, adapter.dump_python(validated, mode="json"))
+
+
+@pytest.mark.skipif(
+    PYDANTIC_RUNTIME_VERSION < PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
+    reason="Pydantic before 2.11.0 runs target 2, which keeps string patterns that a bare alias cannot validate",
+)
+def test_payload_runtime_dataclass_lookaround_alias(tmp_path: Path) -> None:
+    """A bare dataclass alias compiles its lookaround pattern, so it validates without a consuming dataclass."""
+    case = SCHEMA_CASE_BY_ID["jsonschema/root_alias_constraints/lookaround.json"]
+    runtime = generate_payload_runtime(
+        case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2_DATACLASS
+    )
+    validate_with_source_schema(case, "a")
+    runtime.validate_python("a")
+    with pytest.raises(ValidationError, match="string_pattern_mismatch"):
+        runtime.validate_python("b")
+
+
+@pytest.mark.parametrize(
+    ("name", "fixture"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "alias_fallback.json").read_text()).items(),
+)
+def test_payload_runtime_alias_fallback(tmp_path: Path, name: str, fixture: dict[str, Any]) -> None:
+    """Keep single-class fallback and missing/ambiguous diagnostics after recognizing null aliases."""
+    backend = PayloadBackend.MSGSPEC
+    case = replace(
+        SCHEMA_CASE_BY_ID[fixture["schema"]],
+        backend_extra_args={backend: ("--class-name", "Alternate", "--target-python-version", "3.10")},
+    )
+    cache = GeneratedModelCache({"base": tmp_path, "adapters": {}})
+    if name == "single":
+        runtime = generate_payload_runtime(case, cache, backend)
+        validate_with_source_schema(case, fixture["payload"])
+        runtime.validate_python(fixture["payload"])
+        result = runtime.payload_type.__name__
+    else:
+        with pytest.raises(PayloadAdapterError) as caught:
+            generate_payload_runtime(case, cache, backend)
+        result = str(caught.value)
+    assert_output(result + "\n", RUNTIME_COMPATIBILITY_EXPECTED / f"fallback_{name}.txt")

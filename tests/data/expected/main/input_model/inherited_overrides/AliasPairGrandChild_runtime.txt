@@ -1,0 +1,50 @@
+[
+  {
+    "bases": [
+      "AliasPairChild"
+    ],
+    "fields": [
+      "old",
+      "old_other"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "newest": 3,
+      "newest_other": 6
+    },
+    "generated": {
+      "newest": 3,
+      "newest_other": 6
+    }
+  },
+  {
+    "payload": {
+      "newest": 8,
+      "newest_other": 9
+    },
+    "source": {
+      "newest": 8,
+      "newest_other": 9
+    },
+    "generated": {
+      "newest": 8,
+      "newest_other": 9
+    }
+  },
+  {
+    "payload": {
+      "new": 8,
+      "new_other": 9
+    },
+    "source": {
+      "newest": 3,
+      "newest_other": 6
+    },
+    "generated": {
+      "newest": 3,
+      "newest_other": 6
+    }
+  }
+]

@@ -1,0 +1,24 @@
+[tool.datamodel-codegen]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-body-arguments = "both"
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1pets/get" = { name = "list_all" }
+"/paths/~1pets/post" = { body_arguments = "body" }
+
+[tool.datamodel-codegen.profiles.unpack]
+client-signature-style = "unpack"
+
+[tool.datamodel-codegen.profiles.elsewhere]
+client-output = "elsewhere"

@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "fixed",
+          "name": "Byte",
+          "size": 1
+        }
+      },
+      "default": {
+        "z": "\u0100"
+      }
+    }
+  ]
+}

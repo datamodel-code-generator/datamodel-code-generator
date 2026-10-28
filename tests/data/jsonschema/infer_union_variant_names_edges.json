@@ -1,0 +1,326 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnionVariantNameEdges",
+  "type": "object",
+  "required": [
+    "object_discriminator",
+    "scalar_suffixes",
+    "enum_literal",
+    "empty_literal",
+    "ref_literal",
+    "duplicate_generated",
+    "duplicate_literal",
+    "missing_literal",
+    "missing_properties",
+    "external_ref",
+    "boolean_schema_field"
+  ],
+  "properties": {
+    "object_discriminator": {
+      "discriminator": {
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {
+              "const": "object.created"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "reason"],
+          "properties": {
+            "kind": {
+              "const": "object.failed"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "scalar_suffixes": {
+      "discriminator": "kind",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "ok"],
+          "properties": {
+            "kind": {
+              "const": true
+            },
+            "ok": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "count"],
+          "properties": {
+            "kind": {
+              "const": 7
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "enum_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "label"],
+          "properties": {
+            "kind": {
+              "enum": ["enum.kind"]
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "label"],
+          "properties": {
+            "kind": {
+              "const": "direct"
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "empty_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "label"],
+          "properties": {
+            "kind": {
+              "const": ""
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "label"],
+          "properties": {
+            "kind": {
+              "const": "named"
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "ref_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {
+              "$ref": "#/definitions/KindRef"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {
+              "const": "direct"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "duplicate_generated": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "flag"],
+          "properties": {
+            "kind": {
+              "const": true
+            },
+            "flag": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "text"],
+          "properties": {
+            "kind": {
+              "const": "bool_true"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "duplicate_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "a"],
+          "properties": {
+            "kind": {
+              "const": "same"
+            },
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "b"],
+          "properties": {
+            "kind": {
+              "const": "same"
+            },
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "missing_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "a"],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "b"],
+          "properties": {
+            "kind": {
+              "const": "ok"
+            },
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "missing_properties": {
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "object",
+          "required": ["kind", "b"],
+          "properties": {
+            "kind": {
+              "const": "ok"
+            },
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "external_ref": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "a"],
+          "properties": {
+            "kind": {
+              "$ref": "external_kind.json#/definitions/ExternalKind"
+            },
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "b"],
+          "properties": {
+            "kind": {
+              "const": "ok"
+            },
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "boolean_schema_field": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["a"],
+          "properties": {
+            "kind": true,
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "b"],
+          "properties": {
+            "kind": {
+              "const": "ok"
+            },
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "KindRef": {
+      "const": "ref.kind"
+    }
+  }
+}

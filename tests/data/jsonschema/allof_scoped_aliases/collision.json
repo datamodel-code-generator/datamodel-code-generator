@@ -1,0 +1,65 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "other": {
+      "$ref": "#/$defs/Other"
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "$defs": {
+    "Other": {
+      "type": "object",
+      "properties": {
+        "untouched": {
+          "type": "string"
+        }
+      }
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base"
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "string"
+            },
+            "y": {
+              "type": "integer",
+              "default": 2
+            }
+          },
+          "required": [
+            "x"
+          ]
+        }
+      ],
+      "properties": {
+        "z": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "title": "Other"
+    }
+  }
+}

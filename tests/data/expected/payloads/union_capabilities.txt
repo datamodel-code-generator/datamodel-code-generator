@@ -1,0 +1,10 @@
+{
+  "permissive_union": [],
+  "required_union": [
+    "required"
+  ],
+  "required_allof": [
+    "required"
+  ],
+  "empty_union": []
+}

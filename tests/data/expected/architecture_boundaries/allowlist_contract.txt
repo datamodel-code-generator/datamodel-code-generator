@@ -1,0 +1,4 @@
+architecture boundary allowlist entries require a reason
+architecture boundary allowlist counts must be positive
+direct Python files: 1
+outside path preserved: True

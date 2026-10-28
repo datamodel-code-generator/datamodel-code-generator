@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecimalScope",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 12.34
+    },
+    "tax": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.2
+    },
+    "amounts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "decimal"
+      },
+      "default": ["1.2", "3.4"]
+    },
+    "amount_or_label": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": "flexible"
+    },
+    "identifier": {
+      "type": "string",
+      "format": "uuid",
+      "default": "12345678-1234-5678-1234-567812345678"
+    }
+  }
+}

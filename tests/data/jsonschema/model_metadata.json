@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root title",
+  "type": "object",
+  "properties": {
+    "method": {
+      "const": "thread/started"
+    },
+    "payload": {
+      "$ref": "#/$defs/MetadataPayload"
+    }
+  },
+  "required": ["method", "payload"],
+  "$defs": {
+    "MetadataPayload": {
+      "title": "Payload title",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": ["id"]
+    }
+  }
+}

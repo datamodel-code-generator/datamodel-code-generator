@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "$defs": {
+    "Base": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "readOnly": true
+        },
+        "y": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base",
+      "enum": [
+        [
+          {
+            "x": 1,
+            "y": 2
+          }
+        ]
+      ]
+    }
+  ]
+}

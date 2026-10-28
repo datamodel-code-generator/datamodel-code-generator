@@ -1,0 +1,26 @@
+{
+  "plain": {
+    "modules": ["", "api", "api.v1", "api.v2", "api.v1.user", "api.v2.status"],
+    "payload": {"id": 7, "name": "user", "active": true}
+  },
+  "single": {
+    "modules": ["", "api", "api.v1", "api.v2", "api.v1.user", "api.v2.status", "api.v1.user.user", "api.v2.status.status"],
+    "payload": {"id": 7, "name": "user", "active": true}
+  },
+  "collision": {
+    "modules": ["", "api", "api.v1", "api.v2", "api.v1.user", "api.v2.user", "api.v1.user.user", "api.v2.user.user"],
+    "payload": {"id": 7, "name": "user"}
+  },
+  "reuse": {
+    "modules": ["", "shared", "api", "api.v1", "api.v2", "api.v1.schema_a", "api.v2.schema_b", "api.v1.schema_a.model", "api.v1.schema_a.shared_model", "api.v2.schema_b.model"],
+    "payload": {"id": 7, "name": "shared", "data": {"id": 7, "name": "shared"}, "info": {"id": 7, "name": "shared"}}
+  },
+  "cycle": {
+    "modules": ["", "api", "api.v1", "api.v2", "api.v1.a", "api.v2.b"],
+    "payload": {"a": {"b": null}, "b": {"a": null}, "zed": {"value": "z"}, "alpha": {"count": 3}, "value": "z", "count": 3}
+  },
+  "cycle_single": {
+    "modules": ["", "api", "api.v1", "api.v2", "api.v1.a", "api.v2.b", "api.v1.a.apple", "api.v2.b.banana", "api.v1.a.lemon", "api.v1.a.zebra"],
+    "payload": {"a": {"b": null}, "b": {"a": null}, "zed": {"value": "z"}, "alpha": {"count": 3}, "value": "z", "count": 3}
+  }
+}

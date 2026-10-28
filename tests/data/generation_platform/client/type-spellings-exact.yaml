@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  title: Exact type spellings
+  version: "1"
+servers:
+  - url: https://spellings.example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: id
+          in: query
+          schema: {type: string, format: uuid}
+      responses:
+        "200":
+          description: One page of pets.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Page"}
+    post:
+      operationId: adoptPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/pets.Pet"}
+      responses:
+        "201":
+          description: The owner's record of the pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/owners.Pet"}
+  /fields:
+    put:
+      operationId: putField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Field"}
+      responses:
+        "200":
+          description: The stored field.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Response"}
+        "202":
+          description: Nothing was stored.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Unset"}
+  /reasons:
+    post:
+      operationId: postReason
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Unset"}
+      responses:
+        "204":
+          description: Stored.
+    patch:
+      operationId: patchReason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Response"}
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Page:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/Sequence"}
+        next: {type: string}
+    Sequence:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    pets.Pet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        born: {type: string, format: date}
+    owners.Pet:
+      type: object
+      required: [name, owner]
+      properties:
+        name: {type: string}
+        owner: {type: string}
+    Field:
+      type: object
+      properties:
+        label: {type: string}
+    Response:
+      type: object
+      properties:
+        stored: {type: boolean}
+    Unset:
+      type: object
+      properties:
+        reason: {type: string}

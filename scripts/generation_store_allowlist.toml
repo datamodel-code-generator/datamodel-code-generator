@@ -1,0 +1,391 @@
+# Writes that bypass GenerationStore, as scripts/check_generation_store_usage.py finds them.
+# Tables are ["path"."function"] with target = count; no line numbers, so unrelated edits do not move entries.
+# A target = "arguments" entry is a write that only the runtime guard (DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES)
+# sees; its witness is the datamodel-codegen arguments of one run that makes it (`--witnesses` runs them all). When the
+# scan learns to find such a write, its witness becomes a count entry, the only move that may raise the counted total.
+# Generated once by `python scripts/check_generation_store_usage.py --write-allowlist`; later changes only remove
+# entries or lower counts, and a refactor that moves a write renames its entry without raising the total.
+# A new write fails the check, and so does an entry that no longer matches.
+
+["src/datamodel_code_generator/model/base.py"."ConstraintsBase._exclude_unset_dump"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."ConstraintsBase.has_constraints"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel._append_internal_template_data"]
+'_internal_template_data.setdefault(...)' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel._pop_internal_template_data"]
+'_internal_template_data.pop(...)' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel._set_internal_template_data"]
+'_internal_template_data[...]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel._uses_custom_root_template"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.create_reuse_model"]
+reused_reference = "--input tests/data/json/duplicate_models.json --input-file-type json --output-model-type pydantic_v2.BaseModel --reuse-model"
+
+["src/datamodel_code_generator/model/base.py"."DataModel.finalize_required_inherited_field"]
+'extras.pop("default_factory")' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.path"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.set_field_name_bindings"]
+_field_name_bindings = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.set_reference_path"]
+'__dict__["path"]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.template"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.template_file_path"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._merge_untaken_constraints"]
+'__dict__[...]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._set_runtime_expression_imports"]
+'__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_FIELD_KEY)' = 1
+'__dict__[_RUNTIME_EXPRESSION_IMPORTS_FIELD_KEY]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.force_field_assignment"]
+'__dict__["_forced_field_assignment"]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.mark_as_keyword_only"]
+'extras["kw_only"]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.pop_untaken_constraints"]
+'__dict__.pop(_MEMBER_UNTAKEN_CONSTRAINTS_KEY)' = 1
+'__dict__.pop(_UNTAKEN_CONSTRAINTS_KEY)' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.record_overridden_constraints"]
+'__dict__[_OVERRIDDEN_CONSTRAINTS_KEY]' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.record_untaken_constraints"]
+'__dict__[_UNTAKEN_CONSTRAINTS_KEY]' = 1
+
+["src/datamodel_code_generator/model/base.py"."TemplateBase.template"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."TemplateBase.template_file_path"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/base.py"."_RenderedDataModelField.__getattr__"]
+'__dict__["annotated"]' = 1
+'__dict__["field"]' = 1
+'__dict__[...]' = 1
+
+["src/datamodel_code_generator/model/base.py"."_RenderedDataModelField.__init__"]
+'__dict__["docstring"]' = 1
+
+["src/datamodel_code_generator/model/base.py"."_apply_literal_default"]
+default = 1
+nullable = 1
+required = 1
+
+["src/datamodel_code_generator/model/base.py"."_set_nested_model_default_factory_order"]
+'__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY]' = 1
+'__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY]' = 1
+
+["src/datamodel_code_generator/model/dataclass.py"."DataClass.restore_required_inherited_field_state"]
+'extras.pop("init")' = 1
+
+["src/datamodel_code_generator/model/dataclass.py"."DataClass.unbind_fields"]
+'__dict__[_UNBOUND_FIELD_KEY]' = 1
+
+["src/datamodel_code_generator/model/msgspec.py"."DataModelField._copy_data_type"]
+data_types = 1
+dict_key = 1
+enum_member_literals = 1
+kwargs = 1
+literals = 1
+
+["src/datamodel_code_generator/model/msgspec.py"."DataModelField._copy_data_type_without_top_level_none"]
+data_types = 1
+
+["src/datamodel_code_generator/model/msgspec.py"."DataModelField._record_unconstrained_union_members"]
+'__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY]' = 1
+
+["src/datamodel_code_generator/model/msgspec.py"."Struct.add_base_class_kwarg"]
+'_internal_template_data["base_class_kwargs"]' = 1
+
+["src/datamodel_code_generator/model/msgspec.py"."Struct.create_base_class_model"]
+base_classes = "--input tests/data/jsonschema/use_generic_base_class_simple.json --input-file-type jsonschema --output-model-type msgspec.Struct --use-generic-base-class --allow-population-by-field-name --enable-faux-immutability"
+
+["src/datamodel_code_generator/model/pydantic_base.py"."BaseModelBase.template_file_path"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._add_schema_runtime_validation_helper_imports"]
+'_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._get_schema_runtime_validation_module_plan"]
+'__dict__[_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY]' = 3
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._neutralize_generic_extra_config_for_runtime_root_models"]
+'_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._set_config"]
+'_additional_imports.append()' = 1
+'extra_template_data["config"]' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.create_base_class_model"]
+_additional_imports = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+base_classes = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.invalidate_module_code_cache"]
+'__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.invalidate_render_caches"]
+'__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_copy_alias_data_type"]
+data_types = "--input tests/data/openapi/nullable_map_value_types.yaml --input-file-type openapi --output-model-type pydantic_v2.dataclass --openapi-scopes schemas api --use-typed-nullable-map-values --disable-timestamp --formatters builtin"
+dict_key = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+kwargs = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_prepare_field_python_pattern"]
+extras = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+
+["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass.__init__"]
+_lookaround_regex_engine_checked = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._apply_lookaround_regex_engine"]
+_lookaround_regex_engine_checked = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._select_python_regex_engine"]
+'_additional_imports.append()' = 1
+'extra_template_data.setdefault("config")' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
+'_additional_imports.append()' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.add_literal_validation"]
+'_additional_imports.extend()' = 2
+_literal_values = 1
+_requires_literal_validation = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.add_sequence_interface"]
+'_additional_imports.append()' = 5
+
+["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.finalize_sequence_interface"]
+'_additional_imports.remove()' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/type_alias.py"."TypeAlias.template_file_path"]
+'@cached_property' = 1
+
+["src/datamodel_code_generator/model/typed_dict.py"."TypedDict.create_reuse_model"]
+use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inline_definitions.json --input-file-type jsonschema --output-model-type typing.TypedDict --reuse-model --target-python-version 3.11 --use-total-false-for-typed-dict"
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_additional_imports"]
+'_additional_imports[...]' = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_alias_base_class_imports"]
+import_ = 1
+type = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_copy_data_type"]
+data_types = 2
+dict_key = 1
+enum_member_literals = 1
+kwargs = 1
+literals = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."_register_data_type_import"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."apply_inherited_field_default"]
+default = 2
+has_default = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."override_required_field"]
+alias = 1
+'fields.pop()' = 1
+'fields.reverse()' = 1
+name = 1
+original_name = 1
+required = 1
+serialization_alias = 1
+use_default_with_required = 1
+use_serialization_alias = 1
+validation_aliases = 1
+
+["src/datamodel_code_generator/parser/_passes/_shared.py"."set_reference_expression"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/cross_module.py"."apply_generic_base_class"]
+_additional_imports = 1
+file_path = 1
+
+["src/datamodel_code_generator/parser/_passes/cross_module.py"."import_enum_member_literal_classes"]
+enum_member_literals = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."_replace_default_enum_list_members"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."apply_discriminator_type"]
+'__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
+
+["src/datamodel_code_generator/parser/_passes/modules.py"."set_default_enum_member"]
+alias = 1
+
+["src/datamodel_code_generator/parser/_passes/render_prep.py"."_flatten_union_members"]
+data_types = 1
+
+["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
+use_union_operator = 1
+
+["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
+default = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser.__init__"]
+results = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser._apply_final_class_field_aliases"]
+'__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
+alias = 1
+name = 1
+serialization_alias = 1
+validation_aliases = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_data_type"]
+alias = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_field"]
+alias = 1
+import_ = 1
+kwargs = 1
+
+["src/datamodel_code_generator/parser/base.py"."_apply_inherited_field_nullability"]
+is_optional = 1
+nullable = 2
+type_has_null = 2
+
+["src/datamodel_code_generator/parser/base.py"."_copy_data_model_field"]
+default = 1
+extras = 1
+validation_aliases = 1
+
+["src/datamodel_code_generator/parser/base.py"."_copy_resolved_inherited_field"]
+'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 2
+alias = 3
+constraints = 1
+'data_types[...]' = 1
+default = 2
+'extras.update()' = 1
+has_default = 2
+name = 3
+original_name = 2
+read_only = 1
+required = 2
+serialization_alias = 2
+use_default_with_required = 2
+use_serialization_alias = 2
+validation_aliases = 2
+write_only = 1
+
+["src/datamodel_code_generator/parser/base.py"."_merge_data_type_modifiers"]
+is_dict = 1
+is_frozen_set = 1
+is_list = 1
+is_mapping = 1
+is_optional = 2
+is_sequence = 1
+is_set = 1
+is_tuple = 1
+kwargs = 1
+'kwargs[...]' = 1
+tuple_item_count = 1
+
+["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser._resolve_typename_collisions.resolve"]
+alias = 1
+name = 2
+serialization_alias = 2
+
+["src/datamodel_code_generator/parser/graphql.py"."GraphQLParser.parse_field"]
+data_types = 1
+import_ = 1
+is_list = 1
+is_optional = 1
+type = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._build_missing_required_field"]
+alias = 1
+name = 1
+original_name = 1
+required = 1
+serialization_alias = 1
+use_serialization_alias = 1
+validation_aliases = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._collect_inherited_fields_for_request_response"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._get_raw_inherited_fields"]
+required = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._mark_type_dependent_constraints"]
+'__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_root_value"]
+data_types = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_common_part"]
+alias = 1
+name = 1
+required = 2
+target_python_version = 1
+use_default_with_required = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._prepare_required_inherited_field"]
+'__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
+'__dict__[_RAW_SCHEMA_DEFAULT_KEY]' = 1
+'__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY]' = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_object"]
+target_python_version = 1
+
+["src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_object_fields"]
+'__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType.__deepcopy__"]
+'__dict__[...]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType._materialize_render_state"]
+'__dict__[_REFERENCE_NULL_DATA_TYPE_KEY]' = 1
+import_ = 1
+is_optional = 2
+
+["src/datamodel_code_generator/types.py"."DataType._set_enum_member_literal_reference"]
+'__dict__[_ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType._set_forward_reference"]
+'__dict__[_FORWARD_REFERENCE_DATA_TYPE_KEY]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType._set_literal_import"]
+'__dict__[_LITERAL_IMPORT_DATA_TYPE_KEY]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType._set_runtime_expression_imports"]
+'__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY)' = 1
+'__dict__[_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY]' = 1
+
+["src/datamodel_code_generator/types.py"."DataType._strip_null"]
+'__dict__[_NULL_STRIPPED_DATA_TYPE_KEY]' = 1
+is_optional = 1
+
+["src/datamodel_code_generator/types.py"."DataType.replace_reference"]
+reference = "--input tests/data/openapi/not_real_string.json --input-file-type openapi --collapse-root-models"
+
+["src/datamodel_code_generator/types.py"."DataTypeManager.copy_data_type"]
+data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+enum_member_literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"

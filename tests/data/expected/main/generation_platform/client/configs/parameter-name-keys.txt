@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/get'].parameter_names key 1 must be a location (path, query, querystring, header, or cookie), ':', and a name

@@ -55,22 +55,18 @@ class Error(BaseModel):
 
 class Api(BaseModel):
     api_key: str | None = Field(
-        None,
         alias="apiKey",
         description="To be used as a dataset parameter value",
     )
     api_version_number: str | None = Field(
-        None,
         alias="apiVersionNumber",
         description="To be used as a version parameter value",
     )
     api_url: AnyUrl | None = Field(
-        None,
         alias="apiUrl",
         description="The URL describing the dataset's fields",
     )
     api_documentation_url: AnyUrl | None = Field(
-        None,
         alias="apiDocumentationUrl",
         description="A URL to the API console for each API",
     )

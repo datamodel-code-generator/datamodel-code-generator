@@ -1,0 +1,19 @@
+from __future__ import annotations
+from typing import Any, List, Optional
+from pydantic import BaseModel, Field, RootModel
+
+
+class Bad-Name(RootModel[Any]):
+    root: Any
+
+
+class Bad-Name1(BaseModel):
+    name: Optional[str] = Field(None, examples=['ken'])
+    pets: List[Bad-Name1] = Field(default_factory=list)
+
+
+class Bad-Name2(BaseModel):
+    name: Optional[str] = Field(None, examples=['dog', 'cat'])
+
+
+Bad-Name1.model_rebuild()

@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: A cycle whose _internal.py imports a module below a package that re-exports a module using the cycle
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    # x and y form the cycle that _internal.py merges; x also uses p.t.leaf, below the package p.
+    x.thing:
+      type: object
+      properties:
+        other:
+          $ref: '#/components/schemas/y.thing'
+        leaf:
+          $ref: '#/components/schemas/p.t.leaf'
+
+    y.thing:
+      type: object
+      properties:
+        other:
+          $ref: '#/components/schemas/x.thing'
+
+    p.t.leaf:
+      type: object
+      properties:
+        a:
+          type: string
+
+    # The package p has nothing to do with the cycle: only its __init__ module imports the modules below it.
+    p.item:
+      type: object
+      properties:
+        a:
+          type: string
+
+    # p.u.user uses the model of the cycle, which --all-exports-scope makes the package p import.
+    p.u.user:
+      type: object
+      properties:
+        thing:
+          $ref: '#/components/schemas/x.thing'

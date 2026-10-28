@@ -1,0 +1,160 @@
+[
+  {
+    "source": "draft4_id_scope",
+    "version": "auto",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_scope",
+    "version": "draft-04",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_scope",
+    "version": "draft-06",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_scope",
+    "version": "draft-07",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_scope",
+    "version": "2019-09",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_scope",
+    "version": "2020-12",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "auto",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "draft-04",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "draft-06",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "draft-07",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "2019-09",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_id_scope",
+    "version": "2020-12",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "root_id_fallback",
+    "version": "auto",
+    "expected": "root_id_fallback.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "unrecognized_id_scope",
+    "version": "auto",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "undeclared_modern_scope",
+    "version": "auto",
+    "expected": "legacy_id_scope.py",
+    "runtime": "legacy_id_scope_runtime.txt"
+  },
+  {
+    "source": "id_metadata",
+    "version": "auto",
+    "mode": "lenient",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "id_metadata",
+    "version": "auto",
+    "mode": "strict",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_metadata",
+    "version": "auto",
+    "mode": "lenient",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_id_metadata",
+    "version": "auto",
+    "mode": "strict",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "modern_unknown_child",
+    "version": "auto",
+    "mode": "lenient",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "modern_unknown_child",
+    "version": "auto",
+    "mode": "strict",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "modern_unknown_child",
+    "version": "draft-04",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_unknown_child",
+    "version": "auto",
+    "mode": "lenient",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_unknown_child",
+    "version": "auto",
+    "mode": "strict",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  },
+  {
+    "source": "draft4_unknown_child",
+    "version": "2020-12",
+    "expected": "id_metadata.py",
+    "runtime": "modern_id_scope_runtime.txt"
+  }
+]

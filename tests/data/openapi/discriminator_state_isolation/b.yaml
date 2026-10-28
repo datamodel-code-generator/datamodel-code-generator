@@ -1,0 +1,15 @@
+openapi: 3.0.3
+info:
+  title: Second
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name: {type: string}
+    Holder:
+      type: object
+      properties:
+        pet: {$ref: '#/components/schemas/Pet'}

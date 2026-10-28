@@ -1,0 +1,18 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Observation", "version": "1"},
+  "paths": {
+    "/items": {
+      "post": {
+        "operationId": "createItem",
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Item"}}}},
+        "responses": {"200": {"description": "Item", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Item"}}}}}
+      }
+    }
+  },
+  "components": {"schemas": {
+    "Base": {"type": "object", "properties": {"id": {"type": "integer", "readOnly": true}, "ship-to": {"type": "string"}}},
+    "Item": {"allOf": [{"$ref": "#/components/schemas/Base"}, {"type": "object", "required": ["ship-to"], "properties": {"secret": {"type": "string", "writeOnly": true}, "values": {"type": "array", "items": {"$ref": "#/components/schemas/Value"}}}}]},
+    "Value": {"type": "string", "minLength": 1}
+  }}
+}

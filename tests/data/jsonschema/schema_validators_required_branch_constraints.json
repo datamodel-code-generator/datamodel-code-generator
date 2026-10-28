@@ -1,0 +1,26 @@
+{
+  "title": "RequiredBranchConstraints",
+  "type": "object",
+  "properties": {
+    "a": {
+      "type": "string"
+    },
+    "b": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "a"
+      ],
+      "additionalProperties": false,
+      "minProperties": 2
+    },
+    {
+      "required": [
+        "b"
+      ]
+    }
+  ]
+}

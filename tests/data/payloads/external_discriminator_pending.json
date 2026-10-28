@@ -1,0 +1,24 @@
+{
+  "cat": {
+    "item": {
+      "kind": "cat",
+      "meow": "yes"
+    }
+  },
+  "dog": {
+    "item": {
+      "kind": "dog",
+      "bark": "yes"
+    }
+  },
+  "unknown": {
+    "item": {
+      "kind": "bird"
+    }
+  },
+  "missing": {
+    "item": {
+      "kind": "cat"
+    }
+  }
+}

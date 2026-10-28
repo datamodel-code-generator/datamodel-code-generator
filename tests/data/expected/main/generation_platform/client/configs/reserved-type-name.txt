@@ -1,0 +1,2 @@
+generate()
+  Error: --client-resource-names['pets'].namespace: A resource namespace cannot use the reserved name 'JSONValue', which the `types` package exports; --client-operations['/paths/~1pets/get'].resource: A resource namespace cannot use the reserved name 'JSONValue', which the `types` package exports; --client-operations['/paths/~1pets~1{petId}/delete'].resource: A resource namespace cannot use the reserved name 'Aux', a device name on Windows

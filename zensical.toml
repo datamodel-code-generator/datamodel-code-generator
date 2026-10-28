@@ -2,40 +2,22 @@
 site_name = "datamodel-code-generator"
 site_description = "This code generator creates pydantic model from an openapi file and others."
 site_url = "https://datamodel-code-generator.koxudaxi.dev"
-repo_name = "koxudaxi/datamodel-code-generator"
-repo_url = "https://github.com/koxudaxi/datamodel-code-generator"
-copyright = 'Maintained by <a href="https://koxudaxi.dev/?utm_source=dm_docs&utm_medium=footer&utm_campaign=open_to_work">Koudai Aono</a>'
+repo_name = "datamodel-code-generator/datamodel-code-generator"
+repo_url = "https://github.com/datamodel-code-generator/datamodel-code-generator"
+copyright = 'Maintained by the <a href="https://datamodel-code-generator.koxudaxi.dev/#maintainers">datamodel-code-generator maintainers</a>'
 
 nav = [
   { "Overview" = "index.md" },
+  { "Getting Started" = "getting-started.md" },
+  { "Presets" = "presets.md" },
+  { "Option Recommendations (Experimental)" = "recommend-options.md" },
   { "Playground" = "playground.md" },
-  { "CLI Reference" = [
-    { "Overview" = "cli-reference/index.md" },
-    { "Base Options" = "cli-reference/base-options.md" },
-    { "Model Customization" = "cli-reference/model-customization.md" },
-    { "Field Customization" = "cli-reference/field-customization.md" },
-    { "Typing Customization" = "cli-reference/typing-customization.md" },
-    { "Template Customization" = "cli-reference/template-customization.md" },
-    { "OpenAPI Options" = "cli-reference/openapi-only-options.md" },
-    { "GraphQL Options" = "cli-reference/graphql-only-options.md" },
-    { "General Options" = "cli-reference/general-options.md" },
-    { "Utility Options" = "cli-reference/utility-options.md" },
-    { "Quick Reference" = "cli-reference/quick-reference.md" },
-    { "Manual" = [
-      { "Help" = "cli-reference/manual/help.md" },
-      { "Version" = "cli-reference/manual/version.md" },
-      { "Debug" = "cli-reference/manual/debug.md" },
-      { "Profile" = "cli-reference/manual/profile.md" },
-      { "No Color" = "cli-reference/manual/no-color.md" },
-      { "Generate Prompt" = "cli-reference/manual/generate-prompt.md" },
-      { "List Deprecations" = "cli-reference/manual/list-deprecations.md" }
-    ]}
-  ]},
-  { "Support data types" = "supported-data-types.md" },
+  { "Supported Data Types" = "supported-data-types.md" },
   { "Schema Version Support" = "supported_formats.md" },
   { "Usage" = [
     { "Input Formats" = [
       { "OpenAPI" = "openapi.md" },
+      { "OpenAPI Options" = "openapi-options.md" },
       { "AsyncAPI" = "asyncapi.md" },
       { "JSON Schema" = "jsonschema.md" },
       { "Apache Avro" = "avro.md" },
@@ -57,7 +39,6 @@ nav = [
       { "Field Aliases" = "aliases.md" },
       { "Validators" = "validators.md" },
       { "Class Decorators" = "class-decorators.md" },
-      { "OpenAPI-Specific Options" = "openapi-options.md" }
     ]},
     { "Templates and Formatting" = [
       { "Custom Templates" = "custom_template.md" },
@@ -73,12 +54,72 @@ nav = [
       { "CI/CD Integration" = "ci-cd.md" },
       { "LLM Integration" = "llm-integration.md" },
       { "Coding Agent Skill" = "coding-agent-skill.md" }
+    ]},
+    { "Generation Targets" = [
+      { "FastAPI Server (Experimental)" = "fastapi-server.md" },
+      { "Python Client (Experimental)" = "python-client.md" },
+      { "Python Client Protocol Helpers" = "python-client-helpers.md" },
+      { "Python Client Reference" = "python-client-reference.md" },
+      { "Migrating from fastapi-code-generator" = "fastapi-code-generator-migration.md" }
     ]}
   ]},
+  { "CLI Reference" = [
+    { "Overview" = "cli-reference/index.md" },
+    { "Base Options" = "cli-reference/base-options.md" },
+    { "Model Customization" = "cli-reference/model-customization.md" },
+    { "Field Customization" = "cli-reference/field-customization.md" },
+    { "Typing Customization" = "cli-reference/typing-customization.md" },
+    { "Template Customization" = "cli-reference/template-customization.md" },
+    { "OpenAPI Options" = "cli-reference/openapi-only-options.md" },
+    { "GraphQL Options" = "cli-reference/graphql-only-options.md" },
+    { "General Options" = "cli-reference/general-options.md" },
+    { "Target Generation Options" = "cli-reference/target-generation-options.md" },
+    { "Utility Options" = "cli-reference/utility-options.md" },
+    { "Focused Topics" = [
+      { "Model Customization" = "cli-reference/topics/model-customization.md" },
+      { "Template Customization" = "cli-reference/topics/template-customization.md" },
+      { "Typing Customization" = "cli-reference/topics/typing-customization.md" },
+      { "OpenAPI" = "cli-reference/topics/openapi.md" }
+    ]},
+    { "Quick Reference" = "cli-reference/quick-reference.md" },
+    { "Manual" = [
+      { "Help" = "cli-reference/manual/help.md" },
+      { "Version" = "cli-reference/manual/version.md" },
+      { "Debug" = "cli-reference/manual/debug.md" },
+      { "Profile" = "cli-reference/manual/profile.md" },
+      { "Job" = "cli-reference/manual/job.md" },
+      { "All Jobs" = "cli-reference/manual/all-jobs.md" },
+      { "Install Skill" = "cli-reference/manual/install-skill.md" },
+      { "Overwrite Skill" = "cli-reference/manual/overwrite-skill.md" },
+      { "Skill Scope" = "cli-reference/manual/skill-scope.md" },
+      { "No Color" = "cli-reference/manual/no-color.md" },
+      { "Generate Prompt" = "cli-reference/manual/generate-prompt.md" },
+      { "List Deprecations" = "cli-reference/manual/list-deprecations.md" },
+      { "List Experimental" = "cli-reference/manual/list-experimental.md" },
+      { "Output Format" = "cli-reference/manual/output-format.md" },
+      { "Output Format JSON Schema" = "cli-reference/manual/output-format-json-schema.md" }
+    ]}
+  ]},
+  { "Conformance Dashboard" = "conformance.md" },
+  { "Performance Benchmarks" = "performance-benchmarks.md" },
   { "Deprecations" = "deprecations.md" },
+  { "Dependency Migration" = "dependency-migration.md" },
+  { "Migration" = [
+    { "Output Changes in 0.87.0" = "output-changes/0.87.0.md" },
+    { "Upgrading from an Older Release" = "output-changes/upgrading.md" }
+  ]},
   { "Experimental Features" = "experimental.md" },
   { "FAQ" = "faq.md" },
-  { "Development-Contributing" = "development-contributing.md" }
+  { "Architecture" = "architecture.md" },
+  { "Development" = "development-contributing.md" }
+]
+
+extra_css = [
+  "assets/benchmarks/release-benchmarks.css"
+]
+
+extra_javascript = [
+  "assets/benchmarks/release-benchmarks.js"
 ]
 
 [project.theme]

@@ -1,0 +1,2 @@
+is_symlink=True
+target_exists=True

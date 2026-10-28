@@ -1,0 +1,12 @@
+{
+  "title": "Root",
+  "type": [
+    "string",
+    "object"
+  ],
+  "properties": {
+    "x": {
+      "type": "integer"
+    }
+  }
+}

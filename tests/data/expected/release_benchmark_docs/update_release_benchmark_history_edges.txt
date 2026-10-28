@@ -1,0 +1,33 @@
+generated-at-present: True
+metadata-empty: {}
+int-string-int: 123
+int-string-str: 456
+int-string-empty: 
+version-sort-suffix: (0, 1, 2, 3, 0, 'local')
+version-sort-empty-token: (0, 1, 2, 0, 0, '')
+runs-fallback: fallback
+strategy-empty: explicit
+strategy-explicit: clickpy_downloads
+strategy-same: clickpy_downloads
+strategy-base: manual
+strategy-combined: manual_with_backfill
+invalid-selection: {}
+sparse-selection: {}
+valid-selection-helper: valid-selection.json: {'0.64.1': '2026-06-19T00:00:00Z'}
+unsafe-selection: unsafe-selection.json: ValueError: Benchmark entry #1 in <tmp>/unsafe-selection.json has unsafe uploaded_at: '2026-06-19T00:00:00Z<script>'
+unsafe-version-selection: unsafe-version-selection.json: ValueError: Benchmark entry #1 in <tmp>/unsafe-version-selection.json has unsafe version: '0.64.1<script>'
+missing-selection: {}
+unsafe-metadata: unsafe-metadata.json: ValueError: Benchmark metadata in <tmp>/unsafe-metadata.json has unsafe workflow: '<script>'
+safe-metadata: unsafe-metadata.json: {'workflow': 'Release Benchmarks', 'selected_versions': '0.64.1,main'}
+missing-incoming: sample.json: FileNotFoundError: Incoming benchmark data not found: <tmp>/missing-incoming.json
+invalid-current-main-sha: sample.json: ValueError: --current-main-sha must be a 40-character lowercase commit SHA, got 'not-a-sha'
+blank-metadata: {}
+empty-release-date-version: {}
+merged-release-dates-preserve: {'0.64.1': '2026-06-19T00:00:00Z'}
+invalid-payload.json: TypeError: Benchmark data in <tmp>/invalid-payload.json must be a JSON object
+invalid-entries.json: TypeError: Benchmark data in <tmp>/invalid-entries.json must contain an entries list
+non-object-entry.json: TypeError: Benchmark entry #1 in <tmp>/non-object-entry.json must be a JSON object
+unsafe-entry.json: ValueError: Benchmark entry #1 in <tmp>/unsafe-entry.json has unsafe version: '0.64.1"><script>'
+missing-entry.json: ValueError: Benchmark entry #1 in <tmp>/missing-entry.json is missing version
+minimal-entry.json: no error
+unsafe-optional-entry.json: ValueError: Benchmark entry #1 in <tmp>/unsafe-optional-entry.json has unsafe status: '<script>'

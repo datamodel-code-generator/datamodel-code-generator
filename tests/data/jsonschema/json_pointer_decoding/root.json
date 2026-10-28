@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PointerRoot",
+  "type": "object",
+  "required": ["once", "tilde", "percent", "uri", "array_value", "external"],
+  "properties": {
+    "once": {"$ref": "#/$defs/a~1b~01c"},
+    "tilde": {"$ref": "#/$defs/a~1b~00c"},
+    "percent": {"$ref": "#/$defs/a~1b%252Fc"},
+    "uri": {"$ref": "#/$defs/a%7E1b"},
+    "array_value": {"$ref": "#/$defs/choices/oneOf/1"},
+    "external": {"$ref": "external.json#/$defs/a~1b~01c"}
+  },
+  "$defs": {
+    "a/b~1c": {"title": "OnceValue", "type": "string"},
+    "a/b~0c": {"title": "TildeValue", "type": "integer"},
+    "a/b%2Fc": {"title": "PercentValue", "type": "boolean"},
+    "a/b": {"title": "UriValue", "type": "number"},
+    "choices": {
+      "oneOf": [
+        {"title": "UnusedChoice", "type": "null"},
+        {"title": "ArrayChoice", "type": "string"}
+      ]
+    }
+  }
+}

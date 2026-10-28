@@ -1,0 +1,25 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Replacement bindings", "version": "1"},
+  "paths": {
+    "/items": {
+      "post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Holder"}}}},
+        "responses": {"200": {"description": "Result", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Holder"}}}}}
+      }
+    }
+  },
+  "components": {"schemas": {
+    "Text": {"type": "string"},
+    "Record": {"type": "object", "properties": {"value": {"type": "string"}}},
+    "RecordCopy": {"type": "object", "properties": {"value": {"type": "string"}}},
+    "Wrapper": {"$ref": "#/components/schemas/Record"},
+    "Holder": {"type": "object", "properties": {
+      "text": {"$ref": "#/components/schemas/Text"},
+      "list": {"type": "array", "items": {"$ref": "#/components/schemas/Text"}},
+      "original": {"$ref": "#/components/schemas/Record"},
+      "copy": {"$ref": "#/components/schemas/RecordCopy"},
+      "wrapper": {"$ref": "#/components/schemas/Wrapper"}
+    }}
+  }}
+}

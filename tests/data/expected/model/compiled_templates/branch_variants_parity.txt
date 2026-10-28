@@ -1,0 +1,1037 @@
+=== pydantic_empty_missing_comment
+@decorator
+class Unicodeモデル(BaseModel):  # comment \ " {braces}
+next
+    pass
+
+=== pydantic_annotated_default
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    annotated: Annotated[str, Field()]
+    """field \ \" quote
+next"""
+
+
+    default: str = 'value'
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='after')
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        return validate_value(v, info)
+
+=== pydantic_inline_description
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    inline: str
+    """inline \ description"""
+
+
+    after_inline: str
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='after')
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        return validate_value(v, info)
+
+=== pydantic_inline_description_last
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    inline: str
+    """inline \ description"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='after')
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        return validate_value(v, info)
+
+=== pydantic_runtime_custom_base_and_extra_field
+@decorator
+class Unicodeモデル(_RuntimeBase, CustomBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': dict[str, str],
+    }
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    concrete: str = Field(default='concrete')
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='after')
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        return validate_value(v, info)
+
+=== pydantic_validator_wrap
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='wrap')
+    @classmethod
+    def validate_value(cls, v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:
+        return validate_value(v, handler, info)
+
+=== pydantic_validator_plain
+@decorator
+class Unicodeモデル(_RuntimeBase):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+
+    @field_validator('value', mode='plain')
+    @classmethod
+    def validate_value(cls, v: Any) -> Any:
+        return validate_value(v)
+
+=== root_missing_optional_context
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[str]):
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    root: str
+    """field \ \" quote
+next"""
+
+    def generated(self) -> str:
+        return "ok"
+
+=== root_empty
+@decorator
+class Unicodeモデル(BaseModel, Sequence[str]):  # comment \ " {braces}
+next
+    pass
+
+=== root_repeated_truth_testing
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[], Sequence[str]):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+
+=== typed_dict_class
+
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    value: str
+    """field \ \" quote
+next"""
+
+
+    other: list[str]
+    """field \ \" quote
+next"""
+
+=== enum_empty
+@decorator
+class Unicodeモデル(BaseModel):
+
+=== namespace_after_empty
+
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('other',),),),
+    )
+
+
+
+=== dataclass_inline_description
+@decorator
+
+@dataclass(frozen=True)
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    inline: str
+    """inline \ description"""
+
+
+    after_inline: str
+    """field \ \" quote
+next"""
+
+=== dataclass_empty
+@decorator
+
+@dataclass
+class Unicodeモデル:
+    pass
+
+=== dataclass_concrete_and_inline_last
+@decorator
+
+@dataclass(frozen=True)
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    concrete: str = Field(default='concrete')
+    inline: str
+    """inline \ description"""
+
+=== dataclass_default_without_field
+@decorator
+
+@dataclass(frozen=True)
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    default: str = 'value'
+    """field \ \" quote
+next"""
+
+=== enum_inline_description
+@decorator
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    inline = 'value'
+    """inline \ description"""
+
+
+    after_inline = 'value'
+    """field \ \" quote
+next"""
+
+=== enum_without_and_with_last_inline_description
+@decorator
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    undocumented = 'value'
+    inline = 'value'
+    """inline \ description"""
+
+=== msgspec_no_base_default_and_inline
+@decorator
+
+class Unicodeモデル(Struct, frozen=True):
+    concrete: str = Field(default='concrete')
+    annotated_only: Annotated[str, Marker()]
+    annotated_and_field: Annotated[str, Marker()] = field(default='annotated')
+    undocumented: str
+    defaulted: str = 'fallback'
+    """defaulted inline"""
+
+
+    after_inline: str
+    """field \ \" quote
+next"""
+
+
+    inline: str
+    """inline \ description"""
+
+=== msgspec_empty_without_base
+@decorator
+
+class Unicodeモデル:
+    pass
+
+=== pydantic_dataclass_inline_description
+@decorator
+
+@dataclass(frozen=True, config=ConfigDict(frozen=True))
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    inline: str
+    """inline \ description"""
+
+
+    after_inline: str
+    """field \ \" quote
+next"""
+
+=== pydantic_dataclass_empty
+@decorator
+
+@dataclass
+class Unicodeモデル:
+    pass
+
+=== pydantic_dataclass_annotated_and_inline_last
+@decorator
+
+@dataclass(frozen=True, config=ConfigDict(frozen=True))
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    annotated_only: Annotated[str, Marker()]
+    inline: str
+    """inline \ description"""
+
+=== root_empty_with_description
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel, Sequence[str]):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+
+=== root_inline_description
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[str], Sequence[str]):  # comment \ " {braces}
+next
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    root: str
+    """inline \ description"""
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.root)
+
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> str:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> list[str]:
+        pass
+
+    def __getitem__(self, index: SupportsIndex | slice) -> str | list[str]:
+        return self.root[index]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+    def generated(self) -> str:
+        return "ok"
+
+=== root_concrete_without_description
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[str], Sequence[str]):  # comment \ " {braces}
+next
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    root: str = Field(default='concrete')
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.root)
+
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> str:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> list[str]:
+        pass
+
+    def __getitem__(self, index: SupportsIndex | slice) -> str | list[str]:
+        return self.root[index]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+    def generated(self) -> str:
+        return "ok"
+
+=== root_annotated
+@decorator
+class Unicodeモデル(_RuntimeBase, BaseModel[str], Sequence[str]):  # comment \ " {braces}
+next
+    """description こんにちは \ \" {braces}
+next"""
+    marker = {"braces": "{}"}
+
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': ('^forbidden',),
+            'pattern_properties': (('^x', str),),
+            'additional_property_type': None,
+            'allow_unmatched': True,
+        },
+    )
+
+
+
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('choice',),),),
+    )
+
+
+
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('mode',), ('on',)),),
+            'then_required_groups': ((('then',),),),
+            'else_required_groups': (),
+        },
+    )
+
+
+    root: Annotated[str, Marker()]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.root)
+
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> str:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> list[str]:
+        pass
+
+    def __getitem__(self, index: SupportsIndex | slice) -> str | list[str]:
+        return self.root[index]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+    def generated(self) -> str:
+        return "ok"
+
+=== root_type_alias_empty
+Unicodeモデル = RootModel[]  # comment \ " {braces}
+next
+
+=== root_type_alias_field_docstring
+Unicodeモデル = RootModel[str]  # comment \ " {braces}
+next
+"""field \ \" quote
+next"""
+
+=== schema_multiple_patterns_without_prior
+
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+        {
+            'declared_properties': ('known',),
+            'rejected_patterns': (),
+            'pattern_properties': (
+                ('^first', str),
+                ('^second', int),
+            ),
+            'additional_property_type': bool,
+            'allow_unmatched': False,
+        },
+    )
+
+
+
+=== schema_one_of_without_prior
+
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('one',),),),
+    )
+
+
+
+=== schema_any_of_with_prior
+
+
+
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+        ((('any',),),),
+    )
+
+
+
+=== schema_conditional_without_prior
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': (),
+            'then_required_groups': (),
+            'else_required_groups': (),
+        },
+    )
+
+
+
+=== schema_helpers_without_optional_rules
+class _RuntimeBase(BaseModel):
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+        return data
+
+
+
+
+=== scalar_without_description
+Unicodeモデル: TypeAlias = str
+
+=== scalar_type_alias_without_description
+Unicodeモデル = TypeAliasType("Unicodeモデル", str)
+
+=== scalar_statement_without_description
+type Unicodeモデル = str
+
+=== type_alias_annotation_without_fields
+
+Unicodeモデル: TypeAlias = BaseModel  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+
+=== type_alias_type_without_fields
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", BaseModel)  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+
+=== type_statement_without_fields
+
+type Unicodeモデル = BaseModel  # comment \ " {braces}
+next
+"""description こんにちは \ \" {braces}
+next"""
+
+=== typed_dict_class_inline_description
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    inline: str
+    """inline \ description"""
+
+
+    after_inline: str
+    """field \ \" quote
+next"""
+
+=== typed_dict_class_empty
+class Unicodeモデル(BaseModel):
+    pass
+
+=== typed_dict_class_without_and_with_last_inline_description
+class Unicodeモデル(BaseModel):
+    """description こんにちは \ \" {braces}
+next"""
+    undocumented: str
+    inline: str
+    """inline \ description"""
+
+=== typed_dict_function_inline_description
+
+    """description こんにちは \ \" {braces}
+next"""
+Unicodeモデル = TypedDict('Unicodeモデル', {
+    'inline': str,
+    """inline \ description"""
+
+
+    'after_inline': str,
+    """field \ \" quote
+next"""}, total=False)
+
+
+=== typed_dict_function_without_and_with_last_inline_description
+
+Unicodeモデル = TypedDict('Unicodeモデル', {
+    'undocumented': str,
+    'inline': str,
+    """inline \ description"""}, total=False)
+
+
+=== union_annotation_single
+
+Unicodeモデル: TypeAlias = Single
+
+=== union_annotation_empty
+
+# """description こんにちは \ \" {braces}
+# next"""
+Unicodeモデル: TypeAlias = BaseModel
+
+=== union_type_empty
+
+# """description こんにちは \ \" {braces}
+# next"""
+Unicodeモデル = TypeAliasType("Unicodeモデル", BaseModel)
+
+=== union_type_single
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", Single)
+
+=== union_statement_single
+
+type Unicodeモデル = Single
+
+=== union_statement_empty
+
+# """description こんにちは \ \" {braces}
+# next"""
+type Unicodeモデル = BaseModel
+
+=== typealiasannotation_annotated_missing_comment
+
+Unicodeモデル: TypeAlias = Annotated[str, Marker()]
+
+=== typealiasannotation_field_without_docstring
+
+Unicodeモデル: TypeAlias = Annotated[str, Field(default='concrete')]
+
+=== typealiasannotation_field_docstring
+
+Unicodeモデル: TypeAlias = str
+"""field \ \" quote
+next"""
+
+=== typealiasannotation_empty_missing_comment
+
+Unicodeモデル: TypeAlias = BaseModel
+
+=== typealiastype_annotated_missing_comment
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", Annotated[str, Marker()])
+
+=== typealiastype_field_without_docstring
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", Annotated[str, Field(default='concrete')])
+
+=== typealiastype_field_docstring
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", str)
+"""field \ \" quote
+next"""
+
+=== typealiastype_empty_missing_comment
+
+Unicodeモデル = TypeAliasType("Unicodeモデル", BaseModel)
+
+=== typestatement_annotated_missing_comment
+
+type Unicodeモデル = Annotated[str, Marker()]
+
+=== typestatement_field_without_docstring
+
+type Unicodeモデル = Annotated[str, Field(default='concrete')]
+
+=== typestatement_field_docstring
+
+type Unicodeモデル = str
+"""field \ \" quote
+next"""
+
+=== typestatement_empty_missing_comment
+
+type Unicodeモデル = BaseModel

@@ -15,4 +15,4 @@ class Inner:
 @dataclass
 class Model:
     vals: list[float] | None = field(default_factory=lambda: [float('inf'), 1.5])
-    inner: Inner | None = field(default_factory=lambda: {'v': float('inf')})
+    inner: Inner | None = field(default_factory=lambda: Inner(v=float('inf')))

@@ -1,0 +1,2 @@
+--generate-server set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --input pets.yaml --input-file-type openapi --output models.py --generate-server fastapi --server-output server --server-package server --server-model-package models --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --use-specialized-enum --openapi-scopes schemas api --target-python-version 3.11

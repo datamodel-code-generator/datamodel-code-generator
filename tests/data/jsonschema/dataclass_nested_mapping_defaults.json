@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "complete": {
+      "$ref": "#/$defs/RequiredNested",
+      "default": {
+        "external-name": "preset"
+      }
+    },
+    "partial": {
+      "$ref": "#/$defs/RequiredNested",
+      "default": {
+        "optional_value": "preset"
+      }
+    },
+    "empty": {
+      "$ref": "#/$defs/RequiredNested",
+      "default": {}
+    },
+    "defaulted": {
+      "$ref": "#/$defs/DefaultedNested",
+      "default": {}
+    },
+    "model_union": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/RequiredNested"
+        }
+      ],
+      "default": {
+        "external-name": "union"
+      }
+    },
+    "mapping_union": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "$ref": "#/$defs/RequiredNested"
+        }
+      ],
+      "default": {
+        "external-name": "mapping"
+      }
+    },
+    "nested_mapping": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RequiredNested"
+      },
+      "default": {}
+    }
+  },
+  "$defs": {
+    "RequiredNested": {
+      "type": "object",
+      "required": [
+        "external-name"
+      ],
+      "properties": {
+        "external-name": {
+          "type": "string"
+        },
+        "optional_value": {
+          "type": "string"
+        }
+      }
+    },
+    "DefaultedNested": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "default": "fallback"
+        }
+      }
+    }
+  }
+}

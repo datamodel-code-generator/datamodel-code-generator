@@ -1,0 +1,7 @@
+{
+  "default": {},
+  "explicit": {"aliased": {"id": 20}, "alias_list": [{"id": 21}]},
+  "invalid": {"aliased": {"id": "invalid"}},
+  "objects": ["direct", "aliased", "chained", "nullable_item", "empty_object"],
+  "lists": ["direct_list", "alias_list", "chained_list", "nullable_list", "empty_alias_list", "empty_direct_list", "numbers", "choices"]
+}

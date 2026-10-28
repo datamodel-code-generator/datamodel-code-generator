@@ -1,0 +1,10 @@
+{
+  "Child": {
+    "validators": [
+      {
+        "field": "value",
+        "function": "tests.data.python.validator_collision_first.Base"
+      }
+    ]
+  }
+}

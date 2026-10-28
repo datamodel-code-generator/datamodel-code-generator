@@ -11,7 +11,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-import httpx
 import pytest
 
 from datamodel_code_generator import generate
@@ -68,6 +67,14 @@ def _parity_mocked_callables_to_preserve() -> list[Any]:
     return [getattr(prance, "BaseParser", None)]
 
 
+def _http_get_is_mocked() -> bool:
+    """Return whether either lazily imported HTTP backend has a mocked get call."""
+    for module_name in ("httpx2", "httpx"):
+        if (module := sys.modules.get(module_name)) is not None and hasattr(getattr(module, "get", None), "mock_calls"):
+            return True
+    return False
+
+
 def _extract_cli_formatters(extra_args: Sequence[str] | None) -> list[str] | None:
     if extra_args is None or "--formatters" not in extra_args:
         return None
@@ -89,8 +96,9 @@ def _uses_default_cli_formatters(extra_args: Sequence[str] | None) -> bool:
     return (formatters := _extract_cli_formatters(extra_args)) is None or set(formatters) == _DEFAULT_CLI_FORMATTERS
 
 
-def _uses_check_mode(extra_args: Sequence[str] | None) -> bool:
-    return extra_args is not None and "--check" in extra_args
+def _uses_virtual_output_mode(extra_args: Sequence[str] | None) -> bool:
+    """Return whether a command deliberately leaves its output path untouched."""
+    return extra_args is not None and any(option in extra_args for option in ("--check", "--diff-against"))
 
 
 def _uses_default_api_formatters(generate_options: dict[str, Any]) -> bool:
@@ -181,9 +189,9 @@ def _assert_builtin_cli_formatter_parity(
     if (
         output_path is None
         or not output_path.exists()
-        or _uses_check_mode(extra_args)
+        or _uses_virtual_output_mode(extra_args)
         or not _uses_default_cli_formatters(extra_args)
-        or hasattr(httpx.get, "mock_calls")
+        or _http_get_is_mocked()
     ):
         return
 

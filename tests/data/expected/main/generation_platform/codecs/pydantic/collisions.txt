@@ -1,0 +1,4 @@
+refused nothing
+names-server-decode-name: native Names(a_b=1, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":1,"a_b":1}
+names-server-decode-both: native Names(a_b=2, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":2,"a_b":1}
+names-client-encode: native Names(a_b=1, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":1,"a_b":1}

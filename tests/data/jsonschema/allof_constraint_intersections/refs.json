@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Left"
+    },
+    {
+      "$ref": "#/$defs/Right"
+    }
+  ],
+  "$defs": {
+    "Left": {
+      "type": "object",
+      "properties": {
+        "lower": {
+          "type": "integer",
+          "minimum": 10
+        },
+        "lower_reverse": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "upper": {
+          "type": "integer",
+          "maximum": 2
+        },
+        "upper_reverse": {
+          "type": "integer",
+          "maximum": 8
+        },
+        "exclusive_lower": {
+          "type": "integer",
+          "exclusiveMinimum": 10
+        },
+        "exclusive_upper": {
+          "type": "integer",
+          "exclusiveMaximum": 2
+        },
+        "negative": {
+          "type": "integer",
+          "minimum": -10
+        },
+        "large": {
+          "type": "integer",
+          "minimum": 9007199254740993
+        },
+        "shortest": {
+          "type": "string",
+          "minLength": 3
+        },
+        "longest": {
+          "type": "string",
+          "maxLength": 2
+        },
+        "fewest": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "most": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "choice": {
+          "type": "string",
+          "enum": [
+            "last",
+            "shared",
+            "first"
+          ]
+        },
+        "number_choice": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "nested": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 10
+            },
+            "enum": {
+              "type": "string",
+              "enum": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          "required": [
+            "minimum",
+            "enum"
+          ]
+        },
+        "nested_items": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 10
+          }
+        },
+        "fewest_properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "minProperties": 2
+        },
+        "most_properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "maxProperties": 2
+        },
+        "subset_choice": {
+          "type": "string",
+          "enum": [
+            "shared",
+            "first"
+          ]
+        }
+      },
+      "required": [
+        "lower",
+        "lower_reverse",
+        "upper",
+        "upper_reverse",
+        "exclusive_lower",
+        "exclusive_upper",
+        "negative",
+        "large",
+        "shortest",
+        "longest",
+        "fewest",
+        "most",
+        "choice",
+        "number_choice",
+        "nested",
+        "nested_items",
+        "fewest_properties",
+        "most_properties",
+        "subset_choice"
+      ]
+    },
+    "Right": {
+      "type": "object",
+      "properties": {
+        "lower": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lower_reverse": {
+          "type": "integer",
+          "minimum": 10
+        },
+        "upper": {
+          "type": "integer",
+          "maximum": 8
+        },
+        "upper_reverse": {
+          "type": "integer",
+          "maximum": 2
+        },
+        "exclusive_lower": {
+          "type": "integer",
+          "exclusiveMinimum": 1
+        },
+        "exclusive_upper": {
+          "type": "integer",
+          "exclusiveMaximum": 8
+        },
+        "negative": {
+          "type": "integer",
+          "minimum": -20
+        },
+        "large": {
+          "type": "integer",
+          "minimum": 9007199254740992
+        },
+        "shortest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "longest": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "fewest": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "most": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "choice": {
+          "type": "string",
+          "enum": [
+            "first",
+            "shared",
+            "other"
+          ]
+        },
+        "number_choice": {
+          "type": "integer",
+          "enum": [
+            3,
+            2,
+            4
+          ]
+        },
+        "nested": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "enum": {
+              "type": "string",
+              "enum": [
+                "b",
+                "c"
+              ]
+            }
+          },
+          "required": [
+            "minimum",
+            "enum"
+          ]
+        },
+        "nested_items": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "fewest_properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "minProperties": 1
+        },
+        "most_properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "maxProperties": 8
+        },
+        "subset_choice": {
+          "type": "string",
+          "enum": [
+            "first",
+            "shared",
+            "other"
+          ]
+        }
+      },
+      "required": [
+        "lower",
+        "lower_reverse",
+        "upper",
+        "upper_reverse",
+        "exclusive_lower",
+        "exclusive_upper",
+        "negative",
+        "large",
+        "shortest",
+        "longest",
+        "fewest",
+        "most",
+        "choice",
+        "number_choice",
+        "nested",
+        "nested_items",
+        "fewest_properties",
+        "most_properties",
+        "subset_choice"
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "title": "Workspace",
+  "type": "object",
+  "properties": {
+    "registry": {
+      "$ref": "#/definitions/registry"
+    }
+  },
+  "definitions": {
+    "registry": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^plugin_": {
+          "$ref": "#/definitions/plugin"
+        }
+      },
+      "additionalProperties": false
+    },
+    "plugin": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "$ref": "#/definitions/registry"
+        }
+      }
+    }
+  }
+}

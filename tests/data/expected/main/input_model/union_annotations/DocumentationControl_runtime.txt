@@ -1,0 +1,14 @@
+{
+  "string": {
+    "source": {
+      "value": "word"
+    },
+    "generated": {
+      "value": "word"
+    }
+  },
+  "none": {
+    "source": "rejected",
+    "generated": "rejected"
+  }
+}

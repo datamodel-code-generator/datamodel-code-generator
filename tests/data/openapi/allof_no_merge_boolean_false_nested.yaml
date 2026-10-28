@@ -1,0 +1,29 @@
+openapi: "3.1.0"
+info:
+  title: No-merge inherited nested false schema
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Never: false
+
+    Base:
+      type: object
+      required:
+        - values
+      properties:
+        values:
+          type: array
+          items:
+            type: string
+
+    Derived:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            values:
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Never"
+                  - minLength: 2

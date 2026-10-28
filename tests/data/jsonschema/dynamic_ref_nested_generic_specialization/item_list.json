@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "item_list.json",
+  "title": "ItemList",
+  "type": "array",
+  "items": {"$dynamicRef": "#item"},
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "not": true}
+  }
+}

@@ -1,0 +1,4 @@
+status: 1
+generated/enum.py
+generated/msgspec.py
+generated/orphan.py

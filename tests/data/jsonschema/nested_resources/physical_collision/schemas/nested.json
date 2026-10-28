@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/nested.json",
+  "$anchor": "Nested",
+  "type": "object",
+  "properties": {
+    "external_marker": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "external_marker"
+  ]
+}

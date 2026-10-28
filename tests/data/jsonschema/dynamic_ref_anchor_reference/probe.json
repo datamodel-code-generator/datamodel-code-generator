@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "ints": {"$ref": "int_list.json"},
+    "plain": {"$ref": "list.json"}
+  }
+}

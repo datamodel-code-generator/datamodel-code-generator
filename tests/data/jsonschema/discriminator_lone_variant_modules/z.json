@@ -1,0 +1,10 @@
+{
+  "$defs": {
+    "LoneEarly": {
+      "oneOf": [{"$ref": "b.json#/$defs/Shared"}],
+      "discriminator": {"propertyName": "type"}
+    }
+  },
+  "type": "object",
+  "properties": {"early": {"$ref": "#/$defs/LoneEarly"}}
+}

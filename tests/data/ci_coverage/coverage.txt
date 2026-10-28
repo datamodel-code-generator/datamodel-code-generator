@@ -1,0 +1,1 @@
+Nonempty artifact payload; coverage combine validates the database separately.

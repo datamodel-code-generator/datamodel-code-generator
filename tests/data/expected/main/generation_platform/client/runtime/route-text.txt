@@ -1,0 +1,8 @@
+# route-text pydantic_v2.BaseModel
+  NotesCurrentCache The notes.current cache helper of GET /notes/"""\café.
+  NotesCurrentCache.fetch Fetch GET /notes/"""\café through the helper's cache, revalidating a stale entry.
+  AsyncNotesCurrentCache The notes.current cache helper of GET /notes/"""\café.
+  AsyncNotesCurrentCache.fetch Fetch GET /notes/"""\café through the helper's cache, revalidating a stale entry.
+  > GET https://api.example.com/notes/%22%22%22%5Ccaf%C3%A9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  fetch = NotesCaféGetResponse(root='note')

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KnownAndReferencedExtra",
+  "type": "object",
+  "definitions": {
+    "Key": {
+      "enum": ["name", "valid_key"]
+    }
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "propertyNames": {
+    "$ref": "#/definitions/Key"
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

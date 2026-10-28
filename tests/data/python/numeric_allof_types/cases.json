@@ -1,0 +1,188 @@
+{
+  "number_integer": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "integer_number": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "number_number": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "integer_integer": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "reversed_number_integer": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "format_float": [
+    -1,
+    0,
+    1,
+    1.5
+  ],
+  "format_double": [
+    -1,
+    0,
+    1,
+    1.5
+  ],
+  "format_decimal": [
+    -1,
+    0,
+    1,
+    1.5
+  ],
+  "format_int32": [
+    -1,
+    0,
+    1,
+    1.5
+  ],
+  "field": [
+    {
+      "value": 1
+    },
+    {
+      "value": 1.5
+    }
+  ],
+  "ordinary": [
+    1,
+    2,
+    2.5,
+    10,
+    11
+  ],
+  "nullable_base": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_child": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_both": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_null_first": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_integer_first": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_number_same": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "nullable_null_only": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "null_first_nullable": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "null_scalar_nullable": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "null_same": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "string_same": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "string_nullable_same": [
+    null,
+    1,
+    2,
+    2.5,
+    "text"
+  ],
+  "constraint_only": [
+    1,
+    2,
+    2.5,
+    9,
+    10
+  ],
+  "outside_field": [
+    {
+      "value": 1
+    },
+    {
+      "value": "text"
+    }
+  ],
+  "outside_root": [
+    {},
+    1,
+    null
+  ],
+  "outside_null": [
+    {
+      "value": 1
+    },
+    {
+      "value": "text"
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+# responses
+serve pydantic_v2.BaseModel
+service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_tally, get_text, head_text
+service DefaultService without its methods: TypeError
+app standard
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 application/json "hello"
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> GET /documents/1
+  get_document(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /documents/2
+  get_document(id=2)
+< 200 text/plain; charset=utf-8 raw
+> POST /things
+  create_thing(body=Pet(id=1, name='Mimi'))
+< 201 application/json {"id":1,"name":"Mimi"}
+> GET /text
+  get_text()
+< 200 text/plain; charset=utf-8 hello
+> HEAD /text
+  head_text()
+< 200 - b''
+> GET /latin
+  get_latin()
+< 200 text/plain; charset=iso-8859-1 café
+> GET /bytes
+  get_bytes()
+< 200 application/octet-stream b'\x00\x01'
+> GET /problems
+  get_problem(mode=absent)
+< 200 application/problem+json {"message":"Gone"}
+> GET /problems?mode=result
+  get_problem(mode=<ProblemsGetQueryModeParameter.result: 'result'>)
+< 200 application/json {"id":2,"name":"Rex"}
+> GET /problems?mode=invalid
+  get_problem(mode=<ProblemsGetQueryModeParameter.invalid: 'invalid'>)
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Error']
+> GET /notes
+  get_note(empty=None)
+< 200 application/vnd.note+json "note"
+> GET /notes?empty=true
+  get_note(empty=True)
+< 200 application/vnd.note+json null
+> GET /chosen
+  get_chosen()
+< 200 application/json {"id":4,"name":"Pochi"}
+> GET /tallies
+  get_tally()
+< 200 application/vnd.tally+json {"total":2,"nested":{"a":[1]}}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+> openapi /text get 200
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Pet"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /problems get 200
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Pet"}}, "application/problem+json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+app plain
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+app included
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"], "input": "other", "ctx": {"expected": "'bare', 'result' or 'value'"}}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< null
+serve pydantic_v2.dataclass
+service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_tally, get_text, head_text
+service DefaultService without its methods: TypeError
+app standard
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 application/json "hello"
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> GET /documents/1
+  get_document(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /documents/2
+  get_document(id=2)
+< 200 text/plain; charset=utf-8 raw
+> POST /things
+  create_thing(body=Pet(id=1, name='Mimi'))
+< 201 application/json {"id":1,"name":"Mimi"}
+> GET /text
+  get_text()
+< 200 text/plain; charset=utf-8 hello
+> HEAD /text
+  head_text()
+< 200 - b''
+> GET /latin
+  get_latin()
+< 200 text/plain; charset=iso-8859-1 café
+> GET /bytes
+  get_bytes()
+< 200 application/octet-stream b'\x00\x01'
+> GET /problems
+  get_problem(mode=absent)
+< 200 application/problem+json {"message":"Gone"}
+> GET /problems?mode=result
+  get_problem(mode=<ProblemsGetQueryModeParameter.result: 'result'>)
+< 200 application/json {"id":2,"name":"Rex"}
+> GET /problems?mode=invalid
+  get_problem(mode=<ProblemsGetQueryModeParameter.invalid: 'invalid'>)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Error']
+> GET /notes
+  get_note(empty=None)
+< 200 application/vnd.note+json "note"
+> GET /notes?empty=true
+  get_note(empty=True)
+< 200 application/vnd.note+json null
+> GET /chosen
+  get_chosen()
+< 200 application/json {"id":4,"name":"Pochi"}
+> GET /tallies
+  get_tally()
+< 200 application/vnd.tally+json {"total":2,"nested":{"a":[1]}}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+> openapi /text get 200
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Pet"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /problems get 200
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Pet"}}, "application/problem+json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+app plain
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+app included
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode=<GreetingsGetQueryModeParameter.result: 'result'>)
+< 200 application/json "ok"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"], "input": "other", "ctx": {"expected": "'bare', 'result' or 'value'"}}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< null

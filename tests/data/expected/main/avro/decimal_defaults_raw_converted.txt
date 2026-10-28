@@ -1,0 +1,4 @@
+direct: Decimal('258E-2')
+fixed: Decimal('-258E-2')
+reference: Decimal('1200E-2')
+ordinary: b'\xff'

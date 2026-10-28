@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TypeOverridesLiteralModelMembers",
+  "type": "object",
+  "required": [
+    "ratio",
+    "status"
+  ],
+  "properties": {
+    "ratio": {
+      "$ref": "#/definitions/Ratio"
+    },
+    "statuses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Status"
+      }
+    },
+    "status": {
+      "$ref": "#/definitions/Status"
+    }
+  },
+  "definitions": {
+    "Ratio": {
+      "type": "number",
+      "minimum": 0
+    },
+    "Status": {
+      "type": "integer"
+    }
+  }
+}

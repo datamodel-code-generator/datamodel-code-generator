@@ -9,4 +9,4 @@ from msgspec import UNSET, Struct, UnsetType
 
 class Model(Struct):
     required_null: None
-    optional_null: UnsetType = UNSET
+    optional_null: None | UnsetType = UNSET

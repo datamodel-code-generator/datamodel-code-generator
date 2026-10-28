@@ -7,14 +7,21 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class ConstrainedString(RootModel[str]):
     root: Annotated[str, Field(max_length=100, min_length=1)]
 
 
-class DictModel(RootModel[dict[str, Literal['fixed']]]):
-    root: dict[str, Literal['fixed']]
+DictModelAdditionalProperty = TypeAliasType(
+    "DictModelAdditionalProperty",
+    Annotated[Literal['fixed'], Field(max_length=100, min_length=1)],
+)
+
+
+class DictModel(RootModel[dict[str, DictModelAdditionalProperty]]):
+    root: dict[str, DictModelAdditionalProperty]
 
 
 class Model(BaseModel):

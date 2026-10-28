@@ -1,0 +1,14 @@
+{
+  "title": "Root",
+  "type": [
+    "string",
+    "object",
+    "null"
+  ],
+  "properties": {
+    "x": {
+      "type": "integer"
+    }
+  },
+  "minLength": 2
+}

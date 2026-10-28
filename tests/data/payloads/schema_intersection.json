@@ -1,0 +1,6761 @@
+{
+  "ref_siblings": {
+    "model": "Model",
+    "fields": {
+      "pick": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "pick_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "w1": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "w1_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "q_sib": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_sib_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_sib_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "q_sib_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "looser": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 0
+          }
+        ]
+      },
+      "w3": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "redundant_type": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "redundant_allof": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "code_type": {
+        "valid": [
+          "A",
+          "AB"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "q_desc": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_max": {
+        "valid": [
+          1,
+          9
+        ],
+        "invalid": [
+          0,
+          10
+        ]
+      },
+      "examples_only": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "titled": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      }
+    }
+  },
+  "allof_values": {
+    "model": "Model",
+    "fields": {
+      "level": {
+        "valid": [
+          0,
+          10
+        ],
+        "invalid": [
+          -1,
+          11,
+          1.5
+        ]
+      },
+      "level_prop": {
+        "valid": [
+          0,
+          10
+        ],
+        "invalid": [
+          -1,
+          11,
+          1.5
+        ]
+      },
+      "level_items": {
+        "valid": [
+          [
+            0
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            11
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "level_map": {
+        "valid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 11
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      },
+      "mode": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "mode_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "mode_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "mode_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "pat": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
+      },
+      "pat_prop": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
+      },
+      "pat_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          [
+            "axb"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "ba"
+          ]
+        ]
+      },
+      "pat_map": {
+        "valid": [
+          {
+            "k": "ab"
+          },
+          {
+            "k": "axb"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "ba"
+          }
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "a",
+          5
+        ],
+        "invalid": [
+          "",
+          "abcdef"
+        ]
+      },
+      "untyped_prop": {
+        "valid": [
+          "a",
+          5
+        ],
+        "invalid": [
+          "",
+          "abcdef"
+        ]
+      },
+      "untyped_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            ""
+          ],
+          [
+            "abcdef"
+          ]
+        ]
+      },
+      "untyped_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": ""
+          },
+          {
+            "k": "abcdef"
+          }
+        ]
+      },
+      "p": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a"
+        ]
+      }
+    }
+  },
+  "allof_refs": {
+    "model": "Model",
+    "base": {
+      "nullsib_a": "a",
+      "nullsib_b": "a",
+      "nullsib_c": {},
+      "nullsib_d": "a"
+    },
+    "fields": {
+      "pick2": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick2_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick2_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "pick2_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "level2": {
+        "valid": [
+          2,
+          3
+        ],
+        "invalid": [
+          1,
+          4
+        ]
+      },
+      "level2_prop": {
+        "valid": [
+          2,
+          3
+        ],
+        "invalid": [
+          1,
+          4
+        ]
+      },
+      "level2_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "level2_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 3
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 4
+          }
+        ]
+      },
+      "number5": {
+        "valid": [
+          5,
+          6
+        ],
+        "invalid": [
+          4
+        ]
+      },
+      "number5_prop": {
+        "valid": [
+          5,
+          6
+        ],
+        "invalid": [
+          4
+        ]
+      },
+      "number5_items": {
+        "valid": [
+          [
+            5
+          ],
+          [
+            6
+          ]
+        ],
+        "invalid": [
+          [
+            4
+          ]
+        ]
+      },
+      "number5_map": {
+        "valid": [
+          {
+            "k": 5
+          },
+          {
+            "k": 6
+          }
+        ],
+        "invalid": [
+          {
+            "k": 4
+          }
+        ]
+      },
+      "non_negative": {
+        "valid": [
+          0,
+          1.5
+        ],
+        "invalid": [
+          -1,
+          -0.5
+        ]
+      },
+      "non_negative_prop": {
+        "valid": [
+          0,
+          1.5
+        ],
+        "invalid": [
+          -1,
+          -0.5
+        ]
+      },
+      "non_negative_items": {
+        "valid": [
+          [
+            0
+          ],
+          [
+            1.5
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            -0.5
+          ]
+        ]
+      },
+      "non_negative_map": {
+        "valid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 1.5
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": -0.5
+          }
+        ]
+      },
+      "two_refs": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          2,
+          6
+        ]
+      },
+      "two_refs_prop": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          2,
+          6
+        ]
+      },
+      "two_refs_items": {
+        "valid": [
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "two_refs_map": {
+        "valid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "stamp_len": {
+        "valid": [
+          "2020-01-01T00:00:00Z"
+        ],
+        "invalid": [
+          "2020-01-01T00:00:00.1234567890123456789012+00:00"
+        ]
+      },
+      "stamp_len_prop": {
+        "valid": [
+          "2020-01-01T00:00:00Z"
+        ],
+        "invalid": [
+          "2020-01-01T00:00:00.1234567890123456789012+00:00"
+        ]
+      },
+      "stamp_len_items": {
+        "valid": [
+          [
+            "2020-01-01T00:00:00Z"
+          ]
+        ],
+        "invalid": [
+          [
+            "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          ]
+        ]
+      },
+      "stamp_len_map": {
+        "valid": [
+          {
+            "k": "2020-01-01T00:00:00Z"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          }
+        ]
+      },
+      "quantity": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "q_allof": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_allof_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_allof_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "q_allof_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "q_allof2": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_allof2_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_allof2_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "q_allof2_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "xpt_a": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11,
+          1.5
+        ]
+      },
+      "xpt_b": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11,
+          1.5
+        ]
+      },
+      "nullsib_a": {
+        "valid": [
+          "abc"
+        ],
+        "invalid": [
+          "abcd",
+          null
+        ]
+      },
+      "nullsib_b": {
+        "valid": [
+          "abc"
+        ],
+        "invalid": [
+          "abcd",
+          null
+        ]
+      },
+      "nullsib_c": {
+        "valid": [
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "a"
+          },
+          null
+        ]
+      },
+      "nullsib_d": {
+        "valid": [
+          "abc"
+        ],
+        "invalid": [
+          "abcd",
+          null
+        ]
+      }
+    }
+  },
+  "allof_int_frac": {
+    "model": "Model",
+    "fields": {
+      "frac": {
+        "valid": [
+          1,
+          9
+        ],
+        "invalid": [
+          0,
+          10,
+          1.5
+        ]
+      },
+      "frac_prop": {
+        "valid": [
+          1,
+          9
+        ],
+        "invalid": [
+          0,
+          10,
+          1.5
+        ]
+      },
+      "frac_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            10
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "frac_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 10
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      }
+    }
+  },
+  "allof_array_bounds": {
+    "model": "Model",
+    "fields": {
+      "tags_len": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "tags_len_prop": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "tags_len_items": {
+        "valid": [
+          [
+            [
+              "a"
+            ]
+          ],
+          [
+            [
+              "a",
+              "b",
+              "c"
+            ]
+          ]
+        ],
+        "invalid": [
+          [
+            []
+          ],
+          [
+            [
+              "a",
+              "b",
+              "c",
+              "d"
+            ]
+          ],
+          [
+            [
+              1
+            ]
+          ]
+        ]
+      },
+      "tags_len_map": {
+        "valid": [
+          {
+            "k": [
+              "a"
+            ]
+          },
+          {
+            "k": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        ],
+        "invalid": [
+          {
+            "k": []
+          },
+          {
+            "k": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ]
+          },
+          {
+            "k": [
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "root_members": {
+    "model": "M",
+    "fields": {
+      "wa": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wa_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wb": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "wb_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "wb_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "wb_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wc": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wc_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wd": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "wd_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "wd_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "wd_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "we": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "we_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "wf": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "wf_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      },
+      "wg": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wg_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wh": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wh_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      }
+    }
+  },
+  "root_forms": {
+    "model": "Model",
+    "fields": {
+      "a": {
+        "valid": [
+          [
+            "x"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "b": {
+        "valid": [
+          [
+            "x"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "c": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "d": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "v": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          2,
+          6
+        ]
+      },
+      "p": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
+      },
+      "u": {
+        "valid": [
+          "a",
+          5
+        ],
+        "invalid": [
+          "",
+          "abcdef"
+        ]
+      },
+      "two_refs": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          2,
+          6
+        ]
+      },
+      "m": {
+        "valid": [
+          {},
+          {
+            "k": 1
+          },
+          null
+        ],
+        "invalid": [
+          {
+            "k": "x"
+          },
+          1
+        ]
+      },
+      "m2": {
+        "valid": [
+          {},
+          {
+            "k": 1
+          },
+          null
+        ],
+        "invalid": [
+          {
+            "k": "x"
+          },
+          1
+        ]
+      },
+      "path_a": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "root_multi": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "inline_root": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a"
+        ]
+      }
+    }
+  },
+  "inherited_overrides": {
+    "model": "Model",
+    "fields": {
+      "c": {
+        "valid": [
+          {
+            "x": 10
+          },
+          {
+            "e": "b"
+          },
+          {
+            "y": 0
+          },
+          {
+            "y": 5
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": 21
+          },
+          {
+            "e": "a"
+          },
+          {
+            "e": "c"
+          },
+          {
+            "y": -1
+          },
+          {
+            "y": 6
+          }
+        ]
+      }
+    }
+  },
+  "enum_refs": {
+    "model": "Model",
+    "fields": {
+      "v": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c",
+          "d"
+        ]
+      },
+      "v_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c",
+          "d"
+        ]
+      },
+      "v_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d"
+          ]
+        ]
+      },
+      "v_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          },
+          {
+            "k": "d"
+          }
+        ]
+      }
+    }
+  },
+  "allof_4716": {
+    "model": "Measurement",
+    "fields": {
+      "count": {
+        "valid": [
+          5
+        ],
+        "invalid": [
+          4
+        ]
+      },
+      "code": {
+        "valid": [
+          "A"
+        ],
+        "invalid": [
+          "ABCD",
+          "a"
+        ]
+      },
+      "tags": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          [
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f"
+          ]
+        ]
+      },
+      "score": {
+        "valid": [
+          100
+        ],
+        "invalid": [
+          101
+        ]
+      },
+      "counts": {
+        "valid": [
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            4
+          ]
+        ]
+      },
+      "limits": {
+        "valid": [
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 11
+          }
+        ]
+      },
+      "point": {
+        "valid": [
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "a"
+          }
+        ]
+      },
+      "label": {
+        "valid": [
+          123
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "status": {
+        "valid": [
+          "open",
+          "closed"
+        ],
+        "invalid": [
+          "other"
+        ]
+      },
+      "pair": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ]
+      },
+      "single": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "b"
+          ]
+        ]
+      },
+      "ref_pair": {
+        "valid": [
+          [
+            "b"
+          ],
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "invalid": [
+          []
+        ]
+      },
+      "pp": {
+        "valid": [
+          {
+            "a": 1
+          },
+          {
+            "b": 9
+          }
+        ],
+        "invalid": [
+          {
+            "a": 0
+          },
+          {
+            "b": 10
+          }
+        ]
+      },
+      "ap": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "q_allof": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "q_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "short_status": {
+        "valid": [
+          "open"
+        ],
+        "invalid": [
+          "closed"
+        ]
+      }
+    }
+  },
+  "ref_siblings_draft07": {
+    "model": "Model",
+    "fields": {
+      "pick": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "pick_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "pick_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "pick_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "w1": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "w1_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "q_sib": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "q_sib_prop": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "q_sib_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "q_sib_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          },
+          {
+            "k": 11
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "looser": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 0
+          }
+        ]
+      },
+      "w3": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "redundant_type": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "redundant_allof": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "code_type": {
+        "valid": [
+          "A",
+          "AB"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "q_desc": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_max": {
+        "valid": [
+          1,
+          9,
+          10
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_only": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "titled": {
+        "valid": [
+          "a",
+          "ab"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "wa": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wa_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wb": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wb_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wb_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wb_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wc": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wc_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wd": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "wd_prop": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "wd_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "wd_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          },
+          {
+            "k": 11
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "we": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "we_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "wf": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "wf_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      },
+      "wg": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wg_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wh": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wh_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "enum_const": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b"
+        ]
+      }
+    }
+  },
+  "discriminator_narrowing": {
+    "model": "Holder",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "petType": "cat"
+          },
+          {
+            "petType": "cat",
+            "meow": "m"
+          },
+          {
+            "petType": "dog"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "bird"
+          },
+          {},
+          {
+            "petType": "cat",
+            "meow": 1
+          }
+        ]
+      }
+    }
+  },
+  "discriminator_narrowing_inline": {
+    "model": "Holder",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "petType": "cat"
+          },
+          {
+            "petType": "cat",
+            "meow": "m"
+          },
+          {
+            "petType": "dog"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "bird"
+          },
+          {},
+          {
+            "petType": "cat",
+            "meow": 1
+          }
+        ]
+      }
+    }
+  },
+  "rw": {
+    "model": "Pet",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "base": {
+      "id": "a",
+      "name": "n",
+      "secret": "s",
+      "s2": "s"
+    },
+    "fields": {
+      "id": {
+        "valid": [
+          "abcde"
+        ],
+        "invalid": [
+          "abcdef",
+          1
+        ]
+      },
+      "name": {
+        "valid": [
+          "n"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "secret": {
+        "valid": [
+          "x",
+          "123456789"
+        ],
+        "invalid": [
+          "",
+          "1234567890"
+        ]
+      },
+      "s2": {
+        "valid": [
+          "x",
+          "123456789"
+        ],
+        "invalid": [
+          "",
+          "1234567890"
+        ]
+      }
+    }
+  },
+  "ref_siblings_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "pick": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "pick_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "pick_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "pick_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "w1": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "w1_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "q_sib": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "q_sib_prop": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "q_sib_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "q_sib_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          },
+          {
+            "k": 11
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "looser": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 0
+          }
+        ]
+      },
+      "w3": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "redundant_type": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "redundant_allof": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "code_type": {
+        "valid": [
+          "A",
+          "AB"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "q_desc": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_max": {
+        "valid": [
+          1,
+          9,
+          10
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_only": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "titled": {
+        "valid": [
+          "a",
+          "ab"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "wa": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wa_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wb": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wb_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wb_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wb_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wc": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wc_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wd": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "wd_prop": {
+        "valid": [
+          1,
+          10,
+          11
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "wd_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "wd_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          },
+          {
+            "k": 11
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "we": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "we_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "wf": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "wf_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      },
+      "wg": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wg_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wh": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wh_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      }
+    }
+  },
+  "ref_siblings_oas31": {
+    "model": "Model",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "pick": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "pick_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "pick_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "w1": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "w1_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "w1_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "q_sib": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_sib_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "q_sib_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "q_sib_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "looser": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          -1,
+          0
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 0
+          }
+        ]
+      },
+      "w3": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "redundant_type": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "redundant_allof": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "code_type": {
+        "valid": [
+          "A",
+          "AB"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "q_desc": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "examples_max": {
+        "valid": [
+          1,
+          9
+        ],
+        "invalid": [
+          0,
+          10
+        ]
+      },
+      "examples_only": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "titled": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "wa": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wa_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wa_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wb": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "wb_prop": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "wb_items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "wb_map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wc": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wc_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wc_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wd": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "wd_prop": {
+        "valid": [
+          1,
+          10
+        ],
+        "invalid": [
+          0,
+          11
+        ]
+      },
+      "wd_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "wd_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "we": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "we_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "we_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "wf": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_prop": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          0,
+          1.5
+        ]
+      },
+      "wf_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            1.5
+          ]
+        ]
+      },
+      "wf_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 1.5
+          }
+        ]
+      },
+      "wg": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wg_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wg_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "wh": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_prop": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "wh_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "wh_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      }
+    }
+  },
+  "unsat_enum_extend": {
+    "model": "M",
+    "fields": {
+      "status": {
+        "valid": [],
+        "invalid": [
+          "active",
+          "pending",
+          "x"
+        ]
+      }
+    }
+  },
+  "unsat_two_enum_refs": {
+    "model": "M",
+    "fields": {
+      "v": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c",
+          "x"
+        ]
+      }
+    }
+  },
+  "unsat_closed_extend": {
+    "model": "M",
+    "fields": {
+      "sib": {
+        "valid": [],
+        "invalid": [
+          {},
+          {
+            "b": "x"
+          },
+          {
+            "a": "x"
+          },
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ]
+      },
+      "child": {
+        "valid": [],
+        "invalid": [
+          {},
+          {
+            "b": "x"
+          },
+          {
+            "a": "x"
+          },
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ]
+      }
+    }
+  },
+  "unsat_forms": {
+    "model": "M",
+    "fields": {
+      "f": {
+        "valid": [],
+        "invalid": [
+          1,
+          "x",
+          null
+        ]
+      },
+      "v": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "merged": {
+        "valid": [
+          {}
+        ],
+        "invalid": [
+          {
+            "w": "a"
+          },
+          {
+            "w": "b"
+          }
+        ]
+      }
+    }
+  },
+  "ref_sibling_keywords": {
+    "model": "Model",
+    "fields": {
+      "unique": {
+        "valid": [
+          [
+            1,
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "count_number": {
+        "valid": [
+          3
+        ],
+        "invalid": [
+          2.5,
+          -1
+        ]
+      },
+      "code_or_null": {
+        "valid": [],
+        "invalid": [
+          null,
+          3,
+          "x"
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "named": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "const_conflict": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "closed": {
+        "valid": [
+          {
+            "a": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ]
+      },
+      "int_values": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": "x"
+          }
+        ]
+      },
+      "any_values": {
+        "valid": [
+          {
+            "k": "x"
+          }
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "small_items": {
+        "valid": [
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            15
+          ]
+        ]
+      },
+      "small_property": {
+        "valid": [
+          {
+            "n": 10
+          }
+        ],
+        "invalid": [
+          {
+            "n": 15
+          }
+        ]
+      },
+      "crossed": {
+        "valid": [],
+        "invalid": [
+          3,
+          5
+        ]
+      },
+      "const_enum": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "enum_const": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "self_crossed": {
+        "valid": [],
+        "invalid": [
+          4,
+          5
+        ]
+      }
+    }
+  },
+  "inherited_override_keywords": {
+    "model": "Model",
+    "fields": {
+      "c": {
+        "valid": [
+          {
+            "tags": {
+              "a": "x",
+              "b": "y"
+            }
+          },
+          {}
+        ],
+        "invalid": [
+          {
+            "tags": {
+              "b": "y"
+            }
+          },
+          {
+            "tags": {
+              "a": "x"
+            }
+          },
+          {
+            "kind": "c"
+          },
+          {
+            "size": 1
+          },
+          {
+            "size": "x"
+          },
+          {
+            "code": "abcdef"
+          }
+        ]
+      }
+    }
+  },
+  "ref_sibling_nullable_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "typed": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "typed_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [
+            null
+          ],
+          [
+            "abcdef"
+          ]
+        ]
+      }
+    }
+  },
+  "allof_value_parts": {
+    "model": "Model",
+    "fields": {
+      "enum_member_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "enum_member_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "enum_member_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "narrow_prop": {
+        "valid": [
+          2,
+          3
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "narrow_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "narrow_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 3
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          }
+        ]
+      },
+      "literal_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "literal_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "literal_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "const_prop": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b"
+        ]
+      },
+      "const_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            "b"
+          ]
+        ]
+      },
+      "const_map": {
+        "valid": [
+          {
+            "k": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "b"
+          }
+        ]
+      },
+      "nested_prop": {
+        "valid": [
+          1,
+          3
+        ],
+        "invalid": [
+          0,
+          4
+        ]
+      },
+      "nested_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            3
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "nested_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 3
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 4
+          }
+        ]
+      },
+      "nested_untyped_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          0,
+          "a"
+        ]
+      },
+      "nested_untyped_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "nested_untyped_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": "a"
+          }
+        ]
+      },
+      "nullable_prop": {
+        "valid": [
+          1,
+          null
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "nullable_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            null
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "nullable_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": null
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "outer_prop": {
+        "valid": [
+          0,
+          9
+        ],
+        "invalid": [
+          -1,
+          10
+        ]
+      },
+      "outer_items": {
+        "valid": [
+          [
+            0
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "outer_map": {
+        "valid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "multiple_prop": {
+        "valid": [
+          6,
+          12
+        ],
+        "invalid": [
+          2,
+          3
+        ]
+      },
+      "multiple_items": {
+        "valid": [
+          [
+            6
+          ],
+          [
+            12
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "multiple_map": {
+        "valid": [
+          {
+            "k": 6
+          },
+          {
+            "k": 12
+          }
+        ],
+        "invalid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "const_conflict_prop": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "const_conflict_items": {
+        "valid": [],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ]
+      },
+      "const_conflict_map": {
+        "valid": [],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ]
+      },
+      "not_sibling_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "not_sibling_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "not_sibling_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "enum_bound_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          30,
+          11
+        ]
+      },
+      "enum_bound_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            30
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "enum_bound_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 30
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "enum_length_prop": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "bcdefg",
+          "zzzz"
+        ]
+      },
+      "enum_length_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            "bcdefg"
+          ],
+          [
+            "zzzz"
+          ]
+        ]
+      },
+      "enum_length_map": {
+        "valid": [
+          {
+            "k": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "bcdefg"
+          },
+          {
+            "k": "zzzz"
+          }
+        ]
+      },
+      "two_patterns_prop": {
+        "valid": [
+          "ab",
+          "acb"
+        ],
+        "invalid": [
+          "ba",
+          "a"
+        ]
+      },
+      "two_patterns_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [
+            "ba"
+          ]
+        ]
+      },
+      "two_patterns_map": {
+        "valid": [
+          {
+            "k": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "ba"
+          }
+        ]
+      }
+    }
+  },
+  "allof_ref_item_constraints": {
+    "model": "Model",
+    "fields": {
+      "disjoint_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "disjoint_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "overlap_items": {
+        "valid": [
+          [
+            5
+          ],
+          [
+            6
+          ]
+        ],
+        "invalid": [
+          [
+            4
+          ]
+        ]
+      },
+      "overlap_map": {
+        "valid": [
+          {
+            "k": 5
+          },
+          {
+            "k": 6
+          }
+        ],
+        "invalid": [
+          {
+            "k": 4
+          }
+        ]
+      },
+      "redundant_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "redundant_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "member_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "member_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "two_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "two_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "stamp_items": {
+        "valid": [
+          [
+            "2020-01-01T00:00:00Z"
+          ]
+        ],
+        "invalid": [
+          [
+            "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          ]
+        ]
+      },
+      "stamp_map": {
+        "valid": [
+          {
+            "k": "2020-01-01T00:00:00Z"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          }
+        ]
+      },
+      "enum_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            20
+          ]
+        ]
+      },
+      "enum_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 20
+          }
+        ]
+      },
+      "nested_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "nested_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "point_items": {
+        "valid": [
+          [
+            {
+              "x": 1
+            }
+          ]
+        ],
+        "invalid": [
+          [
+            {
+              "x": "a"
+            }
+          ]
+        ]
+      },
+      "point_map": {
+        "valid": [
+          {
+            "k": {
+              "x": 1
+            }
+          }
+        ],
+        "invalid": [
+          {
+            "k": {
+              "x": "a"
+            }
+          }
+        ]
+      },
+      "letter_items": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "bb"
+          ]
+        ],
+        "invalid": [
+          [
+            "c"
+          ]
+        ]
+      },
+      "letter_map": {
+        "valid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "bb"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "false_items": {
+        "valid": [],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      }
+    }
+  },
+  "unsat_root_literals": {
+    "model": "M",
+    "fields": {
+      "const_member": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c",
+          ""
+        ]
+      },
+      "sibling_enum": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "item_enums": {
+        "valid": [
+          []
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      }
+    }
+  },
+  "root_site_null": {
+    "model": "M",
+    "fields": {
+      "ref_array": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          null,
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "ref_integers": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          null,
+          2,
+          6,
+          "3"
+        ]
+      },
+      "inline_array": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          null,
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "inline_integer": {
+        "valid": [
+          3,
+          5
+        ],
+        "invalid": [
+          null,
+          2,
+          6
+        ]
+      }
+    }
+  },
+  "root_site_null_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "ref_array": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          null,
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "inline_array": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          null,
+          [],
+          [
+            1
+          ]
+        ]
+      }
+    }
+  },
+  "root_value_keywords": {
+    "model": "M",
+    "fields": {
+      "items_later": {
+        "valid": [
+          [
+            "a"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          "a"
+        ]
+      },
+      "items_first": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a"
+          ]
+        ]
+      },
+      "unevaluated_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "ref_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "ref_bounded": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "ref_no_parts": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          "a"
+        ]
+      }
+    }
+  },
+  "root_value_items_draft07": {
+    "model": "M",
+    "fields": {
+      "tuple_later": {
+        "valid": [
+          [
+            "a"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "closing_elsewhere": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "own_closing": {
+        "valid": [
+          [
+            "a"
+          ],
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "nullable_tags": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          null,
+          [
+            1
+          ]
+        ]
+      }
+    }
+  },
+  "array_site_all_of": {
+    "model": "M",
+    "fields": {
+      "named": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "inline": {
+        "valid": [
+          [
+            1,
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "nested": {
+        "valid": [
+          [
+            [
+              1
+            ]
+          ]
+        ],
+        "invalid": [
+          [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        ]
+      },
+      "map": {
+        "valid": [
+          {
+            "k": [
+              1
+            ]
+          }
+        ],
+        "invalid": [
+          {
+            "k": [
+              1,
+              2,
+              3
+            ]
+          }
+        ]
+      },
+      "any_of": {
+        "valid": [
+          [
+            1
+          ],
+          "s"
+        ],
+        "invalid": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "null_or_array": {
+        "valid": [
+          null,
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          []
+        ]
+      },
+      "member_items": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a"
+          ]
+        ]
+      },
+      "annotation_only": {
+        "valid": [
+          [
+            1
+          ]
+        ],
+        "invalid": [
+          {},
+          [
+            "a"
+          ]
+        ]
+      },
+      "ref_only": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            1
+          ]
+        ]
+      },
+      "ref_more": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a",
+            "a",
+            "a",
+            "a"
+          ],
+          [
+            1
+          ]
+        ]
+      }
+    }
+  },
+  "allof_patterns": {
+    "model": "Model",
+    "fields": {
+      "anchored_tail": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba",
+          "xb"
+        ]
+      },
+      "anchored_tail_sibling": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba",
+          "xb"
+        ]
+      },
+      "implied_sibling": {
+        "valid": [
+          "ab",
+          "abc"
+        ],
+        "invalid": [
+          "a",
+          "xab"
+        ]
+      },
+      "class_prefix": {
+        "valid": [
+          "bx",
+          "zbxx"
+        ],
+        "invalid": [
+          "a",
+          "x"
+        ]
+      },
+      "escape_prefix": {
+        "valid": [
+          "1x",
+          "a1x"
+        ],
+        "invalid": [
+          "x1",
+          "1"
+        ]
+      },
+      "literal_head": {
+        "valid": [
+          "a1",
+          "xa2"
+        ],
+        "invalid": [
+          "a",
+          "1"
+        ]
+      },
+      "both_anchored": {
+        "valid": [
+          "ab",
+          "abc"
+        ],
+        "invalid": [
+          "a",
+          "xab"
+        ]
+      },
+      "anchor_mismatch": {
+        "valid": [
+          "ab",
+          "aXab"
+        ],
+        "invalid": [
+          "xab",
+          "aX"
+        ]
+      },
+      "alternation": {
+        "valid": [
+          "ac",
+          "cb"
+        ],
+        "invalid": [
+          "c",
+          "ab"
+        ]
+      },
+      "three": {
+        "valid": [
+          "abc",
+          "axbyc"
+        ],
+        "invalid": [
+          "ab",
+          "bc",
+          "ac"
+        ]
+      },
+      "unportable": {
+        "valid": [
+          "ab",
+          "xab"
+        ],
+        "invalid": [
+          "b",
+          "ax"
+        ]
+      },
+      "inherited": {
+        "valid": [
+          {
+            "s": "ab"
+          },
+          {
+            "s": "axb"
+          }
+        ],
+        "invalid": [
+          {
+            "s": "a"
+          },
+          {
+            "s": "xb"
+          }
+        ]
+      }
+    }
+  },
+  "allof_literals": {
+    "model": "Model",
+    "fields": {
+      "bound_enum": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          5,
+          30
+        ]
+      },
+      "length_enum": {
+        "valid": [
+          "bb"
+        ],
+        "invalid": [
+          "a",
+          "cc"
+        ]
+      },
+      "pattern_enum": {
+        "valid": [
+          "bb"
+        ],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "pattern_enum_items": {
+        "valid": [
+          [
+            "bb"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ]
+        ]
+      },
+      "own_length_enum": {
+        "valid": [
+          "a",
+          "bb"
+        ],
+        "invalid": [
+          "ccc"
+        ]
+      },
+      "pattern_enum_class": {
+        "valid": [
+          "aa"
+        ],
+        "invalid": [
+          "bb"
+        ]
+      }
+    }
+  },
+  "nullable_array_items_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "ref_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            "abcd"
+          ],
+          [
+            1
+          ],
+          "ab"
+        ]
+      },
+      "inline_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            "abcd"
+          ],
+          [
+            1
+          ],
+          "ab"
+        ]
+      }
+    }
+  },
+  "null_multiple_types_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "u": {
+        "valid": [
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          1,
+          {
+            "x": "a"
+          }
+        ]
+      },
+      "v": {
+        "valid": [
+          null,
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "w": {
+        "valid": [
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      }
+    }
+  },
+  "inherited_override_null_oas31": {
+    "model": "NamedCat",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "base": {
+      "lives": 9,
+      "kind": "x",
+      "kind4": "x",
+      "ckind": "xy",
+      "direct": "x",
+      "direct_obj": {
+        "n": 1
+      },
+      "direct_obj_first": {
+        "n": 1
+      },
+      "list_null_first": "x"
+    },
+    "fields": {
+      "kind": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      },
+      "kind2": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null
+        ]
+      },
+      "kind3": {
+        "valid": [
+          null,
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "kind4": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      },
+      "ckind": {
+        "valid": [
+          "xy"
+        ],
+        "invalid": [
+          null,
+          "x"
+        ]
+      },
+      "direct": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      },
+      "direct_obj": {
+        "valid": [
+          {
+            "n": 1
+          }
+        ],
+        "invalid": [
+          null,
+          "x"
+        ]
+      },
+      "direct_obj_first": {
+        "valid": [
+          {
+            "n": 1
+          }
+        ],
+        "invalid": [
+          null
+        ]
+      },
+      "list_null_first": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      }
+    }
+  },
+  "enum_ref_consts": {
+    "model": "Model",
+    "fields": {
+      "one": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "cst": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "own": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "lvl": {
+        "valid": [
+          2
+        ],
+        "invalid": [
+          1,
+          3,
+          4
+        ]
+      },
+      "same": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "none": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b",
+          "z"
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            "b"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "c"
+          ]
+        ]
+      },
+      "map": {
+        "valid": [
+          {
+            "k": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "c"
+          }
+        ]
+      },
+      "named": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      }
+    }
+  },
+  "enum_ref_consts_draft04": {
+    "model": "Model",
+    "fields": {
+      "cst": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          "c"
+        ]
+      },
+      "one": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      }
+    }
+  },
+  "enum_refs_null": {
+    "model": "Model",
+    "fields": {
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          2,
+          3,
+          null
+        ]
+      },
+      "shared": {
+        "valid": [
+          2
+        ],
+        "invalid": [
+          1,
+          3,
+          null
+        ]
+      }
+    }
+  },
+  "enum_refs_unholdable": {
+    "model": "Model",
+    "fields": {
+      "number": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          2,
+          "bad",
+          null
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          2,
+          "bad",
+          null
+        ]
+      }
+    }
+  },
+  "enum_refs_unholdable_str": {
+    "model": "Model",
+    "fields": {
+      "text": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b",
+          1.5,
+          null
+        ]
+      }
+    }
+  },
+  "allof_scalar_refs": {
+    "model": "Model",
+    "fields": {
+      "two_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            6
+          ],
+          [
+            4.5
+          ]
+        ]
+      },
+      "two_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "two_pattern_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "two_prop": {
+        "valid": [
+          4,
+          5
+        ],
+        "invalid": [
+          3,
+          6,
+          {}
+        ]
+      },
+      "refs_items": {
+        "valid": [
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "text_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          [
+            "abcde"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "abcdef"
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "number_items": {
+        "valid": [
+          [
+            0.5
+          ],
+          [
+            3
+          ],
+          [
+            9.5
+          ]
+        ],
+        "invalid": [
+          [
+            0.4
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "list_items": {
+        "valid": [
+          [
+            [
+              1
+            ]
+          ],
+          [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        ],
+        "invalid": [
+          [
+            []
+          ],
+          [
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              "a"
+            ]
+          ]
+        ]
+      },
+      "untyped_typed_items": {
+        "valid": [
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "untyped_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            "a"
+          ],
+          [
+            {}
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "nullable_items": {
+        "valid": [
+          [
+            null
+          ],
+          [
+            3
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            6
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "point_items": {
+        "valid": [],
+        "invalid": [
+          [
+            {
+              "x": 1
+            }
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "name": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          "y"
+        ]
+      },
+      "pattern_refs": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba"
+        ]
+      },
+      "lookahead_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "b"
+          ]
+        ]
+      }
+    }
+  }
+}

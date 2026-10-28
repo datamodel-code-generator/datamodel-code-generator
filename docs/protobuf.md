@@ -2,6 +2,9 @@
 
 Generate Python models from Protocol Buffers schema files (`.proto`), including message types referenced by gRPC service definitions.
 
+!!! warning "Experimental"
+    Protocol Buffers input support is experimental and may change as real-world usage is validated.
+
 ## 🚀 Quick Start
 
 Install the Protocol Buffers parser extra:
@@ -63,15 +66,15 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class ExampleShopV1Order(BaseModel):
-    id: str | None = Field('', description='Unique order identifier.')
+    id: str | None = Field("", description="Unique order identifier.")
     tags: list[str] | None = []
     created_at: AwareDatetime | None = None
-    email: str | None = Field(None, description='oneof: contact')
-    phone: str | None = Field(None, description='oneof: contact')
+    email: str | None = Field(None, description="oneof: contact")
+    phone: str | None = Field(None, description="oneof: contact")
 
 
 class ExampleShopV1GetOrderRequest(BaseModel):
-    id: str | None = ''
+    id: str | None = ""
 
 
 class ExampleShopV1GetOrderResponse(BaseModel):
@@ -114,6 +117,12 @@ Common `google.protobuf` well-known types are mapped through the generator's nor
 | `Any` | `dict[str, Any]` |
 | `FieldMask` | `str` |
 | Wrapper types | Optional scalar fields |
+
+Referenced standard types without a built-in mapping are generated from their
+compiled descriptors; unrelated standard types remain omitted. This includes the
+`NullValue` enum, represented by its `NULL_VALUE` member like other generated enums.
+This enum representation does not implement ProtoJSON's special `null` serialization;
+acceptance of `None` follows the selected output backend.
 
 ## Schema Version
 

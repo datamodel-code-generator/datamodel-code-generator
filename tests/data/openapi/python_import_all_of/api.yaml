@@ -1,0 +1,60 @@
+openapi: 3.1.0
+info:
+  title: allOf members that reference a component with x-python-import
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      x-python-import:
+        module: python_import_bases.models
+        name: Twig
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        twigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+      required:
+        - id
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+    Grove:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - type: object
+          required:
+            - twigs
+    Sprout:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - type: object
+          properties:
+            label:
+              type: string
+          required:
+            - label
+    Holder:
+      type: object
+      properties:
+        twig:
+          $ref: '#/components/schemas/Twig'
+    Bud:
+      x-python-import:
+        module: python_import_bases.models
+        name: Bud
+    Seedling:
+      allOf:
+        - $ref: '#/components/schemas/Bud'
+        - type: object
+          properties:
+            name:
+              type: string

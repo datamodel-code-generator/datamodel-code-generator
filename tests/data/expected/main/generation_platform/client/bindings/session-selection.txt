@@ -1,0 +1,127 @@
+# session-selection
+render pydantic_v2.BaseModel default
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default
+change pydantic_v2.BaseModel default field
+  @@ -14 +14 @@
+  -    bad: str
+  +    bad: int
+change pydantic_v2.BaseModel default function
+  @@ -14,0 +15,3 @@
+  +
+  +def Bad():
+  +    return 1
+change pydantic_v2.BaseModel default delete
+  @@ -14,0 +15,2 @@
+  +
+  +del Bad
+change pydantic_v2.BaseModel default unpack
+  @@ -14,0 +15,2 @@
+  +
+  +Bad, other = int, str
+change pydantic_v2.BaseModel default augmented
+  @@ -14,0 +15,2 @@
+  +
+  +Bad |= int
+change pydantic_v2.BaseModel default imported-base
+  @@ -6,0 +7,4 @@
+  +
+  +def BaseModel():
+  +    return 1
+  +
+render pydantic_v2.dataclass default
+  models.py
+  model_bindings.py pydantic_v2_dataclass/default
+change pydantic_v2.dataclass default field
+  @@ -18 +18 @@
+  -    bad: str
+  +    bad: int
+change pydantic_v2.dataclass default function
+  @@ -18,0 +19,3 @@
+  +
+  +def Bad():
+  +    return 1
+change pydantic_v2.dataclass default delete
+  @@ -18,0 +19,2 @@
+  +
+  +del Bad
+change pydantic_v2.dataclass default unpack
+  @@ -18,0 +19,2 @@
+  +
+  +Bad, other = int, str
+change pydantic_v2.dataclass default augmented
+  @@ -18,0 +19,2 @@
+  +
+  +Bad |= int
+render dataclasses.dataclass default
+  models.py
+  model_bindings.py dataclasses_dataclass/default
+change dataclasses.dataclass default field
+  @@ -18 +18 @@
+  -    bad: str
+  +    bad: int
+change dataclasses.dataclass default function
+  @@ -18,0 +19,3 @@
+  +
+  +def Bad():
+  +    return 1
+change dataclasses.dataclass default delete
+  @@ -18,0 +19,2 @@
+  +
+  +del Bad
+change dataclasses.dataclass default unpack
+  @@ -18,0 +19,2 @@
+  +
+  +Bad, other = int, str
+change dataclasses.dataclass default augmented
+  @@ -18,0 +19,2 @@
+  +
+  +Bad |= int
+render typing.TypedDict default
+  models.py
+  model_bindings.py typing_TypedDict/default
+change typing.TypedDict default field
+  @@ -16 +16 @@
+  -    bad: str
+  +    bad: int
+change typing.TypedDict default function
+  @@ -16,0 +17,3 @@
+  +
+  +def Bad():
+  +    return 1
+change typing.TypedDict default delete
+  @@ -16,0 +17,2 @@
+  +
+  +del Bad
+change typing.TypedDict default unpack
+  @@ -16,0 +17,2 @@
+  +
+  +Bad, other = int, str
+change typing.TypedDict default augmented
+  @@ -16,0 +17,2 @@
+  +
+  +Bad |= int
+render msgspec.Struct default
+  models.py
+  model_bindings.py msgspec_Struct/default
+change msgspec.Struct default field
+  @@ -16 +16 @@
+  -    bad: str
+  +    bad: int
+change msgspec.Struct default function
+  @@ -16,0 +17,3 @@
+  +
+  +def Bad():
+  +    return 1
+change msgspec.Struct default delete
+  @@ -16,0 +17,2 @@
+  +
+  +del Bad
+change msgspec.Struct default unpack
+  @@ -16,0 +17,2 @@
+  +
+  +Bad, other = int, str
+change msgspec.Struct default augmented
+  @@ -16,0 +17,2 @@
+  +
+  +Bad |= int

@@ -1,0 +1,13 @@
+[
+  {
+    "type": "result",
+    "is_error": true,
+    "result": null,
+    "errors": [
+      null,
+      {},
+      "SECRET-CANARY",
+      "API Error: 401 SECRET-CANARY"
+    ]
+  }
+]

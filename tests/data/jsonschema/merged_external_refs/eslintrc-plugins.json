@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "ruleNumber": {"type": "integer", "minimum": 0, "maximum": 2},
+    "ruleString": {"type": "string", "enum": ["off", "warn", "error"]}
+  },
+  "properties": {
+    "plugin/rule": {"oneOf": [{"$ref": "#/definitions/ruleNumber"}, {"$ref": "#/definitions/ruleString"}]}
+  }
+}

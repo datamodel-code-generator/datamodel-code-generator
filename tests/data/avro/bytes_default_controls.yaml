@@ -1,0 +1,46 @@
+type: record
+name: BytesControls
+fields:
+  - name: direct
+    type: bytes
+    default: !!binary /w==
+  - name: fixed
+    type:
+      type: fixed
+      name: Octet
+      size: 1
+    default: "ÿ"
+  - name: referenced
+    type: Octet
+    default: !!binary QQ==
+  - name: strings
+    type:
+      type: array
+      items: string
+    default: ["ÿ", "ASCII", ""]
+  - name: mapping
+    type:
+      type: map
+      values: string
+    default: {z: "ÿ", a: "ASCII"}
+  - name: array_without_default
+    type:
+      type: array
+      items: bytes
+  - name: map_without_default
+    type:
+      type: map
+      values: Octet
+  - name: unchanged_invalid_bytes_default
+    type: bytes
+    default: []
+  - name: unchanged_invalid_map_default
+    type:
+      type: map
+      values: bytes
+    default: []
+  - name: unchanged_invalid_array_default
+    type:
+      type: array
+      items: bytes
+    default: "ÿ"

@@ -1,0 +1,62 @@
+{
+  "integer_greater": {
+    "valid": 2,
+    "invalid": 1,
+    "error_type": "greater_than"
+  },
+  "integer_less": {
+    "valid": 4,
+    "invalid": 5,
+    "error_type": "less_than"
+  },
+  "integer_multiple": {
+    "valid": 4,
+    "invalid": 3,
+    "error_type": "multiple_of"
+  },
+  "number_greater": {
+    "valid": 1.5,
+    "invalid": 1,
+    "error_type": "greater_than"
+  },
+  "number_less": {
+    "valid": 4.5,
+    "invalid": 5,
+    "error_type": "less_than"
+  },
+  "number_multiple": {
+    "valid": 4,
+    "invalid": 3,
+    "error_type": "multiple_of"
+  },
+  "fractional_multiple": {
+    "valid": 0.25,
+    "invalid": 0.2,
+    "error_type": "multiple_of"
+  },
+  "fractional_bound": {
+    "valid": 2,
+    "invalid": 1,
+    "error_type": "greater_than_equal"
+  },
+  "integral_float": {
+    "valid": 2.5,
+    "invalid": 3.0,
+    "error_type": "less_than"
+  },
+  "exact_large_integer": {
+    "valid": 18014398509481985,
+    "invalid": 18014398509481984,
+    "error_type": "greater_than"
+  },
+  "negative_exact": {
+    "valid": -18014398509481985,
+    "invalid": -18014398509481984,
+    "error_type": "less_than"
+  },
+  "ordered_data": {
+    "valid": 7,
+    "invalid": "invalid",
+    "error_type": "int_parsing"
+  }
+}

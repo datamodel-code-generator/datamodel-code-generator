@@ -1,0 +1,8 @@
+{
+  "Person": {
+    "base_class_kwargs": {
+      "omit_defaults": true,
+      "tag": "\"; builtin_template_data_marker = True #\rprint(\"never\")"
+    }
+  }
+}

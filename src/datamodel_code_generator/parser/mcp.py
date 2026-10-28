@@ -3,24 +3,31 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
-from copy import deepcopy
+from collections import ChainMap
+from collections.abc import Mapping, MutableMapping
 from typing import Any, Literal, TypeAlias
 
 from pydantic import ConfigDict, Field, StrictStr, ValidationError
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    SCHEMA_MAP_KEYS,  # noqa: F401
+    SCHEMA_VALUE_KEYS,  # noqa: F401
+    DefinitionKey,  # noqa: F401
+    _local_definition_ref_name,  # noqa: F401
+    _rewrite_local_definition_ref,  # noqa: F401
+    _rewrite_schema_refs,
+)
 from datamodel_code_generator.util import BaseModel
 
 JSONSchemaDraft: TypeAlias = Literal["https://json-schema.org/draft/2020-12/schema"]
 JSONSchemaMapping: TypeAlias = Mapping[str, Any]
-DefinitionKey: TypeAlias = Literal["$defs", "definitions"]
 OptionalStringToolKey: TypeAlias = Literal["title", "description"]
 OptionalMappingToolKey: TypeAlias = Literal["outputSchema", "annotations", "_meta"]
 SchemaKey: TypeAlias = Literal["inputSchema", "outputSchema"]
 
 JSON_SCHEMA_DRAFT_2020_12: JSONSchemaDraft = "https://json-schema.org/draft/2020-12/schema"
-DEFINITION_KEYS: tuple[DefinitionKey, ...] = ("$defs", "definitions")
 OPTIONAL_STRING_TOOL_KEYS: tuple[OptionalStringToolKey, ...] = ("title", "description")
 OPTIONAL_MAPPING_TOOL_KEYS: tuple[OptionalMappingToolKey, ...] = ("outputSchema", "annotations", "_meta")
 
@@ -158,60 +165,47 @@ def _to_definition_name(name: str) -> str:
     return candidate
 
 
-def _rewrite_local_definition_ref(ref: str, ref_map: Mapping[str, str]) -> str:
-    for key in DEFINITION_KEYS:
-        prefix = f"#/{key}/"
-        if not ref.startswith(prefix):
-            continue
-        name, separator, suffix = ref[len(prefix) :].partition("/")
-        rewritten_name = ref_map.get(name, name)
-        return f"#/$defs/{rewritten_name}{separator}{suffix}"
-    return ref
-
-
-def _rewrite_schema_refs(value: Any, ref_map: Mapping[str, str], *, strip_root_definitions: bool = False) -> Any:
-    if isinstance(value, Mapping):
-        rewritten: dict[str, Any] = {}
-        for key, item in value.items():
-            if strip_root_definitions and key in DEFINITION_KEYS:
-                continue
-            if key == "$ref" and isinstance(item, str):
-                rewritten[key] = _rewrite_local_definition_ref(item, ref_map)
-                continue
-            rewritten[key] = _rewrite_schema_refs(item, ref_map)
-        return rewritten
-    if isinstance(value, list):
-        return [_rewrite_schema_refs(item, ref_map) for item in value]
-    return value
-
-
 def _normalize_schema(
     schema: JSONSchemaMapping,
     definition_name: str,
     used_names: set[str],
+    references: set[str],
+    parent_ref_map: MutableMapping[str, str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    schema_copy = dict(deepcopy(schema))
-    root_definitions = [
-        definitions for key in DEFINITION_KEYS if isinstance(definitions := schema_copy.get(key), Mapping)
-    ]
-    ref_map: dict[str, str] = {}
+    root_definitions = [definitions for key in DEFINITION_KEYS if isinstance(definitions := schema.get(key), Mapping)]
+    local_ref_map: dict[str, str] = {}
     for definitions in root_definitions:
         for name in definitions:
-            ref_map[str(name)] = _unique_definition_name(
+            local_ref_map[str(name)] = _unique_definition_name(
                 f"{definition_name} {_to_definition_name(str(name))}",
                 used_names,
             )
+    ref_map: MutableMapping[str, str] = ChainMap(local_ref_map, parent_ref_map) if parent_ref_map else local_ref_map
 
     hoisted_definitions: dict[str, Any] = {}
     for definitions in root_definitions:
         for name, inner_schema in definitions.items():
-            if not isinstance(inner_schema, Mapping):
-                continue
-            normalized, nested = _normalize_schema(inner_schema, ref_map[str(name)], used_names)
-            hoisted_definitions.update(nested)
-            hoisted_definitions[ref_map[str(name)]] = normalized
+            definition_key = str(name)
+            match inner_schema:
+                case Mapping():
+                    normalized, nested = _normalize_schema(
+                        inner_schema,
+                        local_ref_map[definition_key],
+                        used_names,
+                        references,
+                        ref_map,
+                    )
+                    hoisted_definitions.update(nested)
+                    hoisted_definitions[local_ref_map[definition_key]] = normalized
+                case bool():
+                    hoisted_definitions[local_ref_map[definition_key]] = inner_schema
 
-    normalized_schema = _rewrite_schema_refs(schema_copy, ref_map, strip_root_definitions=True)
+    normalized_schema = _rewrite_schema_refs(
+        schema,
+        ref_map,
+        references,
+        strip_root_definitions=True,
+    )
     normalized_schema["title"] = definition_name
     return normalized_schema, hoisted_definitions
 
@@ -228,8 +222,13 @@ def _add_tool_schema_definition(
     base_name = _to_definition_name(tool.name)
     definition_name = _unique_definition_name(f"{base_name} {suffix}", used_names)
     schema = tool.input_schema if schema_key == "inputSchema" else tool.output_schema
-    normalized, hoisted_definitions = _normalize_schema(schema, definition_name, used_names)
-    definitions.update(hoisted_definitions)
+    references: set[str] = set()
+    normalized, hoisted_definitions = _normalize_schema(schema, definition_name, used_names, references)
+    # A later sibling definition can reference a boolean schema hoisted earlier.
+    for name, value in hoisted_definitions.items():
+        if isinstance(value, bool) and name not in references:
+            continue
+        definitions[name] = value
     definitions[definition_name] = normalized
 
 

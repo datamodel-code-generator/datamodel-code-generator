@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "code": {"$ref": "#/definitions/Code"},
+    "dup": {"$ref": "#/definitions/Dup"},
+    "codes": {"$ref": "#/definitions/Codes"},
+    "mapping": {"$ref": "#/definitions/Mapping"},
+    "keys": {"$ref": "#/definitions/Keys"},
+    "tags": {"$ref": "#/definitions/Tags"},
+    "either": {"$ref": "#/definitions/Either"}
+  },
+  "definitions": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$", "maxLength": 8},
+    "Dup": {"type": "string", "pattern": "^(?!bad)[a-z]+$", "maxLength": 8},
+    "Codes": {"type": "array", "items": {"type": "string", "pattern": "^(?=x)[a-z]+$"}},
+    "Mapping": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[a-z]+(?<!z)$"}},
+    "Keys": {"type": "object", "patternProperties": {"^(?=key)[a-z0-9_]+$": {"type": "integer"}}, "additionalProperties": false},
+    "Tags": {"type": "object", "patternProperties": {"^(?=t)": {"type": "string"}}, "additionalProperties": false},
+    "Either": {"anyOf": [{"type": "string", "pattern": "^(?!no)[a-z]+$"}, {"type": "integer"}]}
+  }
+}

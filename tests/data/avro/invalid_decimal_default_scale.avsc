@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "DecimalDefaults",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 1000000000000000000000000000000,
+        "scale": 1000000000000000000000000000000
+      },
+      "default": "\u0001"
+    }
+  ]
+}

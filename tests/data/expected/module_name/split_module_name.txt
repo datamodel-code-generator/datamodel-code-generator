@@ -1,0 +1,20 @@
+None, False | 'models.Pet' -> ['models', 'Pet']
+None, False | 'SaveTrifectaV2.1' -> ['SaveTrifectaV2', '1']
+None, False | 'pkg.class.Model' -> ['pkg', 'class', 'Model']
+None, True | 'models.Pet' -> ['models', 'Pet']
+None, True | 'pkg.日本語' -> ['pkg', '日本語']
+None, True | 'match.case' -> ['match', 'case']
+None, True | 'pkg.1.Model' -> None
+None, True | 'SaveTrifectaV2.1' -> None
+None, True | 'pkg.class' -> None
+None, True | 'pkg.user-name' -> None
+None, True | '.Pet' -> None
+None, True | 'pkg.' -> None
+None, True | 'pkg..Pet' -> None
+None, True | 'K.Model' -> None
+None, True | 'pkg.Ａ' -> None
+None, True | 'Pet' -> None
+False, True | 'models.Pet' -> None
+False, True | 'SaveTrifectaV2.1' -> None
+True, True | 'models.Pet' -> ['models', 'Pet']
+True, True | 'SaveTrifectaV2.1' -> ['SaveTrifectaV2', '1']

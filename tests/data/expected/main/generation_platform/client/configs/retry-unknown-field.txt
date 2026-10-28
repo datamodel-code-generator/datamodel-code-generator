@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/post'].runtime.idempotency has no key 'secret'

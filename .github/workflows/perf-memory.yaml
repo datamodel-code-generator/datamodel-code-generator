@@ -1,0 +1,30 @@
+name: performance-memory
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"
+
+concurrency:
+  group: performance-memory-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  peak-rss:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-suffix: performance-memory
+      - name: Install dependencies
+        run: uv sync --frozen --group test
+      - name: Run peak RSS guards
+        run: .venv/bin/pytest -n0 -q -s -m perf tests/main/test_memory.py

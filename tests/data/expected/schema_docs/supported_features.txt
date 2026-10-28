@@ -1,0 +1,49 @@
+
+### Supported Features (from code)
+
+The following features are tracked in the codebase with their implementation status:
+
+#### JSON Schema Features
+
+| Feature | Introduced | Status | Description |
+|---------|------------|--------|-------------|
+| `Null in type array` | Draft 4 or earlier | ✅ Supported | Allows `type: ['string', 'null']` syntax for nullable types |
+| `$defs` | 2019-09 | ✅ Supported | Uses `$defs` instead of `definitions` for schema definitions |
+| `prefixItems` | 2020-12 | ✅ Supported | Tuple validation using `prefixItems` keyword |
+| `Boolean schemas` | Draft 6 | ✅ Supported | Allows `true` and `false` as valid schemas |
+| `$id` | Draft 6 | ✅ Supported | Schema identifier field (`id` in Draft 4, `$id` in Draft 6+) |
+| `definitions/$defs` | Draft 4 | ✅ Supported | Key for reusable schema definitions |
+| `exclusiveMinimum/Maximum as number` | Draft 6 | ✅ Supported | Numeric `exclusiveMinimum`/`exclusiveMaximum` (boolean in Draft 4) |
+| `readOnly/writeOnly` | Draft 7 | ✅ Supported | Field visibility hints for read-only and write-only properties |
+| `const` | Draft 6 | ✅ Supported | Single constant value constraint |
+| `propertyNames` | Draft 6 | ✅ Supported | Dict key type constraints via pattern, enum, or $ref |
+| `contains` | Draft 6 | ⚠️ Partial | Count constraints are modeled when contains matches every item; general schema-valued contains is not supported |
+| `deprecated` | 2019-09 | ⚠️ Partial | Marks schema elements as deprecated |
+| `if/then/else` | Draft 7 | ❌ Not Supported | Conditional schema validation |
+| `contentMediaType/contentEncoding` | Draft 7 | ⚠️ Partial | Content type and encoding hints for strings |
+| `contentSchema` | 2019-09 | ⚠️ Partial | Schema for decoded string content |
+| `$anchor` | 2019-09 | ✅ Supported | Location-independent schema references |
+| `$vocabulary` | 2019-09 | ❌ Not Supported | Vocabulary declarations for meta-schemas |
+| `unevaluatedProperties` | 2019-09 | ⚠️ Partial | Additional properties not evaluated by subschemas |
+| `unevaluatedItems` | 2019-09 | ⚠️ Partial | Additional items not evaluated by subschemas |
+| `dependentRequired` | 2019-09 | ❌ Not Supported | Conditional property requirements |
+| `dependentSchemas` | 2019-09 | ❌ Not Supported | Conditional schema application based on property presence |
+| `$recursiveRef/$recursiveAnchor` | 2019-09 | ✅ Supported | Recursive reference resolution via anchors |
+| `$dynamicRef/$dynamicAnchor` | 2020-12 | ✅ Supported | Dynamic reference resolution across schemas |
+
+#### OpenAPI-Specific Features
+
+| Feature | Introduced | Status | Description |
+|---------|------------|--------|-------------|
+| `nullable` | OAS 3.0 | ✅ Supported | Uses `nullable: true` for nullable types (deprecated in 3.1) |
+| `discriminator` | OAS 3.0 | ✅ Supported | Polymorphism support via `discriminator` keyword |
+| `webhooks` | OAS 3.1 | ✅ Supported | Top-level webhooks object for incoming events |
+| `$ref with sibling keywords` | OAS 3.1 | ⚠️ Partial | $ref can coexist with description, summary (no allOf workaround) |
+| `itemSchema` | OAS 3.2 | ✅ Supported | Media Type Object item schema for sequential media |
+| `$self` | OAS 3.2 | ✅ Supported | Root document URI for relative and absolute reference resolution |
+| `querystring` | OAS 3.2 | ✅ Supported | Query string parameter object without a parameter name |
+| `xml` | OAS 3.0 | ⚠️ Partial | XML serialization metadata (name, namespace, prefix) |
+| `externalDocs` | OAS 3.0 | ⚠️ Partial | Reference to external documentation |
+| `links` | OAS 3.0 | ❌ Not Supported | Links between operations |
+| `callbacks` | OAS 3.0 | ❌ Not Supported | Callback definitions for webhooks |
+| `securitySchemes` | OAS 3.0 | ❌ Not Supported | API security mechanism definitions |

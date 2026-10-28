@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AUnion": {"anyOf": [{"$ref": "#/$defs/Kind"}, {"type": "integer"}]},
+    "AMap": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/Kind"},
+      "additionalProperties": {"type": "integer"}
+    },
+    "Kind": {"type": "string", "enum": ["a", "b"], "const": "b"}
+  }
+}

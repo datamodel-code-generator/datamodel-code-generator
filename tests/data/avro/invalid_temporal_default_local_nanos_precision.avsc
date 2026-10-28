@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-nanos"
+      },
+      "default": -1
+    }
+  ]
+}

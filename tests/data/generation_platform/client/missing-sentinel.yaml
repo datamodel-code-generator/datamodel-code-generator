@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info: {title: Missing sentinel, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema: {type: object, properties: {status: {type: string}, owner: {type: [string, "null"]}}}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user: {type: string}
+                remember: {type: boolean}
+                note: {type: [string, "null"]}
+      responses:
+        "204": {description: Done.}
+  /upload:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                tag: {type: string}
+                note: {type: [string, "null"]}
+      responses:
+        "204": {description: Done.}
+  /profile:
+    put:
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                note: {type: [string, "null"]}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Color:
+      type: [string, "null"]
+      enum: [red, green, null]
+    Pet:
+      type: object
+      required: [name, owner]
+      properties:
+        name: {type: string}
+        owner: {type: [string, "null"]}
+        tag: {type: string}
+        nick: {type: [string, "null"]}
+        color: {$ref: "#/components/schemas/Color"}

@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "ab": {
+      "type": "string"
+    },
+    "pDeclared": {
+      "type": "object",
+      "properties": {
+        "ab": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "string",
+          "maxLength": 3
+        }
+      }
+    },
+    "rDeclared": {
+      "$ref": "#/$defs/Declared"
+    },
+    "iDeclared": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ab": {
+            "type": "string"
+          }
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "string",
+            "maxLength": 3
+          }
+        }
+      }
+    },
+    "mDeclared": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "ab": {
+            "type": "string"
+          }
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "string",
+            "maxLength": 3
+          }
+        }
+      }
+    },
+    "pAny": {
+      "type": "object",
+      "properties": {
+        "x": true
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    },
+    "rAny": {
+      "$ref": "#/$defs/AnyDeclared"
+    },
+    "iAny": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "x": true
+        },
+        "patternProperties": {
+          "^x": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "mAny": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "x": true
+        },
+        "patternProperties": {
+          "^x": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "pImplied": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 2
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "rImplied": {
+      "$ref": "#/$defs/Implied"
+    },
+    "pItems": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "rItems": {
+      "$ref": "#/$defs/ImpliedItems"
+    },
+    "pConst": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "const": "a"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "const": "a"
+        }
+      }
+    },
+    "rConst": {
+      "$ref": "#/$defs/ImpliedConst"
+    },
+    "pRef": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "#/$defs/Implied"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/Implied"
+        }
+      }
+    },
+    "rRef": {
+      "$ref": "#/$defs/ImpliedRef"
+    }
+  },
+  "patternProperties": {
+    "^a": {
+      "type": "string",
+      "maxLength": 3
+    }
+  },
+  "$defs": {
+    "Declared": {
+      "type": "object",
+      "properties": {
+        "ab": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "string",
+          "maxLength": 3
+        }
+      }
+    },
+    "AnyDeclared": {
+      "type": "object",
+      "properties": {
+        "x": true
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    },
+    "Implied": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 2
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ImpliedItems": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "ImpliedConst": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "const": "a"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "const": "a"
+        }
+      }
+    },
+    "ImpliedRef": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "#/$defs/Implied"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/Implied"
+        }
+      }
+    }
+  }
+}

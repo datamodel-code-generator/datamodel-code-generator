@@ -1,0 +1,4 @@
+Options missing from the recommender registry: none
+Registry entries without an option: none
+
+Every option needs an entry in "options" of src/datamodel_code_generator/resources/recommender_rules.json: {"rules": ["<rule id>"]} when a rule sets it, or {"not_recommended": "<category>", "reason": "<why the schema does not decide it>"} with category io, target, preset, style, runtime-behaviour, formatting, compat, debug, platform, command, or pending (pending also needs follow_up and release). See Adding a New CLI Option in docs/development-contributing.md.

@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "AliasParent": {
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        }
+      },
+      "title": "AliasParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/AliasParent"
+    }
+  ],
+  "properties": {
+    "new": {
+      "title": "New",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "new"
+  ],
+  "title": "AliasRequiredChild",
+  "type": "object"
+}

@@ -1,0 +1,5 @@
+SKILL.md
+references
+references/cli-options.md
+references/troubleshooting.md
+references/workflows.md

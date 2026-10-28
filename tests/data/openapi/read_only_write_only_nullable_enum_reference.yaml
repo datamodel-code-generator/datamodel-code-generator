@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id: {type: string, readOnly: true}
+        tags: {type: array, items: {$ref: '#/components/schemas/T'}}
+    T:
+      type: object
+      properties:
+        t: {type: string, enum: [m, n, null]}

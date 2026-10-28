@@ -1,0 +1,1 @@
+field_info.annotation should not be None when generating a schema

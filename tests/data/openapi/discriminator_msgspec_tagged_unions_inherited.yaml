@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Discriminator fields kept by base and derived structs
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          type: string
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          type: string
+        bark:
+          type: boolean
+    Lion:
+      allOf:
+        - $ref: "#/components/schemas/Cat"
+        - type: object
+          properties:
+            petType:
+              type: string
+            pride:
+              type: integer
+    Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    Animal:
+      type: object
+      required: [species]
+      properties:
+        species:
+          type: string
+    Mammal:
+      allOf:
+        - $ref: "#/components/schemas/Animal"
+        - type: object
+          properties:
+            legs:
+              type: integer
+    Horse:
+      allOf:
+        - $ref: "#/components/schemas/Mammal"
+        - type: object
+          properties:
+            speed:
+              type: integer
+    Zebra:
+      allOf:
+        - $ref: "#/components/schemas/Mammal"
+        - type: object
+          properties:
+            stripes:
+              type: integer
+    Zoo:
+      type: object
+      properties:
+        animal:
+          oneOf:
+            - $ref: "#/components/schemas/Horse"
+            - $ref: "#/components/schemas/Zebra"
+          discriminator:
+            propertyName: species
+            mapping:
+              horse: "#/components/schemas/Horse"
+              zebra: "#/components/schemas/Zebra"
+    Vehicle:
+      type: object
+      required: [vehicle-type]
+      properties:
+        vehicle-type:
+          type: string
+    Car:
+      allOf:
+        - $ref: "#/components/schemas/Vehicle"
+        - type: object
+          properties:
+            doors:
+              type: integer
+    Bike:
+      allOf:
+        - $ref: "#/components/schemas/Vehicle"
+        - type: object
+          properties:
+            gears:
+              type: integer
+    Garage:
+      type: object
+      properties:
+        vehicle:
+          oneOf:
+            - $ref: "#/components/schemas/Car"
+            - $ref: "#/components/schemas/Bike"
+          discriminator:
+            propertyName: vehicle-type
+            mapping:
+              car: "#/components/schemas/Car"
+              bike: "#/components/schemas/Bike"
+    Fish:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Frog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Shark:
+      allOf:
+        - $ref: "#/components/schemas/Fish"
+        - type: object
+          properties:
+            teeth:
+              type: integer
+    Hammerhead:
+      allOf:
+        - $ref: "#/components/schemas/Shark"
+        - type: object
+          properties:
+            kind:
+              type: string
+    Tank:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Fish"
+            - $ref: "#/components/schemas/Frog"
+          discriminator:
+            propertyName: kind
+            mapping:
+              fish: "#/components/schemas/Fish"
+              frog: "#/components/schemas/Frog"
+    Tool:
+      type: object
+      required: [toolType]
+      properties:
+        toolType:
+          type: string
+    Gadget:
+      type: object
+      required: [toolType]
+      properties:
+        toolType:
+          type: string
+    Hammer:
+      allOf:
+        - $ref: "#/components/schemas/Tool"
+        - type: object
+          properties:
+            weight:
+              type: integer
+    Saw:
+      allOf:
+        - $ref: "#/components/schemas/Tool"
+        - type: object
+          properties:
+            teeth:
+              type: integer
+    Mallet:
+      allOf:
+        - $ref: "#/components/schemas/Tool"
+        - type: object
+          properties:
+            toolType:
+              type: string
+    Shed:
+      type: object
+      properties:
+        tool:
+          oneOf:
+            - $ref: "#/components/schemas/Hammer"
+            - $ref: "#/components/schemas/Saw"
+          discriminator:
+            propertyName: toolType
+            mapping:
+              hammer: "#/components/schemas/Hammer"
+              saw: "#/components/schemas/Saw"
+    Workshop:
+      type: object
+      properties:
+        tool:
+          oneOf:
+            - $ref: "#/components/schemas/Tool"
+            - $ref: "#/components/schemas/Gadget"
+          discriminator:
+            propertyName: toolType
+            mapping:
+              tool: "#/components/schemas/Tool"
+              gadget: "#/components/schemas/Gadget"

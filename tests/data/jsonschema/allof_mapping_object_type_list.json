@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AllOfObjectTypeListExtra",
+  "allOf": [
+    {
+      "type": ["object"],
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  ]
+}

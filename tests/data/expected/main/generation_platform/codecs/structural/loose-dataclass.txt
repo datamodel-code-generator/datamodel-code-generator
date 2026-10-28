@@ -1,0 +1,1 @@
+Error: /paths/~1loose/put/requestBody: The union members are both JSON objects, which the dataclasses.dataclass converter cannot tell apart

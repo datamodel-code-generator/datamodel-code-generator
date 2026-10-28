@@ -1,0 +1,19 @@
+- OpenAPI 3 (YAML/JSON)
+- AsyncAPI (YAML/JSON)
+- JSON Schema
+- MCP tool schemas
+- XML Schema (XSD)
+- Protocol Buffers / gRPC (`.proto`)
+- Apache Avro schema (AVSC)
+- JSON data
+- YAML data
+- Python dictionary
+- CSV data
+- GraphQL schema
+- Python types (Pydantic, dataclass, TypedDict) via `--input-model`
+
+- [pydantic v2](https://docs.pydantic.dev/) BaseModel
+- [pydantic v2](https://docs.pydantic.dev/) dataclass
+- [dataclasses](https://docs.python.org/3/library/dataclasses.html)
+- [TypedDict](https://docs.python.org/3/library/typing.html#typing.TypedDict)
+- [msgspec](https://github.com/jcrist/msgspec) Struct

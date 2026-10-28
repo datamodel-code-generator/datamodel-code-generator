@@ -1,0 +1,7 @@
+{
+  "CatBase.petType": "kind",
+  "DogBase.petType": "kind",
+  "CatBase.kind": "other",
+  "DogBase.kind": "other",
+  "petType": "kind"
+}

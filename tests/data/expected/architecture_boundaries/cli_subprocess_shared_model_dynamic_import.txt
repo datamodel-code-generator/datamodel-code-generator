@@ -1,0 +1,12 @@
+exit: 1
+stdout: ''
+stderr:
+Architecture boundary violations found:
+src/datamodel_code_generator/model/base.py:9:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:10:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:12:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:14:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:16:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:18:1: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in <module>)
+src/datamodel_code_generator/model/base.py:24:5: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in inspect_forward_provider)
+src/datamodel_code_generator/model/base.py:37:5: [shared-model-backend-import] datamodel_code_generator.model.pydantic_v2.base_model: shared model code must not depend on a concrete backend; expose a neutral capability instead (in inspect_conditional_provider)

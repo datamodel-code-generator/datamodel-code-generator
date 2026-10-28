@@ -1,0 +1,72 @@
+{
+  "Minimum": {
+    "valid": 3,
+    "invalid": 2,
+    "error_type": "greater_than_equal"
+  },
+  "Maximum": {
+    "valid": 4,
+    "invalid": 5,
+    "error_type": "less_than_equal"
+  },
+  "DecimalMinimum": {
+    "valid": 0.5,
+    "invalid": 0.25,
+    "error_type": "greater_than_equal"
+  },
+  "DecimalMaximum": {
+    "valid": 1.25,
+    "invalid": 1.5,
+    "error_type": "less_than_equal"
+  },
+  "MixedIntegerMinimum": {
+    "valid": 2,
+    "invalid": 1,
+    "error_type": "greater_than_equal"
+  },
+  "MixedIntegerMaximum": {
+    "valid": -2,
+    "invalid": -1,
+    "error_type": "less_than_equal"
+  },
+  "ExclusiveMinimum": {
+    "valid": 9007199254740993,
+    "invalid": 9007199254740992,
+    "error_type": "greater_than"
+  },
+  "ExclusiveMaximum": {
+    "valid": -9007199254740993,
+    "invalid": -9007199254740992,
+    "error_type": "less_than"
+  },
+  "ExclusiveNumberMinimum": {
+    "valid": 1.75,
+    "invalid": 1.5,
+    "error_type": "greater_than"
+  },
+  "ExclusiveNumberMaximum": {
+    "valid": -1.75,
+    "invalid": -1.5,
+    "error_type": "less_than"
+  },
+  "ExclusiveMinimumReversed": {
+    "valid": 9007199254740993,
+    "invalid": 9007199254740992,
+    "error_type": "greater_than"
+  },
+  "ExclusiveMaximumReversed": {
+    "valid": -9007199254740993,
+    "invalid": -9007199254740992,
+    "error_type": "less_than"
+  },
+  "ExclusiveNegativeMinimum": {
+    "valid": -9007199254740991,
+    "invalid": -9007199254740992,
+    "error_type": "greater_than"
+  },
+  "ExclusivePositiveMaximum": {
+    "valid": 9007199254740991,
+    "invalid": 9007199254740992,
+    "error_type": "less_than"
+  }
+}

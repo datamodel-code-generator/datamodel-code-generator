@@ -1,0 +1,9 @@
+{
+  "payload": "native payload",
+  "file": "prefix-payload",
+  "offset": 7,
+  "next_offset": 3,
+  "retry": [503, 200],
+  "hops": [307, 503, 200],
+  "url": "https://files.example.com/upload"
+}

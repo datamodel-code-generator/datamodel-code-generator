@@ -7,6 +7,9 @@ on:
       - 'src/datamodel_code_generator/**'
       - 'README.md'
       - 'docs/index.md'
+      - 'docs/presets.md'
+      - 'scripts/build_preset_docs.py'
+      - 'tests/data/jsonschema/tutorial_pet.json'
 
 permissions:
   contents: read
@@ -15,19 +18,25 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
       - name: Setup environment
         run: tox run -vv --notest --skip-missing-interpreters false -e readme
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
+      - name: Setup preset docs environment
+        run: tox run -vv --notest --skip-missing-interpreters false -e preset-docs
+        env:
+          UV_PYTHON_PREFERENCE: "only-managed"
       - name: Update README
         run: .tox/readme/bin/python scripts/update_command_help_on_markdown.py
+      - name: Check preset docs
+        run: .tox/preset-docs/bin/python scripts/build_preset_docs.py --check

@@ -1,0 +1,53 @@
+[
+  {
+    "name": "MixedRoot",
+    "fields": [
+      "box",
+      "ordinary"
+    ],
+    "annotations_equal": {
+      "box": false,
+      "ordinary": false
+    },
+    "type_identity": {
+      "box": false,
+      "ordinary": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": 1
+          },
+          "ordinary": {
+            "text": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": 1
+          },
+          "ordinary": {
+            "text": "ok"
+          }
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "box": false,
+      "ordinary": false
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "title": "Cat",
+  "type": "object",
+  "properties": {
+    "lives": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string",
+      "default": "x"
+    }
+  },
+  "required": [
+    "lives"
+  ]
+}

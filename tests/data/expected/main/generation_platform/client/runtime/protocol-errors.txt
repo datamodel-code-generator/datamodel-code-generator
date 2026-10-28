@@ -1,0 +1,33 @@
+# pets-protocols pydantic_v2.BaseModel
+  APIConnectionError: APIConnectionError < SDKError
+  APIStatusError: APIStatusError < SDKError
+  APITimeoutError: APITimeoutError < APIConnectionError < SDKError
+  AuthenticationError: AuthenticationError < APIStatusError < SDKError
+  BadRequestError: BadRequestError < APIStatusError < SDKError
+  ConfigurationError: ConfigurationError < SDKError
+  ConflictError: ConflictError < APIStatusError < SDKError
+  DecodeError: DecodeError < SDKError
+  InternalServerError: InternalServerError < APIStatusError < SDKError
+  NotFoundError: NotFoundError < APIStatusError < SDKError
+  PermissionDeniedError: PermissionDeniedError < APIStatusError < SDKError
+  ProtocolDataError: ProtocolDataError < SDKError
+  RateLimitError: RateLimitError < APIStatusError < SDKError
+  SDKError: SDKError
+  SessionLimitError: SessionLimitError < SDKError
+  StreamInterruptedError: StreamInterruptedError < SDKError
+  UnprocessableEntityError: UnprocessableEntityError < APIStatusError < SDKError
+  WebSocketClosedError: WebSocketClosedError < SDKError
+  ProtocolDataError ProtocolDataError(operation_id='protocol', reason='operation_failed') secret=False
+    fields={'reason': 'operation_failed', 'location': BodySelector(pointer='/private-protocol-marker'), 'data': {'private-protocol-marker': 1}}
+    context=True measurements=(1, 0.25, None)
+  SessionLimitError SessionLimitError(operation_id='protocol', reason='pages', limit=3) secret=False
+    fields={'reason': 'pages', 'limit': 3, 'progress': mappingproxy({'pages': 3, 'items': 30}), 'required_wait': None}
+    context=True measurements=(1, 0.25, None)
+  StreamInterruptedError StreamInterruptedError(operation_id='protocol', reason='transport', sequence=7) secret=False
+    fields={'reason': 'transport', 'sequence': 7}
+    context=True measurements=(1, 0.25, None)
+  WebSocketClosedError WebSocketClosedError(operation_id='protocol', code=4001, clean=False) secret=False
+    fields={'reason': 'private-protocol-marker', 'code': 4001, 'clean': False}
+    context=True measurements=(1, 0.25, None)
+  progress copy={'pages': 1} type=mappingproxy
+  defaults=ProtocolDataError(reason='value') value

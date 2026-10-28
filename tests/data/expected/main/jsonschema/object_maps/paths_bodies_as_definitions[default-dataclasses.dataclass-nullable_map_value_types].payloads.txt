@@ -1,0 +1,7 @@
+ScoresPostRequest valid null: accepted
+ScoresPostRequest valid {}: accepted
+ScoresPostRequest valid {"a": 1}: accepted
+ScoresPostRequest invalid []: rejected (dict_type)
+ScoresPostRequest invalid "x": rejected (dict_type)
+ScoresPostRequest invalid {"a": "x"}: accepted
+ScoresPostRequest invalid {"a": null}: accepted

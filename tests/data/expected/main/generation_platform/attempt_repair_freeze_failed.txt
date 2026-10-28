@@ -1,0 +1,21 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "freeze:1:True",
+    "dispose:1",
+    "construct:2",
+    "parse:2",
+    "freeze:2:True",
+    "dispose:2",
+    "discard:2",
+    "close"
+  ],
+  "error": [
+    "BindingCaptureError",
+    "freeze failed"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0
+}

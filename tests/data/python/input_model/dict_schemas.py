@@ -26,3 +26,14 @@ OPENAPI_SPEC = {
         }
     },
 }
+
+JSON_COERCIBLE_SCHEMA = {
+    "title": "JsonCoercible",
+    "type": "object",
+    "properties": {1: {"type": "string"}},
+}
+
+NON_JSON_SCHEMA = {
+    "type": "object",
+    "x-non-json": {"value"},
+}

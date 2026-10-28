@@ -1,0 +1,18 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "nested": {"anyOf": [{"anyOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]}, {"$ref": "#/$defs/C"}]},
+    "beside_alias": {"anyOf": [{"anyOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]}, {"$ref": "#/$defs/Pair"}]},
+    "nullable_alias": {"oneOf": [{"$ref": "#/$defs/Pair"}, {"type": "null"}, {"$ref": "#/$defs/A"}]},
+    "nested_alias": {"anyOf": [{"anyOf": [{"$ref": "#/$defs/Pair"}, {"type": "integer"}]}, {"$ref": "#/$defs/C"}]},
+    "alias_items": {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/Pair"}, {"$ref": "#/$defs/C"}]}},
+    "single": {"anyOf": [{"$ref": "#/$defs/A"}, {"type": "integer"}]}
+  },
+  "$defs": {
+    "A": {"type": "object", "properties": {"a": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"b": {"type": "string"}}},
+    "C": {"type": "object", "properties": {"c": {"type": "string"}}},
+    "Pair": {"anyOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]}
+  }
+}

@@ -1,0 +1,2 @@
+syntax = "proto2";
+message Payload { optional string text = 1 [default = 'x(y)'

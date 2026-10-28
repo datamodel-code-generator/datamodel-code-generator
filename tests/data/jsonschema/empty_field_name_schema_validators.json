@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "EmptyBase": {
+      "type": "object",
+      "properties": {
+        "": {
+          "type": "string"
+        }
+      }
+    },
+    "DirectEmptyPattern": {
+      "type": "object",
+      "properties": {
+        "": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x_[0-9]+$": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InheritedEmptyPattern": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EmptyBase"
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^x_[0-9]+$": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/DirectEmptyPattern"
+}

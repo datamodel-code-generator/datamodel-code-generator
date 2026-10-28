@@ -1,0 +1,35 @@
+{
+  "$defs": {
+    "IntFirst": {
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "x-python-type": "Callable[[int], int]"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "IntFirst",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "value": {
+      "$ref": "#/$defs/IntFirst"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "NestedModels",
+  "type": "object"
+}

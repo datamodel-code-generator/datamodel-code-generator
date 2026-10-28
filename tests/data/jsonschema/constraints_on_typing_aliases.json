@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstraintsOnTypingAliases",
+  "type": "object",
+  "required": [
+    "value",
+    "final_list"
+  ],
+  "properties": {
+    "value": {
+      "type": "integer",
+      "x-python-type": "typing.List[int]",
+      "minItems": 2
+    },
+    "final_list": {
+      "type": "integer",
+      "x-python-type": "typing.Final[typing.List[int]]",
+      "minItems": 2
+    },
+    "bare_list": {
+      "type": "integer",
+      "x-python-type": "List[int]",
+      "maxItems": 2
+    },
+    "sequence": {
+      "type": "integer",
+      "x-python-type": "typing.Sequence[int]",
+      "minItems": 2,
+      "pattern": "^a"
+    },
+    "mutable_sequence": {
+      "type": "integer",
+      "x-python-type": "collections.abc.MutableSequence[int]",
+      "maxLength": 2
+    },
+    "frozen": {
+      "type": "integer",
+      "x-python-type": "typing.FrozenSet[int]",
+      "minItems": 2
+    },
+    "abstract_set": {
+      "type": "integer",
+      "x-python-type": "collections.abc.Set[int]",
+      "maxItems": 2
+    },
+    "pair": {
+      "type": "integer",
+      "x-python-type": "typing.Tuple[int, ...]",
+      "minItems": 2
+    },
+    "triple": {
+      "type": "integer",
+      "x-python-type": "typing.Tuple[int, int, int]",
+      "minItems": 2
+    },
+    "deque_field": {
+      "type": "integer",
+      "x-python-type": "typing.Deque[int]",
+      "minItems": 2
+    },
+    "set_field": {
+      "type": "integer",
+      "x-python-type": "typing.Set[int]",
+      "minItems": 2
+    },
+    "mutable_set": {
+      "type": "integer",
+      "x-python-type": "typing.MutableSet[int]",
+      "maxItems": 2
+    },
+    "optional_list": {
+      "x-python-type": "typing.Optional[typing.List[int]]",
+      "minItems": 2
+    },
+    "nested_union": {
+      "x-python-type": "typing.Optional[typing.Union[typing.List[int], str]]",
+      "minLength": 2
+    },
+    "none_union": {
+      "x-python-type": "typing.Optional[None]",
+      "minLength": 2
+    },
+    "text": {
+      "type": "integer",
+      "x-python-type": "typing.Text",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "annotated_text": {
+      "type": "integer",
+      "x-python-type": "typing.Annotated[str, str]",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "optional_annotated_text": {
+      "x-python-type": "typing.Optional[typing.Annotated[str, str]]",
+      "maxLength": 2
+    },
+    "annotated_optional_text": {
+      "type": "integer",
+      "x-python-type": "typing.Annotated[typing.Optional[str], str]",
+      "maxLength": 2
+    },
+    "annotated_count": {
+      "type": "string",
+      "x-python-type": "typing.Annotated[int, str]",
+      "minimum": 0
+    },
+    "mapping": {
+      "type": "integer",
+      "x-python-type": "typing.Mapping[str, int]",
+      "pattern": "^a"
+    },
+    "collection": {
+      "type": "integer",
+      "x-python-type": "collections.abc.Collection",
+      "minItems": 2
+    },
+    "sized": {
+      "type": "integer",
+      "x-python-type": "typing.Sized",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "buffer": {
+      "type": "integer",
+      "x-python-type": "collections.abc.Buffer",
+      "maxLength": 2,
+      "pattern": "^a"
+    },
+    "supports_int": {
+      "type": "string",
+      "x-python-type": "typing.SupportsInt",
+      "minimum": 0
+    },
+    "custom_path": {
+      "customTypePath": "typing.Sequence",
+      "maxItems": 2
+    },
+    "overridden": {
+      "minItems": 2
+    }
+  }
+}

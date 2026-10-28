@@ -1,0 +1,51 @@
+[
+  {
+    "name": "AnnotatedInlineRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": false
+    },
+    "type_identity": {
+      "box": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": false
+    }
+  }
+]

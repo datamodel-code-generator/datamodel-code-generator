@@ -1,0 +1,9 @@
+{
+  "data": {
+    "last_day": 12,
+    "last_month": 3456,
+    "last_week": 789
+  },
+  "package": "datamodel-code-generator",
+  "type": "recent_downloads"
+}

@@ -1,0 +1,363 @@
+# nullable
+serve pydantic_v2.BaseModel
+service DefaultService: post_any_alias, post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_ok, post_pet, post_text, post_value, upload
+service DefaultService without its methods: TypeError
+> POST /texts
+  post_text(body=TextsPostRequest(root=None))
+< 204 - b''
+> POST /texts
+  post_text(body=TextsPostRequest(root='a'))
+< 204 - b''
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_too_long", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_type", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /lists
+  post_list(body=ListsPostRequest(root=None))
+< 204 - b''
+> POST /lists
+  post_list(body=ListsPostRequest(root=[1, 2]))
+< 204 - b''
+> POST /lists
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=None))
+< 204 - b''
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=Item(name='a')))
+< 204 - b''
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=3))
+< 204 - b''
+> POST /choices
+< 422 application/json [{"type": "model_type", "loc": ["body", "Item"]}, {"type": "int_parsing", "loc": ["body", "int"]}]
+> POST /colors
+  post_color(body=<Color.NoneType_None: None>)
+< 204 - b''
+> POST /colors
+  post_color(body=<Color.red: 'red'>)
+< 204 - b''
+> POST /colors
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /names
+  post_name(body=None)
+< 204 - b''
+> POST /names
+  post_name(body=Name(root='a'))
+< 204 - b''
+> POST /names
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /pets
+  post_pet(body=None)
+< 204 - b''
+> POST /pets
+  post_pet(body=Pet(name='a'))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /pets
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /codes
+  post_code(body=CodesPostRequest(root=None))
+< 204 - b''
+> POST /codes
+  post_code(body=CodesPostRequest(root='a'))
+< 204 - b''
+> POST /codes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /values
+  post_value(body=ValuesPostRequest(root=None))
+< 204 - b''
+> POST /values
+  post_value(body=ValuesPostRequest(root={'any': [1, None]}))
+< 204 - b''
+> POST /values
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /anything
+  post_anything(body=None)
+< 204 - b''
+> POST /anything
+  post_anything(body=[1, 'a'])
+< 204 - b''
+> POST /anything
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+  post_item(body=Item(name='a'))
+< 204 - b''
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+  post_id(body=IdsPostRequest(root=UUID('00000000-0000-0000-0000-000000000001')))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /drafts
+  post_draft(body=DraftsPostRequest(root='a'))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=NotesPostRequest(text='a'))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /forms
+  post_form(body=FormsPostRequest(name='n', tags=['a', 'b'], count=2))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /uploads
+  upload(body=UploadsPostRequest(file=b'file body', note='n', meta=Meta(size=3)))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=ExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+  post_multi(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi
+  post_multi(body=MultiPostRequest(root='null'), media_type='text/plain')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=MultiOptionalPostRequest(root='null'), media_type='text/plain')
+< 204 - b''
+> POST /oks
+  post_ok(body=Ok(root=None))
+< 204 - b''
+> POST /oks
+  post_ok(body=Ok(root='ok'))
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=AnyAlias(root=None))
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=AnyAlias(root=1))
+< 204 - b''
+serve pydantic_v2.dataclass
+service DefaultService: post_any_alias, post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_ok, post_pet, post_text, post_value, upload
+service DefaultService without its methods: TypeError
+> POST /texts
+  post_text(body=None)
+< 204 - b''
+> POST /texts
+  post_text(body='a')
+< 204 - b''
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_too_long", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_type", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /lists
+  post_list(body=None)
+< 204 - b''
+> POST /lists
+  post_list(body=[1, 2])
+< 204 - b''
+> POST /lists
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /choices
+  post_choice(body=None)
+< 204 - b''
+> POST /choices
+  post_choice(body=Item(name='a'))
+< 204 - b''
+> POST /choices
+  post_choice(body=3)
+< 204 - b''
+> POST /choices
+< 422 application/json [{"type": "dataclass_type", "loc": ["body", "Item"]}, {"type": "int_parsing", "loc": ["body", "int"]}]
+> POST /colors
+  post_color(body=<Color.NoneType_None: None>)
+< 204 - b''
+> POST /colors
+  post_color(body=<Color.red: 'red'>)
+< 204 - b''
+> POST /colors
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /names
+  post_name(body=None)
+< 204 - b''
+> POST /names
+  post_name(body='a')
+< 204 - b''
+> POST /names
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /pets
+  post_pet(body=None)
+< 204 - b''
+> POST /pets
+  post_pet(body=Pet(name='a'))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /pets
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /codes
+  post_code(body=None)
+< 204 - b''
+> POST /codes
+  post_code(body='a')
+< 204 - b''
+> POST /codes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /values
+  post_value(body=None)
+< 204 - b''
+> POST /values
+  post_value(body={'any': [1, None]})
+< 204 - b''
+> POST /values
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /anything
+  post_anything(body=None)
+< 204 - b''
+> POST /anything
+  post_anything(body=[1, 'a'])
+< 204 - b''
+> POST /anything
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+  post_item(body=Item(name='a'))
+< 204 - b''
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+  post_id(body=UUID('00000000-0000-0000-0000-000000000001'))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /drafts
+  post_draft(body='a')
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=NotesPostRequest(text='a'))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /forms
+  post_form(body=FormsPostRequest(name='n', tags=['a', 'b'], count=2))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /uploads
+  upload(body=UploadsPostRequest(file=b'file body', note='n', meta=Meta(size=3)))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=ExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+  post_multi(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi
+  post_multi(body='null', media_type='text/plain')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body='null', media_type='text/plain')
+< 204 - b''
+> POST /oks
+  post_ok(body=None)
+< 204 - b''
+> POST /oks
+  post_ok(body='ok')
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=None)
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=1)
+< 204 - b''

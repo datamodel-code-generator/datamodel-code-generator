@@ -1,0 +1,17 @@
+{
+  "models": [
+    "Shared",
+    "Consumer",
+    "Model"
+  ],
+  "model_module": "runtime_relative_parent_import.model",
+  "validated": {
+    "left": {
+      "left_value": "ok"
+    },
+    "right": {
+      "right_value": 1
+    }
+  },
+  "modules_restored": true
+}

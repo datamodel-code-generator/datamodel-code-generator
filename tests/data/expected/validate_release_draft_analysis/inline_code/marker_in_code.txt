@@ -1,0 +1,1 @@
+{"analysis": null, "returncode": 1, "stderr": "Read-boundary marker appeared in Claude output; refusing to update the draft.\n"}

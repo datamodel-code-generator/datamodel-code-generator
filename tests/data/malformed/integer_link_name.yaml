@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Integer link name
+  version: '1.0'
+servers:
+  - url: https://example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          description: OK
+          links:
+            1:
+              operationId: listPets

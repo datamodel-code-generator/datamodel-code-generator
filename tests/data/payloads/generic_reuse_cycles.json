@@ -1,0 +1,51 @@
+{
+  "direct": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "x-python-type": "A",
+          "$ref": "#/$defs/A"
+        }
+      },
+      "$defs": {
+        "A": {
+          "x-python-import": {
+            "module": "typing",
+            "name": "List",
+            "x-python-type": "A"
+          }
+        }
+      }
+    },
+    "error": "Cyclic x-python-import type expression involving 'A'"
+  },
+  "mutual": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "x-python-type": "A",
+          "$ref": "#/$defs/A"
+        }
+      },
+      "$defs": {
+        "A": {
+          "x-python-import": {
+            "module": "typing",
+            "name": "List",
+            "x-python-type": "B"
+          }
+        },
+        "B": {
+          "x-python-import": {
+            "module": "typing",
+            "name": "List",
+            "x-python-type": "A"
+          }
+        }
+      }
+    },
+    "error": "Cyclic x-python-import type expression involving 'B'"
+  }
+}

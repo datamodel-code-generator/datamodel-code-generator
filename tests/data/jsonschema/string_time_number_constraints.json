@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StringTimeNumberConstraints",
+  "type": "object",
+  "properties": {
+    "minimum": {
+      "type": "string",
+      "format": "time",
+      "minimum": 0
+    },
+    "maximum": {
+      "type": "string",
+      "format": "time",
+      "maximum": 10
+    },
+    "exclusive_minimum": {
+      "type": "string",
+      "format": "time",
+      "exclusiveMinimum": 0
+    },
+    "exclusive_maximum": {
+      "type": "string",
+      "format": "time",
+      "exclusiveMaximum": 10
+    },
+    "multiple_of": {
+      "type": "string",
+      "format": "time",
+      "multipleOf": 0.5
+    },
+    "nullable_minimum": {
+      "type": ["string", "null"],
+      "format": "time",
+      "minimum": 0
+    },
+    "items_minimum": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "time",
+        "minimum": 0
+      }
+    },
+    "inherited_minimum": {
+      "$ref": "#/definitions/InheritedMinimum"
+    },
+    "date_minimum": {
+      "type": "string",
+      "format": "date",
+      "minimum": 0
+    },
+    "number_minimum": {
+      "type": "number",
+      "minimum": 0
+    }
+  },
+  "definitions": {
+    "Time": {
+      "type": "string",
+      "format": "time"
+    },
+    "InheritedMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Time"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    }
+  }
+}

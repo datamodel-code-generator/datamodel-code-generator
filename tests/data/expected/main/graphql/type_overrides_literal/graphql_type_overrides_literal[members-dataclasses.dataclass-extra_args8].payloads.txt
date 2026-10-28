@@ -1,0 +1,5 @@
+valid {"level": 200, "mode": 0.5}: accepted
+valid {"level": 201, "levels": [200, 201], "mode": 1.5}: accepted
+invalid {"level": 404, "mode": 0.5}: rejected
+invalid {"level": 200, "levels": [200, 404], "mode": 0.5}: rejected
+invalid {"level": 200, "mode": 2.5}: rejected

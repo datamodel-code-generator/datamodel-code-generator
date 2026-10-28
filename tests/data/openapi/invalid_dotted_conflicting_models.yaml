@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted conflicting models
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    A.1.Foo:
+      type: object
+      properties:
+        value:
+          type: string
+    B.2.Foo:
+      type: object
+      properties:
+        count:
+          type: integer

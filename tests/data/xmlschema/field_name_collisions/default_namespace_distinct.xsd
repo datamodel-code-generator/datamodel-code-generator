@@ -1,0 +1,1 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"><xs:import namespace="urn:one" schemaLocation="one.xsd"/><xs:import namespace="urn:two" schemaLocation="two.xsd"/><xs:element name="root"><xs:complexType><xs:sequence><xs:element xmlns="urn:one" ref="code"/><xs:element xmlns="urn:two" ref="code"/></xs:sequence></xs:complexType></xs:element></xs:schema>

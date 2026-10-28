@@ -1,0 +1,3 @@
+("Not a module docstring.")()
+
+import os

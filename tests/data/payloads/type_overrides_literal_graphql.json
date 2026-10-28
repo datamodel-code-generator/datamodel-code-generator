@@ -1,0 +1,25 @@
+{
+  "annotations": {
+    "valid": [
+      {"level": 1, "mode": "a"},
+      {"level": 2, "levels": [1, 2], "mode": null, "code": "x"}
+    ],
+    "invalid": [
+      {"level": 3, "mode": "a"},
+      {"level": 1, "levels": [1, 3], "mode": "a"},
+      {"level": 1, "mode": "c"},
+      {"level": 1, "mode": "a", "code": 5}
+    ]
+  },
+  "members": {
+    "valid": [
+      {"level": 200, "mode": 0.5},
+      {"level": 201, "levels": [200, 201], "mode": 1.5}
+    ],
+    "invalid": [
+      {"level": 404, "mode": 0.5},
+      {"level": 200, "levels": [200, 404], "mode": 0.5},
+      {"level": 200, "mode": 2.5}
+    ]
+  }
+}

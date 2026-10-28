@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "named": {"$ref": "#/$defs/Named"},
+    "inline": {"type": "array", "items": {"type": "integer"}, "allOf": [{"maxItems": 2}]},
+    "nested": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}, "allOf": [{"maxItems": 2}]}},
+    "map": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer"}, "allOf": [{"maxItems": 2}]}},
+    "any_of": {"anyOf": [{"type": "array", "items": {"type": "integer"}, "allOf": [{"maxItems": 2}]}, {"type": "string"}]},
+    "null_or_array": {"type": ["array", "null"], "items": {"type": "integer"}, "allOf": [{"minItems": 1}]},
+    "member_items": {"type": "array", "allOf": [{"items": {"type": "integer"}}, {"minItems": 1}]},
+    "annotation_only": {"type": "array", "items": {"type": "integer"}, "allOf": [{"description": "Integers."}]},
+    "ref_only": {"type": "array", "allOf": [{"$ref": "#/$defs/Bounded"}]},
+    "ref_more": {"type": "array", "allOf": [{"$ref": "#/$defs/Bounded"}, {"maxItems": 3}]}
+  },
+  "$defs": {
+    "Named": {"type": "array", "items": {"type": "string"}, "allOf": [{"minItems": 1}]},
+    "Bounded": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+  }
+}

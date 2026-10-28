@@ -1,0 +1,1 @@
+{"title": "Model", "type": "object", "properties": {"syntax": {"type": "string", "default": "syntax = \"proto3\";"}}}

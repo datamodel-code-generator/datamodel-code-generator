@@ -1,0 +1,6 @@
+dataclass pydantic_base loaded: False
+dataclass constraint module: datamodel_code_generator.model.pydantic_base
+msgspec pydantic_base loaded: False
+msgspec constraint base module: datamodel_code_generator.model.pydantic_base
+legacy constraints identity: True
+legacy pattern identity: True

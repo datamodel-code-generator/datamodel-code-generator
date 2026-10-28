@@ -1,0 +1,43 @@
+{
+  "examples": [
+    {
+      "x-datamodel-code-generator-field-names": {
+        "shared": "user data"
+      }
+    }
+  ],
+  "properties": {
+    "item": {
+      "properties": {
+        "first": {
+          "title": "First",
+          "type": "integer"
+        },
+        "shared": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shared",
+          "type": "array"
+        },
+        "last": {
+          "title": "Last",
+          "type": "string"
+        }
+      },
+      "required": [
+        "first",
+        "shared",
+        "shared",
+        "last"
+      ],
+      "title": "Inner",
+      "type": "object"
+    }
+  },
+  "required": [
+    "item"
+  ],
+  "title": "InlinedWins",
+  "type": "object"
+}

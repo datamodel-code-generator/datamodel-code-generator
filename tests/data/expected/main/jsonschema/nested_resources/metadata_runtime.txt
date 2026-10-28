@@ -1,0 +1,23 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "value": {
+        "n": 1
+      },
+      "metadata": {
+        "$id": "item.json",
+        "$ref": "unread-default.json",
+        "examples": [
+          {
+            "$ref": "unread-example.json"
+          }
+        ]
+      }
+    },
+    "rejected"
+  ]
+}

@@ -3,31 +3,10 @@
 > This code generator creates pydantic model from an openapi file and others.
 
 - [datamodel-code-generator](https://datamodel-code-generator.koxudaxi.dev/): Generate Python data models from schema definitions in seconds.
+- [Getting Started](https://datamodel-code-generator.koxudaxi.dev/getting-started/): Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with `--recommend-options` (experimental).
+- [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/): Presets are immutable named groups of CLI options. A preset name never changes behavior; new recommendations are published as new dated preset names.
+- [Option recommendations](https://datamodel-code-generator.koxudaxi.dev/recommend-options/): Analyse a schema and get the `datamodel-codegen` options that suit it, starting from the latest dated preset.
 - [Playground](https://datamodel-code-generator.koxudaxi.dev/playground/): Run datamodel-code-generator in your browser. The deployed site serves this route as a standalone app so Pyodide only starts after you open it.
-## CLI Reference
-
-- [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/): This documentation is auto-generated from test cases.
-- [Base Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/base-options/)
-- [Model Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/)
-- [Field Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/field-customization/)
-- [Typing Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-customization/)
-- [Template Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/template-customization/)
-- [OpenAPI-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/openapi-only-options/)
-- [GraphQL-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/graphql-only-options/)
-- [General Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/general-options/)
-- [Utility Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-options/)
-- [Quick Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/quick-reference/): All CLI options in one page for easy **Ctrl+F** searching.
-### Manual
-
-- [Help](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/help/)
-- [Version](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/version/)
-- [Debug](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/debug/)
-- [Profile](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/profile/)
-- [No Color](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/no-color/)
-- [Generate Prompt](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/generate-prompt/)
-- [List Deprecations](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/list-deprecations/)
-
-
 - [Supported Input Formats](https://datamodel-code-generator.koxudaxi.dev/supported-data-types/): This code generator supports the following input formats:
 - [Schema Version Support](https://datamodel-code-generator.koxudaxi.dev/supported_formats/): This document describes the JSON Schema, OpenAPI, AsyncAPI, Apache Avro, XML Schema, and Protocol Buffers versions supported by datamodel-code-gene...
 ## Usage
@@ -35,15 +14,16 @@
 ### Input Formats
 
 - [Generate from OpenAPI](https://datamodel-code-generator.koxudaxi.dev/openapi/): Generate Pydantic models from OpenAPI 3 schema definitions.
+- [OpenAPI Options](https://datamodel-code-generator.koxudaxi.dev/openapi-options/): When working with OpenAPI specifications, datamodel-code-generator provides several options to control how schemas, operations, and special propert...
 - [Generate from AsyncAPI](https://datamodel-code-generator.koxudaxi.dev/asyncapi/): Generate Python models from AsyncAPI 2.x and 3.x documents.
-- [Generate from JSON Schema](https://datamodel-code-generator.koxudaxi.dev/jsonschema/): Generate Pydantic models from JSON Schema definitions. See [Supported Data Types](./supported-data-types.md#openapi-3-and-json-schema) for supporte...
+- [Generate from JSON Schema](https://datamodel-code-generator.koxudaxi.dev/jsonschema/): Generate Pydantic models from JSON Schema definitions. See Supported Data Types for supported JSON Schema features.
 - [Generate from Apache Avro Schema](https://datamodel-code-generator.koxudaxi.dev/avro/): Generate Python models from JSON-encoded Apache Avro schemas (`.avsc`).
 - [Generate from XML Schema](https://datamodel-code-generator.koxudaxi.dev/xmlschema/): Generate Python models from W3C XML Schema documents (`.xsd`).
 - [Generate from Protocol Buffers / gRPC](https://datamodel-code-generator.koxudaxi.dev/protobuf/): Generate Python models from Protocol Buffers schema files (`.proto`), including message types referenced by gRPC service definitions.
 - [Generate from MCP Tool Schemas](https://datamodel-code-generator.koxudaxi.dev/mcp-tools/): Generate Python models from Model Context Protocol (MCP) tool schema profiles.
-- [Generate from JSON / YAML / CSV Data](https://datamodel-code-generator.koxudaxi.dev/jsondata/): Generate Pydantic models directly from raw JSON, YAML, or CSV data. Under the hood, the generator uses [GenSON](https://pypi.org/project/genson/) t...
+- [Generate from JSON / YAML / CSV Data](https://datamodel-code-generator.koxudaxi.dev/jsondata/): Generate Pydantic models directly from raw JSON, YAML, or CSV data. Under the hood, the generator uses GenSON to infer a JSON Schema from JSON/YAML...
 - [Generate from GraphQL](https://datamodel-code-generator.koxudaxi.dev/graphql/): Generate Pydantic models from GraphQL schema definitions.
-- [Generate from Python Models {#python-model}](https://datamodel-code-generator.koxudaxi.dev/python-model/): Generate code from existing Python types: Pydantic models, dataclasses, TypedDict, or dict schemas. This is useful for converting between model typ...
+- [Generate from Python Models](https://datamodel-code-generator.koxudaxi.dev/python-model/): Generate code from existing Python types: Pydantic models, dataclasses, TypedDict, or dict schemas. This is useful for converting between model typ...
 
 ### Output Customization
 
@@ -57,7 +37,6 @@
 - [Field Aliases](https://datamodel-code-generator.koxudaxi.dev/aliases/): The `--aliases` option allows you to rename fields in the generated models. This is useful when you want to use different Python field names than t...
 - [Field Validators](https://datamodel-code-generator.koxudaxi.dev/validators/): The `--validators` option allows you to add custom field validators to generated Pydantic v2 models. This enables you to inject validation logic in...
 - [Custom Class Decorators](https://datamodel-code-generator.koxudaxi.dev/class-decorators/): The `--class-decorators` option adds custom decorators to all generated model classes. This is useful for integrating with serialization libraries ...
-- [OpenAPI-Specific Options](https://datamodel-code-generator.koxudaxi.dev/openapi-options/): When working with OpenAPI specifications, datamodel-code-generator provides several options to control how schemas, operations, and special propert...
 
 ### Templates and Formatting
 
@@ -76,9 +55,66 @@
 - [LLM Integration](https://datamodel-code-generator.koxudaxi.dev/llm-integration/): The `--generate-prompt` option generates a formatted prompt that you can use to consult Large Language Models (LLMs) about datamodel-code-generator...
 - [Using datamodel-code-generator with coding agents](https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/): This repository includes an experimental Agent Skill for skills-compatible coding agents. The skill teaches an agent to run `datamodel-codegen` whe...
 
+### Generation Targets
 
+- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): TLS is configured by the server or reverse proxy that hosts the generated application. Update its trust store when it verifies client certificates,...
+- [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Python Client Protocol Helpers](https://datamodel-code-generator.koxudaxi.dev/python-client-helpers/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Python Client Reference](https://datamodel-code-generator.koxudaxi.dev/python-client-reference/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Migrating from fastapi-code-generator](https://datamodel-code-generator.koxudaxi.dev/fastapi-code-generator-migration/): This guide is for projects that generate a FastAPI application with fastapi-code-generator (*fcg*, the `fastapi-codegen` command)
+
+
+## CLI Reference
+
+- [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/): This documentation is auto-generated from test cases.
+- [Base Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/base-options/)
+- [Model Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/)
+- [Field Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/field-customization/)
+- [Typing Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-customization/)
+- [Template Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/template-customization/)
+- [OpenAPI-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/openapi-only-options/): This generated reference lists every OpenAPI-only CLI flag and its tested examples. For a workflow-oriented guide, see OpenAPI Options. For input f...
+- [GraphQL-only Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/graphql-only-options/)
+- [General Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/general-options/)
+- [Target Generation Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-generation-options/)
+- [Utility Options](https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-options/)
+### Focused Topics
+
+- [Model Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/topics/model-customization/): Choose model class shape, naming, reuse, and root-model behavior.
+- [Template Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/topics/template-customization/): Tune generated file headers, imports, decorators, templates, and formatting.
+- [Typing Customization](https://datamodel-code-generator.koxudaxi.dev/cli-reference/topics/typing-customization/): Control Python annotation syntax, collection types, imports, and type mappings.
+- [OpenAPI](https://datamodel-code-generator.koxudaxi.dev/cli-reference/topics/openapi/): Handle OpenAPI operation naming, path selection, scopes, and readOnly/writeOnly behavior.
+
+- [Quick Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/quick-reference/): All CLI options in one page for easy **Ctrl+F** searching.
+### Manual
+
+- [Help](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/help/)
+- [Version](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/version/)
+- [Debug](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/debug/)
+- [Profile](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/profile/)
+- [Job](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/job/)
+- [All Jobs](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/all-jobs/)
+- [Install Skill](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/install-skill/)
+- [Overwrite Skill](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/overwrite-skill/)
+- [Skill Scope](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/skill-scope/)
+- [No Color](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/no-color/)
+- [Generate Prompt](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/generate-prompt/)
+- [List Deprecations](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/list-deprecations/)
+- [List Experimental](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/list-experimental/)
+- [Output Format](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/output-format/)
+- [Output Format Json Schema](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/output-format-json-schema/)
+
+
+- [Conformance Dashboard](https://datamodel-code-generator.koxudaxi.dev/conformance/): This page summarizes the external conformance and end-to-end corpus checks that CI runs for datamodel-code-generator. The table is generated from `...
+- [Performance Benchmarks](https://datamodel-code-generator.koxudaxi.dev/performance-benchmarks/): This page tracks datamodel-code-generator release and main-branch benchmark results collected on GitHub Actions. The data covers only datamodel-cod...
 - [Deprecations](https://datamodel-code-generator.koxudaxi.dev/deprecations/): This page lists deprecations and scheduled breaking changes.
+- [Dependency migration notices](https://datamodel-code-generator.koxudaxi.dev/dependency-migration/): This release prepares later changes. Black and isort remain the default formatters and required dependencies; all current dependency ranges, compat...
+## Migration
+
+- [Output changes in 0.87.0](https://datamodel-code-generator.koxudaxi.dev/output-changes/0.87.0/): How the models 0.87.0 generates differ in behaviour from the models 0.86.0 generates. Both releases generated every test fixture and payload valida...
+- [Upgrading from an older release](https://datamodel-code-generator.koxudaxi.dev/output-changes/upgrading/): How the models 0.87.0 generates differ in behaviour from the models each recorded older release generates, with default options, for every test fix...
+
 - [Experimental Features](https://datamodel-code-generator.koxudaxi.dev/experimental/): This page lists features that are available but still experimental.
+- [Architecture](https://datamodel-code-generator.koxudaxi.dev/architecture/): `datamodel-code-generator` is organized around one central idea: many input formats are normalized into a shared generation graph, then rendered th...
 ## Optional
 
 - [Frequently Asked Questions](https://datamodel-code-generator.koxudaxi.dev/faq/)

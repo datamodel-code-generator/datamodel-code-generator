@@ -1,0 +1,2 @@
+syntax,edition,message
+syntax = 'proto3';,edition = '2023';,value

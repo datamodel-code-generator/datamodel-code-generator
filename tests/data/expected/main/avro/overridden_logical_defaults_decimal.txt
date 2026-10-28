@@ -1,0 +1,2 @@
+DecimalDefaults(positive=b'\x01\x02', negative=Decimal('-2.58'), zero=Decimal('0.0000'), trailing=Decimal('12.00'))
+{'positive': b'\x01\x02', 'negative': Decimal('-2.58'), 'zero': Decimal('0.0000'), 'trailing': Decimal('12.00')}

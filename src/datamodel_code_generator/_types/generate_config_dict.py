@@ -13,22 +13,36 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator.enums import (
+        AliasGenerator,
         AllExportsCollisionStrategy,
         AllExportsScope,
         AllOfClassHierarchy,
         AllOfMergeMode,
         ClassNameAffixScope,
+        ClientBodyArguments,
+        ClientSignatureStyle,
+        ClientType,
         CollapseRootModelsNameStrategy,
+        ConstructorFieldOrder,
+        CustomFileHeaderMode,
         DataclassArguments,
         DataModelType,
+        DefaultValueType,
         FieldTypeCollisionStrategy,
         GraphQLScope,
+        HTTPBackend,
         InputFileType,
         ModuleSplitMode,
         NamingStrategy,
+        OpenAPIAsDefinitions,
         OpenAPIScope,
         ReadOnlyWriteOnlyModelType,
         ReuseScope,
+        SchemaValidatorType,
+        ServerBodyMode,
+        ServerHandlerMode,
+        ServerLayout,
+        ServerType,
         StrictTypes,
         TargetPydanticVersion,
         UnionMode,
@@ -36,40 +50,49 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.format import DateClassType, DatetimeClassType, Formatter, PythonVersion
     from datamodel_code_generator.parser import LiteralType
+    from datamodel_code_generator.preset_names import PresetName
     from datamodel_code_generator.validators import ModelValidators, ValidatorMode
 
 
-class GenerateConfigDict(TypedDict, closed=True):
-    input_filename: NotRequired[str | None]
+class ValidatorDefinition(TypedDict):
+    field: NotRequired[str | None]
+    fields: NotRequired[list[str] | None]
+    function: str
+    mode: NotRequired[ValidatorMode]
+
+
+class BaseGenerateConfig(TypedDict):
     input_file_type: NotRequired[InputFileType]
     output: NotRequired[Path | None]
+    emit_model_metadata: NotRequired[Path | None]
     output_model_type: NotRequired[DataModelType]
+    preset: NotRequired[PresetName | None]
     target_python_version: NotRequired[PythonVersion]
     target_pydantic_version: NotRequired[TargetPydanticVersion | None]
     base_class: NotRequired[str]
     base_class_map: NotRequired[dict[str, str | list[str]] | None]
+    model_name_map: NotRequired[dict[str, str] | None]
     additional_imports: NotRequired[list[str] | None]
     class_decorators: NotRequired[list[str] | None]
     custom_template_dir: NotRequired[Path | None]
-    extra_template_data: NotRequired[defaultdict[str, dict[str, Any]] | None]
-    validators: NotRequired[Mapping[str, ModelValidators] | None]
+    schema_validator_type: NotRequired[SchemaValidatorType | None]
+    generate_schema_validators: NotRequired[bool]
+    check_pattern_maps_strictly: NotRequired[bool]
+    schema_validator_base_class_name: NotRequired[str | None]
     validation: NotRequired[bool]
     field_constraints: NotRequired[bool]
+    alias_generator: NotRequired[AliasGenerator | None]
+    pin_aliases_with_alias_generator: NotRequired[bool]
     snake_case_field: NotRequired[bool]
     strip_default_none: NotRequired[bool]
-    aliases: NotRequired[Mapping[str, str | list[str]] | None]
-    serialization_aliases: NotRequired[Mapping[str, str] | None]
     disable_timestamp: NotRequired[bool]
     enable_version_header: NotRequired[bool]
     enable_command_header: NotRequired[bool]
     enable_generated_header_marker: NotRequired[bool]
-    command_line: NotRequired[str | None]
     allow_population_by_field_name: NotRequired[bool]
     allow_extra_fields: NotRequired[bool]
     extra_fields: NotRequired[str | None]
     use_generic_base_class: NotRequired[bool]
-    apply_default_values_for_required_fields: NotRequired[bool]
-    force_optional_for_required_fields: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
     class_name_prefix: NotRequired[str | None]
@@ -83,6 +106,8 @@ class GenerateConfigDict(TypedDict, closed=True):
     use_inline_field_description: NotRequired[bool]
     use_single_line_docstring: NotRequired[bool]
     use_default_kwarg: NotRequired[bool]
+    deserialize_default_values: NotRequired[Sequence[DefaultValueType]]
+    use_missing_sentinel: NotRequired[bool]
     reuse_model: NotRequired[bool]
     reuse_scope: NotRequired[ReuseScope]
     shared_module_name: NotRequired[str]
@@ -92,67 +117,97 @@ class GenerateConfigDict(TypedDict, closed=True):
     ignore_enum_constraints: NotRequired[bool]
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
+    use_msgspec_tagged_unions: NotRequired[bool]
+    tag_msgspec_by_payload_name: NotRequired[bool]
+    use_msgspec_nullable_enum_alias: NotRequired[bool]
+    use_typed_nullable_map_values: NotRequired[bool]
+    use_typed_map_values_beside_other_types: NotRequired[bool]
+    use_single_dict_for_object_maps: NotRequired[bool]
+    read_unevaluated_properties: NotRequired[bool]
+    use_single_value_enum_as_const: NotRequired[bool]
+    read_const_beside_enum: NotRequired[bool]
+    filter_literal_values: NotRequired[bool]
+    intersect_allof_keywords: NotRequired[bool]
+    read_nullable_beside_type_list: NotRequired[bool]
+    keep_field_defaults_off_branch_roots: NotRequired[bool]
+    keep_enum_member_values: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]
     use_subclass_enum: NotRequired[bool]
     use_specialized_enum: NotRequired[bool]
     strict_nullable: NotRequired[bool]
+    omit_redundant_reference_null: NotRequired[bool]
     use_generic_container_types: NotRequired[bool]
     enable_faux_immutability: NotRequired[bool]
     disable_appending_item_suffix: NotRequired[bool]
-    strict_types: NotRequired[Sequence[StrictTypes] | None]
     empty_enum_field_name: NotRequired[str | None]
-    custom_class_name_generator: NotRequired[Callable[[str], str] | None]
     field_extra_keys: NotRequired[set[str] | None]
     field_include_all_keys: NotRequired[bool]
     field_extra_keys_without_x_prefix: NotRequired[set[str] | None]
     model_extra_keys: NotRequired[set[str] | None]
     model_extra_keys_without_x_prefix: NotRequired[set[str] | None]
-    openapi_scopes: NotRequired[list[OpenAPIScope] | None]
     include_path_parameters: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
-    graphql_scopes: NotRequired[list[GraphQLScope] | None]
+    openapi_as_definitions: NotRequired[Sequence[OpenAPIAsDefinitions]]
     graphql_no_typename: NotRequired[bool]
     wrap_string_literal: NotRequired[bool | None]
     use_title_as_name: NotRequired[bool]
+    infer_union_variant_names: NotRequired[bool]
+    use_tag_as_union_variant_name: NotRequired[bool]
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]
     use_tuple_for_fixed_items: NotRequired[bool]
+    use_tuple_for_closed_arrays: NotRequired[bool]
+    use_tuple_for_fixed_length_arrays: NotRequired[bool]
+    use_total_false_for_typed_dict: NotRequired[bool]
     use_closed_typed_dict: NotRequired[bool]
     allof_merge_mode: NotRequired[AllOfMergeMode]
     allof_class_hierarchy: NotRequired[AllOfClassHierarchy]
     allow_remote_refs: NotRequired[bool | None]
+    strict_refs: NotRequired[bool]
     allow_private_network: NotRequired[bool]
+    http_backend: NotRequired[HTTPBackend]
     http_headers: NotRequired[Sequence[tuple[str, str]] | None]
     http_local_ref_path: NotRequired[Path | None]
     http_ignore_tls: NotRequired[bool]
     http_timeout: NotRequired[float | None]
+    lockfile: NotRequired[Path | None]
+    update_lock: NotRequired[bool]
+    locked: NotRequired[bool]
     use_annotated: NotRequired[bool]
     use_serialize_as_any: NotRequired[bool]
     use_non_positive_negative_number_constrained_types: NotRequired[bool]
     use_decimal_for_multiple_of: NotRequired[bool]
+    use_decimal_in_field_forms: NotRequired[bool]
+    omit_redundant_constraints: NotRequired[bool]
+    use_site_models_for_constrained_refs: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]
     use_double_quotes: NotRequired[bool]
     use_union_operator: NotRequired[bool]
     collapse_root_models: NotRequired[bool]
     collapse_root_models_name_strategy: NotRequired[CollapseRootModelsNameStrategy | None]
+    collapse_shared_parent_wrappers: NotRequired[bool]
     collapse_reuse_models: NotRequired[bool]
     skip_root_model: NotRequired[bool]
+    use_root_model_sequence_interface: NotRequired[bool]
     use_type_alias: NotRequired[bool]
+    use_type_alias_type: NotRequired[bool]
     use_root_model_type_alias: NotRequired[bool]
     special_field_name_prefix: NotRequired[str | None]
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
+    order_constructor_fields_by: NotRequired[Sequence[ConstructorFieldOrder]]
     custom_file_header: NotRequired[str | None]
     custom_file_header_path: NotRequired[Path | None]
+    custom_file_header_mode: NotRequired[CustomFileHeaderMode]
     custom_formatters: NotRequired[list[str] | None]
-    custom_formatters_kwargs: NotRequired[dict[str, Any] | None]
     use_pendulum: NotRequired[bool]
     use_standard_primitive_types: NotRequired[bool]
     use_object_type: NotRequired[bool]
     http_query_parameters: NotRequired[Sequence[tuple[str, str]] | None]
     treat_dot_as_module: NotRequired[bool | None]
+    strict_dotted_module_names: NotRequired[bool]
     use_exact_imports: NotRequired[bool]
     use_type_checking_imports: NotRequired[bool | None]
     union_mode: NotRequired[UnionMode | None]
@@ -166,31 +221,67 @@ class GenerateConfigDict(TypedDict, closed=True):
     use_default_factory_for_optional_nested_models: NotRequired[bool]
     formatters: NotRequired[list[Formatter] | None]
     builtin_format_line_length: NotRequired[int | None]
-    settings_path: NotRequired[Path | None]
     parent_scoped_naming: NotRequired[bool]
     naming_strategy: NotRequired[NamingStrategy | None]
     duplicate_name_suffix: NotRequired[dict[str, str] | None]
     dataclass_arguments: NotRequired[DataclassArguments | None]
     disable_future_imports: NotRequired[bool]
+    import_overrides: NotRequired[dict[str, str] | None]
     type_mappings: NotRequired[list[str] | None]
     type_overrides: NotRequired[dict[str, str] | None]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
+    dedupe_request_response_variants: NotRequired[bool]
     use_status_code_in_response_name: NotRequired[bool]
     all_exports_scope: NotRequired[AllExportsScope | None]
     all_exports_collision_strategy: NotRequired[AllExportsCollisionStrategy | None]
     field_type_collision_strategy: NotRequired[FieldTypeCollisionStrategy | None]
     module_split_mode: NotRequired[ModuleSplitMode | None]
-    default_value_overrides: NotRequired[Mapping[str, Any] | None]
     schema_version: NotRequired[str | None]
     schema_version_mode: NotRequired[VersionMode | None]
     external_ref_mapping: NotRequired[dict[str, str] | None]
+    generate_server: NotRequired[ServerType | None]
+    server_output: NotRequired[Path | None]
+    server_package: NotRequired[str | None]
+    server_model_package: NotRequired[str | None]
+    server_layout: NotRequired[ServerLayout | None]
+    server_handler_mode: NotRequired[ServerHandlerMode | None]
+    server_handler_modes: NotRequired[Mapping[str, ServerHandlerMode] | None]
+    server_include_request: NotRequired[bool | None]
+    server_body_mode: NotRequired[ServerBodyMode | None]
+    server_body_modes: NotRequired[Mapping[str, ServerBodyMode] | None]
+    server_primary_responses: NotRequired[Mapping[str, Any] | None]
+    server_operation_names: NotRequired[Mapping[str, str] | None]
+    server_router_names: NotRequired[Mapping[str, str] | None]
+    server_parameter_names: NotRequired[Mapping[str, Mapping[str, str]] | None]
+    generate_client: NotRequired[ClientType | None]
+    client_output: NotRequired[Path | None]
+    client_package: NotRequired[str | None]
+    client_model_package: NotRequired[str | None]
+    client_signature_style: NotRequired[ClientSignatureStyle | None]
+    client_body_arguments: NotRequired[ClientBodyArguments | None]
+    client_resource_names: NotRequired[Mapping[str, str] | None]
+    client_operations: NotRequired[Mapping[str, Mapping[str, Any]] | None]
+    client_default_base_url: NotRequired[str | None]
+    client_server_base_url: NotRequired[str | None]
+    client_protocols: NotRequired[Mapping[str, Any] | None]
 
 
-class ValidatorDefinition(TypedDict):
-    field: NotRequired[str | None]
-    fields: NotRequired[list[str] | None]
-    function: str
-    mode: NotRequired[ValidatorMode]
+class GenerateConfigDict(BaseGenerateConfig, closed=True):
+    input_filename: NotRequired[str | None]
+    extra_template_data: NotRequired[defaultdict[str, dict[str, Any]] | None]
+    validators: NotRequired[Mapping[str, ModelValidators] | None]
+    aliases: NotRequired[Mapping[str, str | list[str]] | None]
+    serialization_aliases: NotRequired[Mapping[str, str] | None]
+    command_line: NotRequired[str | None]
+    apply_default_values_for_required_fields: NotRequired[bool]
+    force_optional_for_required_fields: NotRequired[bool]
+    strict_types: NotRequired[Sequence[StrictTypes] | None]
+    custom_class_name_generator: NotRequired[Callable[[str], str] | None]
+    openapi_scopes: NotRequired[list[OpenAPIScope] | None]
+    graphql_scopes: NotRequired[list[GraphQLScope] | None]
+    custom_formatters_kwargs: NotRequired[dict[str, Any] | None]
+    settings_path: NotRequired[Path | None]
+    default_value_overrides: NotRequired[Mapping[str, Any] | None]
 
 
 class ModelValidatorsModel(TypedDict):

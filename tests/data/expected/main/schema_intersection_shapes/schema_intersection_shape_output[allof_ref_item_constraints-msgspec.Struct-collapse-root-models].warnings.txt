@@ -1,0 +1,1 @@
+allOf combines $ref with 2 constraint(s) that will be ignored in inherited field type resolution. Consider defining constraints in the referenced schema.

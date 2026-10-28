@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstraintsOnTypingProtocols",
+  "type": "object",
+  "properties": {
+    "collection": {
+      "customTypePath": "collections.abc.Collection",
+      "minItems": 2
+    },
+    "sized": {
+      "customTypePath": "typing.Sized",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "container": {
+      "customTypePath": "typing.Container",
+      "maxItems": 2
+    },
+    "reversible": {
+      "customTypePath": "typing.Reversible",
+      "minItems": 2
+    },
+    "iterable": {
+      "type": "integer",
+      "x-python-type": "typing.Iterable[int]",
+      "minItems": 2,
+      "maxItems": 3
+    },
+    "generator": {
+      "type": "integer",
+      "x-python-type": "collections.abc.Generator[int, None, None]",
+      "maxItems": 2
+    },
+    "any_text": {
+      "type": "integer",
+      "x-python-type": "typing.AnyStr",
+      "minLength": 2,
+      "pattern": "^a",
+      "minItems": 2
+    },
+    "buffer": {
+      "customTypePath": "typing_extensions.Buffer",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "supports_bytes": {
+      "customTypePath": "typing.SupportsBytes",
+      "minLength": 2
+    },
+    "extensions_list": {
+      "type": "integer",
+      "x-python-type": "typing_extensions.List[int]",
+      "minItems": 2,
+      "pattern": "^a"
+    }
+  }
+}

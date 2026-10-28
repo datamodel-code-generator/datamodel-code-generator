@@ -1,0 +1,5 @@
+created:
+  type: object
+  properties:
+    state: {type: string, const: created}
+  required: [state]

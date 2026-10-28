@@ -1,0 +1,16 @@
+models shared True
+# forms_30 in-process sync, in-process async
+post_parts
+  > POST /parts [multipart/form-data; boundary=<boundary>]
+  post_parts(body=PartsPostRequest(point=Point(x=1, y=2), ids=[1, 2], note='café, b', tags=['a,b', 'c']))
+  < 204 -
+  = None
+post_form
+  > POST /form [application/x-www-form-urlencoded]
+  post_form(body=FormPostRequest(ids=[1, 2]))
+  < 204 -
+  = None
+/parts a delimited part
+  > POST /parts [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  = (422, [['body', 'ids', 0]])

@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: Models of modules before and after the module of a model that inherits a schema of a mapped document beside it
+  version: '1'
+paths: {}
+components:
+  schemas:
+    aaa.Grand:
+      allOf:
+        - $ref: '#/components/schemas/pkg.Branch'
+        - required:
+            - kids
+            - leaf
+    pkg.Branch:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+    zzz.Grand:
+      allOf:
+        - $ref: '#/components/schemas/pkg.Branch'
+        - required:
+            - kids
+            - leaf

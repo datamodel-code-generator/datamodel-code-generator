@@ -1,0 +1,31 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Inherited nested shapes", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Child": {
+        "allOf": [
+          {"$ref": "#/components/schemas/Parent"},
+          {"type": "object", "properties": {
+            "payload": {"properties": {"detail": {"properties": {"code": {"minLength": 1}}}}},
+            "position": {"prefixItems": [{"minLength": 1}]}
+          }}
+        ]
+      },
+      "Parent": {"type": "object", "properties": {
+        "payload": {"$ref": "#/components/schemas/Node"},
+        "position": {"$ref": "#/components/schemas/Pair"}
+      }},
+      "Node": {"type": "object", "properties": {
+        "detail": {"$ref": "#/components/schemas/Detail"},
+        "label": {"type": "string"}
+      }},
+      "Detail": {"type": "object", "properties": {
+        "code": {"type": "string"},
+        "count": {"type": "integer"}
+      }},
+      "Pair": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}], "items": false}
+    }
+  }
+}

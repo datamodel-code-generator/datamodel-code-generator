@@ -1,0 +1,5 @@
+type A
+
+type B
+
+union U = A | B

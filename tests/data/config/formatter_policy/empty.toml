@@ -1,0 +1,6 @@
+[tool.datamodel-codegen]
+preset = "standard-py310-20260909"
+formatters = []
+
+[tool.ruff]
+line-length = 88

@@ -1,0 +1,1 @@
+Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from Cage.pet, so these unions cannot decode it: Basket.pet ('Kitten').

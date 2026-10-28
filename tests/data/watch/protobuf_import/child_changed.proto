@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Child {
+  string name = 1;
+  int32 age = 2;
+}

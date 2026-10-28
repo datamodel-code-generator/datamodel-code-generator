@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "SharedAliasParent": {
+      "properties": {
+        "shared": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shared",
+          "type": "array",
+          "uniqueItems": true,
+          "x-python-type": "frozenset[int]"
+        }
+      },
+      "required": [
+        "shared"
+      ],
+      "title": "SharedAliasParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/SharedAliasParent"
+    }
+  ],
+  "properties": {
+    "shared": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Shared",
+      "type": "array",
+      "x-python-type": "list[int]"
+    }
+  },
+  "required": [
+    "shared"
+  ],
+  "title": "ClassVarAliasChild",
+  "type": "object"
+}

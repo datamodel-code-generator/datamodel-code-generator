@@ -1,0 +1,35 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "shared": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Shared"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "shared",
+    "shared",
+    "last"
+  ],
+  "title": "NullableWins",
+  "type": "object"
+}

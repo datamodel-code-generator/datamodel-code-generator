@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Components that only reference each other beside sibling keywords
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/B'
+      minProperties: 1
+    B:
+      $ref: '#/components/schemas/A'
+      minProperties: 1
+    Holder:
+      type: object
+      properties:
+        x:
+          type: string
+      additionalProperties:
+        $ref: '#/components/schemas/A'

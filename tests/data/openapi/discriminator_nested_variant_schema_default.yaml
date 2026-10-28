@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: Discriminated unions that take a root model with the default of its schema as a variant
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        type:
+          const: cat
+      required:
+        - type
+    Dog:
+      type: object
+      properties:
+        type:
+          const: dog
+      required:
+        - type
+    Bird:
+      type: object
+      properties:
+        type:
+          const: bird
+      required:
+        - type
+    DefaultedDogOrBird:
+      oneOf:
+        - $ref: "#/components/schemas/Dog"
+        - $ref: "#/components/schemas/Bird"
+      default:
+        type: dog
+      discriminator:
+        propertyName: type
+    DefaultedPets:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/DefaultedDogOrBird"
+          discriminator:
+            propertyName: type

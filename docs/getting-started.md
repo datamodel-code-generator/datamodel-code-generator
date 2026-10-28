@@ -1,0 +1,226 @@
+# Getting Started
+
+Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with
+`--recommend-options` (experimental).
+
+## Installation
+
+=== "uv tool (Recommended for CLI use)"
+
+    ```bash
+    uv tool install datamodel-code-generator
+    ```
+
+=== "conda"
+
+    ```bash
+    conda install -c conda-forge datamodel-code-generator
+    ```
+
+=== "uv (project)"
+
+    ```bash
+    uv add --dev datamodel-code-generator
+    ```
+
+=== "pip"
+
+    ```bash
+    pip install datamodel-code-generator
+    ```
+
+=== "pipx"
+
+    ```bash
+    pipx install datamodel-code-generator
+    ```
+
+=== "uvx (one-shot)"
+
+    ```bash
+    uvx --from datamodel-code-generator datamodel-codegen --help
+    ```
+
+Use `uv tool install` when you want `datamodel-codegen` available as a standalone CLI. Use `uv add --dev` when a project
+or CI workflow should pin the generator version in its lockfile.
+
+### TLS certificate updates
+
+The [October 2026 eMudhra CA incident](https://emudhra.we-have-a-problem.com/) affects HTTPS clients whose trust stores
+still accept the compromised certificate chains. Update your operating system's CA certificates and your installer:
+uv 0.13.4 or later, or pip 26.2.2 or later. Browser updates alone do not update command-line tools' trust stores.
+
+For remote schemas (`--url` and remote `$ref`), install the current `datamodel-code-generator[http]` release and refresh
+your lockfile. The `http` and `validation` extras require certifi 2026.10.19 or later. Existing environments and older
+generator releases also need that certifi update. Rebuild containers to update both their OS and Python trust stores.
+
+The selected HTTP backend determines certificate trust:
+
+| Backend | Default CA source | What to update |
+| --- | --- | --- |
+| Stable HTTPX (`http` extra) | certifi | certifi in the environment running the generator |
+| Experimental HTTPX2 (`httpx2` extra) | OS trust store through truststore | OS CA certificates in the host or container |
+| Generated HTTPX2 client | OS trust store through truststore | OS CA certificates where the generated client runs |
+
+`SSL_CERT_FILE` replaces the backend's default CA source; otherwise `SSL_CERT_DIR` selects an OpenSSL certificate
+directory. Update these custom stores separately. This also applies to generated clients using the default HTTPX2
+client; a supplied `http_client` follows its own TLS configuration. `--http-ignore-tls` disables certificate verification
+and is not a remedy for a compromised CA.
+
+!!! info "Distribution packages"
+    Community-maintained distribution packages are also available from
+    [Debian](https://packages.debian.org/search?keywords=datamodel-codegen&searchon=names&suite=all&section=all),
+    [Ubuntu](https://packages.ubuntu.com/search?keywords=datamodel-codegen&searchon=names&suite=all&section=all),
+    [nixpkgs](https://search.nixos.org/packages?query=datamodel-code-generator), and
+    [openSUSE Tumbleweed](https://software.opensuse.org/package/python-datamodel-code-generator).
+    Availability and versions vary by distribution.
+
+!!! note "Default output model"
+    When `--output-model-type` is omitted, datamodel-code-generator generates Pydantic v2 BaseModel output
+    (`pydantic_v2.BaseModel`). You can pass `--output-model-type` explicitly when you want another model family.
+
+---
+
+## Quick Start
+
+<!-- BEGIN AUTO-GENERATED PRESET QUICK START -->
+### Command
+
+```bash
+datamodel-codegen \
+  --input schema.json \
+  --input-file-type jsonschema \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20261027 \
+  --output model.py
+```
+
+This quick start uses `standard-py312-20261027` as the modern Python 3.12 baseline.
+Preset names include the target Python version: `py312` means Python 3.12.
+
+See [CLI Reference](cli-reference/index.md) for all options. See [Presets](presets.md),
+[`--preset`](cli-reference/base-options.md#preset), [`--input-file-type`](cli-reference/base-options.md#input-file-type), and
+[`--output-model-type`](cli-reference/model-customization.md#output-model-type) for this command.
+
+For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
+documentation, use [`practical-py312-20261027`](presets.md#practical-py312-20261027).
+
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See [Option recommendations](recommend-options.md).
+
+<details>
+<summary>Input (<code>schema.json</code>)</summary>
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pet",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The pet's name"
+    },
+    "species": {
+      "type": "string",
+      "enum": ["dog", "cat", "bird", "fish"],
+      "default": "dog"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Age in years"
+    },
+    "vaccinated": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
+```
+
+</details>
+
+### Output
+
+<!-- fmt: off -->
+
+```python title="model.py"
+# generated by datamodel-codegen:
+#   filename:  schema.json
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class Species(StrEnum):
+    dog = 'dog'
+    cat = 'cat'
+    bird = 'bird'
+    fish = 'fish'
+
+
+class Pet(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    name: Annotated[str, Field(description="The pet's name")]
+    species: Species = Species.dog
+    age: Annotated[int | None, Field(description='Age in years', ge=0)] = None
+    vaccinated: bool = False
+```
+
+<!-- fmt: on -->
+
+🎉 That's it! Your schema is now a fully-typed Python model.
+
+### Choose a formatter
+
+Choose a formatter to match your project and generation priorities:
+
+- **Projects using Ruff:** use `--formatters ruff-check ruff-format` to keep generated code consistent with the
+  project's formatting and lint policy. Install it with `pip install 'datamodel-code-generator[ruff]'`.
+- **No Ruff, Black, or isort, or generation speed is the priority:** use `--formatters builtin` to avoid running
+  external formatters on standard generated model modules.
+- **Projects using Black/isort:** keep `--formatters black isort` to preserve the project's formatting and existing
+  generated output.
+
+The current default remains Black/isort, which are still required dependencies. Omitting formatter options continues
+normal generation. The future builtin default is intended to reduce required installation dependencies and version
+constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
+based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
+optional installation; their ranges and environment markers match the current required dependencies.
+Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
+Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
+
+Custom templates can emit Python outside the standard generated model patterns covered by `builtin`, so
+custom-template output is not exhaustively validated. If `--formatters builtin` produces invalid or poorly formatted
+output with a custom template, please open an issue with a small reproducer. See
+[Formatter Behavior](formatter-behavior.md) for details.
+
+See [Performance Benchmarks](performance-benchmarks.md) for release benchmark data and interactive charts.
+<!-- END AUTO-GENERATED PRESET QUICK START -->
+
+---
+
+## Generate a server or a client
+
+From an OpenAPI document, the same run that generates the models can also generate a FastAPI server package
+(`--generate-server fastapi`) or an HTTPX2 client package (`--generate-client httpx2`) that use those models.
+Both are experimental since 0.84.0 (see [Experimental Features](experimental.md)). See the
+[overview example](index.md#generate-a-fastapi-server-or-an-http-client-experimental),
+[FastAPI Server Generation](fastapi-server.md), and [Python Client Generation](python-client.md).
+
+---
+
+## Next Steps
+
+- [Choose an input format](index.md#choose-your-input)
+- [Review presets](presets.md)
+- [Browse the CLI reference](cli-reference/index.md)

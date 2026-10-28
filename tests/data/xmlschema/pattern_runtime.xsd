@@ -1,0 +1,32 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Token"><xs:restriction base="xs:string">
+    <xs:pattern value="[A-Z]+"/><xs:pattern value="[0-9]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Tokens"><xs:list itemType="Token"/></xs:simpleType>
+  <xs:complexType name="Parent"><xs:sequence>
+    <xs:element name="compile" type="xs:string" minOccurs="0" default="shadow"/>
+    <xs:element name="word"><xs:simpleType><xs:restriction base="xs:string">
+      <xs:pattern value="\w+"/><xs:pattern value="Q"/>
+    </xs:restriction></xs:simpleType></xs:element>
+    <xs:element name="mirror" minOccurs="0"><xs:simpleType><xs:restriction base="xs:string">
+      <xs:pattern value="\w+"/><xs:pattern value="Q"/>
+    </xs:restriction></xs:simpleType></xs:element>
+    <xs:element name="uri"><xs:simpleType><xs:restriction base="xs:anyURI">
+      <xs:pattern value="https:.*"/><xs:pattern value="http:.*"/>
+    </xs:restriction></xs:simpleType></xs:element>
+  </xs:sequence></xs:complexType>
+  <xs:complexType name="Intermediate"><xs:complexContent>
+    <xs:extension base="Parent"/>
+  </xs:complexContent></xs:complexType>
+  <xs:complexType name="Derived"><xs:complexContent><xs:extension base="Intermediate"><xs:sequence>
+    <xs:element name="nonword"><xs:simpleType><xs:restriction base="xs:string">
+      <xs:pattern value="\W+"/><xs:pattern value="Q"/>
+    </xs:restriction></xs:simpleType></xs:element>
+    <xs:element name="tilde"><xs:simpleType><xs:restriction base="xs:string">
+      <xs:pattern value="[a~~b]+"/><xs:pattern value="Q"/>
+    </xs:restriction></xs:simpleType></xs:element>
+    <xs:element name="token" type="Token"/>
+    <xs:element name="tokens" type="Tokens"/>
+  </xs:sequence></xs:extension></xs:complexContent></xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

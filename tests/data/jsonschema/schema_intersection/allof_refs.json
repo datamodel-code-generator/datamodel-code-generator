@@ -1,0 +1,514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pick2": {
+      "$ref": "#/$defs/Pick2"
+    },
+    "pick2_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "pick2_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "pick2_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "level2": {
+      "$ref": "#/$defs/Level2"
+    },
+    "level2_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "type": "integer",
+          "enum": [
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    "level2_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Level"
+          },
+          {
+            "type": "integer",
+            "enum": [
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    "level2_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Level"
+          },
+          {
+            "type": "integer",
+            "enum": [
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    "number5": {
+      "$ref": "#/$defs/Number5"
+    },
+    "number5_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Number"
+        }
+      ],
+      "minimum": 5
+    },
+    "number5_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Number"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "number5_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Number"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "non_negative": {
+      "$ref": "#/$defs/NonNegative"
+    },
+    "non_negative_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Real"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    },
+    "non_negative_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Real"
+          },
+          {
+            "minimum": 0
+          }
+        ]
+      }
+    },
+    "non_negative_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Real"
+          },
+          {
+            "minimum": 0
+          }
+        ]
+      }
+    },
+    "two_refs": {
+      "$ref": "#/$defs/TwoRefs"
+    },
+    "two_refs_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "$ref": "#/$defs/Big"
+        }
+      ]
+    },
+    "two_refs_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ]
+      }
+    },
+    "two_refs_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ]
+      }
+    },
+    "stamp_len": {
+      "$ref": "#/$defs/StampLen"
+    },
+    "stamp_len_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Stamp"
+        }
+      ],
+      "maxLength": 40
+    },
+    "stamp_len_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Stamp"
+          }
+        ],
+        "maxLength": 40
+      }
+    },
+    "stamp_len_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Stamp"
+          }
+        ],
+        "maxLength": 40
+      }
+    },
+    "quantity": {
+      "$ref": "#/$defs/Quantity"
+    },
+    "q_allof": {
+      "$ref": "#/$defs/AllOfRoot"
+    },
+    "q_allof_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        }
+      ],
+      "maximum": 10
+    },
+    "q_allof_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "q_allof_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "q_allof2": {
+      "$ref": "#/$defs/AllOfRoot2"
+    },
+    "q_allof2_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "maximum": 10
+        }
+      ]
+    },
+    "q_allof2_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "q_allof2_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "xpt_a": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q"
+        }
+      ],
+      "maximum": 10
+    },
+    "xpt_b": {
+      "$ref": "#/$defs/Q",
+      "maximum": 10
+    },
+    "nullsib_a": {
+      "$ref": "#/$defs/Name",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nullsib_b": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Name"
+        }
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nullsib_c": {
+      "$ref": "#/$defs/Foo",
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "nullsib_d": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Name"
+        },
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "nullsib_a",
+    "nullsib_b",
+    "nullsib_c",
+    "nullsib_d"
+  ],
+  "$defs": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Level": {
+      "type": "integer",
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "Number": {
+      "type": "integer"
+    },
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Real": {
+      "type": "number"
+    },
+    "Small": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "Big": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "Stamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Q": {
+      "type": "integer",
+      "minimum": 1,
+      "x-python-type": "decimal.Decimal"
+    },
+    "Name": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "Foo": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "Pick2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "Level2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "type": "integer",
+          "enum": [
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    "Number5": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Number"
+        }
+      ],
+      "minimum": 5
+    },
+    "NonNegative": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Real"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    },
+    "TwoRefs": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "$ref": "#/$defs/Big"
+        }
+      ]
+    },
+    "StampLen": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Stamp"
+        }
+      ],
+      "maxLength": 40
+    },
+    "AllOfRoot": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        }
+      ],
+      "maximum": 10
+    },
+    "AllOfRoot2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "maximum": 10
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "unchanged": {},
+  "empty-models": {"notice": "dependencies-empty-models.txt", "source": "empty.yaml"},
+  "missing-root": {"remove": ["server"]},
+  "missing-model": {"remove": ["models.py"]},
+  "changed-python": {"append": {"server/services.py": "# changed\n"}},
+  "changed-readme": {"append": {"server/README.md": "\nChanged documentation.\n"}},
+  "missing-readme": {"remove": ["server/README.md"]},
+  "missing-marker": {"remove": ["server/py.typed"]},
+  "extra-python": {"write": {"server/extensions.py": "# User extension\n"}},
+  "extra-nested-python": {"write": {"server/deep/extra.py": "# Stale module\n"}},
+  "ignore-unrendered-text": {"write": {"server/notes.txt": "User notes\n"}},
+  "ignore-bytecode-python": {"write": {"server/__pycache__/extra.py": "# cache\n"}},
+  "crlf": {"crlf": ["models.py", "server/services.py", "server/README.md"]},
+  "lf": {"lf": ["models.py", "server/services.py", "server/README.md"]},
+  "non-text-python": {"binary": ["server/services.py"], "error": "server: Output is not text in encoding 'utf-8'"},
+  "non-text-readme": {"binary": ["server/README.md"], "error": "server/README.md: Output is not text in encoding 'utf-8'"},
+  "latin-1": {"encoding": "latin-1", "append": {"server/services.py": "# Café\n"}, "templates": true},
+  "nested-cwd": {"nested": true, "append": {"server/README.md": "\nChanged documentation.\n"}},
+  "modular": {"notice": "dependencies-modular.txt", "modular": true},
+  "modular-extra": {"notice": "dependencies-modular.txt", "modular": true, "write": {"models/extra.py": "# stale model\n"}},
+  "modular-missing": {"notice": "dependencies-modular.txt", "modular": true, "remove": ["models"]},
+  "stale": {"options": ["--openapi-include-paths", "/pets"], "changed": true},
+  "stale-regenerated": {"regenerated": "dependencies-stale.txt", "options": ["--openapi-include-paths", "/pets"], "regenerate": true, "changed": true, "warnings": "leftover-warning.txt"},
+  "edited-regenerated": {"append": {"server/services.py": "# changed\n"}, "regenerate": true, "changed": false},
+  "leftover-manifest": {"write": {"server/.dcg-target-manifest.json": "{\"format\": 1}\n"}},
+  "foreign": {"fresh": true, "write": {"server/routers/__init__.py": "# Someone else's module.\n"}},
+  "models-in-package": {"model": "server/models.py", "arguments": ["--server-model-package", "server.models"]},
+  "suffixless-models-in-package": {
+    "model": "server/models",
+    "encoding": "latin-1",
+    "arguments": [
+      "--server-model-package", "server.models", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"
+    ]
+  },
+  "models-in-package-changed": {
+    "model": "server/models.py",
+    "arguments": ["--server-model-package", "server.models"],
+    "append": {"server/models.py": "# changed\n", "server/services.py": "# changed\n"},
+    "remove": ["server/README.md"],
+    "write": {"server/extensions.py": "# User extension\n"}
+  },
+  "models-in-package-stale": {
+    "model": "server/models.py",
+    "arguments": ["--server-model-package", "server.models"],
+    "options": ["--openapi-include-paths", "/pets"],
+    "changed": true
+  },
+  "modular-models-in-package": {
+    "notice": "dependencies-modular.txt",
+    "modular": true,
+    "model": "server/models",
+    "arguments": ["--server-model-package", "server.models"],
+    "remove": ["server/models/pets.py"],
+    "write": {"server/models/extra.py": "# stale model\n"}
+  },
+  "package-in-models": {
+    "modular": true,
+    "server": "models/server",
+    "notice": "dependencies-models-server.txt",
+    "unchanged": "unchanged-models-server.json",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"]
+  },
+  "package-in-models-changed": {
+    "modular": true,
+    "server": "models/server",
+    "notice": "dependencies-models-server.txt",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"],
+    "append": {"models/pets.py": "# changed\n", "models/server/services.py": "# changed\n"},
+    "remove": ["models/server/py.typed"],
+    "write": {"models/extra.py": "# stale model\n", "models/server/extensions.py": "# User extension\n"}
+  },
+  "package-in-models-services": {
+    "modular": true,
+    "server": "models/server",
+    "notice": "dependencies-models-server.txt",
+    "arguments": ["--server-package", "models.server", "--server-model-package", "models"],
+    "write": {"models/services/helpers.py": "# A helper of yours\n", "models/services/admin/__init__.py": "# Yours\n"},
+    "changed": false
+  }
+}

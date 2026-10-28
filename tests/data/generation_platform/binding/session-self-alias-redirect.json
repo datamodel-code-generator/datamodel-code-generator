@@ -1,0 +1,23 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Self-aliasing root schema",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Node": {
+        "$ref": "#/components/schemas/Node"
+      },
+      "Holder": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/components/schemas/Node"
+          }
+        }
+      }
+    }
+  }
+}

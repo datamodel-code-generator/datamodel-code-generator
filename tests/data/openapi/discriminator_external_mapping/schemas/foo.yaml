@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Foo schema
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    Foo:
+      type: object
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum: [foo]
+        value:
+          type: string

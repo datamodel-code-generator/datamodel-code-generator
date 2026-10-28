@@ -229,18 +229,18 @@ class EdgeCasesCoverage(
 ):
     local_field: str | None = None
     field_with_constraints: Any
-    multiple_field: conint(multiple_of=10)
+    multiple_field: MultipleField
     ref_and_primitive: SimpleString
     nested_anyof: SimpleString | int
-    deep_array: list[dict[str, Any]]
+    deep_array: list[DeepArrayItem]
     oneof_field: str | int
     single_oneof: str
-    deep_dict: dict[str, dict[str, Any]]
-    object_allof: dict[str, Any]
-    large_union: Any
-    nested_allof_ref: SimpleString
-    nested_indirect: SimpleString
-    enum_field: Literal['a', 'b', 'c']
+    deep_dict: dict[str, DeepDict]
+    object_allof: ObjectAllof
+    large_union: str | int | bool | float | list[str] | dict[str, Any]
+    nested_allof_ref: NestedAllofRef
+    nested_indirect: NestedIndirect
+    enum_field: EnumField
 
 
 class CyclicAliasA(RootModel["CyclicAliasB"]):

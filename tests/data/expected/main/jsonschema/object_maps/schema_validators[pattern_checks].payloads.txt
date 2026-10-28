@@ -1,0 +1,7 @@
+valid: accepted
+invalid lookDeclared: rejected (string_pattern_mismatch)
+invalid lookUndeclared: rejected (string_pattern_mismatch)
+invalid crossedLength: rejected (string_too_short)
+invalid crossedRange: rejected (less_than_equal)
+invalid lookReference: rejected (string_pattern_mismatch)
+invalid lookReference: rejected (string_too_long)

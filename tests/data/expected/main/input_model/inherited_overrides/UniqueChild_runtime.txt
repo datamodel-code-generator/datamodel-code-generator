@@ -1,0 +1,30 @@
+[
+  {
+    "bases": [
+      "RepeatedChild"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "source": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "generated": {
+      "value": [
+        1,
+        2
+      ]
+    }
+  }
+]

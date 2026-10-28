@@ -1,0 +1,64 @@
+name: Smoke test Docker image
+description: Generate a small model with a datamodel-code-generator Docker image.
+
+inputs:
+  image:
+    description: Docker image tag to smoke test.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify CA stores
+      shell: bash
+      env:
+        SMOKE_IMAGE: ${{ inputs.image }}
+      run: |
+        set -euo pipefail
+        docker run --rm -i --entrypoint python "$SMOKE_IMAGE" - <<'PY'
+        import ssl
+
+        import certifi
+        from pip._vendor import certifi as pip_certifi
+
+        blocked = {"AAA Certificate Services", "emSign ECC Root CA - G3"}
+        for name, context in (
+            ("system", ssl.create_default_context()),
+            ("certifi", ssl.create_default_context(cafile=certifi.where())),
+            ("pip", ssl.create_default_context(cafile=pip_certifi.where())),
+        ):
+            subjects = {
+                value
+                for certificate in context.get_ca_certs()
+                for rdn in certificate["subject"]
+                for key, value in rdn
+                if key == "commonName"
+            }
+            if compromised := subjects & blocked:
+                raise SystemExit(f"{name} still trusts compromised CA roots: {sorted(compromised)}")
+            print(f"{name}: compromised CA roots excluded")
+        PY
+
+    - name: Generate and validate model
+      shell: bash
+      env:
+        SMOKE_IMAGE: ${{ inputs.image }}
+        SMOKE_WORKSPACE: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+
+        output="$(
+          docker run --rm \
+            --volume "$SMOKE_WORKSPACE/tests/data/jsonschema:/data:ro" \
+            "$SMOKE_IMAGE" \
+            --input /data/simple_string.json \
+            --input-file-type jsonschema \
+            --disable-timestamp
+        )"
+
+        printf '%s\n' "$output" | grep -Fqx "class Model(BaseModel):"
+        printf '%s\n' "$output" | grep -Fqx "    s: str"
+        if printf '%s\n' "$output" | grep -Fq "timestamp:"; then
+          echo "generated output contains a timestamp" >&2
+          exit 1
+        fi

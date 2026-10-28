@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "RequiredEmpty",
+      "name": "RequiredEmpty",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/RequiredEmpty",
+      "source_path": [
+        "$defs",
+        "RequiredEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "OptionalEmpty",
+      "name": "OptionalEmpty",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/OptionalEmpty",
+      "source_path": [
+        "$defs",
+        "OptionalEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "AllOfRequiredEmpty",
+      "name": "AllOfRequiredEmpty",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/AllOfRequiredEmpty",
+      "source_path": [
+        "$defs",
+        "AllOfRequiredEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "AllOfOverrideEmpty",
+      "name": "AllOfOverrideEmpty",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/AllOfOverrideEmpty",
+      "source_path": [
+        "$defs",
+        "AllOfOverrideEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "ReadWriteEmptyRequest",
+      "name": "ReadWriteEmptyRequest",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmpty",
+      "source_path": [
+        "$defs",
+        "ReadWriteEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field__1",
+          "alias": "field_",
+          "original_name": "field_",
+          "type": "int",
+          "required": true
+        },
+        {
+          "name": "shared",
+          "alias": "shared",
+          "original_name": "shared",
+          "type": "bool | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "ReadWriteEmptyResponse",
+      "name": "ReadWriteEmptyResponse",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmpty",
+      "source_path": [
+        "$defs",
+        "ReadWriteEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "shared",
+          "alias": "shared",
+          "original_name": "shared",
+          "type": "bool | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "ReadWriteEmpty",
+      "name": "ReadWriteEmpty",
+      "module": "",
+      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmpty",
+      "source_path": [
+        "$defs",
+        "ReadWriteEmpty"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "field__1",
+          "alias": "field_",
+          "original_name": "field_",
+          "type": "int",
+          "required": true
+        },
+        {
+          "name": "shared",
+          "alias": "shared",
+          "original_name": "shared",
+          "type": "bool | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "EmptyFieldRoot",
+      "name": "EmptyFieldRoot",
+      "module": "",
+      "source_ref": "empty_field_name.json#",
+      "source_path": [],
+      "title": "EmptyFieldRoot",
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "RequiredEmpty",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

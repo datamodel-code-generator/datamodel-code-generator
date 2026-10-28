@@ -1,0 +1,30 @@
+{
+  "integer": {
+    "source": {
+      "value": 7
+    },
+    "generated": {
+      "value": 7
+    }
+  },
+  "string": {
+    "source": {
+      "value": "word"
+    },
+    "generated": {
+      "value": "word"
+    }
+  },
+  "none": {
+    "source": {
+      "value": null
+    },
+    "generated": {
+      "value": null
+    }
+  },
+  "callable": {
+    "source": "rejected",
+    "generated": "rejected"
+  }
+}

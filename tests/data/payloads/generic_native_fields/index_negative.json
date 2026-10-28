@@ -1,0 +1,32 @@
+{
+  "schema": {
+    "type": "object",
+    "properties": {
+      "box": {
+        "$ref": "#/$defs/Native"
+      }
+    },
+    "$defs": {
+      "Native": {
+        "x-python-import": {
+          "module": "tests.data.python.input_model.generic_reuse",
+          "name": "AnnotatedAliasRoot",
+          "native-field": {
+            "module": "tests.data.python.input_model.generic_reuse",
+            "qualname": "AnnotatedAliasRoot",
+            "fields": [
+              {
+                "name": "box",
+                "arguments": [
+                  -1
+                ],
+                "pydantic": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "message": "nonnegative integers"
+}

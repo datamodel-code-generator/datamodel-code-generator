@@ -1,0 +1,143 @@
+{
+  "unsupported_oneof": {
+    "valid": {},
+    "invalid": []
+  },
+  "unsupported_sibling": {
+    "valid": {},
+    "invalid": []
+  },
+  "unsupported_mixed": {
+    "valid": {},
+    "invalid": []
+  },
+  "unsupported_one_constrained": {
+    "valid": {},
+    "invalid": []
+  },
+  "unsupported_one_sibling": {
+    "valid": {},
+    "invalid": []
+  },
+  "unconstrained_oneof": {
+    "valid": {
+      "x": 1
+    },
+    "invalid": [],
+    "expected": "unsupported_one_constrained.py"
+  },
+  "allof_custom_template": {
+    "input": "unsupported_allof.json",
+    "builtin_template_directory": true,
+    "expected": "allof_custom_template.py",
+    "valid": {
+      "ab": 1
+    },
+    "invalid": []
+  },
+  "allof_branch_title": {
+    "valid": {
+      "ab": 1
+    },
+    "invalid": [],
+    "expected": "allof_custom_template.py"
+  },
+  "allof_frozen": {
+    "input": "unsupported_allof.json",
+    "faux_immutable": true,
+    "valid": {
+      "ab": 1
+    },
+    "invalid": []
+  },
+  "unsupported_nonstring": {
+    "expected": "nonstring_prefix.py",
+    "valid": {
+      "b": 1
+    },
+    "invalid": {
+      "a": 1
+    },
+    "error_type": "string_pattern_mismatch"
+  },
+  "unsupported_nonstring_union": {
+    "expected": "nonstring_prefix.py",
+    "valid": {
+      "b": 1
+    },
+    "invalid": {
+      "a": 1
+    },
+    "error_type": "string_pattern_mismatch"
+  },
+  "nonstring_lookbehind": {
+    "expected": "unsupported_nonstring.py",
+    "valid": {
+      "bc": 1
+    },
+    "invalid": []
+  },
+  "allof_collapsed": {
+    "input": "unsupported_allof.json",
+    "collapse_root_models": true,
+    "valid": {
+      "ab": 1
+    },
+    "invalid": []
+  },
+  "allof_type_alias": {
+    "input": "unsupported_allof.json",
+    "use_type_alias": true,
+    "valid": {
+      "ab": 1
+    },
+    "invalid": []
+  },
+  "allof_field_constraints": {
+    "input": "unsupported_allof.json",
+    "field_constraints": true,
+    "expected": "allof_field_constraints.py",
+    "valid": {},
+    "invalid": []
+  },
+  "allof_lookbehind_field_constraints": {
+    "input": "allof_lookbehind.json",
+    "field_constraints": true,
+    "expected": "allof_field_constraints.py",
+    "valid": {},
+    "invalid": []
+  },
+  "nonstring_length": {
+    "valid": {
+      "bb": 1
+    },
+    "invalid": {
+      "b": 1
+    },
+    "error_type": "string_too_short"
+  },
+  "nonstring_literal": {
+    "valid": {
+      "ab.": 1
+    },
+    "invalid": {
+      "b": 1
+    },
+    "error_type": "string_pattern_mismatch"
+  },
+  "nonstring_complex_patterns": {
+    "valid": {
+      "backreference": {
+        "bb": 1
+      },
+      "end_anchor": {
+        "b\n": 1
+      },
+      "lookbehind": {
+        "bc": 1
+      }
+    },
+    "invalid": [],
+    "error_type": "model_type"
+  }
+}

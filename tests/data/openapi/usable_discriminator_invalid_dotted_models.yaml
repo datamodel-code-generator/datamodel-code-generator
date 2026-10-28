@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: Usable discriminator invalid dotted models
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Bar.1.Cat:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+    Bar.1.Dog:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+    Bar.1.PetOwner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: '#/components/schemas/Bar.1.Cat'
+            - $ref: '#/components/schemas/Bar.1.Dog'
+          discriminator:
+            propertyName: type
+            mapping:
+              cat: '#/components/schemas/Bar.1.Cat'
+              dog: '#/components/schemas/Bar.1.Dog'
+    Bar.1.Literal:
+      type: object
+      properties:
+        bar:
+          type: string
+    Foo.1.Literal:
+      type: object
+      properties:
+        foo:
+          type: string

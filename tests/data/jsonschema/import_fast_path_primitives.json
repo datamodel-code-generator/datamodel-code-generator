@@ -1,0 +1,22 @@
+{
+  "title": "ImportFastPathPrimitives",
+  "type": "object",
+  "properties": {
+    "required_name": {
+      "type": "string"
+    },
+    "optional_name": {
+      "type": "string"
+    },
+    "nullable_required": {
+      "type": ["string", "null"]
+    },
+    "count": {
+      "type": "integer"
+    },
+    "flag": {
+      "type": "boolean"
+    }
+  },
+  "required": ["required_name", "nullable_required", "count"]
+}

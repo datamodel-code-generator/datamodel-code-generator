@@ -1,0 +1,6 @@
+{
+  "$defs": {
+    "Empty": {}
+  },
+  "$ref": "#/$defs/Empty"
+}

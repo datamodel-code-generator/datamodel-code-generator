@@ -1,0 +1,38 @@
+[
+  {
+    "model": "Root",
+    "native": true,
+    "value": []
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": [
+      []
+    ]
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": [
+      [
+        []
+      ]
+    ]
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  }
+]

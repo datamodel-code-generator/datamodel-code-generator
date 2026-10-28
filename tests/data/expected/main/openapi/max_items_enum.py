@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 
 class BarEnum(Enum):
     hello = 'hello'
-    goodbye = 'goodbye'
 
 
 class Foo(BaseModel):

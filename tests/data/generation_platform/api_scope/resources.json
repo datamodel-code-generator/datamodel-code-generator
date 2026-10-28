@@ -1,0 +1,18 @@
+{
+  "openapi": "3.0.4",
+  "components": {
+    "schemas": {
+      "Uses": {
+        "type": "object",
+        "properties": {
+          "selected": {
+            "$ref": "resources-library.json#/$defs/Selected"
+          },
+          "root": {
+            "$ref": "resources-library.json#"
+          }
+        }
+      }
+    }
+  }
+}

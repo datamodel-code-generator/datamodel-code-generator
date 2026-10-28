@@ -1,0 +1,5 @@
+Before
+<!-- BEGIN -->
+Generated
+<!-- END -->
+After

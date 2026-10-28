@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "legacy": {
+      "$ref": "legacy-child.json"
+    },
+    "current": {
+      "$ref": "current.json"
+    }
+  },
+  "required": [
+    "legacy",
+    "current"
+  ],
+  "$defs": {
+    "Legacy": {
+      "id": "legacy-child.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "definitions": {
+        "Value": {
+          "type": "string"
+        }
+      },
+      "$schema": "http://json-schema.org/draft-04/schema#"
+    },
+    "Current": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "child": {
+          "$ref": "#/$defs/Child"
+        }
+      },
+      "required": [
+        "child"
+      ],
+      "$defs": {
+        "Value": {
+          "type": "string"
+        },
+        "Child": {
+          "id": "nested.json",
+          "type": "object",
+          "properties": {
+            "value": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      "$id": "current.json",
+      "id": "ignored-resource.json"
+    }
+  }
+}

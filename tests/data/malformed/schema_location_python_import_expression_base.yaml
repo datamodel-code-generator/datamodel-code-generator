@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: A base class written as a $ref to a schema whose x-python-import names a nested class
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      x-python-import:
+        module: shrubs
+        name: Shrub
+        qualname: Shrub.Twig
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string

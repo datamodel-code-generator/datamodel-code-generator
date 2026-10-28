@@ -1,0 +1,1 @@
+datamodel-codegen --input "schema with spaces.json" --no-use-closed-typed-dict --no-use-union-operator

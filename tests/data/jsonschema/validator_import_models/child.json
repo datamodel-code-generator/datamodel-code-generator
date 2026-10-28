@@ -1,0 +1,8 @@
+{
+  "title": "Child",
+  "allOf": [
+    {
+      "$ref": "base.json"
+    }
+  ]
+}

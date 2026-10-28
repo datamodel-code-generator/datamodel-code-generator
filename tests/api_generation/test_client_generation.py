@@ -1,0 +1,482 @@
+"""Render client targets: resources, methods, parameters, media, responses, servers, and the package files."""
+
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from datamodel_code_generator import get_version
+from tests.api_generation.support.client_generation import (
+    client_api_report,
+    client_config_report,
+    client_documents,
+    client_input_report,
+    client_options_report,
+    client_ordinary_models,
+    client_render,
+    client_tree,
+    generate_client,
+)
+from tests.conftest import (
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    write_generated_modules,
+)
+
+EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
+DATA = Path(__file__).parents[1] / "data"
+SOURCE = DATA / "generation_platform" / "client"
+
+
+@pytest.mark.parametrize(
+    "case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-cycle-reference", "input-aliases"]
+)
+def test_client_input(case: str, tmp_path: Path) -> None:
+    """Accept cyclic input the loader keeps, which nothing traverses, and shared aliases."""
+    assert_output(client_input_report(case, tmp_path), EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "allowreserved-path-30",
+        "allowreserved-path-31",
+        "allowreserved-path-32",
+        "pets",
+        "auth",
+        "auth-no-root",
+        "auth-errors",
+        "auth-context",
+        "auth-wire-conflicts",
+        "credential-name-errors",
+        "pets-unpack",
+        "retries",
+        "retry-headers",
+        "retry-header-conflicts",
+        "retry-security-context",
+        "retry-security-context-conflicts",
+        "media",
+        "servers",
+        "servers-single-value-enum",
+        "default-server",
+        "implicit-server",
+        "names",
+        "names-unpack",
+        "naming",
+        "naming-snake",
+        "naming-default",
+        "naming-default-moved",
+        "naming-device-moved",
+        "name-errors",
+        "method-collisions",
+        "method-collisions-suffix",
+        "child-collision",
+        "media-errors",
+        "form-name-errors",
+        "form-name-kept",
+        "media-item-parts",
+        "parameter-content-defaults-30",
+        "parameter-content-defaults-31",
+        "multipart-referenced-items",
+        "server-errors",
+        "codec-errors",
+        "binary-text",
+        "binary-allowed",
+        "binary-mapped",
+        "cookie-names",
+        "header-names",
+        "reference-errors",
+        "setting-errors",
+        "empty",
+        "empty-security",
+        "querystring",
+        "references",
+        "evolution",
+        "validation-ambiguous",
+        "discriminator-copies",
+        "discriminator-variants",
+        "discriminator-reuse",
+        "fields",
+        "fields-structural",
+        "fields-unpack",
+        "fields-errors",
+        "fields-both",
+        "fields-cycle",
+        "fields-optional-models",
+        "type-spellings",
+        "type-spellings-exact",
+        "type-spellings-legacy",
+        "type-spellings-reuse",
+        "type-spellings-cycle",
+        "type-spellings-bound",
+        "helpers",
+        "pagination",
+        "pagination-counts",
+        "fingerprint-nested",
+        "fingerprint-nested-changed",
+        "fingerprint-write-only",
+        "pagination-links",
+        "pagination-plans",
+        "pagination-querystring",
+        "pagination-targets",
+        "querystring-targets",
+        "polling",
+        "polling-plans",
+        "uploads",
+        "uploads-compression",
+        "uploads-plans",
+        "webhooks",
+        "webhooks-schema",
+        "webhooks-public-keys",
+        "webhooks-adapters",
+        "webhooks-unsigned",
+        "streams",
+        "streams-mixed",
+        "ndjson",
+        "stream-resume",
+        "sockets",
+        "caching",
+        "compression",
+        "docstrings",
+        "route-text",
+        "templates",
+        "templates-helpers",
+        "templates-webhooks",
+        "templates-invalid",
+        "type-checking-imports",
+        "type-checking-imports-on",
+        "type-checking-imports-off",
+        "templates-not-found",
+        "api-scope-required",
+        "typeddict-target-keys",
+        "ref-instance-data",
+        "ref-name-positions",
+    ],
+)
+def test_client_render(case: str, tmp_path: Path) -> None:
+    """Plan each operation's names, arguments, media, responses, and servers, and render the package they need."""
+    report, rendered = client_render(case, tmp_path)
+    assert_output(report, EXPECTED / f"{case}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"}
+            if case in {"auth-no-root", "default-server", "implicit-server", "servers"}
+            or (case == "pets" and backend != "pydantic_v2_BaseModel")
+            else modules,
+            EXPECTED / "packages" / case / backend,
+        )
+    if case in {
+        "auth",
+        "auth-context",
+        "compatibility",
+        "empty",
+        "evolution",
+        "fields",
+        "fields-arguments",
+        "fields-optional-models",
+        "fields-structural",
+        "fields-unpack",
+        "helpers",
+        "media",
+        "names",
+        "pagination",
+        "pagination-querystring",
+        "pets",
+        "pets-unpack",
+        "querystring",
+        "retries",
+        "retry-headers",
+        "validation-arguments",
+    }:
+        for backend, ordinary in client_ordinary_models(case, tmp_path / "ordinary").items():
+            write_generated_modules(
+                captured := tmp_path / "captured" / backend,
+                {parts: content for parts, content in rendered.get(backend, {}).items() if parts[0] != "client"},
+            )
+            assert_exact_directory_content(captured, ordinary)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "protocols-disabled",
+        "protocols-relative",
+        "protocols-empty",
+        "protocols-unsupported",
+        "protocols-unsupported-kinds",
+        "protocols-deep-limit",
+        "protocols-names",
+        "protocols-shared-errors",
+        "protocols-pagination-errors",
+        "protocols-polling-errors",
+        "protocols-stream-errors",
+        "protocols-references",
+        "protocols-querystring",
+        "protocols-pagination-checks",
+        "protocols-pagination-querystring-checks",
+        "protocols-querystring-target-checks",
+        "protocols-pagination-count-checks",
+        "protocols-pagination-wrapper-checks",
+        "protocols-pagination-strict-checks",
+        "protocols-polling-checks",
+        "protocols-upload-errors",
+        "protocols-upload-checks",
+        "protocols-pagination-link-checks",
+        "protocols-pagination-resume-checks",
+        "protocols-webhook-errors",
+        "protocols-webhook-checks",
+        "protocols-stream-checks",
+        "protocols-stream-scope",
+        "protocols-ndjson-checks",
+        "protocols-stream-resume-checks",
+        "protocols-socket-checks",
+        "protocols-socket-errors",
+        "protocols-socket-scope",
+        "protocols-unmodeled",
+        "protocols-cache-errors",
+        "protocols-cache-checks",
+    ],
+)
+def test_client_protocols(case: str, tmp_path: Path) -> None:
+    """Load helper settings from JSON or TOML, validate and record them, and keep the package.
+
+    Cases that give the same settings another way report under the name of the case they equal.
+    """
+    report, rendered = client_render(case, tmp_path)
+    assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"},
+            EXPECTED / "packages" / "helpers" / backend,
+        )
+
+
+@pytest.mark.parametrize(
+    ("case", "builtin_sources"),
+    [
+        ("auth", True),
+        ("caching", True),
+        ("compression", True),
+        ("empty", True),
+        ("fields-both", True),
+        ("media", True),
+        ("ndjson", True),
+        ("pagination", True),
+        ("pagination-counts", True),
+        ("pagination-links", True),
+        ("pets-unpack", True),
+        ("polling", True),
+        ("retries", True),
+        ("sockets", True),
+        ("stream-resume", True),
+        ("streams", True),
+        ("uploads", True),
+        ("webhooks", True),
+        ("webhooks-unsigned", True),
+        ("templates-missing", False),
+    ],
+)
+def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path: Path) -> None:
+    """Render a package from copies of the builtin templates' Jinja sources, or without client overrides, unchanged.
+
+    The copies live in the client directory of a custom template directory; a custom template directory without one
+    falls back to the builtin roles. Each case reports under the name of the case it equals.
+    """
+    report, rendered = client_render(case, tmp_path / "render", builtin_sources=builtin_sources)
+    expected = report.splitlines()[0].removeprefix("# ")
+    assert_output(report, EXPECTED / f"{expected}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
+    documents = client_documents(case, tmp_path / "documentation", builtin_sources=builtin_sources)
+    write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
+    assert_exact_directory_content(
+        tmp_path / "documents", EXPECTED / "packages" / expected / "pydantic_v2_BaseModel", "*.md"
+    )
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ("pagination-root", "pagination-documents"),
+        ("references", "self-references"),
+    ],
+    ids=[
+        "pagination-root-pagination-documents-helper-documents",
+        "references-self-references-reference-spellings",
+    ],
+)
+def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> None:
+    """Generate equivalent helper settings, such as document references spelled two ways, into the same files.
+
+    Each id names the equality it shows.
+    """
+    left, right = (client_tree(name, tmp_path / name) for name in (first, second))
+    for pattern in ("*.py", "*.md", "py.typed"):
+        assert_exact_directory_content(left, right, pattern)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "retries",
+        "default-server",
+        "empty",
+        "auth",
+        "pagination",
+        "pagination-counts",
+        "pagination-links",
+        "polling",
+        "uploads",
+        "streams",
+        "ndjson",
+        "ndjson-split",
+        "stream-resume",
+        "sockets",
+        "caching",
+        "compression",
+        "fields-both",
+        "pets-unpack",
+        "media",
+        "templates",
+    ],
+)
+def test_client_documentation(case: str, tmp_path: Path) -> None:
+    """Keep metadata, explicit retry overrides, and documentation ownership visible."""
+    documents = client_documents(case, tmp_path / "render")
+    write_generated_modules(tmp_path / "documents", {tuple(path.split("/")): text for path, text in documents.items()})
+    assert_exact_directory_content(
+        tmp_path / "documents", EXPECTED / "packages" / case / "pydantic_v2_BaseModel", "*.md"
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "defaults",
+        "auth-values",
+        "auth-invalid",
+        "auth-unknown",
+        "values",
+        "invalid-values",
+        "invalid-urls",
+        "invalid-shapes",
+        "invalid-parameter-names",
+        "body-fields",
+        "body-fields-invalid",
+        "body-field-names-invalid",
+        "retry-values",
+        "retry-invalid",
+        "retry-conflicting-controls",
+        "retry-unknown-field",
+        "compression-values",
+        "compression-invalid",
+        "reserved-type-name",
+    ],
+)
+def test_client_config(case: str, tmp_path: Path) -> None:
+    """Generate a client with client option values, or refuse them."""
+    assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    ("case", "options"),
+    [
+        (
+            "body-field-keys",
+            {
+                "operations": {
+                    "/paths/~1pets/post": {
+                        "body_arguments": "both",
+                        "body_field_names": {"application/json": {1: "first", None: "second"}},
+                    }
+                }
+            },
+        ),
+        ("parameter-name-keys", {"operations": {"/paths/~1pets/get": {"parameter_names": {1: "first"}}}}),
+        ("parameter-name-none-key", {"operations": {"/paths/~1pets/get": {"parameter_names": {None: "first"}}}}),
+        ("runtime-keys", {"operations": {"/paths/~1pets/get": {"runtime": {1: "first", "unknown": "second"}}}}),
+    ],
+)
+def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path: Path) -> None:
+    """Refuse an operation setting key that only a Python mapping holds, as the malformed key of its JSON form."""
+    assert_output(client_options_report(options, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    ("case", "options", "module"),
+    [
+        (
+            "header-quotes",
+            {
+                "custom_file_header_path": DATA / "custom_file_header_with_docstring.txt",
+                "custom_file_header_mode": "prepend",
+                "enable_version_header": True,
+                "use_double_quotes": True,
+            },
+            ("resources", "pets", "__init__.py"),
+        ),
+        (
+            "encoding",
+            {"encoding": "latin-1", "custom_file_header": "# -*- coding: latin-1 -*-\n# Café"},
+            ("resources", "pets", "__init__.py"),
+        ),
+        ("formatters", {"formatters": ["ruff-format"]}, ("resources", "pets", "__init__.py")),
+        ("builtin-line-length", {"builtin_format_line_length": 100}, ("_operations.py",)),
+        (
+            "black-isort",
+            {"formatters": ["black", "isort"], "use_double_quotes": True, "wrap_string_literal": True},
+            ("_operations.py",),
+        ),
+        (
+            "ruff-line-length",
+            {"formatters": ["ruff-check", "ruff-format"], "settings_path": SOURCE / "line-length"},
+            ("_operations.py",),
+        ),
+        (
+            "custom-formatter",
+            {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
+            ("_operations.py",),
+        ),
+    ],
+)
+def test_client_output_options(case: str, options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
+    """Head, format, and encode the client files with the model output options, exactly like the models.
+
+    The formatters and their settings lay out the plan values the templates leave on one line.
+    """
+    source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
+    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
+    encoding = str(options.get("encoding", "utf-8"))
+    text = (tmp_path / "client").joinpath(*module).read_bytes().decode(encoding)
+    assert_output(
+        text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
+        EXPECTED / "output-options" / f"{case}.py",
+    )
+
+
+@pytest.mark.parametrize("formatters", [None, ["ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"])
+def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Path) -> None:
+    """Write the same client files again in a copy of a fresh generation, though its models were staged at first."""
+    generated, copy = tmp_path / "generated", tmp_path / "copy"
+    generated.mkdir()
+    shutil.copy2(SOURCE / "pets.yaml", generated / "pets.yaml")
+    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I", "N999"]\n', encoding="utf-8")
+    model = {"formatters": formatters}
+    generate_client(generated / "pets.yaml", generated, "client", "pydantic_v2.BaseModel", model=model)
+    shutil.copytree(generated, copy)
+    generate_client(copy / "pets.yaml", copy, "client", "pydantic_v2.BaseModel", model=model)
+    changed = sorted(
+        path.relative_to(copy).as_posix()
+        for path in copy.rglob("*.py")
+        if path.read_bytes() != (generated / path.relative_to(copy)).read_bytes()
+    )
+    assert_output(f"changed {changed}\n", EXPECTED / "regenerated-unchanged.txt")
+
+
+def test_client_api(tmp_path: Path) -> None:
+    """Return the files without an output, generate twice, then rewrite an edited owned file."""
+    assert_output(client_api_report(tmp_path), EXPECTED / "api.txt")

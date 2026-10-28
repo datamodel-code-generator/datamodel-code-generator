@@ -1,0 +1,31 @@
+# reference-policies
+render pydantic_v2.BaseModel kept
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/kept
+render pydantic_v2.BaseModel collapsed
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/collapsed
+render pydantic_v2.dataclass kept
+  models.py
+  model_bindings.py pydantic_v2_dataclass/kept
+render pydantic_v2.dataclass collapsed
+  models.py
+  model_bindings.py pydantic_v2_dataclass/collapsed
+render dataclasses.dataclass kept
+  models.py
+  model_bindings.py dataclasses_dataclass/kept
+render dataclasses.dataclass collapsed
+  models.py
+  model_bindings.py dataclasses_dataclass/collapsed
+render typing.TypedDict kept
+  models.py
+  model_bindings.py typing_TypedDict/kept
+render typing.TypedDict collapsed
+  models.py
+  model_bindings.py typing_TypedDict/collapsed
+render msgspec.Struct kept
+  models.py
+  model_bindings.py msgspec_Struct/kept
+render msgspec.Struct collapsed
+  models.py
+  model_bindings.py msgspec_Struct/collapsed

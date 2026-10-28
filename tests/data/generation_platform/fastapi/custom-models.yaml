@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: Custom models, version: "1.0"}
+paths:
+  /things:
+    post:
+      operationId: postThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Thing"}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Thing:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}

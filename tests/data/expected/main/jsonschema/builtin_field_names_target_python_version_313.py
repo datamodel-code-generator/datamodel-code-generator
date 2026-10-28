@@ -15,3 +15,8 @@ class Model(BaseModel):
     PythonFinalizationError_: PythonFinalizationError | None = Field(
         None, alias='PythonFinalizationError'
     )
+    ZeroDivisionError_: ZeroDivisionError | None = Field(
+        None, alias='ZeroDivisionError'
+    )
+    len_: len | None = Field(None, alias='len')
+    help_: help | None = Field(None, alias='help')

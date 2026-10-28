@@ -1,0 +1,43 @@
+[
+  {
+    "bases": [
+      "UniquePairParent"
+    ],
+    "fields": [
+      "value",
+      "retained"
+    ]
+  },
+  {
+    "payload": {
+      "value": [
+        1,
+        1
+      ],
+      "retained": [
+        2,
+        3
+      ]
+    },
+    "source": {
+      "value": [
+        1,
+        1
+      ],
+      "retained": [
+        2,
+        3
+      ]
+    },
+    "generated": {
+      "value": [
+        1,
+        1
+      ],
+      "retained": [
+        2,
+        3
+      ]
+    }
+  }
+]

@@ -1,0 +1,23 @@
+valid: accepted
+invalid pClosed: accepted
+invalid rClosed: accepted
+invalid iClosed: accepted
+invalid mClosed: rejected (int_parsing)
+invalid pNames: accepted
+invalid rNames: accepted
+invalid iNames: rejected (int_parsing)
+invalid pRefNames: accepted
+invalid rRefNames: accepted
+invalid mRefNames: rejected (int_parsing)
+invalid pOpen: rejected (int_parsing)
+invalid rOpen: rejected (int_parsing)
+invalid mOpen: accepted
+invalid pNullableCount: accepted
+invalid rNullableCount: accepted
+invalid iNullableCount: accepted
+invalid pStringOrCount: accepted
+invalid rStringOrCount: rejected (dict_type)
+invalid mStringOrCount: accepted
+invalid pNoKeys: accepted
+invalid rNoKeys: accepted
+invalid iNoKeys: accepted

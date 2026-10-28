@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}],
+      "discriminator": {"propertyName": "kind"}
+    }
+  },
+  "$defs": {
+    "Cat": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {"kind": {"type": "string", "enum": ["cat"], "const": "cat"}, "lives": {"type": "integer"}}
+    },
+    "Dog": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {"kind": {"type": "string", "enum": ["dog"], "const": "dog"}, "good": {"type": "boolean"}}
+    }
+  }
+}

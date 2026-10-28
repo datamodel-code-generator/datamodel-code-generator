@@ -1,0 +1,7 @@
+{
+  "title": "Root",
+  "type": "string",
+  "pattern": "^a",
+  "minLength": 2,
+  "maxLength": 3
+}

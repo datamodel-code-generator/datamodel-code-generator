@@ -1,0 +1,28 @@
+openapi: "3.0.0"
+info:
+  title: Required inherited request response cycle
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    CycleA:
+      required:
+        - a
+        - b
+      allOf:
+        - $ref: "#/components/schemas/CycleB"
+      properties:
+        a:
+          type: string
+          minLength: 2
+        responseOnly:
+          type: string
+          readOnly: true
+
+    CycleB:
+      allOf:
+        - $ref: "#/components/schemas/CycleA"
+      properties:
+        b:
+          type: integer
+          minimum: 1

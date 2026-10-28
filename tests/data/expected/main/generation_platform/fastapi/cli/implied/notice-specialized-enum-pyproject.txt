@@ -1,0 +1,3 @@
+--generate-server set the options it needs that you left unset; to set them yourself, add to [tool.datamodel-codegen] of pyproject.toml:
+  openapi-scopes = ["schemas", "api"]
+  target-python-version = "3.11"

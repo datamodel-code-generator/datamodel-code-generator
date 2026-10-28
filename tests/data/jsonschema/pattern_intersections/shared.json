@@ -1,0 +1,32 @@
+{
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "Shared": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "a"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "patternProperties": {
+    "^x": {
+      "$ref": "#/$defs/Shared"
+    },
+    "x$": {
+      "$ref": "#/$defs/Shared"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "anchor": {
+      "$ref": "#/$defs/Shared"
+    }
+  }
+}

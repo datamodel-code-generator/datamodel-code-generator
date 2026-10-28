@@ -1,0 +1,37 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted name priority
+  version: '1'
+paths: {}
+components:
+  schemas:
+    A.1.Bar:
+      type: object
+      properties:
+        a:
+          type: string
+    B.2.Bar:
+      type: object
+      properties:
+        b:
+          type: integer
+    Z.3.Foo:
+      type: object
+      properties:
+        value:
+          type: string
+    Z.3.InvalidParent:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Z.3.Foo'
+    Good.Foo:
+      type: object
+      properties:
+        value:
+          type: string
+    Good.CanonicalParent:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Good.Foo'

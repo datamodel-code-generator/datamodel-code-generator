@@ -1,0 +1,137 @@
+openapi: 3.1.0
+info: {title: Nullable parameters, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /items:
+    get:
+      operationId: getItems
+      parameters:
+        - {name: cap, in: query, schema: {type: [integer, "null"]}}
+        - {name: tags, in: query, schema: {type: [array, "null"], items: {type: integer}}}
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema: {type: [object, "null"], properties: {name: {type: string}}}
+        - {name: X-Trace, in: header, schema: {type: [string, "null"]}}
+        - {name: session, in: cookie, schema: {type: [string, "null"]}}
+        - {name: blob, in: query, content: {application/json: {schema: {type: [integer, "null"]}}}}
+        - {name: levels, in: query, schema: {type: array, items: {type: [integer, "null"]}}}
+      responses:
+        "204": {description: Done.}
+  /needed/{key}:
+    get:
+      operationId: getNeeded
+      parameters:
+        - {name: key, in: path, required: true, schema: {type: [string, "null"]}}
+        - {name: need, in: query, required: true, schema: {type: [integer, "null"]}}
+      responses:
+        "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "200":
+          description: A note or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: [object, "null"]
+              required: [name]
+              properties: {name: {type: string}, tags: {type: array, items: {type: string}}, count: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: [object, "null"]
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                note: {type: string}
+                meta: {type: object, properties: {size: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], allOf: [{required: [text], properties: {text: {type: string}}}]}
+      responses:
+        "200":
+          description: An extended note or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], allOf: [{$ref: "#/components/schemas/Note"}, {properties: {tag: {type: string}}}]}
+  /drafts:
+    post:
+      operationId: postDraft
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /variants:
+    post:
+      operationId: postVariant
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /versions:
+    post:
+      operationId: postVersion
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /texts:
+    post:
+      operationId: postText
+      requestBody:
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Note: {type: object, required: [text], properties: {text: {type: string}}}

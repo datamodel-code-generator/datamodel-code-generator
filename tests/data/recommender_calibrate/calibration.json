@@ -1,0 +1,26 @@
+{
+  "calibrated_presets": "20261015",
+  "format_version": 1,
+  "grid": {"configurations": 8, "decisions": ["naming-strategy", "enum-shape", "title-source"]},
+  "rules_revision": "2026-10-15",
+  "schemas": {
+    "legacy": {"best": null, "diff_against": null, "recommended": null, "ref": "v1", "regret": null, "rules": []},
+    "pets": {
+      "best": {"arguments": ["--enum-field-as-literal", "all"], "median_length": 11, "problems": 3},
+      "diff_against": "v1",
+      "recommended": {"arguments": [], "median_length": 12, "problems": 5},
+      "ref": "v2",
+      "regret": 2,
+      "rules": ["enums.inline-value-sets-as-literal"]
+    },
+    "shop": {
+      "best": {"arguments": ["--enum-field-as-literal", "all"], "median_length": 4, "problems": 0},
+      "diff_against": null,
+      "recommended": {"arguments": ["--naming-strategy", "full-path"], "median_length": 11, "problems": 0},
+      "ref": "v1",
+      "regret": 0,
+      "rules": ["naming.qualify-shared-inline-names"]
+    }
+  },
+  "settings": {"output_model_type": "pydantic_v2.BaseModel", "target_python_version": "3.14"}
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "koxudaxi",
+    "release": "https://github.com/koxudaxi/datamodel-code-generator/pull/1 koxudaxi/datamodel-code-generator#2 #3 https://github.com/koxudaxi/datamodel-code-generator/pull/1",
+    "body": "Fixes https://github.com/koxudaxi/datamodel-code-generator/issues/10\nCloses koxudaxi/datamodel-code-generator#11\nResolves #12\nRelated https://github.com/koxudaxi/datamodel-code-generator/issues/13\nSee koxudaxi/datamodel-code-generator#14\nRefs #15\nhttps://github.com/koxudaxi/datamodel-code-generator/pull/16\nhttps://github.com/koxudaxi/datamodel-code-generator/pull/1\nhttps://github.com/koxudaxi/datamodel-code-generator/issues/17\nhttps://github.com/koxudaxi/datamodel-code-generator/issues/10\n#10 #18 #1"
+  },
+  {
+    "name": "datamodel-code-generator",
+    "release": "https://github.com/datamodel-code-generator/datamodel-code-generator/pull/1 datamodel-code-generator/datamodel-code-generator#2 #3 https://github.com/datamodel-code-generator/datamodel-code-generator/pull/1",
+    "body": "Fixes https://github.com/datamodel-code-generator/datamodel-code-generator/issues/10\nCloses datamodel-code-generator/datamodel-code-generator#11\nResolves #12\nRelated https://github.com/datamodel-code-generator/datamodel-code-generator/issues/13\nSee datamodel-code-generator/datamodel-code-generator#14\nRefs #15\nhttps://github.com/datamodel-code-generator/datamodel-code-generator/pull/16\nhttps://github.com/datamodel-code-generator/datamodel-code-generator/pull/1\nhttps://github.com/datamodel-code-generator/datamodel-code-generator/issues/17\nhttps://github.com/datamodel-code-generator/datamodel-code-generator/issues/10\n#10 #18 #1"
+  },
+  {
+    "name": "unrelated",
+    "release": "https://github.com/another/datamodel-code-generator/pull/20 another/datamodel-code-generator#30\nhttps://github.com/koxudaxi/another/pull/21 koxudaxi/another#31\nhttps://github.com/another-koxudaxi/datamodel-code-generator/pull/22 another-koxudaxi/datamodel-code-generator#32\nhttps://github.com/another-datamodel-code-generator/datamodel-code-generator/pull/23 another-datamodel-code-generator/datamodel-code-generator#33\nhttps://github.com/koxudaxi/datamodel-code-generator-extra/pull/24 koxudaxi/datamodel-code-generator-extra#34",
+    "body": "Fixes https://github.com/another/datamodel-code-generator/issues/40\nCloses another/datamodel-code-generator#50\nSee another/datamodel-code-generator#60\nhttps://github.com/another/datamodel-code-generator/pull/70\nhttps://github.com/another/datamodel-code-generator/issues/80\nFixes https://github.com/koxudaxi/another/issues/41\nCloses koxudaxi/another#51\nSee koxudaxi/another#61\nhttps://github.com/koxudaxi/another/pull/71\nhttps://github.com/koxudaxi/another/issues/81\nFixes https://github.com/another-koxudaxi/datamodel-code-generator/issues/42\nCloses another-koxudaxi/datamodel-code-generator#52\nSee another-koxudaxi/datamodel-code-generator#62\nhttps://github.com/another-koxudaxi/datamodel-code-generator/pull/72\nhttps://github.com/another-koxudaxi/datamodel-code-generator/issues/82\nFixes https://github.com/another-datamodel-code-generator/datamodel-code-generator/issues/43\nCloses another-datamodel-code-generator/datamodel-code-generator#53\nSee another-datamodel-code-generator/datamodel-code-generator#63\nhttps://github.com/another-datamodel-code-generator/datamodel-code-generator/pull/73\nhttps://github.com/another-datamodel-code-generator/datamodel-code-generator/issues/83\nFixes https://github.com/koxudaxi/datamodel-code-generator-extra/issues/44\nCloses koxudaxi/datamodel-code-generator-extra#54\nSee koxudaxi/datamodel-code-generator-extra#64\nhttps://github.com/koxudaxi/datamodel-code-generator-extra/pull/74\nhttps://github.com/koxudaxi/datamodel-code-generator-extra/issues/84"
+  },
+  {
+    "name": "mixed-deduplicated",
+    "release": "https://github.com/koxudaxi/datamodel-code-generator/pull/1 https://github.com/datamodel-code-generator/datamodel-code-generator/pull/1 koxudaxi/datamodel-code-generator#1 datamodel-code-generator/datamodel-code-generator#1 #1",
+    "body": "Fixes koxudaxi/datamodel-code-generator#10\nCloses datamodel-code-generator/datamodel-code-generator#10\nRelated #10\nhttps://github.com/koxudaxi/datamodel-code-generator/pull/16\nhttps://github.com/datamodel-code-generator/datamodel-code-generator/pull/16"
+  },
+  {
+    "name": "empty",
+    "release": "",
+    "body": ""
+  }
+]

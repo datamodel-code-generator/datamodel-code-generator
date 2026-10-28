@@ -1,0 +1,21 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Schema Extensions Enum Test
+paths: {}
+components:
+  schemas:
+    Color:
+      type: string
+      x-enum-missing-default: RED
+      enum:
+        - RED
+        - GREEN
+        - BLUE
+    NullableColor:
+      type: string
+      nullable: true
+      x-enum-missing-default: RED
+      enum:
+        - RED
+        - null

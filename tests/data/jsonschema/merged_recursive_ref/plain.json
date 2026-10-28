@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Plain", "type": "object", "properties": {"label": {"type": "string"}, "next": {"$recursiveRef": "#"}}}

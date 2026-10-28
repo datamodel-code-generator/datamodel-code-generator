@@ -1,0 +1,5 @@
+LiveEvent valid {"type": "started"}: accepted
+LiveEvent valid {"type": "updated", "count": 2}: accepted
+LiveEvent invalid {"type": "stopped"}: rejected
+LiveEvent invalid {"type": "updated", "count": "two"}: rejected
+LiveEvent invalid {}: rejected

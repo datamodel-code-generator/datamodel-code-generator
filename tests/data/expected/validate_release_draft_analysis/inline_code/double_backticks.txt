@@ -1,0 +1,1 @@
+{"analysis": null, "returncode": 1, "stderr": "Claude output has an invalid inline code span; refusing to update the draft.\n"}

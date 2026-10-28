@@ -1,0 +1,46 @@
+{
+  "field": {
+    "Example": {
+      "first": "alpha",
+      "second": 2
+    }
+  },
+  "nested": {
+    "Record": {
+      "first": "nested",
+      "second": 4
+    },
+    "NestedEnvelope": {
+      "metadata": "batch",
+      "records": [
+        {
+          "first": "nested",
+          "second": 4
+        }
+      ]
+    }
+  },
+  "defs": {
+    "Alpha": {
+      "first": "alpha",
+      "second": 1
+    },
+    "Beta": {
+      "third": true,
+      "fourth": 2.5
+    },
+    "DefinitionsEnvelope": {
+      "context": "definitions"
+    }
+  },
+  "openapi": {
+    "Pet": {
+      "name": "Mochi",
+      "age": 3
+    },
+    "Owner": {
+      "first_name": "Ada",
+      "last_name": "Lovelace"
+    }
+  }
+}

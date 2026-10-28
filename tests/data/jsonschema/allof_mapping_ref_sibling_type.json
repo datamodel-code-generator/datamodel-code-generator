@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Target": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "Holder": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Target",
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "holder": {
+      "$ref": "#/$defs/Holder"
+    }
+  },
+  "title": "AllOfRefSiblingType"
+}

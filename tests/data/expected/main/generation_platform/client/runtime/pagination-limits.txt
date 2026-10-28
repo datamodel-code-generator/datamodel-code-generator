@@ -1,0 +1,14 @@
+# pagination-limits pydantic_v2.BaseModel
+  > GET https://api.example.com/codes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/codes?cursor=longer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  a long server cursor ['1', '2']
+  > GET https://api.example.com/codes?cursor=longer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  a long start cursor ['1']
+  > GET https://api.example.com/users?offset=4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?offset=6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  a start offset its root model takes ['1', '2']

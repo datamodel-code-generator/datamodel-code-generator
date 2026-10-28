@@ -1,0 +1,6 @@
+{
+  "stale": true,
+  "updated": true,
+  "current": false,
+  "unchanged": false
+}

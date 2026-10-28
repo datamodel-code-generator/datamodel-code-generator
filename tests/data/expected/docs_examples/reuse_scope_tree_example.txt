@@ -1,0 +1,74 @@
+
+**Output with `--reuse-scope tree`:**
+
+<!-- fmt: off -->
+
+```text
+models/
+|-- __init__.py
+|-- schema_a.py
+|-- schema_b.py
+`-- shared.py
+```
+
+<!-- fmt: on -->
+
+**models/__init__.py:**
+_No code beyond the generated header._
+
+**models/schema_a.py:**
+
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+from .shared import SharedModel as SharedModel_1
+
+
+class SharedModel(SharedModel_1):
+    pass
+
+
+class Model(BaseModel):
+    data: SharedModel | None = None
+```
+
+<!-- fmt: on -->
+
+**models/schema_b.py:**
+
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+from . import shared
+
+
+class Model(BaseModel):
+    info: shared.SharedModel | None = None
+```
+
+<!-- fmt: on -->
+
+**models/shared.py:**
+
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class SharedModel(BaseModel):
+    id: int | None = None
+    name: str | None = None
+```
+
+<!-- fmt: on -->

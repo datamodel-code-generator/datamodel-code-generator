@@ -1,0 +1,5 @@
+{%- if fields and fields[0].data_type.reference %}
+{%- include 'TypeAliasAnnotation.jinja2' %}
+{%- else %}
+{%- include 'TypeAliasType.jinja2' %}
+{%- endif %}

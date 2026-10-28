@@ -1,0 +1,8 @@
+[tool.black]
+line-length = 88
+
+[tool.isort]
+known_first_party = [ "tests" ]
+
+[tool.datamodel-codegen]
+builtin-format-line-length = 88

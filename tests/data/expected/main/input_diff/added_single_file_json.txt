@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "input-diff",
+  "success": false,
+  "content": "ADDED: models.py (generated only from current input)\n",
+  "differences": [
+    {
+      "kind": "added",
+      "path": "models.py",
+      "message": "ADDED: models.py (generated only from current input)",
+      "diff": null
+    }
+  ]
+}

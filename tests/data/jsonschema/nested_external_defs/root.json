@@ -1,0 +1,7 @@
+{
+  "title": "NestedExternalDefs",
+  "type": "object",
+  "properties": {
+    "entry": {"$ref": "sub/branch.json#/$defs/Branch"}
+  }
+}

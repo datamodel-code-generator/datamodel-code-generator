@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info: {title: Native boundary contracts, version: '1'}
+servers: [{url: https://api.example.com}]
+paths:
+  /values:
+    get:
+      operationId: getValues
+      tags: [nativeHeaders]
+      responses:
+        '204':
+          description: JSON headers
+          headers:
+            X-Value:
+              required: true
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Entry'}
+            X-Optional:
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Entry'}
+            X-Count:
+              schema: {type: integer}
+            X-Ratio:
+              schema: {type: number, enum: [0.5, 2.2]}
+            X-Score:
+              schema: {type: number}
+            X-Flag:
+              schema: {type: boolean}
+            X-When:
+              schema: {type: string, format: date-time}
+            X-Id:
+              schema: {type: string, format: uuid}
+            X-Amount:
+              schema: {type: string, format: decimal}
+            X-Counts:
+              schema: {type: array, items: {type: integer}}
+            X-Entry:
+              style: simple
+              explode: true
+              schema: {$ref: '#/components/schemas/Entry'}
+            X-Closed:
+              style: simple
+              explode: true
+              schema: {$ref: '#/components/schemas/ClosedEntry'}
+    post:
+      operationId: saveValue
+      tags: [nativeHeaders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - {$ref: '#/components/schemas/Entry'}
+                - {type: 'null'}
+      responses:
+        '204': {description: Saved}
+  /form:
+    get:
+      operationId: getForm
+      tags: [nativeHeaders]
+      responses:
+        '200':
+          description: URL-encoded numbers
+          content:
+            application/x-www-form-urlencoded:
+              schema: {$ref: '#/components/schemas/Numbers'}
+  /parts:
+    get:
+      operationId: getParts
+      tags: [nativeHeaders]
+      responses:
+        '200':
+          description: Form-data numbers
+          content:
+            multipart/form-data:
+              schema: {$ref: '#/components/schemas/Numbers'}
+components:
+  schemas:
+    Entry:
+      type: object
+      required: [value]
+      properties:
+        value: {type: string}
+    ClosedEntry:
+      type: object
+      additionalProperties: false
+      required: [value]
+      properties:
+        value: {type: string}
+    Numbers:
+      type: object
+      properties:
+        count: {type: integer}
+        score: {type: number}
+        active: {type: boolean}

@@ -7,6 +7,24 @@ from __future__ import annotations
 from pydantic import AwareDatetime, BaseModel
 
 
+class TimestampsRequest(BaseModel):
+    pass
+
+
+class TimestampsResponse(BaseModel):
+    created_at: AwareDatetime | None = None
+    updated_at: AwareDatetime | None = None
+
+
+class CredentialsRequest(BaseModel):
+    password: str | None = None
+    api_key: str | None = None
+
+
+class CredentialsResponse(BaseModel):
+    pass
+
+
 class UserRequest(BaseModel):
     password: str | None = None
     api_key: str | None = None

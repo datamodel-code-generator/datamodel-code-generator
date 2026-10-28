@@ -1,0 +1,277 @@
+openapi: "3.1.0"
+info:
+  title: Required inherited field options
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    BaseFirst:
+      type: object
+      properties:
+        mode:
+          type: string
+          default: schema
+        x-field:
+          type: string
+          minLength: 1
+
+    DerivedBaseFirst:
+      type: object
+      required:
+        - mode
+        - x-field
+      allOf:
+        - $ref: "#/components/schemas/BaseFirst"
+
+    ScopedDerivedBaseFirst:
+      type: object
+      required:
+        - mode
+        - x-field
+      allOf:
+        - $ref: "#/components/schemas/BaseFirst"
+
+    ForwardDerived:
+      type: object
+      required:
+        - mode
+        - x-field
+      allOf:
+        - $ref: "#/components/schemas/ForwardBase"
+
+    ForwardScopedDerived:
+      type: object
+      required:
+        - mode
+        - x-field
+      allOf:
+        - $ref: "#/components/schemas/ForwardBase"
+
+    ForwardBase:
+      type: object
+      properties:
+        mode:
+          type: string
+          default: schema
+        x-field:
+          type: string
+          minLength: 1
+
+    CollisionBase:
+      type: object
+      properties:
+        x-y:
+          type: string
+          minLength: 1
+
+    CollisionDerived:
+      type: object
+      required:
+        - x-y
+      allOf:
+        - $ref: "#/components/schemas/CollisionBase"
+      properties:
+        x_y:
+          type: integer
+
+    ForwardCollisionDerived:
+      type: object
+      required:
+        - x-y
+      allOf:
+        - $ref: "#/components/schemas/ForwardCollisionBase"
+      properties:
+        x_y:
+          type: integer
+
+    ForwardCollisionBase:
+      type: object
+      properties:
+        x-y:
+          type: string
+          minLength: 1
+
+    C3Root:
+      type: object
+      properties:
+        value:
+          type: string
+
+    C3First:
+      allOf:
+        - $ref: "#/components/schemas/C3Root"
+
+    C3Second:
+      allOf:
+        - $ref: "#/components/schemas/C3Root"
+      properties:
+        value:
+          type: integer
+          minimum: 1
+
+    C3Combined:
+      allOf:
+        - $ref: "#/components/schemas/C3First"
+        - $ref: "#/components/schemas/C3Second"
+
+    C3Derived:
+      type: object
+      required:
+        - value
+      allOf:
+        - $ref: "#/components/schemas/C3Combined"
+
+    C3DirectDerived:
+      type: object
+      required:
+        - value
+      allOf:
+        - $ref: "#/components/schemas/C3Root"
+        - $ref: "#/components/schemas/C3Second"
+
+    PartialItem:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 2
+
+    PartialContainerBase:
+      type: object
+      required:
+        - inline
+        - mapping
+        - unionValue
+        - booleanUnionValue
+        - text
+        - number
+      properties:
+        inline:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              minLength: 2
+        mapping:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PartialItem"
+        unionValue:
+          $ref: "#/components/schemas/PartialItem"
+        booleanUnionValue:
+          $ref: "#/components/schemas/PartialItem"
+        text:
+          type: string
+          minLength: 3
+          maxLength: 10
+          pattern: "^a"
+        number:
+          type: integer
+          multipleOf: 2
+
+    PartialContainerDerived:
+      allOf:
+        - $ref: "#/components/schemas/PartialContainerBase"
+      properties:
+        inline:
+          type: object
+        mapping:
+          type: object
+        unionValue:
+          anyOf:
+            - {}
+            - type: string
+        booleanUnionValue:
+          anyOf:
+            - true
+            - type: string
+        text:
+          minLength: 1
+          maxLength: 5
+          pattern: ".*z$"
+        number:
+          multipleOf: 3
+
+    ForwardPartialContainerDerived:
+      allOf:
+        - $ref: "#/components/schemas/ForwardPartialContainerBase"
+      properties:
+        inline:
+          type: object
+        mapping:
+          type: object
+        unionValue:
+          anyOf:
+            - {}
+            - type: string
+        booleanUnionValue:
+          anyOf:
+            - true
+            - type: string
+        text:
+          minLength: 1
+          maxLength: 5
+          pattern: ".*z$"
+        number:
+          multipleOf: 3
+
+    ForwardPartialContainerBase:
+      type: object
+      required:
+        - inline
+        - mapping
+        - unionValue
+        - booleanUnionValue
+        - text
+        - number
+      properties:
+        inline:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              minLength: 2
+        mapping:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PartialItem"
+        unionValue:
+          $ref: "#/components/schemas/PartialItem"
+        booleanUnionValue:
+          $ref: "#/components/schemas/PartialItem"
+        text:
+          type: string
+          minLength: 3
+          maxLength: 10
+          pattern: "^a"
+        number:
+          type: integer
+          multipleOf: 2
+
+    C3Unrelated:
+      type: object
+      properties:
+        orderedValue:
+          type: boolean
+
+    C3Descendant:
+      allOf:
+        - $ref: "#/components/schemas/C3Root"
+      properties:
+        orderedValue:
+          type: integer
+          minimum: 1
+
+    C3StableOrderDerived:
+      required:
+        - orderedValue
+      allOf:
+        - $ref: "#/components/schemas/C3Root"
+        - $ref: "#/components/schemas/C3Unrelated"
+        - $ref: "#/components/schemas/C3Descendant"

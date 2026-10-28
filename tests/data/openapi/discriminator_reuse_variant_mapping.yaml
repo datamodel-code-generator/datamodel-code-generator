@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: Reused variants that take the tag a discriminator mapping gives their schema
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+    Kitten:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+    Fish:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        fins:
+          type: integer
+    Goldfish:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        fins:
+          type: integer
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    Feline:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Kitten"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          kitty: "#/components/schemas/Kitten"
+          dog: "#/components/schemas/Dog"
+    Aquarium:
+      oneOf:
+        - $ref: "#/components/schemas/Goldfish"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          goldie: "#/components/schemas/Goldfish"
+          dog: "#/components/schemas/Dog"
+    Cage:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    Hound:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    Basket:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Kitten"
+            - $ref: "#/components/schemas/Hound"
+          discriminator:
+            propertyName: kind
+            mapping:
+              kitty: "#/components/schemas/Kitten"
+              dog: "#/components/schemas/Hound"
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+        wings:
+          type: integer
+    Parrot:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+        wings:
+          type: integer
+    Aviary:
+      oneOf:
+        - $ref: "#/components/schemas/Parrot"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          bird: "#/components/schemas/Parrot"
+          dog: "#/components/schemas/Dog"

@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Bar schema
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    Bar:
+      type: object
+      required:
+        - kind
+        - count
+      properties:
+        kind:
+          type: string
+          enum: [bar]
+        count:
+          type: integer

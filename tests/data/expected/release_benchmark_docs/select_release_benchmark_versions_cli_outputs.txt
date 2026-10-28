@@ -1,0 +1,63 @@
+returncode: 0
+stdout:
+0.64.1,0.64.0,0.53.0,0.33.0
+stderr:
+selection:
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T00:00:00Z",
+  "package": "datamodel-code-generator",
+  "strategy": "clickpy_downloads",
+  "history_days": 365,
+  "limit": 4,
+  "selected_versions": [
+    "0.64.1",
+    "0.64.0",
+    "0.53.0",
+    "0.33.0"
+  ],
+  "releases": [
+    {
+      "version": "0.64.1",
+      "uploaded_at": "2026-06-19T00:00:00Z",
+      "downloads": 25,
+      "first_seen": "2026-06-19",
+      "last_seen": "2026-06-20"
+    },
+    {
+      "version": "0.64.0",
+      "uploaded_at": "2026-06-14T00:00:00Z",
+      "downloads": 50,
+      "first_seen": "2026-06-14",
+      "last_seen": "2026-06-20"
+    },
+    {
+      "version": "0.53.0",
+      "uploaded_at": "2026-01-12T00:00:00Z",
+      "downloads": 900,
+      "first_seen": "2026-01-12",
+      "last_seen": "2026-06-20"
+    },
+    {
+      "version": "0.33.0",
+      "uploaded_at": "2025-08-14T00:00:00Z",
+      "downloads": 1000,
+      "first_seen": "2026-01-01",
+      "last_seen": "2026-06-20"
+    }
+  ],
+  "download_stats": {
+    "source": "clickpy",
+    "window_days": "365",
+    "versions_with_downloads": "4",
+    "window_downloads": "1975",
+    "pypistats": {
+      "source": "pypistats.org",
+      "last_day": 12,
+      "last_week": 789,
+      "last_month": 3456,
+      "timeseries_days": 2,
+      "timeseries_downloads": 300
+    }
+  }
+}

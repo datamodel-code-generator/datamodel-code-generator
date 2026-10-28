@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "properties": {
+    "lowerinclusive": {
+      "$ref": "#/$defs/LowerInclusive"
+    },
+    "lowerexclusive": {
+      "$ref": "#/$defs/LowerExclusive"
+    },
+    "lowerequal": {
+      "$ref": "#/$defs/LowerEqual"
+    },
+    "upperinclusive": {
+      "$ref": "#/$defs/UpperInclusive"
+    },
+    "upperexclusive": {
+      "$ref": "#/$defs/UpperExclusive"
+    },
+    "upperequal": {
+      "$ref": "#/$defs/UpperEqual"
+    },
+    "fractionallower": {
+      "$ref": "#/$defs/FractionalLower"
+    },
+    "fractionalupper": {
+      "$ref": "#/$defs/FractionalUpper"
+    }
+  },
+  "$defs": {
+    "LowerInclusive": {
+      "type": "integer",
+      "minimum": 3,
+      "exclusiveMinimum": 1
+    },
+    "LowerExclusive": {
+      "type": "integer",
+      "minimum": -3,
+      "exclusiveMinimum": -1
+    },
+    "LowerEqual": {
+      "type": "integer",
+      "minimum": 0,
+      "exclusiveMinimum": 0
+    },
+    "UpperInclusive": {
+      "type": "integer",
+      "maximum": -3,
+      "exclusiveMaximum": -1
+    },
+    "UpperExclusive": {
+      "type": "integer",
+      "maximum": 3,
+      "exclusiveMaximum": 1
+    },
+    "UpperEqual": {
+      "type": "integer",
+      "maximum": 0,
+      "exclusiveMaximum": 0
+    },
+    "FractionalLower": {
+      "type": "number",
+      "minimum": 1.5,
+      "exclusiveMinimum": 0.5
+    },
+    "FractionalUpper": {
+      "type": "number",
+      "maximum": -1.5,
+      "exclusiveMaximum": -0.5
+    }
+  }
+}

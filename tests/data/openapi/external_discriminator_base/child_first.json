@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Deferred discriminator parent",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "WarmupCat": {
+        "$ref": "./pending/children.json#/components/schemas/cat"
+      },
+      "Wrapper": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "$ref": "./pending/parent.json#/components/schemas/Base"
+          }
+        },
+        "required": [
+          "item"
+        ]
+      }
+    }
+  }
+}

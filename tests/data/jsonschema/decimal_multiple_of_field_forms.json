@@ -1,0 +1,16 @@
+{
+  "title": "DecimalMultipleOfFieldForms",
+  "type": "object",
+  "properties": {
+    "amount": {"type": "number", "multipleOf": 0.01, "minimum": 0, "maximum": 1000000},
+    "opt": {"type": ["number", "null"], "multipleOf": 0.5, "minimum": -1000000, "maximum": 1000000},
+    "maxed": {"type": "number", "multipleOf": 0.1, "minimum": -1000000, "maximum": 10},
+    "inty": {"type": "integer", "multipleOf": 2},
+    "arr": {"type": "array", "items": {"type": "number", "multipleOf": 0.01, "minimum": -1000000, "maximum": 1000000}},
+    "mapv": {"type": "object", "additionalProperties": {"type": "number", "multipleOf": 0.01, "minimum": -1000000, "maximum": 1000000}},
+    "rate": {"$ref": "#/$defs/Rate"},
+    "plainf": {"type": "number", "minimum": 0}
+  },
+  "required": ["amount"],
+  "$defs": {"Rate": {"type": "number", "multipleOf": 0.001, "exclusiveMinimum": 0, "maximum": 1000000}}
+}

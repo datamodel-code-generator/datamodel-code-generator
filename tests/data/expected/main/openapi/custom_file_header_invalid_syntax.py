@@ -1,7 +1,6 @@
-
+# Valid comment
 from __future__ import annotations
 
-# Valid comment
 def incomplete(
 
 from pydantic import AnyUrl, BaseModel, Field, RootModel

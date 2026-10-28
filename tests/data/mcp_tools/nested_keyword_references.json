@@ -1,0 +1,25 @@
+{
+  "name": "nested",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "outer": {"$ref": "#/$defs/Outer"}
+    },
+    "$defs": {
+      "Outer": {
+        "type": "object",
+        "properties": {
+          "default": {"$ref": "#/$defs/Inner"},
+          "const": {"$ref": "#/$defs/Inner"},
+          "enum": {"$ref": "#/$defs/Inner"},
+          "examples": {"$ref": "#/$defs/Inner"},
+          "items": {"type": "array", "items": {"$ref": "#/$defs/Inner"}},
+          "combined": {"allOf": [{"$ref": "#/$defs/Inner"}]}
+        },
+        "$defs": {
+          "Inner": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -21,3 +21,4 @@ class ParseConfigDict(TypedDict, closed=True):
     all_exports_scope: NotRequired[AllExportsScope | None]
     all_exports_collision_strategy: NotRequired[AllExportsCollisionStrategy | None]
     module_split_mode: NotRequired[ModuleSplitMode | None]
+    collect_model_metadata: NotRequired[bool]

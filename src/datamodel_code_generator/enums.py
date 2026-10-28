@@ -60,6 +60,30 @@ class DataModelType(Enum):
     MsgspecStruct = "msgspec.Struct"
 
 
+class _OutputModelFamily(str, Enum):
+    """Compatibility family used when preserving input-model references."""
+
+    PYDANTIC = "pydantic"
+    DATACLASS = "dataclass"
+    TYPEDDICT = "typeddict"
+    MSGSPEC = "msgspec"
+
+
+def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputModelFamily:
+    """Resolve the reference-compatible family for an output model selection."""
+    match data_model_type:
+        case None | DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
+            return _OutputModelFamily.PYDANTIC
+        case DataModelType.DataclassesDataclass:
+            return _OutputModelFamily.DATACLASS
+        case DataModelType.TypingTypedDict:
+            return _OutputModelFamily.TYPEDDICT
+        case DataModelType.MsgspecStruct:
+            return _OutputModelFamily.MSGSPEC
+    msg = f"{data_model_type} is unsupported data model type"  # pragma: no cover
+    raise ValueError(msg)  # pragma: no cover
+
+
 class ReuseScope(Enum):
     """Scope for model reuse deduplication.
 
@@ -80,6 +104,7 @@ class OpenAPIScope(Enum):
     Parameters = "parameters"
     Webhooks = "webhooks"
     RequestBodies = "requestbodies"
+    Api = "api"
 
 
 class AllExportsScope(Enum):
@@ -115,6 +140,28 @@ class FieldTypeCollisionStrategy(Enum):
 
     RenameField = "rename-field"
     RenameType = "rename-type"
+
+
+class ExtraFields(str, Enum):
+    """Generated model behavior for unknown input fields."""
+
+    Allow = "allow"
+    Ignore = "ignore"
+    Forbid = "forbid"
+
+
+class SchemaValidatorType(Enum):
+    """Schema-derived runtime validator backend."""
+
+    PydanticV2 = "pydantic-v2"
+
+
+class HTTPBackend(Enum):
+    """HTTP client backend selection policy."""
+
+    AUTO = "auto"
+    HTTPX = "httpx"
+    HTTPX2 = "httpx2"
 
 
 class NamingStrategy(Enum):
@@ -205,12 +252,43 @@ class ModuleSplitMode(Enum):
 class TargetPydanticVersion(Enum):
     """Target Pydantic version for generated code.
 
-    V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
+    An unset target emits the newest supported feature forms and keeps the populate_by_name config naming of V2,
+    and the experimental MISSING import of V2_12.
+
+    V2: Generate code compatible with Pydantic 2.0.3+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).
+    V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).
+    V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's
+        regex engine; pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of
+        the same class; a number schema keeps multipleOf on a timedelta).
     """
 
     V2 = "2"
     V2_11 = "2.11"
+    V2_12 = "2.12"
+    V2_14 = "2.14"
+
+
+def _pydantic_version_key(target_version: TargetPydanticVersion | str) -> tuple[int, ...]:
+    """Convert a target Pydantic version into comparable integer parts."""
+    value = target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
+    return tuple(int(part) for part in value.split("."))
+
+
+def _is_pydantic_version_at_least(
+    target_version: TargetPydanticVersion | str,
+    minimum: TargetPydanticVersion | str,
+) -> bool:
+    """Return whether the target Pydantic version is greater than or equal to the minimum."""
+    return _pydantic_version_key(target_version) >= _pydantic_version_key(minimum)
+
+
+class AliasGenerator(Enum):
+    """Supported Pydantic v2 alias generator helpers."""
+
+    ToCamel = "to_camel"
+    ToPascal = "to_pascal"
+    ToSnake = "to_snake"
 
 
 class UnionMode(Enum):
@@ -218,6 +296,13 @@ class UnionMode(Enum):
 
     smart = "smart"
     left_to_right = "left_to_right"
+
+
+class CustomFileHeaderMode(Enum):
+    """Strategy for combining custom and generated file headers."""
+
+    Replace = "replace"
+    Prepend = "prepend"
 
 
 class InputModelRefStrategy(Enum):
@@ -242,6 +327,27 @@ class StrictTypes(Enum):
     int = "int"
     float = "float"
     bool = "bool"
+
+
+class DefaultValueType(Enum):
+    """Schema default value types that can be deserialized in generated code."""
+
+    Decimal = "decimal"
+    Enum = "enum"
+
+
+class ConstructorFieldOrder(Enum):
+    """What decides the order of the constructor fields of dataclass and msgspec.Struct models."""
+
+    FinalNames = "final-names"
+    WrittenDefaults = "written-defaults"
+
+
+class OpenAPIAsDefinitions(Enum):
+    """OpenAPI schemas that get the model a definitions entry of the same schema gets."""
+
+    PathsBodies = "paths-bodies"
+    RefComponents = "ref-components"
 
 
 class JsonSchemaVersion(Enum):
@@ -315,31 +421,92 @@ class VersionMode(Enum):
     Strict = "strict"
 
 
+class ServerType(Enum):
+    """Server package a generation run adds to the models."""
+
+    FastAPI = "fastapi"
+
+
+class ServerLayout(Enum):
+    """Module layout of a generated server package."""
+
+    Routers = "routers"
+    Single = "single"
+
+
+class ServerHandlerMode(Enum):
+    """Kind of function a generated service method is."""
+
+    Sync = "sync"
+    Async = "async"
+
+
+class ServerBodyMode(Enum):
+    """How a generated server passes request bodies to services."""
+
+    Typed = "typed"
+    Request = "request"
+
+
+class ClientType(Enum):
+    """Client package a generation run adds to the models."""
+
+    HTTPX2 = "httpx2"
+
+
+class ClientSignatureStyle(Enum):
+    """How generated client methods declare keyword arguments."""
+
+    Explicit = "explicit"
+    Unpack = "unpack"
+
+
+class ClientBodyArguments(Enum):
+    """How generated client methods take request bodies."""
+
+    Body = "body"
+    Both = "both"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
     "MIN_VERSION",
+    "AliasGenerator",
     "AllExportsCollisionStrategy",
     "AllExportsScope",
     "AllOfClassHierarchy",
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientBodyArguments",
+    "ClientSignatureStyle",
+    "ClientType",
     "CollapseRootModelsNameStrategy",
+    "ConstructorFieldOrder",
+    "CustomFileHeaderMode",
     "DataModelType",
     "DataclassArguments",
+    "DefaultValueType",
     "FieldTypeCollisionStrategy",
     "GraphQLScope",
+    "HTTPBackend",
     "InputFileType",
     "InputModelRefStrategy",
     "JsonSchemaVersion",
     "ModuleSplitMode",
     "NamingStrategy",
+    "OpenAPIAsDefinitions",
     "OpenAPIScope",
     "OpenAPIVersion",
     "ProtobufVersion",
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",
+    "SchemaValidatorType",
+    "ServerBodyMode",
+    "ServerHandlerMode",
+    "ServerLayout",
+    "ServerType",
     "StrictTypes",
     "TargetPydanticVersion",
     "UnionMode",

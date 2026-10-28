@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ClassModel": {
+      "type": "object",
+      "properties": {
+        "required_value": {
+          "type": "string"
+        },
+        "optional_value": {
+          "type": "integer"
+        },
+        "required_read_only": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "optional_read_only": {
+          "type": "number",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "required_value",
+        "required_read_only"
+      ]
+    },
+    "BaseModel": {
+      "type": "object",
+      "properties": {
+        "base_required": {
+          "type": "string"
+        },
+        "base_optional": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base_required"
+      ]
+    },
+    "FunctionalModel": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseModel"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "invalid-key": {
+              "type": "string"
+            },
+            "child_optional": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "invalid-key"
+          ]
+        }
+      ]
+    },
+    "ClosedModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "closed_required": {
+          "type": "string"
+        },
+        "closed_optional": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "closed_required"
+      ]
+    },
+    "ExtraItemsModel": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "properties": {
+        "extra_required": {
+          "type": "string"
+        },
+        "extra_optional": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "extra_required"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "class_model": {
+      "$ref": "#/$defs/ClassModel"
+    },
+    "functional_model": {
+      "$ref": "#/$defs/FunctionalModel"
+    },
+    "closed_model": {
+      "$ref": "#/$defs/ClosedModel"
+    },
+    "extra_items_model": {
+      "$ref": "#/$defs/ExtraItemsModel"
+    }
+  },
+  "required": [
+    "class_model"
+  ]
+}

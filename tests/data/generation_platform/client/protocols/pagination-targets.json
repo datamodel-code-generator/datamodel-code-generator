@@ -1,0 +1,75 @@
+{
+  "users.by_header": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "header", "name": "x-cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  },
+  "users.bound": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    },
+    "bindings": [
+      {
+        "target": {"in": "header", "name": "X-Snapshot"},
+        "value": {"source": "initial", "selector": {"from": "header", "name": "x-snapshot"}}
+      },
+      {"target": {"in": "query", "name": "code"}, "value": {"source": "previous", "selector": {"from": "status"}}},
+      {"target": {"in": "query", "name": "limit"}, "value": {"literal": 5}},
+      {
+        "target": {"in": "query", "name": "tags"},
+        "value": {"source": "previous", "selector": {"from": "header", "name": "X-Tag", "occurrence": "all"}}
+      }
+    ]
+  },
+  "searches.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1searches/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "body", "pointer": "/page/cursor"},
+      "end": [{"kind": "missing"}],
+      "empty_string": "end"
+    },
+    "bindings": [
+      {
+        "target": {"in": "body", "pointer": "/after"},
+        "value": {"source": "previous", "selector": {"from": "body", "pointer": "/last"}}
+      },
+      {"target": {"in": "body", "pointer": "/size"}, "value": {"literal": 10}},
+      {"target": {"in": "body", "pointer": "/filter"}, "value": {"literal": {"states": ["open"]}}},
+      {"target": {"in": "body", "pointer": "/range/from"}, "value": {"literal": "a"}}
+    ]
+  },
+  "folders.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1folders~1{folder}/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next_cursor"},
+      "write": {"in": "path", "name": "folder"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "bases": [
+      "RequiredParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "value": 2
+    },
+    "generated": {
+      "value": 2
+    }
+  },
+  {
+    "payload": {
+      "value": 8
+    },
+    "source": {
+      "value": 8
+    },
+    "generated": {
+      "value": 8
+    }
+  }
+]

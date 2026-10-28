@@ -1,0 +1,34 @@
+{
+  "fields": [
+    "list",
+    "list_aliased",
+    "list_aliased_1",
+    "items",
+    "Field",
+    "count",
+    "choice",
+    "child"
+  ],
+  "items_annotation": true,
+  "choice_literals": [
+    "Field",
+    "Optional",
+    "list"
+  ],
+  "values": {
+    "list": "list",
+    "list_aliased": "list",
+    "list_aliased_1": "list",
+    "Field": "list",
+    "count": 3,
+    "choice": "list"
+  },
+  "items": [
+    1,
+    2
+  ],
+  "child_value": 4,
+  "docstring_preserved": true,
+  "default_value": "Field Optional list — 名前",
+  "forward_identity": true
+}

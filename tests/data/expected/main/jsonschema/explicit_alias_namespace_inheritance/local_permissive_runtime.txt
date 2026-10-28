@@ -1,0 +1,26 @@
+{
+  "bases": [
+    "Second",
+    "First"
+  ],
+  "namespaces": [],
+  "fields": [
+    "first",
+    "second",
+    "model_validate",
+    "b"
+  ],
+  "attribute": "wire",
+  "dump": {
+    "child": {
+      "first": 1,
+      "second": 2,
+      "a": "wire",
+      "b": 7
+    }
+  },
+  "warnings": [
+    "Field name \"model_validate\" in \"Child\" shadows an attribute in parent \"Second\"",
+    "Field name \"model_validate\" in \"Child\" shadows an attribute in parent \"First\""
+  ]
+}

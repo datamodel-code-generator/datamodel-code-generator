@@ -1,0 +1,9 @@
+Owner valid {}: accepted
+Owner valid {"pets": [{"type": "cat"}, {"type": "dog"}]}: accepted
+Owner valid {"chained": [{"type": "dog"}, {"type": "cat"}]}: accepted
+Owner valid {"plain": [{"type": "bird"}, {"type": "cat"}]}: accepted
+Owner invalid {"pets": [{"type": "bird"}]}: rejected
+Owner invalid {"pets": {"type": "cat"}}: rejected
+Owner invalid {"chained": [{"type": "bird"}]}: rejected
+Owner invalid {"plain": [{"type": "dog"}]}: rejected
+Owner invalid {"plain": [{}]}: rejected

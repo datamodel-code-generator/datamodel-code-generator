@@ -1,0 +1,29 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ]
+    }
+  }
+}

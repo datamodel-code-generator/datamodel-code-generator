@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "first": {"$ref": "#/$defs/MissingOne"},
+    "duplicate": {"$ref": "#/$defs/MissingOne"},
+    "second": {"$ref": "#/$defs/MissingTwo"}
+  },
+  "$defs": {}
+}

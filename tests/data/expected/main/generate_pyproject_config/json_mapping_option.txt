@@ -1,0 +1,3 @@
+[tool.datamodel-codegen]
+base-class-map = "{\"User\":\"custom.Base\"}"
+

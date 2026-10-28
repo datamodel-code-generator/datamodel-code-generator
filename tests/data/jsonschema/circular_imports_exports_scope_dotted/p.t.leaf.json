@@ -1,0 +1,7 @@
+{
+  "title": "Leaf",
+  "type": "object",
+  "properties": {
+    "a": {"type": "string"}
+  }
+}

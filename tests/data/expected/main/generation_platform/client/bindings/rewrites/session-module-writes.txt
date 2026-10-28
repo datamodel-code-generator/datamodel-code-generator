@@ -1,0 +1,7 @@
+# session-module-writes
+rewrite pydantic_v2.BaseModel default if-assignment
+  @@ -14,0 +15,4 @@
+  +
+  +if True:
+  +    Model = int
+  +

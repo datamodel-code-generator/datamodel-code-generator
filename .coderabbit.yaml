@@ -1,13 +1,18 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 reviews:
+  # Review a pull request when it is opened (or on `@coderabbitai review`), not again on every push
+  auto_review:
+    enabled: true
+    auto_incremental_review: false
   # Path filters to reduce review scope and save rate limits
   # Exclude patterns use ! prefix
   path_filters:
     # Include source code
     - "src/**/*.py"
     - "tests/**/*.py"
-    # Include expected output (important for review)
+    # Include expected output (important for review) and the index of which tests compare it
     - "tests/data/expected/**/*.py"
+    - "tests/**/*.refs"
     # Include documentation
     - "docs/**/*.md"
     - "README.md"
@@ -16,6 +21,7 @@ reviews:
     - "tox.ini"
     - "zensical.toml"
     - "Dockerfile"
+    - ".dockerignore"
     - ".pre-commit-config.yaml"
     - ".pre-commit-hooks.yaml"
     - "action.yml"

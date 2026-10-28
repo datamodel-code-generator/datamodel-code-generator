@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "batch",
+  "jobs": [
+    {
+      "name": "nested",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": true,
+        "content": "",
+        "differences": [],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
+      }
+    },
+    {
+      "name": "modular",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": true,
+        "content": "",
+        "differences": [],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
+      }
+    }
+  ]
+}

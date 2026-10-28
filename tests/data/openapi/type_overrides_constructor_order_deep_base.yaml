@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: t, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        x: {type: string, default: a}
+    Mid:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [m]
+          properties:
+            m: {type: string}
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Mid'
+        - type: object
+          required: [y]
+          properties:
+            y: {type: string}

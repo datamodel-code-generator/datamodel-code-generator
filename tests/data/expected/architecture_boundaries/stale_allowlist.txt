@@ -1,0 +1,2 @@
+Architecture boundary violations found:
+tests/data/architecture_boundaries/stale/clean.py:0:0: [stale-allowlist] backend-import:datamodel_code_generator.model.pydantic_v2: remove or reduce this allowlist entry; expected 1 legacy occurrence(s), found 0. Reason: fixture for stale-entry reporting (in missing_legacy_hook)

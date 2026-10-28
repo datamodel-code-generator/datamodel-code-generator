@@ -1,0 +1,357 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Legacy media producers",
+    "version": "1"
+  },
+  "paths": {
+    "/scalar": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/scalar"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/scalar"
+          }
+        }
+      }
+    },
+    "/object": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/object"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/object"
+          }
+        }
+      }
+    },
+    "/enum": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/enum"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/enum"
+          }
+        }
+      }
+    },
+    "/union": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/union"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/union"
+          }
+        }
+      }
+    },
+    "/any": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/any"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/any"
+          }
+        }
+      }
+    },
+    "/empty": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/empty"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/empty"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "requestBodies": {
+      "scalar": {
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "integer"
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "object": {
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "object",
+              "properties": {
+                "wire-name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "wire-name"
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wire-name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "wire-name"
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "enum": {
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "string",
+              "enum": [
+                "one",
+                "two"
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "one",
+                "two"
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "union": {
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "any": {
+        "content": {
+          "application/json": {
+            "itemSchema": true
+          },
+          "application/custom": {
+            "schema": true
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "empty": {
+        "content": {
+          "application/json": {
+            "itemSchema": false
+          },
+          "application/custom": {
+            "schema": false
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      }
+    },
+    "responses": {
+      "scalar": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "integer"
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "object": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "object",
+              "properties": {
+                "wire-name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "wire-name"
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "wire-name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "wire-name"
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "enum": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "type": "string",
+              "enum": [
+                "one",
+                "two"
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "one",
+                "two"
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "union": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "application/custom": {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "any": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": true
+          },
+          "application/custom": {
+            "schema": true
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      },
+      "empty": {
+        "description": "Done",
+        "content": {
+          "application/json": {
+            "itemSchema": false
+          },
+          "application/custom": {
+            "schema": false
+          },
+          "application/empty": {
+            "schema": null
+          }
+        }
+      }
+    }
+  }
+}

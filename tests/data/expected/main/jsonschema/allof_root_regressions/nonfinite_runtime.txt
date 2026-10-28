@@ -1,0 +1,42 @@
+[
+  {
+    "model": "Root",
+    "native": true,
+    "value": Infinity
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": -Infinity
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": 1.5
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  }
+]

@@ -1,0 +1,93 @@
+[
+  {
+    "name": "LocalEnumDataclass",
+    "fields": [
+      "box",
+      "validated"
+    ],
+    "annotations_equal": {
+      "box": true,
+      "validated": true
+    },
+    "type_identity": {
+      "box": true,
+      "validated": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": "a"
+          },
+          "validated": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "validated",
+              "value"
+            ],
+            "value_error"
+          ]
+        ],
+        "extra_invalid": [
+          [
+            [
+              [
+                "box",
+                "value"
+              ],
+              "literal_error"
+            ]
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": "a"
+          },
+          "validated": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "validated",
+              "value"
+            ],
+            "value_error"
+          ]
+        ],
+        "extra_invalid": [
+          [
+            [
+              [
+                "box",
+                "value"
+              ],
+              "literal_error"
+            ]
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": true,
+      "validated": true
+    },
+    "instances": {
+      "box": {
+        "type_identity": true,
+        "value_identity": true
+      },
+      "validated": {
+        "type_identity": true,
+        "value_identity": true
+      }
+    }
+  }
+]

@@ -1,0 +1,38 @@
+{
+  "integer": {
+    "source": {
+      "value": 7
+    },
+    "generated": {
+      "value": 7
+    }
+  },
+  "custom": {
+    "source": {
+      "value": {
+        "custom_type": "CustomValue"
+      }
+    },
+    "generated": {
+      "value": {
+        "custom_type": "CustomValue"
+      }
+    }
+  },
+  "callable": {
+    "source": {
+      "value": {
+        "callable_result": 7
+      }
+    },
+    "generated": {
+      "value": {
+        "callable_result": 7
+      }
+    }
+  },
+  "none": {
+    "source": "rejected",
+    "generated": "rejected"
+  }
+}

@@ -11,11 +11,11 @@ from pydantic import BaseModel, Field
 
 
 class A(BaseModel):
-    type: Literal['a'] = 'a'
+    type: Literal['a'] | None = None
 
 
 class B1(BaseModel):
-    type: Literal['b'] = 'b'
+    type: Literal['b'] | None = None
 
 
 class Other(BaseModel):

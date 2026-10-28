@@ -1,0 +1,84 @@
+[
+  {
+    "name": "AnnotatedContainersRoot",
+    "fields": [
+      "boxes",
+      "deque_boxes"
+    ],
+    "annotations_equal": {
+      "boxes": true,
+      "deque_boxes": true
+    },
+    "type_identity": {},
+    "results": {
+      "native": {
+        "valid": {
+          "boxes": [
+            {
+              "value": 4
+            }
+          ],
+          "deque_boxes": [
+            {
+              "value": 5
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "deque_boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "boxes": [
+            {
+              "value": 4
+            }
+          ],
+          "deque_boxes": [
+            {
+              "value": 5
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "deque_boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "boxes": true,
+      "deque_boxes": true
+    }
+  }
+]

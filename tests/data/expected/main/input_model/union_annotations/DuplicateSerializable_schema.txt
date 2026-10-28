@@ -1,0 +1,22 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string",
+          "x-python-type": "Callable[[int], int]"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "int | int | Callable[[int], int]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "DuplicateSerializable",
+  "type": "object"
+}

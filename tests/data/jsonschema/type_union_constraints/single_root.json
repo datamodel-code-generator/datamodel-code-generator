@@ -1,0 +1,5 @@
+{
+  "title": "Root",
+  "type": "integer",
+  "minimum": 2
+}

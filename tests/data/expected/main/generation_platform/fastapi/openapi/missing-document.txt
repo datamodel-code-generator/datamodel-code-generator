@@ -1,0 +1,2 @@
+# missing-document
+openapi.json FileNotFoundError: openapi.json of docs_pets._generated is missing: include _generated/openapi.json as package data when building the package, such as with setuptools package-data or MANIFEST.in

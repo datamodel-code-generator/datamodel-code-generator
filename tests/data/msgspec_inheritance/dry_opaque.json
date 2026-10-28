@@ -1,0 +1,70 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/LeftOuter"
+    },
+    {
+      "$ref": "#/$defs/RightOuter"
+    }
+  ],
+  "$defs": {
+    "LeftInner": {
+      "type": "object",
+      "properties": {
+        "left1": {
+          "type": "integer"
+        }
+      }
+    },
+    "LeftOuter": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LeftInner"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "left2": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "RightInner": {
+      "type": "object",
+      "properties": {
+        "right1": {
+          "type": "integer"
+        }
+      }
+    },
+    "RightOuter": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/RightInner"
+        },
+        {
+          "$ref": "#/$defs/Opaque"
+        },
+        {
+          "$ref": "#/$defs/RightInner"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "right2": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Opaque": {
+      "type": "object",
+      "customBasePath": "msgspec.inspect.IntType",
+      "properties": {}
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "anyOf": [
+      {
+        "pattern": "^a"
+      },
+      {
+        "pattern": "^b"
+      }
+    ],
+    "maxLength": 2
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

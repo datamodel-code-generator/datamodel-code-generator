@@ -1,0 +1,18 @@
+{
+  "ZNumber": 7,
+  "AText": "hello",
+  "TwinNumber": 9,
+  "Items": [1, 2],
+  "MaybeNumber": null,
+  "Color": "red",
+  "PlainObject": {"active": true},
+  "AliasModels": {
+    "number": 7,
+    "text": "hello",
+    "twin": 9,
+    "items": [1, 2],
+    "maybe": null,
+    "color": "red",
+    "plain": {"active": true}
+  }
+}

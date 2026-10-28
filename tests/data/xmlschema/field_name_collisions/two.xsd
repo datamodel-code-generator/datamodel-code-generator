@@ -1,0 +1,5 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:two="urn:two" targetNamespace="urn:two" attributeFormDefault="qualified">
+  <xs:element name="code" type="xs:string"/>
+  <xs:attribute name="code" type="xs:string"/>
+  <xs:attributeGroup name="fields"><xs:attribute ref="two:code" use="required"/></xs:attributeGroup>
+</xs:schema>

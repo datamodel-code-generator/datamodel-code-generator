@@ -69,12 +69,12 @@ class Error(BaseModel):
 
 
 class AllOfNested3(AllOfCombine):
-    name: Optional[AnyOfCombine] = None
+    name: AnyOfCombine
 
 
 class AllOfNested2(AllOfNested3):
-    name: Optional[AllOfNested1] = None
+    name: AllOfNested1
 
 
 class AllOfNested1(AllOfNested2):
-    name: Optional[AllOfCombine] = None
+    name: AllOfCombine

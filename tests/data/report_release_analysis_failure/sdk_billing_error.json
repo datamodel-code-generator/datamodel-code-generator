@@ -1,0 +1,19 @@
+[
+  {
+    "type": "assistant",
+    "error": "billing_error",
+    "message": {
+      "content": [
+        {
+          "type": "text",
+          "text": "SECRET-CANARY\n::error::injected"
+        }
+      ]
+    }
+  },
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "Unrecognized failure"
+  }
+]

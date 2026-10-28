@@ -1,0 +1,19 @@
+Decimal: Decimal('1E-2')
+positive: Decimal('258E-2')
+negative: Decimal('-258E-2')
+zero: Decimal('0E-4')
+trailing: Decimal('1200E-2')
+no_scale: Decimal('123E-0')
+large: Decimal('12345678901234567890123456789012345678901234567890123456789012345678901234567890E-29')
+fixed: Decimal('258E-2')
+reference: Decimal('-258E-2')
+array: [Decimal('1E-2'), Decimal('-1E-2')]
+map: {'z': Decimal('0E-2'), 'a': Decimal('1200E-2')}
+union: Decimal('1E-2')
+string_first: '12'
+nullable: None
+record: {'amount': Decimal('258E-2')}
+record_array: [{'amount': Decimal('-258E-2')}]
+nested: [{'z': Decimal('12E-3'), 'a': Decimal('-12E-3')}]
+ordinary: b'\xff'
+plain_fixed: b'\x01\x02'

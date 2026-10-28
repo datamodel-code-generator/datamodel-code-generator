@@ -1,0 +1,51 @@
+{
+  "valid": {
+    "direct": {
+      "types@a": 1
+    },
+    "items": [
+      1,
+      "x",
+      null,
+      {
+        "types@b": [
+          1
+        ]
+      }
+    ],
+    "values": {
+      "k": null,
+      "l": {
+        "types@c": "y"
+      }
+    },
+    "patterns": {
+      "#a": {
+        "types@c": "y"
+      },
+      "#b": 2
+    }
+  },
+  "invalid": [
+    {
+      "items": {
+        "a": 1
+      }
+    },
+    {
+      "values": [
+        1
+      ]
+    },
+    {
+      "patterns": {
+        "a": 1
+      }
+    },
+    {
+      "patterns": [
+        1
+      ]
+    }
+  ]
+}

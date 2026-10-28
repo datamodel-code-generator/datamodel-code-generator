@@ -1,0 +1,15 @@
+{
+  "title": "Dog",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "const": "dog"
+    },
+    "bark": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ]
+}

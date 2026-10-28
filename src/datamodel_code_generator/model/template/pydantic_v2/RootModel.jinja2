@@ -14,9 +14,9 @@
 {{ decorator }}
 {% endfor -%}
 
-{#- Use base_type_hint in generic when regex_engine is set to avoid evaluating pattern before config is processed -#}
+{#- Use base_type_hint in generic when regex_engine is set to avoid evaluating pattern before config is processed, and Any when it would reach a string pattern type alias, which a base type hint still names -#}
 {%- set use_base_type = config and config.regex_engine -%}
-class {{ class_name }}({{ base_class }}{%- if fields -%}[{{get_type_hint(fields, use_base_type)}}]{%- endif -%}):{% if comment is defined %}  # {{ comment }}{% endif %}
+class {{ class_name }}({%- if schema_runtime_validation_use_base -%}{{ schema_runtime_validation_base_class_name }}, {% endif -%}{{ base_class }}{%- if fields -%}[{% if string_pattern_alias_reached %}Any{% else %}{{get_type_hint(fields, use_base_type)}}{% endif %}]{%- endif -%}{%- if sequence_base_class is defined -%}, {{ sequence_base_class }}{%- endif -%}):{% if comment is defined %}  # {{ comment }}{% endif %}
 {%- if description %}
     {{ description }}
 {%- endif %}
@@ -28,8 +28,11 @@ class {{ class_name }}({{ base_class }}{%- if fields -%}[{{get_type_hint(fields,
 {%- for line in class_body_lines %}
     {{ line }}
 {%- endfor %}
-{%- if not fields and not description and not config and not class_body_lines %}
+{%- include 'schema_runtime_validation.jinja2' %}
+{%- if not fields %}
+{%- if not description and not config and not class_body_lines and not schema_runtime_validation %}
     pass
+{%- endif %}
 {%- else %}
     {%- set field = fields[0] %}
     {%- if not field.annotated and field.field %}
@@ -50,4 +53,27 @@ class {{ class_name }}({{ base_class }}{%- if fields -%}[{{get_type_hint(fields,
     {{ field.inline_field_docstring }}
 
     {%- endif %}
+{%- if sequence_item_type is defined and sequence_slice_type is defined %}
+
+    def __iter__(self) -> Iterator[{{ sequence_item_type }}]:
+        return iter(self.root)
+
+    @overload
+    def __getitem__(self, index: SupportsIndex) -> {{ sequence_item_type }}:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> {{ sequence_slice_type }}:
+        pass
+
+    def __getitem__(self, index: SupportsIndex | slice) -> {{ sequence_item_type }} | {{ sequence_slice_type }}:
+        return self.root[index]
+
+    def __len__(self) -> int:
+        return len(self.root)
+{%- endif %}
+{%- for method in methods %}
+
+    {{ method }}
+{%- endfor %}
 {%- endif %}

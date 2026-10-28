@@ -1,0 +1,38 @@
+{
+  "title": "ComposedFlags",
+  "type": "object",
+  "properties": {
+    "readOnlyComposed": {
+      "allOf": [
+        {"type": "string"}
+      ],
+      "anyOf": [
+        {"type": "string"}
+      ],
+      "oneOf": [
+        {"type": "string", "readOnly": true}
+      ]
+    },
+    "readOnlyAllOfComposed": {
+      "allOf": [
+        true,
+        {"type": "string", "readOnly": true}
+      ]
+    },
+    "writeOnlyComposed": {
+      "allOf": [
+        {"type": "string"}
+      ],
+      "anyOf": [
+        {"type": "string", "writeOnly": true}
+      ],
+      "oneOf": [
+        {"type": "string"}
+      ]
+    },
+    "shared": {
+      "type": "integer"
+    }
+  },
+  "required": ["readOnlyComposed", "readOnlyAllOfComposed", "writeOnlyComposed", "shared"]
+}

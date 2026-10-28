@@ -1,0 +1,13 @@
+{
+  "dump": [
+    2,
+    1
+  ],
+  "rejects_invalid": true,
+  "default": [
+    2,
+    1
+  ],
+  "root_model": true,
+  "rejects_object": true
+}

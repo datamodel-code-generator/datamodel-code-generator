@@ -1,0 +1,187 @@
+"""Plan route paths, internal path slots, and groups of a FastAPI server target."""
+
+from __future__ import annotations
+
+import keyword
+import re
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Final
+from urllib.parse import unquote
+
+from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from datamodel_code_generator._target_contract import OperationContract
+
+_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+_UNMATCHABLE: Final = re.compile(r"%(?:2[Ff]|7[BbDd])")
+_SLOT_PREFIX: Final = "dcg_p"
+BUILDER_NAMES: Final = frozenset({
+    "ROUTES",
+    "INFO",
+    "LITERAL_ROUTES",
+    "TEMPLATED_ROUTES",
+    "app",
+    "build_router",
+    "create_app",
+    "source_openapi",
+    "authorize",
+    "dependencies",
+    "operation_dependencies",
+    "prefix",
+    "fastapi_kwargs",
+    "callbacks",
+    "contact",
+    "debug",
+    "default_response_class",
+    "deprecated",
+    "description",
+    "docs_url",
+    "exception_handlers",
+    "generate_unique_id_function",
+    "include_in_schema",
+    "license_info",
+    "lifespan",
+    "middleware",
+    "on_shutdown",
+    "on_startup",
+    "openapi_external_docs",
+    "openapi_prefix",
+    "openapi_tags",
+    "openapi_url",
+    "redirect_slashes",
+    "redoc_url",
+    "responses",
+    "root_path",
+    "root_path_in_servers",
+    "routes",
+    "separate_input_output_schemas",
+    "servers",
+    "strict_content_type",
+    "summary",
+    "swagger_ui_init_oauth",
+    "swagger_ui_oauth2_redirect_url",
+    "swagger_ui_parameters",
+    "terms_of_service",
+    "title",
+    "version",
+    "webhooks",
+})
+EXPORTED_NAMES: Final = frozenset({"serve_source_openapi", "validation_error_handler"})
+
+
+class RouteError(ValueError):
+    """Report a path template FastAPI cannot register as declared."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PathSlot:
+    """One placeholder the route path renames: its wire name, internal slot name, and occurrence index."""
+
+    wire_name: str
+    slot: str
+    occurrence: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RoutePath:
+    """A route path with its wire placeholders in order and the slots renamed for Starlette."""
+
+    path: str
+    route_path: str
+    placeholders: tuple[str, ...]
+    slots: tuple[PathSlot, ...]
+
+    @property
+    def templated(self) -> bool:
+        """Return whether the path has placeholders, which register after literal paths."""
+        return bool(self.placeholders)
+
+    def shape(self) -> str:
+        """Return the routed path with every placeholder erased, which identifies routes FastAPI cannot tell apart.
+
+        Its literal text is decoded, as the route matches it, so `/a b` and `/a%20b` have one shape.
+        """
+        return _PLACEHOLDER.sub("{}", self.route_path)
+
+    def written(self) -> str:
+        """Return the path as the document writes it, with every placeholder erased."""
+        return _PLACEHOLDER.sub("{}", self.path)
+
+
+def placeholders(path: str) -> tuple[str, ...]:
+    """Return a path template's placeholder names in order, rejecting braces FastAPI cannot route.
+
+    Starlette routes by the percent-decoded path, so literal text that encodes `/`, `{`, or `}` is refused too: no
+    route of decoded text matches it as a client sends it.
+    """
+    names = tuple(_PLACEHOLDER.findall(path))
+    if _PLACEHOLDER.sub("", path).count("{") or _PLACEHOLDER.sub("", path).count("}"):
+        msg = "The path has an unmatched brace"
+        raise RouteError(msg)
+    if any(_UNMATCHABLE.search(text) for text in _PLACEHOLDER.split(path)[::2]):
+        msg = "The path's literal text encodes '/', '{', or '}', which a route cannot match"
+        raise RouteError(msg)
+    for name in names:
+        if not name or ":" in name:
+            msg = "A path placeholder is empty or uses converter syntax"
+            raise RouteError(msg)
+    return names
+
+
+def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePath:
+    """Rename placeholders Starlette cannot match by their wire names, keeping ordinary identifiers unchanged.
+
+    The literal text between them is registered percent-decoded, as Starlette matches the decoded path, so a route
+    of `/files/a%20b` matches the request a client sends for it.
+    """
+    names = placeholders(path)
+    if len(set(names)) != len(names) and not repeatable:
+        msg = "OpenAPI 3.2 does not allow a placeholder twice in one path"
+        raise RouteError(msg)
+    reserved = {*names, *taken}
+    counts: dict[str, int] = {}
+    slots: list[PathSlot] = []
+    index = 0
+    parts: list[str] = []
+    position = 0
+    for match in _PLACEHOLDER.finditer(path):
+        name = match.group(1)
+        occurrence = counts.get(name, 0)
+        counts[name] = occurrence + 1
+        if _plain(name) and names.count(name) == 1 and name not in taken:
+            slot = name
+        else:
+            while (slot := f"{_SLOT_PREFIX}{index}") in reserved:
+                index += 1
+            index += 1
+            slots.append(PathSlot(wire_name=name, slot=slot, occurrence=occurrence))
+        parts.extend((unquote(path[position : match.start()]), f"{{{slot}}}"))
+        position = match.end()
+    parts.append(unquote(path[position:]))
+    return RoutePath(path=path, route_path="".join(parts), placeholders=names, slots=tuple(slots))
+
+
+def _plain(name: str) -> bool:
+    return name.isascii() and name.isidentifier() and not keyword.iskeyword(name)
+
+
+def tags(operation: OperationContract) -> tuple[str, ...]:
+    """Return an operation's tags in declaration order."""
+    if not isinstance(value := dict(operation.facts).get("tags"), LiteralSequence):
+        return ()
+    return tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
+
+
+def group_key(operation: OperationContract, *, single: bool) -> str:
+    """Return the group of an operation: its first tag, default without tags, or all for the single layout."""
+    if single:
+        return "all"
+    return f"tag:{found[0]}" if (found := tags(operation)) else "default"
+
+
+def group_basis(key: str) -> str:
+    """Return the text a group's default name derives from: its first tag, default, or service for all."""
+    return "service" if key == "all" else key.removeprefix("tag:")

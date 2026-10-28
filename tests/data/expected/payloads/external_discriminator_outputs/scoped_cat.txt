@@ -1,0 +1,1 @@
+{"left": {"kind": "cat", "meow": "yes"}, "local": {"kind": "cat", "meow": "yes"}, "right": {"purr": 7, "species": "cat"}}

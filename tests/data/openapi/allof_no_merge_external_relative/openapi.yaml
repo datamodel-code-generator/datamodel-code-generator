@@ -1,0 +1,24 @@
+openapi: "3.1.0"
+info:
+  title: No-merge external relative nested references
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ScopedBase:
+      type: object
+      required:
+        - values
+      properties:
+        values:
+          $ref: "./schemas/aliases.yaml#/ScopedContainer"
+    ScopedChild:
+      allOf:
+        - $ref: "#/components/schemas/ScopedBase"
+        - type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: string
+                minLength: 1

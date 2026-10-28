@@ -1,0 +1,9 @@
+literal-object=True
+type-list=True
+schema-object=True
+branch-rule-counts=(0, 0)
+candidate-paths=()
+common-paths=((),)
+pattern-paths=((('__json_schema_mapping_pattern_values__', '^value', None),),)
+required-group-count=1
+conditional-required-count=1

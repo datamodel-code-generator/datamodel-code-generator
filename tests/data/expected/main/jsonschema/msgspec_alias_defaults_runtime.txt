@@ -1,0 +1,191 @@
+{
+  "defaults": {
+    "direct": {
+      "id": 1
+    },
+    "aliased": {
+      "id": 2
+    },
+    "chained": {
+      "id": 3
+    },
+    "direct_list": [
+      {
+        "id": 4
+      }
+    ],
+    "alias_list": [
+      {
+        "id": 5
+      }
+    ],
+    "chained_list": [
+      {
+        "id": 6
+      }
+    ],
+    "nullable_item": {
+      "id": 7
+    },
+    "nullable_list": [
+      {
+        "id": 8
+      }
+    ],
+    "empty_object": {
+      "state": "initial"
+    },
+    "empty_alias_list": [],
+    "empty_direct_list": [],
+    "number": 9,
+    "numbers": [
+      1,
+      2
+    ],
+    "mapping": {
+      "item": {
+        "id": 10
+      }
+    },
+    "empty_mapping": {},
+    "choices": [
+      "a"
+    ]
+  },
+  "object_types": {
+    "direct": "Item",
+    "aliased": "Item",
+    "chained": "Item",
+    "nullable_item": "Item",
+    "empty_object": "EmptyItem"
+  },
+  "list_item_types": {
+    "direct_list": [
+      "Item"
+    ],
+    "alias_list": [
+      "Item"
+    ],
+    "chained_list": [
+      "Item"
+    ],
+    "nullable_list": [
+      "Item"
+    ],
+    "empty_alias_list": [],
+    "empty_direct_list": [],
+    "numbers": [
+      "int",
+      "int"
+    ],
+    "choices": [
+      "str"
+    ]
+  },
+  "explicit": {
+    "direct": {
+      "id": 1
+    },
+    "aliased": {
+      "id": 20
+    },
+    "chained": {
+      "id": 3
+    },
+    "direct_list": [
+      {
+        "id": 4
+      }
+    ],
+    "alias_list": [
+      {
+        "id": 21
+      }
+    ],
+    "chained_list": [
+      {
+        "id": 6
+      }
+    ],
+    "nullable_item": {
+      "id": 7
+    },
+    "nullable_list": [
+      {
+        "id": 8
+      }
+    ],
+    "empty_object": {
+      "state": "initial"
+    },
+    "empty_alias_list": [],
+    "empty_direct_list": [],
+    "number": 9,
+    "numbers": [
+      1,
+      2
+    ],
+    "mapping": {
+      "item": {
+        "id": 10
+      }
+    },
+    "empty_mapping": {},
+    "choices": [
+      "a"
+    ]
+  },
+  "independent_defaults": {
+    "direct": {
+      "id": 1
+    },
+    "aliased": {
+      "id": 2
+    },
+    "chained": {
+      "id": 3
+    },
+    "direct_list": [
+      {
+        "id": 4
+      }
+    ],
+    "alias_list": [
+      {
+        "id": 5
+      }
+    ],
+    "chained_list": [
+      {
+        "id": 6
+      }
+    ],
+    "nullable_item": {
+      "id": 7
+    },
+    "nullable_list": [
+      {
+        "id": 8
+      }
+    ],
+    "empty_object": {
+      "state": "initial"
+    },
+    "empty_alias_list": [],
+    "empty_direct_list": [],
+    "number": 9,
+    "numbers": [
+      1,
+      2
+    ],
+    "mapping": {
+      "item": {
+        "id": 10
+      }
+    },
+    "empty_mapping": {},
+    "choices": [
+      "a"
+    ]
+  }
+}

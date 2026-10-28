@@ -10,7 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator import Error, InputFileType, _is_json_text, _is_xml_text, infer_input_type
+from datamodel_code_generator import (
+    Error,
+    InputFileType,
+    _is_json_text,
+    _is_xml_text,
+    _looks_like_csv_text,
+    infer_input_type,
+)
 
 DATA_PATH: Path = Path(__file__).parent / "data"
 HEAVY_INFERENCE_MODULES = (
@@ -19,6 +26,10 @@ HEAVY_INFERENCE_MODULES = (
     "datamodel_code_generator.parser.base",
     "datamodel_code_generator.parser.jsonschema",
     "datamodel_code_generator.parser.xmlschema",
+)
+DETECTION_MODULES = (
+    "datamodel_code_generator._avro_detection",
+    "datamodel_code_generator._xmlschema_detection",
 )
 SUBPROCESS_TIMEOUT_SECONDS = 15
 
@@ -44,7 +55,8 @@ loaded = sorted(
     for module_name in sys.modules
     if module_name in heavy_modules or module_name.startswith("datamodel_code_generator.model.")
 )
-print(json.dumps({{"loaded": loaded, "outcome": outcome}}))
+loaded_detection = sorted(module_name for module_name in sys.modules if module_name in {DETECTION_MODULES!r})
+print(json.dumps({{"loaded": loaded, "loaded_detection": loaded_detection, "outcome": outcome}}))
 """
     env = os.environ.copy()
     env.pop("PYTHONWARNINGS", None)
@@ -95,7 +107,13 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
         if file.name.endswith((
             "external_child.json",
             "external_child.yaml",
+            "extra_data_alias_generator.json",
+            "extra_data_builtin_template_config.json",
+            "extra_data_builtin_template_msgspec.json",
+            "extra_data_builtin_template_reserved.json",
+            "extra_data_builtin_template_typed_dict.json",
             "extra_data_msgspec.json",
+            "extra_data_msgspec_non_dict.json",
             "field_validators_config.json",
             "field_validators_multi_fields_config.json",
             "list_only.json",
@@ -107,6 +125,10 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
+        if "allof_no_merge_external_relative" in file.parts and file.name != "openapi.yaml":
+            continue
+        if "allof_required_inherited_external" in file.parts and file.name != "openapi.yaml":
+            continue
         if "all_of_with_relative_ref" in file.parts:
             continue
         if "reference_same_hierarchy_directory" in file.parts:
@@ -115,17 +137,23 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "paths_external_ref" in file.parts and file.name != "openapi.yaml":
             continue
+        if "read_only_write_only_external_directory" in file.parts and "ext" in file.parts:
+            continue
         if "paths_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
             continue
         if "webhooks_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
             continue
+        if "single_value_enum_as_const" in file.parts and file.name != "api.yaml":
+            continue
+        if "self_of_json_schema_document" in file.parts and file.name != "openapi.yaml":
+            continue
+        if "component_embedded_ids" in file.parts and file.suffix == ".json":
+            continue
         if file.name.endswith((
             "aliases.json",
             "extra_data.json",
-            "extra_data_msgspec.json",
             "invalid.yaml",
             "list.json",
-            "empty_data.json",
             "root_model.yaml",
             "json_pointer.yaml",
             "const.json",
@@ -166,6 +194,56 @@ def test_is_json_text() -> None:
     assert not _is_json_text("name: value")
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("id,name\n1,taro\n", True),
+        ("\n id, name \n 1, taro \n", True),
+        ("id,name\n", False),
+        ("name\nvalue\n", False),
+        ("id,name,tel\n1,taro\n", False),
+        ("id,name\n1,taro\n2,jiro,extra\n", False),
+        ("", False),
+    ],
+)
+def test_looks_like_csv_text(text: str, expected: bool) -> None:
+    """Test bounded CSV text detection for auto inference fallback."""
+    assert _looks_like_csv_text(text) is expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("id,name\n1,taro\n", InputFileType.CSV),
+        ("\n id, name \n 1, taro \n", InputFileType.CSV),
+    ],
+)
+def test_infer_input_type_detects_csv_text(text: str, expected: InputFileType) -> None:
+    """Test auto inference detects CSV data without treating all YAML errors as CSV."""
+    assert infer_input_type(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"Pet": {',
+        "root:\n  child: [",
+        "id,name,tel\n1,taro\n",
+        "id,name\n1,taro\n2,jiro,extra\n",
+    ],
+)
+def test_infer_input_type_rejects_non_csv_parse_errors(text: str) -> None:
+    """Test malformed JSON/YAML and uneven comma data do not infer as CSV."""
+    with pytest.raises(
+        Error,
+        match=(
+            r"(?s)Can't infer input file type from the input data\..*"
+            r"Please specify the input file type explicitly with --input-file-type option\."
+        ),
+    ):
+        infer_input_type(text)
+
+
 def test_infer_input_type_non_schema_xml() -> None:
     """Test non-schema XML does not infer as XML Schema."""
     with pytest.raises(
@@ -179,20 +257,40 @@ def test_infer_input_type_non_schema_xml() -> None:
 
 
 @pytest.mark.parametrize(
-    ("text", "expected_outcome"),
+    ("text", "expected_outcome", "expected_detection"),
     [
-        ('{"type": "record", "name": "User", "fields": []}', InputFileType.Avro.value),
-        ('{"type": "object"}', InputFileType.JsonSchema.value),
-        ('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" />', InputFileType.XMLSchema.value),
-        ("<root />", Error.__name__),
+        (
+            '{"type": "record", "name": "User", "fields": []}',
+            InputFileType.Avro.value,
+            ["datamodel_code_generator._avro_detection"],
+        ),
+        ('{"type": "object"}', InputFileType.JsonSchema.value, ["datamodel_code_generator._avro_detection"]),
+        (
+            '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" />',
+            InputFileType.XMLSchema.value,
+            ["datamodel_code_generator._xmlschema_detection"],
+        ),
+        (
+            "<root />",
+            Error.__name__,
+            [
+                "datamodel_code_generator._avro_detection",
+                "datamodel_code_generator._xmlschema_detection",
+            ],
+        ),
     ],
 )
-def test_infer_input_type_fast_path_does_not_import_heavy_modules(text: str, expected_outcome: str) -> None:
+def test_infer_input_type_fast_path_does_not_import_heavy_modules(
+    text: str,
+    expected_outcome: str,
+    expected_detection: list[str],
+) -> None:
     """Test input inference avoids concrete parsers and output models."""
     probe = _probe_infer_input_type(text)
 
     assert probe["outcome"] == expected_outcome
     assert probe["loaded"] == []
+    assert probe["loaded_detection"] == expected_detection
 
 
 def test_public_detection_helpers_keep_parser_module_surface() -> None:
@@ -220,6 +318,22 @@ def test_public_detection_helpers_keep_parser_module_surface() -> None:
     assert xmlschema.is_xml_schema_text('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" />')
     assert xmlschema.XML_SCHEMA_NAMESPACE == "http://www.w3.org/2001/XMLSchema"
     assert xmlschema.XML_SCHEMA_TAG == "{http://www.w3.org/2001/XMLSchema}schema"
+
+
+def test_private_detection_reexports_preserve_identity_and_metadata() -> None:
+    """Legacy lightweight detection modules stay import-compatible."""
+    from datamodel_code_generator import _avro_detection as shared_avro_detection
+    from datamodel_code_generator import _xmlschema_detection as shared_xmlschema_detection
+    from datamodel_code_generator.parser import _avro_detection as legacy_avro_detection
+    from datamodel_code_generator.parser import _xmlschema_detection as legacy_xmlschema_detection
+
+    assert legacy_avro_detection.is_avro_schema_data is shared_avro_detection.is_avro_schema_data
+    assert legacy_xmlschema_detection.is_xml_schema_text is shared_xmlschema_detection.is_xml_schema_text
+    assert legacy_avro_detection.is_avro_schema_data.__module__ == "datamodel_code_generator.parser._avro_detection"
+    assert (
+        legacy_xmlschema_detection.is_xml_schema_text.__module__
+        == "datamodel_code_generator.parser._xmlschema_detection"
+    )
 
 
 def test_probe_infer_input_type_reports_subprocess_timeout(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,0 +1,6 @@
+
+	/* syntax = "proto2"; fake: value
+ */ // leading: note
+syntax /* version: note */ = // equals: note
+'proto3' /* terminator: note */ ;
+message M { string value = 1; int32 count = 2; }

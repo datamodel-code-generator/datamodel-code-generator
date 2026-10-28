@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: Extracted branch default
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        weight:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+          default: null
+        quantity:
+          anyOf:
+            - type: integer
+              minimum: 0
+            - type: string
+              maxLength: 3
+          default: 5
+        tags:
+          anyOf:
+            - type: array
+              items:
+                type: string
+              minItems: 1
+            - type: "null"
+          default: null
+        step:
+          anyOf:
+            - type: number
+              minimum: 0
+              default: 1
+            - type: "null"
+          default: null

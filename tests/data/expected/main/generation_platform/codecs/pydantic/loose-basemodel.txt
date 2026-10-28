@@ -1,0 +1,3 @@
+holder-client-decode-tag: native Holder(value=Tag(label='x')) set=['value'] json={"value":{"label":"x"}}
+holder-client-decode-other: native Holder(value={'other': 1}) set=['value'] json={"value":{"other":1}}
+holder-client-convert-other: native Holder(value={'other': 1}) set=['value'] json={"value":{"other":1}}

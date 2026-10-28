@@ -1,0 +1,2 @@
+native: name 'Child' is not defined
+generated: name 'Child' is not defined

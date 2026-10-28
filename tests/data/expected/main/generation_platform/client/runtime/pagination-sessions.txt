@@ -1,0 +1,124 @@
+# pagination pydantic_v2.BaseModel
+  iterate with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',)] invalid_value
+  page with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',)] invalid_value
+  iterate with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  page with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  iterate with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  page with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
+  next page of options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  status error after retries ! InternalServerError: Error code: 500 - {"message":"down"} [operation_id='listUsers', status_code=500, body=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] body=Error(message='down')
+  after the status error ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+  session timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded {'pages': 0, 'items': 0}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first item before the deadline = '1'
+  next page after the deadline ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no session timeout ['1']
+  page timeout [] ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page before an expired session = [1] continuation='a' status=200 attempts=1
+  next page in an expired session ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  interrupted page: KeyboardInterrupt
+  item after the interruption ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+    progress {'pages': 0, 'items': 0}
+    request hook GET https://api.example.com/users
+  item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.fetching') [field_path=('next', 'fetching')] invalid_state
+  close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='close.fetching') [field_path=('close', 'fetching')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  items after the concurrent steps ['1']
+  default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001}
+  explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages progress={'pages': 2, 'items': 2}
+  default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001}
+  explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(reason='items', limit=100000) [limit=100000] items progress={'pages': 1, 'items': 100000}
+  default session clock first = '1'
+  default session clock after former timeout = '2'
+    progress {'pages': 2, 'items': 2}
+  explicit session clock first = '1'
+  explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
+    progress {'pages': 1, 'items': 1}
+  client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.everyone') [field_path=('helper_defaults', 'users.everyone')] unknown_field
+  async client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.everyone') [field_path=('helper_defaults', 'users.everyone')] unknown_field
+  client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] invalid_value
+  async client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] invalid_value
+  client with no defaults = None
+  client with empty defaults = None
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default item limit ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty call options keep defaults ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  call item limit ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  helper without defaults ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  view keeps defaults ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+    request hook GET https://api.example.com/users
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook 200
+    request hook GET https://api.example.com/users?cursor=a
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook 200
+  hooked items ['1', '2']
+    request hook GET https://api.example.com/loose
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    response hook 200
+  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  response hook failure ! APIConnectionError: APIConnectionError(operation_id='listUsers', cause='RuntimeError') [operation_id='listUsers', cause=RuntimeError('response hook failed on 200')]
+  after the hook failure ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item before closing the client = '1'
+  item after closing the client ! ConfigurationError: ConfigurationError(operation_id='listUsers', reason='client_closed', field_path='client.closed') [operation_id='listUsers', field_path=('client', 'closed')] client_closed
+  item after the closed client ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+  async default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001}
+  async explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages progress={'pages': 2, 'items': 2}
+  async default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001}
+  async explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(reason='items', limit=100000) [limit=100000] items progress={'pages': 1, 'items': 100000}
+  async default session clock first = User(id='1', name=None)
+  async default session clock after former timeout = User(id='2', name=None)
+    progress {'pages': 2, 'items': 2}
+  async explicit session clock first = User(id='1', name=None)
+  async explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
+    progress {'pages': 1, 'items': 1}
+    async request hook GET https://api.example.com/users
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    async request hook GET https://api.example.com/users?cursor=a
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async hooked items ['1', '2']
+    async request hook GET https://api.example.com/loose
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
+    async request hook GET https://api.example.com/users
+  async item while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.fetching') [field_path=('anext', 'fetching')] invalid_state
+  async close while fetching ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aclose.fetching') [field_path=('aclose', 'fetching')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async items after the concurrent steps ['1']
+    async request hook GET https://api.example.com/users
+  async cancelled page: CancelledError
+  async after the cancellation [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.failed') [field_path=('aiter', 'failed')] invalid_state

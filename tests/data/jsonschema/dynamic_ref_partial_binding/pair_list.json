@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pair_list.json",
+  "title": "PairList",
+  "$ref": "list.json",
+  "$defs": {
+    "item": {
+      "$dynamicAnchor": "item",
+      "type": "object",
+      "properties": {"value": {"$dynamicRef": "#value"}}
+    },
+    "value": {"$dynamicAnchor": "value", "not": true}
+  }
+}

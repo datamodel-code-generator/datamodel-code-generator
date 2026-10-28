@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections import defaultdict
     from pathlib import Path
 
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.reference import Reference
 
 
@@ -93,3 +94,4 @@ class DataTypeUnionTypeStatement(_DataTypeUnionBase):
     TEMPLATE_FILE_PATH: ClassVar[str] = "UnionTypeStatement.jinja2"
     BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_UNION,)
+    _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = "pydantic.type_statement"

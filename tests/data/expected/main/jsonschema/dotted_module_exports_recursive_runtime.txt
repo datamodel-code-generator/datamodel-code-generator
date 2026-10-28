@@ -1,0 +1,102 @@
+[
+  {
+    "module": "",
+    "exports": [
+      {
+        "name": "Status",
+        "origin": "api.v2.status",
+        "is_definition": true,
+        "fields": [
+          "active"
+        ],
+        "dump": {
+          "active": true
+        }
+      },
+      {
+        "name": "User",
+        "origin": "api.v1.user",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api",
+    "exports": [
+      {
+        "name": "Status",
+        "origin": "api.v2.status",
+        "is_definition": true,
+        "fields": [
+          "active"
+        ],
+        "dump": {
+          "active": true
+        }
+      },
+      {
+        "name": "User",
+        "origin": "api.v1.user",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v1.user",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2",
+    "exports": [
+      {
+        "name": "Status",
+        "origin": "api.v2.status",
+        "is_definition": true,
+        "fields": [
+          "active"
+        ],
+        "dump": {
+          "active": true
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.user",
+    "exports": []
+  },
+  {
+    "module": "api.v2.status",
+    "exports": []
+  }
+]

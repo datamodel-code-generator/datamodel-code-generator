@@ -1,0 +1,13 @@
+{
+  "title": "Record",
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer",
+      "description": "Field list"
+    },
+    "Field": {
+      "type": "string"
+    }
+  }
+}

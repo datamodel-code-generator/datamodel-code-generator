@@ -1,0 +1,5 @@
+{
+  "custom_include_rendered": true,
+  "custom_root_rendered": true,
+  "imported_jinja2": true
+}

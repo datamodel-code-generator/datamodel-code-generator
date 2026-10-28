@@ -1,0 +1,1 @@
+Could not replace the Agent Skill. Its previous version is preserved at <tmp>/.agents/skills/<recovery>/datamodel-code-generator.

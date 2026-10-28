@@ -1,0 +1,27 @@
+{
+  "properties": {
+    "value": {
+      "additionalProperties": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Value",
+      "type": "object",
+      "x-python-type": "dict[str, list[int | Callable[[int], int]]]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "NestedContainer",
+  "type": "object"
+}

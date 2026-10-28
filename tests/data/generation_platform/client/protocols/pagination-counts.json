@@ -1,0 +1,120 @@
+{
+  "users.offsets": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"literal": 2},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    },
+    "bindings": [{"target": {"in": "query", "name": "limit"}, "value": {"literal": 2}}]
+  },
+  "users.items": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"page_items_count": true},
+      "total": {"from": "body", "pointer": "/total"}
+    }
+  },
+  "users.loose": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 10,
+      "step": {"page_items_count": true},
+      "has_more": {"from": "body", "pointer": "/more"}
+    }
+  },
+  "users.pages": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "total": {"from": "header", "name": "x-total-count"}
+    }
+  },
+  "users.counted": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 2},
+      "total": {"from": "body", "pointer": "/count"}
+    }
+  },
+  "users.by_header": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "header", "name": "X-Page"},
+      "first": 0,
+      "step": {"literal": 1},
+      "has_more": {"from": "header", "name": "X-Has-More"}
+    }
+  },
+  "searches.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1searches/post",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "body", "pointer": "/window/start"},
+      "first": 0,
+      "step": {"literal": 10},
+      "total": {"from": "body", "pointer": "/total"}
+    }
+  },
+  "finds.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1finds/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "querystring", "name": "criteria", "pointer": "/start"},
+      "first": 0,
+      "step": {"literal": 5},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  },
+  "users.positions": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "position"},
+      "first": 0,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  }
+}

@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info: {title: Server nullable bodies, version: "1.0"}
+paths:
+  /texts:
+    post:
+      operationId: postText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [string, "null"], maxLength: 5}
+      responses:
+        "204": {description: Done.}
+  /lists:
+    post:
+      operationId: postList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [array, "null"], items: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /choices:
+    post:
+      operationId: postChoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {oneOf: [{$ref: "#/components/schemas/Item"}, {type: integer}, {type: "null"}]}
+      responses:
+        "204": {description: Done.}
+  /colors:
+    post:
+      operationId: postColor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Color"}
+      responses:
+        "204": {description: Done.}
+  /names:
+    post:
+      operationId: postName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Name"}
+      responses:
+        "204": {description: Done.}
+  /pets:
+    post:
+      operationId: postPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "204": {description: Done.}
+  /codes:
+    post:
+      operationId: postCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: string, x-python-type: "str | None"}
+      responses:
+        "204": {description: Done.}
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      responses:
+        "204": {description: Done.}
+  /anything:
+    post:
+      operationId: postAnything
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+      responses:
+        "204": {description: Done.}
+  /items:
+    post:
+      operationId: postItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /ids:
+    post:
+      operationId: postId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: string, format: uuid}
+      responses:
+        "204": {description: Done.}
+  /drafts:
+    post:
+      operationId: postDraft
+      requestBody:
+        content:
+          application/json:
+            schema: {type: [string, "null"]}
+      responses:
+        "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: [object, "null"]
+              required: [name]
+              properties: {name: {type: string}, tags: {type: array, items: {type: string}}, count: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: [object, "null"]
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                note: {type: string}
+                meta: {type: object, properties: {size: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: [object, "null"]
+              allOf: [{$ref: "#/components/schemas/Item"}, {properties: {note: {type: string}}}]
+      responses:
+        "204": {description: Done.}
+  /multi:
+    post:
+      operationId: postMulti
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /multi-optional:
+    post:
+      operationId: postMultiOptional
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /oks:
+    post:
+      operationId: postOk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Ok"}
+      responses:
+        "204": {description: Done.}
+  /any-aliases:
+    post:
+      operationId: postAnyAlias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AnyAlias"}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Item: {type: object, required: [name], properties: {name: {type: string}}}
+    Pet: {type: [object, "null"], required: [name], properties: {name: {type: string}}}
+    Name: {type: [string, "null"]}
+    Color: {enum: [red, blue, null]}
+    Ok: {type: string, x-python-type: "typing.Literal['ok', None]"}
+    AnyAlias: {type: string, x-python-type: "typing_extensions.Any"}

@@ -1,0 +1,59 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/RightOuter"
+    },
+    {
+      "$ref": "#/$defs/LeftOuter"
+    }
+  ],
+  "$defs": {
+    "LeftInner": {
+      "type": "object",
+      "properties": {
+        "left1": {
+          "type": "integer"
+        }
+      }
+    },
+    "LeftOuter": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LeftInner"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "left2": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "RightInner": {
+      "type": "object",
+      "properties": {
+        "right1": {
+          "type": "integer"
+        }
+      }
+    },
+    "RightOuter": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/RightInner"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "right2": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

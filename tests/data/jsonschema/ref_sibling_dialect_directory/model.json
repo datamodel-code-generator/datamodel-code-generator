@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "wd": {
+      "$ref": "#/$defs/Wd"
+    }
+  },
+  "$defs": {
+    "Q": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Wd": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "maximum": 10
+        }
+      ]
+    }
+  }
+}

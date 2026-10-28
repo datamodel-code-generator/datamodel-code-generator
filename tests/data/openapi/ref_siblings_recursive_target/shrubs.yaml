@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: A constrained $ref to a recursive schema in another document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      properties:
+        twigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+    Shrub:
+      $ref: '#/components/schemas/Twig'
+      minProperties: 1

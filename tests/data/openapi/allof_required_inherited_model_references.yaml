@@ -1,0 +1,187 @@
+openapi: "3.0.0"
+info:
+  title: Required inherited model references
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ForwardDeclaredPickup:
+      type: object
+      required:
+        - detail
+        - forwardEvents
+        - forwardWindow
+      allOf:
+        - $ref: "#/components/schemas/ForwardBasePickup"
+
+    ForwardInlineRequiredPickup:
+      allOf:
+        - $ref: "#/components/schemas/ForwardBasePickup"
+        - type: object
+          required:
+            - detail
+            - forwardEvents
+            - forwardWindow
+
+    ForwardPartialPickup:
+      allOf:
+        - $ref: "#/components/schemas/ForwardBasePickup"
+      properties:
+        detail: {}
+        forwardEvents:
+          type: array
+          items: {}
+
+    ForwardBasePickup:
+      type: object
+      properties:
+        detail:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              minLength: 1
+        forwardEvents:
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - latitude
+            properties:
+              latitude:
+                type: number
+                minimum: -90
+                maximum: 90
+        forwardWindow:
+          type: object
+          writeOnly: true
+          required:
+            - startAt
+          properties:
+            startAt:
+              type: integer
+              minimum: 0
+
+    LegacyContact:
+      type: object
+      properties:
+        legacyName:
+          type: string
+
+    BasePickup:
+      type: object
+      properties:
+        contactDetails:
+          $ref: "#/components/schemas/LegacyContact"
+
+    Pickup:
+      allOf:
+        - $ref: "#/components/schemas/BasePickup"
+        - type: object
+          properties:
+            contactDetails:
+              title: contact_details
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+            events:
+              type: array
+              readOnly: true
+              items:
+                title: event
+                type: object
+                required:
+                  - latitude
+                properties:
+                  latitude:
+                    type: number
+                    minimum: -90
+                    maximum: 90
+            packages:
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/LabelPackage"
+                  - type: object
+                    required:
+                      - alternativeIdentifiers
+                    properties:
+                      alternativeIdentifiers:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+            package:
+              $ref: "#/components/schemas/Package"
+            trackingCode:
+              $ref: "#/components/schemas/TrackingCode"
+            pickupWindow:
+              title: pickup_window
+              type: object
+              writeOnly: true
+              required:
+                - startAt
+                - endAt
+              properties:
+                startAt:
+                  type: integer
+                endAt:
+                  type: integer
+            mode:
+              type: string
+              default: standard
+
+    ScheduledPickup:
+      type: object
+      required:
+        - contactDetails
+        - events
+        - packages
+        - package
+        - trackingCode
+        - pickupWindow
+        - mode
+        - fallbackField
+      allOf:
+        - $ref: "#/components/schemas/Pickup"
+
+    ReverseScheduledPickup:
+      allOf:
+        - type: object
+          required:
+            - contactDetails
+            - events
+            - packages
+          properties:
+            note:
+              type: string
+        - $ref: "#/components/schemas/Pickup"
+
+    LabelPackage:
+      type: object
+      required:
+        - labelId
+      properties:
+        labelId:
+          type: string
+          minLength: 1
+
+    Package:
+      type: object
+      required:
+        - sku
+      properties:
+        sku:
+          type: string
+          minLength: 1
+
+    TrackingCode:
+      type: string
+      minLength: 1

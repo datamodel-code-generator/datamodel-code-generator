@@ -1,0 +1,7 @@
+{
+  "title": "Thing",
+  "type": "object",
+  "properties": {
+    "other": {"$ref": "x.thing.json"}
+  }
+}

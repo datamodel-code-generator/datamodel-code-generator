@@ -1,0 +1,28 @@
+{
+  "case_id": "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase",
+  "field": "decimal_multiple_field",
+  "source_fragment": {
+    "allOf": [
+      {
+        "type": "number",
+        "multipleOf": 0.2
+      },
+      {
+        "multipleOf": 0.3
+      }
+    ]
+  },
+  "native_multiple": "0.6",
+  "proof": "After scaling by ten, divisibility by both two and three is equivalent to divisibility by six.",
+  "source_valid_witnesses": [
+    {
+      "decimal_multiple_field": 0.6
+    },
+    {
+      "decimal_multiple_field": 10066330.8
+    },
+    {
+      "decimal_multiple_field": 1.5901107559605153e+24
+    }
+  ]
+}

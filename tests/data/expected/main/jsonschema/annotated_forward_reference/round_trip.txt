@@ -1,0 +1,34 @@
+{
+  "treeName": "oak",
+  "rootNode": {
+    "nodeValue": 1,
+    "next-node": {
+      "nodeValue": 2,
+      "kind": "leaf"
+    },
+    "kind": "leaf"
+  },
+  "spare-node": {
+    "nodeValue": 3,
+    "kind": "leaf"
+  },
+  "nodes": [
+    {
+      "nodeValue": 4,
+      "kind": "leaf"
+    }
+  ],
+  "labels": [
+    "old"
+  ],
+  "pick": {
+    "kind": "leaf"
+  },
+  "spare": {
+    "nodeValue": 8,
+    "kind": "leaf"
+  },
+  "branches": [
+    []
+  ]
+}

@@ -1,0 +1,4 @@
+# field-ownership-chain
+render msgspec.Struct default
+  models.py
+  model_bindings.py msgspec_Struct/default

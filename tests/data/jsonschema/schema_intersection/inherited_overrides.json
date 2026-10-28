@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "c": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "maximum": 10
+        },
+        "e": {
+          "type": "string",
+          "enum": [
+            "a",
+            "b"
+          ]
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "x": {
+              "maximum": 20
+            },
+            "e": {
+              "enum": [
+                "b",
+                "c"
+              ]
+            },
+            "y": {
+              "maximum": 5
+            }
+          }
+        }
+      ]
+    }
+  }
+}

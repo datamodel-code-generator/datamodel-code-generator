@@ -1,0 +1,31 @@
+{
+  "title": "Record",
+  "type": "object",
+  "properties": {
+    "Union": {
+      "type": "string",
+      "default": "list"
+    },
+    "Annotated": {
+      "type": "string",
+      "default": "list"
+    },
+    "choice": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "list": {
+      "type": "string"
+    }
+  }
+}

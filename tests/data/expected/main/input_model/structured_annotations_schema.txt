@@ -1,0 +1,15 @@
+{
+  "description": "Model containing a nested Callable and runtime symbols.",
+  "properties": {
+    "handler": {
+      "title": "Handler",
+      "type": "object",
+      "x-python-type": "tests.data.python.input_model.structured_annotations.Wrapper[Callable[[int, str], bool]]"
+    }
+  },
+  "required": [
+    "handler"
+  ],
+  "title": "StructuredAnnotations",
+  "type": "object"
+}

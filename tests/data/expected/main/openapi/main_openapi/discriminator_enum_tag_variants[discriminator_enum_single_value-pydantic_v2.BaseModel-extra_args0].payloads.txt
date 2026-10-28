@@ -1,0 +1,4 @@
+ToolCall valid {"type": "function", "id": "a"}: accepted
+ToolCall invalid {"type": "other", "id": "a"}: rejected
+ToolCall invalid {"id": "a"}: rejected
+ToolCall invalid {"type": "function"}: rejected

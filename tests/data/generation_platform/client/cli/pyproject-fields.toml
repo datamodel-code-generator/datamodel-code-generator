@@ -1,0 +1,25 @@
+[tool.datamodel-codegen]
+input = "fields.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+openapi-include-paths = ["/pets*", "/owners"]
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-body-arguments = "both"
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/post".body_field_names]
+"application/json" = { tag = "pet_tag" }
+"application/x-www-form-urlencoded" = { tag = "pet_tag" }
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets~1{petId}~1visits/post"]
+body_field_names = { "application/json" = { options = "visit_options" } }
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets~1{petId}~1owner/put"]
+body_arguments = "body"

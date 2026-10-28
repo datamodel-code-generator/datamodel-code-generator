@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: Redundant reference null, version: "1"}
+paths: {}
+components:
+  schemas:
+    Nothing: {type: "null"}
+    Use:
+      type: object
+      required: [nothing_f, nothing_a, nothing_m, nothing_u]
+      properties:
+        nothing_f: {$ref: '#/components/schemas/Nothing'}
+        nothing_a: {type: array, items: {$ref: '#/components/schemas/Nothing'}}
+        nothing_m: {type: object, additionalProperties: {$ref: '#/components/schemas/Nothing'}}
+        nothing_u: {anyOf: [{$ref: '#/components/schemas/Nothing'}, {type: integer}]}

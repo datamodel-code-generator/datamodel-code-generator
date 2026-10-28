@@ -11,12 +11,15 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import assert_output
+
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "generate_changelog.sh"
 
 
 @pytest.mark.skipif(shutil.which("jq") is None, reason="generate_changelog.sh requires jq")
 @pytest.mark.skipif(sys.platform == "win32", reason="generate_changelog.sh is tested on POSIX runners")
-def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path) -> None:
+@pytest.mark.parametrize("repo", [None, "datamodel-code-generator/datamodel-code-generator", "another/project"])
+def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path, repo: str | None) -> None:
     """Existing release entries are replaced instead of duplicated."""
     changelog = tmp_path / "CHANGELOG.md"
     changelog.write_text(
@@ -68,8 +71,7 @@ def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path) -> None:
     command = [
         "bash",
         str(SCRIPT),
-        "--repo",
-        "koxudaxi/datamodel-code-generator",
+        *(["--repo", repo] if repo else []),
         "--tag",
         "0.57.0",
         "--prepend-to",
@@ -82,6 +84,12 @@ def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path) -> None:
     subprocess.run(command, check=True, env=env)
     second_run = changelog.read_text()
 
+    assert_output(
+        first_run,
+        Path(__file__).parent
+        / "data/expected/repository_transfer"
+        / ("changelog_override.txt" if repo == "another/project" else "changelog.txt"),
+    )
     assert first_run == second_run
     assert first_run.count("## [0.57.0]") == 1
     assert "Old release body" not in first_run

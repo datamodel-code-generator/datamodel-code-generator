@@ -1,0 +1,20 @@
+{
+  "title": "PointerControl",
+  "type": "object",
+  "required": ["ordinary", "slash", "tilde", "percent", "array_value", "external"],
+  "properties": {
+    "ordinary": {"$ref": "#/$defs/Ordinary"},
+    "slash": {"$ref": "#/$defs/a~1b"},
+    "tilde": {"$ref": "#/$defs/a~0b"},
+    "percent": {"$ref": "#/$defs/a%20b"},
+    "array_value": {"$ref": "#/$defs/choices/oneOf/0"},
+    "external": {"$ref": "control~01%25.json#/$defs/External"}
+  },
+  "$defs": {
+    "Ordinary": {"type": "string"},
+    "a/b": {"type": "integer"},
+    "a~b": {"type": "boolean"},
+    "a b": {"type": "number"},
+    "choices": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+  }
+}

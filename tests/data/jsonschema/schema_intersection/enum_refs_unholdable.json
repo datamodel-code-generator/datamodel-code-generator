@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "number": {
+      "$ref": "#/$defs/Number"
+    },
+    "disjoint": {
+      "$ref": "#/$defs/Disjoint"
+    }
+  },
+  "$defs": {
+    "Level": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "Mixed": {
+      "enum": [
+        1,
+        "bad"
+      ]
+    },
+    "Words": {
+      "enum": [
+        "bad"
+      ]
+    },
+    "Number": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "$ref": "#/$defs/Mixed"
+        }
+      ]
+    },
+    "Disjoint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "$ref": "#/$defs/Words"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "$defs": {
+    "PositionsInputValue": {
+      "type": "string",
+      "title": "PositionsInputValue"
+    },
+    "PositionsInputBooleanUser": {
+      "$ref": "#/$defs/PositionsInputAllowed",
+      "title": "PositionsInputBooleanUser"
+    },
+    "PositionsInputAllowed": true,
+    "PositionsInput": {
+      "type": "object",
+      "$ref": "#/$defs/PositionsInputValue",
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "const": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "enum": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "examples": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "$ref": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "$defs": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "legacy": {
+          "items": [
+            {
+              "$ref": "#/$defs/PositionsInputValue"
+            },
+            false
+          ],
+          "extends": [
+            {
+              "$ref": "#/$defs/PositionsInputValue"
+            }
+          ],
+          "definitions": {
+            "default": {
+              "$ref": "#/$defs/PositionsInputValue"
+            }
+          },
+          "$defs": {
+            "enum": {
+              "$ref": "#/$defs/PositionsInputValue"
+            }
+          }
+        },
+        "external": {
+          "$ref": "https://example.com/schema.json#/$defs/Value"
+        },
+        "anchor": {
+          "$ref": "#anchor"
+        }
+      },
+      "patternProperties": {
+        "default": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "$ref": {
+          "$ref": "#/$defs/PositionsInputValue"
+        }
+      },
+      "dependentSchemas": {
+        "examples": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "$ref": {
+          "$ref": "#/$defs/PositionsInputValue"
+        }
+      },
+      "dependencies": {
+        "enum": {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        "$ref": [
+          "default",
+          "const"
+        ]
+      },
+      "default": {
+        "$ref": "#/$defs/Value",
+        "nested": [
+          {
+            "default": {
+              "$ref": "#/$defs/Allowed"
+            },
+            "const": {
+              "$ref": "#/definitions/Value"
+            },
+            "enum": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "examples": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "$defs": {
+              "Value": {
+                "$ref": "#/$defs/Value"
+              }
+            }
+          }
+        ]
+      },
+      "const": {
+        "$ref": "#/$defs/Value",
+        "nested": [
+          {
+            "default": {
+              "$ref": "#/$defs/Allowed"
+            },
+            "const": {
+              "$ref": "#/definitions/Value"
+            },
+            "enum": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "examples": [
+              {
+                "$ref": "#/$defs/Value"
+              }
+            ],
+            "$defs": {
+              "Value": {
+                "$ref": "#/$defs/Value"
+              }
+            }
+          }
+        ]
+      },
+      "enum": [
+        {
+          "$ref": "#/$defs/Value",
+          "nested": [
+            {
+              "default": {
+                "$ref": "#/$defs/Allowed"
+              },
+              "const": {
+                "$ref": "#/definitions/Value"
+              },
+              "enum": [
+                {
+                  "$ref": "#/$defs/Value"
+                }
+              ],
+              "examples": [
+                {
+                  "$ref": "#/$defs/Value"
+                }
+              ],
+              "$defs": {
+                "Value": {
+                  "$ref": "#/$defs/Value"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "$ref": "#/$defs/Value",
+          "nested": [
+            {
+              "default": {
+                "$ref": "#/$defs/Allowed"
+              },
+              "const": {
+                "$ref": "#/definitions/Value"
+              },
+              "enum": [
+                {
+                  "$ref": "#/$defs/Value"
+                }
+              ],
+              "examples": [
+                {
+                  "$ref": "#/$defs/Value"
+                }
+              ],
+              "$defs": {
+                "Value": {
+                  "$ref": "#/$defs/Value"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "x-metadata": {
+        "properties": {
+          "value": {
+            "$ref": "#/$defs/Value"
+          }
+        },
+        "$ref": "#/$defs/Unused",
+        "items": [
+          {
+            "$ref": "#/$defs/Value"
+          }
+        ]
+      },
+      "additionalItems": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "contains": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "contentSchema": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "else": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "if": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "not": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "then": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "unevaluatedItems": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "unevaluatedProperties": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "extends": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "items": {
+        "$ref": "#/$defs/PositionsInputValue"
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        true,
+        false
+      ],
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        true,
+        false
+      ],
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        true,
+        false
+      ],
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/PositionsInputValue"
+        },
+        true,
+        false
+      ],
+      "title": "PositionsInput"
+    }
+  }
+}

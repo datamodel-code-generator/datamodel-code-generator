@@ -1,0 +1,471 @@
+{
+  "annotation": {
+    "source": "annotation",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_00.py",
+      "False_False_external": "code_00.py",
+      "False_True_builtin": "code_00.py",
+      "False_True_external": "code_00.py",
+      "True_False_builtin": "code_01.py",
+      "True_False_external": "code_01.py",
+      "True_True_builtin": "code_01.py",
+      "True_True_external": "code_01.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_00_black23.py",
+      "False_False_external_23": "code_00_black23.py",
+      "False_True_external_22": "code_00_black23.py",
+      "False_True_external_23": "code_00_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "annotation_True_True_runtime.txt"
+    }
+  },
+  "other_annotation": {
+    "source": "other_annotation",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_02.py",
+      "False_False_external": "code_02.py",
+      "False_True_builtin": "code_02.py",
+      "False_True_external": "code_02.py",
+      "True_False_builtin": "code_03.py",
+      "True_False_external": "code_03.py",
+      "True_True_builtin": "code_03.py",
+      "True_True_external": "code_03.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_02_black23.py",
+      "False_False_external_23": "code_02_black23.py",
+      "False_True_external_22": "code_02_black23.py",
+      "False_True_external_23": "code_02_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "annotation_True_True_runtime.txt",
+      "True_True": "annotation_True_True_runtime.txt"
+    }
+  },
+  "unknown_keyword": {
+    "source": "unknown_keyword",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_04.py",
+      "False_False_external": "code_04.py",
+      "False_True_builtin": "code_04.py",
+      "False_True_external": "code_04.py",
+      "True_False_builtin": "code_05.py",
+      "True_False_external": "code_05.py",
+      "True_True_builtin": "code_05.py",
+      "True_True_external": "code_05.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_04_black23.py",
+      "False_False_external_23": "code_04_black23.py",
+      "False_True_external_22": "code_04_black23.py",
+      "False_True_external_23": "code_04_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "classvar_True_True_runtime.txt",
+      "True_True": "classvar_True_True_runtime.txt"
+    }
+  },
+  "python_type": {
+    "source": "python_type",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_06.py",
+      "False_False_external": "code_06.py",
+      "False_True_builtin": "code_06.py",
+      "False_True_external": "code_06.py",
+      "True_False_builtin": "code_07.py",
+      "True_False_external": "code_07.py",
+      "True_True_builtin": "code_07.py",
+      "True_True_external": "code_07.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_06_black23.py",
+      "False_False_external_23": "code_06_black23.py",
+      "False_True_external_22": "code_06_black23.py",
+      "False_True_external_23": "code_06_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "classvar_True_True_runtime.txt",
+      "True_True": "classvar_True_True_runtime.txt"
+    }
+  },
+  "classvar": {
+    "source": "classvar",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_08.py",
+      "False_False_external": "code_08.py",
+      "False_True_builtin": "code_08.py",
+      "False_True_external": "code_08.py",
+      "True_False_builtin": "code_09.py",
+      "True_False_external": "code_09.py",
+      "True_True_builtin": "code_09.py",
+      "True_True_external": "code_09.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_08_black23.py",
+      "False_False_external_23": "code_08_black23.py",
+      "False_True_external_22": "code_08_black23.py",
+      "False_True_external_23": "code_08_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "True_False": "classvar_True_True_runtime.txt"
+    }
+  },
+  "base_class_extension": {
+    "source": "base_class_extension",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_10.py",
+      "False_False_external": "code_10.py",
+      "False_True_builtin": "code_10.py",
+      "False_True_external": "code_10.py",
+      "True_False_builtin": "code_11.py",
+      "True_False_external": "code_11.py",
+      "True_True_builtin": "code_11.py",
+      "True_True_external": "code_11.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_10_black23.py",
+      "False_False_external_23": "code_10_black23.py",
+      "False_True_external_22": "code_10_black23.py",
+      "False_True_external_23": "code_10_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "classvar_True_True_runtime.txt",
+      "True_True": "classvar_True_True_runtime.txt"
+    }
+  },
+  "model_extras": {
+    "source": "annotation",
+    "config": {
+      "model_extra_keys": [
+        "x-notes"
+      ]
+    },
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_00.py",
+      "False_False_external": "code_00.py",
+      "False_True_builtin": "code_00.py",
+      "False_True_external": "code_00.py",
+      "True_False_builtin": "code_12.py",
+      "True_False_external": "code_12.py",
+      "True_True_builtin": "code_12.py",
+      "True_True_external": "code_12.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_00_black23.py",
+      "False_False_external_23": "code_00_black23.py",
+      "False_True_external_22": "code_00_black23.py",
+      "False_True_external_23": "code_00_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "model_extras_True_True_runtime.txt"
+    }
+  },
+  "model_extras_stripped": {
+    "source": "annotation",
+    "config": {
+      "model_extra_keys_without_x_prefix": [
+        "x-notes"
+      ]
+    },
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_00.py",
+      "False_False_external": "code_00.py",
+      "False_True_builtin": "code_00.py",
+      "False_True_external": "code_00.py",
+      "True_False_builtin": "code_13.py",
+      "True_False_external": "code_13.py",
+      "True_True_builtin": "code_13.py",
+      "True_True_external": "code_13.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_00_black23.py",
+      "False_False_external_23": "code_00_black23.py",
+      "False_True_external_22": "code_00_black23.py",
+      "False_True_external_23": "code_00_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "model_extras_stripped_True_True_runtime.txt"
+    }
+  },
+  "custom_base": {
+    "source": "annotation",
+    "config": {
+      "base_class": "tests.data.python.pattern_intersection_base.AttributeBase"
+    },
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "b": 2
+        }
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_14.py",
+      "False_False_external": "code_15.py",
+      "False_True_builtin": "code_14.py",
+      "False_True_external": "code_15.py",
+      "True_False_builtin": "code_16.py",
+      "True_False_external": "code_17.py",
+      "True_True_builtin": "code_16.py",
+      "True_True_external": "code_17.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "code_15_black23.py",
+      "False_False_external_23": "code_15_black23.py",
+      "False_True_external_22": "code_15_black23.py",
+      "False_True_external_23": "code_15_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "classvar_False_True_runtime.txt",
+      "False_True": "classvar_False_True_runtime.txt",
+      "True_False": "custom_base_True_True_runtime.txt"
+    }
+  },
+  "declared": {
+    "source": "declared",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {}
+      },
+      {
+        "x": 1
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_18.py",
+      "False_False_external": "code_18.py",
+      "False_True_builtin": "code_18.py",
+      "False_True_external": "code_18.py",
+      "True_False_builtin": "code_19.py",
+      "True_False_external": "code_19.py",
+      "True_True_builtin": "code_19.py",
+      "True_True_external": "code_19.py"
+    },
+    "runtime_names": {
+      "False_False": "declared_False_True_runtime.txt",
+      "True_False": "declared_True_True_runtime.txt"
+    }
+  },
+  "enum": {
+    "source": "enum",
+    "config": {},
+    "payloads": [
+      {},
+      {
+        "x": "one"
+      },
+      {
+        "x": 1
+      }
+    ],
+    "code_names": {
+      "False_False_builtin": "code_20.py",
+      "False_False_external": "code_20.py",
+      "False_True_builtin": "code_20.py",
+      "False_True_external": "code_20.py",
+      "True_False_builtin": "code_21.py",
+      "True_False_external": "code_21.py",
+      "True_True_builtin": "code_21.py",
+      "True_True_external": "code_21.py"
+    },
+    "runtime_names": {
+      "False_False": "enum_True_True_runtime.txt",
+      "False_True": "enum_True_True_runtime.txt",
+      "True_False": "enum_True_True_runtime.txt"
+    }
+  }
+}

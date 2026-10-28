@@ -1,0 +1,8 @@
+[
+  {
+    "value": "text",
+    "id": 1,
+    "enabled": true,
+    "label": "label"
+  }
+]

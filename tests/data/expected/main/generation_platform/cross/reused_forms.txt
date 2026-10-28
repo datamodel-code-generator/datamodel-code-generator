@@ -1,0 +1,24 @@
+models shared True
+# reused_forms in-process sync, in-process async
+post_extras
+  > POST /extras [multipart/form-data; boundary=<boundary>]
+  post_extras(body=ExtrasPostRequest(name='n', maxAge=MISSING))
+  post_extras members(name='n', maxAge=MISSING, first=Filter(color='blue', minAge=MISSING))
+  < 204 -
+  = None
+post_extra_lists
+  > POST /extra-lists [multipart/form-data; boundary=<boundary>]
+  post_extra_lists(body=ExtraListsPostRequest(name='n'))
+  post_extra_lists members(name='n', first=[Filter(color='blue', minAge=MISSING), Filter(color=MISSING, minAge=MISSING)])
+  < 204 -
+  = None
+post_extra_scores
+  > POST /extra-scores [application/x-www-form-urlencoded]
+  post_extra_scores(body=ExtraScoresPostRequest(name='n'))
+  post_extra_scores members(name='n', first=[1, 2], second=[3])
+  < 204 -
+  = None
+post_extra_scores refused
+  > POST /extra-scores [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'first', 1])])

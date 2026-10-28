@@ -1,0 +1,12 @@
+Pet {"kind": "cat", "name": "Tom", "lives": 9}: Kitten
+Pet {"kind": "cat"}: rejected
+Pet {"kind": "dog"}: Dog
+Pet {"kind": "bird"}: rejected
+Pet {}: rejected
+Animal {"kind": "cat", "name": "Tom"}: Kitten
+Animal {"kind": "bird"}: Bird
+Animal {"kind": "dog"}: rejected
+Holder {"solo": {"kind": "cat", "name": "Tom"}}: Holder
+Holder {"solo": {"kind": "dog"}}: rejected
+Holder {"other": {"kind": "cat", "name": "Tom"}}: Holder
+Holder {"other": {"kind": "dog"}}: rejected

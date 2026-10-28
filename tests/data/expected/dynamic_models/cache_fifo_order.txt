@@ -1,0 +1,5 @@
+{
+  "first_hit": true,
+  "second_retained": true,
+  "first_evicted": true
+}

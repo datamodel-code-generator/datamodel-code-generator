@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info: {title: Overlapping inherited nullable enums, version: "1"}
+paths: {}
+components:
+  schemas:
+    Level:
+      type: integer
+      enum: [1, 2]
+    Extra:
+      enum: [2, null]
+    Merged:
+      allOf:
+        - $ref: "#/components/schemas/Level"
+        - $ref: "#/components/schemas/Extra"

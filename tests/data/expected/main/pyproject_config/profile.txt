@@ -1,0 +1,12 @@
+{
+  "class_name": "Child",
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "force_optional_for_required_fields": true,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT",
+  "snake_case_field": true,
+  "target_python_version": "3.11"
+}

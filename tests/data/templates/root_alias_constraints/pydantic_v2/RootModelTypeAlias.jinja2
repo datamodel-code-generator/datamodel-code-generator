@@ -1,0 +1,9 @@
+{%- if fields[0].annotated %}
+{{ class_name }} = RootModel[{{ fields[0].annotated }}]
+{%- elif fields[0].field %}
+from typing import Annotated
+
+{{ class_name }} = RootModel[Annotated[{{ fields[0].type_hint }}, {{ fields[0].field }}]]
+{%- else %}
+{{ class_name }} = RootModel[{{ fields[0].type_hint }}]
+{%- endif %}

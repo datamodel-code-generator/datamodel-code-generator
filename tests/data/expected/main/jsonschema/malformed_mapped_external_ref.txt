@@ -1,0 +1,2 @@
+Invalid external $ref: child.json#/$defs/Child#extra
+Invalid external $ref: child.json#/$defs/Child#extra

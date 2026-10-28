@@ -1,0 +1,30 @@
+[
+  {
+    "convert": {},
+    "decode": {}
+  },
+  {
+    "convert": {
+      "status": "ready",
+      "level": 2,
+      "enabled": true
+    },
+    "decode": {
+      "status": "ready",
+      "level": 2,
+      "enabled": true
+    }
+  },
+  {
+    "convert": {
+      "status": "waiting",
+      "level": 1,
+      "enabled": false
+    },
+    "decode": {
+      "status": "waiting",
+      "level": 1,
+      "enabled": false
+    }
+  }
+]

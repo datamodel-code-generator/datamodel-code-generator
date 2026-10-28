@@ -1,30 +1,31 @@
-"""Pydantic v2 runtime feature boundaries used by the generator."""
+"""Pydantic v2 feature boundaries keyed on the target Pydantic version, never on the installed one.
+
+The minimum of each construct and what an unset target means for it are rows of the requirement table in
+``datamodel_code_generator._requirements``; this module reads the target recorded for a model.
+"""
 
 from __future__ import annotations
 
-import re
+from typing import TYPE_CHECKING
 
-from pydantic import VERSION as PYDANTIC_VERSION
+from datamodel_code_generator._requirements import pydantic_target_meets
 
+if TYPE_CHECKING:
+    from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator.model.base import DataModel
 
-def _version_tuple(version: str) -> tuple[int, int, int]:
-    match = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
-    if match is None:
-        return (0, 0, 0)
-    major, minor, patch = match.groups(default="0")
-    return int(major), int(minor), int(patch)
+_PYDANTIC_V2_MODEL_MODULE_PREFIX = "datamodel_code_generator.model.pydantic_v2."
 
 
-PYDANTIC_VERSION_TUPLE = _version_tuple(PYDANTIC_VERSION)
-PYDANTIC_V2_DATACLASS_ALIAS_FIXED_VERSION = (2, 4, 0)
-PYDANTIC_V2_FIELD_DEPRECATED_FIXED_VERSION = (2, 7, 0)
-PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_FIXED_VERSION = (2, 8, 0)
-PYDANTIC_V2_REGEX_ENGINE_FIXED_VERSION = (2, 5, 0)
-PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK = PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_DATACLASS_ALIAS_FIXED_VERSION
-PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA = (
-    PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_FIELD_DEPRECATED_FIXED_VERSION
-)
-PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING = (
-    PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_FIXED_VERSION
-)
-PYDANTIC_V2_REGEX_ENGINE_UNSUPPORTED = PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_REGEX_ENGINE_FIXED_VERSION
+def model_target_meets(model: DataModel | None, construct: PydanticConstruct) -> bool:
+    """Return whether the target Pydantic version recorded for ``model`` has ``construct``."""
+    return pydantic_target_meets(
+        construct, None if model is None else model.extra_template_data.get("target_pydantic_version")
+    )
+
+
+def _includes_dict_key_reference_classes(model: DataModel) -> bool:
+    """Order dict-key references first for built-in models whose target predates forward-ref dict keys."""
+    return type(model).__module__.startswith(_PYDANTIC_V2_MODEL_MODULE_PREFIX) and not model_target_meets(
+        model, "pydantic.dict_key_forward_ref"
+    )

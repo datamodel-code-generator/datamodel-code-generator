@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel
 
 
 class ChildRequest(BaseModel):
-    id: int | None = None
+    id: int
     child_field: str | None = None
 
 

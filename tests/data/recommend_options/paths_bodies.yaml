@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Object bodies typed inline
+  version: "1"
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: [object, "null"]
+              additionalProperties:
+                type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/PetNames"
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+      responses:
+        "204":
+          description: Stored.
+  /owners:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties:
+                type: integer
+      responses:
+        "204":
+          description: Stored.
+  /files:
+    post:
+      requestBody:
+        content:
+          application/octet-stream: {}
+          application/json:
+            schema:
+              type: 5
+      responses:
+        "204":
+          description: Stored.
+webhooks:
+  newPet:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: [object, "null"]
+              additionalProperties:
+                type: string
+      responses:
+        "200":
+          description: Received.
+components:
+  responses:
+    PetNames:
+      description: The pet names by id.
+      content:
+        application/json:
+          schema:
+            type: [object, "null"]
+            additionalProperties:
+              type: string

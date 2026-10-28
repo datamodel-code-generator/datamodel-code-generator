@@ -1,0 +1,2 @@
+content: 'safe\n'
+swapped: True

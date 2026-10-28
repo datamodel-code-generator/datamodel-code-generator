@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "pet-kind": {
+          "const": "cat"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pet-kind"
+      ]
+    },
+    "Dog": {
+      "type": "object",
+      "properties": {
+        "pet-kind": {
+          "const": "dog"
+        },
+        "bark": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pet-kind"
+      ]
+    }
+  },
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "pet-kind"
+      }
+    }
+  }
+}

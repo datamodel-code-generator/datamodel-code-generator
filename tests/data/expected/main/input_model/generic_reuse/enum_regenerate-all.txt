@@ -1,0 +1,51 @@
+[
+  {
+    "name": "EnumRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": false
+    },
+    "type_identity": {
+      "box": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": "a"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "literal_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": "a"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "literal_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": false
+    }
+  }
+]

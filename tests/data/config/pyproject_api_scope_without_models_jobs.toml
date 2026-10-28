@@ -1,0 +1,11 @@
+[tool.datamodel-codegen]
+input-file-type = "openapi"
+openapi-scopes = ["api"]
+
+[tool.datamodel-codegen.jobs.models]
+input = "api_scope_without_models.yaml"
+output = "models.py"
+
+[tool.datamodel-codegen.jobs.package]
+input = "api_scope_without_models.yaml"
+output = "package"

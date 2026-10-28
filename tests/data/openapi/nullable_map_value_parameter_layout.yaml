@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: Nullable map parameters in a dotted module
+  version: "1.0"
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: items
+          in: query
+          schema:
+            $ref: "#/components/schemas/stats.Item"
+        - name: ranks
+          in: query
+          schema:
+            $ref: "#/components/schemas/stats.Rank"
+      responses:
+        "200":
+          description: The items.
+components:
+  schemas:
+    Value:
+      type: object
+      properties:
+        id:
+          type: integer
+    stats.Item:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+    stats.Rank:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Value"

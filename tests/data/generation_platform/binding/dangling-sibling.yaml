@@ -1,0 +1,15 @@
+openapi: "3.0.0"
+info:
+  title: Dangling sibling
+  version: "1"
+paths:
+  /pets:
+    get:
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                x-note: sibling

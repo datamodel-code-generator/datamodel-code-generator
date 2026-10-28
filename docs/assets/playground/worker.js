@@ -5,7 +5,6 @@ const PYODIDE_VERSION = "314.0.0";
 const PYODIDE_INDEX = "https://cdn.jsdelivr.net/pyodide/v314.0.0/full/";
 const STANDARD_RUNTIME_PACKAGES = [
   "inflect>=4.1,<8",
-  "jinja2>=2.10.1,<4",
   "pydantic>=2.12,<3",
   "pyyaml>=6.0.1",
 ];
@@ -47,6 +46,7 @@ function withDefaultVersionConfig(versionConfig = {}) {
     metadataUrl: config.metadataUrl || new URL("codegen-ui-metadata.json", assetBaseUrl).toString(),
     appUrl: config.appUrl || new URL("runtime.py", assetBaseUrl).toString(),
     install: config.install || null,
+    runtimePackages: Array.isArray(config.runtimePackages) ? config.runtimePackages : [],
   };
 }
 
@@ -123,7 +123,7 @@ async function initPyodide(versionConfig) {
 
   await installPythonPackages(
     pyodide,
-    [...STANDARD_RUNTIME_PACKAGES, ...packagesForRuntimeApp(activeVersion)],
+    [...STANDARD_RUNTIME_PACKAGES, ...activeVersion.runtimePackages, ...packagesForRuntimeApp(activeVersion)],
     "Installing generator runtime dependencies...",
   );
 

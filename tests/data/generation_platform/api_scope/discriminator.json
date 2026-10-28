@@ -1,0 +1,66 @@
+{
+  "openapi": "3.1.1",
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "cat": "#/components/schemas/Cat"
+          }
+        }
+      },
+      "Cat": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/%50et"
+          }
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "cat"
+            ]
+          },
+          "lives": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "%50et": {
+        "title": "PercentPet",
+        "type": "object",
+        "properties": {
+          "literal": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "Adopt": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Pet"
+            }
+          }
+        }
+      }
+    }
+  }
+}

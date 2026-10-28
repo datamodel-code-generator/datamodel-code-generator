@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,6 +16,11 @@ from datamodel_code_generator.reference import (
     is_url,
     snake_to_upper_camel,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from os import stat_result
+    from typing import Literal
 
 
 @pytest.mark.parametrize(
@@ -87,6 +94,36 @@ def test_model_resolver_add_class_name_generates_class_reference() -> None:
 
     assert reference.name == "User"
     assert reference.duplicate_name is None
+
+
+@pytest.mark.parametrize(
+    ("name", "treat_dot_as_module", "strict_dotted_module_names", "expected"),
+    [
+        ("models.Pet", None, False, "models.Pet"),
+        ("SaveTrifectaV2.1", None, False, "SaveTrifectaV2.Field1"),
+        ("pkg.class.Model", None, False, "pkg.class_.Model"),
+        ("models.Pet", None, True, "models.Pet"),
+        ("SaveTrifectaV2.1", None, True, "SaveTrifectaV21"),
+        ("pkg.class.Model", None, True, "PkgClassModel"),
+        ("models.Pet", False, True, "ModelsPet"),
+        ("SaveTrifectaV2.1", True, True, "SaveTrifectaV2.Field1"),
+    ],
+)
+def test_model_resolver_dotted_class_name(
+    name: str,
+    treat_dot_as_module: bool | None,
+    strict_dotted_module_names: bool,
+    expected: str,
+) -> None:
+    """Interpret dotted class names according to explicit and inferred policies."""
+    resolver = ModelResolver(
+        treat_dot_as_module=treat_dot_as_module,
+        strict_dotted_module_names=strict_dotted_module_names,
+    )
+
+    class_name = resolver.get_class_name(name, unique=False)
+
+    assert class_name.name == expected
 
 
 def test_reference_cache_clear_preserves_helper_values() -> None:
@@ -259,6 +296,165 @@ def test_resolve_ref_with_relative_root_id_and_base_url() -> None:
     result = resolver.resolve_ref("sub.schema.json")
 
     assert result == "http://localhost:8888/schemas/v1/sub.schema.json#"
+
+
+def test_resolve_ref_caches_local_file_parts_by_base_path(tmp_path: Path) -> None:
+    """Keep fragment handling separate while caching each local file path per base path."""
+    first_base_path = tmp_path / "first"
+    second_base_path = tmp_path / "second"
+    for base_path in (first_base_path, second_base_path):
+        base_path.mkdir()
+        (base_path / "shared.json").touch()
+
+    resolver = ModelResolver(base_path=tmp_path)
+    with resolver.current_base_path_context(first_base_path):
+        assert resolver.resolve_ref("shared.json#/$defs/First") == "first/shared.json#/$defs/First"
+        assert resolver.resolve_ref("shared.json#/$defs/Second") == "first/shared.json#/$defs/Second"
+        assert (
+            resolver.resolve_ref(f"{first_base_path / 'shared.json'}#/$defs/Absolute")
+            == "first/shared.json#/$defs/Absolute"
+        )
+    with resolver.current_base_path_context(second_base_path):
+        assert resolver.resolve_ref("shared.json#/$defs/Third") == "second/shared.json#/$defs/Third"
+
+    assert resolver.resolve_ref("#/defs/Local") == "#/defs/Local"
+    with resolver.current_root_context(["root"]):
+        assert resolver.resolve_ref("#") == "root#"
+    assert (
+        resolver.resolve_ref("https://example.com/shared.json#/$defs/Remote")
+        == "https://example.com/shared.json#/$defs/Remote"
+    )
+    assert resolver._resolved_local_file_parts == {
+        (first_base_path, "shared.json"): "first/shared.json",
+        (first_base_path, str(first_base_path / "shared.json")): "first/shared.json",
+        (second_base_path, "shared.json"): "second/shared.json",
+    }
+
+
+def test_resolve_ref_normalizes_empty_path_as_root_fragment() -> None:
+    """Treat an empty reference as the ``#`` root fragment instead of indexing it."""
+    resolver = ModelResolver()
+
+    assert resolver.resolve_ref("") == "#"
+    with resolver.current_root_context(["root"]):
+        assert resolver.resolve_ref("") == "root#"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="requires POSIX symlinks")
+@pytest.mark.parametrize("symlink_kind", ["file", "parent"])
+def test_resolve_ref_local_file_cache_tracks_retargeted_symlinks(
+    tmp_path: Path, symlink_kind: Literal["file", "parent"]
+) -> None:
+    """Do not retain a reference whose direct or parent symlink is later retargeted."""
+    first_directory = tmp_path / "first"
+    second_directory = tmp_path / "second"
+    for directory in (first_directory, second_directory):
+        directory.mkdir()
+        (directory / "shared.json").touch()
+
+    if symlink_kind == "file":
+        symlink_path = tmp_path / "shared.json"
+        first_target = first_directory / "shared.json"
+        second_target = second_directory / "shared.json"
+        reference_path = "shared.json"
+        target_is_directory = False
+    else:
+        symlink_path = tmp_path / "schemas"
+        first_target = first_directory
+        second_target = second_directory
+        reference_path = "schemas/shared.json"
+        target_is_directory = True
+
+    symlink_path.symlink_to(first_target, target_is_directory=target_is_directory)
+    resolver = ModelResolver(base_path=tmp_path)
+
+    assert resolver.resolve_ref(f"{reference_path}#/$defs/First") == "first/shared.json#/$defs/First"
+    assert resolver._resolved_local_file_parts == {}
+
+    symlink_path.unlink()
+    symlink_path.symlink_to(second_target, target_is_directory=target_is_directory)
+
+    assert resolver.resolve_ref(f"{reference_path}#/$defs/Second") == "second/shared.json#/$defs/Second"
+    assert resolver._resolved_local_file_parts == {}
+
+
+def test_resolve_ref_does_not_cache_when_symlink_inspection_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Preserve uncached resolution if checking a local path for symlinks fails."""
+    (tmp_path / "shared.json").touch()
+    original_lstat = Path.lstat
+
+    def raise_symlink_error(path: Path) -> stat_result:
+        if path == tmp_path:
+            msg = "simulated symlink inspection failure"
+            raise OSError(msg)
+        return original_lstat(path)
+
+    monkeypatch.setattr(Path, "lstat", raise_symlink_error)
+    resolver = ModelResolver(base_path=tmp_path)
+
+    assert resolver.resolve_ref("shared.json#/$defs/Shared") == "shared.json#/$defs/Shared"
+    assert resolver._resolved_local_file_parts == {}
+
+
+def test_resolve_ref_does_not_cache_failed_local_file_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not retain a local reference when filesystem resolution fails."""
+    target = tmp_path / "missing.json"
+    resolver = ModelResolver(base_path=tmp_path)
+
+    def raise_resolution_error(path: Path, *args: object, **kwargs: object) -> Path:
+        del path, args, kwargs
+        msg = "simulated filesystem failure"
+        raise OSError(msg)
+
+    monkeypatch.setattr(Path, "resolve", raise_resolution_error)
+
+    with pytest.raises(OSError, match="simulated filesystem failure"):
+        resolver.resolve_ref(f"{target.name}#/$defs/Loop")
+
+    assert resolver._resolved_local_file_parts == {}
+
+
+def test_resolve_ref_local_file_cache_stays_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resolve uncached files without symlink inspection after the cache reaches its limit."""
+    (tmp_path / "uncached.json").touch()
+    resolver = ModelResolver(base_path=tmp_path)
+    resolver._resolved_local_file_parts.update({
+        (tmp_path, f"cached-{index}.json"): f"cached-{index}.json"
+        for index in range(resolver._MAX_RESOLVED_LOCAL_FILE_PARTS)
+    })
+
+    def fail_unexpected_lstat(_path: Path) -> stat_result:
+        pytest.fail("symlink inspection should be skipped when the cache is full")  # pragma: no cover
+
+    monkeypatch.setattr(Path, "lstat", fail_unexpected_lstat)
+
+    assert resolver.resolve_ref("uncached.json#/$defs/Uncached") == "uncached.json#/$defs/Uncached"
+    assert (tmp_path, "uncached.json") not in resolver._resolved_local_file_parts
+
+
+def test_resolve_ref_local_file_cache_preserves_model_resolver_overrides(tmp_path: Path) -> None:
+    """Keep custom resolver overrides on the normal reference-resolution dispatch path."""
+
+    class TrackingModelResolver(ModelResolver):
+        resolved_paths: list[str]
+
+        def __init__(self, base_path: Path) -> None:
+            super().__init__(base_path=base_path)
+            self.resolved_paths = []
+
+        def resolve_ref(self, path: Sequence[str] | str) -> str:
+            self.resolved_paths.append(path if isinstance(path, str) else "/".join(path))
+            return super().resolve_ref(path)
+
+    (tmp_path / "shared.json").touch()
+    resolver = TrackingModelResolver(tmp_path)
+
+    assert resolver.resolve_ref("shared.json#/$defs/Model") == "shared.json#/$defs/Model"
+    assert resolver.resolved_paths == ["shared.json#/$defs/Model"]
 
 
 def test_resolve_path_absolute_local_ref_with_root_id(tmp_path: Path) -> None:

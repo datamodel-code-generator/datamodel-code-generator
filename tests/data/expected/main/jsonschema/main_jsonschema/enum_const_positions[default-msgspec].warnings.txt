@@ -1,0 +1,8 @@
+The schema at enum_const_positions.json#/properties/property admits only its const 'a' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/properties/words/items admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/properties/counts/additionalProperties admits only its const 2 of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/properties/branch/anyOf/0 admits only its const 'a' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/properties/refSibling admits only its const 'on' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/$defs/Narrowed admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/$defs/AllOfNarrowed admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.
+The schema at enum_const_positions.json#/$defs/BesideNull admits only its const 'b' of its enum values, but its values are typed as its enum class, which accepts the other values too.

@@ -1,0 +1,12 @@
+CountsPostRequest valid {}: accepted
+CountsPostRequest valid {"a1": 1}: accepted
+CountsPostRequest invalid {"a1": "x"}: rejected (int_parsing)
+CountsPostRequest invalid {"b": 1}: accepted
+CodesPostRequest valid {}: accepted
+CodesPostRequest valid {"abc": 1}: accepted
+CodesPostRequest invalid {"abcd": 1}: accepted
+CodesPostRequest invalid {"abc": "x"}: rejected (int_parsing)
+ScoresPostRequest valid {}: accepted
+ScoresPostRequest valid {"a": 1}: accepted
+ScoresPostRequest valid 5: accepted
+ScoresPostRequest invalid {"a": "x"}: accepted

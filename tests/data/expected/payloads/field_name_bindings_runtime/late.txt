@@ -1,0 +1,10 @@
+{
+  "fields": [
+    "count",
+    "Field"
+  ],
+  "values": {
+    "count": 3,
+    "Field": "list"
+  }
+}

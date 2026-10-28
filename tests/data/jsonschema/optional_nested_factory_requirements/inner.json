@@ -1,0 +1,30 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Item"
+    }
+  },
+  "$defs": {
+    "Leaf": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "leaf": {
+          "$ref": "#/$defs/Leaf"
+        }
+      }
+    }
+  }
+}

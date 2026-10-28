@@ -1,0 +1,10 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/": {
+      "additionalOperations": {
+        "QUERY": {}
+      }
+    }
+  }
+}

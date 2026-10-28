@@ -1,0 +1,664 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "strings": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/StrM1"
+        },
+        {
+          "$ref": "#/$defs/StrM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "ints": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/IntM1"
+        },
+        {
+          "$ref": "#/$defs/IntM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "enums": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EnumM1"
+        },
+        {
+          "$ref": "#/$defs/EnumM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "optionals": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/OptM1"
+        },
+        {
+          "$ref": "#/$defs/OptM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "chain": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ChainM1"
+        },
+        {
+          "$ref": "#/$defs/ChainM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "derived": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ChainM1a"
+        },
+        {
+          "$ref": "#/$defs/ChainM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "mixed": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MixM1"
+        },
+        {
+          "$ref": "#/$defs/MixM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "one_member": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/OneM1"
+        },
+        {
+          "$ref": "#/$defs/OneM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "pets": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaggedPet"
+        },
+        {
+          "$ref": "#/$defs/TaggedOther"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "tagged_chain": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaggedAM1"
+        },
+        {
+          "$ref": "#/$defs/TaggedZOther"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "zs": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaggedZ"
+        },
+        {
+          "$ref": "#/$defs/TaggedZOther"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "dashed": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DashM1"
+        },
+        {
+          "$ref": "#/$defs/DashM2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "tag-k"
+      }
+    }
+  },
+  "$defs": {
+    "StrBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "StrM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/StrBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "s1"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "StrM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/StrBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "s2"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "IntBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "IntM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/IntBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": 1
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "IntM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/IntBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": 2
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "EnumBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "m",
+            "n"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "EnumM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EnumBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "m"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "EnumM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EnumBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "n"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "OptBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        },
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "OptM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OptBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "o1"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "OptM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OptBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "o2"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "ChainBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "ChainMid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ChainBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "ChainM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ChainMid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "c1"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "ChainM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ChainMid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "c2"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "ChainM1a": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ChainM1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "c1"
+            },
+            "x": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "MixBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "MixM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "x1"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "MixM2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": "x2"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "OneBase": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "OneM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OneBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "enum": [
+                "n1"
+              ]
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "OneM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OneBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "enum": [
+                "n2"
+              ]
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "TaggedPet": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": "pet"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "TaggedOther": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": "other"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "TaggedZ": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": "z"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "TaggedZOther": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": "zo"
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "TaggedA": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TaggedZ"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "z"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "TaggedAM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TaggedA"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "z"
+            },
+            "y": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "k"
+          ]
+        }
+      ]
+    },
+    "DashBase": {
+      "type": "object",
+      "properties": {
+        "tag-k": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag-k"
+      ]
+    },
+    "DashM1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/DashBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tag-k": {
+              "const": "d1"
+            }
+          },
+          "required": [
+            "tag-k"
+          ]
+        }
+      ]
+    },
+    "DashM2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/DashBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tag-k": {
+              "const": "d2"
+            }
+          },
+          "required": [
+            "tag-k"
+          ]
+        }
+      ]
+    }
+  }
+}

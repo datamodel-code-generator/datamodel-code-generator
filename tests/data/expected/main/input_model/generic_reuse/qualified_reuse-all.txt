@@ -1,0 +1,51 @@
+[
+  {
+    "name": "QualifiedRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": true
+    },
+    "type_identity": {
+      "box": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": true
+    }
+  }
+]

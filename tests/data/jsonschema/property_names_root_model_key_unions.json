@@ -1,0 +1,12 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "either": {"type": "object", "propertyNames": {"$ref": "#/$defs/Either"}, "additionalProperties": {"type": "integer"}},
+    "recursive": {"type": "object", "propertyNames": {"$ref": "#/$defs/Recursive"}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Either": {"anyOf": [{"type": "string", "pattern": "^x"}, {"type": "string", "minLength": 4}]},
+    "Recursive": {"anyOf": [{"type": "string", "pattern": "^r"}, {"type": "array", "items": {"$ref": "#/$defs/Recursive"}}]}
+  }
+}

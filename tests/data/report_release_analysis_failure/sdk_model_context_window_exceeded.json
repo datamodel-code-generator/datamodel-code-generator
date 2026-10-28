@@ -1,0 +1,19 @@
+[
+  {
+    "type": "assistant",
+    "error": "model_context_window_exceeded",
+    "message": {
+      "content": [
+        {
+          "type": "text",
+          "text": "SECRET-CANARY\n::error::injected"
+        }
+      ]
+    }
+  },
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "Unrecognized failure"
+  }
+]

@@ -1,0 +1,3 @@
+# protocols-querystring
+render pydantic_v2.BaseModel
+  Error: /paths/~1search/get: --client-protocols['search.query'].continuation.write: GET /search owns a querystring, which a querystring target writes; /paths/~1search/get: --client-protocols['search.other'].continuation.write: GET /search has no querystring 'terms'

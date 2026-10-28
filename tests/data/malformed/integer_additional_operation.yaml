@@ -1,0 +1,11 @@
+openapi: 3.2.0
+info:
+  title: Integer additional operation
+  version: '1.0'
+paths:
+  /pets:
+    additionalOperations:
+      1:
+        responses:
+          '200':
+            description: OK

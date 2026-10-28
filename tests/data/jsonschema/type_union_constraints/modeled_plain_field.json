@@ -1,0 +1,28 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "before": {
+      "type": "boolean",
+      "default": true
+    },
+    "value": {
+      "type": [
+        "string",
+        "object"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "after": {
+      "type": "integer",
+      "default": 7
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "resources": [
+    {
+      "body_sha256": "sha256:dd685a80d0a5f4f988100135d00eabca42b21310777ec61c17212948a26032b0",
+      "request_sha256": "<normalized>",
+      "url": "http://localhost"
+    },
+    {
+      "body_sha256": "sha256:dd685a80d0a5f4f988100135d00eabca42b21310777ec61c17212948a26032b0",
+      "request_sha256": "<normalized>",
+      "url": "http://localhost"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,268 @@
+openapi: "3.1.0"
+info:
+  title: Read Only Write Only Variant Graph Test API
+  version: "1.0.0"
+paths:
+  /conditional:
+    post:
+      operationId: validateConditional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConditionalForwardWrapper"
+      responses:
+        "204":
+          description: Conditional payload accepted
+components:
+  schemas:
+    ForwardGraphWrapper:
+      type: object
+      required:
+        - alias
+        - items
+        - values
+        - keyedValues
+      properties:
+        alias:
+          $ref: "#/components/schemas/ForwardAlias"
+        items:
+          $ref: "#/components/schemas/ForwardArray"
+        values:
+          $ref: "#/components/schemas/ForwardMap"
+        keyedValues:
+          $ref: "#/components/schemas/ForwardKeyedMap"
+    ForwardInlineWrapper:
+      type: object
+      required:
+        - container
+      properties:
+        container:
+          $ref: "#/components/schemas/ForwardInlineContainer"
+    ForwardRootInlineArrayWrapper:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          $ref: "#/components/schemas/InlineObjectArray"
+    ForwardRootInlineUnionWrapper:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: "#/components/schemas/InlineObjectUnion"
+    ForwardDictKeyWrapper:
+      type: object
+      required:
+        - values
+      properties:
+        values:
+          $ref: "#/components/schemas/ForwardDictKeyMap"
+    ConditionalForwardWrapper:
+      type: object
+      required:
+        - payload
+      properties:
+        payload:
+          $ref: "#/components/schemas/ConditionalEnvelope"
+    PositiveSccWrapper:
+      type: object
+      required:
+        - node
+      properties:
+        node:
+          $ref: "#/components/schemas/PositiveA"
+    NegativeSccWrapper:
+      type: object
+      required:
+        - node
+      properties:
+        node:
+          $ref: "#/components/schemas/NegativeA"
+    User:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+    UserRequest:
+      type: object
+      required:
+        - legacy
+      properties:
+        legacy:
+          type: boolean
+    CollisionWrapper:
+      type: object
+      required:
+        - user
+        - sourceRequest
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        sourceRequest:
+          $ref: "#/components/schemas/UserRequest"
+    DirectInlineContainer:
+      type: object
+      required:
+        - child
+      properties:
+        child:
+          title: DirectInlineLeaf
+          type: object
+          required:
+            - label
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            label:
+              type: string
+    ForwardInlineContainer:
+      type: object
+      required:
+        - child
+      properties:
+        child:
+          title: ForwardInlineLeaf
+          type: object
+          required:
+            - label
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            label:
+              type: string
+    InlineObjectArray:
+      type: array
+      items:
+        title: InlineArrayLeaf
+        type: object
+        required:
+          - label
+        properties:
+          id:
+            type: integer
+            readOnly: true
+          label:
+            type: string
+    InlineObjectUnion:
+      anyOf:
+        - title: InlineUnionReadLeaf
+          type: object
+          required:
+            - label
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            label:
+              type: string
+        - title: InlineUnionPlainLeaf
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    ForwardAlias:
+      $ref: "#/components/schemas/ReadOnlyLeaf"
+    ForwardArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/ReadOnlyLeaf"
+    ForwardMap:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/ReadOnlyLeaf"
+    ForwardKeyedMap:
+      type: object
+      propertyNames:
+        $ref: "#/components/schemas/AllowedKey"
+      additionalProperties:
+        $ref: "#/components/schemas/ReadOnlyLeaf"
+    ForwardDictKeyMap:
+      type: object
+      propertyNames:
+        $ref: "#/components/schemas/ReadOnlyLeaf"
+      additionalProperties:
+        type: string
+    PositiveA:
+      type: object
+      properties:
+        name:
+          type: string
+        b:
+          $ref: "#/components/schemas/PositiveB"
+    PositiveB:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        label:
+          type: string
+        a:
+          $ref: "#/components/schemas/PositiveA"
+    NegativeA:
+      type: object
+      properties:
+        name:
+          type: string
+        b:
+          $ref: "#/components/schemas/NegativeB"
+    NegativeB:
+      type: object
+      properties:
+        label:
+          type: string
+        a:
+          $ref: "#/components/schemas/NegativeA"
+    ConditionalEnvelope:
+      type: object
+      minProperties: 2
+      maxProperties: 2
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+      if:
+        properties:
+          kind:
+            const: metric
+        required:
+          - kind
+      then:
+        properties:
+          metricLeaf:
+            $ref: "#/components/schemas/ReadOnlyLeaf"
+        required:
+          - metricLeaf
+      else:
+        properties:
+          noteLeaf:
+            $ref: "#/components/schemas/ReadOnlyLeaf"
+        required:
+          - noteLeaf
+    AllowedKey:
+      type: string
+      enum:
+        - alpha
+        - beta
+    ReadOnlyLeaf:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          readOnly: true

@@ -1,0 +1,6 @@
+{
+  "native_input_retention": true,
+  "native_value_type": true,
+  "hashable": true,
+  "set_size": 1
+}

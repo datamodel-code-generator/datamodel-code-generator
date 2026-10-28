@@ -1,0 +1,15 @@
+[
+  {
+    "schema_valid": true,
+    "generated": {
+      "anchor": null,
+      "x": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  }
+]

@@ -2,9 +2,11 @@
 #   filename:  modular.yaml
 
 from __future__ import annotations
+
 from pydantic import BaseModel
-from .._internal import Cocoa, Source
+
 from .. import bar
+from .._internal import Cocoa, Source
 
 
 class Chocolate(BaseModel):

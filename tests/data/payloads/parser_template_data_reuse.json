@@ -1,0 +1,9 @@
+{
+  "template_data": {
+    "#all#": {
+      "unused_list": ["stable"]
+    }
+  },
+  "valid": {},
+  "invalid": {"unexpected": 1}
+}

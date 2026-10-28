@@ -1,0 +1,14 @@
+{
+  "oas30": {"instances": "oas30-instances.json"},
+  "oas31": {"instances": "oas31-instances.json"},
+  "oas32": {
+    "refusal": {},
+    "config": {"model": {"openapi_include_paths": ["/search", "/spread", "/raw"]}}
+  },
+  "parameters": {},
+  "directions-accepted": {"instances": "directions-accepted-instances.json"},
+  "dialects": {},
+  "dialects32": {},
+  "legacy": {"model": {"openapi_scopes": ["schemas", "paths", "api"]}},
+  "querystring-version": {"model": {"schema_version": "3.2"}}
+}

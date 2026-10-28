@@ -17,8 +17,7 @@ class KnownAndRefExtra(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, ExtraValue],
+    }
     name: str
-
-
-KnownAndRefExtra.__annotations__['__pydantic_extra__'] = Dict[str, ExtraValue]
-KnownAndRefExtra.model_rebuild(force=True)

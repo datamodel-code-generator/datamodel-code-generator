@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MsgspecBooleanEnumLiteral",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "enum": [true, false]
+    }
+  }
+}

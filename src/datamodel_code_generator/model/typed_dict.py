@@ -6,27 +6,46 @@ Generates Python TypedDict classes for use with type checkers.
 from __future__ import annotations
 
 import keyword
-from typing import TYPE_CHECKING, Any, ClassVar
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
+from typing_extensions import override
+
+from datamodel_code_generator._target_unicode import is_identifier
+from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model._render_plan import FieldRenderPlan, RuleId, Why
 from datamodel_code_generator.model.base import UNDEFINED
 from datamodel_code_generator.model.imports import (
     IMPORT_NOT_REQUIRED,
     IMPORT_NOT_REQUIRED_BACKPORT,
     IMPORT_READ_ONLY,
     IMPORT_READ_ONLY_BACKPORT,
+    IMPORT_REQUIRED,
+    IMPORT_REQUIRED_BACKPORT,
     IMPORT_TYPED_DICT,
     IMPORT_TYPED_DICT_BACKPORT,
 )
-from datamodel_code_generator.types import NOT_REQUIRED_PREFIX, READ_ONLY_PREFIX
+from datamodel_code_generator.python_literal import (
+    _InternalTypeExpression,
+    represent_untrusted_public_type_name,
+    represent_untrusted_python_value,
+)
+from datamodel_code_generator.types import NOT_REQUIRED_PREFIX, READ_ONLY_PREFIX, REQUIRED_PREFIX
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
-    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+
+_KEY_REQUIREDNESS = Why(RuleId("D3.typed-dict.key-requiredness"), keyword="required")
+"""A key whose requiredness differs from the class's totality is ``Required[`` or ``NotRequired[``."""
+_READ_ONLY = Why(RuleId("D11.typed-dict.read-only"), keyword="readOnly", option="--use-frozen-field")
 
 
 escape_characters = str.maketrans({
@@ -40,11 +59,14 @@ escape_characters = str.maketrans({
 })
 
 
+def _field_source_name(field: DataModelFieldBase) -> str | None:
+    return field.original_name if field.original_name is not None else field.name
+
+
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:
-    name = field.original_name or field.name
-    if name is None:  # pragma: no cover
+    if (name := _field_source_name(field)) is None:  # pragma: no cover
         return False
-    return name.isidentifier() and not keyword.iskeyword(name)
+    return is_identifier(name, field.data_type.python_version) and not keyword.iskeyword(name)
 
 
 class TypedDict(DataModel):
@@ -53,6 +75,51 @@ class TypedDict(DataModel):
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypedDict.jinja2"
     BASE_CLASS: ClassVar[str] = "typing.TypedDict"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPED_DICT,)
+    REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES: ClassVar[bool] = True
+    SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = True
+    SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+
+    @classmethod
+    @override
+    def store_additional_properties_type(
+        cls,
+        extra_template_data: dict[str, Any],
+        type_hint: str,
+        reference_classes: set[str] | None = None,
+        *,
+        root_model_type: type[DataModel] | None = None,
+        imports: tuple[Import, ...] = (),
+        use_backport: bool = False,
+    ) -> None:
+        """Store TypedDict extra-item imports without exposing them to other outputs."""
+        super().store_additional_properties_type(
+            extra_template_data,
+            type_hint,
+            reference_classes,
+            root_model_type=root_model_type,
+            use_backport=use_backport,
+        )
+        if imports:
+            extra_template_data["additionalPropertiesImports"] = imports
+
+    @classmethod
+    @override
+    def resolve_module_import_conflicts(
+        cls,
+        models: Iterable[DataModel],
+        model_imports: Mapping[DataModel, tuple[Import, ...]],
+        imports: Imports,
+    ) -> None:
+        """Prefer one TypedDict source when a module mixes target-version requirements."""
+        if not any(IMPORT_TYPED_DICT_BACKPORT in model_imports[model] for model in models):
+            return
+        if IMPORT_TYPED_DICT_BACKPORT.import_ not in imports.get(
+            IMPORT_TYPED_DICT_BACKPORT.from_, set()
+        ) or IMPORT_TYPED_DICT.import_ not in imports.get(IMPORT_TYPED_DICT.from_, set()):
+            return
+        while imports.counter.get((IMPORT_TYPED_DICT.from_, IMPORT_TYPED_DICT.import_), 0) > 0:
+            imports.remove(IMPORT_TYPED_DICT)
 
     def __init__(  # noqa: PLR0913
         self,
@@ -89,10 +156,11 @@ class TypedDict(DataModel):
             keyword_only=keyword_only,
             treat_dot_as_module=treat_dot_as_module,
         )
-        self._setup_closed_extra_items()
+        self.use_total_false_for_typed_dict = bool(self.extra_template_data.get("use_total_false_for_typed_dict"))
+        self._setup_typed_dict_kwargs()
 
-    def _setup_closed_extra_items(self) -> None:
-        """Set up closed and extra_items kwargs based on additionalProperties.
+    def _setup_typed_dict_kwargs(self) -> None:
+        """Set up total, closed, and extra_items keyword arguments.
 
         For PEP 728 TypedDict support:
         - additionalProperties: false -> closed=True
@@ -106,25 +174,59 @@ class TypedDict(DataModel):
         additional_props_type = self.extra_template_data.get("additionalPropertiesType")
         is_base_class = self.extra_template_data.get("is_base_class", False)
 
-        typed_dict_kwargs: dict[str, str] = {}
+        typed_dict_kwargs: dict[str, str] = {"total": "False"} if self.use_total_false_for_typed_dict else {}
 
         if additional_props is False and not is_base_class:
             typed_dict_kwargs["closed"] = "True"
         elif additional_props_type and not is_base_class:
-            if self.extra_template_data.get("additionalPropertiesReferenceClasses"):
-                typed_dict_kwargs["extra_items"] = repr(additional_props_type)
+            if isinstance(additional_props_type, _InternalTypeExpression):
+                typed_dict_kwargs["extra_items"] = additional_props_type.code
+            elif len(self.additional_properties_reference_classes):
+                typed_dict_kwargs["extra_items"] = represent_untrusted_python_value(additional_props_type)
             else:
-                typed_dict_kwargs["extra_items"] = additional_props_type
+                typed_dict_kwargs["extra_items"] = represent_untrusted_public_type_name(additional_props_type)
 
         if typed_dict_kwargs:
-            self.extra_template_data["typed_dict_kwargs"] = typed_dict_kwargs
-            kwargs_str = ", ".join(f"{k}={v}" for k, v in typed_dict_kwargs.items())
-            self.extra_template_data["typed_dict_kwargs_suffix"] = f", {kwargs_str}"
+            self._set_typed_dict_kwargs(typed_dict_kwargs)
+
+    def _set_typed_dict_kwargs(self, typed_dict_kwargs: dict[str, str]) -> None:
+        kwargs_str = ", ".join(f"{k}={v}" for k, v in typed_dict_kwargs.items())
+        self._set_internal_template_data("typed_dict_kwargs", typed_dict_kwargs)
+        self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
 
     @property
-    def _has_typed_dict_kwargs(self) -> bool:
+    def _extra_items_source(self) -> DataType | None:
+        """The data type that ``extra_items`` renders once class names are final, or None."""
+        typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})
+        additional_props_type = self.extra_template_data.get("additionalPropertiesType")
+        if "extra_items" not in typed_dict_kwargs or not isinstance(additional_props_type, _InternalTypeExpression):
+            return None
+        return cast("DataType | None", additional_props_type.source)
+
+    @override
+    def _name_final_classes(self) -> None:
+        """Render ``extra_items`` again from the data type it was built from, as field types render.
+
+        It is a string while it names generated classes, which may be declared later.
+        """
+        if (source := self._extra_items_source) is None:
+            return
+        typed_dict_kwargs: dict[str, str] = self._internal_template_data["typed_dict_kwargs"]
+        type_hint = source.type_hint
+        extra_items = repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
+        self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
+
+    @override
+    def _setting_data_types(self) -> Iterator[DataType]:
+        """Yield the data types of ``extra_items``, which names models as field types do."""
+        if (source := self._extra_items_source) is not None:
+            yield from source.all_data_types
+
+    @property
+    def _has_pep728_kwargs(self) -> bool:
         """Check if this TypedDict has closed or extra_items kwargs."""
-        return bool(self.extra_template_data.get("typed_dict_kwargs"))
+        typed_dict_kwargs = self._internal_template_data.get("typed_dict_kwargs", {})
+        return "closed" in typed_dict_kwargs or "extra_items" in typed_dict_kwargs
 
     @property
     def _use_typeddict_backport(self) -> bool:
@@ -132,54 +234,94 @@ class TypedDict(DataModel):
         return bool(self.extra_template_data.get("use_typeddict_backport"))
 
     @property
+    def _requires_typeddict_backport(self) -> bool:
+        """Check if this TypedDict needs typing_extensions.TypedDict."""
+        if self.extra_template_data.get("use_total_false_typeddict_backport"):
+            return True
+        return self._use_typeddict_backport and self._has_pep728_kwargs
+
+    @property
+    @override
     def base_class(self) -> str:
         """Get base class string with kwargs if needed.
 
         For PEP 728 support, includes closed=True or extra_items=X in the base class.
         """
         base = super().base_class
-        if typed_dict_kwargs_suffix := self.extra_template_data.get("typed_dict_kwargs_suffix"):
+        use_custom_template = self._uses_custom_root_template
+        template_data = self._custom_template_data() if use_custom_template else self._internal_template_data
+        if typed_dict_kwargs_suffix := template_data.get("typed_dict_kwargs_suffix"):
             return f"{base}{typed_dict_kwargs_suffix}"
         return base
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
-        """Get imports, using backport TypedDict when closed/extra_items are used on Python < 3.13."""
-        base_imports = list(super().imports)
+        """Get imports, using the TypedDict backport when required by the target version."""
+        extra_item_imports = tuple(
+            import_
+            for import_ in self.extra_template_data.get("additionalPropertiesImports", ())
+            if isinstance(import_, Import)
+        )
+        base_imports = (*super().imports, *extra_item_imports)
+        if not self._requires_typeddict_backport:
+            return base_imports
+        return (*(i for i in base_imports if i != IMPORT_TYPED_DICT), IMPORT_TYPED_DICT_BACKPORT)
 
-        if self._use_typeddict_backport and self._has_typed_dict_kwargs:
-            base_imports = [i for i in base_imports if i != IMPORT_TYPED_DICT]
-            base_imports.append(IMPORT_TYPED_DICT_BACKPORT)
+    @override
+    def create_reuse_model(self, base_ref: Reference) -> TypedDict:
+        """Create a reuse model while preserving total=False behavior."""
+        reuse_model = super().create_reuse_model(base_ref)
+        if not self.use_total_false_for_typed_dict:
+            return reuse_model
 
-        return tuple(base_imports)
+        reuse_model.use_total_false_for_typed_dict = True
+        reuse_model.extra_template_data["use_total_false_for_typed_dict"] = True
+        if self.extra_template_data.get("use_total_false_typeddict_backport"):
+            reuse_model.extra_template_data["use_total_false_typeddict_backport"] = True
+        TypedDict._setup_typed_dict_kwargs(reuse_model)
+        return reuse_model
 
     @property
     def is_functional_syntax(self) -> bool:
         """Check if TypedDict requires functional syntax."""
         return any(not _is_valid_field_name(f) for f in self.fields)
 
+    def _flattened_fields(self) -> Iterable[DataModelFieldBase]:
+        """Return the own fields, or with base models the fields they and their bases give, by key."""
+        if any(base.reference and isinstance(base.reference.source, DataModel) for base in self.base_classes):
+            return {_field_source_name(field): field for field in self.iter_all_fields()}.values()
+        return self.fields
+
     @property
     def all_fields(self) -> Iterator[DataModelFieldBase]:
         """Iterate over all fields, without docstrings the functional dict literal cannot hold."""
-        for field in self.iter_all_fields():
+        for field in self._flattened_fields():
             yield field.model_copy(update={"use_field_description": False, "use_inline_field_description": False})
 
+    @override
+    def fields_evaluated_at_definition(self) -> list[DataModelFieldBase]:
+        """Return the fields of the functional form, whose dict literal evaluates their types as the module runs."""
+        return list(self._flattened_fields()) if self.is_functional_syntax else []
+
+    @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render TypedDict class with appropriate syntax."""
-        use_custom_template = self.template_file_path.is_absolute()
-        description = self.description if use_custom_template else self.rendered_description
+        use_custom_template = self._uses_custom_root_template
+        description = self._template_description(use_custom_template=use_custom_template)
         if not use_custom_template and self.is_functional_syntax:
             description = None
+        extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
         return self._render(
             class_name=class_name or self.class_name,
-            fields=self.fields if use_custom_template else self.rendered_fields,
+            fields=self._template_fields(use_custom_template=use_custom_template),
             decorators=self.decorators,
             base_class=self.base_class,
             methods=self.methods,
             description=description,
             is_functional_syntax=self.is_functional_syntax,
             all_fields=self.all_fields,
-            **self.extra_template_data,
+            **extra_template_data,
         )
 
 
@@ -190,8 +332,10 @@ class DataModelField(DataModelFieldBase):
     """
 
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_NOT_REQUIRED,)
+    DEFAULT_REQUIRED_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_REQUIRED,)
     DEFAULT_READ_ONLY_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_READ_ONLY,)
 
+    @override
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
@@ -199,24 +343,67 @@ class DataModelField(DataModelFieldBase):
     @property
     def key(self) -> str:
         """Get escaped field key for TypedDict."""
-        return (self.original_name or self.name or "").translate(  # pragma: no cover
-            escape_characters
-        )
+        name = _field_source_name(self)
+        return (name if name is not None else "").translate(escape_characters)
 
     @property
+    @override
     def type_hint(self) -> str:
-        """Get type hint with ReadOnly and/or NotRequired wrapper if needed."""
+        """Get type hint with ReadOnly and/or key-requiredness wrapper if needed."""
         type_hint = super().type_hint
-        # Apply ReadOnly first (inner), then NotRequired (outer)
-        if self._read_only:
-            type_hint = f"{READ_ONLY_PREFIX}{type_hint}]"
-        if self._not_required:
-            type_hint = f"{NOT_REQUIRED_PREFIX}{type_hint}]"
+        for prefix, _ in self._render_plan().qualifiers:
+            type_hint = f"{prefix}{type_hint}]"
         return type_hint
 
+    @override
+    def _build_frozen_render_plan(self) -> FieldRenderPlan:
+        return self._render_plan()
+
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Build the plan: the type alone, wrapped in ``ReadOnly[`` (inner) and the key's requiredness (outer)."""
+        qualifiers: list[tuple[str, Why]] = []
+        symbol_imports: list[tuple[Import, Why]] = []
+        if read_only := self._read_only:
+            qualifiers.append((READ_ONLY_PREFIX, _READ_ONLY))
+        if requiredness := self._requiredness:
+            qualifiers.append((requiredness, _KEY_REQUIREDNESS))
+            requiredness_imports = (
+                self.DEFAULT_REQUIRED_IMPORTS if requiredness == REQUIRED_PREFIX else self.DEFAULT_IMPORTS
+            )
+            symbol_imports.extend((import_, _KEY_REQUIREDNESS) for import_ in requiredness_imports)
+        if read_only:
+            symbol_imports.extend((import_, _READ_ONLY) for import_ in self.DEFAULT_READ_ONLY_IMPORTS)
+        return replace(super()._build_render_plan(), qualifiers=tuple(qualifiers), symbol_imports=tuple(symbol_imports))
+
+    def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:  # noqa: PLR6301
+        """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
+        return (
+            tuple(prefix for prefix, _ in plan.qualifiers),
+            tuple(import_ for import_, _ in plan.symbol_imports),
+        )
+
+    def _declared_render_items(self) -> frozenset[str]:  # noqa: PLR6301
+        """Return the items the field declares that its plan must write or omit: a key writes none."""
+        return frozenset()
+
     @property
-    def _not_required(self) -> bool:
-        """Check if field should be marked as NotRequired."""
+    def _requiredness(self) -> str:
+        """Get the TypedDict key-requiredness qualifier prefix."""
+        if not isinstance((parent := self.parent), TypedDict):
+            return ""
+        match (parent.use_total_false_for_typed_dict, self.required):
+            case (True, True):
+                requiredness = REQUIRED_PREFIX
+            case (False, False):
+                requiredness = NOT_REQUIRED_PREFIX
+            case _:
+                requiredness = ""
+        return requiredness
+
+    @property
+    def _is_optional_typed_dict_key(self) -> bool:
+        """Check if this field is an optional TypedDict key."""
         return not self.required and isinstance(self.parent, TypedDict)
 
     @property
@@ -225,18 +412,19 @@ class DataModelField(DataModelFieldBase):
         return self.use_frozen_field and self.read_only and isinstance(self.parent, TypedDict)
 
     @property
+    @override
     def fall_back_to_nullable(self) -> bool:
         """Check if field should fall back to nullable."""
-        return not self._not_required
+        return not self._is_optional_typed_dict_key
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
-        """Get imports including NotRequired and ReadOnly if needed."""
-        return (
-            *super().imports,
-            *(self.DEFAULT_IMPORTS if self._not_required else ()),
-            *(self.DEFAULT_READ_ONLY_IMPORTS if self._read_only else ()),
-        )
+        """Get imports including key-requiredness and ReadOnly qualifiers."""
+        base_imports = super().imports
+        if not (symbol_imports := self._render_plan().symbol_imports):
+            return base_imports
+        return (*base_imports, *(import_ for import_, _ in symbol_imports))
 
 
 class DataModelFieldReadOnlyBackport(DataModelField):
@@ -255,6 +443,7 @@ class DataModelFieldBackport(DataModelField):
     """
 
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_NOT_REQUIRED_BACKPORT,)
+    DEFAULT_REQUIRED_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_REQUIRED_BACKPORT,)
     DEFAULT_READ_ONLY_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_READ_ONLY_BACKPORT,)
 
 

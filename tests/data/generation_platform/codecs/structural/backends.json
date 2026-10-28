@@ -1,0 +1,33 @@
+{
+  "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+  "package": "codec_backends",
+  "options": {"use_unique_items_as_set": true},
+  "cases": [
+    {"name": "created-minimal", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new"}},
+    {"name": "created-minimal-echo", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "echo",
+     "value": {"id": 1, "name": "Mimi", "status": "new"}},
+    {"name": "created-default-echo", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "echo",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "visits": 0}},
+    {"name": "created-null-echo", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "echo",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": null, "cost": null}},
+    {"name": "created-extra-echo", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "echo",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "zz": 1, "owner": {"name": "Ann", "note": 2}}},
+    {"name": "created-full-echo", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "echo",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "kind": "cat", "owner": {"name": "Ann", "e-mail": "ann@example.com"},
+               "born": "2020-01-01T00:00:00Z", "price": "1.10", "weight": 2.5, "labels": ["b", "a"], "scores": {"x": 1}}},
+    {"name": "created-value", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "zz": 1, "owner": {"name": "Ann", "note": 2}, "cost": null}},
+    {"name": "created-value-encode", "use": "/paths/~1pets/post response_body 201", "op": "encode", "value": {"result": "created-value"}},
+    {"name": "created-bad-price", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "price": "one"}},
+    {"name": "created-bad-kind", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "kind": "cow"}},
+    {"name": "create-readonly", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"name": "Mimi", "status": "new"}},
+    {"name": "list-echo", "use": "/paths/~1pets/get response_body 200", "surface": "client", "op": "echo",
+     "value": [{"id": 1, "name": "A", "status": "new"}, {"id": 2, "name": "B", "status": "new", "tag": "t"}]},
+    {"name": "patch-echo", "use": "/paths/~1pets~1{id}/patch response_body 200", "surface": "client", "op": "echo", "value": {"name": "B"}},
+    {"name": "patch-delete-echo", "use": "/paths/~1pets~1{id}/patch response_body 200", "surface": "client", "op": "echo",
+     "value": {"name": "B", "tag": null}}
+  ]
+}

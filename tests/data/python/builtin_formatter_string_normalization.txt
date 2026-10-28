@@ -1,0 +1,41 @@
+ordinary
+value = 1
+if (value := 1):
+    match value:
+        case 1:
+            result = "ok"
+
+---CASE---
+quotes
+value = 'value'
+
+---CASE---
+escape
+value = 'has \' quote'
+quoted = 'has " quote'
+
+---CASE---
+triple
+value = '''triple
+value'''
+
+---CASE---
+f-string
+name = "value"
+value = f'item {name}'
+
+---CASE---
+control
+value = "beforeformfeed"
+
+---CASE---
+tab-whitespace
+value	=1
+
+---CASE---
+formfeed-whitespace
+value = 1+2
+
+---CASE---
+invalid
+if

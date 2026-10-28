@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "FixedReferenceDefaults",
+  "fields": [
+    {
+      "name": "inlineFixed",
+      "type": {"type": "fixed", "name": "Digest", "size": 1},
+      "default": "\u00ff"
+    },
+    {
+      "name": "referencedFixed",
+      "type": "Digest",
+      "default": "\u0001"
+    }
+  ]
+}

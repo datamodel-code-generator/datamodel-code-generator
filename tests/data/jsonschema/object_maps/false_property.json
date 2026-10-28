@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "m": {
+      "type": "object",
+      "properties": {
+        "a": false
+      },
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/Text"
+        },
+        "^y": {
+          "$ref": "#/$defs/Count"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Text": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "Count": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

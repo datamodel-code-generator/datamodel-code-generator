@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "input-diff",
+  "success": false,
+  "content": "--- output.py (baseline input)\n+++ output.py (current input)\n@@ -8,3 +8,4 @@\n \n class Person(BaseModel):\n     name: str | None = None\n+    age: int | None = None\n",
+  "differences": [
+    {
+      "kind": "changed",
+      "path": "output.py",
+      "message": null,
+      "diff": "--- output.py (baseline input)\n+++ output.py (current input)\n@@ -8,3 +8,4 @@\n \n class Person(BaseModel):\n     name: str | None = None\n+    age: int | None = None\n"
+    }
+  ]
+}

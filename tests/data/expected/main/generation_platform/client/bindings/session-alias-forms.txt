@@ -1,0 +1,81 @@
+# session-alias-forms
+render pydantic_v2.BaseModel py311
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/py311
+change pydantic_v2.BaseModel py311 value-0
+  @@ -18 +18 @@
+  -Nullable = TypeAliasType("Nullable", str | None)
+  +Nullable: str
+change pydantic_v2.BaseModel py311 value-1
+  @@ -18 +18 @@
+  -Nullable = TypeAliasType("Nullable", str | None)
+  +Nullable =
+change pydantic_v2.BaseModel py311 value-2
+  @@ -18 +18 @@
+  -Nullable = TypeAliasType("Nullable", str | None)
+  +Nullable = TypeAliasType("Wrong", str | None)
+change pydantic_v2.BaseModel py311 value-3
+  @@ -18 +18 @@
+  -Nullable = TypeAliasType("Nullable", str | None)
+  +Nullable = TypeAliasType("Nullable")
+change pydantic_v2.BaseModel py311 value-4
+  @@ -18 +18 @@
+  -Nullable = TypeAliasType("Nullable", str | None)
+  +Nullable = TypeAliasType("Nullable", str | None, str)
+render pydantic_v2.BaseModel py311-annotated
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/py311
+render pydantic_v2.BaseModel py312
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/py311
+render pydantic_v2.BaseModel py312-annotated
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/py311
+render pydantic_v2.dataclass py311
+  models.py
+  model_bindings.py pydantic_v2_dataclass/py311
+render pydantic_v2.dataclass py311-annotated
+  models.py
+  model_bindings.py pydantic_v2_dataclass/py311
+render pydantic_v2.dataclass py312
+  models.py
+  model_bindings.py pydantic_v2_dataclass/py311
+render pydantic_v2.dataclass py312-annotated
+  models.py
+  model_bindings.py pydantic_v2_dataclass/py311
+render dataclasses.dataclass py311
+  models.py
+  model_bindings.py dataclasses_dataclass/py311
+render dataclasses.dataclass py311-annotated
+  models.py
+  model_bindings.py dataclasses_dataclass/py311
+render dataclasses.dataclass py312
+  models.py
+  model_bindings.py dataclasses_dataclass/py311
+render dataclasses.dataclass py312-annotated
+  models.py
+  model_bindings.py dataclasses_dataclass/py311
+render typing.TypedDict py311
+  models.py
+  model_bindings.py typing_TypedDict/py311
+render typing.TypedDict py311-annotated
+  models.py
+  model_bindings.py typing_TypedDict/py311
+render typing.TypedDict py312
+  models.py
+  model_bindings.py typing_TypedDict/py311
+render typing.TypedDict py312-annotated
+  models.py
+  model_bindings.py typing_TypedDict/py311
+render msgspec.Struct py311
+  models.py
+  model_bindings.py msgspec_Struct/py311
+render msgspec.Struct py311-annotated
+  models.py
+  model_bindings.py msgspec_Struct/py311
+render msgspec.Struct py312
+  models.py
+  model_bindings.py msgspec_Struct/py311
+render msgspec.Struct py312-annotated
+  models.py
+  model_bindings.py msgspec_Struct/py311

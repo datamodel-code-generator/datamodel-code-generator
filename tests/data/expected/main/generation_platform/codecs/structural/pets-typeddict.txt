@@ -1,0 +1,42 @@
+use /paths/~1pets/get parameter query limit: TypedDictCodec
+use /paths/~1pets/get parameter query tags: TypedDictCodec
+use /paths/~1pets/get parameter query filter: TypedDictCodec
+use /paths/~1pets/get response_body 200: TypedDictCodec
+use /paths/~1pets/post request_body: TypedDictCodec
+use /paths/~1pets/post response_body 201: TypedDictCodec
+use /paths/~1pets~1lookup/get response_body 200: TypedDictCodec
+use /paths/~1pets~1{id}~1photo/get parameter path id: TypedDictCodec
+use /paths/~1pets~1{id}/patch parameter path id: TypedDictCodec
+use /paths/~1pets~1{id}/patch request_body: TypedDictCodec
+use /paths/~1pets~1{id}/patch response_body 200: TypedDictCodec
+create-server-decode: native {'name': 'Mimi', 'status': 'new', 'password': 'pw'} json={"name":"Mimi","status":"new","password":"pw"}
+create-client-from-wire: native {'id': 7, 'name': 'Mimi', 'status': 'new', 'extra': True} json={"id":7,"name":"Mimi","status":"new","extra":true}
+create-client-encode-native: json={"id":1,"name":"Mimi","status":"new","password":"pw"}
+created-client-decode: native {'id': 1, 'name': 'Mimi', 'status': 'new', 'nick-name': None, 'kind': 'cat', 'owner': {'name': 'Ann', 'e-mail': 'ann@example.com', 'note': 1}, 'born': '2020-01-01T00:00:00Z', 'price': Decimal('1.10'), 'cost': None, 'weight': 2, 'labels': {'a', 'b'}, 'scores': {'x': 1}, 'visits': 0, 'hint': 'x'} json={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["a","b"],"scores":{"x":1},"visits":0,"hint":"x"}
+created-server-encode-echo: json={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["a","b"],"scores":{"x":1},"visits":0,"hint":"x"}
+created-server-encode-snapshot: json={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["a","b"],"scores":{"x":1},"visits":0,"hint":"x"}
+created-server-omitted: json={"id":1,"name":"Mimi","status":"new"}
+created-server-explicit-none: json={"id":1,"name":"Mimi","status":"new","tag":null}
+created-server-nullable-none: json={"id":1,"name":"Mimi","status":"new","nick-name":null}
+created-server-too-long: json={"id":1,"name":"Mimi the cat","status":"new"}
+created-server-no-json: TypeError
+created-server-plain-dict: json={"id":1,"name":"Mimi","status":"new","unknown":1}
+created-server-missing-required: json={"id":1,"name":"Mimi"}
+created-client-decode-bad-price: InvalidOperation
+list-client-decode: native [{'id': 1, 'name': 'A', 'status': 'new', 'zz': 1}, {'id': 2, 'name': 'B', 'status': 'new', 'labels': {'a', 'b'}}] json=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["a","b"]}]
+list-server-encode-plain: json=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["a","b"]}]
+lookup-client-decode-map: native {'a': {'id': 1, 'name': 'A', 'status': 'new'}} json={"a":{"id":1,"name":"A","status":"new"}}
+lookup-client-decode-list: native [{'id': 1, 'name': 'A', 'status': 'new'}] json=[{"id":1,"name":"A","status":"new"}]
+lookup-server-encode-map: json={"a":{"id":1,"name":"A","status":"new"}}
+lookup-server-encode-list: json=[{"id":1,"name":"A","status":"new"}]
+patch-client-encode-native: json={"name":"B"}
+patch-client-from-wire: native {'name': 'B'} json={"name":"B"}
+patch-client-encode-from-wire: json={"name":"B"}
+limit-server-decode: native 5 json=5
+create-client-serialize: json={"id":1,"name":"Mimi","status":"new","password":"pw"}
+created-server-serialize-snapshot: json={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["a","b"],"scores":{"x":1},"visits":0,"hint":"x"}
+created-client-convert: native {'id': 1, 'name': 'Mimi', 'status': 'new', 'kind': 'cat', 'visits': 0} json={"id":1,"name":"Mimi","status":"new","kind":"cat","visits":0}
+created-client-convert-long: native {'id': 1, 'name': 'far too long a name', 'status': 'new', 'kind': 'cat', 'visits': 0} json={"id":1,"name":"far too long a name","status":"new","kind":"cat","visits":0}
+created-client-convert-type: native {'id': 'one', 'name': 'Mimi', 'status': 'new', 'kind': 'cat', 'visits': 0} json={"id":"one","name":"Mimi","status":"new","kind":"cat","visits":0}
+create-client-serialize-long: json={"id":1,"name":"far too long a name","status":"new"}
+create-client-encode-long: json={"id":1,"name":"far too long a name","status":"new"}

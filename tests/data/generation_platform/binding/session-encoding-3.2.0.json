@@ -1,0 +1,193 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Encoding ownership",
+    "version": "1"
+  },
+  "paths": {
+    "/values": {
+      "post": {
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "$ref": "#/components/schemas/Model"
+                },
+                "encoding": {
+                  "value": {
+                    "style": "form",
+                    "explode": false,
+                    "headers": {
+                      "Content-Type": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "X-Parameter": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Model"
+              },
+              "encoding": {
+                "value": {
+                  "style": "form",
+                  "explode": false,
+                  "headers": {
+                    "Content-Type": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "X-Json": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Model"
+              },
+              "encoding": {
+                "value": {
+                  "style": "form",
+                  "explode": false,
+                  "headers": {
+                    "Content-Type": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "X-Form": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Model"
+              },
+              "encoding": {
+                "value": {
+                  "style": "form",
+                  "explode": false,
+                  "headers": {
+                    "Content-Type": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "X-Part": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Values",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content": {
+                "content": {
+                  "multipart/form-data": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Model"
+                    },
+                    "encoding": {
+                      "value": {
+                        "style": "form",
+                        "explode": false,
+                        "headers": {
+                          "Content-Type": {
+                            "schema": {
+                              "type": "string"
+                            }
+                          },
+                          "X-Nested": {
+                            "schema": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "$ref": "#/components/schemas/Model"
+                },
+                "encoding": {
+                  "value": {
+                    "style": "form",
+                    "explode": false,
+                    "headers": {
+                      "Content-Type": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "X-Response": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Model": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

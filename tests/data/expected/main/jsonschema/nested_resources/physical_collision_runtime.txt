@@ -1,0 +1,16 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "child": {
+        "nested": {
+          "embedded_marker": "ok"
+        }
+      }
+    },
+    "rejected"
+  ]
+}

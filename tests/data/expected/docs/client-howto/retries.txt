@@ -1,0 +1,5 @@
+exit 0
+> GET https://eu.shelter.example/v1/health
+> GET https://eu.shelter.example/v1/health
+> GET https://eu.shelter.example/v1/health
+status='up' 3 [0.5, 1.0]

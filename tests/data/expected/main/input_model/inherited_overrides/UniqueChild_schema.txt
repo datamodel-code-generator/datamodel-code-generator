@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "UniqueParent": {
+      "properties": {
+        "value": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Value",
+          "type": "array",
+          "uniqueItems": true,
+          "x-python-type": "set[int]"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "UniqueParent",
+      "type": "object",
+      "x-is-base-class": true
+    },
+    "RepeatedChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/UniqueParent"
+        }
+      ],
+      "properties": {
+        "value": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Value",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "RepeatedChild",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/RepeatedChild"
+    }
+  ],
+  "properties": {
+    "value": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Value",
+      "type": "array",
+      "uniqueItems": true,
+      "x-python-type": "set[int]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "UniqueChild",
+  "type": "object"
+}

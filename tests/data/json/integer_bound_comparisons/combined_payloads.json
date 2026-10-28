@@ -1,0 +1,34 @@
+{
+  "LowerInclusive": {
+    "valid": 3,
+    "invalid": 2
+  },
+  "LowerExclusive": {
+    "valid": 0,
+    "invalid": -1
+  },
+  "LowerEqual": {
+    "valid": 1,
+    "invalid": 0
+  },
+  "UpperInclusive": {
+    "valid": -3,
+    "invalid": -2
+  },
+  "UpperExclusive": {
+    "valid": 0,
+    "invalid": 1
+  },
+  "UpperEqual": {
+    "valid": -1,
+    "invalid": 0
+  },
+  "FractionalLower": {
+    "valid": 1.5,
+    "invalid": 1.0
+  },
+  "FractionalUpper": {
+    "valid": -1.5,
+    "invalid": -1.0
+  }
+}

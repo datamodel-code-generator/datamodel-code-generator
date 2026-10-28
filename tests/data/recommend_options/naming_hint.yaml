@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Shop
+  version: "1"
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            order_source:
+              type: string
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            invoice_source:
+              type: string
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            shipment_source:
+              type: string
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            customer_source:
+              type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            product_source:
+              type: string
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            payment_source:
+              type: string
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            refund_source:
+              type: string
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            review_source:
+              type: string
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            coupon_source:
+              type: string
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            store_source:
+              type: string
+    Warehouse:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            warehouse_source:
+              type: string
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            supplier_source:
+              type: string

@@ -1,0 +1,695 @@
+[
+  {
+    "name": "extension",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "label": "label"
+        },
+        "valid": false
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "reverse_declarations",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true,
+    "expected": "extension"
+  },
+  {
+    "name": "three_levels",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "enabled": true,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "integer",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">12</Root>",
+        "data": {
+          "value": 12,
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": 12,
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "decimal",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">12.5</Root>",
+        "data": {
+          "value": "12.5",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "12.5",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "boolean",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">true</Root>",
+        "data": {
+          "value": true,
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": true,
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "date",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">2026-09-07</Root>",
+        "data": {
+          "value": "2026-09-07",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "2026-09-07",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "normal_builtin",
+    "samples": [
+      {
+        "xml": "<Root>text</Root>",
+        "data": {
+          "value": "text"
+        },
+        "expected": {
+          "value": "text",
+          "label": "kept"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "normal_named",
+    "samples": [
+      {
+        "xml": "<Root>text</Root>",
+        "data": {
+          "value": "text"
+        },
+        "expected": {
+          "value": "text",
+          "label": "kept"
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root>x</Root>",
+        "data": {
+          "value": "x"
+        },
+        "expected": {
+          "value": "x"
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "normal_builtin"
+  },
+  {
+    "name": "named_inherited",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\" label=\"label\">x</Root>",
+        "data": {
+          "value": "x",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "x",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "extension"
+  },
+  {
+    "name": "restriction_integer",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">12</Root>",
+        "data": {
+          "value": 12,
+          "id": 1
+        },
+        "expected": {
+          "value": 12,
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\">9</Root>",
+        "data": {
+          "value": 9,
+          "id": 1
+        },
+        "expected": {
+          "value": 9,
+          "id": 1
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root id=\"1\">21</Root>",
+        "data": {
+          "value": 21,
+          "id": 1
+        },
+        "expected": {
+          "value": 21,
+          "id": 1
+        },
+        "valid": false
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "restriction_text",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\">x</Root>",
+        "data": {
+          "value": "x",
+          "id": 1
+        },
+        "expected": {
+          "value": "x",
+          "id": 1
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "attribute_groups"
+  },
+  {
+    "name": "restriction_defaults",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "derived"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "restriction_prohibited",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1
+        },
+        "valid": true
+      }
+    ],
+    "native": true,
+    "expected": "attribute_groups"
+  },
+  {
+    "name": "optional_to_required",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root>text</Root>",
+        "data": {
+          "value": "text"
+        },
+        "expected": {
+          "value": "text"
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "attribute_groups"
+  },
+  {
+    "name": "attribute_groups",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "inherited_default",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "base",
+          "enabled": false
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "restriction_then_extension",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">12</Root>",
+        "data": {
+          "value": 12,
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": 12,
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\" label=\"label\">9</Root>",
+        "data": {
+          "value": 9,
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": 9,
+          "id": 1,
+          "label": "label"
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "integer"
+  },
+  {
+    "name": "restriction_inline",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1
+        },
+        "expected": {
+          "value": "text",
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\">x</Root>",
+        "data": {
+          "value": "x",
+          "id": 1
+        },
+        "expected": {
+          "value": "x",
+          "id": 1
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "attribute_groups"
+  },
+  {
+    "name": "restriction_named_integer",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">12</Root>",
+        "data": {
+          "value": 12,
+          "id": 1
+        },
+        "expected": {
+          "value": 12,
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\">9</Root>",
+        "data": {
+          "value": 9,
+          "id": 1
+        },
+        "expected": {
+          "value": 9,
+          "id": 1
+        },
+        "valid": false
+      }
+    ],
+    "native": true,
+    "expected": "restriction_integer"
+  },
+  {
+    "name": "redefined",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true,
+    "expected": "extension"
+  },
+  {
+    "name": "cyclic_invalid",
+    "samples": [],
+    "native": false
+  },
+  {
+    "name": "non_simple_base_invalid",
+    "samples": [],
+    "native": false,
+    "expected": "cyclic_invalid"
+  },
+  {
+    "name": "imported",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true,
+    "expected": "extension"
+  },
+  {
+    "name": "list_inherited",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">1 2</Root>",
+        "data": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "normal_list",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">1 2</Root>",
+        "data": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1,
+          "label": "label"
+        },
+        "valid": true
+      }
+    ],
+    "native": true,
+    "expected": "list_inherited"
+  },
+  {
+    "name": "restriction_list",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\">1 2</Root>",
+        "data": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1
+        },
+        "expected": {
+          "value": [
+            1,
+            2
+          ],
+          "id": 1
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\">1</Root>",
+        "data": {
+          "value": [
+            1
+          ],
+          "id": 1
+        },
+        "expected": null,
+        "valid": false
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "inherited_fixed",
+    "samples": [
+      {
+        "xml": "<Root id=\"1\" label=\"label\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "kind": "fixed",
+          "label": "label"
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root id=\"1\" label=\"label\" kind=\"other\">text</Root>",
+        "data": {
+          "value": "text",
+          "id": 1,
+          "label": "label",
+          "kind": "other"
+        },
+        "expected": {
+          "value": "text",
+          "id": 1,
+          "label": "label",
+          "kind": "other"
+        },
+        "valid": false
+      }
+    ],
+    "native": true
+  },
+  {
+    "name": "cyclic_restriction_invalid",
+    "samples": [],
+    "native": false,
+    "expected": "cyclic_invalid"
+  }
+]

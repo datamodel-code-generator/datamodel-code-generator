@@ -1,0 +1,11 @@
+{
+  "in_process": {
+    "code": 0,
+    "stdout_matches_embedded": true
+  },
+  "subprocess": {
+    "code": 0,
+    "imported_metadata": false,
+    "stdout_matches_embedded": true
+  }
+}

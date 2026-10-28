@@ -1,0 +1,15 @@
+{
+  "name": "denied",
+  "inputSchema": {},
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "denied": {
+        "$ref": "#/$defs/Denied"
+      }
+    },
+    "$defs": {
+      "Denied": false
+    }
+  }
+}

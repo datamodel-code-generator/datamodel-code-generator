@@ -1,0 +1,29 @@
+LoneCount valid 3: accepted
+LoneCount valid 0: accepted
+LoneCount invalid "x": rejected
+LoneCount invalid 1.5: rejected
+LoneCount invalid null: rejected
+LoneNothing valid null: accepted
+LoneNothing invalid "x": rejected
+LoneNothing invalid 0: rejected
+LoneAnything valid 1: accepted
+LoneAnything valid "x": accepted
+LoneAnything valid null: accepted
+LoneAnything valid {}: accepted
+LoneAnything valid [1]: accepted
+LoneAlias valid "abc": accepted
+LoneAlias invalid 1: rejected
+LoneAlias invalid null: rejected
+LoneAlias invalid {}: rejected
+LoneInline valid "abc": accepted
+LoneInline invalid 1: rejected
+LoneInline invalid null: rejected
+LoneTagged valid {"type": "tagged"}: accepted
+LoneTagged invalid {"type": "other"}: rejected
+LoneTagged invalid {}: rejected
+LoneTagged invalid "x": rejected
+Holder valid {}: accepted
+Holder valid {"name": "abc", "inline": "abc", "tagged": {"type": "tagged"}}: accepted
+Holder invalid {"name": 1}: rejected
+Holder invalid {"inline": 1}: rejected
+Holder invalid {"tagged": {"type": "other"}}: rejected

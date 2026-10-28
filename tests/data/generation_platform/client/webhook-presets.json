@@ -1,0 +1,20 @@
+[
+  {
+    "source": "printf '1614265330.{\"test\": 2432232314}' | openssl dgst -sha256 -hmac whsec_adapter_secret",
+    "helper": "stripe.event",
+    "secret_hex": "77687365635f616461707465725f736563726574",
+    "body": "{\"test\": 2432232314}",
+    "headers": [
+      [
+        "Content-Type",
+        "application/json"
+      ],
+      [
+        "Stripe-Signature",
+        "t=1614265330,v1=09a96f3f0348fc47322c6258cbb75ebea55d90e042e9393897ca954e457ea3e9"
+      ]
+    ],
+    "now": "2021-02-25T15:02:10+00:00",
+    "key_id": "stripe-2026"
+  }
+]

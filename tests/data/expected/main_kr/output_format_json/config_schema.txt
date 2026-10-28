@@ -1,0 +1,478 @@
+{
+  "$defs": {
+    "ClientOperationsConfig": {
+      "additionalProperties": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "description": "Client settings keyed by operation reference; the client target validates their members.",
+      "title": "ClientOperationsConfig",
+      "type": "object"
+    },
+    "ClientProtocolsConfig": {
+      "additionalProperties": true,
+      "description": "Client helper definitions keyed by helper name; the client target validates them.",
+      "title": "ClientProtocolsConfig",
+      "type": "object"
+    },
+    "DefaultValuesConfig": {
+      "additionalProperties": true,
+      "description": "Default value override mapping.",
+      "title": "DefaultValuesConfig",
+      "type": "object"
+    },
+    "DuplicateNameSuffixConfig": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Duplicate-name suffix mapping.",
+      "propertyNames": {
+        "enum": [
+          "model",
+          "enum",
+          "default"
+        ]
+      },
+      "title": "DuplicateNameSuffixConfig",
+      "type": "object"
+    },
+    "EnumFieldAsLiteralMapConfig": {
+      "additionalProperties": {
+        "enum": [
+          "literal",
+          "enum"
+        ],
+        "type": "string"
+      },
+      "description": "Per-field enum/literal generation override mapping.",
+      "title": "EnumFieldAsLiteralMapConfig",
+      "type": "object"
+    },
+    "ExtraTemplateDataConfig": {
+      "additionalProperties": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "description": "Extra template data mapping.",
+      "title": "ExtraTemplateDataConfig",
+      "type": "object"
+    },
+    "ModelValidators": {
+      "description": "Validators configuration for a single model.",
+      "properties": {
+        "validators": {
+          "items": {
+            "$ref": "#/$defs/ValidatorDefinition"
+          },
+          "title": "Validators",
+          "type": "array"
+        }
+      },
+      "required": [
+        "validators"
+      ],
+      "title": "ModelValidators",
+      "type": "object"
+    },
+    "ServerBodyModesConfig": {
+      "additionalProperties": {
+        "enum": [
+          "typed",
+          "request"
+        ],
+        "type": "string"
+      },
+      "description": "Request body modes of server operations, keyed by operation reference.",
+      "title": "ServerBodyModesConfig",
+      "type": "object"
+    },
+    "ServerHandlerModesConfig": {
+      "additionalProperties": {
+        "enum": [
+          "sync",
+          "async"
+        ],
+        "type": "string"
+      },
+      "description": "Handler modes of server operations, keyed by operation reference.",
+      "title": "ServerHandlerModesConfig",
+      "type": "object"
+    },
+    "ServerParameterNamesConfig": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "description": "Server argument names keyed by operation reference, then by location and parameter name.",
+      "title": "ServerParameterNamesConfig",
+      "type": "object"
+    },
+    "ServerPrimaryResponseConfig": {
+      "additionalProperties": false,
+      "description": "The declared response a bare server return value takes.",
+      "properties": {
+        "media_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Media Type"
+        },
+        "status_code": {
+          "maximum": 599,
+          "minimum": 100,
+          "title": "Status Code",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status_code"
+      ],
+      "title": "ServerPrimaryResponseConfig",
+      "type": "object"
+    },
+    "ServerPrimaryResponsesConfig": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ServerPrimaryResponseConfig"
+      },
+      "description": "Primary responses of server operations, keyed by operation reference.",
+      "title": "ServerPrimaryResponsesConfig",
+      "type": "object"
+    },
+    "StringMappingConfig": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "JSON object with string keys and string values.",
+      "title": "StringMappingConfig",
+      "type": "object"
+    },
+    "StringOrStringListMappingConfig": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ]
+      },
+      "description": "JSON object with string keys and string or list-of-string values.",
+      "title": "StringOrStringListMappingConfig",
+      "type": "object"
+    },
+    "ValidatorDefinition": {
+      "description": "Definition of a single validator.",
+      "properties": {
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "fields": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fields"
+        },
+        "function": {
+          "title": "Function",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/ValidatorMode",
+          "default": "after"
+        }
+      },
+      "required": [
+        "function"
+      ],
+      "title": "ValidatorDefinition",
+      "type": "object"
+    },
+    "ValidatorMode": {
+      "description": "Validator mode for Pydantic v2 field_validator.",
+      "enum": [
+        "before",
+        "after",
+        "wrap",
+        "plain"
+      ],
+      "title": "ValidatorMode",
+      "type": "string"
+    },
+    "ValidatorsConfig": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ModelValidators"
+      },
+      "description": "Root model for validators configuration.",
+      "title": "ValidatorsConfig",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Strict JSON configuration schemas accepted by datamodel-code-generator.",
+  "properties": {
+    "aliases": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringOrStringListMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "base-class-map": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringOrStringListMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-operations": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClientOperationsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-protocols": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClientProtocolsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-resource-names": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "custom-formatters-kwargs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "default-values": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DefaultValuesConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "duplicate-name-suffix": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DuplicateNameSuffixConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "enum-field-as-literal-map": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EnumFieldAsLiteralMapConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "extra-template-data": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExtraTemplateDataConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "import-overrides": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "model-name-map": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "serialization-aliases": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-body-modes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerBodyModesConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-handler-modes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerHandlerModesConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-operation-names": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-parameter-names": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerParameterNamesConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-primary-responses": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerPrimaryResponsesConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "server-router-names": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "type-overrides": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "validators": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ValidatorsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "JsonConfigSchemasPayload",
+  "type": "object"
+}

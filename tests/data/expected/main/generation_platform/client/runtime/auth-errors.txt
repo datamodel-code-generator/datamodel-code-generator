@@ -1,0 +1,21 @@
+# auth pydantic_v2.BaseModel
+  family AuthError bases=('SDKError',)
+  signature AuthError keyword-only=True required=('reason',)
+  hints AuthError ('reason', 'status_code', 'oauth_error', 'operation_id', 'cause', 'return')
+  defaults AuthError fields=(('reason', 'provider_failed'), ('status_code', None), ('oauth_error', None)) common=(None, None, None, 0, 0.0, None)
+  metadata AuthError operation=auth_operation info=None cause=True measurements=(0, 0.0, None)
+  supplied AuthError (('reason', 'provider_failed'), ('status_code', 400), ('oauth_error', None))
+  safe AuthError True text="AuthError(operation_id='auth_operation', reason='provider_failed', status_code=400)"
+  positional AuthError TypeError notes []
+  family ConfigurationError bases=('SDKError',)
+  signature ConfigurationError keyword-only=True required=()
+  hints ConfigurationError ('field_path', 'reason', 'helper_id', 'operation_id', 'info', 'cause', 'return')
+  defaults ConfigurationError fields=(('reason', 'invalid_value'), ('field_path', ()), ('helper_id', None)) common=(None, None, None, 0, 0.0, None)
+  metadata ConfigurationError operation=auth_operation info=True cause=True measurements=(2, 0.25, None)
+  supplied ConfigurationError (('reason', 'invalid_scope'), ('field_path', ('private-secret',)), ('helper_id', None))
+  safe ConfigurationError False text="ConfigurationError(operation_id='auth_operation', reason='invalid_scope', field_path='private-secret')"
+  positional ConfigurationError TypeError notes []
+  missing required AuthError TypeError notes []
+  oauth values {'reason': 'oauth_error', 'status_code': 400, 'oauth_error': 'invalid_client'} returned "AuthError(reason='oauth_error', status_code=400, oauth_error='invalid_client')"
+  oauth values {'reason': 'reauthorization_required', 'oauth_error': 'invalid_grant'} returned "AuthError(reason='reauthorization_required', oauth_error='invalid_grant')"
+  reasons ('provider_failed', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required')

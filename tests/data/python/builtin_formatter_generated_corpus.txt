@@ -1,0 +1,56 @@
+pydantic-model
+from typing import Optional, List
+from pydantic import Field, BaseModel
+from __future__ import annotations
+
+class Pet(BaseModel):
+    tags: Optional[List[str]]=Field(None, examples=['fast'])
+
+
+root-model
+from typing import Dict, Any
+from pydantic import RootModel
+from __future__ import annotations
+
+class Payload(RootModel[Dict[str, Any]]):
+    root: Dict[str, Any]
+
+
+dataclass-model
+from typing import Optional
+from dataclasses import field, dataclass
+from __future__ import annotations
+
+@dataclass
+class User:
+    name: Optional[str]=field(default=None)
+
+
+enum-model
+from enum import Enum
+from __future__ import annotations
+
+class Status(Enum):
+    ready='ready'
+    complete='complete'
+
+
+msgspec-model
+from typing import Optional
+from msgspec import Struct, field
+from __future__ import annotations
+
+class Event(Struct):
+    name: Optional[str]=field(default=None)
+
+
+known-first-party-import
+from tests.data import model
+from datamodel_code_generator import DataModelType
+import pathlib
+
+class Registry:
+    model=model
+    output_type=DataModelType.PydanticV2BaseModel
+    path_type=pathlib.Path
+

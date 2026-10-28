@@ -1,0 +1,2 @@
+// syntax = 'proto3';,edition,message
+value,value,value

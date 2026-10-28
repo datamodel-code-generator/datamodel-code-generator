@@ -1,0 +1,360 @@
+name: Release Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - docs/data/release-benchmarks.json
+  pull_request:
+    types: [labeled]
+  workflow_run:
+    workflows: ["Publish"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "Release tags, versions, or main to benchmark. Leave empty to select by PyPI download usage."
+        required: false
+        default: ""
+      history_days:
+        description: "PyPI download lookback window used for version selection."
+        required: false
+        default: "365"
+      limit:
+        description: "Maximum release versions to benchmark."
+        required: false
+        default: "40"
+      runs:
+        description: "Measured runs per release/input/formatter case."
+        required: false
+        default: "7"
+      python_version:
+        description: "Python version used to install and run released packages."
+        required: false
+        default: "3.14.2"
+
+concurrency:
+  # Coalesce redundant main-only measurements, while retaining release,
+  # backfill, and pull-request runs in independent groups.
+  group: release-benchmarks-${{ github.event_name == 'push' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve release benchmark versions
+    runs-on: ubuntu-24.04
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'run-release-benchmarks') &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        ) ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_repository.full_name == github.repository
+        )
+      }}
+    outputs:
+      versions_json: ${{ steps.versions.outputs.versions_json }}
+      versions: ${{ steps.versions.outputs.versions }}
+      main_sha: ${{ steps.main.outputs.sha }}
+    env:
+      BENCHMARK_PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python_version || '3.14.2' }}
+      BENCHMARK_HISTORY_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.history_days || '365' }}
+      BENCHMARK_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.limit || '40' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.BENCHMARK_PYTHON_VERSION }}
+      - name: Resolve current main revision
+        id: main
+        run: |
+          set -euo pipefail
+          main_sha="$(git ls-remote "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" refs/heads/main | awk 'NR == 1 { print $1 }')"
+          if ! [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Could not resolve the current main revision" >&2
+            exit 1
+          fi
+          echo "sha=$main_sha" >> "$GITHUB_OUTPUT"
+      - name: Resolve release versions
+        id: versions
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || '' }}
+          WORKFLOW_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+          INPUT_VERSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.versions || '' }}
+        run: |
+          set -euo pipefail
+          versions="$INPUT_VERSIONS"
+          case "$EVENT_NAME" in
+            push)
+              versions="main"
+              ;;
+            workflow_run)
+              versions="$WORKFLOW_TAG"
+              case "$versions" in
+                refs/tags/*) versions="${versions#refs/tags/}" ;;
+                v[0-9]* | [0-9]*) ;;
+                *) versions="" ;;
+              esac
+              if [ -z "$versions" ] && [ -n "$WORKFLOW_SHA" ]; then
+                git fetch --tags --force --depth=1 origin '+refs/tags/*:refs/tags/*'
+                versions="$(git tag --points-at "$WORKFLOW_SHA" | sort -V | tail -n 1)"
+              fi
+              if [ -z "$versions" ]; then
+                echo "Could not determine release tag for Publish workflow run $WORKFLOW_SHA" >&2
+                exit 1
+              fi
+              ;;
+          esac
+          python scripts/select_release_benchmark_versions.py \
+            --versions "$versions" \
+            --include-main \
+            --history-days "$BENCHMARK_HISTORY_DAYS" \
+            --limit "$BENCHMARK_LIMIT" \
+            --output .benchmarks/release-benchmark-selection.json
+      - name: Upload benchmark selection
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dcg-release-benchmark-selection
+          path: .benchmarks/release-benchmark-selection.json
+          if-no-files-found: error
+
+  collect:
+    name: Collect release benchmarks (${{ matrix.version }})
+    needs: resolve
+    if: needs.resolve.result == 'success'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 40
+      matrix:
+        version: ${{ fromJson(needs.resolve.outputs.versions_json) }}
+    env:
+      BENCHMARK_PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python_version || '3.14.2' }}
+      BENCHMARK_RUNS: ${{ github.event_name == 'workflow_dispatch' && inputs.runs || (github.event_name == 'pull_request' && '3' || '7') }}
+      OS: ubuntu-24.04
+      BENCHMARK_MAIN_REF: ${{ needs.resolve.outputs.main_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.BENCHMARK_PYTHON_VERSION }}
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - name: Collect benchmarks
+        env:
+          BENCHMARK_VERSION: ${{ matrix.version }}
+        run: >-
+          python scripts/collect_release_benchmarks.py
+          --versions "$BENCHMARK_VERSION"
+          --main-ref "$BENCHMARK_MAIN_REF"
+          --runs "$BENCHMARK_RUNS"
+          --output ".benchmarks/fragments/release-benchmark-${BENCHMARK_VERSION}.json"
+      - name: Upload benchmark fragment
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dcg-release-benchmark-fragment-${{ matrix.version }}
+          path: .benchmarks/fragments/release-benchmark-${{ matrix.version }}.json
+          if-no-files-found: error
+
+  build:
+    name: Build release benchmark data
+    needs: [resolve, collect]
+    if: needs.collect.result == 'success'
+    runs-on: ubuntu-24.04
+    env:
+      BENCHMARK_PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python_version || '3.14.2' }}
+      OS: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.BENCHMARK_PYTHON_VERSION }}
+      - name: Download benchmark selection
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dcg-release-benchmark-selection
+          path: .benchmarks
+      - name: Download benchmark fragments
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: dcg-release-benchmark-fragment-*
+          path: .benchmarks/fragments
+          merge-multiple: true
+      - name: Merge benchmark data
+        run: >-
+          python scripts/merge_release_benchmarks.py
+          .benchmarks/fragments/*.json
+          --selection .benchmarks/release-benchmark-selection.json
+          --output .benchmarks/release-benchmarks.json
+      - name: Upload benchmark data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dcg-release-benchmarks-json
+          path: .benchmarks/release-benchmarks.json
+          if-no-files-found: error
+
+  update-docs:
+    name: Create release benchmark data PR
+    needs: build
+    if: >-
+      ${{
+        needs.build.result == 'success' &&
+        (
+          github.event_name == 'push' ||
+          github.event_name == 'workflow_run' ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            github.ref_name == 'main'
+          )
+        ) &&
+        github.repository == 'datamodel-code-generator/datamodel-code-generator'
+      }}
+    runs-on: ubuntu-24.04
+    concurrency:
+      # Keep every release/backfill update while serializing the shared data branch.
+      group: release-benchmark-data
+      queue: max
+    outputs:
+      changed: ${{ steps.pr.outputs.changed }}
+      pr_number: ${{ steps.pr.outputs.pr_number }}
+    env:
+      BENCHMARK_PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python_version || '3.14.2' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.BENCHMARK_PYTHON_VERSION }}
+      - name: Download benchmark data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dcg-release-benchmarks-json
+          path: .benchmarks/update
+      - name: Download benchmark selection
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dcg-release-benchmark-selection
+          path: .benchmarks/update
+      - name: Refresh release metadata
+        run: |
+          set -euo pipefail
+          versions="$(
+            python -c 'import json; from pathlib import Path; payload = json.loads(Path(".benchmarks/update/release-benchmark-selection.json").read_text(encoding="utf-8")); print(",".join(str(version) for version in payload.get("selected_versions", [])))'
+          )"
+          if [ -n "$versions" ] && python scripts/select_release_benchmark_versions.py \
+              --versions "$versions" \
+              --include-main \
+              --output .benchmarks/update/release-benchmark-selection-refresh.json; then
+            :
+          else
+            cp .benchmarks/update/release-benchmark-selection.json \
+              .benchmarks/update/release-benchmark-selection-refresh.json
+          fi
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GENERATED_DOCS_APP_ID }}
+          private-key: ${{ secrets.GENERATED_DOCS_APP_PRIVATE_KEY }}
+      - name: Create or update release benchmark data PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          case "$TARGET_REPO" in
+            datamodel-code-generator/datamodel-code-generator) ;;
+            *) echo "Refusing to push release benchmark docs to $TARGET_REPO" >&2; exit 1 ;;
+          esac
+          sync_branch="docs/release-benchmark-data"
+          remote_url="https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git"
+          remote_sha="$(git ls-remote --heads "$remote_url" "$sync_branch" | awk '{print $1}')"
+          git fetch origin main
+          current_main_sha="$(git rev-parse origin/main)"
+          git checkout -B "$sync_branch" origin/main
+          if [ -n "$remote_sha" ]; then
+            git fetch "$remote_url" \
+              "refs/heads/$sync_branch:refs/remotes/release-benchmark/$sync_branch"
+            pending_changes="$(
+              git diff --name-only "origin/main...refs/remotes/release-benchmark/$sync_branch"
+            )"
+            case "$pending_changes" in
+              "" | docs/data/release-benchmarks.json) ;;
+              *) echo "Refusing pending benchmark branch with unexpected changes" >&2; exit 1 ;;
+            esac
+            pending_data="$RUNNER_TEMP/release-benchmark-pending.json"
+            git show "refs/remotes/release-benchmark/$sync_branch:docs/data/release-benchmarks.json" > "$pending_data"
+            python scripts/update_release_benchmark_history.py \
+              --base-data docs/data/release-benchmarks.json \
+              --incoming-data "$pending_data" \
+              --current-main-sha "$current_main_sha" \
+              --output docs/data/release-benchmarks.json
+          fi
+          python scripts/update_release_benchmark_history.py \
+            --incoming-data .benchmarks/update/release-benchmarks.json \
+            --selection .benchmarks/update/release-benchmark-selection-refresh.json \
+            --current-main-sha "$current_main_sha" \
+            --output docs/data/release-benchmarks.json
+          git add docs/data/release-benchmarks.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "docs: update release benchmark data"
+
+          if [ -n "$remote_sha" ]; then
+            git push --force-with-lease="refs/heads/${sync_branch}:${remote_sha}" \
+              "$remote_url" \
+              "HEAD:refs/heads/${sync_branch}"
+          else
+            git push "$remote_url" "HEAD:refs/heads/${sync_branch}"
+          fi
+
+          target_owner="${TARGET_REPO%%/*}"
+          existing_pr="$(
+            gh pr list \
+              --repo "$TARGET_REPO" \
+              --base main \
+              --head "$sync_branch" \
+              --state open \
+              --json number,isCrossRepository \
+              --jq 'map(select(.isCrossRepository == false)) | .[0].number // empty'
+          )"
+
+          if [ -n "$existing_pr" ]; then
+            pr_number="$existing_pr"
+          else
+            pr_url="$(
+              gh pr create \
+                --repo "$TARGET_REPO" \
+                --base main \
+                --head "${target_owner}:${sync_branch}" \
+                --title "Update release benchmark data" \
+                --body ""
+            )"
+            pr_number="${pr_url##*/}"
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"

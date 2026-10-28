@@ -1,0 +1,114 @@
+[
+  {
+    "name": "PreservedChild",
+    "fields": [
+      "first",
+      "second",
+      "optional",
+      "annotated",
+      "nested_annotation",
+      "child"
+    ],
+    "annotations_equal": {
+      "first": true,
+      "second": true,
+      "optional": true,
+      "annotated": true,
+      "nested_annotation": false,
+      "child": true
+    },
+    "type_identity": {
+      "child": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "first": [
+            {
+              "value": 1
+            }
+          ],
+          "second": [
+            {
+              "value": "ok"
+            }
+          ],
+          "optional": null,
+          "annotated": [
+            {
+              "value": 1
+            }
+          ],
+          "nested_annotation": [
+            [
+              {
+                "value": 1
+              }
+            ]
+          ],
+          "child": {
+            "value": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": [
+            {
+              "value": 1
+            }
+          ],
+          "second": [
+            {
+              "value": "ok"
+            }
+          ],
+          "optional": null,
+          "annotated": [
+            {
+              "value": 1
+            }
+          ],
+          "nested_annotation": [
+            [
+              {
+                "value": 1
+              }
+            ]
+          ],
+          "child": {
+            "value": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "first": true,
+      "second": true,
+      "optional": true,
+      "annotated": true,
+      "nested_annotation": true,
+      "child": true
+    }
+  }
+]

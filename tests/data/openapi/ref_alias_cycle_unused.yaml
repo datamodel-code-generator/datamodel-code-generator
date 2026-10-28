@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info:
+  title: Components that only reference each other beside a class that does not use them
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/B'
+    B:
+      $ref: '#/components/schemas/A'
+    Name:
+      type: string
+    Label:
+      $ref: '#/components/schemas/Name'
+    Size:
+      type: object
+      properties:
+        value:
+          type: integer
+    Holder:
+      type: object
+      properties:
+        first:
+          $ref: '#/components/schemas/Name'
+        second:
+          $ref: '#/components/schemas/Name'
+        label:
+          $ref: '#/components/schemas/Label'
+        size:
+          $ref: '#/components/schemas/Size'
+        count:
+          type: integer

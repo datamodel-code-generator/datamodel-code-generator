@@ -6,6 +6,19 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
+| `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
+| `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
+| `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
+| `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
+| `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
+| `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation` | 0.86.0 | - |
+| `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
+| `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
+| `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
+| `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
+| `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.71.1 | - |
 | `formatter.builtin` | formatter | `--formatters builtin` | 0.59.0 | - |
 | `input-format.asyncapi` | input-format | `--input-file-type asyncapi` | 0.59.0 | - |
 | `input-format.avro` | input-format | `--input-file-type avro` | 0.59.0 | - |
@@ -14,6 +27,136 @@ This page lists features that are available but still experimental.
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
 
 ## Details
+
+### `behavior.naming-hint`
+
+- **Kind:** behavior
+- **Target:** `NamingHintWarning`
+- **Since:** 0.86.0
+
+The hint at --recommend-options that a command line generation shows when many class names are numbered collisions is experimental; when it is shown and its text may change.
+
+A command line generation warns with datamodel_code_generator.NamingHintWarning when at least 10 class names, and at least one in five, are numbered collisions: names the model resolver numbered because the name without the number was taken, such as Pet1 beside Pet. It is shown at most once per command and never by generate(). An explicit --naming-strategy, --model-name-map, or deprecated --parent-scoped-naming, on the command line or in pyproject.toml, --check, --diff-against, --output-format json, --disable-warnings, and the options --recommend-options refuses (--watch, --all-jobs, and more than one --job) leave it out; a filter that turns warnings into errors drops it. It never changes the generated files, the result of --check, or the exit code.
+
+### `behavior.batch-generation-jobs`
+
+- **Kind:** behavior
+- **Target:** `[tool.datamodel-codegen.jobs], --job, --all-jobs`
+- **Since:** 0.72.3
+
+Named batch jobs are experimental; their configuration schema, batch output, and transactional/watch execution contracts may change.
+
+Define named generation jobs in [tool.datamodel-codegen.jobs] and select them with --job or --all-jobs. Each selected job has its own input and output, and the full selection is validated before generation begins.
+
+### `behavior.remote-reference-lock`
+
+- **Kind:** behavior
+- **Target:** `datamodel-codegen.lock, --lockfile, --update-lock, and --locked`
+- **Since:** 0.72.3
+
+Remote reference integrity locking is experimental: the lock document schema and request-identity compatibility may evolve, but integrity mismatches remain fail-closed and credentials are never persisted.
+
+The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests, never response bodies or request values directly. Each saved display origin contains only the scheme, host, and explicit port—never a path, query, or request headers.
+
+### `cli-option.generate-client`
+
+- **Kind:** cli-option
+- **Target:** `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)`
+- **Since:** 0.84.0
+
+HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
+
+`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` and next-step notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, `--target-pydantic-version 2.14` with `--use-missing-sentinel`, and `--use-msgspec-tagged-unions` and `--use-msgspec-nullable-enum-alias` for `msgspec.Struct` models; one left unset takes that value, as with `--generate-server`.
+
+### `cli-option.generate-schema-validators`
+
+- **Kind:** cli-option
+- **Target:** `--generate-schema-validators`
+- **Since:** 0.66.1
+
+Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
+
+The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.
+
+### `cli-option.generate-server`
+
+- **Kind:** cli-option
+- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)`
+- **Since:** 0.84.0
+
+FastAPI server generation from the CLI is experimental; its options and generated package may change.
+
+`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`, whose `main.py` serves the application with the implementations in the `services` package beside it; generation writes each missing module of `services` once, with stubs, and never overwrites one. `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command and the next steps to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output, writing no stubs. It needs Python 3.11 or later, both to run and as `--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, `--target-pydantic-version 2.14` with `--use-missing-sentinel`, and `--openapi-scopes` with `api`. A setting left unset, by the options, `pyproject.toml`, `generate()`, and the preset, takes that value, and the command line prints how to set it; one set otherwise is refused.
+
+### `cli-option.install-skill`
+
+- **Kind:** cli-option
+- **Target:** `--install-skill, --skill-scope, and --overwrite-skill`
+- **Since:** 0.76.0
+
+Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.
+
+Use --install-skill with codex or claude-code. --skill-scope selects a project or user installation, and --overwrite-skill safely replaces an existing regular skill directory.
+
+### `cli-option.recommend-options`
+
+- **Kind:** cli-option
+- **Target:** `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation`
+- **Since:** 0.86.0
+
+Option recommendations are experimental; the rules, the schema signals they read, the class-name metrics, the report, and the JSON payload may change.
+
+--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. For schemas of up to 3000 estimated models, it also generates the candidate configurations in memory and recommends the one whose class names score best; nothing is written. With --generate-prompt, the prompt embeds the report, and its JSON output carries the recommend-options payload as recommendation.
+
+### `cli-option.schema-validator-type`
+
+- **Kind:** cli-option
+- **Target:** `--schema-validator-type`
+- **Since:** 0.66.1
+
+Schema-derived runtime validator backend selection is experimental and may change as validation backends are added.
+
+The only currently implemented backend is 'pydantic-v2', which preserves the existing generated Pydantic v2 validator behavior.
+
+### `cli-option.use-missing-sentinel`
+
+- **Kind:** cli-option
+- **Target:** `--use-missing-sentinel`
+- **Since:** 0.66.1
+
+Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
+
+The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass output, and `--target-pydantic-version 2.14` with it.
+
+### `cli-option.use-type-alias`
+
+- **Kind:** cli-option
+- **Target:** `--use-type-alias`
+- **Since:** 0.36.0
+
+Type alias output is experimental and may change as Python typing support evolves.
+
+The option replaces root model classes with type aliases where possible. Pydantic v2 output may use TypeAliasType or Python 3.12 type statements depending on the target Python version.
+
+### `cli-option.use-type-alias-type`
+
+- **Kind:** cli-option
+- **Target:** `--use-type-alias-type`
+- **Since:** 0.71.1
+
+Runtime TypeAliasType output is experimental and may change as Python typing support evolves.
+
+The option implies --use-type-alias and selects TypeAliasType for Python 3.10 and 3.11. Python 3.12 and newer continue to use native type statements.
+
+### `extra.httpx2`
+
+- **Kind:** extra
+- **Target:** `datamodel-code-generator[httpx2]`
+- **Since:** 0.71.1
+
+The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
+
+`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; `datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or `HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency errors do not fall back.
 
 ### `formatter.builtin`
 

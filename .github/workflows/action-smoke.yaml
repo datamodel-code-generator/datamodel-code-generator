@@ -1,0 +1,73 @@
+name: GitHub Action
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'action.yml'
+      - 'requirements-pip.txt'
+      - '.github/workflows/action-smoke.yaml'
+      - 'tests/data/jsonschema/simple_string.json'
+  push:
+    branches:
+      - main
+    paths:
+      - 'action.yml'
+      - 'requirements-pip.txt'
+      - '.github/workflows/action-smoke.yaml'
+      - 'tests/data/jsonschema/simple_string.json'
+  workflow_dispatch:
+
+concurrency:
+  group: action-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prepare smoke fixtures
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/action-smoke/schemas" "$RUNNER_TEMP/action-smoke/generated"
+          cp tests/data/jsonschema/simple_string.json "$RUNNER_TEMP/action-smoke/schemas/injection\$(touch action-injection-ran).json"
+
+      - name: Generate models
+        uses: ./
+        with:
+          input: 'schemas/injection$(touch action-injection-ran).json'
+          output: generated/model.py
+          input-file-type: jsonschema
+          output-model-type: pydantic_v2.BaseModel
+          check: 'false'
+          working-directory: ${{ runner.temp }}/action-smoke
+          extra-args: --disable-timestamp
+          version: 0.66.3
+
+      - name: Check generated models
+        uses: ./
+        with:
+          input: 'schemas/injection$(touch action-injection-ran).json'
+          output: generated/model.py
+          input-file-type: jsonschema
+          output-model-type: pydantic_v2.BaseModel
+          working-directory: ${{ runner.temp }}/action-smoke
+          extra-args: --disable-timestamp
+          version: 0.66.3
+
+      - name: Verify shell-sensitive input
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/action-smoke/action-injection-ran"
+          grep -Fqx "class Model(BaseModel):" "$RUNNER_TEMP/action-smoke/generated/model.py"
+          grep -Fqx "    s: str" "$RUNNER_TEMP/action-smoke/generated/model.py"

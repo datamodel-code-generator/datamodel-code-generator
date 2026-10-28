@@ -1,0 +1,16 @@
+{
+  "title": "ConditionalIntermediate",
+  "allOf": [
+    {
+      "$ref": "conditional_parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "intermediate": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

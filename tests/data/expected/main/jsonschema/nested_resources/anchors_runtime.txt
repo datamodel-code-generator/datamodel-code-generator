@@ -1,0 +1,17 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "left": {
+        "left": 1
+      },
+      "right": {
+        "right": "ok"
+      }
+    },
+    "rejected"
+  ]
+}

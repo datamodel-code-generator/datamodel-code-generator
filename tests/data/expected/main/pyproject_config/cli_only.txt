@@ -1,0 +1,7 @@
+{
+  "disable_timestamp": true,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT"
+}

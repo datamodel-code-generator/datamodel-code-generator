@@ -1,0 +1,7 @@
+{
+  "dump": {
+    "payload": 3
+  },
+  "rejects_invalid": true,
+  "root_model": false
+}

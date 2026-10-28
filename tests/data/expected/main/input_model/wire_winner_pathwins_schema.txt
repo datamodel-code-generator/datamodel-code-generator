@@ -1,0 +1,27 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "values": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Values",
+      "type": "array"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "values",
+    "values",
+    "last"
+  ],
+  "title": "PathWins",
+  "type": "object"
+}

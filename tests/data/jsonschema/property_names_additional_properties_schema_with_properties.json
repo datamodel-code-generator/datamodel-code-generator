@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KnownAndNamedExtra",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z_]+$"
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

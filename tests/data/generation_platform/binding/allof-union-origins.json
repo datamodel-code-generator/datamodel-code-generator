@@ -1,0 +1,15 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "AllOf union origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Envelope": {"allOf": [
+      {"$ref": "#/components/schemas/Variants"},
+      {"type": "object", "properties": {"nested": {"$ref": "#/components/schemas/Variants"}}}
+    ]},
+    "Variants": {
+      "anyOf": [false, {"type": "object", "properties": {"ship-to": {"type": "string"}}}],
+      "oneOf": [{"type": "object", "properties": {"other-key": {"type": "integer"}}}]
+    }
+  }}
+}

@@ -1,0 +1,705 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "both_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "both_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "both_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "child_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ]
+        },
+        "child_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ]
+        },
+        "child_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ]
+        },
+        "short_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone"
+          ]
+        },
+        "short_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone"
+          ]
+        },
+        "short_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone"
+          ]
+        },
+        "short_child_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone"
+          ]
+        },
+        "short_child_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone"
+          ]
+        },
+        "short_child_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone"
+          ]
+        },
+        "parent_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "parent_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "parent_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone",
+            "ParentB",
+            "ParentC"
+          ]
+        },
+        "parent_short_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone"
+          ]
+        },
+        "parent_short_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone"
+          ]
+        },
+        "parent_short_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone"
+          ]
+        },
+        "empty_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": []
+        },
+        "empty_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": []
+        },
+        "empty_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": []
+        },
+        "nullable_metadata_names": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Gone",
+            null,
+            ""
+          ]
+        },
+        "nullable_metadata_alt": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Gone",
+            null,
+            ""
+          ]
+        },
+        "nullable_metadata_descriptions": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Gone",
+            null,
+            ""
+          ]
+        },
+        "complex_names": {
+          "enum": [
+            {
+              "key": 0
+            },
+            {
+              "key": 1
+            },
+            [
+              2
+            ]
+          ]
+        },
+        "complex_alt": {
+          "enum": [
+            {
+              "key": 0
+            },
+            {
+              "key": 1
+            },
+            [
+              2
+            ]
+          ]
+        },
+        "complex_descriptions": {
+          "enum": [
+            {
+              "key": 0
+            },
+            {
+              "key": 1
+            },
+            [
+              2
+            ]
+          ]
+        },
+        "numeric_boolean_names": {
+          "enum": [
+            true,
+            1,
+            2
+          ]
+        },
+        "numeric_boolean_alt": {
+          "enum": [
+            true,
+            1,
+            2
+          ]
+        },
+        "numeric_boolean_descriptions": {
+          "enum": [
+            true,
+            1,
+            2
+          ]
+        },
+        "combined": {
+          "enum": [
+            "gone",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "required": [
+        "both_names",
+        "both_alt",
+        "both_descriptions",
+        "child_names",
+        "child_alt",
+        "child_descriptions",
+        "short_names",
+        "short_alt",
+        "short_descriptions",
+        "short_child_names",
+        "short_child_alt",
+        "short_child_descriptions",
+        "parent_names",
+        "parent_alt",
+        "parent_descriptions",
+        "parent_short_names",
+        "parent_short_alt",
+        "parent_short_descriptions",
+        "empty_names",
+        "empty_alt",
+        "empty_descriptions",
+        "nullable_metadata_names",
+        "nullable_metadata_alt",
+        "nullable_metadata_descriptions",
+        "complex_names",
+        "complex_alt",
+        "complex_descriptions",
+        "numeric_boolean_names",
+        "numeric_boolean_alt",
+        "numeric_boolean_descriptions",
+        "combined"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "both_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "both_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "both_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "child_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "child_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "child_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "short_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "short_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "short_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "short_child_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC"
+          ]
+        },
+        "short_child_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": [
+            "ChildC"
+          ]
+        },
+        "short_child_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": [
+            "ChildC"
+          ]
+        },
+        "parent_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "parent_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "parent_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "parent_short_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "parent_short_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "parent_short_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ]
+        },
+        "empty_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": []
+        },
+        "empty_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": []
+        },
+        "empty_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": []
+        },
+        "nullable_metadata_names": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "nullable_metadata_alt": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enumNames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "nullable_metadata_descriptions": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-descriptions": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ]
+        },
+        "complex_names": {
+          "enum": [
+            [
+              2
+            ],
+            {
+              "key": 1
+            },
+            false
+          ],
+          "x-enum-varnames": [
+            "Array",
+            "Object",
+            "Bool"
+          ]
+        },
+        "complex_alt": {
+          "enum": [
+            [
+              2
+            ],
+            {
+              "key": 1
+            },
+            false
+          ],
+          "x-enumNames": [
+            "Array",
+            "Object",
+            "Bool"
+          ]
+        },
+        "complex_descriptions": {
+          "enum": [
+            [
+              2
+            ],
+            {
+              "key": 1
+            },
+            false
+          ],
+          "x-enum-descriptions": [
+            "Array",
+            "Object",
+            "Bool"
+          ]
+        },
+        "numeric_boolean_names": {
+          "enum": [
+            2,
+            1,
+            false
+          ],
+          "x-enum-varnames": [
+            "Two",
+            "One",
+            "False"
+          ]
+        },
+        "numeric_boolean_alt": {
+          "enum": [
+            2,
+            1,
+            false
+          ],
+          "x-enumNames": [
+            "Two",
+            "One",
+            "False"
+          ]
+        },
+        "numeric_boolean_descriptions": {
+          "enum": [
+            2,
+            1,
+            false
+          ],
+          "x-enum-descriptions": [
+            "Two",
+            "One",
+            "False"
+          ]
+        },
+        "combined": {
+          "enum": [
+            "c",
+            "b",
+            "extra"
+          ],
+          "x-enum-varnames": [
+            "ChildC",
+            "ChildB",
+            "Extra"
+          ],
+          "x-enumNames": [
+            "AltC",
+            "AltB",
+            "AltExtra"
+          ],
+          "x-enum-descriptions": [
+            "description C",
+            "description B",
+            "description extra"
+          ]
+        }
+      }
+    }
+  ]
+}

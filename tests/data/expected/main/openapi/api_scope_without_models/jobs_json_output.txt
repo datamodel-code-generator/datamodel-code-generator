@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "batch",
+  "jobs": [
+    {
+      "name": "models",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "generation",
+        "output": "<ROOT>/models.py",
+        "files": []
+      }
+    },
+    {
+      "name": "package",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "generation",
+        "output": "<ROOT>/package",
+        "files": []
+      }
+    }
+  ]
+}

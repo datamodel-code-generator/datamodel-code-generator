@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Response header references
+  version: '1'
+paths:
+  /items:
+    get:
+      responses:
+        '200':
+          description: ok
+          headers:
+            X-Total:
+              $ref: '#/components/headers/Total'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+components:
+  headers:
+    Total:
+      schema:
+        type: integer
+  responses:
+    Listed:
+      description: ok
+      headers:
+        X-Count:
+          $ref: '#/components/headers/Total'
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+  requestBodies:
+    Upload:
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/Item'
+          encoding:
+            id:
+              headers:
+                X-Part:
+                  $ref: '#/components/headers/Total'

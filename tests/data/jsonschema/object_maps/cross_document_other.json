@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cross_document_other.json",
+  "title": "Other",
+  "$ref": "#/$defs/Base",
+  "$defs": {
+    "Bound": {
+      "type": "integer"
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "#/$defs/Bound"
+        }
+      }
+    }
+  }
+}

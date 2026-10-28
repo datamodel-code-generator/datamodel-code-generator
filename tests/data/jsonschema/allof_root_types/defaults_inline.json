@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "description": "Outer description.",
+  "default": "outer",
+  "examples": [
+    "last",
+    "first"
+  ],
+  "allOf": [
+    {
+      "type": "string",
+      "minLength": 2,
+      "default": "inner",
+      "examples": [
+        "inner-first",
+        "inner-last"
+      ]
+    }
+  ]
+}

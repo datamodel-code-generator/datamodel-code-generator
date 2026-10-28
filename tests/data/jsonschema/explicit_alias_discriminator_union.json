@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [
+        {
+          "$ref": "names.json"
+        },
+        {
+          "$ref": "variants.json#/$defs/Dog"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "pet_type",
+        "mapping": {
+          "names": "names.json",
+          "dog": "variants.json#/$defs/Dog"
+        }
+      }
+    }
+  }
+}

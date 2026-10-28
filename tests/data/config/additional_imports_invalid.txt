@@ -1,0 +1,2 @@
+collections.deque
+INJECTION_MARKER = 1

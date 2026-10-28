@@ -1,0 +1,10 @@
+{
+  "title": "RecursiveDefaults",
+  "type": "object",
+  "$defs": {
+    "Values": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Values"}}, {"type": "integer"}]}
+  },
+  "properties": {
+    "values": {"$ref": "#/$defs/Values", "default": [1, [2]]}
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MsgspecMetaUnsupportedTypes",
+  "type": "object",
+  "definitions": {
+    "Price": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0
+    },
+    "Pair": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "items": false
+        }
+      ]
+    }
+  },
+  "properties": {
+    "amount": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0,
+      "multipleOf": 0.01
+    },
+    "clock": {
+      "type": "number",
+      "format": "time",
+      "minimum": 0
+    },
+    "label": {
+      "type": "integer",
+      "x-python-type": "str",
+      "minimum": 0
+    },
+    "blob": {
+      "type": "string",
+      "format": "binary",
+      "pattern": "^a",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "const": "ab",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "const": 3,
+      "minimum": 1
+    },
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Price"
+      }
+    },
+    "pair": {
+      "$ref": "#/definitions/Pair"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

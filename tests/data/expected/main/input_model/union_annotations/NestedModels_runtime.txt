@@ -1,0 +1,22 @@
+{
+  "nested": {
+    "source": {
+      "value": {
+        "value": {
+          "callable_result": 7
+        }
+      }
+    },
+    "generated": {
+      "value": {
+        "value": {
+          "callable_result": 7
+        }
+      }
+    }
+  },
+  "none": {
+    "source": "rejected",
+    "generated": "rejected"
+  }
+}

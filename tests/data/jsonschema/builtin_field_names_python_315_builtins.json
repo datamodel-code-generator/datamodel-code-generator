@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "frozendict": {
+      "type": "object",
+      "x-python-type": "frozendict"
+    },
+    "sentinel": {
+      "type": "string",
+      "x-python-type": "sentinel"
+    },
+    "ImportCycleError": {
+      "type": "string",
+      "x-python-type": "ImportCycleError"
+    }
+  }
+}

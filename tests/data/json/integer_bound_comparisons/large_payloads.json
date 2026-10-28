@@ -1,0 +1,57 @@
+{
+  "PositiveMinimum": {
+    "valid": 9007199254740993,
+    "invalid": 9007199254740992,
+    "error_type": "greater_than_equal"
+  },
+  "PositiveMinimumReversed": {
+    "valid": 9007199254740993,
+    "invalid": 9007199254740992,
+    "error_type": "greater_than_equal"
+  },
+  "PositiveMaximum": {
+    "valid": 9007199254740992,
+    "invalid": 9007199254740993,
+    "error_type": "less_than_equal"
+  },
+  "PositiveMaximumReversed": {
+    "valid": 9007199254740992,
+    "invalid": 9007199254740993,
+    "error_type": "less_than_equal"
+  },
+  "NegativeMinimum": {
+    "valid": -9007199254740992,
+    "invalid": -9007199254740993,
+    "error_type": "greater_than_equal"
+  },
+  "NegativeMinimumReversed": {
+    "valid": -9007199254740992,
+    "invalid": -9007199254740993,
+    "error_type": "greater_than_equal"
+  },
+  "NegativeMaximum": {
+    "valid": -9007199254740993,
+    "invalid": -9007199254740992,
+    "error_type": "less_than_equal"
+  },
+  "NegativeMaximumReversed": {
+    "valid": -9007199254740993,
+    "invalid": -9007199254740992,
+    "error_type": "less_than_equal"
+  },
+  "MixedMinimum": {
+    "valid": 9007199254740993,
+    "invalid": 9007199254740992,
+    "error_type": "greater_than_equal"
+  },
+  "MixedMaximum": {
+    "valid": -9007199254740993,
+    "invalid": -9007199254740992,
+    "error_type": "less_than_equal"
+  },
+  "BelowExactLimit": {
+    "valid": 9007199254740991,
+    "invalid": 9007199254740990,
+    "error_type": "greater_than_equal"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "query": "query Check($input: ItemInput!) {\n item(input: $input) { __typename camelValue label spare }\n choice { __typename ... on Second { camelValue label spare } }\n cross { __typename value label }\n ordinary { __typename value }\n solo { __typename label }\n}",
+  "models": {
+    "ZNode": {
+      "camelValue": 1,
+      "label": "node"
+    },
+    "ANode": {
+      "camelValue": 2,
+      "label": "child",
+      "spare": 12
+    },
+    "Item": {
+      "camelValue": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "Second": {
+      "camelValue": 4,
+      "label": "second",
+      "spare": 14
+    },
+    "Base": {
+      "value": 5
+    },
+    "Cross": {
+      "value": 6,
+      "label": "cross"
+    },
+    "Solo": {
+      "label": "solo"
+    },
+    "ItemInput": {
+      "camelValue": 7,
+      "label": "input",
+      "spare": 17
+    },
+    "Ordinary": {
+      "value": 8
+    }
+  },
+  "python": {
+    "ZNode": {
+      "camelValue": 1,
+      "label": "node"
+    },
+    "ANode": {
+      "camelValue": 2,
+      "label": "child",
+      "spare": 12
+    },
+    "Item": {
+      "camelValue": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "Second": {
+      "camelValue": 4,
+      "label": "second",
+      "spare": 14
+    },
+    "Base": {
+      "value": 5
+    },
+    "Cross": {
+      "value": 6,
+      "label": "cross"
+    },
+    "Solo": {
+      "label": "solo"
+    },
+    "ItemInput": {
+      "camelValue": 7,
+      "label": "input",
+      "spare": 17
+    },
+    "Ordinary": {
+      "value": 8
+    }
+  },
+  "root": {
+    "item": {
+      "camelValue": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "choice": {
+      "__typename": "Second",
+      "camelValue": 4,
+      "label": "second",
+      "spare": 14
+    },
+    "cross": {
+      "value": 6,
+      "label": "cross"
+    },
+    "solo": {
+      "label": "solo"
+    },
+    "ordinary": {
+      "value": 8
+    }
+  },
+  "variables": {
+    "input": {
+      "camelValue": 7,
+      "label": "input",
+      "spare": 17
+    }
+  },
+  "responses": {
+    "Item": "item",
+    "Second": "choice",
+    "Cross": "cross",
+    "Solo": "solo",
+    "Ordinary": "ordinary"
+  }
+}

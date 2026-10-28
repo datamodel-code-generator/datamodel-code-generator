@@ -1,0 +1,9 @@
+{
+  "title": "Stable model",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  }
+}

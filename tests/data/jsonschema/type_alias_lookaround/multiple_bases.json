@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "both": {"$ref": "#/definitions/Both"}
+  },
+  "definitions": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$"},
+    "Plain": {"type": "object", "properties": {"label": {"type": "string"}}},
+    "Base": {"type": "object", "properties": {"code": {"$ref": "#/definitions/Code"}}},
+    "Both": {
+      "allOf": [
+        {"$ref": "#/definitions/Plain"},
+        {"$ref": "#/definitions/Base"},
+        {"type": "object", "properties": {"z": {"type": "integer"}}}
+      ]
+    }
+  }
+}

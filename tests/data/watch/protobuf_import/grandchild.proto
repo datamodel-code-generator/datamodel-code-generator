@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Grandchild {
+  string value = 1;
+}

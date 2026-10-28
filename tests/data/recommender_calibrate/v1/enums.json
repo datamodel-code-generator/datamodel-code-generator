@@ -1,0 +1,140 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Enums",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "CodeAlpha": {
+        "type": "string",
+        "enum": [
+          "alpha-a",
+          "alpha-b"
+        ]
+      },
+      "CodeBeta": {
+        "type": "string",
+        "enum": [
+          "beta-a",
+          "beta-b"
+        ]
+      },
+      "CodeGamma": {
+        "type": "string",
+        "enum": [
+          "gamma-a",
+          "gamma-b"
+        ]
+      },
+      "CodeDelta": {
+        "type": "string",
+        "enum": [
+          "delta-a",
+          "delta-b"
+        ]
+      },
+      "CodeEpsilon": {
+        "type": "string",
+        "enum": [
+          "epsilon-a",
+          "epsilon-b"
+        ]
+      },
+      "CodeZeta": {
+        "type": "string",
+        "enum": [
+          "zeta-a",
+          "zeta-b"
+        ]
+      },
+      "CodeEta": {
+        "type": "string",
+        "enum": [
+          "eta-a",
+          "eta-b"
+        ]
+      },
+      "CodeTheta": {
+        "type": "string",
+        "enum": [
+          "theta-a",
+          "theta-b"
+        ]
+      },
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pet-open",
+              "pet-closed"
+            ]
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "order-open",
+              "order-closed"
+            ]
+          }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "store-open",
+              "store-closed"
+            ]
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "user-open",
+              "user-closed"
+            ]
+          }
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "tag-open",
+              "tag-closed"
+            ]
+          }
+        }
+      },
+      "Shelf": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "shelf-open",
+              "shelf-closed"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

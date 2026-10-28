@@ -1,0 +1,28 @@
+{
+  "mapping": {
+    "source": {
+      "value": {
+        "items": [
+          7,
+          {
+            "callable_result": 7
+          }
+        ]
+      }
+    },
+    "generated": {
+      "value": {
+        "items": [
+          7,
+          {
+            "callable_result": 7
+          }
+        ]
+      }
+    }
+  },
+  "none": {
+    "source": "rejected",
+    "generated": "rejected"
+  }
+}

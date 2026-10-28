@@ -1,0 +1,7 @@
+--- server/services.py
++++ server/services.py (expected)
+@@ -83,4 +83,3 @@
+         """
+         Handle GET /store/inventory.
+         """
+-# Café

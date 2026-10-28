@@ -1,0 +1,7 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {"x": {"type": "integer"}},
+  "patternProperties": {"[": true},
+  "additionalProperties": false
+}

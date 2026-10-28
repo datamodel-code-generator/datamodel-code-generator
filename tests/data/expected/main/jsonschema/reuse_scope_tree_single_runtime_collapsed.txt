@@ -1,0 +1,38 @@
+[
+  {
+    "module": "schema_a.model",
+    "fields": [
+      "data"
+    ],
+    "dump": {
+      "data": {
+        "id": 7,
+        "name": "shared"
+      }
+    },
+    "nested_fields": [
+      "id",
+      "name"
+    ],
+    "canonical": true,
+    "inherits_shared": true
+  },
+  {
+    "module": "schema_b.model",
+    "fields": [
+      "info"
+    ],
+    "dump": {
+      "info": {
+        "id": 7,
+        "name": "shared"
+      }
+    },
+    "nested_fields": [
+      "id",
+      "name"
+    ],
+    "canonical": true,
+    "inherits_shared": true
+  }
+]

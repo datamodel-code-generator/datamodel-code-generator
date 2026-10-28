@@ -1,0 +1,114 @@
+[
+  {
+    "native": true,
+    "fields": [
+      "root"
+    ],
+    "python": {},
+    "identity": "Root",
+    "json": {}
+  },
+  {
+    "native": false,
+    "fields": [
+      "root"
+    ],
+    "python": {
+      "x": {
+        "c": 1
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "c": 1
+      }
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "root"
+    ],
+    "python": {
+      "x": {
+        "a": 1,
+        "c": 3
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "a": 1,
+        "c": 3
+      }
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "root"
+    ],
+    "python": {
+      "x": {
+        "a": 1,
+        "b": 2,
+        "c": 3
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "a": 1,
+        "b": 2,
+        "c": 3
+      }
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "root"
+    ],
+    "python": {
+      "x": {
+        "c": 1,
+        "b": null
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "c": 1,
+        "b": null
+      }
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "root"
+    ],
+    "python": {
+      "x": {
+        "a": null,
+        "b": 2
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "a": null,
+        "b": 2
+      }
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "root"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  }
+]

@@ -2,16 +2,46 @@
 
 from __future__ import annotations
 
+import codecs
+import json
+import warnings
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
+import msgspec
+import pytest
+import yaml
+from lxml import etree
+from pydantic import PydanticUserError, ValidationError
+
+from datamodel_code_generator import DataModelType, InputFileType
 from datamodel_code_generator.__main__ import Exit
-from tests.main.conftest import XML_SCHEMA_DATA_PATH, run_main_and_assert
+from datamodel_code_generator.format import Formatter, PythonVersion
+from datamodel_code_generator.parser import xmlschema as xmlschema_parser
+from datamodel_code_generator.parser.xmlschema import (
+    _clear_xml_schema_data_cache,
+    _load_xml_schema_data_from_path,
+    _read_xml_text,
+    convert_xml_schema_data,
+)
+from tests.conftest import assert_output, stored_expected
+from tests.main.conftest import (
+    BACKEND_GOLDEN_CASES,
+    BACKEND_GOLDEN_TARGET_ARGS,
+    DATA_PATH,
+    EXPECTED_XML_SCHEMA_PATH,
+    XML_SCHEMA_DATA_PATH,
+    _generated_model,
+    _model_json_validator,
+    assert_generated_model_json_validation,
+    assert_path_cache_evicts_lru_entries,
+    run_generate_file_and_assert,
+    run_main_and_assert,
+)
 from tests.main.xmlschema.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
 
 def test_main_xmlschema_purchase_order(output_file: Path) -> None:
@@ -23,6 +53,84 @@ def test_main_xmlschema_purchase_order(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="purchase_order.py",
     )
+
+
+def test_convert_xml_schema_data_preserves_yaml_safe_non_finite_defaults() -> None:
+    """Keep public XML Schema conversion results serializable by PyYAML."""
+    converted = convert_xml_schema_data((XML_SCHEMA_DATA_PATH / "non_finite_enum.xsd").read_text(encoding="utf-8"))
+
+    assert_output(
+        yaml.safe_dump(converted["definitions"]["NonFinite"]["enum"], sort_keys=False),
+        EXPECTED_XML_SCHEMA_PATH / "converted_non_finite_defaults.txt",
+    )
+
+
+def test_main_xmlschema_with_parsed_source_cache(output_file: Path) -> None:
+    """Generate XML Schema models with process-local parsed source cache enabled."""
+    _clear_xml_schema_data_cache()
+    run_generate_file_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "purchase_order.xsd",
+        output_path=output_file,
+        input_file_type=InputFileType.XMLSchema,
+        assert_func=assert_file_content,
+        expected_file="purchase_order.py",
+    )
+
+
+@pytest.mark.parametrize(
+    ("byte_order_mark", "xml_encoding"),
+    [
+        (codecs.BOM_UTF8, "utf-8"),
+        (codecs.BOM_UTF32_LE, "utf-32-le"),
+        (codecs.BOM_UTF32_BE, "utf-32-be"),
+        (codecs.BOM_UTF16_LE, "utf-16-le"),
+        (codecs.BOM_UTF16_BE, "utf-16-be"),
+    ],
+)
+def test_read_xml_text_detects_byte_order_mark(tmp_path: Path, byte_order_mark: bytes, xml_encoding: str) -> None:
+    """Decode XML source according to its byte order mark."""
+    schema_path = tmp_path / "schema.xsd"
+    expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
+    schema_text = stored_expected(expected_path).read_text(encoding="utf-8")
+    schema_path.write_bytes(byte_order_mark + schema_text.encode(xml_encoding))
+
+    assert_output(_read_xml_text(schema_path, "ascii"), expected_path)
+
+
+def test_read_xml_text_reads_updated_source(tmp_path: Path) -> None:
+    """Read the current XML source content without retaining stale text."""
+    schema_path = tmp_path / "schema.xsd"
+    first_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
+    second_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_updated.txt"
+    schema_path.write_bytes(stored_expected(first_expected_path).read_text(encoding="utf-8").encode("latin-1"))
+    assert_output(_read_xml_text(schema_path, "latin-1"), first_expected_path)
+
+    schema_path.write_bytes(stored_expected(second_expected_path).read_text(encoding="utf-8").encode("latin-1"))
+    assert_output(_read_xml_text(schema_path, "latin-1"), second_expected_path)
+
+
+def test_load_xml_schema_data_from_path_evicts_lru_entries(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Evict old converted XML Schema cache entries after the configured limit."""
+    monkeypatch.setattr(xmlschema_parser, "_XML_SCHEMA_DATA_CACHE_MAX_SIZE", 1)
+    _clear_xml_schema_data_cache()
+    first_path = tmp_path / "first.xsd"
+    second_path = tmp_path / "second.xsd"
+    first_path.write_text((XML_SCHEMA_DATA_PATH / "single_root_item.xsd").read_text(encoding="utf-8"), encoding="utf-8")
+    second_path.write_text((XML_SCHEMA_DATA_PATH / "inline_root.xsd").read_text(encoding="utf-8"), encoding="utf-8")
+
+    kwargs = {
+        "base_path": tmp_path,
+        "encoding": "utf-8",
+        "xmlschema_version": None,
+        "schema_version_mode": None,
+        "use_xmlschema_datetime_default": False,
+        "source_safe_non_finite": True,
+    }
+
+    def load_schema_data(path: Path, encoding: str) -> object:  # noqa: ARG001
+        return _load_xml_schema_data_from_path(path, **kwargs)
+
+    assert_path_cache_evicts_lru_entries(load_schema_data, first_path, second_path)
 
 
 def test_main_xmlschema_purchase_order_from_normalized_external_path(tmp_path: Path, output_file: Path) -> None:
@@ -74,6 +182,17 @@ def test_main_xmlschema_edge_cases(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_xmlschema_single_value_enum_as_const_keeps_converted(extra_args: list[str], output_file: Path) -> None:
+    """Keep the fixed values of nillable elements as written, as XML Schema is converted rather than read as JSON."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "single_value_enum_as_const.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_xmlschema_fixed_decimal(output_file: Path) -> None:
     """Generate Decimal defaults for fixed XML Schema decimal values."""
     run_main_and_assert(
@@ -93,6 +212,61 @@ def test_main_xmlschema_special_float_defaults(output_file: Path) -> None:
         input_file_type="xmlschema",
         assert_func=assert_file_content,
         expected_file="special_float_defaults.py",
+    )
+
+
+def test_main_xmlschema_custom_template_non_finite_raw(output_file: Path) -> None:
+    """Keep XML non-finite defaults valid in legacy raw custom templates."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "special_float_defaults.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--custom-template-dir", str(DATA_PATH / "templates_non_finite_raw")],
+        assert_func=assert_file_content,
+        expected_file="custom_template_non_finite_raw.py",
+        force_exec_validation=True,
+    )
+
+
+def test_main_xmlschema_custom_template_non_finite_raw_list(output_file: Path) -> None:
+    """Keep nested XML non-finite defaults valid in raw custom templates."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "non_finite_list_default.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--custom-template-dir", str(DATA_PATH / "templates_non_finite_raw")],
+        assert_func=assert_file_content,
+        expected_file="custom_template_non_finite_raw_list.py",
+        force_exec_validation=True,
+    )
+
+
+def test_main_xmlschema_non_finite_enum(output_file: Path) -> None:
+    """Keep non-finite enum member names and values valid."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "non_finite_enum.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        assert_func=assert_file_content,
+        expected_file="non_finite_enum.py",
+        force_exec_validation=True,
+        importable_module_name="generated_xml_non_finite_enum",
+        importable_module_attribute="NonFinite",
+    )
+
+
+def test_main_xmlschema_non_finite_inline_enum_default(output_file: Path) -> None:
+    """Resolve a NaN default to its non-finite inline enum member."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "non_finite_inline_enum_default.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--set-default-enum-member"],
+        assert_func=assert_file_content,
+        expected_file="non_finite_inline_enum_default.py",
+        force_exec_validation=True,
+        importable_module_name="generated_xml_non_finite_inline_enum_default",
+        importable_module_attribute="Model",
     )
 
 
@@ -129,6 +303,39 @@ def test_main_xmlschema_boolean_whitespace_defaults(output_file: Path) -> None:
     )
 
 
+def test_generate_xmlschema_nillable_boolean_api(output_file: Path) -> None:
+    """Generate XSD nillable lexical values through the public Python API."""
+    run_generate_file_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "nillable_boolean.xsd",
+        output_path=output_file,
+        input_file_type=InputFileType.XMLSchema,
+        assert_func=assert_file_content,
+        expected_file="nillable_boolean.py",
+    )
+
+
+def test_main_xmlschema_nillable_boolean(output_file: Path) -> None:
+    """Treat XML Schema nillable true and 1 lexical values equivalently."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "nillable_boolean.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        assert_func=assert_file_content,
+        expected_file="nillable_boolean.py",
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_xmlschema_nillable_boolean",
+        model_name="Root",
+        valid_json='{"nillableTrue":null,"nillableOne":null,"nillableFalse":"false","nillableZero":"zero","unspecified":"value"}',
+        invalid_json='{"nillableTrue":null,"nillableOne":null,"nillableFalse":"false","nillableZero":null,"unspecified":"value"}',
+        expected_error_type="string_type",
+        expected_attribute_path=("nillableOne",),
+        expected_attribute_value=None,
+    )
+
+
 def test_main_xmlschema_temporal_defaults(output_file: Path) -> None:
     """Generate typed defaults for XML Schema temporal lexical values."""
     run_main_and_assert(
@@ -137,6 +344,25 @@ def test_main_xmlschema_temporal_defaults(output_file: Path) -> None:
         input_file_type="xmlschema",
         assert_func=assert_file_content,
         expected_file="temporal_defaults.py",
+    )
+
+
+def test_main_xmlschema_temporal_default_import_alias(output_file: Path) -> None:
+    """Keep temporal default expressions bound when a generated field reserves the import alias."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "temporal_default_import_alias.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        assert_func=assert_file_content,
+        expected_file="temporal_default_import_alias.py",
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+        ],
+        force_exec_validation=True,
+        importable_module_name="generated_xml_temporal_default_import_alias",
+        importable_module_attribute="Root",
     )
 
 
@@ -228,6 +454,35 @@ def test_main_xmlschema_advanced_constructs(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(("output_model_type", "expected_name"), BACKEND_GOLDEN_CASES)
+def test_main_xmlschema_output_model_types(
+    output_file: Path,
+    output_model_type: str,
+    expected_name: str,
+) -> None:
+    """Generate representative XML Schema models across supported output backends."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "advanced_constructs.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/advanced_constructs_{expected_name}.py",
+            extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
+            force_exec_validation=True,
+            importable_module_name=f"generated_xmlschema_{expected_name}",
+            importable_module_attribute="Zoo",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_XML_SCHEMA_PATH / "output_model_types" / f"advanced_constructs_{expected_name}_warnings.txt",
+    )
+
+
 def test_main_xmlschema_multiple_substitution_groups(output_file: Path) -> None:
     """Generate models for elements affiliated with multiple substitution groups."""
     run_main_and_assert(
@@ -258,6 +513,25 @@ def test_main_xmlschema_type_element_symbol_spaces(output_file: Path) -> None:
         input_file_type="xmlschema",
         assert_func=assert_file_content,
         expected_file="type_element_symbol_spaces.py",
+    )
+
+
+def test_main_xmlschema_type_alias_with_field_description_py312(output_file: Path) -> None:
+    """Render a PEP 695 alias and field description through structured generation."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "type_alias_with_field_description.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        assert_func=assert_file_content,
+        expected_file="type_alias_with_field_description_py312.py",
+        extra_args=[
+            "--use-type-alias",
+            "--target-python-version",
+            "3.12",
+            "--use-field-description",
+            "--formatters",
+            "builtin",
+        ],
     )
 
 
@@ -731,3 +1005,439 @@ def test_main_xmlschema_auto_wrong_root_error(capsys: pytest.CaptureFixture[str]
         expected_stderr_contains="Can't infer input file type",
         output_should_not_exist=True,
     )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+@pytest.mark.parametrize("fixture", ["pattern_alternatives", "pattern_alternatives_simple", "pattern_controls"])
+@pytest.mark.parametrize(
+    ("backend", "suffix", "field_constraints"),
+    [
+        ("pydantic_v2.BaseModel", "pydantic", True),
+        ("pydantic_v2.BaseModel", "pydantic_constrained", False),
+        ("pydantic_v2.dataclass", "pydantic_dataclass", True),
+        ("msgspec.Struct", "msgspec", True),
+    ],
+)
+def test_xmlschema_pattern_alternatives(
+    output_file: Path, entrypoint: str, fixture: str, backend: str, suffix: str, *, field_constraints: bool
+) -> None:
+    """Match the XSD oracle for sibling alternatives and intersect inherited constraints."""
+    input_path = XML_SCHEMA_DATA_PATH / f"{fixture}.xsd"
+    expected_file = f"{fixture}_{suffix}.py"
+    # Keep the deep regex fixture on its selected formatter; the compact fixture checks default parity.
+    explicit_builtin = fixture == "pattern_alternatives"
+    if entrypoint == "cli":
+        extra_args = ["--output-model-type", backend, "--target-python-version", "3.10", "--disable-timestamp"]
+        if field_constraints:
+            extra_args.append("--field-constraints")
+        if explicit_builtin:
+            extra_args.extend(["--formatters", "builtin"])
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=extra_args,
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type=InputFileType.XMLSchema,
+            output_model_type=DataModelType(backend),
+            target_python_version=PythonVersion.PY_310,
+            field_constraints=field_constraints,
+            use_annotated=backend == "msgspec.Struct",
+            disable_timestamp=True,
+            **({"formatters": [Formatter.BUILTIN]} if explicit_builtin else {}),
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+        )
+    if fixture == "pattern_controls":
+        return
+    cases = json.loads((XML_SCHEMA_DATA_PATH / f"{fixture}.cases.json").read_text())
+    results = []
+    with _generated_model(output_file, f"generated_{fixture}_{suffix}_{entrypoint}", "Root") as model:
+        validate = (
+            msgspec.json.Decoder(type=model).decode if backend == "msgspec.Struct" else _model_json_validator(model)
+        )
+        for field, values in cases["values"].items():
+            for value in values:
+                try:
+                    validate(json.dumps(cases["base"] | {field: value}))
+                except (ValidationError, msgspec.ValidationError):
+                    valid = False
+                else:
+                    valid = True
+                results.append({"field": field, "value": value, "valid": valid})
+    assert_output(json.dumps(results, indent=2) + "\n", EXPECTED_XML_SCHEMA_PATH / f"{fixture}.validation.txt")
+    if backend != "msgspec.Struct":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"generated_{fixture}_{suffix}_{entrypoint}_alias",
+            model_name="Token",
+            valid_json=json.dumps(cases["alias"]["valid"]),
+            invalid_json=json.dumps(cases["alias"]["invalid"]),
+            expected_error_type="string_pattern_mismatch",
+        )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        ([], "pattern_alternatives_simple_pydantic_type_alias.py"),
+        (["--field-constraints"], "pattern_alternatives_simple_pydantic_type_alias_field_constraints.py"),
+    ],
+)
+def test_xmlschema_compiled_pattern_alias_without_regex_engine(
+    output_file: Path, extra_args: list[str], expected_file: str
+) -> None:
+    """Leave ``regex_engine`` off the models that use a type alias whose XSD pattern is already compiled.
+
+    Targets before Pydantic 2.8 keep JSON Schema patterns as strings in type aliases, so their users select the
+    engine. Combined XSD patterns are compiled for every target, ``2`` included, so they need Pydantic 2.8, from which
+    they validate without a config. ``--field-constraints`` keeps the compiled pattern in ``Field()``.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "pattern_alternatives_simple.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--use-type-alias",
+                "--target-pydantic-version",
+                "2",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                *extra_args,
+            ],
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_pattern_alternatives_simple_type_alias",
+        model_name="Root",
+        valid_json=json.dumps({"value": "ABC"}),
+        invalid_json=json.dumps({"value": "ABC\n"}),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "backend", "extra_args"),
+    [
+        (
+            "inherited",
+            "pydantic_v2.BaseModel",
+            [
+                "--field-constraints",
+                "--base-class",
+                "tests.data.python.pattern_intersection_base.PythonRegexIntermediate",
+                "--reuse-model",
+            ],
+        ),
+        ("constrained", "pydantic_v2.dataclass", []),
+        ("collapsed", "pydantic_v2.BaseModel", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapsed_dataclass",
+            "pydantic_v2.dataclass",
+            ["--field-constraints", "--collapse-root-models", "--target-pydantic-version", "2.14"],
+        ),
+        (
+            "custom_alias",
+            "pydantic_v2.BaseModel",
+            [
+                "--field-constraints",
+                "--use-root-model-type-alias",
+                "--use-annotated",
+                "--custom-template-dir",
+                str(DATA_PATH / "templates" / "root_alias_constraints"),
+            ],
+        ),
+    ],
+)
+@pytest.mark.filterwarnings("ignore:Possible set symmetric difference:FutureWarning")
+def test_xmlschema_compiled_patterns(output_file: Path, name: str, backend: str, extra_args: list[str]) -> None:
+    """Keep Python pattern semantics across import aliases, inheritance and root model transformations.
+
+    An ``anyURI`` takes no pattern, so ``Field()`` arguments leave its pattern out with a warning.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"Pydantic does not take pattern on AnyUrl; Parent\.uri ")
+        if "--field-constraints" in extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "pattern_runtime.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=[
+                "--output-model-type",
+                backend,
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.10",
+                "--formatters",
+                "builtin",
+                *extra_args,
+            ],
+            assert_func=assert_file_content,
+            expected_file=f"pattern_runtime_{name}.py",
+        )
+    cases = json.loads((XML_SCHEMA_DATA_PATH / "pattern_runtime.cases.json").read_text(encoding="utf-8"))
+    for case in cases["cases"]:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"generated_pattern_runtime_{name}",
+            model_name="Root",
+            valid_json=json.dumps(cases["base"] | case["valid"]),
+            invalid_json=json.dumps(cases["base"] | case["invalid"]),
+            expected_error_type="string_pattern_mismatch",
+        )
+
+
+XSD_PROPERTY_COLLISIONS = (
+    "mixed_element",
+    "mixed_attribute",
+    "element_attribute",
+    "namespaced_elements",
+    "namespaced_attributes",
+    "local_forms",
+    "simple_content_collision",
+    "simple_content_value",
+    "default_namespace_distinct",
+    "default_namespace_attributes",
+)
+XSD_PROPERTY_CONTROLS = (
+    "ordinary",
+    "repeated_refs",
+    "group_reuse",
+    "choice_reuse",
+    "inherited_override",
+    "nested_scope",
+    "simple_content",
+    "global_elements",
+    "global_local_reuse",
+    "chameleon_reuse",
+    "default_namespace_reuse",
+    "default_namespace_alias_reuse",
+    "empty_namespace_reuse",
+)
+XSD_PROPERTY_SHARED_INSTANCES = {
+    "empty_namespace_reuse.xml": "group_reuse.xml",
+    "simple_content_collision.xml": "namespaced_attributes.xml",
+    "simple_content_collision.invalid.xml": "namespaced_attributes.invalid.xml",
+}
+XSD_PROPERTY_BACKENDS = (
+    DataModelType.PydanticV2BaseModel,
+    DataModelType.PydanticV2Dataclass,
+    DataModelType.DataclassesDataclass,
+    DataModelType.TypingTypedDict,
+    DataModelType.MsgspecStruct,
+)
+
+
+@pytest.mark.parametrize("name", [*XSD_PROPERTY_COLLISIONS, *XSD_PROPERTY_CONTROLS])
+def test_native_xsd_property_names(name: str) -> None:
+    """Confirm collision and reuse fixtures are legal XSD with valid XML instances."""
+    source = XML_SCHEMA_DATA_PATH / "field_name_collisions" / name
+    valid, invalid = (
+        source.with_name(XSD_PROPERTY_SHARED_INSTANCES.get(instance, instance))
+        for instance in (f"{name}.xml", f"{name}.invalid.xml")
+    )
+    schema = etree.XMLSchema(etree.parse(str(source.with_suffix(".xsd"))))
+    schema.assertValid(etree.parse(str(valid)))
+    with pytest.raises(etree.DocumentInvalid):
+        schema.assertValid(etree.parse(str(invalid)))
+
+
+@pytest.mark.parametrize("name", [*XSD_PROPERTY_CONTROLS, "unused"])
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> None:
+    """Preserve baseline output for legal reuse, scope changes, and ordinary fields."""
+    source = XML_SCHEMA_DATA_PATH / "field_name_collisions" / f"{name}.xsd"
+    expected = f"field_name_collisions/{name}.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp"],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type=InputFileType.XMLSchema,
+            disable_timestamp=True,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+
+    if name != "unused":
+        return
+    schema = etree.XMLSchema(etree.parse(str(source)))
+    schema.assertValid(etree.parse(str(source.with_name("ordinary.xml"))))
+    with pytest.raises(etree.DocumentInvalid):
+        schema.assertValid(etree.parse(str(source.with_name("ordinary.invalid.xml"))))
+    payloads = DATA_PATH / "payloads/xsd_field_name_collisions"
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"unused_xsd_property_{entrypoint}",
+        model_name="Root",
+        valid_json=(payloads / "ordinary.json").read_text(),
+        invalid_json=(payloads / "ordinary_invalid.json").read_text(),
+        expected_error_type="int_parsing",
+        expected_attribute_path=("item",),
+        expected_attribute_value=1,
+    )
+
+
+@pytest.mark.parametrize("backend", XSD_PROPERTY_BACKENDS)
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, output_file: Path) -> None:
+    """Keep field order and usable generated types across all supported backends."""
+    source = XML_SCHEMA_DATA_PATH / "field_name_collisions/ordinary.xsd"
+    expected = (
+        "field_name_collisions/ordinary.py"
+        if backend == DataModelType.PydanticV2BaseModel
+        else f"field_name_collisions/ordinary_{backend.name}.py"
+    )
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp", "--output-model-type", backend.value],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type=InputFileType.XMLSchema,
+            output_model_type=backend,
+            disable_timestamp=True,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    payloads = DATA_PATH / "payloads/xsd_field_name_collisions"
+    valid_json = (payloads / "ordinary.json").read_text(encoding="utf-8")
+    invalid_json = (payloads / "ordinary_invalid.json").read_text(encoding="utf-8")
+    with _generated_model(output_file, f"b65_{backend.name}_{entrypoint}", "Root") as model:
+        fields = list(model.__annotations__)
+        if backend == DataModelType.TypingTypedDict:
+            with _generated_model(
+                DATA_PATH / "python/xsd_field_name_collisions/native_typeddict.py", "native_xsd_typeddict", "NativeRoot"
+            ) as native_model:
+                try:
+                    _model_json_validator(native_model)
+                except PydanticUserError as native_error:
+                    assert_output(
+                        f"{native_error.code}: {native_error.message}\n",
+                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/typeddict_native_error.txt",
+                    )
+                    with pytest.raises(PydanticUserError) as generated_error:
+                        _model_json_validator(model)
+                    assert_output(
+                        f"{generated_error.value.code}: {generated_error.value.message}\n",
+                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/typeddict_native_error.txt",
+                    )
+                    assert_output(
+                        json.dumps({"fields": fields, "item": model(**json.loads(valid_json))["item"]}, indent=2)
+                        + "\n",
+                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/ordinary_runtime.txt",
+                    )
+                    return
+        if backend == DataModelType.MsgspecStruct:
+            value = msgspec.json.decode(valid_json, type=model)
+            item = value.item
+            with pytest.raises(msgspec.ValidationError):
+                msgspec.json.decode(invalid_json, type=model)
+        else:
+            validate = _model_json_validator(model)
+            value = validate(valid_json)
+            item = value["item"] if isinstance(value, dict) else value.item
+            with pytest.raises(ValidationError):
+                validate(invalid_json)
+
+    assert_output(
+        json.dumps({"fields": fields, "item": item}, indent=2) + "\n",
+        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/ordinary_runtime.txt",
+    )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+@pytest.mark.parametrize(
+    ("schema_group", "case"),
+    [
+        (schema_group, case)
+        for schema_group in ("occurrence_bounds", "simple_content_inheritance")
+        for case in json.loads((DATA_PATH / f"payloads/xmlschema_{schema_group}/cases.json").read_text())
+    ],
+    ids=lambda value: value["name"] if isinstance(value, dict) else value,
+)
+def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_group: str, case: dict) -> None:
+    """Preserve occurrence limits and inherited scalar content through real generation."""
+    name = case["name"]
+    source = XML_SCHEMA_DATA_PATH / schema_group / f"{name}.xsd"
+    expected = f"{schema_group}/{name}.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type="xmlschema",
+            assert_func=assert_file_content,
+            expected_file=expected,
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--field-constraints",
+                "--use-field-description",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type=InputFileType.XMLSchema,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            field_constraints=True,
+            use_field_description=True,
+            disable_timestamp=True,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    with _generated_model(output_file, f"generated_{schema_group}_{name}", "Root") as model:
+        results = []
+        for sample in case["samples"]:
+            if sample["valid"]:
+                value = model.model_validate(sample["data"])
+                if schema_group == "simple_content_inheritance":
+                    results.append(value.model_dump(mode="json"))
+            else:
+                with pytest.raises(ValidationError):
+                    model.model_validate(sample["data"])
+        if schema_group == "simple_content_inheritance":
+            assert_output(
+                json.dumps(results, indent=2) + "\n",
+                EXPECTED_XML_SCHEMA_PATH / schema_group / f"{case.get('expected', name)}.txt",
+            )

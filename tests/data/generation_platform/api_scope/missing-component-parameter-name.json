@@ -1,0 +1,13 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "parameters": {
+      "Invalid": {
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

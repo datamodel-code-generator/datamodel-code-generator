@@ -1,0 +1,1 @@
+error: invalid recipe item: {'nodeid': 'a', 'weight': 0}

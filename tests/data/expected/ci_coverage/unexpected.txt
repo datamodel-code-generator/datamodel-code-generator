@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "prepared": [],
+  "stderr": "Coverage artifacts differ: missing=[], unexpected=['extra']\n",
+  "stdout": ""
+}

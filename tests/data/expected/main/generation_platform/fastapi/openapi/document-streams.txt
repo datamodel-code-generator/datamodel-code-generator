@@ -1,0 +1,56 @@
+# document-streams
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Items",
+    "version": "1.0"
+  },
+  "paths": {
+    "/events": {
+      "get": {
+        "operationId": "listEvents",
+        "responses": {
+          "200": {
+            "description": "The events.",
+            "content": {
+              "application/jsonl": {
+                "itemSchema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              },
+              "application/json": {
+                "$ref": "#/components/mediaTypes/EventsMedia"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "#/components/schemas/stamp"
+          }
+        }
+      },
+      "stamp": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "mediaTypes": {
+      "EventsMedia": {
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

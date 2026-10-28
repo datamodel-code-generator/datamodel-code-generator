@@ -13,12 +13,15 @@ uv run python scripts/build_datamodel_codegen_skill_docs.py
 
 Input sources, output paths, and schema version handling.
 
+- `--http-backend`: Select the HTTP client backend. 'auto' (default) selects stable HTTPX when its client module is installed and only selects experimental HTTPX2 when that module is absent. 'httpx' and 'httpx2' require that exact backend. Explicit selections and paired dependency errors do not fall back. Choices: `auto`, `httpx`, `httpx2`.
 - `--input`: Input file/directory (default: stdin)
 - `--input-file-type`: Input file type (default: auto). Use 'jsonschema', 'openapi', 'asyncapi', 'graphql', 'mcp-tools', 'xmlschema', 'protobuf', or 'avro' for schema definitions. Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically. Choices: `auto`, `openapi`, `asyncapi`, `jsonschema`, `mcp-tools`, `xmlschema`, `protobuf`, `avro`, `json`, `yaml`, `dict`, `csv`, `graphql`.
 - `--external-ref-mapping`: Map external $ref file paths to Python import packages instead of generating duplicate classes. Accepts one or more mappings after a single flag. Format: "path/to/schema.yaml=mypackage.models". When a $ref points to a mapped file, an import statement is generated instead of a class definition.
 - `--output`: Output file (default: stdout)
-- `--url`: Input file URL. `--input` is ignored when `--url` is used
-- `--input-model`: Python import path to a Pydantic v2 model or schema dict (e.g., 'mypackage.module:ClassName' or 'mypackage.schemas:SCHEMA_DICT'). Can be specified multiple times for related models with inheritance. For dict input, --input-file-type is required. Cannot be used with --input or --url.
+- `--emit-model-metadata`: Write a separate JSON map from generated models and fields to the JSON Pointer locations of their source schemas; module and class name identify a model.
+- `--preset`: Apply an immutable built-in option preset. Preset names include the target Python version so generated syntax is pinned. Choices: `standard-py310-20260619`, `standard-py311-20260619`, `standard-py312-20260619`, `standard-py313-20260619`, `standard-py314-20260619`, `practical-py310-20260619`, `practical-py311-20260619`, `practical-py312-20260619`, `practical-py313-20260619`, `practical-py314-20260619`, `standard-py310-20260826`, `standard-py311-20260826`, `standard-py312-20260826`, `standard-py313-20260826`, `standard-py314-20260826`, `practical-py310-20260826`, `practical-py311-20260826`, `practical-py312-20260826`, `practical-py313-20260826`, `practical-py314-20260826`, `standard-py310-20260909`, `standard-py311-20260909`, `standard-py312-20260909`, `standard-py313-20260909`, `standard-py314-20260909`, `practical-py310-20260909`, `practical-py311-20260909`, `practical-py312-20260909`, `practical-py313-20260909`, `practical-py314-20260909`, `standard-py310-20261015`, `standard-py311-20261015`, `standard-py312-20261015`, `standard-py313-20261015`, `standard-py314-20261015`, `standard-py315-20261015`, `practical-py310-20261015`, `practical-py311-20261015`, `practical-py312-20261015`, `practical-py313-20261015`, `practical-py314-20261015`, `practical-py315-20261015`, `standard-py310-20261017`, `standard-py311-20261017`, `standard-py312-20261017`, `standard-py313-20261017`, `standard-py314-20261017`, `standard-py315-20261017`, `practical-py310-20261017`, `practical-py311-20261017`, `practical-py312-20261017`, `practical-py313-20261017`, `practical-py314-20261017`, `practical-py315-20261017`, `standard-py310-20261027`, `standard-py311-20261027`, `standard-py312-20261027`, `standard-py313-20261027`, `standard-py314-20261027`, `standard-py315-20261027`, `practical-py310-20261027`, `practical-py311-20261027`, `practical-py312-20261027`, `practical-py313-20261027`, `practical-py314-20261027`, `practical-py315-20261027`.
+- `--url`: Input file URL. `--input` is ignored when `--url` is used. For HTTP(S), datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated, while datamodel-code-generator[httpx2] is experimental. The default --http-backend auto policy selects stable HTTPX when its client module is installed and selects HTTPX2 only when that module is absent. Select --http-backend httpx2 to require the experimental backend. Explicit selections and paired dependency errors do not fall back.
+- `--input-model`: Python import path or file path to a Pydantic v2 model or schema dict (e.g., 'mypackage.module:ClassName', './models.py:ClassName', or 'mypackage.schemas:SCHEMA_DICT'). Can be specified multiple times for related models with inheritance. For dict input, --input-file-type is required. Cannot be used with --input or --url.
 - `--input-model-ref-strategy`: Strategy for referenced types in --input-model. 'regenerate-all': Regenerate all types. 'reuse-foreign': Reuse types from different families (Enum, etc.), regenerate same-family. 'reuse-all': Reuse all referenced types via import. If not specified, defaults to regenerate-all behavior. Choices: `regenerate-all`, `reuse-foreign`, `reuse-all`.
 - `--encoding`: The encoding of input and output (default: utf-8)
 - `--schema-version`: Schema version. Valid values depend on input type: JsonSchema: auto, draft-04, draft-06, draft-07, 2019-09, 2020-12. OpenAPI: auto, 3.0, 3.1, 3.2. AsyncAPI: auto, 2.0, 3.0. XMLSchema: auto, 1.0, 1.1. Protobuf: auto, proto2, proto3, 2023. (default: auto - detected from $schema, openapi/asyncapi field, XML Schema versioning attributes, or Protobuf syntax/edition)
@@ -30,33 +33,49 @@ Type annotation, import, and primitive type behavior.
 
 - `--use-pendulum`: use pendulum instead of datetime
 - `--use-standard-primitive-types`: Use Python standard library types for string formats (UUID, IPv4Address, etc.) instead of str. Affects dataclass, msgspec, TypedDict output. Pydantic already uses these types by default.
+- `--no-use-standard-primitive-types`: Use Python standard library types for string formats (UUID, IPv4Address, etc.) instead of str. Affects dataclass, msgspec, TypedDict output. Pydantic already uses these types by default.
 - `--output-datetime-class`: Choose Datetime class between AwareDatetime, NaiveDatetime, PastDatetime, FutureDatetime or datetime. Each output model has its default mapping (for example pydantic: datetime, dataclass: str, ...) Choices: `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime`.
 - `--output-date-class`: Choose Date class between PastDate, FutureDate or date. (Pydantic v2 only) Each output model has its default mapping. Choices: `date`, `PastDate`, `FutureDate`.
 - `--enum-field-as-literal`: Parse enum field as literal. all: all enum field type are Literal. one: field type is Literal when an enum has only one possible value. none: always use Enum class (never convert to Literal) Choices: `all`, `one`, `none`.
 - `--enum-field-as-literal-map`: Per-field override for enum/literal generation (JSON or JSON file path). Format: JSON object mapping field names to 'literal' or 'enum'. Example: '{"status": "literal", "priority": "enum"}'. Overrides --enum-field-as-literal for matched fields.
 - `--ignore-enum-constraints`: Ignore enum constraints and use the base type (e.g., str, int) instead of generating Enum classes
+- `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal: oneOf/anyOf branches such as {"type": "string", "enum": ["low"]} merge into one Enum when there are two or more and all hold values of one JSON type, otherwise each branch is typed as written, and a schema with one enum value is typed Literal[...] instead of a one-member Enum, except one with `nullable: true` and a value other than null, which is read as written
+- `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does: a value whose schema names the enum is typed by the const that narrows it (`Literal[Enum.member]`, a Literal or None) instead of the enum class that lists the values the const excludes, and under --use-single-value-enum-as-const an `enum` that admits its `const` is read as that `const` instead of an Enum, except one with `nullable: true` and a value other than null
+- `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the `minLength`, `maxLength`, `pattern`, bound and `multipleOf` constraints beside them in its `Literal` or Enum, as JSON Schema validates them; a schema none of whose values meets them stays as written with a warning
+- `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, of a `$ref` with sibling keywords and of an inherited property override, as JSON Schema validates them: the tightest bounds, the `enum` values every part admits, the `type` every part admits, the conjunction of the `pattern`s, no null beside a `type` that excludes it, and the constraints of the root, item and map value positions of an `allOf`. Without it, the keyword of the last part wins where the parts disagree
 - `--strict-types`: Use strict types Choices: `str`, `bytes`, `int`, `float`, `bool`.
 - `--use-annotated`: Use typing.Annotated for Field(). Also, `--field-constraints` option will be enabled. Will become default for Pydantic v2 in a future version.
 - `--no-use-annotated`: Use typing.Annotated for Field(). Also, `--field-constraints` option will be enabled. Will become default for Pydantic v2 in a future version.
 - `--use-generic-container-types`: Use generic container types for type hinting (typing.Sequence, typing.Mapping). If `--use-standard-collections` option is set, then import from collections.abc instead of typing
 - `--use-non-positive-negative-number-constrained-types`: Use the Non{Positive,Negative}{FloatInt} types instead of the corresponding con* constrained types.
 - `--use-decimal-for-multiple-of`: Use condecimal instead of confloat for float/number fields with multipleOf constraint (Pydantic only). Avoids floating-point precision issues in validation.
+- `--use-decimal-in-field-forms`: Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms (--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under --strict-types float (Pydantic only)
 - `--use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--no-use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--use-object-type`: Use object instead of Any for unspecified JSON Schema object and array values
+- `--use-typed-nullable-map-values`: Type the values of nullable maps, schemas whose type array lists object alone or with null, such as [object, null] or [object], with additionalProperties, as their schema says, with a model for object values. Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.
+- `--use-typed-map-values-beside-other-types`: With --use-typed-nullable-map-values, also type the map values of type arrays that list object beside other types, such as [object, string], as dict[str, int] | str instead of dict[str, Any] | str
+- `--read-unevaluated-properties`: Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place, so it types the extra keys of a model and makes an object without properties a map
+- `--use-single-dict-for-object-maps`: Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, as one dict whose keys are those of every key class and whose value is the union of their values, beside the null and the other types of its type array
 - `--use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
 - `--no-use-specialized-enum`: Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+
+- `--keep-enum-member-values`: Write an enum as a plain Enum where the value base of --use-specialized-enum or --use-subclass-enum would change a member value, such as 2.5 in an IntEnum; without it the base follows the schema type, as in 0.86.0
 - `--use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled
 - `--no-use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled
 - `--use-unique-items-as-set`: define field type as `set` when the field attribute has `uniqueItems`
 - `--use-tuple-for-fixed-items`: Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items length
+- `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail (items, unevaluatedItems or additionalItems false) whose length the length keywords fix, so that each position keeps its own type
+- `--use-tuple-for-fixed-length-arrays`: Generate tuple types for fixed-length arrays with a single items schema
+- `--use-total-false-for-typed-dict`: Generate TypedDict with total=False and mark required fields with Required
 - `--use-closed-typed-dict`: Generate TypedDict with PEP 728 closed=True/extra_items for additionalProperties constraints. Use --no-use-closed-typed-dict for type checkers that don't yet support PEP 728 (e.g., mypy).
 - `--no-use-closed-typed-dict`: Generate TypedDict with PEP 728 closed=True/extra_items for additionalProperties constraints. Use --no-use-closed-typed-dict for type checkers that don't yet support PEP 728 (e.g., mypy).
 - `--allof-merge-mode`: Mode for field merging in allOf schemas. 'constraints': merge only constraints (minItems, maxItems, pattern, etc.) from parent (default). 'all': merge constraints plus annotations (default, examples) from parent. 'none': do not merge any fields from parent properties. Choices: `constraints`, `all`, `none`.
 - `--allof-class-hierarchy`: How to map allOf references to class hierarchies. 'if-no-conflict': only create subclasses when parent class has no conflicting property definition. 'always': always create subclasses. Choices: `if-no-conflict`, `always`.
 - `--use-type-alias`: Use TypeAlias instead of root models (experimental)
+- `--use-type-alias-type`: Use TypeAliasType for type aliases on Python 3.10 and 3.11 (implies --use-type-alias; experimental)
 - `--use-root-model-type-alias`: Use type alias format for RootModel (e.g., Foo = RootModel[Bar]) instead of class inheritance (Pydantic v2 only)
 - `--disable-future-imports`: Disable __future__ imports
+- `--import-overrides`: Override modules for generated imports by symbol name. Format: JSON object mapping symbols to module paths. Example: '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}'.
 - `--type-mappings`: Override default type mappings. Format: "type+format=target" (e.g., "string+binary=string" to map binary format to string type) or "format=target" (e.g., "binary=string"). Can be specified multiple times.
 - `--type-overrides`: Replace schema model types with custom Python types. Format: JSON object mapping model names to Python import paths. Model-level: '{"CustomType": "my_app.types.MyType"}' replaces all references. Scoped: '{"User.field": "my_app.Type"}' replaces specific field only.
 
@@ -67,8 +86,12 @@ Field naming, aliases, defaults, and constraints.
 - `--extra-fields`: Set the generated models to allow, forbid, or ignore extra fields. Choices: `allow`, `ignore`, `forbid`.
 - `--use-schema-description`: Use schema description to populate class docstring
 - `--use-title-as-name`: use titles as class names of models
+- `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) instead of Pet1, Pet2
+- `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and single-key branches ({"granular": ...} -> AskForApprovalGranular)
 - `--field-constraints`: Use field constraints and not con* annotations
-- `--set-default-enum-member`: Set enum members as default values for enum field
+- `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values
+- `--use-site-models-for-constrained-refs`: Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out
+- `--set-default-enum-member` (deprecated): Deprecated: --set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
 - `--use-enum-values-in-discriminator`: Use enum member literals in discriminator fields instead of string literals
 - `--capitalise-enum-members`: Capitalize field names on enum
 - `--capitalize-enum-members`: Capitalize field names on enum
@@ -79,6 +102,7 @@ Field naming, aliases, defaults, and constraints.
 - `--original-field-name-delimiter`: Set delimiter to convert to snake case. This option only can be used with --snake-case-field (default: `_` )
 - `--remove-special-field-name-prefix`: Remove field name prefix if it has a special meaning e.g. underscores
 - `--snake-case-field`: Change camel-case field name to snake-case
+- `--no-snake-case-field`: Change camel-case field name to snake-case
 - `--special-field-name-prefix`: Set field name prefix when first character can't be used as Python field name (default: `field`)
 - `--use-field-description`: Use schema description to populate field docstring
 - `--use-field-description-example`: Use schema example to populate field docstring
@@ -87,10 +111,12 @@ Field naming, aliases, defaults, and constraints.
 - `--use-single-line-docstring`: Use single-line docstrings when the content fits on one line
 - `--no-alias`: Do not add a field alias. E.g., if --snake-case-field is used along with a base class, which has an alias_generator
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only). This allows setting values using the Pythonic field name while serializing to the original name.
-- `--serialization-aliases`: Serialization alias mapping file (JSON) for Pydantic v2. Format: {'<schema_field>': '<serialization_alias>'}. Supports hierarchical formats: Flat: {'name': 'fullName'} applies to all occurrences. Scoped: {'User.name': 'fullName'} applies to specific class.
+- `--serialization-aliases`: Serialization alias mapping as inline JSON or a JSON file path for Pydantic v2. Format: {'<schema_field>': '<serialization_alias>'}. Supports hierarchical formats: Flat: {'name': 'fullName'} applies to all occurrences. Scoped: {'User.name': 'fullName'} applies to specific class.
 - `--field-type-collision-strategy`: Strategy for handling field name and type name collisions (Pydantic v2 only). 'rename-field': rename field with suffix and add alias (default). 'rename-type': rename type class with suffix to preserve field name. Choices: `rename-field`, `rename-type`.
-- `--aliases`: Alias mapping file (JSON) for renaming fields. Format: {'<schema_field>': '<python_name>'} - the schema field name becomes the Pydantic alias. Supports hierarchical formats: Flat: {'id': 'id_'} applies to all occurrences. Scoped: {'User.name': 'user_name'} applies to specific class. Priority: scoped > flat. Multiple aliases (Pydantic v2 only): {'field': ['alt1', 'alt2']} uses AliasChoices for validation. Example: {'User.name': 'user_name', 'id': 'id_'} generates `id_: ... = Field(alias='id')`.
-- `--default-values`: Default value overrides file (JSON). Supports hierarchical formats: Flat: {'field': value} applies to all occurrences. Scoped: {'ClassName.field': value} applies to specific class. Priority: scoped > flat. Note: Scoped keys use the generated class name for JSON Schema/OpenAPI. Required fields remain required unless --use-default is also specified. Example: {'User.status': 'active', 'page': 1, 'limit': 10}
+- `--aliases`: Alias mapping as inline JSON or a JSON file path for renaming fields. Format: {'<schema_field>': '<python_name>'} - the schema field name becomes the Pydantic alias. Supports hierarchical formats: Flat: {'id': 'id_'} applies to all occurrences. Scoped: {'User.name': 'user_name'} applies to specific class. Priority: scoped > flat. Multiple aliases (Pydantic v2 only): {'field': ['alt1', 'alt2']} uses AliasChoices for validation. Example: {'User.name': 'user_name', 'id': 'id_'} generates `id_: ... = Field(alias='id')`.
+- `--default-values`: Default value overrides as inline JSON or a JSON file path. Supports hierarchical formats: Flat: {'field': value} applies to all occurrences. Scoped: {'ClassName.field': value} applies to specific class. Priority: scoped > flat. Note: Scoped keys use the generated class name for JSON Schema/OpenAPI. Required fields remain required unless --use-default is also specified. Example: {'User.status': 'active', 'page': 1, 'limit': 10}
+- `--deserialize-default-values`: Deserialize serialized schema defaults for selected generated types. Supported values: decimal, enum. Choices: `decimal`, `enum`.
+- `--no-deserialize-default-values`: Disable schema default value deserialization.
 
 ## Model Customization
 
@@ -99,24 +125,35 @@ Generated model class and package behavior.
 - `--output-model-type`: Output model type (default: pydantic_v2.BaseModel) Choices: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `typing.TypedDict`, `msgspec.Struct`.
 - `--allow-extra-fields` (deprecated): Deprecated: --allow-extra-fields is deprecated. Use --extra-fields=allow instead.
 - `--allow-population-by-field-name`: Allow population by field name
+- `--no-allow-population-by-field-name`: Allow population by field name
 - `--class-name`: Set class name of root model
+- `--model-name-map`: Rename generated model classes by schema ref or current generated class name using a JSON object or JSON file.
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an underscore
 - `--class-name-prefix`: Prefix to add to generated class names (e.g., 'Api' produces 'ApiUser'). Does not apply to root model when --class-name is specified.
 - `--class-name-suffix`: Suffix to add to generated class names (e.g., 'Schema' produces 'UserSchema'). Does not apply to root model when --class-name is specified.
 - `--class-name-affix-scope`: Scope for applying --class-name-prefix/--class-name-suffix. 'all': Apply to all classes including enums (default). 'models': Apply only to model classes. 'enums': Apply only to enum classes. Choices: `all`, `models`, `enums`.
 - `--collapse-root-models`: Models generated with a root-type field will be merged into the models using that root-type model
+- `--no-collapse-root-models`: Models generated with a root-type field will be merged into the models using that root-type model
 - `--collapse-root-models-name-strategy`: Strategy for naming when collapsing root models that reference other models. 'child': Keep inner model's name (default). 'parent': Use wrapper's name for inner model. Requires --collapse-root-models to be set. Choices: `child`, `parent`.
+- `--collapse-shared-parent-wrappers`: Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference the inner model that takes its name, as its first model does; without it, where --field-type-collision-strategy rename-type can rename the wrapper apart from the inner model in their module, the later models keep the wrapper
 - `--collapse-reuse-models`: When used with --reuse-model, collapse duplicate models by replacing references instead of creating empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns
 - `--skip-root-model`: Skip generating the model for the root schema element
+- `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement collections.abc.Sequence by adding Sequence[T] inheritance and root-delegating __iter__, __getitem__, and __len__ methods
 - `--enable-faux-immutability`: Enable faux immutability
 - `--keep-model-order`: Keep generated models' order
+- `--order-constructor-fields-by`: Decide the order of constructor fields by each given value. final-names: order the constructor fields of dataclass and msgspec.Struct models after every field has its final name, so a field that overrides an inherited field renamed in another module is matched to it and keeps its place; without it the override reads as a new field after the inherited default and is written keyword-only (kw_only=True). written-defaults: order the fields of msgspec.Struct and Pydantic dataclass models by the defaults they write, so under --strip-default-none an optional field whose None default is stripped but still written (UNSET, or None for a type that admits None) goes after the required fields of a Struct with the other optional fields and stays positional after an inherited default, and a required pydantic.dataclass field redeclaring it is written Field(...) (a msgspec.Struct writes a bare annotation); without it the field keeps its place among the fields without a default, as before: it is keyword-only after an inherited default, a redeclaring field inherits its None default, and the fields are reordered only where a required field would then follow a default. Choices: `final-names`, `written-defaults`.
 - `--keyword-only`: Defined models as keyword only (for example dataclass(kw_only=True)).
 - `--frozen-dataclasses`: Generate frozen dataclasses (dataclass(frozen=True)). Only applies to dataclass output.
 - `--dataclass-arguments`: Custom dataclass arguments as a JSON dictionary, e.g. '{"frozen": true, "kw_only": true}'. Overrides --frozen-dataclasses and similar flags.
+- `--use-msgspec-tagged-unions`: msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every variant is tagged with the document's property name and its value, or none is and a warning says why. Without it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the other discriminators as Literal fields.
+- `--tag-msgspec-by-payload-name`: msgspec.Struct output only: tag the structs of a discriminated union with the property name the document carries (for example 'pet-kind') instead of the Python name that property resolves to (pet_kind), which msgspec looks for in the payload. --use-msgspec-tagged-unions already tags by the document's property name. Without either option the Python name is kept.
+- `--use-msgspec-nullable-enum-alias`: msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an Enum | None type alias, so that msgspec can decode it. Without it a plain Enum keeps the 0.83.0 None member, which msgspec cannot decode; an IntEnum or --use-subclass-enum enum, which cannot hold it, is written without it and, as its one type rejects null, without the alias.
 - `--reuse-model`: Reuse models on the field when a module has the model with the same content
 - `--reuse-scope`: Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). Only effective when --reuse-model is set. Choices: `module`, `tree`.
-- `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`.
-- `--target-pydantic-version`: Target Pydantic version for generated code. '2': Pydantic 2.0+ compatible (default, uses populate_by_name). '2.11': Pydantic 2.11+ (uses validate_by_name). Choices: `2`, `2.11`.
+- `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`, `3.15`.
+- `--target-pydantic-version`: Oldest Pydantic version the generated code must support. Unset: the newest supported feature forms, with populate_by_name config like '2' and the experimental MISSING import like '2.12'. '2': Pydantic 2.0.3+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). '2.11': Pydantic 2.11+ (uses validate_by_name). '2.12': Pydantic 2.12+ (supports MISSING sentinel). '2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; a number schema keeps multipleOf on a timedelta). Constructs without an older form are written for every target, with a warning naming the Pydantic they need. Choices: `2`, `2.11`, `2.12`, `2.14`.
+- `--alias-generator`: Pydantic v2 BaseModel alias generator to use in ConfigDict. Matching generated aliases are omitted from individual Field() calls, except with --target-pydantic-version 2, which writes every alias. Choices: `to_camel`, `to_pascal`, `to_snake`.
+- `--pin-aliases-with-alias-generator`: pydantic_v2.BaseModel and pydantic_v2.dataclass output: decide a field's alias by the alias generator its model applies, the one in its config or in the config it inherits. For a dataclass and a --target-pydantic-version older than 2.8, whose alias generators can differ from the generated aliases, write the generated alias on every field of a dataclass whose config names an alias generator. Without it a field keeps the alias it has without the generator, which the config then replaces.
 - `--use-generic-base-class`: Generate a shared base class with model configuration (e.g., extra='forbid') instead of repeating the configuration in each model. Keeps code DRY.
 - `--parent-scoped-naming` (deprecated): Deprecated: --parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.
 - `--naming-strategy`: Strategy for generating unique model names when duplicates occur. 'numbered' (default): Append numeric suffix (Address, Address1, Address2). Simple but names don't indicate context. 'parent-prefixed': Prefix with parent model name using underscore (Company_Address, Company_Employee_Address for nested). Names show hierarchy. 'full-path': Similar to parent-prefixed but joins with CamelCase (CompanyAddress, CompanyEmployeeAddress). More readable for deep nesting. 'primary-first': Keep clean names for primary definitions (in /definitions/ or /components/schemas/), only add suffix to inline/nested duplicates. Choices: `numbered`, `parent-prefixed`, `full-path`, `primary-first`.
@@ -130,11 +167,16 @@ Generated model class and package behavior.
 - `--model-extra-keys-without-x-prefix`: Add extra keys with `x-` prefix to model_config json_schema_extra. The extra keys are stripped of the `x-` prefix.
 - `--force-optional`: Force optional for required fields
 - `--strict-nullable`: Treat default field as a non-nullable field
-- `--strip-default-none`: Strip default None on fields
+- `--omit-redundant-reference-null`: Do not write None again where a field, item or member references a model that holds null itself (a root model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model
+- `--strip-default-none`: Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to None only when the type admits None)
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.
+- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.
+- `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list with an object into the root model of that schema under --strict-nullable or --use-missing-sentinel, as a declared field does; without it only a `type` list holding null makes that root admit None
+- `--keep-field-defaults-off-branch-roots`: Leave the default of a property off the root models extracted from the branches of its `anyOf` or `oneOf`, which then require their value; without it each such root takes the property's default
 - `--union-mode`: Union mode for only pydantic v2 field Choices: `smart`, `left_to_right`.
 - `--use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
+- `--no-use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
 - `--use-default-factory-for-optional-nested-models`: Use default_factory for optional nested model fields instead of None default. E.g., `field: Model | None = Field(default_factory=Model)` instead of `field: Model | None = None`
 
 ## Template Customization
@@ -148,33 +190,42 @@ Formatting, custom templates, and generated file headers.
 - `--enable-generated-header-marker`: Enable @generated marker on file headers
 - `--treat-dot-as-module`: Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file output.
 - `--no-treat-dot-as-module`: Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file output.
+- `--strict-dotted-module-names`: Only infer dotted schema names as module paths when every segment is a canonical Python identifier. This applies only to automatic inference and does not override --treat-dot-as-module or --no-treat-dot-as-module.
+- `--no-strict-dotted-module-names`: Only infer dotted schema names as module paths when every segment is a canonical Python identifier. This applies only to automatic inference and does not override --treat-dot-as-module or --no-treat-dot-as-module.
 - `--use-exact-imports`: import exact types instead of modules, for example: "from .foo import Bar" instead of "from . import foo" with "foo.Bar"
 - `--custom-file-header`: Custom file header
 - `--custom-file-header-path`: Custom file header file path
+- `--custom-file-header-mode`: How to combine a custom file header with the generated header (default: replace) Choices: `replace`, `prepend`.
 - `--custom-template-dir`: Custom template directory
-- `--extra-template-data`: Extra template data for output models. Input is supposed to be a json/yaml file. For OpenAPI and Jsonschema the keys are the spec path of the object, or the name of the object if you want to apply the template data to multiple objects with the same name. If you are using another input file type (e.g. GraphQL), the key is the name of the object. The value is a dictionary of the template data to add.
-- `--validators`: Validators configuration file (JSON). Defines field validators for Pydantic v2 models. Keys are model names, values contain validator definitions with field, function, and mode.
+- `--extra-template-data`: Extra template data for output models as inline JSON or a JSON file path. For OpenAPI and Jsonschema the keys are the spec path of the object, or the name of the object if you want to apply the template data to multiple objects with the same name. If you are using another input file type (e.g. GraphQL), the key is the name of the object. The value is a dictionary of the template data to add.
+- `--validators`: Validators configuration as inline JSON or a JSON file path. Defines field validators for Pydantic v2 models. Keys are model names, values contain validator definitions with field, function, and mode.
+- `--generate-schema-validators`: Generate Pydantic v2 model validators for JSON Schema rules that cannot be represented as type hints (experimental).
+- `--check-pattern-maps-strictly`: Under --generate-schema-validators, count every key that a pattern of patternProperties admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties
+- `--schema-validator-type`: Select the schema-derived runtime validator backend. 'pydantic-v2' generates Pydantic v2 model validators (experimental). Choices: `pydantic-v2`.
+- `--schema-validator-base-class-name`: Set the generated shared Pydantic v2 schema runtime validator base class name.
 - `--use-type-checking-imports`: Allow Ruff to move typing-only imports into TYPE_CHECKING blocks. By default this stays enabled, except for multi-module Ruff formatting of modular Pydantic output where referenced models stay imported at runtime. Use --no-use-type-checking-imports to force runtime imports.
 - `--no-use-type-checking-imports`: Allow Ruff to move typing-only imports into TYPE_CHECKING blocks. By default this stays enabled, except for multi-module Ruff formatting of modular Pydantic output where referenced models stay imported at runtime. Use --no-use-type-checking-imports to force runtime imports.
 - `--use-double-quotes`: Model generated with double quotes. Single quotes or your black config skip_string_normalization value will be used without this option.
 - `--wrap-string-literal`: Wrap string literal by using black `experimental-string-processing` option (require black 20.8b0 or later)
 - `--additional-imports`: Custom imports for output (delimited list input). For example "datetime.date,datetime.datetime"
 - `--class-decorators`: Custom decorators for generated model classes (delimited list input). For example "@dataclass_json(letter_case=LetterCase.CAMEL)". The "@" prefix is optional and will be added automatically if missing.
-- `--formatters`: Formatters for output (default: [black, isort]; use builtin for dependency-free formatting) Choices: `builtin`, `black`, `isort`, `ruff-check`, `ruff-format`.
+- `--formatters`: Formatters (current default: black, isort; future default: builtin). For Ruff projects, use --formatters ruff-check ruff-format (install with pip install 'datamodel-code-generator[ruff]'). Use --formatters builtin when no external formatter is used or generation speed takes priority. Keep --formatters black isort to preserve existing formatting. Presets dated 20260909 or later include builtin; explicit formatters override presets. The future builtin default reduces installation dependencies and version constraints. Black/isort remain required today; declare [black,isort] extras for their later optional installation. Review custom-template output with builtin. Details: https://datamodel-code-generator.koxudaxi.dev/formatter-behavior/ Choices: `builtin`, `black`, `isort`, `ruff-check`, `ruff-format`.
 - `--custom-formatters`: List of modules with custom formatter (delimited list input).
-- `--custom-formatters-kwargs`: A file with kwargs for custom formatters.
+- `--custom-formatters-kwargs`: Custom formatter kwargs as inline JSON or a JSON file path.
 
 ## OpenAPI-only Options
 
 OpenAPI-specific generation behavior.
 
-- `--openapi-scopes`: Scopes of OpenAPI model generation (default: schemas) Choices: `schemas`, `paths`, `tags`, `parameters`, `webhooks`, `requestbodies`.
+- `--openapi-scopes`: Scopes of OpenAPI model generation (default: schemas) Choices: `schemas`, `paths`, `tags`, `parameters`, `webhooks`, `requestbodies`, `api`.
 - `--use-operation-id-as-name`: use operation id of OpenAPI as class names of models
 - `--include-path-parameters`: Include path parameters in generated parameter models in addition to query parameters (Only OpenAPI)
 - `--openapi-include-paths`: Include only OpenAPI paths matching fnmatch patterns. Use wildcards: '*' matches any chars, '?' matches single char. Example: '/users/*' '/products'. Requires '--openapi-scopes' to include 'paths'.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as OPENAPI_INFO_VERSION in generated models
+- `--openapi-as-definitions`: Give each given kind of OpenAPI schema the model a definitions entry of the same schema gets. paths-bodies: the request and response bodies of the paths and webhooks scopes, so an object body with a type array such as [object, null], or with map keywords and no type, becomes a model instead of an inline type, and an object body with patternProperties or propertyNames becomes the root model of a map. ref-components: a component written as a $ref to a recursive schema with sibling keywords, which gets the root model; without it such a component gets no model, and a reference to it is typed by the schema its $ref names Choices: `paths-bodies`, `ref-components`.
 - `--validation` (deprecated): Deprecated: The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.
 - `--read-only-write-only-model-type`: Model generation for readOnly/writeOnly fields: 'request-response' = Request/Response models only (no base model), 'all' = Base + Request + Response models. Choices: `request-response`, `all`.
+- `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each inline model once, without the unreferenced duplicate classes and shifted class numbers of 0.86.0
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)
 
 ## GraphQL-only Options
@@ -189,6 +240,7 @@ General utility, HTTP, checking, and project integration options.
 
 - `--allow-remote-refs`: Allow fetching remote $ref references over HTTP/HTTPS. Currently remote fetching is allowed by default but emits a deprecation warning. Pass --allow-remote-refs to opt in without warning, or --no-allow-remote-refs to block remote fetching. In a future version, remote fetching will be disabled by default.
 - `--no-allow-remote-refs`: Allow fetching remote $ref references over HTTP/HTTPS. Currently remote fetching is allowed by default but emits a deprecation warning. Pass --allow-remote-refs to opt in without warning, or --no-allow-remote-refs to block remote fetching. In a future version, remote fetching will be disabled by default.
+- `--strict-refs`: Treat unresolved local $ref JSON pointers as errors instead of generating fallback Any models.
 - `--allow-private-network`: Allow HTTP(S) schema requests to private, loopback, link-local, or otherwise non-public network hosts. By default these targets are blocked to reduce server-side request forgery (SSRF) risk. If a trusted internal schema endpoint is blocked, verify the URL and pass this option; otherwise use a local schema file or public endpoint. Pass --no-allow-private-network to override a configuration file that enables it.
 - `--no-allow-private-network`: Allow HTTP(S) schema requests to private, loopback, link-local, or otherwise non-public network hosts. By default these targets are blocked to reduce server-side request forgery (SSRF) risk. If a trusted internal schema endpoint is blocked, verify the URL and pass this option; otherwise use a local schema file or public endpoint. Pass --no-allow-private-network to override a configuration file that enables it.
 - `--http-headers`: Set headers in HTTP requests to the remote host. (example: "Authorization: Basic dXNlcjpwYXNz")
@@ -196,24 +248,66 @@ General utility, HTTP, checking, and project integration options.
 - `--http-ignore-tls`: Disable verification of the remote host's TLS certificate
 - `--http-timeout`: Timeout in seconds for HTTP requests to remote hosts (default: 30)
 - `--http-local-ref-path`: Resolve HTTP(S) JSON Schema $ref URLs from a local directory instead of fetching them. URLs are mapped under the directory by host and path; extensionless refs also try '.json'.
+- `--lockfile`: Select the remote reference integrity lock file (experimental). An existing selected lock is verified automatically; a missing selected lock is ignored unless --locked is used. The default is datamodel-codegen.lock beside the discovered pyproject.toml, or in the invocation working directory when no project is found. Explicit relative paths resolve from the invocation working directory.
+- `--update-lock`: Create or atomically update the selected remote lock after generation (experimental).
+- `--locked`: Require an existing remote lock and validate each fetched resource against it (experimental).
 - `--shared-module-name`: Name of the shared module for --reuse-scope=tree (default: "shared"). Use this option if your schema has a file named "shared".
 - `--all-exports-scope`: Generate __all__ in __init__.py with re-exports. 'children': export from direct child modules only. 'recursive': export from all descendant modules. Choices: `children`, `recursive`.
 - `--all-exports-collision-strategy`: Strategy for name collisions when using --all-exports-scope=recursive. 'error': raise an error (default). 'minimal-prefix': add module prefix only to colliding names. 'full-prefix': add full module path prefix to colliding names. Choices: `error`, `minimal-prefix`, `full-prefix`.
 - `--module-split-mode`: Split generated models into separate files. 'single': generate one file per model class. Choices: `single`.
 - `--check`: Verify generated files are up-to-date without modifying them. Exits with code 1 if differences found, 0 if up-to-date. Useful for CI to ensure generated code is committed.
+- `--diff-against`: Generate BASELINE_INPUT and the current --input into temporary outputs, then show the generated-code diff from baseline to current. Requires --input and --output; --output is a virtual output path that selects file or directory layout and is never modified. Exits with code 1 when generated outputs differ.
 - `--debug`: show debug message (require "debug". `$ pip install 'datamodel-code-generator[debug]'`)
 - `--disable-warnings`: disable warnings
 - `--list-deprecations`: List registered deprecations and scheduled breaking changes, then exit. Choices: `table`, `json`, `markdown`.
-- `--list-experimental`: List registered experimental features, then exit. Choices: `table`, `json`, `markdown`.
+- `--list-experimental`: List registered experimental features and their compatibility notes, then exit. Choices: `table`, `json`, `markdown`.
 - `--help` (alias: `-h`): show this help message and exit
 - `--no-color`: disable colorized output
 - `--output-format`: Format for command output (default: text). Use json for structured output when supported. Choices: `text`, `json`.
-- `--output-format-json-schema`: Output JSON Schema for the selected structured output format and exit. Choices: `generate-prompt`, `generation`, `structured-output`.
+- `--fail-on-multi-module-stdout`: Return an error instead of concatenating multiple generated modules in text stdout. This does not affect single-module, JSON, or file output.
+- `--output-format-json-schema`: Output JSON Schema for the selected JSON output or JSON configuration format and exit. Choices: `config`, `generate-prompt`, `generation`, `model-metadata`, `recommend-options`, `structured-output`.
 - `--generate-pyproject-config`: Generate pyproject.toml configuration from the provided CLI arguments and exit
 - `--generate-cli-command`: Generate CLI command from pyproject.toml configuration and exit
 - `--generate-prompt`: Generate a prompt for consulting LLMs about CLI options. Optionally provide your question as an argument. Pipe to CLI tools (e.g., `| claude -p`, `| codex exec`) or copy to clipboard (e.g., `| pbcopy`, `| xclip`) for web LLM chats.
+- `--recommend-options`: Analyse the input schema and print the options to add on top of the latest dated preset, with the reasons, as a command and a pyproject.toml block, then exit (experimental). Schemas of up to 3000 estimated models are also compared by generating the candidate configurations in memory. With --generate-prompt, the prompt includes the recommendation instead.
 - `--ignore-pyproject`: Ignore pyproject.toml configuration
+- `--install-skill`: Install the bundled datamodel-code-generator Agent Skill and exit (experimental). Use --skill-scope to select a project or personal installation. Choices: `codex`, `claude-code`.
+- `--skill-scope`: Installation scope for --install-skill (default: project). Project installs use .agents/skills or .claude/skills; user installs use the matching home directory. Choices: `project`, `user`.
+- `--overwrite-skill`: Replace an existing regular skill directory when used with --install-skill.
 - `--profile`: Use a named profile from pyproject.toml [tool.datamodel-codegen.profiles.<name>]
+- `--job`: Run a named job from pyproject.toml [tool.datamodel-codegen.jobs.<name>] (experimental). Can be repeated.
+- `--all-jobs`: Run every named job from pyproject.toml in declaration order (experimental).
 - `--watch`: Watch input file(s) for changes and regenerate output automatically
 - `--watch-delay`: Debounce delay in seconds for watch mode (default: 0.5)
 - `--version`: show version
+
+## Target Generation Options
+
+Server and client generation alongside the models (experimental).
+
+- `--generate-server`: Generate a FastAPI server package for the models; the --server-* options configure it (experimental). Choices: `fastapi`.
+- `--server-output`: Directory of the generated server package (experimental).
+- `--server-package`: Import path of the generated server package (experimental).
+- `--server-model-package`: Import path of the models that --output generates (experimental).
+- `--server-layout`: Write one router module per tag (default) or a single routes module (experimental). Choices: `routers`, `single`.
+- `--server-handler-mode`: Make service methods plain functions (default) or coroutine functions (experimental). Choices: `sync`, `async`.
+- `--server-handler-modes`: Per-operation handler modes as inline JSON or a JSON file path, keyed by operation reference such as /paths/~1pets/get; overrides --server-handler-mode for matched operations (experimental).
+- `--server-include-request`: Pass the Starlette Request to every service method (experimental).
+- `--no-server-include-request`: Pass the Starlette Request to every service method (experimental).
+- `--server-body-mode`: Pass request bodies as validated models (default) or as the raw Request (experimental). Choices: `typed`, `request`.
+- `--server-body-modes`: Per-operation body modes as inline JSON or a JSON file path, keyed by operation reference; overrides --server-body-mode for matched operations (experimental).
+- `--server-primary-responses`: The declared response a bare return value takes, per operation, as inline JSON or a JSON file path: an object with "status_code" and an optional "media_type" for each operation reference (experimental).
+- `--server-operation-names`: Service method names per operation reference as inline JSON or a JSON file path (experimental).
+- `--server-router-names`: Router group names keyed by group key, such as tag:pets, as inline JSON or a JSON file path (experimental).
+- `--server-parameter-names`: Argument names per operation reference, each keyed by location and name such as query:limit, as inline JSON or a JSON file path (experimental).
+- `--generate-client`: Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental). Choices: `httpx2`.
+- `--client-output`: Directory of the generated client package (experimental).
+- `--client-package`: Import path of the generated client package (experimental).
+- `--client-model-package`: Import path of the models that --output generates (experimental).
+- `--client-signature-style`: Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental). Choices: `explicit`, `unpack`.
+- `--client-body-arguments`: Take request bodies as one body argument (default) or also as field arguments (experimental). Choices: `body`, `both`.
+- `--client-resource-names`: Resource namespaces keyed by tag, such as {"pets": "store.pets"}, as inline JSON or a JSON file path (experimental).
+- `--client-operations`: Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; their body_arguments overrides --client-body-arguments (experimental).
+- `--client-default-base-url`: Server URL of the operations that declare no servers (experimental).
+- `--client-server-base-url`: Base URL that relative server URLs of the document resolve against (experimental).
+- `--client-protocols`: Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a JSON file path (experimental).

@@ -1,0 +1,81 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/case": {
+      "get": {
+        "operationId": "fixedGet",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "standard"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalOperations": {
+        "get": {
+          "operationId": "lowerGet",
+          "responses": {
+            "200": {
+              "description": "ok",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "lower"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "GeT": {
+          "operationId": "mixedGet",
+          "responses": {
+            "200": {
+              "description": "ok",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "mixed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "query": {
+          "operationId": "lowerQuery",
+          "responses": {
+            "200": {
+              "description": "ok",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "querylower"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+unsat_root_literals.json#/$defs/ConstMember: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `const`; the generated code keeps its earlier `const`.
+unsat_root_literals.json#/$defs/SiblingEnum: no value satisfies every part of this schema (the referenced or inherited schema and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.
+unsat_root_literals.json#/$defs/ItemEnums: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.

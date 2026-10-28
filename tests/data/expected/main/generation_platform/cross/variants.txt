@@ -1,0 +1,22 @@
+models shared True
+# variants in-process sync, in-process async
+post_form
+  > POST /forms [application/x-www-form-urlencoded]
+  post_form(body=PetRequest(name='Rex', secret='s', tags=['a', 'b c']))
+  < 200 application/json
+  = PetResponse(id=1, origin=Origin(country='jp'), name='Rex', tags=['a'])
+post_parts
+  > POST /parts [multipart/form-data; boundary=<boundary>]
+  post_parts(body=PetRequest(name='Rex', secret='s', tags=['a', 'b c']))
+  < 200 application/json
+  = PetResponse(id=1, origin=Origin(country='jp'), name='Rex', tags=['a'])
+/forms with read-only members
+  > POST /forms [application/x-www-form-urlencoded]
+  post_form(body=PetRequest(name='raw', secret='s', tags=None))
+  < 200 application/json
+  = (200, {'id': 1, 'origin': {'country': 'jp'}, 'name': 'Rex', 'tags': ['a']})
+/parts with read-only members
+  > POST /parts [multipart/form-data; boundary=<boundary>]
+  post_parts(body=PetRequest(name='raw', secret='s', tags=None))
+  < 200 application/json
+  = (200, {'id': 1, 'origin': {'country': 'jp'}, 'name': 'Rex', 'tags': ['a']})

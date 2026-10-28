@@ -1,0 +1,28 @@
+# unions-mapped pydantic_v2.BaseModel
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat = PetsGetResponse(root=Cat(kind='cat', lives=9))
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog = PetsGetResponse(root=Dog(kind='dog', good=True))
+# unions-mapped pydantic_v2.dataclass, dataclasses.dataclass
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat = Cat(kind='cat', lives=9)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog = Dog(kind='dog', good=True)
+# unions-mapped typing.TypedDict
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat = {'kind': 'cat', 'lives': 9}
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog = {'kind': 'dog', 'good': True}
+# unions-mapped msgspec.Struct
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat = Cat(lives=9)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog = Dog(good=True)

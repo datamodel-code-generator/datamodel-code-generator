@@ -27,6 +27,18 @@ Phone: TypeAlias = Annotated[str, Meta(min_length=3)]
 FaxItem: TypeAlias = Annotated[str, Meta(min_length=3)]
 
 
+HeightInteger: TypeAlias = Annotated[int, Meta(ge=1, le=300)]
+
+
+HeightNumber: TypeAlias = Annotated[float, Meta(ge=1.0, le=300.0)]
+
+
+WeightNumber: TypeAlias = Annotated[float, Meta(ge=1.0, le=1000.0)]
+
+
+WeightInteger: TypeAlias = Annotated[int, Meta(ge=1, le=1000)]
+
+
 class User(Struct):
     id: Annotated[int, Meta(ge=0)]
     name: Annotated[str, Meta(max_length=256)]
@@ -34,8 +46,8 @@ class User(Struct):
     tag: Annotated[str, Meta(max_length=64)] | UnsetType = UNSET
     phones: Annotated[list[Phone], Meta(max_length=10)] | UnsetType = UNSET
     fax: list[FaxItem] | UnsetType = UNSET
-    height: Annotated[int | float, Meta(ge=1.0, le=300.0)] | UnsetType = UNSET
-    weight: Annotated[float | int, Meta(ge=1.0, le=1000.0)] | UnsetType = UNSET
+    height: HeightInteger | HeightNumber | UnsetType = UNSET
+    weight: WeightNumber | WeightInteger | UnsetType = UNSET
     age: Annotated[int, Meta(gt=0, le=200)] | UnsetType = UNSET
     rating: Annotated[float, Meta(gt=0.0, le=5.0)] | UnsetType = UNSET
 

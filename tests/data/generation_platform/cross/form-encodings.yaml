@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info: {title: Form encodings, version: "1.0"}
+servers:
+  - {url: https://encodings.example.com}
+paths:
+  /styles:
+    post:
+      operationId: postStyles
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                point: {$ref: "#/components/schemas/Point"}
+                corner: {$ref: "#/components/schemas/Point"}
+                deep: {$ref: "#/components/schemas/Named"}
+                spaced: {type: array, items: {type: string}}
+                piped: {type: array, items: {type: integer}}
+                listed: {type: array, items: {type: integer}}
+                path: {type: string}
+                meta: {$ref: "#/components/schemas/Named"}
+                note: {type: string}
+            encoding:
+              point: {style: form, explode: true}
+              corner: {style: form, explode: false}
+              deep: {style: deepObject, explode: true}
+              spaced: {style: spaceDelimited}
+              piped: {style: pipeDelimited}
+              listed: {style: form, explode: false}
+              path: {allowReserved: true}
+              meta: {contentType: application/json}
+              note: {contentType: text/plain}
+      responses:
+        "204": {description: Done.}
+  /labels:
+    post:
+      operationId: postLabels
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                id: {type: integer}
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /choices:
+    post:
+      operationId: postChoices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Choice"}
+          application/x-www-form-urlencoded:
+            schema: {$ref: "#/components/schemas/Choice"}
+            encoding:
+              ids: {style: spaceDelimited}
+      responses:
+        "204": {description: Done.}
+  /texts:
+    post:
+      operationId: postTexts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+                count: {type: integer}
+                code: {type: string}
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              note: {contentType: "text/plain; charset=utf-8"}
+              count: {contentType: text/plain}
+              code: {contentType: "text/plain; charset=US-ASCII"}
+              ids: {style: form, contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /images:
+    post:
+      operationId: postImages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: {type: string, format: binary}
+                thumbnails: {type: array, items: {type: string, format: binary}}
+                caption: {type: string}
+            encoding:
+              image: {contentType: image/png}
+              thumbnails: {contentType: "image/png, image/*"}
+              caption: {contentType: "text/markdown; charset=utf-8"}
+      responses:
+        "204": {description: Done.}
+  /styled-parts:
+    post:
+      operationId: postStyledParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                point: {$ref: "#/components/schemas/Point"}
+                corner: {$ref: "#/components/schemas/Point"}
+                deep: {$ref: "#/components/schemas/Named"}
+                spaced: {type: array, items: {type: string}}
+                piped: {type: array, items: {type: integer}}
+                listed: {type: array, items: {type: string}}
+                path: {type: string}
+                meta: {$ref: "#/components/schemas/Named"}
+            encoding:
+              point: {explode: true}
+              corner: {style: form, explode: false}
+              deep: {style: deepObject, explode: true}
+              spaced: {style: spaceDelimited}
+              piped: {style: pipeDelimited}
+              listed: {style: form, explode: false}
+              path: {allowReserved: true, contentType: application/json}
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /part-labels:
+    post:
+      operationId: postPartLabels
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id: {type: integer}
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Point:
+      type: object
+      additionalProperties: false
+      properties:
+        x: {type: integer}
+        y: {type: integer}
+    Named:
+      type: object
+      properties:
+        name: {type: string}
+    Choice:
+      type: object
+      properties:
+        ids: {type: array, items: {type: string}}

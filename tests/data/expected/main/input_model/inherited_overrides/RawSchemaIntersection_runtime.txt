@@ -1,0 +1,64 @@
+[
+  {
+    "bases": [
+      "StrictParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {
+      "value": 0
+    },
+    "source": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    }
+  },
+  {
+    "payload": {
+      "value": 1
+    },
+    "source": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    }
+  },
+  {
+    "payload": {
+      "value": 5
+    },
+    "source": {
+      "value": 5
+    },
+    "generated": {
+      "value": 5
+    }
+  },
+  {
+    "payload": {},
+    "source": {
+      "errors": [
+        "missing"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "missing"
+      ]
+    }
+  }
+]

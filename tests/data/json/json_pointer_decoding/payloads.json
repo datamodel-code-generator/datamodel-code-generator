@@ -1,0 +1,18 @@
+{
+  "valid": {
+    "once": "once",
+    "tilde": 42,
+    "percent": true,
+    "uri": 1.5,
+    "array_value": "array",
+    "external": "external"
+  },
+  "invalid": [
+    {"field": "once", "error": "string_type"},
+    {"field": "tilde", "error": "int_type"},
+    {"field": "percent", "error": "bool_type"},
+    {"field": "uri", "error": "float_type"},
+    {"field": "array_value", "error": "string_type"},
+    {"field": "external", "error": "string_type"}
+  ]
+}

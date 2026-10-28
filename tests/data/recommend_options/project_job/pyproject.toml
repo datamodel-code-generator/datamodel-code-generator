@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+target-python-version = "3.14"
+jobs.api.input = "api.yaml"
+jobs.api.output = "models.py"

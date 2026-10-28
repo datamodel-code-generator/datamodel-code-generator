@@ -1,0 +1,10 @@
+{
+  "aliases": {
+    "userName": "safe_name"
+  },
+  "disable_timestamp": true,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT"
+}

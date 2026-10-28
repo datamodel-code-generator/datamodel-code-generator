@@ -1,0 +1,27 @@
+openapi: "3.0.3"
+info:
+  title: Common Schemas
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+        - id
+        - name
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required:
+        - code
+        - message

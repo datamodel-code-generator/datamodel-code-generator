@@ -1,0 +1,7 @@
+_tables.py: msgspec cannot decode the enum Wide: its value 9223372036854
+_tables.py: msgspec cannot decode the enum Negative: its value -92233720
+_tables.py: msgspec cannot decode the enum Typed: its value 100000000000
+_tables.py: msgspec cannot decode the enum ListedEnum: its value 9223372
+_tables.py: msgspec cannot decode Model.constant: its Literal value 1844
+_tables.py: msgspec cannot decode the union Model.either: its int-like m
+kept by a parser.base module filter: 0

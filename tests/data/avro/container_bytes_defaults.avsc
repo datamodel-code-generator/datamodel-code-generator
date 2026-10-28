@@ -1,0 +1,323 @@
+{
+  "type": "record",
+  "name": "ContainerDefaults",
+  "namespace": "outer",
+  "fields": [
+    {
+      "name": "single",
+      "type": "bytes",
+      "default": "ÿ"
+    },
+    {
+      "name": "array",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      },
+      "default": [
+        "ASCII",
+        "ÿ",
+        "\u0000",
+        ""
+      ]
+    },
+    {
+      "name": "mapping",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "bytes"
+        }
+      },
+      "default": {
+        "z": "ÿ",
+        "a": "ASCII",
+        "empty": ""
+      }
+    },
+    {
+      "name": "strings",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [
+        "ÿ",
+        "ASCII",
+        ""
+      ]
+    },
+    {
+      "name": "string_map",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "default": {
+        "z": "ÿ",
+        "a": "ASCII"
+      }
+    },
+    {
+      "name": "numbers",
+      "type": {
+        "type": "array",
+        "items": "int"
+      },
+      "default": [
+        2,
+        1
+      ]
+    },
+    {
+      "name": "empty_array",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      },
+      "default": []
+    },
+    {
+      "name": "empty_map",
+      "type": {
+        "type": "map",
+        "values": "bytes"
+      },
+      "default": {}
+    },
+    {
+      "name": "nested",
+      "type": {
+        "type": {
+          "type": "array",
+          "items": {
+            "type": "map",
+            "values": {
+              "type": "array",
+              "items": "bytes"
+            }
+          }
+        }
+      },
+      "default": [
+        {
+          "z": [
+            "ÿ",
+            "ASCII"
+          ],
+          "a": []
+        },
+        {
+          "k": [
+            "\u0000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fixed_array",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "fixed",
+          "name": "Octet",
+          "size": 1
+        }
+      },
+      "default": [
+        "ÿ",
+        "A"
+      ]
+    },
+    {
+      "name": "fixed_map",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "array",
+          "items": "Octet"
+        }
+      },
+      "default": {
+        "z": [
+          "ÿ",
+          "A"
+        ],
+        "a": [
+          "\u0000"
+        ]
+      }
+    },
+    {
+      "name": "union_array",
+      "type": [
+        {
+          "type": "array",
+          "items": [
+            "bytes",
+            "string"
+          ]
+        },
+        "null"
+      ],
+      "default": [
+        "ÿ",
+        "ASCII"
+      ]
+    },
+    {
+      "name": "string_union",
+      "type": {
+        "type": "array",
+        "items": [
+          "string",
+          "bytes"
+        ]
+      },
+      "default": [
+        "ÿ",
+        "ASCII"
+      ]
+    },
+    {
+      "name": "nullable_array",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": "bytes"
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "record",
+      "type": {
+        "type": "record",
+        "name": "inner.Entry",
+        "fields": [
+          {
+            "name": "first",
+            "type": "string"
+          },
+          {
+            "name": "inline",
+            "type": {
+              "type": "fixed",
+              "name": "LocalOctet",
+              "size": 1
+            }
+          },
+          {
+            "name": "reference",
+            "type": "LocalOctet"
+          },
+          {
+            "name": "array",
+            "type": {
+              "type": "array",
+              "items": "LocalOctet"
+            }
+          },
+          {
+            "name": "last",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "last": "ÿ",
+        "reference": "ÿ",
+        "inline": "A",
+        "array": [
+          "ÿ",
+          "A"
+        ],
+        "first": "ASCII"
+      }
+    },
+    {
+      "name": "record_array",
+      "type": {
+        "type": "array",
+        "items": "inner.Entry"
+      },
+      "default": [
+        {
+          "first": "ÿ",
+          "inline": "ÿ",
+          "reference": "A",
+          "array": [
+            "A",
+            "ÿ"
+          ],
+          "last": "end"
+        }
+      ]
+    },
+    {
+      "name": "empty_record",
+      "type": {
+        "type": "record",
+        "name": "Empty"
+      },
+      "default": {}
+    },
+    {
+      "name": "recursive",
+      "type": {
+        "type": "record",
+        "name": "Node",
+        "fields": [
+          {
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "name": "next",
+            "type": [
+              "Node",
+              "null"
+            ]
+          }
+        ]
+      },
+      "default": {
+        "next": {
+          "data": "A",
+          "next": null
+        },
+        "data": "ÿ"
+      }
+    },
+    {
+      "name": "enum_array",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "name": "Choice",
+          "symbols": [
+            "Z",
+            "A"
+          ]
+        }
+      },
+      "default": [
+        "Z",
+        "A"
+      ]
+    },
+    {
+      "name": "enum_reference",
+      "type": {
+        "type": "array",
+        "items": "Choice"
+      },
+      "default": [
+        "A",
+        "Z"
+      ]
+    }
+  ]
+}

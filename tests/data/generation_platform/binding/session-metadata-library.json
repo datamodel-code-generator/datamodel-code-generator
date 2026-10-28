@@ -1,0 +1,32 @@
+{
+  "components": {
+    "schemas": {
+      "Marker": {
+        "type": "object",
+        "properties": {
+          "loaded": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Key": {
+        "$ref": "#/components/securitySchemes/ActualKey"
+      },
+      "ActualKey": {
+        "type": "apiKey",
+        "name": "X-Key",
+        "in": "header"
+      }
+    },
+    "links": {
+      "Next": {
+        "operationId": "readItem",
+        "parameters": {
+          "id": "$response.body#/id"
+        }
+      }
+    }
+  }
+}

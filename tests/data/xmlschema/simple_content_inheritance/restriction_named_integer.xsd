@@ -1,0 +1,24 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Number">
+    <xs:restriction base="xs:int">
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="Base">
+    <xs:simpleContent>
+      <xs:extension base="Number">
+        <xs:attribute name="id" type="xs:int" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:restriction base="Base">
+        <xs:minInclusive value="10"/>
+        <xs:maxInclusive value="20"/>
+        <xs:attribute name="id" type="xs:int" use="required"/>
+      </xs:restriction>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnsafeListNested",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "customBasePath": [
+          "pydantic.BaseModel",
+          "pydantic.BaseModel\nDMCG_PROBE = 1"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

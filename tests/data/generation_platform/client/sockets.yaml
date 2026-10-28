@@ -1,0 +1,89 @@
+openapi: 3.1.0
+info:
+  title: Sockets
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /rooms/{room}/socket:
+    get:
+      operationId: roomSocket
+      tags: [rooms]
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema: {type: string}
+        - name: since
+          in: query
+          schema: {type: integer}
+      responses:
+        '101':
+          description: The room's chat channel.
+        '204':
+          description: The room is closed.
+        '4XX':
+          description: The room refused the client.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /feed/socket:
+    get:
+      operationId: feedSocket
+      tags: [feed]
+      responses:
+        '101':
+          description: The feed's channel.
+        '204':
+          description: The feed is closed.
+  /secure/socket:
+    get:
+      operationId: secureSocket
+      tags: [secure]
+      security:
+        - bearer: []
+      parameters:
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+      responses:
+        '101':
+          description: The secure channel.
+        '204':
+          description: The channel is closed.
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  schemas:
+    ClientMessage:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string}
+    Said:
+      type: object
+      required: [kind, text]
+      properties:
+        kind: {type: string, const: said}
+        text: {type: string}
+    Joined:
+      type: object
+      required: [kind, user]
+      properties:
+        kind: {type: string, const: joined}
+        user: {type: string}
+    ServerMessage:
+      oneOf:
+        - {$ref: '#/components/schemas/Said'}
+        - {$ref: '#/components/schemas/Joined'}
+      discriminator:
+        propertyName: kind
+        mapping:
+          said: '#/components/schemas/Said'
+          joined: '#/components/schemas/Joined'
+    Problem:
+      type: object
+      properties:
+        detail: {type: string}

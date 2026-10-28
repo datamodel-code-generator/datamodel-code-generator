@@ -1,0 +1,1 @@
+msgspec cannot decode the union Root.item: its Struct types Item, Other are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

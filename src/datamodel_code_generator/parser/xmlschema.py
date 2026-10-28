@@ -11,28 +11,24 @@ import contextlib
 import io
 import re
 import warnings
+from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
+from hashlib import sha256
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, cast
+from threading import RLock
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 from xml.etree import ElementTree as ET  # noqa: S405
 
 from typing_extensions import Unpack
 
-from datamodel_code_generator import Error, YamlValue
+from datamodel_code_generator import Error
+from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
+from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
-from datamodel_code_generator.format import DatetimeClassType
 from datamodel_code_generator.parser import _xmlschema_literals
 from datamodel_code_generator.parser._convert_common import _copy_schema, _namespace_name, _unique_name
-from datamodel_code_generator.parser._math_imports import apply_math_imports_to_parse_result
-from datamodel_code_generator.parser._xmlschema_detection import (
-    XML_SCHEMA_NAMESPACE,
-    XML_SCHEMA_TAG,
-)
-from datamodel_code_generator.parser._xmlschema_detection import (
-    is_xml_schema_text as _is_xml_schema_text,
-)
 from datamodel_code_generator.parser._xmlschema_literals import (
-    _collect_python_expression_imports,
     _PythonExpression,
     _safe_bool,
     _safe_date_expression,
@@ -43,13 +39,17 @@ from datamodel_code_generator.parser._xmlschema_literals import (
 )
 from datamodel_code_generator.parser.base import Source, title_to_class_name
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.python_literal import runtime_expression_imports
+from datamodel_code_generator.util import record_watch_dependency
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from urllib.parse import ParseResult
 
+    from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._types import XMLSchemaParserConfigDict
     from datamodel_code_generator.config import XMLSchemaParserConfig
+    from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 XML_SCHEMA_VERSIONING_NAMESPACE = "http://www.w3.org/2007/XMLSchema-versioning"
 XSD11_ELEMENTS = frozenset({"alternative", "assert", "assertion", "defaultOpenContent", "openContent", "override"})
@@ -63,6 +63,7 @@ XML_DATE_PATTERN = _xmlschema_literals.XML_DATE_PATTERN
 XSD_WHITESPACE_CHARS = _xmlschema_literals.XSD_WHITESPACE_CHARS
 _datetime_expression = _xmlschema_literals._datetime_expression  # noqa: SLF001
 _normalize_timezone = _xmlschema_literals._normalize_timezone  # noqa: SLF001
+_collect_python_expression_imports = runtime_expression_imports
 
 _XMLSCHEMA_LITERAL_REEXPORTS: tuple[tuple[str, object], ...] = (
     ("DAY_TIME_DURATION_PATTERN", DAY_TIME_DURATION_PATTERN),
@@ -71,6 +72,7 @@ _XMLSCHEMA_LITERAL_REEXPORTS: tuple[tuple[str, object], ...] = (
     ("XSD_WHITESPACE_CHARS", XSD_WHITESPACE_CHARS),
     ("_datetime_expression", _datetime_expression),
     ("_normalize_timezone", _normalize_timezone),
+    ("_collect_python_expression_imports", _collect_python_expression_imports),
 )
 for _xmlschema_literal_reexport_name, _xmlschema_literal_reexport in _XMLSCHEMA_LITERAL_REEXPORTS:
     if globals()[_xmlschema_literal_reexport_name] is not _xmlschema_literal_reexport:  # pragma: no cover
@@ -82,6 +84,19 @@ JsonSchema = dict[str, Any]
 QNameKey = tuple[str | None, str]
 DefinitionKey = tuple[str, str | None, str]
 PYTHON_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_XML_SCHEMA_DATA_CACHE_MAX_SIZE = 128
+_XMLSchemaDataCacheKey = tuple[Path, Path, str, str, XMLSchemaVersion | None, VersionMode | None, bool, bool]
+_XMLSchemaDataSeenKey = tuple[Path, Path, str, XMLSchemaVersion | None, VersionMode | None, bool, bool]
+
+
+class _XMLSchemaDataCacheEntry(NamedTuple):
+    data: dict[str, YamlValue]
+    dependencies: tuple[tuple[Path, str], ...]
+
+
+_xml_schema_data_cache: OrderedDict[_XMLSchemaDataCacheKey, _XMLSchemaDataCacheEntry] = OrderedDict()
+_xml_schema_data_seen_keys: OrderedDict[_XMLSchemaDataSeenKey, None] = OrderedDict()
+_xml_schema_data_cache_lock = RLock()
 
 
 STRING_SCHEMA: JsonSchema = {"type": "string"}
@@ -96,7 +111,7 @@ class _OccurrenceContext(NamedTuple):
     required: bool = True
     repeating: bool = False
     min_items: int | None = None
-    max_items: int | None = None
+    max_items: int | None = 1  # Multiplicative identity; None denotes an unbounded maximum.
 
 
 DEFAULT_OCCURRENCE = _OccurrenceContext()
@@ -239,7 +254,11 @@ def _has_xmlschema_versioning_attribute(element: ET.Element) -> bool:
 
 
 def _read_xml_text(path: Path, encoding: str) -> str:
-    data = path.read_bytes()
+    record_watch_dependency(path)
+    return _decode_xml_bytes(path.read_bytes(), encoding)
+
+
+def _decode_xml_bytes(data: bytes, encoding: str) -> str:
     for bom, xml_encoding in (
         (codecs.BOM_UTF8, "utf-8-sig"),
         (codecs.BOM_UTF32_LE, "utf-32"),
@@ -250,6 +269,104 @@ def _read_xml_text(path: Path, encoding: str) -> str:
         if data.startswith(bom):
             return data.decode(xml_encoding)
     return data.decode(encoding)
+
+
+def _digest_bytes(data: bytes) -> str:
+    return sha256(data).hexdigest()
+
+
+def _digest_path(path: Path) -> str:
+    record_watch_dependency(path)
+    return _digest_bytes(path.read_bytes())
+
+
+def _xml_schema_cache_dependencies(paths: set[Path]) -> tuple[tuple[Path, str], ...]:
+    return tuple((path, _digest_path(path)) for path in sorted(paths))
+
+
+def _xml_schema_cache_entry_is_fresh(entry: _XMLSchemaDataCacheEntry) -> bool:
+    return all(path.is_file() and _digest_path(path) == digest for path, digest in entry.dependencies)
+
+
+def _load_xml_schema_data_from_path(  # noqa: PLR0913
+    path: Path,
+    base_path: Path,
+    encoding: str,
+    *,
+    xmlschema_version: XMLSchemaVersion | None,
+    schema_version_mode: VersionMode | None,
+    use_xmlschema_datetime_default: bool,
+    source_safe_non_finite: bool,
+) -> dict[str, YamlValue]:
+    resolved_path = path.resolve()
+    resolved_base_path = base_path.resolve()
+    seen_key = (
+        resolved_path,
+        resolved_base_path,
+        encoding,
+        xmlschema_version,
+        schema_version_mode,
+        use_xmlschema_datetime_default,
+        source_safe_non_finite,
+    )
+    with _xml_schema_data_cache_lock:
+        use_cache = seen_key in _xml_schema_data_seen_keys
+        _xml_schema_data_seen_keys[seen_key] = None
+        _xml_schema_data_seen_keys.move_to_end(seen_key)
+        while len(_xml_schema_data_seen_keys) > _XML_SCHEMA_DATA_CACHE_MAX_SIZE:
+            _xml_schema_data_seen_keys.popitem(last=False)
+
+    if not use_cache:
+        converter = _XMLSchemaConverter(
+            base_path=base_path,
+            encoding=encoding,
+            xmlschema_version=xmlschema_version,
+            schema_version_mode=schema_version_mode,
+            use_xmlschema_datetime_default=use_xmlschema_datetime_default,
+            source_safe_non_finite=source_safe_non_finite,
+        )
+        return converter.convert(Source(path=path.relative_to(base_path), text=_read_xml_text(path, encoding)))
+
+    cache_key = (
+        resolved_path,
+        resolved_base_path,
+        _digest_path(resolved_path),
+        encoding,
+        xmlschema_version,
+        schema_version_mode,
+        use_xmlschema_datetime_default,
+        source_safe_non_finite,
+    )
+    with _xml_schema_data_cache_lock:
+        if (entry := _xml_schema_data_cache.get(cache_key)) is not None and _xml_schema_cache_entry_is_fresh(entry):
+            _xml_schema_data_cache.move_to_end(cache_key)
+            return _copy_schema(entry.data)
+
+    converter = _XMLSchemaConverter(
+        base_path=base_path,
+        encoding=encoding,
+        xmlschema_version=xmlschema_version,
+        schema_version_mode=schema_version_mode,
+        use_xmlschema_datetime_default=use_xmlschema_datetime_default,
+        source_safe_non_finite=source_safe_non_finite,
+    )
+    data = converter.convert(Source(path=path.relative_to(base_path), text=_read_xml_text(path, encoding)))
+    dependencies = _xml_schema_cache_dependencies(converter.loaded_source_paths)
+    with _xml_schema_data_cache_lock:
+        _xml_schema_data_cache[cache_key] = _XMLSchemaDataCacheEntry(
+            data=_copy_schema(data),
+            dependencies=dependencies,
+        )
+        _xml_schema_data_cache.move_to_end(cache_key)
+        while len(_xml_schema_data_cache) > _XML_SCHEMA_DATA_CACHE_MAX_SIZE:
+            _xml_schema_data_cache.popitem(last=False)
+    return data
+
+
+def _clear_xml_schema_data_cache() -> None:
+    with _xml_schema_data_cache_lock:
+        _xml_schema_data_cache.clear()
+        _xml_schema_data_seen_keys.clear()
 
 
 def detect_xmlschema_version(source: ET.Element | str) -> XMLSchemaVersion:
@@ -270,6 +387,26 @@ def convert_xml_schema_data(
     encoding: str = "utf-8",
 ) -> dict[str, YamlValue]:
     """Convert an XML Schema source string to JSON Schema data."""
+    return _convert_xml_schema_data(
+        raw_schema,
+        base_path=base_path,
+        xmlschema_version=xmlschema_version,
+        schema_version_mode=schema_version_mode,
+        encoding=encoding,
+        source_safe_non_finite=False,
+    )
+
+
+def _convert_xml_schema_data(  # noqa: PLR0913
+    raw_schema: Any,
+    *,
+    base_path: Path | None = None,
+    xmlschema_version: XMLSchemaVersion | None = None,
+    schema_version_mode: VersionMode | None = None,
+    encoding: str = "utf-8",
+    source_safe_non_finite: bool,
+) -> dict[str, YamlValue]:
+    """Convert XML Schema data for a parser that may need source-safe float values."""
     if not isinstance(raw_schema, str):
         msg = "XML Schema schemaFormat requires an XSD schema string"
         raise Error(msg)
@@ -278,12 +415,13 @@ def convert_xml_schema_data(
         encoding=encoding,
         xmlschema_version=xmlschema_version,
         schema_version_mode=schema_version_mode,
+        source_safe_non_finite=source_safe_non_finite,
     )
     return converter.convert(Source(path=Path("__asyncapi_schema__.xsd"), text=raw_schema))
 
 
 class _XMLSchemaConverter:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         base_path: Path,
         encoding: str,
@@ -291,12 +429,14 @@ class _XMLSchemaConverter:
         xmlschema_version: XMLSchemaVersion | None = None,
         schema_version_mode: VersionMode | None = None,
         use_xmlschema_datetime_default: bool = False,
+        source_safe_non_finite: bool = False,
     ) -> None:
         self.base_path = base_path
         self.encoding = encoding
         self.xmlschema_version = xmlschema_version
         self.schema_version_mode = schema_version_mode or VersionMode.Lenient
         self.use_xmlschema_datetime_default = use_xmlschema_datetime_default
+        self.source_safe_non_finite = source_safe_non_finite
         self._resolved_xmlschema_version: XMLSchemaVersion | None = None
         self.namespaces: dict[str, str] = {}
         self.target_namespace: str | None = None
@@ -323,9 +463,16 @@ class _XMLSchemaConverter:
         self._built_definitions: dict[DefinitionKey, JsonSchema] = {}
         self._definitions: dict[str, JsonSchema] = {}
         self._definition_names: dict[DefinitionKey, str] = {}
+        self.loaded_source_paths: set[Path] = set()
 
     def convert(self, source: Source) -> dict[str, YamlValue]:
+        if source.raw_data is not None:
+            if not isinstance(source.raw_data, dict):  # pragma: no cover
+                msg = f"Expected dict, got {type(source.raw_data).__name__}"
+                raise TypeError(msg)
+            return source.raw_data
         source_path = self.base_path / source.path
+        self.loaded_source_paths.add(source_path.resolve())
         root = self._parse_schema(source.text, source_path)
         version = self._detect_effective_xmlschema_version(root, source_path)
         self._resolved_xmlschema_version = version
@@ -383,7 +530,7 @@ class _XMLSchemaConverter:
             schema["definitions"] = self._definitions
         schema.setdefault("$schema", "http://json-schema.org/draft-07/schema#")
         self._strip_internal_metadata(schema)
-        return schema
+        return cast("dict[str, YamlValue]", schema)
 
     def _resolve_xmlschema_version(self, root: ET.Element) -> XMLSchemaVersion:
         if self.xmlschema_version is not None and self.xmlschema_version != XMLSchemaVersion.Auto:
@@ -408,6 +555,7 @@ class _XMLSchemaConverter:
             location = self._resolve_schema_location(source_dir, schema_location)
             if location in seen or not location.is_file():
                 continue
+            self.loaded_source_paths.add(location)
             seen.add(location)
             included_root = self._parse_schema(_read_xml_text(location, self.encoding), location)
             included_version = self._detect_effective_xmlschema_version(included_root, location, seen)
@@ -518,6 +666,7 @@ class _XMLSchemaConverter:
             location = self._resolve_schema_location(source_dir, schema_location)
             if not location.is_file():
                 continue
+            self.loaded_source_paths.add(location)
             included_root = self._parse_schema(_read_xml_text(location, self.encoding), location)
             self._prepare_schema_root(
                 included_root, self._resolved_xmlschema_version or self._resolve_xmlschema_version(included_root)
@@ -631,7 +780,7 @@ class _XMLSchemaConverter:
                 used_names.add(candidate)
 
     def _build_definitions(self) -> dict[str, JsonSchema]:
-        definitions: dict[str, JsonSchema] = {}
+        definitions = self._definitions
         for key in sorted(self.simple_types, key=self._sort_key):
             definition_key = self._type_definition_key(key)
             definitions[self._definition_name(definition_key)] = self._build_definition(definition_key)
@@ -744,7 +893,7 @@ class _XMLSchemaConverter:
             schema["default"] = self._parse_literal(str(element.get("default")), schema, parse_temporal=True)
         if "fixed" in element.attrib:
             self._apply_fixed_value(schema, self._parse_literal(str(element.get("fixed")), schema))
-        if element.get("nillable") == "true":
+        if element.get("nillable") in {"true", "1"}:
             schema = self._make_nullable(schema)
         if element.get("abstract") == "true":
             schema["x-xsd-abstract"] = True
@@ -785,6 +934,7 @@ class _XMLSchemaConverter:
         return array_schema
 
     def _convert_simple_type(self, simple_type: ET.Element) -> JsonSchema:
+        schema: JsonSchema
         if (restriction := _first_xsd_child(simple_type, "restriction")) is not None:
             base_schema = self._restriction_base_schema(restriction)
             schema = self._apply_restriction_facets(restriction, base_schema)
@@ -823,18 +973,26 @@ class _XMLSchemaConverter:
     def _apply_restriction_facets(self, restriction: ET.Element, schema: JsonSchema) -> JsonSchema:  # noqa: PLR0912
         schema = _copy_schema(schema)
         enum_values: list[Any] = []
+        base_pattern = schema.get("pattern")
+        first_pattern: str | None = None
+        patterns: dict[str, None] | None = None
         for facet in restriction:
             if _namespace(facet.tag) != XML_SCHEMA_NAMESPACE:
                 continue
-            name = _local_name(facet.tag)
             value = facet.get("value")
             if value is None:
                 continue
-            match name:
+            match _local_name(facet.tag):
                 case "enumeration":
                     enum_values.append(self._parse_literal(value, schema))
                 case "pattern":
                     if _is_supported_pattern(value):
+                        if first_pattern is None:
+                            first_pattern = value
+                        elif value != first_pattern:
+                            if patterns is None:
+                                patterns = {first_pattern: None}
+                            patterns[value] = None
                         schema["pattern"] = value
                 case "length":
                     self._set_length(schema, value, same=True)
@@ -858,6 +1016,11 @@ class _XMLSchemaConverter:
                     schema["x-xsd-totalDigits"] = _safe_int(value)
                 case "fractionDigits":
                     schema["x-xsd-fractionDigits"] = _safe_int(value)
+        if patterns is not None:
+            # Match the full XSD value; the lookahead also selects Pydantic's Python regex engine.
+            schema["pattern"] = rf"(?=\A)(?:{'|'.join(patterns)})\Z"
+        if first_pattern is not None and base_pattern is not None and base_pattern != schema["pattern"]:
+            schema["pattern"] = rf"(?=\A(?:{base_pattern})\Z)(?:{schema['pattern']})\Z"
         if enum_values:
             schema["enum"] = enum_values
         return schema
@@ -888,7 +1051,7 @@ class _XMLSchemaConverter:
             case "number" if schema.get("format") == "decimal":
                 parsed = _safe_decimal(value)
             case "number":
-                parsed = _safe_float(value)
+                parsed = _safe_float(value, source_safe_non_finite=self.source_safe_non_finite)
             case "boolean":
                 parsed = _safe_bool(value)
             case _:
@@ -922,12 +1085,16 @@ class _XMLSchemaConverter:
         item_schema = items if isinstance(items, dict) else STRING_SCHEMA
         return [self._parse_literal(item, item_schema, parse_temporal=parse_temporal) for item in value.split()]
 
-    def _parse_number(self, value: str, schema: JsonSchema) -> int | float | Decimal | str:  # noqa: PLR6301
+    def _parse_number(self, value: str, schema: JsonSchema) -> int | float | Decimal | str:
         if schema.get("type") == "integer":
             return integer if (integer := _safe_int(value)) is not None else value
         if schema.get("format") == "decimal":
             return decimal if (decimal := _safe_decimal(value)) is not None else value
-        return number if (number := _safe_float(value)) is not None else value
+        return (
+            number
+            if (number := _safe_float(value, source_safe_non_finite=self.source_safe_non_finite)) is not None
+            else value
+        )
 
     @staticmethod
     def _is_numeric_schema(schema: JsonSchema) -> bool:
@@ -998,9 +1165,40 @@ class _XMLSchemaConverter:
     def _has_explicit_content(owner: ET.Element) -> bool:
         return _first_xsd_child(owner, "sequence", "all", "choice", "group") is not None
 
+    def _inherited_simple_content_schema(self, child: ET.Element, owner: ET.Element) -> JsonSchema | None:
+        """Copy only generated simple-content objects, preserving the ordinary scalar path."""
+        if not (base := child.get("base")) or self._qname_namespace(base, child) == XML_SCHEMA_NAMESPACE:
+            return None
+        base_key = self._resolve_key(base, self.simple_types, self.complex_types, element=child)
+        base_type = self.complex_types.get(base_key)
+        if base_type is None or _first_xsd_child(base_type, "simpleContent") is None:
+            return None
+        if base_type is owner and (original := self._redefined_base_complex_types.get(base_key)) is not None:
+            return _copy_schema(self._convert_complex_type(original))
+        definition_key = self._type_definition_key(base_key)
+        if definition_key in self._building_definitions:
+            return None
+        schema = _copy_schema(self._build_definition(definition_key))
+        schema.pop("title", None)
+        return schema
+
+    def _inherited_content_restriction(self, child: ET.Element, value_schema: JsonSchema) -> JsonSchema:
+        """Apply derived facets to the scalar behind an inherited named simple type."""
+        if (simple_type := _first_xsd_child(child, "simpleType")) is not None:
+            return self._convert_simple_type(simple_type)
+        if (ref := value_schema.get("$ref")) and (
+            resolved := self._definitions.get(ref.removeprefix("#/definitions/"))
+        ) is not None:
+            value_schema = _copy_schema(resolved)
+            value_schema.pop("title", None)
+        return value_schema
+
     def _convert_simple_content(self, simple_content: ET.Element, owner: ET.Element) -> JsonSchema:
         child = _first_xsd_child(simple_content, "extension", "restriction")
-        if child is None:
+        inherited = self._inherited_simple_content_schema(child, owner) if child is not None else None
+        if inherited is not None:
+            value_schema = inherited["properties"]["value"]
+        elif child is None:
             value_schema = _copy_schema(STRING_SCHEMA)
         elif base := child.get("base"):
             value_schema = self._schema_for_qname(base, child)
@@ -1009,12 +1207,19 @@ class _XMLSchemaConverter:
         else:
             value_schema = _copy_schema(STRING_SCHEMA)
         if child is not None and _local_name(child.tag) == "restriction":
+            if inherited is not None:
+                value_schema = self._inherited_content_restriction(child, value_schema)
             value_schema = self._apply_restriction_facets(child, value_schema)
 
-        schema: JsonSchema = {"type": "object", "properties": {"value": value_schema}, "required": ["value"]}
-        self._apply_attributes(owner, schema)
+        if inherited is None:
+            schema: JsonSchema = {"type": "object", "properties": {"value": value_schema}, "required": ["value"]}
+        else:
+            schema = inherited
+            schema["properties"]["value"] = value_schema
+        inherited_required = frozenset(schema["required"]) if inherited is not None else None
+        self._apply_attributes(owner, schema, inherited_required=inherited_required)
         if child is not None:
-            self._apply_attributes(child, schema)
+            self._apply_attributes(child, schema, inherited_required=inherited_required)
         return schema
 
     def _apply_model_group(
@@ -1162,19 +1367,26 @@ class _XMLSchemaConverter:
         if occurrence.required and element.get("minOccurs", "1") != "0":
             schema.setdefault("required", []).append(name)
 
-    def _apply_attributes(self, owner: ET.Element, schema: JsonSchema) -> None:
+    def _apply_attributes(
+        self, owner: ET.Element, schema: JsonSchema, *, inherited_required: frozenset[str] | None = None
+    ) -> None:
         for child in owner:
             if _is_xsd_element(child, "attribute"):
-                self._add_attribute(child, schema)
+                if inherited_required is not None and child.get("use") == "prohibited":
+                    name = child.get("name") or _local_name(child.get("ref", ""))
+                    schema.get("properties", {}).pop(name, None)
+                self._add_attribute(child, schema, inherited_required=inherited_required)
             elif _is_xsd_element(child, "attributeGroup"):
-                self._apply_attribute_group(child, schema)
+                self._apply_attribute_group(child, schema, inherited_required=inherited_required)
             elif _is_xsd_element(child, "anyAttribute"):
                 schema["additionalProperties"] = True
 
-    def _apply_attribute_group(self, attribute_group: ET.Element, schema: JsonSchema) -> None:
+    def _apply_attribute_group(
+        self, attribute_group: ET.Element, schema: JsonSchema, *, inherited_required: frozenset[str] | None = None
+    ) -> None:
         ref = attribute_group.get("ref")
         if not ref:
-            self._apply_attributes(attribute_group, schema)
+            self._apply_attributes(attribute_group, schema, inherited_required=inherited_required)
             return
         target_key = self._resolve_key(ref, self.attribute_groups, element=attribute_group)
         target = self.attribute_groups.get(target_key)
@@ -1185,12 +1397,14 @@ class _XMLSchemaConverter:
             if not already_active:
                 self._active_attribute_groups.add(target_key)
             try:
-                self._apply_attributes(target, schema)
+                self._apply_attributes(target, schema, inherited_required=inherited_required)
             finally:
                 if not already_active:
                     self._active_attribute_groups.remove(target_key)
 
-    def _add_attribute(self, attribute: ET.Element, schema: JsonSchema) -> None:
+    def _add_attribute(
+        self, attribute: ET.Element, schema: JsonSchema, *, inherited_required: frozenset[str] | None = None
+    ) -> None:
         if attribute.get("use") == "prohibited":
             return
         ref = attribute.get("ref")
@@ -1202,6 +1416,7 @@ class _XMLSchemaConverter:
         name = attribute.get("name") or source_attribute.get("name") or _local_name(ref or "")
         if not name:
             return
+        use = attribute.get("use") or source_attribute.get("use")
         if type_name := attribute.get("type") or source_attribute.get("type"):
             attribute_schema = self._schema_for_qname(type_name, attribute)
         else:
@@ -1223,7 +1438,7 @@ class _XMLSchemaConverter:
         if fixed is not None:
             self._apply_fixed_value(attribute_schema, self._parse_literal(fixed, attribute_schema))
         schema.setdefault("properties", {})[name] = attribute_schema
-        if (attribute.get("use") or source_attribute.get("use")) == "required":
+        if use == "required" and (inherited_required is None or name not in inherited_required):
             schema.setdefault("required", []).append(name)
 
     @staticmethod
@@ -1232,9 +1447,10 @@ class _XMLSchemaConverter:
         schema: JsonSchema,
         *additional_owners: ET.Element,
     ) -> None:
-        if not any(candidate.get("mixed") == "true" for candidate in (owner, *additional_owners)):
-            return
-        schema.setdefault("properties", {}).setdefault("value", _copy_schema(STRING_SCHEMA))
+        for candidate in (owner, *additional_owners):
+            if candidate.get("mixed") == "true":
+                schema.setdefault("properties", {})["value"] = _copy_schema(STRING_SCHEMA)
+                return
 
     def _schema_for_substitution_group(self, head_key: QNameKey) -> JsonSchema | None:
         member_keys = self.substitution_groups.get(head_key)
@@ -1255,12 +1471,12 @@ class _XMLSchemaConverter:
     def _combine_max_items(self, parent_max_items: int | None, max_occurs: str | None) -> int | None:  # noqa: PLR6301
         if max_occurs is None:
             return parent_max_items
-        if max_occurs == UNBOUNDED:
+        if max_occurs == UNBOUNDED or parent_max_items is None:
             return None
         max_items = _safe_int(max_occurs)
         if max_items is None:
             return parent_max_items
-        return parent_max_items * max_items if parent_max_items is not None else max_items
+        return parent_max_items * max_items
 
     def _combine_min_items(self, parent_min_items: int | None, min_occurs: str | None) -> int | None:  # noqa: PLR6301
         if min_occurs is None:
@@ -1277,13 +1493,16 @@ class _XMLSchemaConverter:
         min_items: int | None,
         max_items: int | None,
     ) -> JsonSchema:
-        if schema.get("type") != "array" or not schema.get(INTERNAL_OCCURS_ARRAY):
+        occurs_array = schema.get("type") == "array" and schema.get(INTERNAL_OCCURS_ARRAY)
+        if not occurs_array:
             array_schema: JsonSchema = {"type": "array", "items": schema, INTERNAL_OCCURS_ARRAY: True}
         else:
             array_schema = _copy_schema(schema)
         if min_items is not None:
             self._set_repeated_bound(array_schema, "minItems", min_items)
-        if max_items is not None:
+        if max_items is None:
+            array_schema.pop("maxItems", None)
+        elif not occurs_array or "maxItems" in array_schema:
             self._set_repeated_bound(array_schema, "maxItems", max_items)
         return array_schema
 
@@ -1405,6 +1624,7 @@ class XMLSchemaParser(JsonSchemaParser):
     """Parse XML Schema documents by converting them to JSON Schema first."""
 
     _config_class_name = "XMLSchemaParserConfig"
+    _cache_parsed_sources_from_path: ClassVar[bool] = True
 
     def __init__(
         self,
@@ -1424,9 +1644,24 @@ class XMLSchemaParser(JsonSchemaParser):
                 config = config.model_copy(update=config_updates)
         super().__init__(source=source, config=config, **options)
 
-    def parse(self, *args: Any, **kwargs: Any) -> str | dict[tuple[str, ...], Any]:
-        """Parse XML Schema and add imports for non-finite float literals."""
-        return apply_math_imports_to_parse_result(super().parse(*args, **kwargs))
+    def _source_from_xml_path(self, path: Path) -> Source:
+        relative_path = path.relative_to(self.base_path)
+        if not self._use_parsed_source_cache:
+            return Source(path=relative_path, text=_read_xml_text(path, self.encoding))
+
+        config = cast("XMLSchemaParserConfig", self.config)
+        return Source(
+            path=relative_path,
+            raw_data=_load_xml_schema_data_from_path(
+                path,
+                self.base_path,
+                self.encoding,
+                xmlschema_version=config.xmlschema_version,
+                schema_version_mode=config.schema_version_mode,
+                use_xmlschema_datetime_default=self.use_xmlschema_datetime_default,
+                source_safe_non_finite=True,
+            ),
+        )
 
     @property
     def iter_source(self) -> Iterator[Source]:
@@ -1436,15 +1671,12 @@ class XMLSchemaParser(JsonSchemaParser):
                 if path.is_dir():  # pragma: no cover
                     for file_path in sorted(path.rglob("*"), key=lambda item: item.name):
                         if file_path.is_file():
-                            yield Source(
-                                path=file_path.relative_to(self.base_path),
-                                text=_read_xml_text(file_path, self.encoding),
-                            )
+                            yield self._source_from_xml_path(file_path)
                 else:
-                    yield Source(path=path.relative_to(self.base_path), text=_read_xml_text(path, self.encoding))
+                    yield self._source_from_xml_path(path)
             case list() as paths:  # pragma: no cover
                 for path in paths:
-                    yield Source(path=path.relative_to(self.base_path), text=_read_xml_text(path, self.encoding))
+                    yield self._source_from_xml_path(path)
             case _:
                 yield from super().iter_source
 
@@ -1458,17 +1690,21 @@ class XMLSchemaParser(JsonSchemaParser):
                 xmlschema_version=config.xmlschema_version,
                 schema_version_mode=config.schema_version_mode,
                 use_xmlschema_datetime_default=self.use_xmlschema_datetime_default,
+                source_safe_non_finite=True,
             )
         )
-        self._append_python_expression_imports()
+        self._register_runtime_expression_imports()
 
-    def _append_python_expression_imports(self) -> None:
+    def _register_runtime_expression_imports(self) -> None:
+        """Prepare XML expressions once so repeated field import collection stays constant time."""
+        # Share immutable expressions within this generation without retaining schemas in a global cache.
+        prepared_patterns: dict[str, PythonRuntimeExpression] = {}
         for model in self.results:
-            imports = tuple(
-                import_ for field in model.fields for import_ in _collect_python_expression_imports(field.default)
-            )
-            if imports:
-                model._additional_imports.extend(imports)  # noqa: SLF001
+            for field in model.fields:
+                field._set_runtime_expression_imports(_collect_python_expression_imports(field.default))  # noqa: SLF001
+                if (prepare_patterns := field.PREPARE_PYTHON_PATTERNS) is not None:
+                    # Only combined XSD patterns use this prefix; single patterns keep their existing representation.
+                    prepare_patterns(field, r"(?=\A", prepared_patterns)
 
 
 __all__ = ["XMLSchemaParser", "convert_xml_schema_data", "detect_xmlschema_version", "is_xml_schema_text"]

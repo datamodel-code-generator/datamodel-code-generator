@@ -1,0 +1,4 @@
+complete: sent ['204']; calls ["upload(b'file body', str)"]; files closed [True]
+parse error: sent ['400']; calls []; files closed []
+anyio cancellation in the file headers: cancelled True, sent []; calls []; files closed []
+anyio cancellation in the file body: cancelled True, sent []; calls []; files closed []

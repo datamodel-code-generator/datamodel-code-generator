@@ -8,20 +8,33 @@ import sys
 import tokenize
 from collections import defaultdict
 from enum import IntEnum
+from functools import cache
 from io import StringIO
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard, cast
 
+from datamodel_code_generator._format_types import PythonVersionMin
+from datamodel_code_generator._target_unicode import (
+    NEWEST_TARGET,
+    HostIdentifiers,
+    host_identifiers,
+    is_upper,
+    lower,
+    target_pattern,
+)
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
     from typing import Protocol
 
-    class PythonVersion(Protocol):
-        @property
-        def version_key(self) -> tuple[int, int]:
-            raise NotImplementedError
+    from datamodel_code_generator._format_types import PythonVersion
+
+    class _SourceLocationNode(Protocol):
+        lineno: int
+        end_lineno: int | None
+        col_offset: int
+        end_col_offset: int | None
 
 
 class _AliasSortCategory(IntEnum):
@@ -38,6 +51,16 @@ class _ImportCategory(IntEnum):
     LOCAL = 4
 
 
+class _ImportNames(NamedTuple):
+    """How import sorting reads names: with lent letters given back, by the case rules of the target."""
+
+    restore: Callable[[str], str] = str
+    python_version: PythonVersion | None = None
+
+
+_PLAIN_NAMES = _ImportNames()
+
+
 DEFAULT_LINE_LENGTH = 88
 DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
 MAX_TOP_LEVEL_BLANK_LINES = 2
@@ -46,7 +69,23 @@ LONG_TARGET_PREFIX_LENGTH = 30
 TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
 STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
 PEP695_TYPE_ALIAS_START_PATTERN = re.compile(r"^(?P<indent>\s*)type\s+(?P<target>[A-Za-z_]\w*(?:\[.*?\])?)\s*=")
+_PEP695_IDENTIFIER_TYPE_ALIAS_START = r"^(?P<indent>\s*)type\s+(?P<target>(?#identifier)(?:\[.*?\])?)\s*="
 PEP695_TYPE_ALIAS_PLACEHOLDER = "__datamodel_codegen_builtin_type_alias__"
+_SOURCE_LINES_CACHE: list[tuple[str, list[str]]] = []
+
+
+def _split_python_lines(source: str) -> list[str]:
+    """Split physical Python lines while preserving Unicode separators."""
+    if not source:
+        return []
+    if "\r" in source:
+        source = source.replace("\r\n", "\n").replace("\r", "\n")
+
+    lines = source.split("\n")
+    if lines[-1]:
+        return lines
+    lines.pop()
+    return lines
 
 
 def _is_valid_builtin_line_length(line_length: Any) -> TypeGuard[int]:
@@ -150,15 +189,16 @@ def _alias_imported_name(alias: str) -> str:
     return alias
 
 
-def _alias_sort_key(alias: str) -> tuple[_AliasSortCategory, str]:
-    name = _alias_imported_name(alias)
-    if name.isupper():
+def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_AliasSortCategory, str]:
+    name = names.restore(_alias_imported_name(alias))
+    target = names.python_version
+    if len(name) > 1 and is_upper(name, target):
         category = _AliasSortCategory.CONSTANT
-    elif name[:1].isupper():
+    elif is_upper(name[:1], target):
         category = _AliasSortCategory.CLASS
     else:
         category = _AliasSortCategory.OTHER
-    return category, name.lower()
+    return category, lower(name, target)
 
 
 def _format_from_import(module: str, aliases: list[str], line_length: int) -> str:
@@ -169,13 +209,24 @@ def _format_from_import(module: str, aliases: list[str], line_length: int) -> st
     return f"from {module} import (\n{imports}\n)"
 
 
-def _import_category(module: str, level: int, known_first_party: frozenset[str]) -> _ImportCategory:
+@cache
+def _stdlib_module_names(python_version: PythonVersion | None) -> frozenset[str]:
+    """Return the top-level standard library module names of the target Python version."""
+    from datamodel_code_generator import _target_stdlib_data as data  # noqa: PLC0415
+
+    index = data.TARGETS.index((python_version or PythonVersionMin).value)
+    return frozenset(name for name, (since, until) in data.STDLIB_MODULE_NAMES.items() if since <= index < until)
+
+
+def _import_category(
+    module: str, level: int, known_first_party: frozenset[str], python_version: PythonVersion | None = None
+) -> _ImportCategory:
     if module == "__future__":
         return _ImportCategory.FUTURE
     if level:
         return _ImportCategory.LOCAL
     top_level_module = module.split(".", 1)[0]
-    if top_level_module in sys.stdlib_module_names:
+    if top_level_module in _stdlib_module_names(python_version):
         return _ImportCategory.STANDARD_LIBRARY
     if top_level_module in known_first_party:
         return _ImportCategory.FIRST_PARTY
@@ -189,11 +240,22 @@ def _has_inline_comment(lines: list[str], node: ast.AST) -> bool:
 
 
 def _has_comment_token(line: str) -> bool:
+    if "#" not in line:
+        return False
     try:
         tokens = tokenize.generate_tokens(StringIO(line).readline)
         return any(token.type == tokenize.COMMENT for token in tokens)
     except tokenize.TokenError:
         return "#" in line
+
+
+def _pep695_type_alias_start(line: str) -> re.Match[str] | None:
+    """Match the start of a type statement named with any identifier, or the letters lent for its characters."""
+    return (
+        PEP695_TYPE_ALIAS_START_PATTERN
+        if line.isascii()
+        else target_pattern(_PEP695_IDENTIFIER_TYPE_ALIAS_START, NEWEST_TARGET)
+    ).match(line)
 
 
 def _needs_pep695_type_alias_placeholders(python_version: PythonVersion | None) -> bool:
@@ -222,12 +284,12 @@ def _pep695_type_alias_statement_end(lines: list[str], start_index: int) -> int:
 
 
 def _replace_pep695_type_aliases_with_placeholders(code: str) -> str:
-    lines = code.splitlines()
+    lines = _split_python_lines(code)
     placeholder_lines = list(lines)
     line_index = 0
     while line_index < len(lines):
         line = lines[line_index]
-        if not PEP695_TYPE_ALIAS_START_PATTERN.match(line):
+        if not _pep695_type_alias_start(line):
             line_index += 1
             continue
 
@@ -240,65 +302,75 @@ def _replace_pep695_type_aliases_with_placeholders(code: str) -> str:
     return "\n".join(placeholder_lines)
 
 
-def _parse_builtin_code(code: str, python_version: PythonVersion | None) -> ast.Module | None:
+def _parse_builtin_code_with_source_validity(
+    code: str,
+    python_version: PythonVersion | None,
+) -> tuple[ast.Module | None, bool]:
     feature_version = python_version.version_key if python_version is not None else None
     try:
-        return ast.parse(code, feature_version=feature_version)
+        return ast.parse(code, feature_version=feature_version), True
     except SyntaxError:
         if not _needs_pep695_type_alias_placeholders(python_version):
-            return None
+            return None, False
 
     placeholder_code = _replace_pep695_type_aliases_with_placeholders(code)
     if placeholder_code == code:
-        return None
+        return None, False
     try:
-        return ast.parse(placeholder_code, feature_version=feature_version)
+        return ast.parse(placeholder_code, feature_version=feature_version), False
     except SyntaxError:
-        return None
+        return None, False
+
+
+def _parse_builtin_code(code: str, python_version: PythonVersion | None) -> ast.Module | None:
+    return _parse_builtin_code_with_source_validity(code, python_version)[0]
 
 
 def _format_import_node_without_reordering(
     node: ast.Import | ast.ImportFrom,
     lines: list[str],
     known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
     end_lineno = node.end_lineno or node.lineno
     raw_import = "\n".join(lines[node.lineno - 1 : end_lineno])
-    return _import_node_category(node, known_first_party), raw_import
+    return _import_node_category(node, known_first_party, names), raw_import
 
 
-def _import_node_category(node: ast.Import | ast.ImportFrom, known_first_party: frozenset[str]) -> _ImportCategory:
+def _import_node_category(
+    node: ast.Import | ast.ImportFrom, known_first_party: frozenset[str], names: _ImportNames = _PLAIN_NAMES
+) -> _ImportCategory:
     match node:
         case ast.Import():
-            return min(_import_category(alias.name, 0, known_first_party) for alias in node.names)
+            return min(
+                _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
+                for alias in node.names
+            )
         case ast.ImportFrom():
-            return _import_category(node.module or "", node.level, known_first_party)
+            return _import_category(
+                names.restore(node.module or ""), node.level, known_first_party, names.python_version
+            )
     msg = f"Unsupported import node: {type(node).__name__}"
     raise TypeError(msg)
 
 
 def _format_import_node(
-    node: ast.Import | ast.ImportFrom,
+    node: ast.ImportFrom,
     line_length: int,
     known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
-    category = _import_node_category(node, known_first_party)
-    match node:
-        case ast.Import():
-            lines = [f"import {_format_alias(alias)}" for alias in sorted(node.names, key=lambda alias: alias.name)]
-            return category, "\n".join(lines)
-        case ast.ImportFrom():
-            module = "." * node.level + (node.module or "")
-            if any(alias.asname is not None for alias in node.names):
-                lines = [
-                    _format_from_import(module, [_format_alias(alias)], line_length)
-                    for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias)))
-                ]
-                return category, "\n".join(lines)
+    category = _import_node_category(node, known_first_party, names)
+    module = "." * node.level + (node.module or "")
+    if any(alias.asname is not None for alias in node.names):
+        lines = [
+            _format_from_import(module, [_format_alias(alias)], line_length)
+            for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
+        ]
+        return category, "\n".join(lines)
 
-            aliases = sorted((_format_alias(alias) for alias in node.names), key=_alias_sort_key)
-            return category, _format_from_import(module, aliases, line_length)
-    raise AssertionError  # pragma: no cover
+    aliases = sorted((_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names))
+    return category, _format_from_import(module, aliases, line_length)
 
 
 def _from_import_key(node: ast.ImportFrom) -> tuple[int, str]:
@@ -321,12 +393,15 @@ def _iter_aliased_from_import_lines(
     module: str,
     aliases: list[tuple[int, str, bool]],
     line_length: int,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> Iterator[str]:
-    sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1]))
+    """Keep aliased names, and plain names also imported under an alias, on their own lines like isort."""
+    sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1], names))
+    renamed = {_alias_imported_name(alias) for _, alias, is_aliased in aliases if is_aliased}
     chunk: list[str] = []
     chunk_group: int | None = None
     for group_index, alias, is_aliased in sorted_aliases:
-        if is_aliased:
+        if is_aliased or alias in renamed:
             if chunk:
                 yield _format_from_import(module, chunk, line_length)
                 chunk = []
@@ -344,16 +419,19 @@ def _iter_aliased_from_import_lines(
         yield _format_from_import(module, chunk, line_length)
 
 
-def _import_line_sort_key(line: str) -> tuple[int, int, str, int, str, str]:
+def _import_line_sort_key(line: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[int, int, str, int, str, str]:
+    line = names.restore(line)
+    target = names.python_version
     if not line.startswith("from "):
-        return 0, 0, line.lower(), 0, "", line
+        return 0, 0, lower(line, target), 0, "", line
 
     module, _, imported = line.removeprefix("from ").partition(" import ")
     relative_level = len(module) - len(module.lstrip("."))
-    alias_category, alias_name = _alias_sort_key(imported.split(",", 1)[0].strip())
+    alias_category, alias_name = _alias_sort_key(imported.split(",", 1)[0].strip(), names)
+    line_key = lower(line, target)
     if relative_level:
-        return 1, -relative_level, module[relative_level:].lower(), int(alias_category), alias_name, line.lower()
-    return 1, 0, module.lower(), int(alias_category), alias_name, line.lower()
+        return 1, -relative_level, lower(module[relative_level:], target), int(alias_category), alias_name, line_key
+    return 1, 0, lower(module, target), int(alias_category), alias_name, line_key
 
 
 def _build_builtin_import_block(
@@ -361,6 +439,7 @@ def _build_builtin_import_block(
     line_length: int,
     lines: list[str],
     known_first_party: frozenset[str],
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> str:
     categorized_lines: defaultdict[_ImportCategory, set[str]] = defaultdict(set)
     grouped_from_imports: defaultdict[tuple[_ImportCategory, int, str], set[str]] = defaultdict(set)
@@ -369,13 +448,15 @@ def _build_builtin_import_block(
 
     for node_index, node in enumerate(import_nodes):
         if _has_inline_comment(lines, node):
-            category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party)
+            category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party, names)
             categorized_lines[category].add(raw_import)
             continue
 
         if isinstance(node, ast.ImportFrom) and _from_import_key(node) in aliased_modules:
             module = "." * node.level + (node.module or "")
-            category = _import_category(node.module or "", node.level, known_first_party)
+            category = _import_category(
+                names.restore(node.module or ""), node.level, known_first_party, names.python_version
+            )
             for alias in node.names:
                 aliased_from_imports[category, node.level, module].append((
                     node_index,
@@ -386,22 +467,30 @@ def _build_builtin_import_block(
 
         if isinstance(node, ast.ImportFrom) and _can_merge_from_imports(node, aliased_modules):
             module = node.module or ""
-            category = _import_category(module, node.level, known_first_party)
+            category = _import_category(names.restore(module), node.level, known_first_party, names.python_version)
             for alias in node.names:
                 grouped_from_imports[category, node.level, module].add(_format_alias(alias))
             continue
 
-        category, import_line = _format_import_node(node, line_length, known_first_party)
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
+                categorized_lines[category].add(f"import {_format_alias(alias)}")
+            continue
+
+        category, import_line = _format_import_node(node, line_length, known_first_party, names)
         categorized_lines[category].add(import_line)
 
     for (category, _level, module), aliases in grouped_from_imports.items():
-        categorized_lines[category].add(_format_from_import(module, sorted(aliases, key=_alias_sort_key), line_length))
+        categorized_lines[category].add(
+            _format_from_import(module, sorted(aliases, key=lambda alias: _alias_sort_key(alias, names)), line_length)
+        )
     for (category, _level, module), aliases in aliased_from_imports.items():
-        for import_line in _iter_aliased_from_import_lines(module, aliases, line_length):
+        for import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
             categorized_lines[category].add(import_line)
 
     groups = [
-        "\n".join(sorted(categorized_lines[category], key=_import_line_sort_key))
+        "\n".join(sorted(categorized_lines[category], key=lambda line: _import_line_sort_key(line, names)))
         for category in sorted(categorized_lines)
     ]
     return "\n\n".join(group for group in groups if group)
@@ -417,8 +506,70 @@ def _is_type_checking_if(node: ast.AST) -> TypeGuard[ast.If]:
     return isinstance(node, ast.If) and _is_name_or_attr(node.test, "TYPE_CHECKING")
 
 
+def _splitlines_no_ff(source: str) -> list[str]:
+    """Split source lines like the Python parser, without form-feed splitting."""
+    index = 0
+    lines: list[str] = []
+    next_line = ""
+    while index < len(source):
+        character = source[index]
+        next_line += character
+        index += 1
+
+        if character == "\r" and index < len(source) and source[index] == "\n":
+            next_line += "\n"
+            index += 1
+        if character in "\r\n":
+            lines.append(next_line)
+            next_line = ""
+
+    if next_line:
+        lines.append(next_line)
+    return lines
+
+
+def _source_lines(source: str) -> list[str]:
+    if _SOURCE_LINES_CACHE:
+        cached_source, cached_lines = _SOURCE_LINES_CACHE[0]
+        if source is cached_source or source == cached_source:
+            return cached_lines
+
+    lines = _splitlines_no_ff(source)
+    _SOURCE_LINES_CACHE[:] = [(source, lines)]
+    return lines
+
+
+def _source_segment_from_cached_lines(source: str, node: ast.AST) -> str | None:
+    if not (
+        hasattr(node, "lineno")
+        and hasattr(node, "end_lineno")
+        and hasattr(node, "col_offset")
+        and hasattr(node, "end_col_offset")
+    ):
+        return None
+
+    location_node = cast("_SourceLocationNode", node)
+    lineno = location_node.lineno
+    end_lineno = location_node.end_lineno
+    col_offset = location_node.col_offset
+    end_col_offset = location_node.end_col_offset
+    if end_lineno is None or end_col_offset is None:
+        return None
+
+    lineno -= 1
+    end_lineno -= 1
+
+    lines = _source_lines(source)
+    if end_lineno == lineno:
+        return lines[lineno].encode()[col_offset:end_col_offset].decode()
+
+    first = lines[lineno].encode()[col_offset:].decode()
+    last = lines[end_lineno].encode()[:end_col_offset].decode()
+    return "".join([first, *lines[lineno + 1 : end_lineno], last])
+
+
 def _source_segment(source: str, node: ast.AST) -> str:
-    return ast.get_source_segment(source, node) or ast.unparse(node)
+    return _source_segment_from_cached_lines(source, node) or ast.unparse(node)
 
 
 def _inline_source_segment(source: str, node: ast.AST) -> str:
@@ -433,15 +584,43 @@ def _format_call_argument(keyword: ast.keyword, source: str) -> str:
     return f"{keyword.arg}={_inline_source_segment(source, keyword.value)}"
 
 
+def _format_nested_literal(
+    node: ast.AST,
+    indent: str,
+    source: str,
+    line_length: int,
+    *,
+    preserve_dict_trailing_comma: bool = False,
+) -> str | None:
+    match node:
+        case ast.Dict(keys=[_, *_]):
+            return _format_dict_literal(
+                node,
+                indent,
+                source,
+                line_length,
+                preserve_trailing_comma=preserve_dict_trailing_comma,
+            )
+        case ast.Tuple(elts=[_, *_]):
+            return _format_tuple_literal(node, indent, source, line_length)
+        case ast.Subscript() if _is_mapping_of_annotated(node):
+            return _format_subscript_value(node, indent, line_length, source)
+    return None
+
+
 def _format_dict_literal(
     dict_node: ast.Dict,
     indent: str,
     source: str,
     line_length: int = DEFAULT_LINE_LENGTH,
+    *,
+    preserve_trailing_comma: bool = False,
 ) -> str:
     entries: list[str] = []
     entry_indent = f"{indent}    "
-    has_trailing_comma = len(dict_node.keys) > 1
+    has_trailing_comma = len(dict_node.keys) > 1 or (
+        preserve_trailing_comma and _source_segment(source, dict_node).rstrip()[:-1].rstrip().endswith(",")
+    )
     for key, value in zip(dict_node.keys, dict_node.values, strict=True):
         trailing_comma = "," if has_trailing_comma else ""
         if key is None:
@@ -451,14 +630,56 @@ def _format_dict_literal(
         key_source = _source_segment(source, key)
         value_source = _source_segment(source, value)
         entry = f"{entry_indent}{key_source}: {value_source}{trailing_comma}"
-        if isinstance(value, ast.Dict) and len(entry) > line_length:
-            nested_lines = _format_dict_literal(value, entry_indent, source, line_length).splitlines()
+        if (
+            len(entry) > line_length
+            and (
+                nested_literal := _format_nested_literal(
+                    value,
+                    entry_indent,
+                    source,
+                    line_length,
+                    preserve_dict_trailing_comma=preserve_trailing_comma,
+                )
+            )
+            is not None
+        ):
+            nested_lines = _split_python_lines(nested_literal)
             entries.append(f"{entry_indent}{key_source}: {nested_lines[0]}")
             entries.extend(nested_lines[1:-1])
             entries.append(f"{nested_lines[-1]}{trailing_comma}")
         else:
             entries.append(entry)
     return "{\n" + "\n".join(entries) + f"\n{indent}}}"
+
+
+def _format_tuple_literal(
+    tuple_node: ast.Tuple,
+    indent: str,
+    source: str,
+    line_length: int = DEFAULT_LINE_LENGTH,
+) -> str:
+    element_indent = f"{indent}    "
+    elements: list[str] = []
+    for element in tuple_node.elts:
+        element_source = _source_segment(source, element)
+        if "\n" not in element_source and len(f"{element_indent}{element_source},") <= line_length:
+            elements.append(f"{element_indent}{element_source},")
+            continue
+        if (
+            nested_literal := _format_nested_literal(
+                element,
+                element_indent,
+                source,
+                line_length,
+                preserve_dict_trailing_comma=True,
+            )
+        ) is None:
+            elements.append(f"{element_indent}{element_source},")
+            continue
+        nested_lines = _split_python_lines(nested_literal)
+        elements.extend(_indent_first_line(nested_lines, element_indent))
+        elements[-1] = f"{elements[-1]},"
+    return "(\n" + "\n".join(elements) + f"\n{indent})"
 
 
 def _format_list_literal(list_node: ast.List, indent: str, source: str) -> str:
@@ -609,15 +830,32 @@ def _is_datetime_module_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
 
 
 def _is_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
-    return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Annotated")
+    return isinstance(node, ast.Subscript) and (
+        _is_name_or_attr(node.value, "Annotated") or _is_name_or_attr(node.value, "Annotated_aliased")
+    )
+
+
+def _is_mapping_of_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    match node:
+        case ast.Subscript(value=value, slice=ast.Tuple(elts=[key, _])):
+            return _is_annotated(key) and any(_is_name_or_attr(value, name) for name in ("dict", "Dict", "Mapping"))
+    return False
 
 
 def _is_list_of_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "list") and _is_annotated(node.slice)
 
 
+def _is_string_constant(node: ast.AST) -> TypeGuard[ast.Constant]:
+    return isinstance(node, ast.Constant) and isinstance(node.value, str)
+
+
 def _is_union(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Union")
+
+
+def _is_optional(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Optional")
 
 
 _CONSTRAINED_CALL_NAMES = frozenset({"conbytes", "condecimal", "confloat", "conint", "conlist", "conset", "constr"})
@@ -679,10 +917,10 @@ def _can_parenthesize_field_value(annotation: ast.AST, target: str) -> bool:
 def _should_format_union_annotation(
     annotation: ast.AST,
     value: ast.AST | None,
-    target_prefix: str,
     annotation_prefix: str,
     line_length: int,
 ) -> TypeGuard[ast.BinOp]:
+    """Return whether to split a union annotation, which black does when `<annotation> = (` cannot open a value."""
     return (
         isinstance(annotation, ast.BinOp)
         and isinstance(annotation.op, ast.BitOr)
@@ -695,12 +933,8 @@ def _should_format_union_annotation(
             )
             or _contains_list_of_annotated(annotation)
             or (
-                len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
-                and len(target_prefix) > LONG_TARGET_PREFIX_LENGTH
-                and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
-            )
-            or (
                 len(f"{annotation_prefix} = (") > line_length
+                and len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
                 and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
             )
         )
@@ -723,6 +957,9 @@ def _format_bit_or_element(
     element_source = _source_segment(source, element)
     if not isinstance(element, ast.Subscript) or len(f"{indent}{prefix}{element_source}") <= line_length:
         return [f"{indent}{prefix}{element_source}"]
+    if _is_mapping_of_annotated(element):
+        lines = _split_python_lines(_format_subscript_value(element, indent, line_length, source))
+        return list(_indent_first_line(lines, f"{indent}{prefix}"))
 
     value = _source_segment(source, element.value)
     elements = _iter_subscript_elements(element)
@@ -871,25 +1108,28 @@ def _format_annotated(  # noqa: PLR0913
     wrap_string_literal: bool = False,
 ) -> str:
     continuation_indent = f"{indent}    "
+    name = _source_segment(source, annotation.value)
     inline_elements = [_source_segment(source, element) for element in _iter_subscript_elements(annotation)]
     joined_elements = ", ".join(inline_elements)
     if len(f"{continuation_indent}{joined_elements}") <= line_length:
-        return f"Annotated[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
+        return f"{name}[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
 
-    formatted_lines: list[str] = ["Annotated["]
+    formatted_lines: list[str] = [f"{name}["]
     for element in _iter_subscript_elements(annotation):
         if _is_call(element, "Field") or _is_call(element, "Meta"):
             inline_field = _source_segment(source, element)
             if len(f"{continuation_indent}{inline_field},") <= line_length:
                 formatted_lines.append(f"{continuation_indent}{inline_field},")
                 continue
-            call_lines = _format_call(
-                element,
-                continuation_indent,
-                line_length,
-                source,
-                wrap_string_literal=wrap_string_literal,
-            ).splitlines()
+            call_lines = _split_python_lines(
+                _format_call(
+                    element,
+                    continuation_indent,
+                    line_length,
+                    source,
+                    wrap_string_literal=wrap_string_literal,
+                )
+            )
             call_lines[-1] = f"{call_lines[-1]},"
             formatted_lines.extend(_indent_first_line(call_lines, continuation_indent))
         else:
@@ -901,6 +1141,16 @@ def _format_annotated(  # noqa: PLR0913
 def _config_dict_assignment(statement: ast.stmt) -> tuple[ast.Assign, ast.Call] | None:
     if isinstance(statement, ast.Assign) and len(statement.targets) == 1 and _is_call(statement.value, "ConfigDict"):
         return statement, statement.value
+    return None
+
+
+def _classvar_tuple_value(statement: ast.AnnAssign) -> ast.Tuple | None:
+    match statement:
+        case ast.AnnAssign(
+            annotation=ast.Subscript(value=class_var),
+            value=ast.Tuple() as value,
+        ) if _is_name_or_attr(class_var, "ClassVar"):
+            return value
     return None
 
 
@@ -919,6 +1169,11 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
     target_prefix = f"{indent}{target}: "
     annotation_prefix = f"{target_prefix}{annotation}"
     value_prefix = f"{annotation_prefix} = "
+    if (
+        statement.lineno != (statement.end_lineno or statement.lineno)
+        and (tuple_value := _classvar_tuple_value(statement)) is not None
+    ):
+        return f"{value_prefix}{_format_tuple_literal(tuple_value, indent, source, line_length)}"
     if statement.value is None and _is_list_of_annotated(statement.annotation):
         return f"{target_prefix}{_format_list_of_annotated(statement.annotation, indent, line_length, source)}"
     if _should_format_constrained_call_union(
@@ -984,7 +1239,6 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
     if _should_format_union_annotation(
         statement.annotation,
         statement.value,
-        target_prefix,
         annotation_prefix,
         line_length,
     ):
@@ -994,8 +1248,11 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         if len(f"{indent}) = {value}") > line_length:
             return f"{target_prefix}{formatted_annotation} = (\n{indent}    {value}\n{indent})"
         return f"{target_prefix}{formatted_annotation} = {value}"
-    if _is_union(statement.annotation) and statement.value is not None and len(annotation_prefix) > line_length:
-        value = _source_segment(source, statement.value)
+    value_opening_fits = len(f"{value_prefix}(") <= line_length
+    if _is_union(statement.annotation) and statement.value is not None and not value_opening_fits:
+        value = _format_closing_default(
+            statement.value, indent, line_length, source, wrap_string_literal=wrap_string_literal
+        )
         return (
             f"{target_prefix}"
             f"{_format_union_subscript(statement.annotation, indent, source, f' = {value}', line_length)}"
@@ -1061,11 +1318,7 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         )
         return f"{value_prefix}{formatted_value}"
     if _is_annotated(statement.annotation):
-        if (
-            statement.value is not None
-            and len(annotation_prefix) <= line_length
-            and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW
-        ):
+        if statement.value is not None and value_opening_fits and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW:
             value = _source_segment(source, statement.value)
             return f"{value_prefix}(\n{indent}    {value}\n{indent})"
         closing_suffix = "" if statement.value is None else f" = {_source_segment(source, statement.value)}"
@@ -1076,6 +1329,21 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
             source,
             closing_suffix,
             wrap_string_literal=wrap_string_literal,
+        )
+        return f"{target_prefix}{formatted_annotation}"
+    if _is_mapping_of_annotated(statement.annotation):
+        closing_suffix = "" if statement.value is None else f" = {_source_segment(source, statement.value)}"
+        formatted_annotation = _format_subscript_value(
+            statement.annotation, indent, line_length, source, closing_suffix
+        )
+        return f"{target_prefix}{formatted_annotation}"
+    if (
+        statement.value is None
+        and isinstance(statement.annotation, ast.BinOp)
+        and any(_is_mapping_of_annotated(element) for element in _iter_bit_or_elements(statement.annotation))
+    ):
+        formatted_annotation = _format_parenthesized_bit_or_annotation(
+            statement.annotation, indent, line_length, source
         )
         return f"{target_prefix}{formatted_annotation}"
     if statement.value is not None:
@@ -1105,9 +1373,17 @@ def _format_generated_class_statement(
     if (len(line) <= line_length and not config_dict_needs_formatting) or _has_comment_token(line):
         return None
 
-    if isinstance(statement, ast.FunctionDef):
-        before_arguments, _, after_open = line.partition("(")
+    if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        signature = line
+        return_annotation = ""
+        if (returns := statement.returns) is not None:
+            if returns.lineno != statement.lineno or returns.end_lineno != statement.lineno:
+                return None
+            signature = line.encode()[: returns.col_offset].decode()
+            return_annotation = line[len(signature) :]
+        before_arguments, _, after_open = signature.partition("(")
         arguments, _, suffix = after_open.rpartition(")")
+        suffix += return_annotation
         if arguments and suffix.endswith(":"):
             return f"{before_arguments}(\n{indent}    {arguments}\n{indent}){suffix}"
 
@@ -1162,7 +1438,7 @@ def _format_annotated_union(annotation: ast.BinOp, indent: str, line_length: int
         return f"(\n{indent}    {inline_union}\n{indent})"
     if _is_annotated(left):
         if len(f"{indent}    {_source_segment(source, left)}") > line_length:
-            annotated_lines = _format_annotated(left, f"{indent}    ", line_length, source).splitlines()
+            annotated_lines = _split_python_lines(_format_annotated(left, f"{indent}    ", line_length, source))
             formatted_annotated = "\n".join(_indent_first_line(annotated_lines, f"{indent}    "))
         else:
             formatted_annotated = f"{indent}    {_source_segment(source, left)}"
@@ -1181,9 +1457,26 @@ def _format_list_of_annotated(annotation: ast.Subscript, indent: str, line_lengt
     if len(f"{continuation_indent}{inline_annotated}") <= line_length:
         formatted_annotated = f"{continuation_indent}{inline_annotated}"
     else:
-        annotated_lines = _format_annotated(annotation.slice, continuation_indent, line_length, source).splitlines()
+        annotated_lines = _split_python_lines(
+            _format_annotated(annotation.slice, continuation_indent, line_length, source)
+        )
         formatted_annotated = "\n".join(_indent_first_line(annotated_lines, continuation_indent))
-    return f"list[\n{formatted_annotated}\n{indent}]"
+    return f"{_source_segment(source, annotation.value)}[\n{formatted_annotated}\n{indent}]"
+
+
+def _format_closing_default(
+    value: ast.expr,
+    indent: str,
+    line_length: int,
+    source: str,
+    *,
+    wrap_string_literal: bool,
+) -> str:
+    """Split a call default overflowing the closing line of a split subscript annotation, as black does."""
+    value_source = _source_segment(source, value)
+    if isinstance(value, ast.Call) and len(f"{indent}] = {value_source}") > line_length:
+        return _format_call(value, indent, line_length, source, wrap_string_literal=wrap_string_literal)
+    return value_source
 
 
 def _format_union_subscript(
@@ -1194,12 +1487,13 @@ def _format_union_subscript(
     line_length: int = DEFAULT_LINE_LENGTH,
 ) -> str:
     continuation_indent = f"{indent}    "
+    head = f"{_source_segment(source, union.value)}["
     elements = [_source_segment(source, element) for element in _iter_subscript_elements(union)]
     joined_elements = ", ".join(elements)
     if len(f"{continuation_indent}{joined_elements}") <= line_length:
-        return f"Union[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
+        return f"{head}\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
 
-    formatted_lines = ["Union["]
+    formatted_lines = [head]
     formatted_lines.extend(f"{continuation_indent}{element}," for element in elements)
     formatted_lines.append(f"{indent}]{closing_suffix}")
     return "\n".join(formatted_lines)
@@ -1223,18 +1517,60 @@ def _format_subscript_value(
     formatted_lines = [f"{value}["]
     for element in elements:
         element_source = _source_segment(source, element)
-        if isinstance(element, ast.BinOp) and isinstance(element.op, ast.BitOr):
+        if (
+            isinstance(element, ast.BinOp)
+            and isinstance(element.op, ast.BitOr)
+            and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
+        ):
             element_lines = _format_bit_or_elements(element, continuation_indent, line_length, source)
             if trailing_comma:
                 element_lines[-1] = f"{element_lines[-1]},"
             formatted_lines.extend(element_lines)
-        elif isinstance(element, ast.Subscript) and len(f"{continuation_indent}{element_source}") > line_length:
-            element_lines = _format_subscript_value(element, continuation_indent, line_length, source, ",").splitlines()
+        elif (
+            isinstance(element, ast.Subscript)
+            and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
+        ):
+            element_lines = _split_python_lines(
+                _format_subscript_value(
+                    element, continuation_indent, line_length, source, "," if trailing_comma else ""
+                )
+            )
             formatted_lines.extend(_indent_first_line(element_lines, continuation_indent))
         else:
             formatted_lines.append(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}")
     formatted_lines.append(f"{indent}]{closing_suffix}")
     return "\n".join(formatted_lines)
+
+
+def _format_type_alias_type_argument(
+    argument: ast.AST,
+    continuation_indent: str,
+    line_length: int,
+    source: str,
+) -> Iterable[str]:
+    if _is_union(argument):
+        union_lines = _split_python_lines(_format_union_subscript(argument, continuation_indent, source, ",", 0))
+        return _indent_first_line(union_lines, continuation_indent)
+
+    if _is_optional(argument):
+        return [_format_type_alias_argument_line(argument, continuation_indent, line_length, source)]
+    argument_source = _source_segment(source, argument)
+    if not _is_annotated(argument):
+        return [f"{continuation_indent}{argument_source},"]
+    match argument.slice:
+        case ast.Tuple(elts=[ast.BinOp(op=ast.BitOr()), *_]):
+            has_bit_or_value = True
+        case _:
+            has_bit_or_value = False
+    if (
+        not has_bit_or_value
+        and "\n" not in argument_source
+        and len(f"{continuation_indent}{argument_source},") <= line_length
+    ):
+        return [f"{continuation_indent}{argument_source},"]
+
+    annotated_lines = _split_python_lines(_format_annotated(argument, continuation_indent, line_length, source, ","))
+    return _indent_first_line(annotated_lines, continuation_indent)
 
 
 def _format_type_alias_type_call(call: ast.Call, indent: str, line_length: int, source: str) -> str:
@@ -1243,22 +1579,21 @@ def _format_type_alias_type_call(call: ast.Call, indent: str, line_length: int, 
     can_inline_type_alias_arguments = (
         len(call.args) == TYPE_ALIAS_INLINE_ARGUMENT_COUNT
         and not call.keywords
-        and (_is_annotated(call.args[1]) or _is_union(call.args[1]))
+        and (
+            _is_annotated(call.args[1])
+            or _is_union(call.args[1])
+            or _is_optional(call.args[1])
+            or _is_string_constant(call.args[1])
+        )
         and "\n" not in inline_arguments
     )
+    head = f"{_source_segment(source, call.func)}("
     if can_inline_type_alias_arguments and len(f"{continuation_indent}{inline_arguments}") <= line_length:
-        return f"TypeAliasType(\n{continuation_indent}{inline_arguments}\n{indent})"
+        return f"{head}\n{continuation_indent}{inline_arguments}\n{indent})"
 
-    formatted_lines = ["TypeAliasType("]
+    formatted_lines = [head]
     for argument in call.args:
-        if _is_union(argument):
-            union_lines = _format_union_subscript(argument, continuation_indent, source, ",", 0).splitlines()
-            formatted_lines.extend(_indent_first_line(union_lines, continuation_indent))
-        elif _is_annotated(argument):
-            annotated_lines = _format_annotated(argument, continuation_indent, line_length, source, ",").splitlines()
-            formatted_lines.extend(_indent_first_line(annotated_lines, continuation_indent))
-        else:
-            formatted_lines.append(f"{continuation_indent}{_source_segment(source, argument)},")
+        formatted_lines.extend(_format_type_alias_type_argument(argument, continuation_indent, line_length, source))
     formatted_lines.extend(
         f"{continuation_indent}{_format_call_argument(keyword, source)}," for keyword in call.keywords
     )
@@ -1284,16 +1619,22 @@ def _format_type_alias_union_assignment(
         ) if _is_union(value):
             union = _format_union_subscript(value, indent, source, line_length=0)
             return f"{indent}{target}: TypeAlias = {union}"
+        case ast.AnnAssign(
+            target=ast.Name(id=target),
+            annotation=ast.Name(id="TypeAlias"),
+            value=ast.Subscript() as value,
+        ) if _is_annotated(value) and statement.lineno == (statement.end_lineno or statement.lineno):
+            return f"{indent}{target}: TypeAlias = {_format_annotated(value, indent, line_length, source)}"
 
     return None
 
 
 def _format_typed_dict_call(call: ast.Call, indent: str, source: str) -> str:
     continuation_indent = f"{indent}    "
-    formatted_lines = ["TypedDict("]
+    formatted_lines = [f"{_source_segment(source, call.func)}("]
     for argument in call.args:
         if isinstance(argument, ast.Dict):
-            dict_lines = _format_dict_literal(argument, continuation_indent, source).splitlines()
+            dict_lines = _split_python_lines(_format_dict_literal(argument, continuation_indent, source))
             dict_lines[-1] = f"{dict_lines[-1]},"
             formatted_lines.extend(_indent_first_line(dict_lines, continuation_indent))
         else:
@@ -1325,14 +1666,14 @@ def _format_root_model_constrained_union_base(
     inner_indent = f"{continuation_indent}    "
     union = base.slice
     assert isinstance(union, ast.BinOp)
-    formatted_lines = ["RootModel["]
+    formatted_lines = [f"{_source_segment(source, base.value)}["]
     if _is_constrained_string_call(union.left):
-        call_lines = _format_constrained_call(union.left, inner_indent, line_length, source).splitlines()
+        call_lines = _split_python_lines(_format_constrained_call(union.left, inner_indent, line_length, source))
         formatted_lines.extend(_indent_first_line(call_lines, inner_indent))
         formatted_lines.append(f"{inner_indent}| {_source_segment(source, union.right)}")
     elif _is_constrained_string_call(union.right):  # pragma: no branch
         formatted_lines.append(f"{inner_indent}{_source_segment(source, union.left)}")
-        call_lines = _format_constrained_call(union.right, inner_indent, line_length, source).splitlines()
+        call_lines = _split_python_lines(_format_constrained_call(union.right, inner_indent, line_length, source))
         formatted_lines.append(f"{inner_indent}| {call_lines[0]}")
         formatted_lines.extend(call_lines[1:])
     formatted_lines.append(f"{continuation_indent}]")
@@ -1348,7 +1689,7 @@ def _format_root_model_union_base(
     continuation_indent = f"{indent}    "
     inner_indent = f"{continuation_indent}    "
     assert isinstance(base.slice, ast.BinOp)
-    formatted_lines = ["RootModel["]
+    formatted_lines = [f"{_source_segment(source, base.value)}["]
     formatted_lines.extend(_format_bit_or_elements(base.slice, inner_indent, line_length, source))
     formatted_lines.append(f"{continuation_indent}]")
     return "\n".join(formatted_lines)
@@ -1417,7 +1758,7 @@ def _format_generated_module_statement(  # noqa: PLR0911
         target = _source_segment(source, statement.targets[0])
         return f"{indent}{target} = {_format_subscript_value(statement.value, indent, line_length, source)}"
     if _is_call(statement.value, "TypedDict") and any(
-        isinstance(argument, ast.Dict) for argument in statement.value.args
+        isinstance(argument, ast.Dict) and argument.keys for argument in statement.value.args
     ):
         indent = _line_indent(line)
         target = _source_segment(source, statement.targets[0])
@@ -1429,10 +1770,13 @@ def _format_generated_module_statement(  # noqa: PLR0911
             _is_union(argument)
             and (len(line) > line_length or argument.lineno != (argument.end_lineno or argument.lineno))
         )
-        or (_is_annotated(argument) and len(line) > line_length)
-        for argument in statement.value.args
+        or (
+            (_is_annotated(argument) or _is_optional(argument) or _is_string_constant(argument))
+            and len(line) > line_length
+        )
+        for argument in statement.value.args[1:]
     ):
-        return None
+        return _format_nested_annotated_type_alias_assignment(statement, statement.value, line, line_length, source)
     if len(line) <= line_length and statement.lineno == (statement.end_lineno or statement.lineno):
         return None  # pragma: no cover
 
@@ -1441,16 +1785,62 @@ def _format_generated_module_statement(  # noqa: PLR0911
     return f"{indent}{target} = {_format_type_alias_type_call(statement.value, indent, line_length, source)}"
 
 
+def _format_type_alias_argument_line(argument: ast.AST, continuation_indent: str, line_length: int, source: str) -> str:
+    """Put one alias argument on its own line, splitting a too-long subscript as black does."""
+    if len(line := f"{continuation_indent}{_source_segment(source, argument)},") > line_length and isinstance(
+        argument, ast.Subscript
+    ):
+        return (
+            f"{continuation_indent}{_format_subscript_value(argument, continuation_indent, line_length, source, ',')}"
+        )
+    return line
+
+
+def _format_nested_annotated_type_alias_assignment(
+    statement: ast.Assign, call: ast.Call, line: str, line_length: int, source: str
+) -> str | None:
+    """Split a too-long alias whose body nests ``Annotated`` constraints, as black does.
+
+    Black first moves the arguments to one continuation line, then puts each argument on its own line.
+    Calls with keywords, such as ``type_params`` from a custom template, keep their existing layout.
+    """
+    if (
+        len(line) <= line_length
+        or statement.lineno != (statement.end_lineno or statement.lineno)
+        or call.keywords
+        or not any(_contains_annotated(argument) for argument in call.args)
+    ):
+        return None
+    indent = _line_indent(line)
+    continuation_indent = f"{indent}    "
+    if (
+        len(body := f"{continuation_indent}{', '.join(_source_segment(source, arg) for arg in call.args)}")
+        > line_length
+    ):
+        body = "\n".join(
+            _format_type_alias_argument_line(argument, continuation_indent, line_length, source)
+            for argument in call.args
+        )
+    target = _source_segment(source, statement.targets[0])
+    return f"{indent}{target} = {_source_segment(source, call.func)}(\n{body}\n{indent})"
+
+
 def _format_type_checking_block(
-    node: ast.If, lines: list[str], line_length: int, known_first_party: frozenset[str]
+    node: ast.If,
+    lines: list[str],
+    line_length: int,
+    known_first_party: frozenset[str],
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> str | None:
     import_nodes = [statement for statement in node.body if isinstance(statement, (ast.Import, ast.ImportFrom))]
     if not import_nodes or len(import_nodes) != len(node.body):
         return None
 
     indent = _line_indent(lines[node.lineno - 1])
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party)
-    indented_import_block = "\n".join(f"{indent}    {line}" if line else line for line in import_block.splitlines())
+    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
+    indented_import_block = "\n".join(
+        f"{indent}    {line}" if line else line for line in _split_python_lines(import_block)
+    )
     return f"{indent}if TYPE_CHECKING:\n{indented_import_block}"
 
 
@@ -1459,7 +1849,7 @@ _LineReplacement = tuple[int, int, list[str]]
 
 def _pep695_type_alias_replacement(lines: list[str], start_index: int, line_length: int) -> _LineReplacement | None:
     line = lines[start_index]
-    if (match := PEP695_TYPE_ALIAS_START_PATTERN.match(line)) is None:
+    if (match := _pep695_type_alias_start(line)) is None:
         return None
 
     end_index = _pep695_type_alias_statement_end(lines, start_index)
@@ -1479,7 +1869,7 @@ def _pep695_type_alias_replacement(lines: list[str], start_index: int, line_leng
     indent = match.group("indent")
     target = match.group("target")
     formatted_value = _format_annotated(value, indent, line_length, rhs_source)
-    return start_index + 1, end_index + 1, f"{indent}type {target} = {formatted_value}".splitlines()
+    return start_index + 1, end_index + 1, _split_python_lines(f"{indent}type {target} = {formatted_value}")
 
 
 def _collect_pep695_type_alias_replacements(lines: list[str], line_length: int) -> list[_LineReplacement]:
@@ -1494,6 +1884,122 @@ def _collect_pep695_type_alias_replacements(lines: list[str], line_length: int) 
     return replacements
 
 
+def _has_overlong_tuple_value(statement: ast.stmt, lines: list[str], line_length: int) -> bool:
+    match statement:
+        case ast.AnnAssign(target=ast.Name()) if (value := _classvar_tuple_value(statement)) is not None:
+            end_lineno = statement.end_lineno or statement.lineno
+            statement_lines = lines[statement.lineno - 1 : end_lineno]
+            if len(statement_lines[0]) > line_length or any(_has_comment_token(line) for line in statement_lines):
+                return False
+            overlong_line_numbers = {
+                line_number
+                for line_number, line in enumerate(statement_lines, start=statement.lineno)
+                if len(line) > line_length
+            }
+            return any(
+                node is not value
+                and isinstance(node, ast.Tuple)
+                and bool(node.elts)
+                and any(
+                    line_number in overlong_line_numbers
+                    for line_number in range(node.lineno, (node.end_lineno or node.lineno) + 1)
+                )
+                for node in ast.walk(value)
+            )
+    return False
+
+
+def _iter_boolean_operand_lines(node: ast.BoolOp, source: bytes, indent: str, line_length: int) -> Iterator[str]:
+    """Split boolean operands, wrapping nested groups that exceed the line length."""
+    operator = "and" if isinstance(node.op, ast.And) else "or"
+    operator_bytes = operator.encode()
+    start = node.col_offset
+    last_index = len(node.values) - 1
+    for index, value in enumerate(node.values):
+        # The gap between AST operands contains only their parentheses and this operator.
+        end = (
+            source.index(operator_bytes, value.end_col_offset, node.values[index + 1].col_offset)
+            if index < last_index
+            else node.end_col_offset
+        )
+        operand = source[start:end].decode().strip()
+        start = (end or 0) + len(operator_bytes)
+        operand_prefix = f"{operator} " if index else ""
+        line = f"{indent}{operand_prefix}{operand}"
+        if len(line) > line_length and isinstance(value, ast.BoolOp):
+            yield from _format_boolean_group(value, source, indent, line_length, operand_prefix)
+        else:
+            yield line
+
+
+def _format_boolean_group(
+    node: ast.BoolOp, source: bytes, indent: str, line_length: int, prefix: str = ""
+) -> list[str]:
+    """Wrap a boolean group and any nested groups exposed by the added indent."""
+    operand_indent = f"{indent}    "
+    single_line = f"{operand_indent}{source[node.col_offset : node.end_col_offset].decode()}"
+    return [
+        f"{indent}{prefix}(",
+        *(
+            (single_line,)
+            if len(single_line) <= line_length
+            else _iter_boolean_operand_lines(node, source, operand_indent, line_length)
+        ),
+        f"{indent})",
+    ]
+
+
+def _collect_function_boolean_replacements(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+    lines: list[str],
+    line_length: int,
+) -> list[_LineReplacement]:
+    """Wrap parenthesized boolean groups and guards inside generated methods."""
+    candidates = {
+        number
+        for number in range(function.lineno, (function.end_lineno or function.lineno) + 1)
+        if len(line := lines[number - 1]) > line_length and (" and " in line or " or " in line)
+    }
+    if not candidates:
+        return []
+    replacements: list[_LineReplacement] = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.BoolOp) or node.lineno not in candidates or node.lineno != node.end_lineno:
+            continue
+        line = lines[node.lineno - 1]
+        source = line.encode()
+        before, after = source[: node.col_offset].strip(), source[node.end_col_offset :].strip()
+        indent = _line_indent(line)
+        match before, after:
+            case (b"(", b")") | (b"if not (", _) | (_, b"):") if (
+                before == b"("
+                or (after == b"):" and before.startswith(b"if ") and before.endswith(b"("))
+                or (after.startswith((b") or ", b") and ")) and after.endswith(b":"))
+            ):
+                formatted = _format_boolean_group(node, source, indent, line_length, before[:-1].decode())
+                formatted[-1] += after[1:].decode()
+            case b"", b"" if (
+                1 < node.lineno < len(lines)
+                and lines[node.lineno - 2].endswith("(")
+                and lines[node.lineno].lstrip().startswith(")")
+            ):
+                formatted = list(_iter_boolean_operand_lines(node, source, indent, line_length))
+            case _:
+                continue
+        replacements.append((node.lineno, node.lineno, formatted))
+        candidates.discard(node.lineno)
+    return replacements
+
+
+def _statement_start(statement: ast.stmt, lines: list[str]) -> int:
+    if not (decorators := getattr(statement, "decorator_list", None)):
+        return statement.lineno
+    start = decorators[0].lineno
+    while not lines[start - 1].lstrip().startswith("@"):
+        start -= 1
+    return start
+
+
 def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
     tree: ast.Module,
     lines: list[str],
@@ -1502,47 +2008,77 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
     known_first_party: frozenset[str],
     *,
     wrap_string_literal: bool,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> list[_LineReplacement]:
     replacements: list[_LineReplacement] = []
     for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            replacements.extend(_collect_function_boolean_replacements(node, lines, line_length))
         if _is_type_checking_if(node):
-            formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party)
+            formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party, names)
             if formatted_type_checking is not None:
-                replacements.append((node.lineno, node.end_lineno or node.lineno, formatted_type_checking.splitlines()))
+                replacements.append((
+                    node.lineno,
+                    node.end_lineno or node.lineno,
+                    _split_python_lines(formatted_type_checking),
+                ))
             continue
 
         formatted_statement = _format_generated_module_statement(node, lines[node.lineno - 1], line_length, source)
         if formatted_statement is not None:
-            replacements.append((node.lineno, node.end_lineno or node.lineno, formatted_statement.splitlines()))
+            replacements.append((
+                node.lineno,
+                node.end_lineno or node.lineno,
+                _split_python_lines(formatted_statement),
+            ))
 
         if isinstance(node, ast.ClassDef):
             formatted_definition = _format_generated_class_definition(node, lines[node.lineno - 1], line_length, source)
             if formatted_definition is not None:
-                replacements.append((node.lineno, node.lineno, formatted_definition.splitlines()))
+                replacements.append((node.lineno, node.lineno, _split_python_lines(formatted_definition)))
             if len(node.body) > 1 and (docstring_node := _docstring_node(node.body[0])) is not None:
                 docstring_end = docstring_node.end_lineno or docstring_node.lineno
-                next_statement = node.body[1]
-                if docstring_end + 1 == next_statement.lineno:
+                next_start = _statement_start(node.body[1], lines)
+                if docstring_end + 1 == next_start:
                     replacements.append((docstring_end, docstring_end, [lines[docstring_end - 1], ""]))
-                elif docstring_end + 2 < next_statement.lineno:
-                    replacements.append((docstring_end + 1, next_statement.lineno - 1, [""]))
+                elif docstring_end + 2 < next_start:
+                    replacements.append((docstring_end + 1, next_start - 1, [""]))
             for previous_statement, next_statement in zip(node.body, node.body[1:], strict=False):
                 if previous_statement is node.body[0] and _docstring_node(previous_statement) is not None:
                     continue
                 previous_end = previous_statement.end_lineno or previous_statement.lineno
-                next_start = min(
-                    (decorator.lineno for decorator in getattr(next_statement, "decorator_list", [])),
-                    default=next_statement.lineno,
-                )
+                next_start = _statement_start(next_statement, lines)
                 if previous_end + 2 < next_start:
                     replacements.append((previous_end + 1, next_start - 1, [""]))
             for statement in node.body:
-                is_long_function_definition = (
-                    isinstance(statement, ast.FunctionDef) and len(lines[statement.lineno - 1]) > line_length
+                match statement:
+                    case ast.Assign(targets=[ast.Name(id="__annotations__")], value=ast.Dict() as annotations) if any(
+                        _is_mapping_of_annotated(value) for value in annotations.values
+                    ):
+                        indent = _line_indent(lines[statement.lineno - 1])
+                        formatted = _format_dict_literal(
+                            annotations, indent, source, line_length, preserve_trailing_comma=True
+                        )
+                        replacements.append((
+                            statement.lineno,
+                            statement.end_lineno or statement.lineno,
+                            _split_python_lines(f"{indent}__annotations__ = {formatted}"),
+                        ))
+                        continue
+                is_long_function_definition = False
+                if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    replacements.extend(_collect_function_boolean_replacements(statement, lines, line_length))
+                    is_long_function_definition = len(lines[statement.lineno - 1]) > line_length
+                is_multiline_statement = statement.lineno != (statement.end_lineno or statement.lineno)
+                format_tuple_value = (
+                    is_multiline_statement
+                    and isinstance(statement, ast.AnnAssign)
+                    and _has_overlong_tuple_value(statement, lines, line_length)
                 )
                 if (
-                    statement.lineno != (statement.end_lineno or statement.lineno)
+                    is_multiline_statement
                     and not is_long_function_definition
+                    and not format_tuple_value
                     and not (
                         isinstance(statement, ast.Assign)
                         and len(statement.targets) == 1
@@ -1550,19 +2086,29 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
                     )
                 ):
                     continue
-                formatted_statement = _format_generated_class_statement(
-                    statement,
-                    lines[statement.lineno - 1],
-                    line_length,
-                    source,
-                    wrap_string_literal=wrap_string_literal,
-                )
+                if format_tuple_value:
+                    assert isinstance(statement, ast.AnnAssign)
+                    formatted_statement = _format_generated_annotation_assignment(
+                        statement,
+                        lines[statement.lineno - 1],
+                        line_length,
+                        source,
+                        wrap_string_literal=wrap_string_literal,
+                    )
+                else:
+                    formatted_statement = _format_generated_class_statement(
+                        statement,
+                        lines[statement.lineno - 1],
+                        line_length,
+                        source,
+                        wrap_string_literal=wrap_string_literal,
+                    )
                 if formatted_statement is not None:
                     replacement_end = statement.lineno if is_long_function_definition else statement.end_lineno
                     replacements.append((
                         statement.lineno,
                         replacement_end or statement.lineno,
-                        formatted_statement.splitlines(),
+                        _split_python_lines(formatted_statement),
                     ))
 
     return replacements
@@ -1646,11 +2192,13 @@ def _ensure_post_class_annotation_assignment_spacing(
 
 def _normalize_top_level_blank_lines(code: str) -> str:
     string_lines: set[int] = set()
-    for token in tokenize.generate_tokens(StringIO(code).readline):
-        if token.type == tokenize.STRING and token.start[0] != token.end[0]:
-            string_lines.update(range(token.start[0], token.end[0] + 1))
+    # Multi-line STRING tokens can only come from triple quotes or backslash-continuation.
+    if ('"""' in code) or ("'''" in code) or ("\\\n" in code) or ("\\\r\n" in code):
+        for token in tokenize.generate_tokens(StringIO(code).readline):
+            if token.type == tokenize.STRING and token.start[0] != token.end[0]:
+                string_lines.update(range(token.start[0], token.end[0] + 1))
 
-    lines = code.splitlines()
+    lines = _split_python_lines(code)
     formatted_lines: list[str] = []
     previous_top_level_class_or_function = False
     for line_number, line in enumerate(lines, start=1):
@@ -1701,11 +2249,140 @@ def _normalize_string_quotes(code: str) -> str:
     return tokenize.untokenize(tokens)
 
 
-def _finalize_builtin_code(code: str, *, string_normalization: bool) -> str:
+def _normalize_string_quotes_if_needed(code: str, *, source_is_valid: bool) -> str:
+    """Normalize string quotes when the already-validated source may contain a candidate."""
+    if type(code) is not str or not source_is_valid or "'" in code or "\t" in code or "\f" in code:
+        return _normalize_string_quotes(code)
+    return code
+
+
+def _finalize_builtin_code(
+    code: str,
+    *,
+    string_normalization: bool,
+    source_is_valid: bool = False,
+) -> str:
     formatted_code = _normalize_top_level_blank_lines(code.strip("\n"))
     if string_normalization:
-        formatted_code = _normalize_string_quotes(formatted_code)
+        formatted_code = _normalize_string_quotes_if_needed(formatted_code, source_is_valid=source_is_valid)
     return f"{formatted_code}\n"
+
+
+def _generated_import_prefix_end(lines: list[str]) -> int | None:
+    """Return the end of a simple generated import prefix, or None when unsupported."""
+    line_index = 0
+    import_end = 0
+    while line_index < len(lines):
+        line = lines[line_index]
+        if not line:
+            line_index += 1
+            continue
+        if not line.startswith(("from ", "import ")):
+            stripped_line = line.lstrip()
+            return None if not import_end and stripped_line.startswith(("#", "'''", '"""')) else import_end
+
+        bracket_depth = 0
+        while line_index < len(lines):
+            import_line = lines[line_index]
+            bracket_depth += import_line.count("(") - import_line.count(")")
+            line_index += 1
+            if bracket_depth <= 0:
+                import_end = line_index
+                break
+        else:
+            return None
+    return import_end
+
+
+def _try_apply_builtin_generated_formatter(  # noqa: PLR0911, PLR0913
+    code: str,
+    *,
+    line_length: int,
+    known_first_party: frozenset[str],
+    wrap_string_literal: bool,
+    string_normalization: bool,
+    python_version: PythonVersion | None,
+) -> str | None:
+    """Format trusted generated code without parsing the complete module."""
+    if wrap_string_literal or string_normalization:
+        return None
+    if python_version is not None and python_version.version_key > sys.version_info[:2]:
+        return None
+
+    lines: list[str] = []
+    for source_line in _split_python_lines(code):
+        line = source_line.rstrip()
+        if (
+            len(line) > line_length  # noqa: PLR0916
+            or "ConfigDict(" in line
+            or "TypeAlias" in line
+            or "TypedDict(" in line
+            or "if TYPE_CHECKING:" in line
+            or "'''" in line
+            or '"""' in line
+        ):
+            return None
+        lines.append(line)
+
+    while lines and not lines[-1]:
+        lines.pop()
+    if not lines:
+        return ""
+    if (import_end := _generated_import_prefix_end(lines)) is None:
+        return None
+    if not import_end:
+        return _finalize_builtin_code("\n".join(lines), string_normalization=False)
+
+    try:
+        import_tree = ast.parse("\n".join(lines[:import_end]))
+    except SyntaxError:
+        return None
+    if not (import_nodes := _iter_module_import_nodes(import_tree)) or len(import_nodes) != len(import_tree.body):
+        return None
+
+    import_block = _build_builtin_import_block(
+        import_nodes, line_length, lines, known_first_party, _ImportNames(python_version=python_version)
+    )
+    body_start = import_end
+    while body_start < len(lines) and not lines[body_start]:
+        body_start += 1
+    del lines[:body_start]
+    if not lines:
+        return _finalize_builtin_code(import_block, string_normalization=False)
+    body = "\n".join(lines)
+    separator = "\n\n\n" if body.startswith(("class ", "def ", "async def ", "@")) else "\n\n"
+    return _finalize_builtin_code(f"{import_block}{separator}{body}", string_normalization=False)
+
+
+def _apply_builtin_generated_formatter(  # noqa: PLR0913
+    code: str,
+    *,
+    line_length: int = DEFAULT_LINE_LENGTH,
+    known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
+    wrap_string_literal: bool = False,
+    string_normalization: bool = False,
+    python_version: PythonVersion | None = None,
+) -> str:
+    """Format generator-owned source, falling back for unsupported code."""
+    if (
+        formatted := _try_apply_builtin_generated_formatter(
+            code,
+            line_length=line_length,
+            known_first_party=known_first_party,
+            wrap_string_literal=wrap_string_literal,
+            string_normalization=string_normalization,
+            python_version=python_version,
+        )
+    ) is not None:
+        return formatted
+    return apply_builtin_formatter(
+        code,
+        line_length=line_length,
+        known_first_party=known_first_party,
+        wrap_string_literal=wrap_string_literal,
+        string_normalization=string_normalization,
+        python_version=python_version,
+    )
 
 
 def apply_builtin_formatter(  # noqa: PLR0913
@@ -1717,15 +2394,75 @@ def apply_builtin_formatter(  # noqa: PLR0913
     string_normalization: bool = False,
     python_version: PythonVersion | None = None,
 ) -> str:
-    """Apply dependency-free formatting for generated Python code."""
-    lines = [line.rstrip() for line in code.splitlines()]
+    """Apply dependency-free formatting for generated Python code.
+
+    Identifier characters of a target newer than the running interpreter are lent letters it parses while formatting,
+    and the names it reads back take the target's NFKC form, so the result is the one the target's interpreter gives.
+    """
+    if (lent := host_identifiers(code)) is None:
+        return _apply_builtin_formatter(
+            code,
+            line_length=line_length,
+            known_first_party=known_first_party,
+            wrap_string_literal=wrap_string_literal,
+            string_normalization=string_normalization,
+            names=_ImportNames(python_version=python_version),
+            lent=None,
+        )
+    return lent.restore_text(
+        _apply_builtin_formatter(
+            lent.source,
+            line_length=line_length,
+            known_first_party=known_first_party,
+            wrap_string_literal=wrap_string_literal,
+            string_normalization=string_normalization,
+            names=_ImportNames(lent.restore_text, python_version),
+            lent=lent,
+        )
+    )
+
+
+def _rename_lent_identifiers(tree: ast.AST, lent: HostIdentifiers) -> None:
+    """Spell each identifier the running interpreter parsed with lent letters as the target parses it.
+
+    Strings take their characters back, so that `repr` spells them as it does without lending.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, str):
+                node.value = lent.restore_text(node.value)
+            continue
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, str) and field != "tag":
+                setattr(node, field, lent.parsed_name(value))
+
+
+def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
+    code: str,
+    *,
+    line_length: int,
+    known_first_party: frozenset[str],
+    wrap_string_literal: bool,
+    string_normalization: bool,
+    names: _ImportNames,
+    lent: HostIdentifiers | None,
+) -> str:
+    python_version = names.python_version
+    lines = [line.rstrip() for line in _split_python_lines(code)]
+    start = 0
+    while start < len(lines) and not lines[start]:
+        start += 1
+    if start:
+        del lines[:start]
     code = "\n".join(lines).strip("\n")
     if not code:
         return ""
 
-    tree = _parse_builtin_code(code, python_version)
+    tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
     if tree is None:
         return f"{code}\n"
+    if lent is not None:
+        _rename_lent_identifiers(tree, lent)
 
     replacements = _collect_builtin_replacements(
         tree,
@@ -1734,6 +2471,7 @@ def apply_builtin_formatter(  # noqa: PLR0913
         code,
         known_first_party,
         wrap_string_literal=wrap_string_literal,
+        names=names,
     )
     if _needs_pep695_type_alias_placeholders(python_version):
         replacements.extend(_collect_pep695_type_alias_replacements(lines, line_length))
@@ -1741,16 +2479,24 @@ def apply_builtin_formatter(  # noqa: PLR0913
 
     if not import_nodes:
         formatted_lines = _apply_line_replacements(lines, replacements)
-        return _finalize_builtin_code("\n".join(formatted_lines), string_normalization=string_normalization)
+        return _finalize_builtin_code(
+            "\n".join(formatted_lines),
+            string_normalization=string_normalization,
+            source_is_valid=source_is_valid,
+        )
 
     first_line = import_nodes[0].lineno
     last_line = import_nodes[-1].end_lineno or import_nodes[-1].lineno
     leading = "\n".join(_leading_lines_before_imports(lines, first_line, tree))
     body_lines = _apply_line_replacements(lines[last_line:], replacements, offset=last_line)
     body = "\n".join(body_lines).strip("\n")
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party)
+    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
     formatted_code = f"{leading}\n{import_block}" if leading else import_block
     if body:
         separator = "\n\n\n" if body.startswith(("class ", "def ", "async def ", "@")) else "\n\n"
         formatted_code = f"{formatted_code}{separator}{body}" if formatted_code else body
-    return _finalize_builtin_code(formatted_code, string_normalization=string_normalization)
+    return _finalize_builtin_code(
+        formatted_code,
+        string_normalization=string_normalization,
+        source_is_valid=source_is_valid,
+    )

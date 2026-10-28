@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "keys": {"$ref": "#/$defs/KeyMap"}
+  },
+  "$defs": {
+    "KeyMap": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/KeyMap"},
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}

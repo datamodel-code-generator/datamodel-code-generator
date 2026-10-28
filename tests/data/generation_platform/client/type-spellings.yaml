@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Type spellings
+  version: "1"
+servers:
+  - url: https://spellings.example.com
+paths:
+  /cats:
+    post:
+      operationId: raw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cat"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [cat, dog]
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/Kind"
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/Kind"
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"

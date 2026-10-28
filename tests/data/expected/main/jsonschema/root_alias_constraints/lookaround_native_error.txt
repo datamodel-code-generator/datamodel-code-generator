@@ -1,0 +1,6 @@
+Error building "model" validator:
+  SchemaError: Error building "str" validator:
+  SchemaError: regex parse error:
+    ^(?=a)
+     ^^^
+error: look-around, including look-ahead and look-behind, is not supported

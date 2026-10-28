@@ -19,10 +19,7 @@ class KnownAndEnumExtra(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, KnownAndEnumExtraAdditionalProperty],
+    }
     name: str
-
-
-KnownAndEnumExtra.__annotations__['__pydantic_extra__'] = Dict[
-    str, KnownAndEnumExtraAdditionalProperty
-]
-KnownAndEnumExtra.model_rebuild(force=True)

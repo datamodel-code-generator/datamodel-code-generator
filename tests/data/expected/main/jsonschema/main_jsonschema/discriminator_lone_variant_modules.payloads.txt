@@ -1,0 +1,13 @@
+z.LoneEarly valid {"type": "Shared", "id": 1}: accepted
+z.LoneEarly invalid {"type": "Shared"}: rejected
+z.LoneEarly invalid {"type": "Other", "id": 1}: rejected
+y.Both valid {"type": "Shared", "id": 1}: accepted
+y.Both valid {"type": "Other", "name": "n"}: accepted
+y.Both invalid {"type": "Third"}: rejected
+y.Both invalid {"type": "Other", "name": 1}: rejected
+a.LoneLate valid {"type": "Shared", "id": 1}: accepted
+a.LoneLate invalid {"type": "Shared"}: rejected
+a.LoneLate invalid {"type": "Other", "id": 1}: rejected
+a.LoneUntagged valid {}: accepted
+a.LoneUntagged valid {"id": 1}: accepted
+a.LoneUntagged invalid {"id": "x"}: rejected

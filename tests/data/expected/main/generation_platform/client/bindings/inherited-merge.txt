@@ -1,0 +1,10 @@
+# inherited-merge
+render pydantic_v2.BaseModel all
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all
+render pydantic_v2.BaseModel constraints
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all
+render pydantic_v2.BaseModel none
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/all

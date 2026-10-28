@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "closed": {"$ref": "#/definitions/Closed"},
+    "closedNested": {"$ref": "#/definitions/ClosedNested"},
+    "holder": {"$ref": "#/definitions/Holder"},
+    "open": {"$ref": "#/definitions/Open"}
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Closed": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/definitions/Item"},
+      "allOf": [{"additionalProperties": false}]
+    },
+    "ClosedNested": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/definitions/Item"},
+      "allOf": [{"allOf": [{"additionalProperties": false}]}]
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "inner": {
+          "type": "object",
+          "properties": {"name": {"type": "string"}},
+          "additionalProperties": {"$ref": "#/definitions/Item"},
+          "allOf": [{"additionalProperties": false}]
+        }
+      }
+    },
+    "Open": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/definitions/Item"}
+    }
+  }
+}

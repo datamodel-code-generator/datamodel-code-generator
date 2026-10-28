@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Audit",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Root": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "integer",
+              "number"
+            ],
+            "nullable": true,
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "jsonschema/compound_property_names/enum_oneof.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type"
+  },
+  "jsonschema/compound_property_names/enum_refs.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type|Type 'ForwardRef"
+  },
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type"
+  },
+  "jsonschema/compound_property_names/extra_enum_then_string.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str-like type"
+  },
+  "jsonschema/type_union_constraints/enum_field.json": {
+    "valid": {
+      "value": 1
+    },
+    "error": "Enums must contain either all str or all int values"
+  }
+}

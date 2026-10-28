@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Optional, TypeAlias
+
+
+@dataclass
+class Base:
+    a: Optional[str] = 'x'
+
+
+@dataclass
+class Child(Base):
+    b: str = field(kw_only=True)
+
+
+Model: TypeAlias = Child

@@ -1,0 +1,31 @@
+openapi: "3.1.0"
+info:
+  title: Inherited constraint composition isolation
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Standalone:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          allOf:
+            - minLength: 3
+
+    Base:
+      type: object
+      properties:
+        other:
+          type: integer
+
+    Derived:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+      required:
+        - value
+      properties:
+        value:
+          allOf:
+            - minLength: 3

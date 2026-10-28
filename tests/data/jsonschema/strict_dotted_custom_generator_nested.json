@@ -1,0 +1,19 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "type": "object",
+      "properties": {
+        "leaf": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

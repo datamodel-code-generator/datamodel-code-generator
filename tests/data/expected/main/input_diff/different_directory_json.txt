@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "input-diff",
+  "success": false,
+  "content": "ADDED: collections.py (generated only from current input)\nREMOVED: models.py (generated only from baseline input)\n",
+  "differences": [
+    {
+      "kind": "added",
+      "path": "collections.py",
+      "message": "ADDED: collections.py (generated only from current input)",
+      "diff": null
+    },
+    {
+      "kind": "removed",
+      "path": "models.py",
+      "message": "REMOVED: models.py (generated only from baseline input)",
+      "diff": null
+    }
+  ]
+}

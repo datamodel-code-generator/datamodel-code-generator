@@ -1,0 +1,374 @@
+class {{ schema_runtime_validation_base_class_name }}(BaseModel):
+{%- if has_pattern_properties %}
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = ()
+{%- endif %}
+{%- if has_required_groups %}
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
+{%- endif %}
+{%- if has_conditional_required %}
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+{%- endif %}
+{%- if has_unique_items %}
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ()
+{%- endif %}
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+{%- if has_unique_items %}
+        data = cls._validate_json_schema_unique_items(data)
+{%- endif %}
+{%- if has_pattern_properties %}
+        data = cls._validate_json_schema_pattern_properties(data)
+{%- endif %}
+{%- if has_required_groups %}
+        data = cls._validate_json_schema_required_groups(
+            data,
+            required_group_rules=cls.__json_schema_one_of_required_groups__,
+            require_exactly_one=True,
+        )
+        data = cls._validate_json_schema_required_groups(
+            data,
+            required_group_rules=cls.__json_schema_any_of_required_groups__,
+            require_exactly_one=False,
+        )
+{%- endif %}
+{%- if has_conditional_required %}
+        data = cls._validate_json_schema_conditional_required(data)
+{%- endif %}
+        return data
+{%- if has_pattern_properties %}
+
+    @classmethod
+    def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        values = data
+        for rule in cls.__json_schema_pattern_properties__:
+            pattern_adapters = None
+            additional_adapter = None
+            for key, value in data.items():
+                if key in rule['declared_properties']:
+                    continue
+                if any(
+                    re.search(pattern, key) for pattern in rule['rejected_patterns']
+                ):
+                    raise ValueError(
+                        f'Property {key!r} is not allowed by patternProperties'
+                    )
+                matched = False
+                for index, (pattern, value_type) in enumerate(
+                    rule['pattern_properties'],
+                ):
+                    if not re.search(pattern, key):
+                        continue
+                    matched = True
+                    if pattern_adapters is None:
+                        pattern_adapters = {}
+                    if (adapter := pattern_adapters.get(index)) is None:
+                        adapter = TypeAdapter(value_type)
+                        pattern_adapters[index] = adapter
+                    value = adapter.validate_python(value)
+                if matched:
+                    if values is data:
+                        values = dict(data)
+                    values[key] = value
+                    continue
+                if rule['additional_property_type'] is not None:
+                    if additional_adapter is None:
+                        additional_adapter = TypeAdapter(
+                            rule['additional_property_type'],
+                        )
+                    if values is data:
+                        values = dict(data)
+                    values[key] = additional_adapter.validate_python(value)
+                    continue
+                if not rule['allow_unmatched']:
+                    raise ValueError(f'Unexpected property {key!r}')
+        return values
+{%- endif %}
+{%- if has_required_groups %}
+
+    @classmethod
+    def _validate_json_schema_required_groups(
+        cls,
+        data: Any,
+        *,
+        required_group_rules: tuple[Any, ...],
+        require_exactly_one: bool,
+    ) -> Any:
+        if not required_group_rules or not isinstance(data, dict):
+            return data
+        for required_groups in required_group_rules:
+            matches = sum(
+                all(any(name in data for name in names) for names in group)
+                for group in required_groups
+            )
+            if require_exactly_one:
+                if matches != 1:
+                    raise ValueError(
+                        'Expected exactly one required property group to be present'
+                    )
+            elif matches == 0:
+                raise ValueError(
+                    'Expected at least one required property group to be present'
+                )
+        return data
+{%- endif %}
+{%- if has_conditional_required %}
+
+    @classmethod
+    def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        for rule in cls.__json_schema_conditional_required__:
+            condition_matches = all(
+                any(name in data and data[name] in expected for name in names)
+                for names, expected in rule['condition']
+            )
+            required_groups = (
+                rule['then_required_groups']
+                if condition_matches
+                else rule['else_required_groups']
+            )
+            for group in required_groups:
+                if all(any(name in data for name in names) for names in group):
+                    continue
+                raise ValueError('Conditional required properties are missing')
+        return data
+{%- endif %}
+{%- if has_unique_items %}
+
+    @classmethod
+    def _validate_json_schema_unique_items(cls, data: Any) -> Any:
+        if not (unique_item_paths := cls.__json_schema_unique_items__):
+            return data
+        for path in unique_item_paths:
+            cls._validate_json_schema_unique_items_path(data, path, 0)
+        return data
+
+    @classmethod
+    def _validate_json_schema_unique_items_path(
+        cls,
+        value: Any,
+        path: tuple[object, ...],
+        position: int,
+    ) -> None:
+        if position == len(path):
+            cls._validate_json_schema_unique_array(value)
+            return
+
+        match path[position]:
+            case None:
+                if not isinstance(value, (list, tuple)):
+                    return
+                for item in value:
+                    cls._validate_json_schema_unique_items_path(item, path, position + 1)
+            case ('__json_schema_array_tail__', int() as start):
+                if not isinstance(value, (list, tuple)) or start >= len(value):
+                    return
+                for index in range(start, len(value)):
+                    cls._validate_json_schema_unique_items_path(value[index], path, position + 1)
+            case int() as index:
+                if isinstance(value, (list, tuple)) and index < len(value):
+                    cls._validate_json_schema_unique_items_path(value[index], path, position + 1)
+            case '__json_schema_mapping_values__':
+                if not isinstance(value, dict):
+                    return
+                for item in value.values():
+                    cls._validate_json_schema_unique_items_path(item, path, position + 1)
+{%- if has_unique_items_regex_paths %}
+            case ('__json_schema_mapping_pattern_values__', str() as pattern, None):
+                if not isinstance(value, dict):
+                    return
+                for name, item in value.items():
+                    if re.search(pattern, name):
+                        cls._validate_json_schema_unique_items_path(item, path, position + 1)
+            case ('__json_schema_mapping_additional_values__', tuple() as declared_name_groups, tuple() as patterns):
+                if not isinstance(value, dict):
+                    return
+                for name, item in value.items():
+                    for input_names in declared_name_groups:
+                        for declared_name in input_names:
+                            if declared_name in value:
+                                break
+                        else:
+                            continue
+                        if name == declared_name:
+                            break
+                    else:
+                        if any(re.search(pattern, name) for pattern in patterns):
+                            continue
+                        cls._validate_json_schema_unique_items_path(item, path, position + 1)
+{%- endif %}
+            case tuple() as input_names:
+                if not isinstance(value, dict):
+                    return
+                for name in input_names:
+                    if name in value:
+                        cls._validate_json_schema_unique_items_path(value[name], path, position + 1)
+                        return
+
+    @classmethod
+    def _validate_json_schema_unique_array(cls, value: Any) -> None:
+        if not isinstance(value, (list, tuple)) or len(value) < 2:
+            return
+
+        scalar_items: set[object] | None = None
+        structural_items: dict[int, list[Any]] | None = None
+        opaque_items: list[Any] | None = None
+        for item in value:
+            match item:
+                case None | bool() | int() | float() | str():
+                    item_key = (bool, item) if isinstance(item, bool) else item
+                    if scalar_items is None:
+                        scalar_items = {item_key}
+                    elif item_key in scalar_items:
+                        raise ValueError('Array items must be unique')
+                    else:
+                        scalar_items.add(item_key)
+                    if (
+                        structural_items is not None
+                        and (candidates := structural_items.get(cls._json_schema_unique_items_fingerprint(item)))
+                        and any(cls._json_schema_unique_items_equal(item, candidate) for candidate in candidates)
+                    ):
+                        raise ValueError('Array items must be unique')
+                    if (
+                        not isinstance(item, bool)
+                        and opaque_items is not None
+                        and any(
+                            cls._json_schema_unique_items_equal_in_either_direction(item, candidate)
+                            for candidate in opaque_items
+                        )
+                    ):
+                        raise ValueError('Array items must be unique')
+                    continue
+                case list() | tuple() | dict():
+                    fingerprint = cls._json_schema_unique_items_fingerprint(item)
+                case _:
+                    if scalar_items is not None:
+                        for scalar_item in scalar_items:
+                            scalar_candidate = scalar_item[1] if isinstance(scalar_item, tuple) else scalar_item
+                            if not isinstance(scalar_candidate, bool) and cls._json_schema_unique_items_equal_in_either_direction(
+                                item, scalar_candidate
+                            ):
+                                raise ValueError('Array items must be unique')
+                    fingerprint = cls._json_schema_unique_items_fingerprint(item)
+            if fingerprint is None:
+                if structural_items is not None and any(
+                    cls._json_schema_unique_items_equal_in_either_direction(item, candidate)
+                    for candidates in structural_items.values()
+                    for candidate in candidates
+                ):
+                    raise ValueError('Array items must be unique')
+                if opaque_items is not None and any(
+                    cls._json_schema_unique_items_equal_in_either_direction(item, candidate)
+                    for candidate in opaque_items
+                ):
+                    raise ValueError('Array items must be unique')
+                if opaque_items is None:
+                    opaque_items = [item]
+                else:
+                    opaque_items.append(item)
+                continue
+            if opaque_items is not None and any(
+                cls._json_schema_unique_items_equal_in_either_direction(item, candidate)
+                for candidate in opaque_items
+            ):
+                raise ValueError('Array items must be unique')
+            if structural_items is None:
+                structural_items = {fingerprint: [item]}
+                continue
+            if (candidates := structural_items.get(fingerprint)) is None:
+                structural_items[fingerprint] = [item]
+                continue
+            if any(cls._json_schema_unique_items_equal(item, candidate) for candidate in candidates):
+                raise ValueError('Array items must be unique')
+            candidates.append(item)
+
+    @classmethod
+    def _json_schema_unique_items_fingerprint(cls, value: Any) -> int | None:
+        match value:
+            case None:
+                return 0x17
+            case bool() as boolean:
+                return 0x1F if boolean else 0x1D
+            case int() | float() as number:
+                return hash(number)
+            case str() as string:
+                return hash(string)
+            case list() | tuple() as array:
+                fingerprint = 0x4F
+                for item in array:
+                    if (item_fingerprint := cls._json_schema_unique_items_fingerprint(item)) is None:
+                        return None
+                    fingerprint = hash((fingerprint * 1000003) ^ item_fingerprint)
+                return hash(fingerprint ^ len(array))
+            case dict() as object_:
+                fingerprint = 0x61
+                for key, item in object_.items():
+                    if (item_fingerprint := cls._json_schema_unique_items_fingerprint(item)) is None:
+                        return None
+                    fingerprint ^= hash((key, item_fingerprint))
+                return hash(fingerprint ^ len(object_))
+            case _:
+                return cls._json_schema_unique_items_safe_hash(value)
+
+    @classmethod
+    def _json_schema_unique_items_equal(cls, left: Any, right: Any) -> bool:
+        match left:
+            case None:
+                return right is None
+            case bool() as boolean:
+                return isinstance(right, bool) and boolean == right
+            case int() | float() as number:
+                if isinstance(right, bool):
+                    return False
+                if isinstance(right, (int, float)):
+                    return number == right
+                return cls._json_schema_unique_items_safe_equal(number, right)
+            case str() as string:
+                if isinstance(right, str):
+                    return string == right
+                return cls._json_schema_unique_items_safe_equal(string, right)
+            case list() | tuple() as array:
+                return (
+                    isinstance(right, (list, tuple))
+                    and len(array) == len(right)
+                    and all(
+                        cls._json_schema_unique_items_equal(item, other)
+                        for item, other in zip(array, right, strict=True)
+                    )
+                )
+            case dict() as object_:
+                if not isinstance(right, dict) or len(object_) != len(right):
+                    return False
+                return all(
+                    key in right and cls._json_schema_unique_items_equal(item, right[key])
+                    for key, item in object_.items()
+                )
+        return cls._json_schema_unique_items_safe_equal(left, right)
+
+    @classmethod
+    def _json_schema_unique_items_safe_hash(cls, value: Any) -> int | None:
+        try:
+            return hash(value)
+        except Exception:  # noqa: BLE001
+            return None
+
+    @classmethod
+    def _json_schema_unique_items_safe_equal(cls, left: Any, right: Any) -> bool:
+        try:
+            comparison = left == right
+        except Exception:  # noqa: BLE001
+            return False
+        return comparison if type(comparison) is bool else False
+
+    @classmethod
+    def _json_schema_unique_items_equal_in_either_direction(cls, left: Any, right: Any) -> bool:
+        return cls._json_schema_unique_items_equal(left, right) or cls._json_schema_unique_items_equal(right, left)
+{%- endif %}
+{{ '\n\n' }}
+
+# Intersection context defined: {{ has_pattern_property_intersections is defined }}

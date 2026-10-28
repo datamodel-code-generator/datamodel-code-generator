@@ -1,0 +1,3 @@
+forbidden.py:1: from datamodel_code_generator.model.pydantic_base import ...
+forbidden.py:2: import datamodel_code_generator.model.pydantic_base
+forbidden.py:3: from datamodel_code_generator.model import pydantic_base

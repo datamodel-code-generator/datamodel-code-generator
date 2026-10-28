@@ -1,63 +1,68 @@
-name: Update llms.txt
+name: Docs Check All
 
 on:
   pull_request:
     branches: [main]
     paths:
+      - '.github/workflows/llms-txt.yaml'
+      - '.github/workflows/playground-lint.yaml'
+      - 'README.md'
+      - 'docs/**'
+      - 'pyproject.toml'
+      - 'scripts/build_architecture_docs.py'
+      - 'scripts/build_behaviour_docs.py'
       - 'src/datamodel_code_generator/**'
+      - 'scripts/build_cli_docs.py'
+      - 'scripts/build_conformance_docs.py'
+      - 'scripts/build_deprecation_docs.py'
+      - 'scripts/build_diagrams.py'
+      - 'scripts/build_docs_examples.py'
+      - 'scripts/build_experimental_docs.py'
+      - 'scripts/build_release_benchmark_docs.py'
+      - 'scripts/build_llms_txt.py'
+      - 'scripts/build_playground_assets.py'
+      - 'scripts/build_preset_docs.py'
+      - 'scripts/build_prompt_data.py'
+      - 'scripts/build_schema_docs.py'
+      - 'scripts/update_command_help_on_markdown.py'
+      - 'scripts/update_generate_prompt_snapshots.py'
+      - 'tests/data/expected/main/jsonschema/**'
+      - 'tests/data/expected/main/openapi/**'
+      - 'tests/data/jsonschema/**'
+      - 'tests/data/openapi/**'
       - 'tests/main/**'
       - 'tests/test_main_kr.py'
-      - 'scripts/build_cli_docs.py'
-      - 'scripts/build_prompt_data.py'
-      - 'src/datamodel_code_generator/parser/schema_version.py'
-      - 'scripts/build_schema_docs.py'
-      - 'docs/**/*.md'
-      - 'README.md'
+      - 'tox.ini'
+      - 'uv.lock'
       - 'zensical.toml'
-      - 'scripts/build_llms_txt.py'
 
 permissions:
   contents: read
 
 jobs:
-  update-llms-txt:
-    runs-on: ubuntu-latest
+  docs-check-all:
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-suffix: docs-check-all
+      - name: Setup Python
+        run: uv python install 3.14.6
+        env:
+          UV_PYTHON_PREFERENCE: "only-managed"
       - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-      - name: Setup README environment
-        run: tox run -vv --notest --skip-missing-interpreters false -e readme
+        run: uv tool install --python-preference only-managed --python 3.14.6 tox --with tox-uv
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Setup CLI docs environment
-        run: tox run -vv --notest --skip-missing-interpreters false -e cli-docs
+      - name: Run aggregate docs check
+        run: tox run -e docs-check-all -- --check
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Setup schema docs environment
-        run: tox run -vv --notest --skip-missing-interpreters false -e schema-docs
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Setup llms.txt environment
-        run: tox run -vv --notest --skip-missing-interpreters false -e llms-txt
-        env:
-          UV_PYTHON_PREFERENCE: "only-managed"
-      - name: Update README
-        run: .tox/readme/bin/python scripts/update_command_help_on_markdown.py
-      - name: Collect CLI doc metadata
-        run: .tox/cli-docs/bin/pytest --collect-cli-docs -p no:xdist -q
-      - name: Build CLI docs
-        run: .tox/cli-docs/bin/python scripts/build_cli_docs.py
-      - name: Build prompt data
-        run: .tox/cli-docs/bin/python scripts/build_prompt_data.py
-      - name: Build schema docs
-        run: .tox/schema-docs/bin/python scripts/build_schema_docs.py
-      - name: Build llms.txt
-        run: .tox/llms-txt/bin/python scripts/build_llms_txt.py

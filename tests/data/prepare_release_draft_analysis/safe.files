@@ -1,0 +1,5 @@
+{"path": ".github/workflows/codeql.yaml", "previous_path": null}
+{"path": ".github/workflows/release-draft.yaml", "previous_path": null}
+{"path": "scripts/prepare_release_draft_analysis.py", "previous_path": null}
+{"path": "tests/test_release_draft_workflow.py", "previous_path": null}
+{"path": "tox.ini", "previous_path": null}

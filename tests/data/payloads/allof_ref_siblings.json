@@ -1,0 +1,495 @@
+[
+  {
+    "name": "string_2020-12",
+    "oracle": "string_2019-09",
+    "valid": [
+      "ab",
+      "abc"
+    ],
+    "invalid": [
+      "a",
+      "abcdef",
+      "abcd"
+    ]
+  },
+  {
+    "name": "string_2019-09",
+    "valid": [
+      "ab",
+      "abc"
+    ],
+    "invalid": [
+      "a",
+      "abcdef",
+      "abcd"
+    ]
+  },
+  {
+    "name": "string_draft-07",
+    "valid": [
+      "ab",
+      "abc",
+      "abcd"
+    ],
+    "invalid": [
+      "a",
+      "abcdef"
+    ]
+  },
+  {
+    "name": "integer",
+    "valid": [
+      3,
+      5
+    ],
+    "invalid": [
+      2,
+      6
+    ]
+  },
+  {
+    "name": "array_external",
+    "valid": [
+      [
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "invalid": [
+      [],
+      [
+        2,
+        3,
+        4
+      ],
+      [
+        1
+      ]
+    ]
+  },
+  {
+    "name": "enum_sibling",
+    "valid": [
+      "a",
+      "b"
+    ],
+    "invalid": [
+      "c"
+    ]
+  },
+  {
+    "name": "enum_intersection",
+    "valid": [
+      "b"
+    ],
+    "invalid": [
+      "a",
+      "c",
+      "d"
+    ]
+  },
+  {
+    "name": "const_sibling",
+    "valid": [
+      "b"
+    ],
+    "invalid": [
+      "a"
+    ]
+  },
+  {
+    "name": "const_intersection",
+    "oracle": "const_sibling",
+    "valid": [
+      "b"
+    ],
+    "invalid": [
+      "c"
+    ]
+  },
+  {
+    "name": "items_sibling",
+    "valid": [
+      [],
+      [
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "invalid": [
+      [
+        1
+      ],
+      [
+        4
+      ]
+    ]
+  },
+  {
+    "name": "items_external",
+    "oracle": "array_external",
+    "valid": [
+      [
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "invalid": [
+      [
+        1
+      ],
+      [
+        4
+      ],
+      []
+    ]
+  },
+  {
+    "name": "items_false",
+    "valid": [
+      []
+    ],
+    "invalid": [
+      [
+        2
+      ]
+    ]
+  },
+  {
+    "name": "items_true",
+    "valid": [
+      [],
+      [
+        2
+      ]
+    ],
+    "invalid": [
+      [
+        1
+      ],
+      [
+        "bad"
+      ]
+    ]
+  },
+  {
+    "name": "items_positional",
+    "valid": [
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "invalid": [
+      [
+        1,
+        3
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        2,
+        5
+      ]
+    ],
+    "use_tuple": true
+  },
+  {
+    "name": "enum_length",
+    "valid": [
+      "bb"
+    ],
+    "invalid": [
+      "a",
+      "cc"
+    ]
+  },
+  {
+    "name": "enum_numeric",
+    "valid": [
+      2
+    ],
+    "invalid": [
+      1,
+      3
+    ]
+  },
+  {
+    "name": "enum_array",
+    "valid": [
+      [
+        1
+      ],
+      [
+        2
+      ]
+    ],
+    "invalid": [
+      [
+        3
+      ]
+    ]
+  },
+  {
+    "name": "items_nested",
+    "valid": [
+      [
+        {
+          "x": "bb",
+          "marker": "marker",
+          "flag": true
+        }
+      ],
+      [
+        {
+          "x": "bbb",
+          "marker": "marker",
+          "flag": true
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "x": "a",
+          "marker": "marker",
+          "flag": true
+        }
+      ],
+      [
+        {
+          "x": "cccc",
+          "marker": "marker",
+          "flag": true
+        }
+      ],
+      [
+        {
+          "x": "bb",
+          "marker": "marker"
+        }
+      ],
+      [
+        {
+          "x": "bb",
+          "flag": true
+        }
+      ]
+    ]
+  },
+  {
+    "name": "enum_objects",
+    "valid": [
+      [],
+      [
+        {
+          "a": 1,
+          "b": 2
+        }
+      ],
+      [
+        {
+          "b": 2,
+          "a": 1
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "a": true,
+          "b": 2
+        }
+      ],
+      [
+        {
+          "a": 2,
+          "b": 2
+        }
+      ],
+      [
+        {
+          "a": 1
+        }
+      ]
+    ]
+  },
+  {
+    "name": "enum_null",
+    "valid": [
+      null,
+      "bb"
+    ],
+    "invalid": [
+      "a",
+      1,
+      true
+    ]
+  },
+  {
+    "name": "enum_pattern",
+    "valid": [
+      "aa"
+    ],
+    "invalid": [
+      "bb",
+      "cc"
+    ]
+  },
+  {
+    "name": "items_closed",
+    "valid": [
+      [],
+      [
+        {
+          "x": "a"
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "x": "a",
+          "y": "b"
+        }
+      ],
+      [
+        {
+          "y": "b"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "items_disjoint_type",
+    "valid": [
+      []
+    ],
+    "invalid": [
+      [
+        1
+      ],
+      [
+        "a"
+      ]
+    ]
+  },
+  {
+    "name": "items_required_closed",
+    "oracle": "items_disjoint_type",
+    "valid": [
+      []
+    ],
+    "invalid": [
+      [
+        {
+          "x": "a"
+        }
+      ],
+      [
+        {
+          "y": "b"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "items_number",
+    "valid": [
+      [],
+      [
+        1,
+        null
+      ]
+    ],
+    "invalid": [
+      [
+        1.5
+      ],
+      [
+        "a"
+      ]
+    ]
+  },
+  {
+    "name": "items_literal",
+    "valid": [
+      [],
+      [
+        "bb"
+      ]
+    ],
+    "invalid": [
+      [
+        "a"
+      ],
+      [
+        "cc"
+      ]
+    ]
+  },
+  {
+    "name": "items_number_bounds",
+    "valid": [
+      [],
+      [
+        1.5
+      ]
+    ],
+    "invalid": [
+      [
+        3
+      ],
+      [
+        -1
+      ]
+    ]
+  },
+  {
+    "name": "enum_model_items",
+    "valid": [
+      [
+        {
+          "a-value": 1,
+          "b": [
+            "x"
+          ]
+        }
+      ]
+    ],
+    "invalid": [
+      [
+        {
+          "a-value": 2,
+          "b": [
+            "x"
+          ]
+        }
+      ],
+      [
+        {
+          "a-value": 1,
+          "b": [
+            "y"
+          ]
+        }
+      ],
+      []
+    ]
+  }
+]

@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info: {title: Naming references, version: "1.0"}
+servers:
+  - url: https://api.example.com
+paths:
+  /items/{itemId}:
+    get:
+      operationId: getItem
+      tags: [items]
+      parameters:
+        - $ref: "naming-refs-shared.yaml#/components/parameters/Cursor"
+        - {name: cursor, in: header, schema: {type: string}}
+        - {name: itemId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /shared:
+    $ref: "naming-refs-shared.yaml#/paths/~1shared"
+  /items:
+    get:
+      operationId: listItems
+      tags: [items]
+      parameters:
+        - {name: limit, in: header, schema: {type: integer}}
+        - $ref: "naming-refs-shared.yaml#/components/parameters/Limit"
+      responses:
+        "204": {description: Done.}

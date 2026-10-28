@@ -12,4 +12,4 @@ class Parent(BaseModel):
 
 
 class Child(Parent):
-    name: constr(min_length=1) | None = None
+    name: constr(max_length=100) | None = None

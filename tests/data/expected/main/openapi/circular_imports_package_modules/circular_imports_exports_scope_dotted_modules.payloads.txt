@@ -1,0 +1,23 @@
+x.thing.json {}: schema accepts, model accepts
+x.thing.json {"other": {"other": {}}}: schema accepts, model accepts
+x.thing.json {"other": {"other": 1}}: schema rejects, model rejects
+x.thing.json {"leaf": {"a": "one"}}: schema accepts, model accepts
+x.thing.json {"leaf": {"a": 1}}: schema rejects, model rejects
+y.thing.json {}: schema accepts, model accepts
+y.thing.json {"other": {"leaf": {"a": "one"}}}: schema accepts, model accepts
+y.thing.json {"other": []}: schema rejects, model rejects
+p.t.leaf.json {}: schema accepts, model accepts
+p.t.leaf.json {"a": "one"}: schema accepts, model accepts
+p.t.leaf.json {"a": 1}: schema rejects, model rejects
+p.item.json {}: schema accepts, model accepts
+p.item.json {"a": "one"}: schema accepts, model accepts
+p.item.json {"a": 1}: schema rejects, model rejects
+p.u.user.json {}: schema accepts, model accepts
+p.u.user.json {"thing": {"other": {}}}: schema accepts, model accepts
+p.u.user.json {"thing": {"leaf": {"a": "one"}}}: schema accepts, model accepts
+p.u.user.json {"thing": {"leaf": {"a": 1}}}: schema rejects, model rejects
+p.u.user.json {"thing": []}: schema rejects, model rejects
+root_thing.json {}: schema accepts, model accepts
+root_thing.json {"user": {"thing": {"leaf": {"a": "one"}}}}: schema accepts, model accepts
+root_thing.json {"user": {"thing": {"leaf": {"a": 1}}}}: schema rejects, model rejects
+root_thing.json {"user": 1}: schema rejects, model rejects

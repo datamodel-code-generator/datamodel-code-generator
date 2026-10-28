@@ -1,0 +1,7 @@
+PetsGetResponse valid null: accepted
+PetsGetResponse valid {}: accepted
+PetsGetResponse valid {"a": "Rex"}: accepted
+PetsGetResponse invalid []: rejected
+PetsGetResponse invalid 1: rejected
+PetsGetResponse invalid {"a": 1}: accepted
+PetsGetResponse invalid {"a": null}: accepted

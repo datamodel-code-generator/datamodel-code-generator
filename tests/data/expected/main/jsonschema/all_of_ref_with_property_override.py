@@ -13,6 +13,6 @@ class Thing(BaseModel):
 
 
 class Person(Thing):
-    type: str | None = 'playground:Person'
-    name: constr(min_length=1) | None = None
+    type: str
+    name: constr(min_length=2)
     age: int | None = None

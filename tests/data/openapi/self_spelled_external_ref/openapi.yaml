@@ -1,0 +1,17 @@
+openapi: 3.2.0
+info:
+  title: Reference spelled with the $self of another document
+  version: '1'
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - $ref: 'library.yaml#/components/parameters/Page'
+      responses:
+        '200':
+          description: ok
+components:
+  schemas:
+    Pet:
+      $ref: 'library.yaml#/components/schemas/Listing'

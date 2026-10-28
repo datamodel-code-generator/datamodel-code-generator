@@ -1,0 +1,8 @@
+Add the runtime dependencies of app.client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
+Next steps: call the API with the client:
+  from app.client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.list_pets(...)
+See app/client/README.md.

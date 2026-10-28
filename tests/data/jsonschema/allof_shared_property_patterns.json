@@ -1,0 +1,22 @@
+{
+    "title": "Model",
+    "type": "object",
+    "allOf": [
+        {
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "pattern": "^[a-z]+"
+                }
+            }
+        },
+        {
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "pattern": "[0-9]$"
+                }
+            }
+        }
+    ]
+}

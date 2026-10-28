@@ -1,0 +1,7 @@
+input = "schema.json"
+output = "output.py"
+input-file-type = "jsonschema"
+output-model-type = "dataclasses.dataclass"
+target-python-version = "3.10"
+disable-timestamp = true
+formatters = ["builtin"]

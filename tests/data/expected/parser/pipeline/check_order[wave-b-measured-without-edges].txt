@@ -1,0 +1,5 @@
+order: G06 -> G03b -> G12b -> G08
+problem: G06 conflicts with G12b on DEFAULTS, FIELD_TYPES and needs an explicit edge
+problem: G03b conflicts with G06 on CONSTRAINTS, FIELD_TYPES and needs an explicit edge
+problem: G08 conflicts with G12b on DEFAULTS, REQUIRED and needs an explicit edge
+problem: G08 conflicts with G06 on DEFAULTS, FIELD_TYPES and needs an explicit edge

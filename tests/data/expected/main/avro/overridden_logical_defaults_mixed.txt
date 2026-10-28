@@ -1,0 +1,2 @@
+MappedDefaults(day=datetime.date(1970, 1, 2), clock=datetime.time(0, 0, 1), instant=1, local=1, amount=b'{', elapsed=b'\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00', elapsed_again=b'\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00', amounts=[Decimal('1.23')])
+{'day': datetime.date(1970, 1, 2), 'clock': datetime.time(0, 0, 1), 'instant': 1, 'local': 1, 'amount': b'{', 'elapsed': b'\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00', 'elapsed_again': b'\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00', 'amounts': [Decimal('1.23')]}

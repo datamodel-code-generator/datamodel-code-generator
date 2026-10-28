@@ -1,0 +1,6 @@
+{
+  "Cat.petType": "kind",
+  "Dog.petType": "kind",
+  "Cat.kind": "other",
+  "Dog.kind": "other"
+}

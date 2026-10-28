@@ -1,0 +1,8 @@
+class {{ class_name }}({{ base_class }}[{{ fields[0].type_hint }}]):
+{%- if description %}
+    """{{ description }}"""
+{%- endif %}
+    root: {{ fields[0].type_hint }}
+{%- if fields[0].docstring %}
+    """{{ fields[0].docstring }}"""
+{%- endif %}

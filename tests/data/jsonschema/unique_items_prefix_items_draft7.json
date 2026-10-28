@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UniqueItemsPrefixItemsDraft7",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string"
+    }
+  ],
+  "items": {
+    "type": "array",
+    "uniqueItems": true,
+    "items": {
+      "type": "integer"
+    }
+  }
+}

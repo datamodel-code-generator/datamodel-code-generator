@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "a": { "$ref": "#/$defs/ModelA" },
+    "b": { "$ref": "#/$defs/ModelB" }
+  },
+  "$defs": {
+    "ModelA": {
+      "anyOf": [
+        { "type": "string" },
+        { "$ref": "#/$defs/Plain" },
+        { "$ref": "#/$defs/ModelB" },
+        { "$ref": "#/$defs/ModelB" }
+      ]
+    },
+    "ModelB": {
+      "anyOf": [
+        { "type": "number" },
+        { "$ref": "#/$defs/ModelA" }
+      ]
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer" }
+      }
+    }
+  }
+}

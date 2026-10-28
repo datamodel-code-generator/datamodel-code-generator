@@ -1,0 +1,57 @@
+[
+  {
+    "name": "ModelRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": true
+    },
+    "type_identity": {
+      "box": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": {
+              "count": 1
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              "count"
+            ],
+            "missing"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": {
+              "count": 1
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              "count"
+            ],
+            "missing"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": true
+    }
+  }
+]

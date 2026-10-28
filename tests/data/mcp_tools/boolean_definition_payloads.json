@@ -1,0 +1,38 @@
+{
+  "referenced_false_definition": {
+    "model": "DeniedInput",
+    "valid": {},
+    "invalid": [],
+    "error": "model_type"
+  },
+  "referenced_false_output_definition": {
+    "model": "DeniedOutput",
+    "valid": {},
+    "invalid": [],
+    "error": "model_type"
+  },
+  "referenced_nested_false_definition": {
+    "model": "DeniedInput",
+    "valid": {
+      "outer": {}
+    },
+    "invalid": [],
+    "error": "model_type"
+  },
+  "referenced_false_dynamic_definition": {
+    "model": "DeniedInput",
+    "valid": {},
+    "invalid": [],
+    "error": "model_type"
+  },
+  "negated_false_definition": {
+    "model": "RecordInput",
+    "valid": {
+      "value": "ok"
+    },
+    "invalid": {
+      "value": 1
+    },
+    "error": "string_type"
+  }
+}

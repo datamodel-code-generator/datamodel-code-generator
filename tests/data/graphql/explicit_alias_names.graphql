@@ -1,0 +1,3 @@
+enum Status { ACTIVE INACTIVE }
+
+type AliasNames { a: String! b: Int! status: Status }

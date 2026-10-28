@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegerBounds",
+  "type": "object",
+  "properties": {
+    "minimum": {
+      "$ref": "#/$defs/Minimum"
+    },
+    "maximum": {
+      "$ref": "#/$defs/Maximum"
+    },
+    "decimalMinimum": {
+      "$ref": "#/$defs/DecimalMinimum"
+    },
+    "decimalMaximum": {
+      "$ref": "#/$defs/DecimalMaximum"
+    },
+    "mixedIntegerMinimum": {
+      "$ref": "#/$defs/MixedIntegerMinimum"
+    },
+    "mixedIntegerMaximum": {
+      "$ref": "#/$defs/MixedIntegerMaximum"
+    },
+    "exclusiveMinimum": {
+      "$ref": "#/$defs/ExclusiveMinimum"
+    },
+    "exclusiveMaximum": {
+      "$ref": "#/$defs/ExclusiveMaximum"
+    },
+    "exclusiveNumberMinimum": {
+      "$ref": "#/$defs/ExclusiveNumberMinimum"
+    },
+    "exclusiveNumberMaximum": {
+      "$ref": "#/$defs/ExclusiveNumberMaximum"
+    },
+    "ordered_metadata": {
+      "type": "integer",
+      "default": 7,
+      "examples": [
+        9,
+        7,
+        8
+      ],
+      "minimum": 0,
+      "maximum": 10
+    },
+    "exclusiveMinimumReversed": {
+      "$ref": "#/$defs/ExclusiveMinimumReversed"
+    },
+    "exclusiveMaximumReversed": {
+      "$ref": "#/$defs/ExclusiveMaximumReversed"
+    },
+    "exclusiveNegativeMinimum": {
+      "$ref": "#/$defs/ExclusiveNegativeMinimum"
+    },
+    "exclusivePositiveMaximum": {
+      "$ref": "#/$defs/ExclusivePositiveMaximum"
+    }
+  },
+  "$defs": {
+    "MinimumBase": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "Minimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MinimumBase"
+        },
+        {
+          "type": "integer",
+          "minimum": 3
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ]
+    },
+    "MaximumBase": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "Maximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MaximumBase"
+        },
+        {
+          "type": "integer",
+          "maximum": 4
+        },
+        {
+          "type": "integer",
+          "maximum": 6
+        }
+      ]
+    },
+    "DecimalMinimumBase": {
+      "type": "number",
+      "minimum": 0.25
+    },
+    "DecimalMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/DecimalMinimumBase"
+        },
+        {
+          "type": "number",
+          "minimum": 0.5
+        },
+        {
+          "type": "number",
+          "minimum": 0.25
+        }
+      ]
+    },
+    "DecimalMaximumBase": {
+      "type": "number",
+      "maximum": 1.5
+    },
+    "DecimalMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/DecimalMaximumBase"
+        },
+        {
+          "type": "number",
+          "maximum": 1.25
+        },
+        {
+          "type": "number",
+          "maximum": 1.5
+        }
+      ]
+    },
+    "MixedIntegerMinimumBase": {
+      "type": "integer",
+      "minimum": 1.25
+    },
+    "MixedIntegerMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixedIntegerMinimumBase"
+        },
+        {
+          "type": "number",
+          "minimum": 2
+        },
+        {
+          "type": "number",
+          "minimum": 1.0
+        }
+      ]
+    },
+    "MixedIntegerMaximumBase": {
+      "type": "integer",
+      "maximum": -1.25
+    },
+    "MixedIntegerMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixedIntegerMaximumBase"
+        },
+        {
+          "type": "number",
+          "maximum": -2
+        },
+        {
+          "type": "number",
+          "maximum": -1.0
+        }
+      ]
+    },
+    "ExclusiveMinimumBase": {
+      "type": "integer",
+      "exclusiveMinimum": 9007199254740990,
+      "minimum": 9007199254740990
+    },
+    "ExclusiveMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveMinimumBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 9007199254740992
+        }
+      ]
+    },
+    "ExclusiveMaximumBase": {
+      "type": "integer",
+      "exclusiveMaximum": -9007199254740990,
+      "maximum": -9007199254740990
+    },
+    "ExclusiveMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveMaximumBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMaximum": -9007199254740992
+        }
+      ]
+    },
+    "ExclusiveNumberMinimumBase": {
+      "type": "number",
+      "exclusiveMinimum": 1
+    },
+    "ExclusiveNumberMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveNumberMinimumBase"
+        },
+        {
+          "type": "number",
+          "exclusiveMinimum": 1.5
+        }
+      ]
+    },
+    "ExclusiveNumberMaximumBase": {
+      "type": "number",
+      "exclusiveMaximum": -1
+    },
+    "ExclusiveNumberMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveNumberMaximumBase"
+        },
+        {
+          "type": "number",
+          "exclusiveMaximum": -1.5
+        }
+      ]
+    },
+    "ExclusiveMinimumReversedBase": {
+      "type": "integer",
+      "exclusiveMinimum": 9007199254740992
+    },
+    "ExclusiveMinimumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveMinimumReversedBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 9007199254740990
+        }
+      ]
+    },
+    "ExclusiveMaximumReversedBase": {
+      "type": "integer",
+      "exclusiveMaximum": -9007199254740992
+    },
+    "ExclusiveMaximumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveMaximumReversedBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMaximum": -9007199254740990
+        }
+      ]
+    },
+    "ExclusiveNegativeMinimumBase": {
+      "type": "integer",
+      "exclusiveMinimum": -9007199254740994
+    },
+    "ExclusiveNegativeMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusiveNegativeMinimumBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": -9007199254740992
+        }
+      ]
+    },
+    "ExclusivePositiveMaximumBase": {
+      "type": "integer",
+      "exclusiveMaximum": 9007199254740994
+    },
+    "ExclusivePositiveMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ExclusivePositiveMaximumBase"
+        },
+        {
+          "type": "integer",
+          "exclusiveMaximum": 9007199254740992
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VariantAdditional",
+  "type": "object",
+  "properties": {
+    "requestValues": {
+      "type": "array",
+      "writeOnly": true,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "responseValues": {
+      "type": "array",
+      "readOnly": true,
+      "items": {
+        "type": "integer"
+      }
+    }
+  },
+  "additionalProperties": {
+    "type": "array",
+    "uniqueItems": true,
+    "items": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "requestValues",
+    "responseValues"
+  ]
+}

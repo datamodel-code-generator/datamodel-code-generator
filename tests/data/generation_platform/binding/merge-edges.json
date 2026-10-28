@@ -1,0 +1,28 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Merge edges", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Combined": {"allOf": [
+      {"$ref": "#/components/schemas/Base"},
+      {"$ref": "#/components/schemas/Base"},
+      {"$ref": "#/components/schemas/Other"}
+    ]},
+    "Base": {"type": "object", "required": ["shared", "ghost"], "properties": {"shared": {"type": "string", "minLength": 1}}},
+    "Other": {"type": "object", "properties": {"shared": {"type": "string", "maxLength": 9}, "extra": {"type": "integer"}, "flag": true}},
+    "Sibling": {
+      "$ref": "#/components/schemas/Plain",
+      "anyOf": [true, {"type": "object", "properties": {"b": {"type": "string"}}}],
+      "properties": {"a": {"maxLength": 3}}
+    },
+    "Plain": {"type": "object", "properties": {"a": {"type": "string"}, "open": true}},
+    "Appended": {"$ref": "#/components/schemas/Branched", "anyOf": [true]},
+    "Branched": {"type": "object", "anyOf": [{"type": "object", "properties": {"c": {"type": "string"}}}]},
+    "Thing": {"$ref": "#/components/schemas/ThingBase", "anyOf": [true]},
+    "ThingBase": {
+      "type": "object",
+      "properties": {"a": {"type": "string"}},
+      "anyOf": [true, {"type": "object", "properties": {"b": {"type": "string"}}}]
+    }
+  }}
+}

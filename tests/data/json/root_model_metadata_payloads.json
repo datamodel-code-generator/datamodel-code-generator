@@ -1,0 +1,12 @@
+{
+  "StringRoot": "text",
+  "NullableRoot": null,
+  "ArrayRoot": [1, 2],
+  "NormalObject": {"value": "object", "": 3, "root": true},
+  "RootMetadata": {
+    "text": "text",
+    "nullable": null,
+    "values": [1, 2],
+    "object": {"value": "object", "": 3, "root": true}
+  }
+}

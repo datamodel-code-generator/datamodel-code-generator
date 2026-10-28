@@ -1,0 +1,68 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "$defs": {
+    "First": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "integer"
+        }
+      }
+    },
+    "Second": {
+      "type": "object",
+      "properties": {
+        "second": {
+          "type": "integer"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/Middle"
+        }
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/First"
+        },
+        {
+          "$ref": "#/$defs/Second"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    "Middle": {
+      "type": "object",
+      "properties": {
+        "middle": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

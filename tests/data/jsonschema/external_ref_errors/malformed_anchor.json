@@ -1,0 +1,7 @@
+{
+  "title": "MalformedAnchorRef",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "child.json#Child#extra"}
+  }
+}

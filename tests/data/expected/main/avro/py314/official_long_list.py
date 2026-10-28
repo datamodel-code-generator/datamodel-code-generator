@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class LongList(BaseModel):
     value: int
-    next: LongList | None
+    next: LongList | None = None
 
 
 LongList.model_rebuild()

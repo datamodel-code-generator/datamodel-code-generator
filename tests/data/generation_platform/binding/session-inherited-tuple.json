@@ -1,0 +1,62 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Inherited tuple",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Child": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Parent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "prefixItems": [
+                  {
+                    "properties": {
+                      "code": {
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Parent": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "integer"
+                  }
+                }
+              }
+            ],
+            "items": false
+          }
+        }
+      }
+    }
+  }
+}

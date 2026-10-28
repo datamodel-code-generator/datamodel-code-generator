@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Titled",
+  "type": "object",
+  "properties": {
+    "kind": {"title": "Kind Title", "type": "string", "enum": ["a", "b"], "const": "a"},
+    "single": {"title": "Single Title", "type": "string", "enum": ["a"], "const": "a"},
+    "written": {"title": "Written Title", "type": "string", "const": "a"}
+  }
+}

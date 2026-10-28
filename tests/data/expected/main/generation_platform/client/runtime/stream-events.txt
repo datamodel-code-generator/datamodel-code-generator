@@ -1,0 +1,116 @@
+# streams pydantic_v2.BaseModel
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  pooled first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  pooled again
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    end
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  content coded
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    end
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  borrowed pool after the client closed = Message(text='ok')
+  > GET https://api.example.com/events accept=text/event-stream
+  native idle while waiting for bytes
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  native read timeout from call options
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  native idle overrides explicit read timeout
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  session total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
+  > GET https://api.example.com/events accept=text/event-stream
+  request budget ends after acquisition
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  paused first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  after a pause longer than the idle limit
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
+  > GET https://api.example.com/events accept=text/event-stream
+  before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  client close with an open stream = None
+  client close again = None
+  after the client closed
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async native idle while waiting for bytes
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async native read timeout from call options
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async native idle overrides explicit read timeout
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async session total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
+  > GET https://api.example.com/events accept=text/event-stream
+  async request budget ends after acquisition
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async paused first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  async after a pause longer than the idle limit
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  async buffered event after the session total ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='deadline_exceeded') [operation_id='streamEvents'] deadline_exceeded
+  > GET https://api.example.com/events accept=text/event-stream
+  async cancelled first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  async step cancelled
+  async after the cancellation ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.failed') [field_path=('anext', 'failed')] invalid_state
+  > GET https://api.example.com/events accept=text/event-stream
+  async before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  async client close with an open stream = None
+  async client close again = None
+  async after the client closed
+    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end

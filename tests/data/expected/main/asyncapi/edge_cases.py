@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, RootModel
 
 
 class AlwaysValid(RootModel[Any]):
@@ -19,7 +19,7 @@ class User(BaseModel):
 
 
 class UserAlias(RootModel[User]):
-    root: User = Field(..., discriminator='kind')
+    root: User
 
 
 class AsyncAPIModelPayload(BaseModel):

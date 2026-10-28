@@ -1,0 +1,1 @@
+error: shard_index must be between 1 and shard_total

@@ -24,3 +24,8 @@ class Address(BaseModel):
 
 class ProductRequest(BaseModel):
     name: str | None = None
+
+
+class ProductResponse(BaseModel):
+    id: int | None = None
+    name: str | None = None

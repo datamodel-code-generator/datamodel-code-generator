@@ -1,0 +1,55 @@
+returncode: 0
+stdout:
+stderr:
+Wrote <tmp>/release-benchmarks.json
+merged:
+{
+  "schema_version": 1,
+  "metadata": {
+    "generated_at": "2026-06-22T00:00:00Z",
+    "workflow": "local",
+    "workflow_run_id": "",
+    "collector_sha": "",
+    "os": "ubuntu-24.04",
+    "python_version": "3.14.2",
+    "runs_per_case": "3",
+    "warmups_per_case": "1",
+    "selection_strategy": "clickpy_downloads",
+    "selection_window_days": "365",
+    "selected_versions": "0.64.1,0.64.0,0.53.0,0.33.0",
+    "download_source": "clickpy",
+    "download_window_days": "365",
+    "download_versions": "4",
+    "download_window_total": "1975",
+    "pypistats_source": "pypistats.org",
+    "pypistats_last_day": "12",
+    "pypistats_last_week": "789",
+    "pypistats_last_month": "3456",
+    "pypistats_timeseries_days": "2",
+    "pypistats_timeseries_downloads": "300",
+    "release_dates": {
+      "0.64.1": "2026-06-19T00:00:00Z",
+      "0.64.0": "2026-06-14T00:00:00Z",
+      "0.53.0": "2026-01-12T00:00:00Z",
+      "0.33.0": "2025-08-14T00:00:00Z"
+    }
+  },
+  "entries": [
+    {
+      "version": "0.64.1",
+      "python_version": "3.14.2",
+      "os": "ubuntu-24.04",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "runs": 3,
+      "median_ms": 546.0,
+      "min_ms": 533.0,
+      "max_ms": 552.0,
+      "stdev_ms": 9.8,
+      "status": "ok",
+      "command": "python -m datamodel_code_generator --input tests/data/jsonschema/person.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --output model.py",
+      "error": ""
+    }
+  ]
+}

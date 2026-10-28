@@ -1,0 +1,8 @@
+{
+  "BaseFirst.x-field": "base_name",
+  "DerivedBaseFirst.x-field": "derived_name",
+  "ScopedDerivedBaseFirst.x-field": "scoped_derived_name",
+  "ForwardBase.x-field": "forward_base_name",
+  "ForwardDerived.x-field": "forward_derived_name",
+  "ForwardScopedDerived.x-field": "forward_scoped_derived_name"
+}

@@ -1,0 +1,1 @@
+msgspec cannot decode the union Shelter.resident: its Struct types Kitten, Cat are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

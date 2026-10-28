@@ -1,0 +1,52 @@
+[
+  {
+    "name": "syntax",
+    "text": "{\"text\": }"
+  },
+  {
+    "name": "large syntax",
+    "prefix": "{\"text\":\"",
+    "text": "x",
+    "repeat": 200000,
+    "suffix": "\""
+  },
+  {
+    "name": "duplicate key",
+    "text": "{\"text\":\"a\",\"text\":\"b\"}"
+  },
+  {
+    "name": "non-finite",
+    "text": "[NaN]"
+  },
+  {
+    "name": "integer limit",
+    "text": "1",
+    "repeat": 5000
+  },
+  {
+    "name": "encoding",
+    "hex": "7b2274657874223a22ff227d"
+  },
+  {
+    "name": "parser nesting",
+    "text": "[",
+    "repeat": 100000,
+    "suffix": "]",
+    "suffix_repeat": 100000
+  },
+  {
+    "name": "snapshot nesting",
+    "text": "[",
+    "repeat": 700,
+    "suffix": "]",
+    "suffix_repeat": 700
+  },
+  {
+    "name": "surrogate value",
+    "text": "{\"text\":\"\\ud800\"}"
+  },
+  {
+    "name": "surrogate key",
+    "text": "{\"\\ud800\":\"a\"}"
+  }
+]

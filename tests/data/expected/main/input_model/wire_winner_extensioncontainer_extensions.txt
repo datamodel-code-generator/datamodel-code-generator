@@ -1,0 +1,25 @@
+{
+  "root": {
+    "x-datamodel-code-generator-field-name": {
+      "user": "root"
+    },
+    "x-datamodel-code-generator-field-names": [
+      "user",
+      "root"
+    ],
+    "examples": [
+      {
+        "x-datamodel-code-generator-field-name": "example"
+      }
+    ]
+  },
+  "property": {
+    "x-datamodel-code-generator-field-name": {
+      "user": "winner"
+    },
+    "x-datamodel-code-generator-field-names": 42
+  },
+  "default": {
+    "x-datamodel-code-generator-field-name": "default"
+  }
+}

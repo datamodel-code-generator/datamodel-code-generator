@@ -1,0 +1,15 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "known": {
+      "type": "integer",
+      "default": 4
+    }
+  },
+  "required": [
+    "missing"
+  ],
+  "additionalProperties": true,
+  "customBasePath": "tests.data.python.pattern_intersection_base.AttributeBase"
+}

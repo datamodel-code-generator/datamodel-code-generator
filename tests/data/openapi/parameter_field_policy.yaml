@@ -1,0 +1,79 @@
+openapi: 3.0.3
+info:
+  title: Parameter field policy
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: schema_nested
+          in: query
+          schema:
+            $ref: "#/components/schemas/Nested"
+        - name: content_nested
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nested"
+        - name: schema_read_only
+          in: query
+          schema:
+            type: string
+            readOnly: true
+        - name: content_read_only
+          in: query
+          content:
+            application/json:
+              schema:
+                type: string
+                readOnly: true
+        - name: schema_write_only
+          in: query
+          schema:
+            type: string
+            writeOnly: true
+        - name: content_write_only
+          in: query
+          content:
+            application/json:
+              schema:
+                type: string
+                writeOnly: true
+        - name: content_array
+          in: query
+          content:
+            application/json:
+              schema:
+                type: array
+                minItems: 1
+                contains: true
+                items:
+                  type: string
+        - name: content_multi
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nested"
+            text/plain:
+              schema:
+                type: string
+      responses:
+        "204":
+          description: No content
+components:
+  schemas:
+    Nested:
+      type: object
+      properties:
+        value:
+          type: string
+    Defaulted:
+      type: object
+      properties:
+        nested:
+          $ref: "#/components/schemas/Nested"
+          default:
+            value: preset

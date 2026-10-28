@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Array type union constraints
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Payload:
+      type: object
+      properties:
+        value:
+          type:
+            - array
+            - string
+          minItems: 1
+          minLength: 2
+          items:
+            type: string
+      required:
+        - value

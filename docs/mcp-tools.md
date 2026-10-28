@@ -92,8 +92,24 @@ For example:
 MCP `inputSchema` and `outputSchema` entries are converted into JSON Schema definitions before generation. Local
 `$defs` and `definitions` entries inside a tool schema are hoisted and prefixed to avoid collisions between tools.
 
+## Supported MCP Features
+
+| Feature | Generation behavior |
+|---------|---------------------|
+| Tool `inputSchema` | Generated as `<ToolName>Input` |
+| Tool `outputSchema` | Generated as `<ToolName>Output` when present |
+| `tools/list` responses | Extracts `result.tools` |
+| Server definitions | Extracts top-level `tools` arrays |
+| Local `$defs` / `definitions` | Hoisted into generated JSON Schema definitions |
+
+## Limitations
+
+MCP tool schema input generates Python models from declared JSON Schemas. It does not connect to MCP servers, call
+tools, validate tool runtime behavior, or infer schemas from tool implementations.
+
 ## See Also
 
+- [Getting Started](getting-started.md)
 - [MCP Tools specification](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
 - [MCP Schema reference](https://modelcontextprotocol.io/specification/2025-06-18/schema)
 - [Generate from JSON Schema](jsonschema.md)

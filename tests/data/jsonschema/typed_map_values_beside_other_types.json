@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "properties": {
+    "limits": {
+      "type": ["object", "null"],
+      "additionalProperties": {"type": "integer"}
+    },
+    "quotas": {
+      "type": ["object", "string"],
+      "additionalProperties": {"type": "integer"}
+    },
+    "owners": {
+      "type": ["object", "string", "null"],
+      "additionalProperties": {
+        "type": "object",
+        "properties": {"name": {"type": "string"}}
+      }
+    }
+  }
+}

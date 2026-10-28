@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info: {title: Pets, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, default: 20}}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+    post:
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "200":
+          description: Already there.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /pets/{name}:
+    put:
+      operationId: replacePet
+      tags: [pets]
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "204": {description: Replaced.}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}

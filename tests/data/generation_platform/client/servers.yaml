@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Servers
+  version: 1.0.0
+servers:
+  - url: /v2
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      responses:
+        '204':
+          description: Up.
+  /regional:
+    servers:
+      - url: https://{zone}.example.com
+        variables:
+          zone:
+            default: east
+      - url: https://backup.example.com:8443/base
+    get:
+      operationId: getRegional
+      responses:
+        '204':
+          description: Up.

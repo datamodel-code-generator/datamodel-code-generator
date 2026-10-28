@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "disjoint": {
+      "$ref": "#/$defs/Disjoint"
+    }
+  },
+  "$defs": {
+    "Single": {
+      "type": "string",
+      "enum": [
+        "a"
+      ]
+    },
+    "Mixed": {
+      "enum": [
+        1.5,
+        "b"
+      ]
+    },
+    "Disjoint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Single"
+        },
+        {
+          "$ref": "#/$defs/Mixed"
+        }
+      ]
+    }
+  }
+}

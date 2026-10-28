@@ -1,0 +1,22 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "items": [
+        {
+          "n": 1
+        },
+        {
+          "n": 2
+        }
+      ],
+      "again": {
+        "n": 3
+      }
+    },
+    "rejected"
+  ]
+}

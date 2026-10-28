@@ -1,0 +1,40 @@
+[
+  {
+    "native": true,
+    "json": {},
+    "python": {}
+  },
+  {
+    "native": true,
+    "json": {
+      "x": {
+        "b": 2,
+        "a": 3
+      }
+    },
+    "python": {
+      "x": {
+        "b": 2,
+        "a": 3
+      }
+    }
+  },
+  {
+    "native": false,
+    "json": "rejected",
+    "python": "rejected"
+  },
+  {
+    "native": false,
+    "json": {
+      "x": {
+        "a": 3
+      }
+    },
+    "python": {
+      "x": {
+        "a": 3
+      }
+    }
+  }
+]

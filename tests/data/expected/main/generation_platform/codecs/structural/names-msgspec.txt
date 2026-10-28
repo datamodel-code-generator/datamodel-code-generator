@@ -1,0 +1,8 @@
+use /paths/~1camels/post request_body: MsgspecCodec
+use /paths/~1camels/post response_body 200: MsgspecCodec
+use /paths/~1kebabs/post request_body: MsgspecCodec
+use /paths/~1kebabs/post response_body 200: MsgspecCodec
+camel-server-decode: ValidationError
+camel-server-response: KeyError
+kebab-server-decode: ValidationError
+kebab-server-response: KeyError

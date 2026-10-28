@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StrictTypesTime",
+  "type": "object",
+  "properties": {
+    "string_time": {
+      "type": "string",
+      "format": "time"
+    },
+    "nullable_string_time": {
+      "type": ["string", "null"],
+      "format": "time"
+    },
+    "string_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "string_date_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "string_duration": {
+      "type": "string",
+      "format": "duration"
+    },
+    "number": {
+      "type": "number"
+    },
+    "string_or_array_time": {
+      "type": ["string", "array"],
+      "format": "time",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "string_or_sized_array_time": {
+      "type": ["string", "array"],
+      "format": "time",
+      "items": {
+        "type": "integer"
+      },
+      "minItems": 1
+    },
+    "string_or_object_time": {
+      "type": ["string", "object"],
+      "format": "time",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" xmlns:alias="urn:one">
+  <xs:element name="first" type="xs:int"/><xs:element name="second" type="xs:string"/>
+</xs:schema>

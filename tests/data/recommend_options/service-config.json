@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Service configuration file schema",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "log-level": {"type": "string", "enum": ["debug", "info", "warning", "error"]},
+    "mode": {"type": "string", "enum": ["standalone", "cluster"]},
+    "timeout": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+    "jobs": {"type": "object", "additionalProperties": {"$ref": "#/definitions/job"}},
+    "triggers": {"type": "array", "items": {"$ref": "#/definitions/trigger"}}
+  },
+  "definitions": {
+    "job": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["build", "deploy"]},
+        "runtime": {"type": "string", "enum": ["python", "node", "go"]},
+        "timeout": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+        "retries": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+        "steps": {"type": "array", "items": {"$ref": "#/definitions/step"}}
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["push", "schedule"]},
+        "timeout": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+        "delay": {"anyOf": [{"type": "integer"}, {"type": "string"}]}
+      }
+    },
+    "step": {
+      "type": "object",
+      "properties": {
+        "uses": {"type": "string"},
+        "run": {"type": "string"},
+        "with": {"type": "object", "properties": {"args": {"type": "string"}}},
+        "timeout": {"anyOf": [{"type": "integer"}, {"type": "string"}]}
+      },
+      "oneOf": [{"required": ["uses"]}, {"required": ["run"]}]
+    }
+  }
+}

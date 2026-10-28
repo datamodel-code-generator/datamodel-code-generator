@@ -1,0 +1,39 @@
+[
+  {
+    "bases": [
+      "StrictParent"
+    ],
+    "fields": [
+      "value",
+      "label"
+    ]
+  },
+  {
+    "payload": {
+      "value": 5
+    },
+    "source": {
+      "value": 5,
+      "label": 2
+    },
+    "generated": {
+      "value": 5,
+      "label": 2
+    }
+  },
+  {
+    "payload": {
+      "value": 1
+    },
+    "source": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    }
+  }
+]

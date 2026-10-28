@@ -5,6 +5,13 @@ Choose the command output format.
 The default output format is `text`. Use `json` when another program or LLM
 agent should inspect structured output.
 
+For backward compatibility, text stdout concatenates generated modules and does
+not preserve their paths. Use `--fail-on-multi-module-stdout` to reject that
+case, `--output <directory>` to preserve files, or `--output-format json` for
+structured stdout. The fail option takes precedence over automatic repair of an
+unusable modular stdout result, so an explicitly requested guard always rejects
+the modular result instead of coalescing it.
+
 In normal generation mode, `--output-format json` wraps generated modules in a
 structured payload on stdout. If `--output` is also supplied, files are still
 written to disk and the JSON payload mirrors the generated files. `--check`
@@ -22,13 +29,31 @@ path relative to the output directory for directory output. For stdout-only
 single-file generation it is `null`, and for multi-module stdout generation it
 is the generated module path.
 
+With `--generate-server` or `--generate-client`, the generation, check, and
+input-diff payloads also have a `target` object: `package` is the import path
+of the generated package, and `dependencies` lists its runtime requirements as
+PEP 508 strings, the ones the `uv add` command on stderr names. A check or input
+diff lists those of the current input, and `implied` the model settings the run
+left unset and the target set, when there are any: an object with the keys
+`openapi-scopes`, `target-python-version`, `use-missing-sentinel`,
+`target-pydantic-version`, `use-msgspec-tagged-unions`, and
+`use-msgspec-nullable-enum-alias`, each present only when the target set it. Payloads of model-only generation leave `target` out. The generation payload's `target` also carries the next steps that
+stderr prints: `readme`, the path of the package README; for a server,
+`entrypoint` (`app`, the import string of the application in `main.py`, and
+`path`) and `implementation`, one entry for each module of yours that `main.py`
+imports (`module`, `name`, `path`, and `created`, true when the run wrote it with
+stubs, and whose `path` names the `__init__.py` of a module you made a package);
+and for a client, `usage`, code that calls its first operation. Its paths are
+relative like those of `files`.
+
 Use `--output-format json` with `--generate-prompt` to emit structured option
 metadata instead of Markdown. Use `--output-format-json-schema` when an LLM
-agent or tool needs the schema for a structured output payload.
+agent or tool needs the schema for a JSON payload.
 
 Schema targets are intentionally scoped. `generate-prompt` emits the
 `PromptPayload` schema for `--generate-prompt --output-format json`.
 `generation` emits only the `GenerationPayload` schema for generated-file JSON.
+`model-metadata` emits the schema for files written by `--emit-model-metadata`.
 `structured-output` emits the broader `StructuredOutputPayload` schema, a union
 covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
 `CheckOutputPayload`. Structured payloads use `kind` as the discriminator.
@@ -41,7 +66,8 @@ covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generation # (4)!
     datamodel-codegen --output-format-json-schema generate-prompt # (5)!
-    datamodel-codegen --output-format-json-schema structured-output # (6)!
+    datamodel-codegen --output-format-json-schema model-metadata # (6)!
+    datamodel-codegen --output-format-json-schema structured-output # (7)!
     ```
 
     1. :material-arrow-left: Emit the default generated Python text
@@ -49,7 +75,8 @@ covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
     3. :material-arrow-left: Emit structured JSON with current options and argparse metadata
     4. :material-arrow-left: Emit JSON Schema for generated-file JSON output
     5. :material-arrow-left: Emit JSON Schema for structured prompt JSON
-    6. :material-arrow-left: Emit JSON Schema for any structured command JSON output
+    6. :material-arrow-left: Emit JSON Schema for generated model metadata JSON
+    7. :material-arrow-left: Emit JSON Schema for any structured command JSON output
 
 ??? example "Generation JSON output"
 

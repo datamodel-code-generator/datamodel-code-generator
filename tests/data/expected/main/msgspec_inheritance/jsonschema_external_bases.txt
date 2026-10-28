@@ -1,0 +1,23 @@
+{
+  "convert": {
+    "c": 3
+  },
+  "decode": {
+    "c": 3
+  },
+  "fields": [
+    "c",
+    "status"
+  ],
+  "bases": [
+    "Struct",
+    "ContextDecorator"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "ContextDecorator",
+    "object"
+  ]
+}

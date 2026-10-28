@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AdditionalAliases",
+  "type": "object",
+  "properties": {
+    "known-value": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    }
+  },
+  "additionalProperties": {
+    "type": "array",
+    "uniqueItems": true,
+    "items": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "known-value"
+  ]
+}

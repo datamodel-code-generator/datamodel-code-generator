@@ -1,0 +1,186 @@
+openapi: 3.2.0
+info:
+  title: Helper targets beside a querystring
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /search/{scope}:
+    get:
+      operationId: search
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term: {type: string}
+                  limit: {type: integer}
+        - name: scope
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Cursor
+          in: header
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of matches.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+  /events:
+    get:
+      operationId: streamEvents
+      parameters:
+        - name: filter
+          in: querystring
+          required: true
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  topic: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events of a topic.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /jobs:
+    post:
+      operationId: createJob
+      responses:
+        '202':
+          description: The job was accepted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      parameters:
+        - name: view
+          in: querystring
+          required: true
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  fields: {type: string}
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The state of a job.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /files:
+    post:
+      operationId: createFile
+      parameters:
+        - name: detail
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  kind: {type: string}
+        - name: Upload-Length
+          in: header
+          required: true
+          schema: {type: integer}
+      responses:
+        '201':
+          description: The upload was created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /files/{fileId}:
+    head:
+      operationId: probeFile
+      parameters:
+        - name: detail
+          in: querystring
+          required: true
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  kind: {type: string}
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The offset the server holds.
+          headers:
+            Upload-Offset:
+              schema: {type: integer}
+    patch:
+      operationId: appendFile
+      parameters:
+        - name: detail
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  kind: {type: string}
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Upload-Offset
+          in: header
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/offset+octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: The chunk was appended.
+          headers:
+            Upload-Offset:
+              schema: {type: integer}
+components:
+  schemas:
+    Page:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {type: string}
+        next: {type: string}
+    Job:
+      type: object
+      properties:
+        id: {type: string}
+        status: {type: string}
+    Message:
+      type: object
+      properties:
+        id: {type: string}

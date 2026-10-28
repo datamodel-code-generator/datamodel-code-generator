@@ -1,0 +1,56 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "integer": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "string": {
+          "enum": [
+            "a",
+            "b"
+          ]
+        },
+        "number": {
+          "enum": [
+            1.5,
+            2.5
+          ]
+        }
+      },
+      "required": [
+        "integer",
+        "string",
+        "number"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "integer": {
+          "enum": [
+            2,
+            1
+          ]
+        },
+        "string": {
+          "enum": [
+            "b",
+            "a"
+          ]
+        },
+        "number": {
+          "enum": [
+            2.5,
+            1.5
+          ]
+        }
+      }
+    }
+  ]
+}

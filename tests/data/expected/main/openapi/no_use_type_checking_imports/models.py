@@ -2,9 +2,11 @@
 #   filename:  modular.yaml
 
 from __future__ import annotations
+
 from enum import Enum
-from pydantic import BaseModel
 from typing import Any
+
+from pydantic import BaseModel
 
 
 class Species(Enum):

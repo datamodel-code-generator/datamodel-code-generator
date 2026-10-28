@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: Enums beside a const
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Shape:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [circle, square]
+          const: circle
+        level:
+          oneOf:
+            - {type: string, enum: [low], title: Low}
+            - {type: string, enum: [high], title: High}

@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "beyondFalse": {"$ref": "#/definitions/BeyondFalse"},
+    "beyondFalseInline": {"$ref": "#/definitions/BeyondFalseInline"},
+    "falseEntry": {"$ref": "#/definitions/FalseEntry"},
+    "additionalAfterFalse": {"$ref": "#/definitions/AdditionalAfterFalse"},
+    "additionalTail": {"$ref": "#/definitions/AdditionalTail"}
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "BeyondFalse": {
+      "type": "array",
+      "items": [{"type": "string"}, false, {"$ref": "#/definitions/Item"}]
+    },
+    "BeyondFalseInline": {
+      "type": "array",
+      "items": [
+        {"type": "string"},
+        false,
+        {"type": "object", "properties": {"r": {"type": "string", "readOnly": true}}}
+      ]
+    },
+    "FalseEntry": {
+      "type": "array",
+      "items": [
+        {"type": "string"},
+        {"allOf": [{"type": "object", "properties": {"r": {"type": "string", "readOnly": true}}}, false]},
+        {"$ref": "#/definitions/Item"}
+      ]
+    },
+    "AdditionalAfterFalse": {
+      "type": "array",
+      "items": [{"type": "string"}, false],
+      "additionalItems": {"$ref": "#/definitions/Item"}
+    },
+    "AdditionalTail": {
+      "type": "array",
+      "items": [{"type": "string"}],
+      "additionalItems": {"$ref": "#/definitions/Item"}
+    }
+  }
+}

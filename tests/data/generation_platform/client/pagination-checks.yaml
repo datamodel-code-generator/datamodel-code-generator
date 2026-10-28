@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: Pagination checks
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: size
+          in: query
+          schema: {type: number}
+        - name: X-Cursor
+          in: header
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            X-Next:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /bodies:
+    post:
+      operationId: searchBodies
+      tags: [bodies]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count: {type: integer}
+                page:
+                  type: object
+                  properties:
+                    cursor: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /multi:
+    post:
+      operationId: searchMulti
+      tags: [multi]
+      requestBody:
+        content:
+          application/vnd.first+json:
+            schema: {$ref: '#/components/schemas/Position'}
+          application/vnd.second+json:
+            schema: {$ref: '#/components/schemas/Position'}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /folders/{folder}:
+    get:
+      operationId: listFolder
+      tags: [folders]
+      parameters:
+        - name: folder
+          in: path
+          required: true
+          schema: {type: string}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /styled/{label}/{reserved}/{file}.json:
+    get:
+      operationId: listStyled
+      tags: [styled]
+      parameters:
+        - {name: label, in: path, required: true, style: label, schema: {type: string}}
+        - {name: reserved, in: path, required: true, allowReserved: true, schema: {type: string}}
+        - {name: file, in: path, required: true, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /joined/{first}{second}:
+    get:
+      operationId: listJoined
+      tags: [joined]
+      parameters:
+        - {name: first, in: path, required: true, schema: {type: string}}
+        - {name: second, in: path, required: true, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /forms:
+    post:
+      operationId: searchForms
+      tags: [forms]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /twice:
+    get:
+      operationId: listTwice
+      tags: [twice]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+        '201':
+          description: Another page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /hidden:
+    get:
+      operationId: listHidden
+      tags: [hidden]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: A page whose required member is write-only.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, secret]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/User'}
+                  secret: {type: string, writeOnly: true}
+components:
+  schemas:
+    Position:
+      type: object
+      properties:
+        cursor: {type: string}
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    Label:
+      type: object
+      properties:
+        name: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}
+        count: {type: integer}
+        mode:
+          enum: [a, null, true, 1, 1.5, 2.0, {k: v}, [1]]
+        fixed: {const: x}
+        anything: {}
+        maybe:
+          anyOf:
+            - type: array
+              items: {$ref: '#/components/schemas/User'}
+            - type: 'null'
+        choice:
+          anyOf: [{type: string}, {type: integer}, {type: 'null'}]
+        grouped:
+          type: object
+          additionalProperties:
+            type: array
+            items: {$ref: '#/components/schemas/User'}
+        either:
+          oneOf:
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items: {$ref: '#/components/schemas/User'}
+            - type: object
+              properties:
+                name: {type: string}

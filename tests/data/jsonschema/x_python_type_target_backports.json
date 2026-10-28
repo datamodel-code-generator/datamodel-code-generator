@@ -1,0 +1,35 @@
+{
+  "title": "TargetBackportModel",
+  "type": "object",
+  "properties": {
+    "buffer": {
+      "type": "string",
+      "x-python-type": "Buffer"
+    },
+    "qualifiers_a": {
+      "type": "string",
+      "x-python-type": "tuple[LiteralString, Never, NotRequired[str]]"
+    },
+    "qualifiers_b": {
+      "type": "string",
+      "x-python-type": "tuple[ReadOnly[str], Required[str], Self]"
+    },
+    "aliases": {
+      "type": "string",
+      "x-python-type": "tuple[TypeAliasType, TypeIs[str], TypeVarTuple, Unpack[tuple[str]]]"
+    },
+    "qualified_type_is": {
+      "type": "string",
+      "x-python-type": "typing.TypeIs[str]"
+    },
+    "future": {
+      "type": "string",
+      "x-python-type": "tuple[override, NoDefault, TypeForm[str]]"
+    },
+    "future_315": {
+      "type": "string",
+      "x-python-type": "tuple[NoExtraItems, disjoint_base, typing.NoExtraItems]"
+    }
+  },
+  "required": ["buffer", "qualifiers_a", "qualifiers_b", "aliases", "qualified_type_is", "future", "future_315"]
+}

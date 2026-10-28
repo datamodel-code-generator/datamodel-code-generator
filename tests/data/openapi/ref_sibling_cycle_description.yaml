@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Components that only reference each other, one beside a description
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/B'
+      minProperties: 1
+    B:
+      $ref: '#/components/schemas/A'
+      description: hi
+    Holder:
+      type: object
+      properties:
+        a:
+          $ref: '#/components/schemas/A'
+        count:
+          type: integer
+    Needs:
+      type: object
+      required:
+        - a
+      properties:
+        a:
+          $ref: '#/components/schemas/A'

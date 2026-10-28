@@ -1,0 +1,33 @@
+{
+  "title": "Apple",
+  "type": "object",
+  "properties": {
+    "b": {
+      "$ref": "api.v2.b.json"
+    },
+    "zed": {
+      "$ref": "#/$defs/Zebra"
+    },
+    "alpha": {
+      "$ref": "#/$defs/Lemon"
+    }
+  },
+  "$defs": {
+    "Zebra": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "Lemon": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

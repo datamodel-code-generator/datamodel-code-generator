@@ -25,6 +25,23 @@ CASES = (
         ],
     ),
     ("with_list_options.txt", ["--strict-types", "str", "int", "--generate-prompt"]),
+    (
+        "json_output.txt",
+        [
+            "--input",
+            "tests/data/jsonschema/person.json",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--no-use-annotated",
+            "--strict-types",
+            "str",
+            "int",
+            "--generate-prompt",
+            "Which strict Pydantic v2 options should I use?",
+            "--output-format",
+            "json",
+        ],
+    ),
 )
 
 

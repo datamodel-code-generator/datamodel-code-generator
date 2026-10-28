@@ -1,0 +1,63 @@
+[none fast_path=False]
+from __future__ import annotations
+from typing import Any, List, Optional
+from pydantic import BaseModel, Field, RootModel
+
+
+class Model(RootModel[Any]):
+    root: Any
+
+
+class User(BaseModel):
+    name: Optional[str] = Field(None, examples=['ken'])
+    pets: List[User] = Field(default_factory=list)
+
+
+class Pet(BaseModel):
+    name: Optional[str] = Field(None, examples=['dog', 'cat'])
+
+
+User.model_rebuild()
+[black fast_path=False]
+from __future__ import annotations
+from typing import Any, List, Optional
+from pydantic import BaseModel, Field, RootModel
+
+
+class Model(RootModel[Any]):
+    root: Any
+
+
+class User(BaseModel):
+    name: Optional[str] = Field(None, examples=['ken'])
+    pets: List[User] = Field(default_factory=list)
+
+
+class Pet(BaseModel):
+    name: Optional[str] = Field(None, examples=['dog', 'cat'])
+
+
+User.model_rebuild()
+
+[builtin fast_path=True]
+from __future__ import annotations
+
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, Field, RootModel
+
+
+class Model(RootModel[Any]):
+    root: Any
+
+
+class User(BaseModel):
+    name: Optional[str] = Field(None, examples=['ken'])
+    pets: List[User] = Field(default_factory=list)
+
+
+class Pet(BaseModel):
+    name: Optional[str] = Field(None, examples=['dog', 'cat'])
+
+
+User.model_rebuild()

@@ -1,0 +1,23 @@
+[tool.datamodel-codegen]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+
+[tool.datamodel-codegen.client-operations]
+"options.yaml#/paths/~1pets/get" = { name = "find_all" }
+
+[tool.datamodel-codegen.client-protocols."pets.all"]
+kind = "pagination"
+operation = { pointer = "/paths/~1pets/get", document = "options.yaml" }
+items = { from = "body", pointer = "/data" }
+item_schema = { pointer = "/components/schemas/Pet", document = "options.yaml" }
+continuation = { kind = "cursor", read = { from = "body", pointer = "/next_cursor" }, write = { in = "query", name = "cursor" }, end = [{ kind = "missing" }, { kind = "null" }], empty_string = "end" }

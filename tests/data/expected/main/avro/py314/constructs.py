@@ -17,7 +17,7 @@ class Status(StrEnum):
 
 class Address(BaseModel):
     street: str
-    zip: str | None
+    zip: str | None = None
 
 
 class MD5(RootModel[conbytes(min_length=16, max_length=16)]):
@@ -41,17 +41,17 @@ class User(BaseModel):
     """
     Stable identifier
     """
-    active: bool
-    age: int
+    active: bool | None = True
+    age: int | None = 0
     visits: int
     score: float
     rating: float
     payload: bytes
-    status: Status
-    tags: list[str]
-    attributes: dict[str, str]
+    status: Status | None = 'ACTIVE'
+    tags: list[str] | None = []
+    attributes: dict[str, str] | None = {}
     address: Address
-    previous: User | None
+    previous: User | None = None
     hash: MD5
     traceId: TraceId
     price: Decimal
@@ -67,7 +67,7 @@ class User(BaseModel):
     localUpdatedAt: NaiveDatetime
     localProcessedAt: NaiveDatetime
     duration: Duration
-    choice: str | int | None
+    choice: str | int | None = None
     rawDecimalText: str
 
 

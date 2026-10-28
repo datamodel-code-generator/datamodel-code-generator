@@ -1,0 +1,14 @@
+{
+  "plain": true,
+  "unicode": true,
+  "pr_reference": false,
+  "empty": false,
+  "newline": false,
+  "mention": false,
+  "html": false,
+  "link": false,
+  "control": false,
+  "line_separator": false,
+  "breaking_changes": true,
+  "trailing_newline": false
+}

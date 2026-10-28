@@ -17,11 +17,12 @@ def test_build_experimental_docs_check_is_up_to_date() -> None:
 def test_build_experimental_docs_release_notes() -> None:
     """The docs script can print release-note snippets from the registry."""
     result = subprocess.run(
-        [sys.executable, str(SCRIPT), "--release-notes", "0.59.0"],
+        [sys.executable, str(SCRIPT), "--release-notes", "0.72.3"],
         check=True,
         capture_output=True,
         text=True,
     )
 
     assert "## Experimental Features" in result.stdout
-    assert "--input-file-type avro" in result.stdout
+    assert "[tool.datamodel-codegen.jobs], --job, --all-jobs" in result.stdout
+    assert "datamodel-codegen.lock, --lockfile, --update-lock, and --locked" in result.stdout

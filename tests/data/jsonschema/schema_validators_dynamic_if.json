@@ -1,0 +1,34 @@
+{
+  "title": "PresenceRules",
+  "type": "object",
+  "properties": {
+    "guard": {
+      "type": "integer"
+    },
+    "a": {},
+    "b": {},
+    "c": {},
+    "d": {}
+  },
+  "required": [
+    "guard"
+  ],
+  "$defs": {
+    "S": {
+      "required": [
+        "d"
+      ]
+    }
+  },
+  "if": {
+    "required": [
+      "a"
+    ],
+    "$dynamicRef": "#/$defs/S"
+  },
+  "then": {
+    "required": [
+      "c"
+    ]
+  }
+}

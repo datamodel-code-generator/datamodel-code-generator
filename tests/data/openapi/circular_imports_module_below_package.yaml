@@ -1,0 +1,48 @@
+openapi: 3.0.0
+info:
+  title: A cycle through a root model and a package, which imports modules below that package
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    # flow_details and the models of the treasury package form the cycle that _internal.py merges.
+    flow_details:
+      type: object
+      properties:
+        received_debit:
+          $ref: '#/components/schemas/treasury.received_debit'
+
+    treasury.received_debit:
+      type: object
+      properties:
+        id:
+          type: string
+        detail:
+          $ref: '#/components/schemas/treasury.sub.detail'
+
+    # The inline enum is a module of its own below treasury under --naming-strategy full-path.
+    treasury.transaction_entry:
+      type: object
+      properties:
+        flow_details:
+          $ref: '#/components/schemas/flow_details'
+        type:
+          type: string
+          enum: [received_credit, received_debit]
+
+    # treasury.sub and treasury.sub.deep are modules that the cycle imports, below the treasury package.
+    treasury.sub.detail:
+      type: object
+      properties:
+        note:
+          type: string
+        leaf:
+          $ref: '#/components/schemas/treasury.sub.deep.leaf'
+
+    treasury.sub.deep.leaf:
+      type: object
+      properties:
+        code:
+          type: integer

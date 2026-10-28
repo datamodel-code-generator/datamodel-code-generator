@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted external relative ref
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Animals:
+      $ref: ./all_of_with_relative_ref/schema/animal.yaml
+    Bad.1.Child:
+      type: object
+      properties:
+        value:
+          type: string
+    Other.2.Parent:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Bad.1.Child'

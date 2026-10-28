@@ -1,0 +1,37 @@
+{
+  "values": [
+    {
+      "native": true,
+      "json": {
+        "x": null
+      },
+      "python": {
+        "x": null
+      }
+    },
+    {
+      "native": true,
+      "json": {
+        "x": {
+          "a": 1
+        }
+      },
+      "python": {
+        "x": {
+          "a": 1
+        }
+      }
+    },
+    {
+      "native": false,
+      "json": "rejected",
+      "python": "rejected"
+    },
+    {
+      "native": false,
+      "json": "rejected",
+      "python": "rejected"
+    }
+  ],
+  "metadata": {}
+}

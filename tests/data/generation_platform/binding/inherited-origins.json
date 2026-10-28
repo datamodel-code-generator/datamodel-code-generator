@@ -1,0 +1,16 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Inherited origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Child": {"allOf": [
+      {"$ref": "#/components/schemas/Parent"},
+      {"type": "object", "properties": {"note": {"minLength": 2}}}
+    ]},
+    "Parent": {"title": "RenamedParent", "type": "object", "properties": {
+      "ship-to": {"type": "object", "properties": {"postal-code": {"type": "string"}}},
+      "note": {"type": "string", "minLength": 1},
+      "id": {"type": "integer", "readOnly": true}
+    }}
+  }}
+}

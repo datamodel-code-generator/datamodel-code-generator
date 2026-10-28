@@ -1,0 +1,1 @@
+error: unsupported shard recipe: {'version': 2, 'items': [{'nodeid': 'a', 'weight': 1}]}

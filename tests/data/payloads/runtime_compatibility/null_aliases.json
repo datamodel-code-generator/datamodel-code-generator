@@ -1,0 +1,38 @@
+{
+  "jsonschema/numeric_allof_types/null_first_nullable.json": {
+    "valid": null,
+    "invalid": [
+      0,
+      "",
+      {},
+      []
+    ]
+  },
+  "jsonschema/numeric_allof_types/null_same.json": {
+    "valid": null,
+    "invalid": [
+      0,
+      "",
+      {},
+      []
+    ]
+  },
+  "jsonschema/numeric_allof_types/null_scalar_nullable.json": {
+    "valid": null,
+    "invalid": [
+      0,
+      "",
+      {},
+      []
+    ]
+  },
+  "jsonschema/numeric_allof_types/nullable_null_only.json": {
+    "valid": null,
+    "invalid": [
+      0,
+      "",
+      {},
+      []
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+timedelta: timedelta(milliseconds=0)
+one: timedelta(milliseconds=1)
+milliseconds: timedelta(milliseconds=1001)
+endian: timedelta(milliseconds=16909060)
+maximum: timedelta(milliseconds=4294967295)
+array: [timedelta(milliseconds=0), timedelta(milliseconds=1), timedelta(milliseconds=1001)]
+map: {'z': timedelta(milliseconds=4294967295), 'a': timedelta(milliseconds=1)}
+union: timedelta(milliseconds=1001)
+string_first: 'kept'
+nullable: None
+record: {'elapsed': timedelta(milliseconds=1001)}
+record_array: [{'elapsed': timedelta(milliseconds=1)}]
+nested: [{'z': timedelta(milliseconds=1001), 'a': timedelta(milliseconds=1)}]
+ordinary_fixed: b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00'
+ordinary_bytes: b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00'

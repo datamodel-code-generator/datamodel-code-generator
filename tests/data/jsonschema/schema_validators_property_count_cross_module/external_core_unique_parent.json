@@ -1,0 +1,13 @@
+{
+  "title": "ExternalCoreUniqueParent",
+  "type": "object",
+  "properties": {
+    "baseValues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer"
+      }
+    }
+  }
+}

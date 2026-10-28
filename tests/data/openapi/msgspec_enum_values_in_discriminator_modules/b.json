@@ -1,0 +1,30 @@
+{
+ "openapi": "3.0.3",
+ "info": {
+  "title": "t",
+  "version": "1"
+ },
+ "paths": {},
+ "components": {
+  "schemas": {
+   "VersionEnum": {
+    "type": "string",
+    "enum": [
+     "v1",
+     "v2"
+    ]
+   },
+   "Base": {
+    "type": "object",
+    "required": [
+     "version"
+    ],
+    "properties": {
+     "version": {
+      "$ref": "#/components/schemas/VersionEnum"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "anyOf": [
+      {
+        "$ref": "#/$defs/A"
+      },
+      {
+        "$ref": "#/$defs/B"
+      }
+    ]
+  },
+  "additionalProperties": {
+    "type": "integer"
+  },
+  "$defs": {
+    "A": {
+      "enum": [
+        "a"
+      ]
+    },
+    "B": {
+      "enum": [
+        "b"
+      ]
+    }
+  }
+}

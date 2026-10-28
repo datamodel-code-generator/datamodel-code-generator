@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Parameter type aliases next to root models
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: code
+          in: query
+          schema: {type: string, maxLength: 4}
+        - name: other
+          in: query
+          schema: {type: string, maxLength: 4}
+        - name: known
+          in: query
+          schema: {$ref: '#/components/schemas/common.Code'}
+        - name: codes
+          in: query
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/common.Code'}
+        - name: size
+          in: query
+          schema: {$ref: '#/components/schemas/common.Size'}
+      responses:
+        '200':
+          description: The items.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/items.Page'}
+  /items/{code}:
+    get:
+      operationId: getItem
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: {type: string, maxLength: 4}
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/items.Item'}
+components:
+  schemas:
+    common.Code:
+      type: string
+      maxLength: 4
+    common.Size:
+      type: integer
+      minimum: 1
+      default: 7
+    items.Item:
+      type: object
+      properties:
+        code: {$ref: '#/components/schemas/common.Code'}
+        alias: {$ref: '#/paths/~1items/get/parameters/0/schema'}
+    items.Page:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/items.Item'}
+        size: {$ref: '#/components/schemas/common.Size'}

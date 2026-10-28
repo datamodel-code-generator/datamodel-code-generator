@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
+import ast
+import warnings
 from typing import TYPE_CHECKING
 
 import black
+import msgspec
 import pytest
 
+from tests.conftest import assert_output
 from tests.main.conftest import (
+    DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     LEGACY_BLACK_SKIP,
+    _generated_model,
+    assert_generated_model_json_validation,
     run_main_and_assert,
+    target_pydantic_args,
 )
 from tests.main.graphql.conftest import assert_file_content
 
@@ -82,6 +90,83 @@ def test_main_graphql_different_types_of_fields(output_file: Path) -> None:
     )
 
 
+def test_main_graphql_msgspec_field_type_collision_list(output_file: Path) -> None:
+    """Write a type hidden by a field of its class as a quoted name inside a typing generic for Python 3.10."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "same_named_list.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="same_named_list_msgspec_no_future_imports.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-future-imports",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        skip_code_validation=True,
+    )
+    payload_path = DATA_PATH / "payloads" / "field_type_collision_graphql"
+    with _generated_model(output_file, "field_type_collision_graphql", "Holder") as model:
+        parsed = msgspec.json.decode((payload_path / "valid.json").read_text(encoding="utf-8"), type=model)
+        assert_output(
+            f"{msgspec.json.encode(parsed).decode()}\n",
+            DATA_PATH / "expected/payloads/field_type_collision_graphql/runtime.txt",
+        )
+
+
+def test_main_graphql_msgspec_unions(output_file: Path) -> None:
+    """Report a GraphQL union of several msgspec Structs, which msgspec cannot decode untagged."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=GRAPHQL_DATA_PATH / "msgspec_unions.graphql",
+            output_path=output_file,
+            input_file_type="graphql",
+            assert_func=assert_file_content,
+            expected_file="msgspec_unions.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_GRAPHQL_PATH / "msgspec_unions_warnings.txt",
+    )
+
+
+def test_main_graphql_root_type_references(output_file: Path) -> None:
+    """Resolve operation roots to Any while retaining non-root types named Query."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "root_type_references.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="root_type_references.py",
+        extra_args=["--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_graphql_root_type_references",
+        model_name="Payload",
+        valid_json='{"queryRoot":{"anything":1},"ordinaryQuery":{"label":"ok"}}',
+        invalid_json='{"ordinaryQuery":{"label":1}}',
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-default-kwarg"],
     option_description="""Use default= keyword argument instead of positional argument for fields with defaults.
@@ -142,6 +227,45 @@ def test_main_graphql_field_enum_default(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("input_file", "extra_args", "expected_name", "enum_name"),
+    [
+        (
+            "field-default-enum.graphql",
+            ["--output-model-type", "typing.TypedDict"],
+            "list_item_enum_typed_dict",
+            "Color",
+        ),
+        (
+            "field-default-enum.graphql",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--enum-field-as-literal", "all"],
+            "list_item_enum_literal_pydantic_v2",
+            "Color",
+        ),
+        (
+            "github-api-issue-states.graphql",
+            ["--output-model-type", "typing.TypedDict"],
+            "github_api_issue_states",
+            "IssueState",
+        ),
+    ],
+)
+def test_main_graphql_collapse_root_models_keeps_list_item_enums(
+    output_file: Path, input_file: str, extra_args: list[str], expected_name: str, enum_name: str
+) -> None:
+    """Keep the enum alias that GraphQL list items name when collapsing root models."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file=f"collapse_root_models_{expected_name}.py",
+        extra_args=[*extra_args, "--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
+        importable_module_name=f"generated_graphql_collapse_{expected_name}",
+        importable_module_attribute=enum_name,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -158,24 +282,65 @@ def test_main_graphql_custom_scalar_types(output_file: Path) -> None:
     )
 
 
+def test_main_graphql_builtin_scalar_template_data_is_non_executing(output_file: Path) -> None:
+    """Built-in scalar aliases serialize executable-looking public type data."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "builtin-template-data.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="builtin_template_data.py",
+        extra_args=[
+            "--disable-timestamp",
+            "--extra-template-data",
+            str(GRAPHQL_DATA_PATH / "builtin-template-data.json"),
+        ],
+    )
+    unsafe_import_calls = [
+        node
+        for node in ast.walk(ast.parse(output_file.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "__import__"
+    ]
+    if unsafe_import_calls:  # pragma: no cover - reports the precise generated-source regression
+        pytest.fail(f"Generated scalar type executed public template data: {unsafe_import_calls!r}")
+
+
+def test_main_graphql_custom_scalar_template_data_remains_raw(output_file: Path) -> None:
+    """Trusted custom scalar templates retain their raw ``py_type`` context."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "builtin-template-data.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="custom_template_data.py",
+        extra_args=[
+            "--disable-timestamp",
+            "--extra-template-data",
+            str(GRAPHQL_DATA_PATH / "builtin-template-data.json"),
+            "--custom-template-dir",
+            str(GRAPHQL_DATA_PATH.parent / "templates_scalar_template_data"),
+        ],
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
 )
 @pytest.mark.cli_doc(
     options=["--aliases"],
-    option_description="""Apply custom field and class name aliases from JSON file.
+    option_description="""Apply custom field and class name aliases via inline JSON or a JSON file path.
 
-The `--aliases` option allows you to rename fields using a JSON mapping file.
+The `--aliases` option allows you to rename fields using an inline JSON object or JSON mapping file.
 Supports hierarchical formats for scoped or global aliasing.""",
     input_schema="graphql/field-aliases.graphql",
     cli_args=["--aliases", "graphql/field-aliases.json"],
     golden_output="graphql/field_aliases.py",
 )
 def test_main_graphql_field_aliases(output_file: Path) -> None:
-    """Apply custom field and class name aliases from JSON file.
+    """Apply custom field and class name aliases via inline JSON or a JSON file path.
 
-    The `--aliases` option allows you to rename fields using a JSON mapping file.
+    The `--aliases` option allows you to rename fields using an inline JSON object or JSON mapping file.
     Supports hierarchical formats for scoped or global aliasing.
     """
     run_main_and_assert(
@@ -438,6 +603,36 @@ def test_main_graphql_enums_subclass(output_file: Path) -> None:
     )
 
 
+def test_main_graphql_enums_subclass_specialized(output_file: Path) -> None:
+    """Write GraphQL enums as importable StrEnum classes under --use-subclass-enum on Python 3.11+.
+
+    A StrEnum subclasses str already, so it takes no extra str base: up to 0.86.0 the output was
+    ``class Color(str, StrEnum)``, which fails at import (no consistent method resolution order).
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "enums.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=["--target-python-version", "3.11", "--use-subclass-enum"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_graphql_enums_dated_preset(output_file: Path) -> None:
+    """Write GraphQL enums as importable StrEnum classes under a dated preset, which sets --use-subclass-enum.
+
+    The preset's own target is passed too, so that the output (``type`` statements) is compiled and imported only on
+    Python 3.14 and compared everywhere.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "enums.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=["--preset", "standard-py314-20261017", "--target-python-version", "3.14"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -553,6 +748,25 @@ def test_main_graphql_additional_imports_in_extra_template_data(output_file: Pat
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
 )
+def test_main_graphql_additional_imports_in_extra_template_data_inline_json(output_file: Path) -> None:
+    """Test extra-template-data loaded from inline JSON."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "additional-imports.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="additional_imports.py",
+        extra_args=[
+            "--extra-template-data",
+            (GRAPHQL_DATA_PATH / "additional-imports-in-extra-template-data.json").read_text(encoding="utf-8"),
+        ],
+    )
+
+
+@pytest.mark.skipif(
+    black.__version__.split(".")[0] == "19",
+    reason="Installed black doesn't support the old style",
+)
 def test_main_graphql_additional_imports_in_extra_template_data_list_format(output_file: Path) -> None:
     """Test additional_imports specified in extra-template-data JSON file (list format)."""
     run_main_and_assert(
@@ -584,7 +798,7 @@ def test_main_graphql_additional_imports_merged(output_file: Path) -> None:
             "--extra-template-data",
             str(GRAPHQL_DATA_PATH / "additional-imports-partial.json"),
             "--additional-imports",
-            "datetime.date,mymodule.myclass.MyCustomPythonClass",
+            " datetime.date, mymodule.myclass.MyCustomPythonClass ",
         ],
     )
 
@@ -883,7 +1097,7 @@ def test_main_graphql_union_class_name_prefix(output_file: Path) -> None:
     This test verifies fix for issue #2939.
     """
     run_main_and_assert(
-        input_path=GRAPHQL_DATA_PATH / "union_class_name_prefix.graphql",
+        input_path=GRAPHQL_DATA_PATH / "union.graphql",
         output_path=output_file,
         input_file_type="graphql",
         assert_func=assert_file_content,
@@ -964,6 +1178,22 @@ def test_main_graphql_use_default_with_default_values(output_file: Path) -> None
     )
 
 
+def test_main_graphql_use_default_with_default_values_inline_json(output_file: Path) -> None:
+    """Test --default-values loaded from inline JSON for GraphQL."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "default_values_required.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="default_values_required_use_default.py",
+        extra_args=[
+            "--use-default",
+            "--default-values",
+            (DEFAULT_VALUES_DATA_PATH / "graphql_user_defaults.json").read_text(encoding="utf-8"),
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--graphql-no-typename"],
     option_description="""Exclude __typename field from generated GraphQL models.
@@ -985,4 +1215,53 @@ def test_main_graphql_no_typename(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="no_typename.py",
         extra_args=["--graphql-no-typename"],
+    )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
+def test_main_graphql_alias_generator_union_members(output_file: Path, target_pydantic_version: str | None) -> None:
+    """Keep union members unpinned for --target-pydantic-version 2: they take no alias and no Field import."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "alias_generator_empty_union.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_empty_union.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--graphql-no-typename",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        pytest.param("pydantic_v2.dataclass", id="pydantic-dataclass"),
+        pytest.param("msgspec.Struct", id="msgspec"),
+    ],
+)
+def test_main_graphql_strip_default_none_constructor_order(output_model_type: str, output_file: Path) -> None:
+    """Order a nullable field after the required ones under --strip-default-none.
+
+    A Pydantic dataclass keeps ``= None`` on a nullable field, and msgspec.Struct keeps every default.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "strip_default_none_constructor_order.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strip-default-none",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
     )

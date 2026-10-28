@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrdinaryRoot",
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "#/$defs/Base",
+      "properties": {"code": {"type": "integer"}},
+      "required": ["code"]
+    }
+  },
+  "required": ["value"],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}},
+      "default": {"note": "ordinary"}
+    }
+  }
+}

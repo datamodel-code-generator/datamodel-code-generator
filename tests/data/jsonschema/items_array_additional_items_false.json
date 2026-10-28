@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ItemsArrayAdditionalItemsFalse",
+  "type": "object",
+  "properties": {
+    "closed_by_additional_items_false": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}],
+      "additionalItems": false,
+      "minItems": 2
+    },
+    "closed_by_false_position": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}, false],
+      "minItems": 2
+    },
+    "explicit_below_positions": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}, {"type": "boolean"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "explicit_beyond_positions": {
+      "type": "array",
+      "items": [{"type": "string"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "explicit_beyond_positions_with_tail": {
+      "type": "array",
+      "items": [{"type": "string"}],
+      "additionalItems": {"type": "integer"},
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "explicit_fixed": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "kept_one_schema": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "string"}],
+      "additionalItems": false,
+      "minItems": 2
+    },
+    "kept_one_position": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "string"}],
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "kept_open": {
+      "type": "array",
+      "items": [{"type": "string"}, {"type": "integer"}],
+      "additionalItems": {"type": "integer"},
+      "minItems": 2
+    }
+  }
+}

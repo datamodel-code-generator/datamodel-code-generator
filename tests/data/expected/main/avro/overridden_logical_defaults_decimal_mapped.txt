@@ -1,0 +1,2 @@
+DecimalDefaults(positive=b'\x01\x02', negative=b'\xfe\xfe', zero=b'\x00', trailing=b'\x04\xb0')
+{'positive': b'\x01\x02', 'negative': b'\xfe\xfe', 'zero': b'\x00', 'trailing': b'\x04\xb0'}

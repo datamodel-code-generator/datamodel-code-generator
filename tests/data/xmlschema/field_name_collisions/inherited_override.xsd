@@ -1,0 +1,3 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" xmlns:alias="urn:one">
+  <xs:complexType name="Base"><xs:attribute name="code" type="xs:string"/></xs:complexType><xs:complexType name="Child"><xs:complexContent><xs:restriction base="Base"><xs:attribute name="code" type="xs:string" use="required"/></xs:restriction></xs:complexContent></xs:complexType><xs:element name="root" type="Child"/>
+</xs:schema>

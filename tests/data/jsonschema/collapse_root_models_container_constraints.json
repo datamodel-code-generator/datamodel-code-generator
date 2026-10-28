@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContainerConstraints",
+  "type": "object",
+  "$defs": {
+    "BoundedList": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {"type": "integer"}
+    },
+    "BoundedMap": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 2,
+      "additionalProperties": {"type": "integer"}
+    },
+    "PlainText": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "boundedList": {"$ref": "#/$defs/BoundedList"},
+    "boundedMap": {"$ref": "#/$defs/BoundedMap"},
+    "plainText": {"$ref": "#/$defs/PlainText"}
+  },
+  "required": ["boundedList", "boundedMap", "plainText"]
+}

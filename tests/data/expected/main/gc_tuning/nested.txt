@@ -1,0 +1,4 @@
+outer_entered=True
+inner_entered=True
+inner_exited=True
+outer_exited=True

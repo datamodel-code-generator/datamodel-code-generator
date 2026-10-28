@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "error": "TypeCheckError"
+    },
+    {
+      "value": "three"
+    },
+    {
+      "error": "TypeCheckError"
+    },
+    {
+      "value": "child"
+    },
+    {
+      "error": "TypeCheckError"
+    },
+    {
+      "value": "mice"
+    }
+  ],
+  "exit_codes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "same_code": true,
+  "public_identity": true,
+  "typeguard_identity": true,
+  "concurrent_safe": true,
+  "loaded_after_generation": {
+    "inflect": false,
+    "typeguard": false
+  },
+  "failed_private_import_cleaned": true
+}

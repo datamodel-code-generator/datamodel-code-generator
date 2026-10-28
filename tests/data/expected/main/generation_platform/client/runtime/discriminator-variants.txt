@@ -1,0 +1,32 @@
+# discriminator-variants typing.TypedDict
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet c = {'pet': {'kind': 'c', 'mane': True}, 'pets_by_name': {'a': {'kind': 'd'}}}
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet d = {'pet': {'kind': 'd'}, 'pets_by_name': {'b': {'kind': 'c', 'mane': False}}}
+  > GET https://api.example.com/child
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', reason='invalid_value') [operation_id='getChild', body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Fish = {'pet': {'kind': 'Fish', 'fins': 2}}
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held Bird = {'pet': {'kind': 'Bird'}}
+  > GET https://api.example.com/holder
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  held null = {'pet': None}
+  > GET https://api.example.com/pets/list
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  listed pets = [{'kind': 'Cat'}, {'kind': 'Dog', 'bark': True}]
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 16] b'{"kind":"kitty"}'
+  pet kitty = {'kind': 'kitty'}
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 29] b'{"kind":"doggo","bark":false}'
+  pet doggo = {'kind': 'doggo', 'bark': False}
+  item without its count ! TypeError: create_item() missing required field arguments for application/json: 'count' []
+  > POST https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
+  item with its count = None

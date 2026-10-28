@@ -1,0 +1,9 @@
+{
+  "valid": {
+    "a-name": "ok"
+  },
+  "invalid": {
+    "a-name": "ok",
+    "b": "bad"
+  }
+}

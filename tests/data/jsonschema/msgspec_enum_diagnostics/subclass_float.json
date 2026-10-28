@@ -1,0 +1,19 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "value": {
+      "enum": [
+        1,
+        1.0
+      ],
+      "x-enum-varnames": [
+        "member_0",
+        "member_1"
+      ]
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

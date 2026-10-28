@@ -1,0 +1,61 @@
+[
+  {
+    "native": true,
+    "json": {},
+    "python": {}
+  },
+  {
+    "native": true,
+    "json": {
+      "xy": {
+        "b": 2,
+        "a": 1
+      }
+    },
+    "python": {
+      "xy": {
+        "b": 2,
+        "a": 1
+      }
+    }
+  },
+  {
+    "native": false,
+    "json": {
+      "xy": {
+        "a": 1
+      }
+    },
+    "python": {
+      "xy": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "native": true,
+    "json": {
+      "x": {
+        "a": 1
+      }
+    },
+    "python": {
+      "x": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "native": true,
+    "json": {
+      "y": {
+        "b": 2
+      }
+    },
+    "python": {
+      "y": {
+        "b": 2
+      }
+    }
+  }
+]

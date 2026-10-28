@@ -1,0 +1,12 @@
+{
+  "ToolCall": {
+    "valid": [
+      {"type": "function", "id": "a"}
+    ],
+    "invalid": [
+      {"type": "other", "id": "a"},
+      {"id": "a"},
+      {"type": "function"}
+    ]
+  }
+}

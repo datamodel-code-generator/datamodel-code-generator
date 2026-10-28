@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-23T00:00:00Z",
+    "workflow_run_id": "main-run",
+    "collector_sha": "moving-main-collector-sha",
+    "main_snapshot_generated_at": "2026-06-23T00:00:00Z",
+    "main_snapshot_workflow_run_id": "main-run",
+    "main_snapshot_collector_sha": "",
+    "runs_per_case": "3",
+    "warmups_per_case": "1"
+  },
+  "entries": [
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    }
+  ]
+}

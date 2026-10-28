@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "properties": {
+    "class_value": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "x-is-classvar": true,
+      "default": {}
+    },
+    "required_value": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {}
+    },
+    "count": {
+      "type": "integer",
+      "default": 1
+    }
+  },
+  "required": ["required_value"]
+}

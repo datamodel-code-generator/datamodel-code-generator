@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Draft4ExclusiveWithoutBound",
+  "type": "object",
+  "properties": {
+    "upper": {"type": "number", "exclusiveMaximum": true},
+    "lower": {"type": "number", "exclusiveMinimum": true},
+    "upper_bounded": {"type": "number", "maximum": 5, "exclusiveMaximum": true},
+    "lower_bounded": {"type": "number", "minimum": 0, "exclusiveMinimum": true}
+  }
+}

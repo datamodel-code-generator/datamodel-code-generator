@@ -1,0 +1,17 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Nullable values", "version": "1.0"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "NullableValue": {"type": ["string", "null"]},
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "value": {"$ref": "#/components/schemas/NullableValue"}
+        },
+        "required": ["value"]
+      }
+    }
+  }
+}

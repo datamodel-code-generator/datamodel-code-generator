@@ -1,0 +1,14 @@
+{
+  "title": "PropertyParent",
+  "type": "object",
+  "minProperties": 2,
+  "properties": {
+    "value": {
+      "type": "string"
+    },
+    "second": {
+      "type": "string"
+    }
+  },
+  "required": ["value", "second"]
+}

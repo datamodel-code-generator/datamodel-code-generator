@@ -1,0 +1,137 @@
+# document-webhooks
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hooks",
+    "version": "1.0"
+  },
+  "paths": {
+    "/subscriptions": {
+      "post": {
+        "operationId": "subscribe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Subscribed."
+          }
+        },
+        "callbacks": {
+          "onEvent": {
+            "{$request.body#/url}": {
+              "$ref": "#/components/pathItems/served-event"
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "newEvent": {
+      "$ref": "#/components/pathItems/served-event"
+    },
+    "newPet": {
+      "$ref": "#/components/pathItems/PetEvent"
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pet": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Cat": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "const": "cat"
+          },
+          "meow": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Dog": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "const": "dog"
+          },
+          "bark": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "pathItems": {
+      "served-event": {
+        "post": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Received."
+            }
+          }
+        }
+      },
+      "PetEvent": {
+        "post": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cat"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Received."
+            }
+          }
+        }
+      }
+    }
+  }
+}

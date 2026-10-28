@@ -1,0 +1,142 @@
+{
+  "type": "record",
+  "name": "DurationDefaults",
+  "namespace": "clock",
+  "fields": [
+    {
+      "name": "timedelta",
+      "type": {
+        "type": "fixed",
+        "name": "Elapsed",
+        "size": 12,
+        "logicalType": "duration"
+      },
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "one",
+      "type": "Elapsed",
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000"
+    },
+    {
+      "name": "milliseconds",
+      "type": "Elapsed",
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000"
+    },
+    {
+      "name": "endian",
+      "type": "Elapsed",
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0003\u0002\u0001"
+    },
+    {
+      "name": "maximum",
+      "type": "Elapsed",
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00ff\u00ff\u00ff\u00ff"
+    },
+    {
+      "name": "array",
+      "type": {
+        "type": "array",
+        "items": "Elapsed"
+      },
+      "default": [
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000",
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000"
+      ]
+    },
+    {
+      "name": "map",
+      "type": {
+        "type": "map",
+        "values": "Elapsed"
+      },
+      "default": {
+        "z": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00ff\u00ff\u00ff\u00ff",
+        "a": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000"
+      }
+    },
+    {
+      "name": "union",
+      "type": [
+        "Elapsed",
+        "null"
+      ],
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000"
+    },
+    {
+      "name": "string_first",
+      "type": [
+        "string",
+        "Elapsed"
+      ],
+      "default": "kept"
+    },
+    {
+      "name": "nullable",
+      "type": [
+        "null",
+        "Elapsed"
+      ],
+      "default": null
+    },
+    {
+      "name": "record",
+      "type": {
+        "type": "record",
+        "name": "Frame",
+        "fields": [
+          {
+            "name": "elapsed",
+            "type": "Elapsed"
+          }
+        ]
+      },
+      "default": {
+        "elapsed": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000"
+      }
+    },
+    {
+      "name": "record_array",
+      "type": {
+        "type": "array",
+        "items": "Frame"
+      },
+      "default": [
+        {
+          "elapsed": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000"
+        }
+      ]
+    },
+    {
+      "name": "nested",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "map",
+          "values": "Elapsed"
+        }
+      },
+      "default": [
+        {
+          "z": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000",
+          "a": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000"
+        }
+      ]
+    },
+    {
+      "name": "ordinary_fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Raw",
+        "size": 12
+      },
+      "default": "\u0001\u0000\u0000\u0000\u0002\u0000\u0000\u0000\u0003\u0000\u0000\u0000"
+    },
+    {
+      "name": "ordinary_bytes",
+      "type": "bytes",
+      "default": "\u0001\u0000\u0000\u0000\u0002\u0000\u0000\u0000\u0003\u0000\u0000\u0000"
+    }
+  ]
+}

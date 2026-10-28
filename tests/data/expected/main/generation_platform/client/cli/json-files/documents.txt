@@ -1,0 +1,3 @@
+# project/client/resources/pets/_sync.py
+find_all(limit, cursor, response_media_type, options)
+create_pet(body, media_type, response_media_type, options)

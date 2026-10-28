@@ -1,0 +1,128 @@
+{
+  "first_then_second": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "DefinitionsEnvelope": true,
+      "Alpha": true,
+      "Beta": true
+    },
+    "cached_followup_model_order": [
+      "DefinitionsEnvelope",
+      "Beta",
+      "Alpha"
+    ],
+    "uncached_followup_model_order": [
+      "DefinitionsEnvelope",
+      "Beta",
+      "Alpha"
+    ],
+    "cached_followup_fields": {
+      "DefinitionsEnvelope": [
+        "context"
+      ],
+      "Beta": [
+        "third",
+        "fourth"
+      ],
+      "Alpha": [
+        "first",
+        "second"
+      ]
+    },
+    "uncached_followup_fields": {
+      "DefinitionsEnvelope": [
+        "context"
+      ],
+      "Beta": [
+        "third",
+        "fourth"
+      ],
+      "Alpha": [
+        "first",
+        "second"
+      ]
+    },
+    "cached_followup_json": {
+      "Alpha": "{\"first\":\"alpha\",\"second\":1}",
+      "Beta": "{\"third\":true,\"fourth\":2.5}",
+      "DefinitionsEnvelope": "{\"context\":\"definitions\"}"
+    },
+    "uncached_followup_json": {
+      "Alpha": "{\"first\":\"alpha\",\"second\":1}",
+      "Beta": "{\"third\":true,\"fourth\":2.5}",
+      "DefinitionsEnvelope": "{\"context\":\"definitions\"}"
+    }
+  },
+  "second_then_first": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "DefinitionsEnvelope": true,
+      "Beta": true,
+      "Alpha": true
+    },
+    "cached_followup_model_order": [
+      "DefinitionsEnvelope",
+      "Alpha",
+      "Beta"
+    ],
+    "uncached_followup_model_order": [
+      "DefinitionsEnvelope",
+      "Alpha",
+      "Beta"
+    ],
+    "cached_followup_fields": {
+      "DefinitionsEnvelope": [
+        "context"
+      ],
+      "Alpha": [
+        "first",
+        "second"
+      ],
+      "Beta": [
+        "third",
+        "fourth"
+      ]
+    },
+    "uncached_followup_fields": {
+      "DefinitionsEnvelope": [
+        "context"
+      ],
+      "Alpha": [
+        "first",
+        "second"
+      ],
+      "Beta": [
+        "third",
+        "fourth"
+      ]
+    },
+    "cached_followup_json": {
+      "Alpha": "{\"first\":\"alpha\",\"second\":1}",
+      "Beta": "{\"third\":true,\"fourth\":2.5}",
+      "DefinitionsEnvelope": "{\"context\":\"definitions\"}"
+    },
+    "uncached_followup_json": {
+      "Alpha": "{\"first\":\"alpha\",\"second\":1}",
+      "Beta": "{\"third\":true,\"fourth\":2.5}",
+      "DefinitionsEnvelope": "{\"context\":\"definitions\"}"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "valid": {
+    "pNullablePatterns": null,
+    "rNullablePatterns": null,
+    "iNullablePatterns": [
+      null,
+      {
+        "a1": 1
+      }
+    ],
+    "mNullablePatterns": {
+      "k": null
+    },
+    "pNullableNames": null,
+    "rNullableNames": null,
+    "iNullableNames": [
+      null,
+      {
+        "a": 1
+      }
+    ],
+    "mNullableNames": {
+      "k": null
+    },
+    "pNullableCount": null,
+    "rNullableCount": null,
+    "iNullableCount": [
+      null,
+      {
+        "x": 1
+      }
+    ],
+    "mNullableCount": {
+      "k": null
+    },
+    "pNullableOpenCount": null,
+    "rNullableOpenCount": null,
+    "iNullableOpenCount": [
+      null,
+      {
+        "x": "s"
+      }
+    ],
+    "mNullableOpenCount": {
+      "k": null
+    },
+    "pPatternCount": {
+      "ab": "s"
+    },
+    "rPatternCount": {
+      "ab": "s"
+    },
+    "iPatternCount": [
+      {
+        "ab": "s"
+      }
+    ],
+    "mPatternCount": {
+      "k": {
+        "ab": "s"
+      }
+    }
+  },
+  "invalid": [
+    {
+      "pNullableCount": {}
+    },
+    {
+      "rNullableCount": {
+        "a": 1,
+        "b": 2,
+        "c": 3,
+        "d": 4
+      }
+    },
+    {
+      "pNullableOpenCount": {}
+    },
+    {
+      "rPatternCount": {}
+    }
+  ]
+}

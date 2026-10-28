@@ -1,0 +1,14 @@
+{
+  "First": {
+    "config": {
+      "protected_namespaces": [
+        "model_"
+      ]
+    }
+  },
+  "Child": {
+    "config": {
+      "protected_namespaces": []
+    }
+  }
+}

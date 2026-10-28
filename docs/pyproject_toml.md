@@ -1,8 +1,19 @@
-<!-- related-cli-options: --ignore-pyproject, --generate-pyproject-config, --generate-cli-command, --profile -->
+<!-- related-cli-options: --all-jobs, --ignore-pyproject, --generate-pyproject-config, --generate-cli-command, --job, --profile, --preset, --watch -->
 
 # ⚙️ pyproject.toml Configuration
 
 datamodel-code-generator can be configured using `pyproject.toml`. The tool automatically searches for `pyproject.toml` in the current directory and parent directories (stopping at the git repository root).
+
+HTTP client selection uses the same values as `--http-backend`. For example,
+the experimental HTTPX2 pair can be required explicitly:
+
+```toml
+[tool.datamodel-codegen]
+http-backend = "httpx2"
+```
+
+The default is `"auto"`, which prefers stable HTTPX. See
+[HTTP backend selection](faq.md#http-backend-selection).
 
 ## 🚀 Basic Usage
 
@@ -16,6 +27,19 @@ field-constraints = true
 ```
 
 All CLI options can be used in `pyproject.toml` by converting them to kebab-case (e.g., `--snake-case-field` becomes `snake-case-field`).
+
+On the command line, relative paths in `pyproject.toml` resolve as follows:
+
+- Relative to the `pyproject.toml` directory: `input`, `output`, `custom-template-dir`, `custom-file-header-path`,
+  `diff-against`, `emit-model-metadata`, `http-local-ref-path`, `lockfile`, `server-output`, `client-output`, and the
+  JSON files of the server and client settings.
+- Relative to the working directory: the file of `input-model`, and the JSON files of `aliases`,
+  `serialization-aliases`, `extra-template-data`, `custom-formatters-kwargs`, `default-values`, `base-class-map`,
+  `model-name-map`, `enum-field-as-literal-map`, `duplicate-name-suffix`, `import-overrides`, `type-overrides`, and
+  `validators`.
+
+`load_pyproject_config()` reads those JSON files from the `pyproject.toml` directory instead; see
+[Using as Module](using_as_module.md).
 
 ## Formatter settings
 
@@ -45,17 +69,13 @@ You can define multiple named profiles for different use cases within a single p
 ```toml
 [tool.datamodel-codegen]
 target-python-version = "3.10"
+
+[tool.datamodel-codegen.profiles.strict]
 snake-case-field = true
+use-annotated = true
 
-[tool.datamodel-codegen.profiles.api]
-input = "schemas/api.yaml"
-output = "src/models/api.py"
+[tool.datamodel-codegen.profiles.py311]
 target-python-version = "3.11"
-
-[tool.datamodel-codegen.profiles.database]
-input = "schemas/db.json"
-output = "src/models/db.py"
-input-file-type = "jsonschema"
 ```
 
 Base settings in `[tool.datamodel-codegen]` are used when no profile is specified, and also serve as defaults for profiles.
@@ -63,18 +83,75 @@ Base settings in `[tool.datamodel-codegen]` are used when no profile is specifie
 Use a profile with the `--profile` option:
 
 ```bash
-datamodel-codegen --profile api
-datamodel-codegen --profile database
+datamodel-codegen --input schemas/api.yaml --output src/models/api.py --profile strict
+datamodel-codegen --input schemas/db.json --output src/models/db.py --profile py311
 ```
+
+## 🏃 Named Jobs (Experimental)
+
+!!! warning "Experimental"
+
+    Named batch jobs are experimental; their configuration schema, batch output,
+    and transactional/watch execution contracts may change.
+
+Profiles are reusable configuration fragments. A job is a runnable generation
+that supplies its own `input` and `output` and can select one profile.
+
+```toml
+[tool.datamodel-codegen.jobs.api]
+profile = "strict"
+input = "schemas/api.yaml"
+output = "src/models/api.py"
+
+[tool.datamodel-codegen.jobs.database]
+profile = "py311"
+input = "schemas/db.json"
+output = "src/models/db.py"
+input-file-type = "jsonschema"
+```
+
+Run selected jobs or every job:
+
+```bash
+datamodel-codegen --job api
+datamodel-codegen --job api --job database --check
+datamodel-codegen --all-jobs
+```
+
+Jobs always run sequentially in their TOML declaration order. Before generation,
+all selected jobs are validated: each must have an input and output, and output
+or model-metadata paths cannot overlap, with two exceptions: jobs that each select
+`generate-server` or `generate-client` may name the same models `output`, which the
+batch writes once and fails on if their generated model files differ, and a job may
+keep its models inside its own server or client output, or that output inside its
+models directory. `--job` and `--all-jobs` are mutually
+exclusive. Define job-specific input and output in TOML instead of combining
+job selection with `--input`, `--url`, `--input-model`, `--output`, `--profile`,
+`--diff-against`, or job-specific watch settings. Input comparison is a
+single-profile/input operation and is rejected if it is inherited by any
+selected job. `watch` and `watch-delay` may be set on the CLI or in the base
+`[tool.datamodel-codegen]` table, but cannot be set in a job table or in the
+selected profile. Batch watch observes the union of every selected job's local
+dependencies plus `pyproject.toml`. Each event reloads the project, replans the
+selection, and transactionally reruns the whole batch; it does not partially
+rebuild individual jobs. A failed cycle keeps the last published outputs and
+continues watching both prior and newly discovered dependencies for recovery.
+
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and a job whose settings select `generate-client` also generates the Python
+client package; such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+Server and client generation are experimental; see [FastAPI Server Generation](fastapi-server.md) and
+[Python Client Generation](python-client.md).
 
 ## 🎯 Configuration Priority
 
 Settings are applied in the following priority order (highest to lowest):
 
 1. **🖥️ CLI arguments** - Always take precedence
-2. **📋 Profile settings** - From `[tool.datamodel-codegen.profiles.<name>]`
-3. **⚙️ Base settings** - From `[tool.datamodel-codegen]`
-4. **🔧 Default values** - Built-in defaults
+2. **🏃 Job settings** - From `[tool.datamodel-codegen.jobs.<name>]`
+3. **📋 Profile settings** - From `[tool.datamodel-codegen.profiles.<name>]`
+4. **⚙️ Base settings** - From `[tool.datamodel-codegen]`
+5. **🔧 Default values** - Built-in defaults
 
 ## 🔀 Merge Rules
 
@@ -141,6 +218,7 @@ datamodel-codegen --profile api --generate-cli-command
 
 ## 📖 See Also
 
+- 🧰 [Presets](presets.md) - Recommended immutable option bundles for modern output
 - 🖥️ [CLI Reference: `--ignore-pyproject`](cli-reference/general-options.md#ignore-pyproject) - Ignore pyproject.toml configuration
 - 🔧 [CLI Reference: `--generate-pyproject-config`](cli-reference/general-options.md#generate-pyproject-config) - Generate pyproject.toml from CLI arguments
 - 🖥️ [CLI Reference: `--generate-cli-command`](cli-reference/general-options.md#generate-cli-command) - Generate CLI command from pyproject.toml

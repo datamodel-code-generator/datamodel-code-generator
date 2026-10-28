@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsPrefixItems2020",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string"
+    }
+  ],
+  "items": {
+    "type": "array",
+    "uniqueItems": true,
+    "items": {
+      "type": "integer"
+    }
+  }
+}

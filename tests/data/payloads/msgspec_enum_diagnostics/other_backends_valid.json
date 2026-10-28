@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "always": true,
+  "never": false,
+  "amount": 2.5
+}

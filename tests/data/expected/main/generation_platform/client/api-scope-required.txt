@@ -1,0 +1,3 @@
+# api-scope-required
+render pydantic_v2.BaseModel
+  Error: --generate-client requires --openapi-scopes to include api

@@ -1,0 +1,19 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "legacy": {
+        "value": "ok"
+      },
+      "current": {
+        "child": {
+          "value": "also ok"
+        }
+      }
+    },
+    "rejected"
+  ]
+}

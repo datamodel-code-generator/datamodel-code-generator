@@ -1,0 +1,14 @@
+openapi: 3.0.0
+info:
+  title: Usable invalid dotted inherited enum
+  version: '1'
+paths: {}
+components:
+  schemas:
+    State:
+      type: string
+      enum: ['1', '2']
+    Bad.1:
+      allOf:
+        - description: inherited enum description
+        - $ref: '#/components/schemas/State'

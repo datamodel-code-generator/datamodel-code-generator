@@ -1,0 +1,389 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Retry header ownership",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/parameter": {
+      "post": {
+        "operationId": "parameter",
+        "tags": [
+          "headers"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Request-Key",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-key": {
+      "post": {
+        "operationId": "api_key",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "headerKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bearer": {
+      "post": {
+        "operationId": "bearer",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth": {
+      "post": {
+        "operationId": "oauth",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "oauth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openid": {
+      "post": {
+        "operationId": "openid",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "openid": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cookie": {
+      "post": {
+        "operationId": "cookie",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "cookieKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query": {
+      "post": {
+        "operationId": "query",
+        "tags": [
+          "headers"
+        ],
+        "security": [
+          {
+            "queryKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ignored": {
+      "post": {
+        "operationId": "ignored",
+        "tags": [
+          "headers"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/direction": {
+      "post": {
+        "operationId": "direction",
+        "tags": [
+          "headers"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Retry-Control",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unused": {
+      "post": {
+        "operationId": "unused",
+        "tags": [
+          "headers"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "headers": {
+              "X-Idempotency": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "headerKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Auth-Key"
+      },
+      "cookieKey": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "queryKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "token"
+      },
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": {}
+          }
+        }
+      },
+      "openid": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "https://auth.example.com/.well-known/openid-configuration"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ]
+}

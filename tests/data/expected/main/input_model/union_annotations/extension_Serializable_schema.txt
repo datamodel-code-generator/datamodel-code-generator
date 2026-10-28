@@ -1,0 +1,25 @@
+{
+  "description": "A serializable union must keep caller schema extensions unchanged.",
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "x-python-union-branch": 17
+        },
+        {
+          "type": "string",
+          "x-python-union-branch": {
+            "label": "metadata"
+          }
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "Serializable",
+  "type": "object"
+}

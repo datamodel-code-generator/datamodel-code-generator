@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "equal_x_enum_varnames": {
+          "enum": [
+            "a",
+            "b"
+          ],
+          "x-enum-varnames": [
+            "Left0",
+            "Left1"
+          ]
+        },
+        "equal_x_enumNames": {
+          "enum": [
+            "a",
+            "b"
+          ],
+          "x-enumNames": [
+            "Left0",
+            "Left1"
+          ]
+        },
+        "equal_x_enum_descriptions": {
+          "enum": [
+            "a",
+            "b"
+          ],
+          "x-enum-descriptions": [
+            "Left0",
+            "Left1"
+          ]
+        },
+        "subset_x_enum_varnames": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enum-varnames": [
+            "Left0",
+            "Left1"
+          ]
+        },
+        "subset_x_enumNames": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enumNames": [
+            "Left0",
+            "Left1"
+          ]
+        },
+        "subset_x_enum_descriptions": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enum-descriptions": [
+            "Left0",
+            "Left1"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "equal_x_enum_varnames": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enum-varnames": [
+            "Right0",
+            "Right1"
+          ]
+        },
+        "equal_x_enumNames": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enumNames": [
+            "Right0",
+            "Right1"
+          ]
+        },
+        "equal_x_enum_descriptions": {
+          "enum": [
+            "b",
+            "a"
+          ],
+          "x-enum-descriptions": [
+            "Right0",
+            "Right1"
+          ]
+        },
+        "subset_x_enum_varnames": {
+          "enum": [
+            "a",
+            "b",
+            "c"
+          ],
+          "x-enum-varnames": [
+            "Right0",
+            "Right1",
+            "Right2"
+          ]
+        },
+        "subset_x_enumNames": {
+          "enum": [
+            "a",
+            "b",
+            "c"
+          ],
+          "x-enumNames": [
+            "Right0",
+            "Right1",
+            "Right2"
+          ]
+        },
+        "subset_x_enum_descriptions": {
+          "enum": [
+            "a",
+            "b",
+            "c"
+          ],
+          "x-enum-descriptions": [
+            "Right0",
+            "Right1",
+            "Right2"
+          ]
+        }
+      }
+    }
+  ]
+}

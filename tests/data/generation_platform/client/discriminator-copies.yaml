@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: Discriminators of copied unions
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "200":
+          description: The stored pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/list:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: Pets told apart by their schema names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Cat"
+                    - $ref: "#/components/schemas/Dog"
+                  discriminator:
+                    propertyName: kind
+  /child:
+    get:
+      operationId: getChild
+      responses:
+        "200":
+          description: A child that requires the pet its base declares.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Child"
+  /holder:
+    get:
+      operationId: getHolder
+      responses:
+        "200":
+          description: A holder of a pet or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+  /items:
+    post:
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Item"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          kitty: Cat
+          doggo: "#/components/schemas/Dog"
+    Base:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Lion"
+            - $ref: "#/components/schemas/Wolf"
+          discriminator:
+            propertyName: kind
+            mapping:
+              c: "#/components/schemas/Lion"
+              d: "#/components/schemas/Wolf"
+        pets_by_name:
+          type: object
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/Lion"
+              - $ref: "#/components/schemas/Wolf"
+            discriminator:
+              propertyName: kind
+              mapping:
+                c: "#/components/schemas/Lion"
+                d: "#/components/schemas/Wolf"
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          required: [pet, pets_by_name]
+          properties:
+            note:
+              type: string
+    Holder:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Fish"
+            - $ref: "#/components/schemas/Bird"
+            - type: "null"
+          discriminator:
+            propertyName: kind
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        lives:
+          type: integer
+          readOnly: true
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Lion:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        mane:
+          type: boolean
+          readOnly: true
+    Wolf:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Fish:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        fins:
+          type: integer
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Item:
+      type: object
+      required: [name, count]
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+          default: 3

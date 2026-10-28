@@ -1,0 +1,5 @@
+{
+  "order": {"id": 1, "status": "placed", "customer": {"name": "Ada", "address": {"city": "Paris", "zip": "75001"}}},
+  "shipment": {"status": "sent", "address": {"city": "Lyon", "zip": "69001"}},
+  "items": [{"sku": "A-1", "quantity": 2}]
+}

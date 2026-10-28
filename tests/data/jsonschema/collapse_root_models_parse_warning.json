@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "#/definitions/JsonValue"}
+  },
+  "definitions": {
+    "JsonValue": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/definitions/JsonValue"}}
+      ]
+    },
+    "BooleanSchema": true
+  }
+}

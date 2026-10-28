@@ -1,0 +1,10 @@
+{
+  "values": {
+    "item": {
+      "value": "a"
+    }
+  },
+  "identities": {
+    "item": true
+  }
+}

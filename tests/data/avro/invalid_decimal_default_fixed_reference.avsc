@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "InvalidDecimalDefault",
+  "fields": [
+    {"name": "definition", "type": {"type": "fixed", "name": "Amount", "size": 2, "logicalType": "decimal", "precision": 4, "scale": 2}},
+    {"name": "amount", "type": "Amount", "default": "\u0001"}
+  ]
+}

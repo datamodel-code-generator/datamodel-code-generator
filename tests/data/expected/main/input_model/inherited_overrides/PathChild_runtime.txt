@@ -1,0 +1,19 @@
+[
+  {
+    "bases": [
+      "PathParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "value": 2
+    },
+    "generated": {
+      "value": 2
+    }
+  }
+]

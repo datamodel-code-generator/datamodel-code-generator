@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: Fixed length array tuples
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    FixedLengthArrayTuples:
+      type: object
+      required:
+        - vector
+        - allOfVector
+        - allOfEmpty
+        - empty
+        - inlineObject
+        - refValues
+        - range
+        - minimumOnly
+      properties:
+        vector:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: number
+            format: double
+        allOfVector:
+          allOf:
+            - type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: string
+        allOfEmpty:
+          allOf:
+            - type: array
+              minItems: 0
+              maxItems: 0
+              items:
+                type: string
+        empty:
+          type: array
+          minItems: 0
+          maxItems: 0
+          items:
+            type: number
+            format: double
+        inlineObject:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: object
+            required:
+              - value
+            properties:
+              value:
+                type: string
+        refValues:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/RefValue'
+        range:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items:
+            type: integer
+        minimumOnly:
+          type: array
+          minItems: 3
+          items:
+            type: string
+    RefValue:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer

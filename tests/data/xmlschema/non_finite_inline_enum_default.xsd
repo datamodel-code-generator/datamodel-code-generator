@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Model">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="special" minOccurs="0" default="NaN">
+          <xs:simpleType>
+            <xs:restriction base="xs:double">
+              <xs:enumeration value="INF"/>
+              <xs:enumeration value="-INF"/>
+              <xs:enumeration value="NaN"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

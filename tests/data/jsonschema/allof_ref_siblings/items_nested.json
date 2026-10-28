@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "$defs": {
+    "Base": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "string",
+            "minLength": 2
+          },
+          "marker": true
+        },
+        "required": [
+          "x",
+          "marker"
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base",
+      "items": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "string",
+            "maxLength": 3
+          },
+          "flag": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "x",
+          "flag"
+        ]
+      }
+    }
+  ]
+}

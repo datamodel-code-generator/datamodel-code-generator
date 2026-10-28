@@ -1,0 +1,1 @@
+EXTRA: server/routers/store.py (no longer generated)

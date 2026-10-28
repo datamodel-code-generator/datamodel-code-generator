@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import math
 import warnings
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
+from hypothesis_jsonschema import from_schema
 from jsonschema import exceptions, validators
 
 from .constants import (
@@ -258,6 +260,8 @@ def _schema_exclusion_reason(schema: dict[str, Any], *, is_openapi: bool = False
         return "contains minContains/maxContains bounds have no valid array payloads"
     if _has_unsatisfiable_property_count(schema):
         return "object property count constraints have no valid payloads"
+    if _any_schema_node(schema, lambda node: "allOf" in node) and from_schema(deepcopy(schema)).is_empty:
+        return "allOf has no schema-valid payload strategy"
     if not is_openapi and _has_object_keywords_without_object_type(schema):
         return "JSON Schema object keywords without type object allow non-object payloads"
     if not is_openapi and _has_array_keywords_without_array_type(schema):

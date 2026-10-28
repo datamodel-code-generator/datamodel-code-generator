@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: The other module of the import cycle, with a model named like the mapped schema
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Hedge:
+      type: object
+      properties:
+        arbor:
+          $ref: 'c.yaml#/components/schemas/Arbor'
+        leafy:
+          $ref: '#/components/schemas/Leafy'
+    Leafy:
+      type: object
+      properties:
+        local:
+          type: string

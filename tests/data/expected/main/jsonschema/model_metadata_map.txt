@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "RootTitle",
+      "name": "RootTitle",
+      "module": "root_title",
+      "source_ref": "model_metadata.json#",
+      "source_path": [],
+      "title": "Root title",
+      "fields": [
+        {
+          "name": "method",
+          "alias": "method",
+          "original_name": "method",
+          "type": "Literal['thread/started']",
+          "required": true
+        },
+        {
+          "name": "payload",
+          "alias": "payload",
+          "original_name": "payload",
+          "type": "metadata_payload.MetadataPayload",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "MetadataPayload",
+      "name": "MetadataPayload",
+      "module": "metadata_payload",
+      "source_ref": "model_metadata.json#/$defs/MetadataPayload",
+      "source_path": [
+        "$defs",
+        "MetadataPayload"
+      ],
+      "title": "Payload title",
+      "fields": [
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "int",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

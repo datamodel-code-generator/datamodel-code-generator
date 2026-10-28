@@ -1,0 +1,22 @@
+# locals
+serve pydantic_v2.BaseModel
+service RouterService: wiring
+service RouterService without its methods: TypeError
+service SecurityService: authenticate
+service SecurityService without its methods: TypeError
+service WiringService: router
+service WiringService without its methods: TypeError
+app default
+> GET /router?wiring=w&router_handler=h&router_principal=p&router_authorize=a&api_key=k
+  authorize ['api_key']
+  router(principal='user', wiring='w', router_handler='h', router_principal='p', router_authorize='a', api_key='k', parameters='c')
+< 204 - b''
+> GET /router
+< 401 application/json {"detail":"Not authenticated"}
+> GET /wiring?router=r&contract=c&dispatch=d&checked=k
+  wiring(router='r', contract='c', dispatch='d', checked='k', wiring_handler='h')
+< 204 - b''
+> GET /security?security=s&authenticate_handler=h
+  authorize ['api_key']
+  authenticate(principal='user', security='s', authenticate_handler='h')
+< 204 - b''

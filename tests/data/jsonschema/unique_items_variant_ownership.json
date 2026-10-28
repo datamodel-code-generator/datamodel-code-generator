@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parent",
+  "type": "object",
+  "properties": {
+    "child": {
+      "type": "object",
+      "properties": {
+        "requestValues": {
+          "type": "array",
+          "uniqueItems": true,
+          "writeOnly": true,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "responseValues": {
+          "type": "array",
+          "uniqueItems": true,
+          "readOnly": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "requestValues",
+        "responseValues"
+      ]
+    }
+  },
+  "required": [
+    "child"
+  ]
+}

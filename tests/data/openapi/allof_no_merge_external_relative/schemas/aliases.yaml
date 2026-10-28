@@ -1,0 +1,4 @@
+ScopedContainer:
+  type: array
+  items:
+    $ref: "../types.yaml#/ScopedInner"

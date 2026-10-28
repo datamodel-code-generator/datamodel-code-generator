@@ -1,0 +1,8 @@
+[
+  {"schema": "https://dcg.invalid/inputs/root#/components/schemas/Item", "value": {"name": "a", "token": "t"}},
+  {"schema": "https://dcg.invalid/inputs/root#/components/schemas/Item", "value": {"id": 1, "name": "a"}},
+  {"schema": "https://dcg.invalid/inputs/root#/components/schemas/Item",
+   "value": {"id": 1, "name": "a", "token": "t", "tags": [{"label": "l"}], "pair": [{}], "x-a": {}}},
+  {"schema": "https://dcg.invalid/inputs/root#/components/schemas/Item",
+   "value": {"name": "a", "token": "t", "tags": [{"label": "l", "secret": "s"}], "pair": [{"key": "k"}], "x-a": {"hidden": "h"}}}
+]

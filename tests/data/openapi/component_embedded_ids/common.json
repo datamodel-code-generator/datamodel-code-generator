@@ -1,0 +1,1 @@
+{"title": "Common", "type": "object", "properties": {"note": {"type": "string"}}}

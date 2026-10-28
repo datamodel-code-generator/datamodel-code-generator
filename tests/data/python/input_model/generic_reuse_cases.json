@@ -1,0 +1,1688 @@
+[
+  {
+    "name": "int",
+    "sources": [
+      "generic_reuse:IntRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "repeated",
+    "sources": [
+      "generic_reuse:RepeatedRoot"
+    ],
+    "payloads": [
+      {
+        "first": {
+          "value": 1
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": [
+          {
+            "value": 3
+          }
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "first": {
+          "value": 0
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": []
+      }
+    ]
+  },
+  {
+    "name": "model",
+    "sources": [
+      "generic_reuse:ModelRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": {
+            "count": 1
+          }
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": {}
+        }
+      }
+    ]
+  },
+  {
+    "name": "nested",
+    "sources": [
+      "generic_reuse:NestedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": {
+            "value": 1
+          }
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": {
+            "value": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "arguments",
+    "sources": [
+      "generic_reuse:ArgumentsRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": [
+            {
+              "count": 1
+            }
+          ]
+        },
+        "choice": {
+          "value": "x"
+        },
+        "pair": {
+          "first": 1,
+          "second": "ok"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": [
+            {}
+          ]
+        },
+        "choice": {
+          "value": "bad"
+        },
+        "pair": {
+          "first": 1,
+          "second": "ok"
+        }
+      }
+    ],
+    "pydantic20_goldens": true
+  },
+  {
+    "name": "qualified",
+    "sources": [
+      "generic_reuse:QualifiedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "export",
+    "sources": [
+      "generic_reuse:ExportRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "named",
+    "sources": [
+      "generic_reuse:NamedRoot"
+    ],
+    "payloads": [
+      {
+        "number": {
+          "value": 1
+        },
+        "text": {
+          "value": "ok"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "number": {
+          "value": 0
+        },
+        "text": {
+          "value": "ok"
+        }
+      }
+    ]
+  },
+  {
+    "name": "plain",
+    "sources": [
+      "generic_reuse:PlainRoot"
+    ],
+    "payloads": [
+      {
+        "item": {
+          "count": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "item": {}
+      }
+    ]
+  },
+  {
+    "name": "inheritance",
+    "sources": [
+      "generic_reuse:ChildRoot"
+    ],
+    "payloads": [
+      {
+        "base": {
+          "value": 1
+        },
+        "child": {
+          "value": "ok"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "base": {
+          "value": 0
+        },
+        "child": {
+          "value": "ok"
+        }
+      }
+    ]
+  },
+  {
+    "name": "multi",
+    "sources": [
+      "generic_reuse:IntRoot",
+      "generic_reuse:NamedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      },
+      {
+        "number": {
+          "value": 1
+        },
+        "text": {
+          "value": "ok"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      },
+      {
+        "number": {
+          "value": 0
+        },
+        "text": {
+          "value": "ok"
+        }
+      }
+    ]
+  },
+  {
+    "name": "multi_reverse",
+    "sources": [
+      "generic_reuse:NamedRoot",
+      "generic_reuse:IntRoot"
+    ],
+    "payloads": [
+      {
+        "number": {
+          "value": 1
+        },
+        "text": {
+          "value": "ok"
+        }
+      },
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "number": {
+          "value": 0
+        },
+        "text": {
+          "value": "ok"
+        }
+      },
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "dataclass",
+    "sources": [
+      "generic_reuse:DataclassRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "typed",
+    "sources": [
+      "generic_reuse:TypedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "enum",
+    "sources": [
+      "generic_reuse:EnumRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": "a"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": "b"
+        }
+      }
+    ],
+    "pydantic20_goldens": true
+  },
+  {
+    "name": "plain_dataclass",
+    "sources": [
+      "generic_reuse:PlainDataclassRoot"
+    ],
+    "payloads": [
+      {
+        "item": {
+          "count": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "item": {}
+      }
+    ]
+  },
+  {
+    "name": "mixed",
+    "sources": [
+      "generic_reuse:MixedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 1
+        },
+        "ordinary": {
+          "text": "ok"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 0
+        },
+        "ordinary": {
+          "text": "ok"
+        }
+      }
+    ]
+  },
+  {
+    "name": "containers",
+    "sources": [
+      "generic_reuse:PreservedRoot"
+    ],
+    "payloads": [
+      {
+        "first": [
+          {
+            "value": 1
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "first": [
+          {
+            "value": 0
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "name": "containers_child",
+    "sources": [
+      "generic_reuse:PreservedChild"
+    ],
+    "payloads": [
+      {
+        "first": [
+          {
+            "value": 1
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "child": {
+          "value": "ok"
+        },
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "first": [
+          {
+            "value": 0
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "child": {
+          "value": "ok"
+        },
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "name": "containers_dataclass",
+    "sources": [
+      "generic_reuse:PreservedDataclass"
+    ],
+    "payloads": [
+      {
+        "items": [
+          {
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "items": [
+          {
+            "value": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "containers_multi",
+    "sources": [
+      "generic_reuse:PreservedRoot",
+      "generic_reuse:IntRoot"
+    ],
+    "payloads": [
+      {
+        "first": [
+          {
+            "value": 1
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      },
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "first": [
+          {
+            "value": 0
+          }
+        ],
+        "second": [
+          {
+            "value": "ok"
+          }
+        ],
+        "optional": null,
+        "annotated": [
+          {
+            "value": 1
+          }
+        ],
+        "nested_annotation": [
+          [
+            {
+              "value": 1
+            }
+          ]
+        ]
+      },
+      {
+        "box": {
+          "value": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "annotated_alias",
+    "sources": [
+      "generic_reuse:AnnotatedAliasRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_inline",
+    "sources": [
+      "generic_reuse:AnnotatedInlineRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_nested",
+    "sources": [
+      "generic_reuse:AnnotatedNestedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": {
+            "value": 4
+          }
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": {
+            "value": 1
+          }
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_containers",
+    "sources": [
+      "generic_reuse:AnnotatedContainersRoot"
+    ],
+    "payloads": [
+      {
+        "boxes": [
+          {
+            "value": 4
+          }
+        ],
+        "deque_boxes": [
+          {
+            "value": 5
+          }
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "boxes": [
+          {
+            "value": 1
+          }
+        ],
+        "deque_boxes": [
+          {
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "formatter_goldens": true,
+    "pydantic20_goldens": true
+  },
+  {
+    "name": "annotated_repeated",
+    "sources": [
+      "generic_reuse:AnnotatedRepeatedRoot"
+    ],
+    "payloads": [
+      {
+        "first": {
+          "value": 4
+        },
+        "second": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "first": {
+          "value": 1
+        },
+        "second": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true,
+    "legacy_code_names": {
+      "external_22_reuse-all": "annotated_repeated_reuse-all_black23.py",
+      "external_23_reuse-all": "annotated_repeated_reuse-all_black23.py"
+    }
+  },
+  {
+    "name": "annotated_dataclass",
+    "sources": [
+      "generic_reuse:AnnotatedDataclassRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_typed",
+    "sources": [
+      "generic_reuse:AnnotatedTypedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_wrapper",
+    "sources": [
+      "generic_reuse:AnnotatedWrapperRoot"
+    ],
+    "payloads": [
+      {
+        "boxes": [
+          {
+            "value": 4
+          }
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "boxes": [
+          {
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_future_alias",
+    "sources": [
+      "generic_reuse_future:FutureAliasRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_future_export",
+    "sources": [
+      "generic_reuse_future:FutureExportRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_future_list",
+    "sources": [
+      "generic_reuse_future:FutureListRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": [
+            4
+          ]
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": [
+            1
+          ]
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "annotated_future_union",
+    "sources": [
+      "generic_reuse_future:FutureUnionRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true,
+    "legacy_code_names": {
+      "external_22_regenerate-all": "annotated_future_union_regenerate-all_black23.py",
+      "external_23_regenerate-all": "annotated_future_union_regenerate-all_black23.py"
+    }
+  },
+  {
+    "name": "annotated_future_inline",
+    "sources": [
+      "generic_reuse_future:FutureInlineRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true,
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "expected_strategies": {
+      "reuse-all": "regenerate-all",
+      "reuse-foreign": "regenerate-all"
+    },
+    "expected_files": {
+      "dataclass/external/annotated_future_inline_regenerate-all.py": "dataclass/builtin/annotated_future_inline_regenerate-all.py"
+    }
+  },
+  {
+    "name": "annotated_future_nested",
+    "sources": [
+      "generic_reuse_future:NestedRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 1
+        }
+      }
+    ],
+    "formatter_goldens": true
+  },
+  {
+    "name": "local_enum",
+    "sources": [
+      "generic_reuse:LocalEnumRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 0
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "box": {
+          "value": "invalid"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "instance_fields": [
+      "box",
+      "validated"
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "pydantic20_goldens": true,
+    "expected_files": {
+      "dataclass/external/local_enum_regenerate-all.py": "dataclass/builtin/local_enum_regenerate-all.py",
+      "dataclass/local_enum_regenerate-all.txt": "local_enum_regenerate-all.txt",
+      "dataclass/local_enum_reuse-all.txt": "local_enum_reuse-all.txt",
+      "dataclass/pydantic20/builtin/local_enum_reuse-all.py": "dataclass/builtin/local_enum_reuse-all.py",
+      "dataclass/pydantic20/external/local_enum_regenerate-all.py": "dataclass/pydantic20/builtin/local_enum_regenerate-all.py",
+      "dataclass/pydantic20/external/local_enum_reuse-all.py": "dataclass/external/local_enum_reuse-all.py",
+      "external/local_enum_regenerate-all.py": "builtin/local_enum_regenerate-all.py",
+      "pydantic20/builtin/local_enum_reuse-all.py": "builtin/local_enum_reuse-all.py",
+      "pydantic20/external/local_enum_regenerate-all.py": "pydantic20/builtin/local_enum_regenerate-all.py",
+      "pydantic20/external/local_enum_reuse-all.py": "external/local_enum_reuse-all.py"
+    }
+  },
+  {
+    "name": "local_enum_dataclass",
+    "sources": [
+      "generic_reuse:LocalEnumDataclass"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 0
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "box": {
+          "value": "invalid"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "instance_fields": [
+      "box",
+      "validated"
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "pydantic20_goldens": true,
+    "expected_files": {
+      "dataclass/external/local_enum_dataclass_regenerate-all.py": "dataclass/builtin/local_enum_dataclass_regenerate-all.py",
+      "dataclass/local_enum_dataclass_regenerate-all.txt": "local_enum_dataclass_regenerate-all.txt",
+      "dataclass/local_enum_dataclass_reuse-all.txt": "local_enum_dataclass_reuse-all.txt",
+      "dataclass/pydantic20/builtin/local_enum_dataclass_reuse-all.py": "dataclass/builtin/local_enum_dataclass_reuse-all.py",
+      "dataclass/pydantic20/external/local_enum_dataclass_regenerate-all.py": "dataclass/pydantic20/builtin/local_enum_dataclass_regenerate-all.py",
+      "dataclass/pydantic20/external/local_enum_dataclass_reuse-all.py": "dataclass/external/local_enum_dataclass_reuse-all.py",
+      "dataclass/pydantic20/external/local_enum_dataclass_reuse-all_black23.py": "dataclass/external/local_enum_dataclass_reuse-all_black23.py",
+      "external/local_enum_dataclass_regenerate-all.py": "builtin/local_enum_dataclass_regenerate-all.py",
+      "pydantic20/builtin/local_enum_dataclass_reuse-all.py": "builtin/local_enum_dataclass_reuse-all.py",
+      "pydantic20/external/local_enum_dataclass_regenerate-all.py": "pydantic20/builtin/local_enum_dataclass_regenerate-all.py",
+      "pydantic20/external/local_enum_dataclass_reuse-all.py": "external/local_enum_dataclass_reuse-all.py",
+      "pydantic20/external/local_enum_dataclass_reuse-all_black23.py": "external/local_enum_dataclass_reuse-all_black23.py"
+    },
+    "legacy_code_names": {
+      "external_22_reuse-all": "local_enum_dataclass_reuse-all_black23.py",
+      "external_23_reuse-all": "local_enum_dataclass_reuse-all_black23.py"
+    }
+  },
+  {
+    "name": "local_enum_typed",
+    "sources": [
+      "generic_reuse:LocalEnumTyped"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 0
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "box": {
+          "value": "invalid"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "instance_fields": [
+      "box",
+      "validated"
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "pydantic20_goldens": true,
+    "expected_files": {
+      "dataclass/external/local_enum_typed_regenerate-all.py": "dataclass/builtin/local_enum_typed_regenerate-all.py",
+      "dataclass/local_enum_typed_regenerate-all.txt": "local_enum_typed_regenerate-all.txt",
+      "dataclass/local_enum_typed_reuse-all.txt": "local_enum_typed_reuse-all.txt",
+      "dataclass/pydantic20/builtin/local_enum_typed_reuse-all.py": "dataclass/builtin/local_enum_typed_reuse-all.py",
+      "dataclass/pydantic20/external/local_enum_typed_regenerate-all.py": "dataclass/pydantic20/builtin/local_enum_typed_regenerate-all.py",
+      "dataclass/pydantic20/external/local_enum_typed_reuse-all.py": "dataclass/external/local_enum_typed_reuse-all.py",
+      "dataclass/pydantic20/external/local_enum_typed_reuse-all_black23.py": "dataclass/external/local_enum_typed_reuse-all_black23.py",
+      "external/local_enum_typed_regenerate-all.py": "builtin/local_enum_typed_regenerate-all.py",
+      "pydantic20/builtin/local_enum_typed_reuse-all.py": "builtin/local_enum_typed_reuse-all.py",
+      "pydantic20/external/local_enum_typed_regenerate-all.py": "pydantic20/builtin/local_enum_typed_regenerate-all.py",
+      "pydantic20/external/local_enum_typed_reuse-all.py": "external/local_enum_typed_reuse-all.py",
+      "pydantic20/external/local_enum_typed_reuse-all_black23.py": "external/local_enum_typed_reuse-all_black23.py"
+    },
+    "legacy_code_names": {
+      "external_22_reuse-all": "local_enum_typed_reuse-all_black23.py",
+      "external_23_reuse-all": "local_enum_typed_reuse-all_black23.py"
+    }
+  },
+  {
+    "name": "annotated_future_typed",
+    "sources": [
+      "generic_reuse_future:FutureInlineTyped"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 3
+        }
+      }
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "expected_strategies": {
+      "reuse-all": "regenerate-all",
+      "reuse-foreign": "regenerate-all"
+    }
+  },
+  {
+    "name": "annotated_future_model",
+    "sources": [
+      "generic_reuse_future:FutureInlineModel"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": 3
+        }
+      }
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "expected_files": {
+      "dataclass/annotated_future_model_reuse-all.txt": "annotated_future_model_reuse-all.txt",
+      "dataclass/external/annotated_future_model_regenerate-all.py": "dataclass/builtin/annotated_future_model_regenerate-all.py",
+      "external/annotated_future_model_regenerate-all.py": "builtin/annotated_future_model_regenerate-all.py"
+    }
+  },
+  {
+    "name": "fallback_mixed",
+    "sources": [
+      "generic_reuse_future:FutureMixedRoot"
+    ],
+    "payloads": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {},
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {
+          "value": 3
+        },
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {},
+        "ordinary": {
+          "value": 0
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      },
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {
+          "value": 5
+        },
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "legacy_code_names": {
+      "external_22_regenerate-all": "fallback_mixed_regenerate-all_black23.py",
+      "external_22_reuse-all": "fallback_mixed_reuse-all_black23.py",
+      "external_23_regenerate-all": "fallback_mixed_regenerate-all_black23.py",
+      "external_23_reuse-all": "fallback_mixed_reuse-all_black23.py"
+    },
+    "expected_files": {
+      "dataclass/external/fallback_mixed_regenerate-all_black23.py": "dataclass/builtin/fallback_mixed_regenerate-all.py",
+      "dataclass/external/fallback_mixed_reuse-all_black23.py": "dataclass/builtin/fallback_mixed_reuse-all.py"
+    }
+  },
+  {
+    "name": "fallback_mixed_reverse",
+    "sources": [
+      "generic_reuse_future:FutureMixedReverseRoot"
+    ],
+    "payloads": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {},
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {
+          "value": 3
+        },
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {},
+        "ordinary": {
+          "value": 0
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      },
+      {
+        "fallback": {
+          "first": 4,
+          "second": {
+            "count": 1
+          }
+        },
+        "defaulted": {
+          "value": 5
+        },
+        "ordinary": {
+          "value": 1
+        },
+        "qualified": {
+          "value": 1
+        },
+        "alias": {
+          "value": 4
+        }
+      }
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "formatter_goldens": true,
+    "legacy_code_names": {
+      "external_22_regenerate-all": "fallback_mixed_reverse_regenerate-all_black23.py",
+      "external_22_reuse-all": "fallback_mixed_reverse_reuse-all_black23.py",
+      "external_23_regenerate-all": "fallback_mixed_reverse_regenerate-all_black23.py",
+      "external_23_reuse-all": "fallback_mixed_reverse_reuse-all_black23.py"
+    },
+    "expected_files": {
+      "dataclass/external/fallback_mixed_reverse_regenerate-all_black23.py": "dataclass/builtin/fallback_mixed_reverse_regenerate-all.py",
+      "dataclass/external/fallback_mixed_reverse_reuse-all_black23.py": "dataclass/builtin/fallback_mixed_reverse_reuse-all.py"
+    }
+  },
+  {
+    "name": "fallback_multi",
+    "sources": [
+      "generic_reuse_future:MixedFutureRoot",
+      "generic_reuse:RepeatedRoot"
+    ],
+    "payloads": [
+      {
+        "mixed": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {},
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        }
+      },
+      {
+        "first": {
+          "value": 1
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": [
+          {
+            "value": 3
+          }
+        ]
+      }
+    ],
+    "invalid": [
+      {
+        "mixed": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {
+            "value": 3
+          },
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        }
+      },
+      {
+        "first": {
+          "value": 0
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": []
+      }
+    ],
+    "formatter_goldens": true,
+    "expected_strategies": {
+      "reuse-foreign": "reuse-foreign"
+    },
+    "legacy_code_names": {
+      "external_22_regenerate-all": "fallback_multi_regenerate-all_black23.py",
+      "external_22_reuse-foreign": "fallback_multi_reuse-foreign_black23.py",
+      "external_23_regenerate-all": "fallback_multi_regenerate-all_black23.py",
+      "external_23_reuse-foreign": "fallback_multi_reuse-foreign_black23.py"
+    }
+  },
+  {
+    "name": "fallback_multi_reverse",
+    "sources": [
+      "generic_reuse:RepeatedRoot",
+      "generic_reuse_future:MixedFutureRoot"
+    ],
+    "payloads": [
+      {
+        "first": {
+          "value": 1
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": [
+          {
+            "value": 3
+          }
+        ]
+      },
+      {
+        "mixed": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {},
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "first": {
+          "value": 0
+        },
+        "second": {
+          "value": 2
+        },
+        "strings": {
+          "value": "ok"
+        },
+        "items": []
+      },
+      {
+        "mixed": {
+          "fallback": {
+            "first": 4,
+            "second": {
+              "count": 1
+            }
+          },
+          "defaulted": {
+            "value": 3
+          },
+          "ordinary": {
+            "value": 1
+          },
+          "qualified": {
+            "value": 1
+          },
+          "alias": {
+            "value": 4
+          }
+        }
+      }
+    ],
+    "formatter_goldens": true,
+    "expected_strategies": {
+      "reuse-foreign": "reuse-foreign"
+    },
+    "legacy_code_names": {
+      "external_22_regenerate-all": "fallback_multi_reverse_regenerate-all_black23.py",
+      "external_22_reuse-foreign": "fallback_multi_reverse_reuse-foreign_black23.py",
+      "external_23_regenerate-all": "fallback_multi_reverse_regenerate-all_black23.py",
+      "external_23_reuse-foreign": "fallback_multi_reverse_reuse-foreign_black23.py"
+    }
+  },
+  {
+    "name": "local_enum_future",
+    "sources": [
+      "generic_reuse_future:FutureLocalEnumRoot"
+    ],
+    "payloads": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "box": {
+          "value": "a"
+        },
+        "validated": {
+          "value": 0
+        }
+      }
+    ],
+    "extra_invalid": [
+      {
+        "box": {
+          "value": "invalid"
+        },
+        "validated": {
+          "value": 1
+        }
+      }
+    ],
+    "instance_fields": [
+      "box",
+      "validated"
+    ],
+    "output_models": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "pydantic20_goldens": true,
+    "expected_files": {
+      "dataclass/local_enum_future_regenerate-all.txt": "local_enum_future_regenerate-all.txt",
+      "dataclass/local_enum_future_reuse-all.txt": "local_enum_future_reuse-all.txt",
+      "dataclass/pydantic20/external/local_enum_future_regenerate-all.py": "dataclass/pydantic20/builtin/local_enum_future_regenerate-all.py",
+      "dataclass/pydantic20/external/local_enum_future_reuse-all.py": "dataclass/pydantic20/builtin/local_enum_future_reuse-all.py",
+      "pydantic20/external/local_enum_future_regenerate-all.py": "pydantic20/builtin/local_enum_future_regenerate-all.py",
+      "pydantic20/external/local_enum_future_reuse-all.py": "pydantic20/builtin/local_enum_future_reuse-all.py"
+    }
+  }
+]

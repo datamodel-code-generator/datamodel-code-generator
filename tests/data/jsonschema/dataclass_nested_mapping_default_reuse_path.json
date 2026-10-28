@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "holder": {
+      "$ref": "#/$defs/Holder",
+      "default": {}
+    }
+  },
+  "$defs": {
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/Root",
+          "default": {}
+        }
+      }
+    },
+    "Root": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#/$defs/D/reuse",
+          "default": {}
+        },
+        "d": {
+          "$ref": "#/$defs/D",
+          "default": {}
+        }
+      }
+    },
+    "C": {
+      "type": "object",
+      "properties": {
+        "g": {
+          "$ref": "#/$defs/Root",
+          "default": {}
+        }
+      }
+    },
+    "D": {
+      "type": "object",
+      "properties": {
+        "g": {
+          "$ref": "#/$defs/Root",
+          "default": {}
+        }
+      },
+      "reuse": {
+        "type": "object",
+        "properties": {
+          "z": {
+            "type": "integer",
+            "default": 0
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "valid": {
+    "services": {
+      "ab": "ok"
+    },
+    "union_values": {
+      "ab": null,
+      "xy": "ok"
+    },
+    "long_union_values": {
+      "ab": "ok",
+      "xy": 13,
+      "bc": null
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "A!": "ok"
+        }
+      },
+      "error": "string_pattern_mismatch"
+    },
+    {
+      "value": {
+        "services": {
+          "a": "ok"
+        }
+      },
+      "error": "string_too_short"
+    },
+    {
+      "value": {
+        "services": {
+          "abcde": "ok"
+        }
+      },
+      "error": "string_too_long"
+    },
+    {
+      "value": {
+        "services": {
+          "ab": "ok"
+        },
+        "union_values": {
+          "a": "ok"
+        }
+      },
+      "error": "string_too_short"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+# document-legacy
+DocumentationAnnotationWarning: <root>/docs_legacy: /paths/~1pets/get/responses/200/links/others: The served document leaves out the link, whose operation it leaves out
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Legacy",
+    "version": "1.0"
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "getPet",
+        "responses": {
+          "200": {
+            "description": "The pet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            },
+            "links": {
+              "uses": {
+                "operationRef": "#/paths/~1uses/get"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uses": {
+      "get": {
+        "operationId": "uses",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/q"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        },
+        "callbacks": {
+          "onDone": {
+            "{$request.query.url}": {
+              "post": {
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Received."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": [
+          "petType"
+        ],
+        "properties": {
+          "petType": {
+            "type": "string"
+          }
+        },
+        "discriminator": {
+          "propertyName": "petType"
+        }
+      },
+      "Cat": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pet"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "meow": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "Dog": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pet"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bark": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "parameters": {
+      "q": {
+        "name": "q",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

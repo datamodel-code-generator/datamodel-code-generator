@@ -1,0 +1,7 @@
+{
+    "title": "Counts",
+    "type": "object",
+    "unevaluatedProperties": {
+        "type": "integer"
+    }
+}

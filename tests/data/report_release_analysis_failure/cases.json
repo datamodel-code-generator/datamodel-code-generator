@@ -1,0 +1,134 @@
+[
+  {
+    "name": "sdk_authentication_failed",
+    "input": "sdk_authentication_failed.json",
+    "expected": "authentication"
+  },
+  {
+    "name": "sdk_billing_error",
+    "input": "sdk_billing_error.json",
+    "expected": "billing"
+  },
+  {
+    "name": "sdk_rate_limit",
+    "input": "sdk_rate_limit.json",
+    "expected": "rate_limit"
+  },
+  {
+    "name": "sdk_invalid_request",
+    "input": "sdk_invalid_request.json",
+    "expected": "invalid_request"
+  },
+  {
+    "name": "sdk_server_error",
+    "input": "sdk_server_error.json",
+    "expected": "server"
+  },
+  {
+    "name": "sdk_max_output_tokens",
+    "input": "sdk_max_output_tokens.json",
+    "expected": "output_limit"
+  },
+  {
+    "name": "sdk_model_context_window_exceeded",
+    "input": "sdk_model_context_window_exceeded.json",
+    "expected": "context_limit"
+  },
+  {
+    "name": "text_authentication",
+    "input": "text_authentication.json",
+    "expected": "authentication"
+  },
+  {
+    "name": "text_billing",
+    "input": "text_billing.json",
+    "expected": "billing"
+  },
+  {
+    "name": "text_rate_limit",
+    "input": "text_rate_limit.json",
+    "expected": "rate_limit"
+  },
+  {
+    "name": "text_model_unavailable",
+    "input": "text_model_unavailable.json",
+    "expected": "model_unavailable"
+  },
+  {
+    "name": "text_permission",
+    "input": "text_permission.json",
+    "expected": "permission"
+  },
+  {
+    "name": "text_server",
+    "input": "text_server.json",
+    "expected": "server"
+  },
+  {
+    "name": "text_invalid_request",
+    "input": "text_invalid_request.json",
+    "expected": "invalid_request"
+  },
+  {
+    "name": "errors_array",
+    "input": "errors_array.json",
+    "expected": "authentication"
+  },
+  {
+    "name": "ignored_content",
+    "input": "ignored_content.json",
+    "expected": "unknown"
+  },
+  {
+    "name": "bounded_error",
+    "input": "bounded_error.json",
+    "expected": "unknown"
+  },
+  {
+    "name": "empty_record",
+    "input": "empty_record.json",
+    "expected": "unknown"
+  },
+  {
+    "name": "wrong_root",
+    "input": "wrong_root.json",
+    "expected": "record_invalid"
+  },
+  {
+    "name": "latest_error",
+    "input": "latest_error.json",
+    "expected": "rate_limit"
+  },
+  {
+    "name": "invalid_json",
+    "input": "invalid_json.input",
+    "expected": "record_unavailable"
+  },
+  {
+    "name": "invalid_encoding",
+    "input": "invalid_encoding.input",
+    "expected": "record_unavailable"
+  },
+  {
+    "name": "space",
+    "input": "space.input",
+    "expected": "record_too_large",
+    "repeat": 1048577
+  },
+  {
+    "name": "deep",
+    "input": "deep.input",
+    "expected": "record_unavailable",
+    "repeat": 10000
+  },
+  {
+    "name": "missing",
+    "input": "missing.json",
+    "expected": "record_unavailable"
+  },
+  {
+    "name": "directory",
+    "input": ".",
+    "expected": "record_unavailable"
+  }
+]

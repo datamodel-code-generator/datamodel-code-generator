@@ -1,0 +1,29 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Collapsed root shared by sibling fields",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Tags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "Holder": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/Tags"
+          },
+          "second": {
+            "$ref": "#/components/schemas/Tags"
+          }
+        }
+      }
+    }
+  }
+}

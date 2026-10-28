@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Integer schema name
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    1:
+      type: string

@@ -1,0 +1,8 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  not analysed (openapi input)
+
+Notes
+  - Nothing is recommended: this is a Swagger 2.0 document, and with --input-file-type openapi
+    generation finds no models in it. Generation reads Swagger 2.0 definitions with
+    --input-file-type jsonschema; run the recommendation with it.

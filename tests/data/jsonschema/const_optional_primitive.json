@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstOptionalPrimitive",
+  "type": "object",
+  "properties": {
+    "negated": {
+      "const": true,
+      "type": "boolean"
+    },
+    "retries": {
+      "const": 3,
+      "type": "integer"
+    },
+    "mode": {
+      "const": "fast",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "1.0.0",
+      "type": "string"
+    }
+  },
+  "required": ["schemaVersion"]
+}

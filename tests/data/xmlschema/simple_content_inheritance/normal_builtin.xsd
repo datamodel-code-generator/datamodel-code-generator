@@ -1,0 +1,10 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="label" type="xs:string" default="kept"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

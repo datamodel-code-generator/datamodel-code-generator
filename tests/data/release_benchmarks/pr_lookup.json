@@ -1,0 +1,7 @@
+[
+  {"name": "no PR", "pull_requests": []},
+  {"name": "target PR", "pull_requests": [{"number": 4001, "isCrossRepository": false}]},
+  {"name": "fork PR", "pull_requests": [{"number": 9999, "isCrossRepository": true}]},
+  {"name": "fork before target", "pull_requests": [{"number": 9999, "isCrossRepository": true}, {"number": 4001, "isCrossRepository": false}]},
+  {"name": "target before fork", "pull_requests": [{"number": 4001, "isCrossRepository": false}, {"number": 9999, "isCrossRepository": true}]}
+]

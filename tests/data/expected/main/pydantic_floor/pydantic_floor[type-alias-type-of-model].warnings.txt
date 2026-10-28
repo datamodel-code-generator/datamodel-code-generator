@@ -1,0 +1,1 @@
+The generated models need pydantic>=2.10, newer than the target Pydantic version 2: a TypeAliasType alias of a model or alias needs 2.10 (ItemRef).

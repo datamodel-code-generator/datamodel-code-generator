@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 11,
+          "examples": [
+            11,
+            12
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {
+            "minimum": 10,
+            "enum": [
+              "a",
+              "b"
+            ]
+          },
+          "examples": [
+            {
+              "maximum": 1
+            }
+          ]
+        },
+        "choice": {
+          "type": "string",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "choice"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 10,
+          "default": 12,
+          "examples": [
+            12,
+            13
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {
+            "minimum": 1,
+            "enum": [
+              "b",
+              "c"
+            ]
+          },
+          "examples": [
+            {
+              "maximum": 10
+            }
+          ]
+        },
+        "choice": {
+          "type": "string",
+          "enum": [
+            "b",
+            "a"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "choice"
+      ]
+    }
+  ]
+}

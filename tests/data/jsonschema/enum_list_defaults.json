@@ -1,0 +1,78 @@
+{
+  "title": "EnumListDefaults",
+  "type": "object",
+  "properties": {
+    "nullable_enum": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"$ref": "#/definitions/Color"},
+          {"type": "null"}
+        ]
+      },
+      "default": ["red", null]
+    },
+    "enum_or_string": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"$ref": "#/definitions/Color"},
+          {"type": "string"}
+        ]
+      },
+      "default": ["red", "custom"]
+    },
+    "multiple_enums": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"$ref": "#/definitions/Color"},
+          {"$ref": "#/definitions/Size"}
+        ]
+      },
+      "default": ["red", "small"]
+    },
+    "scalar_second_enum": {
+      "anyOf": [
+        {"$ref": "#/definitions/Color"},
+        {"$ref": "#/definitions/Size"}
+      ],
+      "default": "small"
+    },
+    "no_match": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"$ref": "#/definitions/Color"},
+          {"type": "string"}
+        ]
+      },
+      "default": ["custom", "other"]
+    },
+    "nested_unmatched": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"$ref": "#/definitions/Color"},
+          {"type": "array", "items": {"type": "integer"}},
+          {"type": "object", "additionalProperties": true}
+        ]
+      },
+      "default": ["red", [1, 2], {"kind": "custom"}]
+    },
+    "empty": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/Color"},
+      "default": []
+    },
+    "all_match": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/Color"},
+      "default": ["red", "blue"]
+    }
+  },
+  "definitions": {
+    "Color": {"type": "string", "enum": ["red", "blue"]},
+    "Size": {"type": "string", "enum": ["small", "large"]}
+  }
+}

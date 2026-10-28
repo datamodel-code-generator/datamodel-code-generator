@@ -1,0 +1,13 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[import-path-removed] app.list:Pop: from app.list import Pop",
+    "[module-removed] app.list: removed"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[import-path-removed] app.list:Pop: from app.list import Pop",
+    "[module-removed] app.list: removed",
+    "[module-added] app.list_1: added"
+  ]
+}

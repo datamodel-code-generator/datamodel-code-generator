@@ -1,0 +1,7 @@
+# unions-tagged msgspec.Struct
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat = Cat(lives=9)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog = Dog(good=True)

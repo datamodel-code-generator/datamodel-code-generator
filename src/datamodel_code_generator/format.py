@@ -6,22 +6,40 @@ along with PythonVersion enum and DatetimeClassType for output configuration.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess  # noqa: S404
 import sys
-from enum import Enum
-from functools import cached_property, lru_cache
-from importlib import import_module
+from dataclasses import dataclass
+from functools import lru_cache
+from importlib import import_module, invalidate_caches
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec, PathFinder
+from importlib.util import source_from_cache
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Any
 from warnings import warn
+from weakref import ReferenceType, WeakKeyDictionary, ref
 
-from datamodel_code_generator.deprecations import warn_deprecated
+from typing_extensions import Sentinel
+
+from datamodel_code_generator import _format_types
+from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from types import CodeType
+
+DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
+EXTERNAL_FORMATTERS = _format_types.EXTERNAL_FORMATTERS
+DateClassType = _format_types.DateClassType
+DatetimeClassType = _format_types.DatetimeClassType
+Formatter = _format_types.Formatter
+PythonVersion = _format_types.PythonVersion
+PythonVersionMin = _format_types.PythonVersionMin
 
 
 DEFAULT_LINE_LENGTH = 88
@@ -31,6 +49,256 @@ MAX_SHORT_DEFAULT_OVERFLOW = 13
 LONG_TARGET_PREFIX_LENGTH = 30
 TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
 STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
+
+
+@dataclass(frozen=True, slots=True)
+class _WatchFormatterState:
+    generation: ReferenceType[object]
+    module_names: tuple[str, ...]
+
+
+_WATCH_FORMATTER_STATES: WeakKeyDictionary[ModuleType, _WatchFormatterState] = WeakKeyDictionary()
+
+
+def _module_source_path(module: ModuleType) -> Path | None:
+    module_file = getattr(module, "__file__", None)
+    if module_file is None:
+        return None
+    path = Path(module_file)
+    if path.suffix == ".pyc":
+        try:
+            path = Path(source_from_cache(str(path)))
+        except ValueError:
+            return None
+    return path.resolve(strict=False)
+
+
+def _local_package_modules(module: ModuleType, *, previous_modules: frozenset[str]) -> tuple[str, ...]:
+    package_paths = getattr(module, "__path__", None)
+    if package_paths is None:
+        return (module.__name__,)
+    roots = tuple(Path(path).resolve(strict=False) for path in package_paths)
+    prefix = f"{module.__name__}."
+    loaded_modules = sys.modules.copy()
+    local_modules = tuple(
+        name
+        for name, candidate in loaded_modules.items()
+        if name not in previous_modules
+        and name.startswith(prefix)
+        and isinstance(candidate, ModuleType)
+        and (source_path := _module_source_path(candidate)) is not None
+        and any(source_path.is_relative_to(root) for root in roots)
+    )
+    return (module.__name__, *local_modules)
+
+
+def _record_watch_module_candidates(module_name: str, watch_dependencies: Any) -> None:
+    relative_module = Path(*module_name.split("."))
+    candidate_roots = [Path.cwd()]
+    if python_path := os.environ.get("PYTHONPATH"):
+        candidate_roots.extend(Path(path) for path in python_path.split(os.pathsep) if path)
+    for root in dict.fromkeys(candidate_roots):
+        watch_dependencies.record_local_dependency(root / relative_module.with_suffix(".py"))
+        watch_dependencies.record_local_dependency(root / relative_module / "__init__.py")
+
+
+def _prepare_watch_module(module: ModuleType) -> tuple[ModuleType, CodeType] | None:
+    """Build and compile a fresh module without mutating interpreter state."""
+    spec = module.__spec__
+    loader = spec.loader if spec is not None else None
+    get_source = getattr(loader, "get_source", None)
+    if spec is None or not callable(get_source):
+        return None
+    try:
+        source = get_source(module.__name__)
+    except (ImportError, OSError):
+        return None
+    if source is None:
+        return None
+    module_path = spec.origin or module.__file__ or module.__name__
+    replacement = ModuleType(module.__name__)
+    replacement.__file__ = module_path
+    replacement.__package__ = spec.parent
+    replacement.__loader__ = loader
+    replacement.__spec__ = spec
+    replacement.__dict__["__cached__"] = spec.cached
+    if spec.submodule_search_locations is not None:
+        replacement.__path__ = list(spec.submodule_search_locations)
+    return replacement, compile(source, module_path, "exec")
+
+
+class _WatchSourceLoader(Loader):
+    """Load a watched package child from its source instead of its bytecode cache."""
+
+    def __init__(self, loader: Loader, origin: str | None) -> None:
+        self._loader = loader
+        self._origin = origin
+
+    def create_module(self, spec: ModuleSpec) -> ModuleType | None:
+        create_module = getattr(self._loader, "create_module", None)
+        return create_module(spec) if callable(create_module) else None
+
+    def exec_module(self, module: ModuleType) -> None:
+        get_source = getattr(self._loader, "get_source", None)
+        if callable(get_source) and (source := get_source(module.__name__)) is not None:
+            module_path = self._origin or module.__file__ or module.__name__
+            exec(compile(source, module_path, "exec"), module.__dict__)  # noqa: S102
+            return
+        exec_module = getattr(self._loader, "exec_module", None)
+        if callable(exec_module):
+            exec_module(module)
+            return
+        msg = f"cannot load module {module.__name__!r}: get_source() returned None and exec_module() is unavailable"
+        raise ImportError(msg)
+
+
+class _WatchSourceFinder:
+    """Wrap only current-package child imports with source-first loading."""
+
+    def __init__(self, package_name: str) -> None:
+        self._prefix = f"{package_name}."
+
+    def find_spec(
+        self, fullname: str, path: Sequence[str] | None = None, target: ModuleType | None = None
+    ) -> ModuleSpec | None:
+        if not fullname.startswith(self._prefix) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
+            return None
+        if spec.loader is not None and callable(getattr(spec.loader, "get_source", None)):
+            spec.loader = _WatchSourceLoader(spec.loader, spec.origin)
+        return spec
+
+
+def _bind_watch_module(module: ModuleType) -> None:
+    """Publish a refreshed module on its parent package when one exists."""
+    parent_name, _, child_name = module.__name__.rpartition(".")
+    if parent_name and (parent_module := sys.modules.get(parent_name)) is not None:
+        setattr(parent_module, child_name, module)
+
+
+def _fresh_watch_module(module: ModuleType) -> ModuleType:
+    """Execute a watch dependency module from source before atomically replacing it."""
+    if (prepared := _prepare_watch_module(module)) is None:
+        return module
+    replacement, code = prepared
+
+    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+
+    with PROCESS_STATE_LOCK:
+        exec(code, replacement.__dict__)  # noqa: S102
+        sys.modules[module.__name__] = replacement
+        _bind_watch_module(replacement)
+    return replacement
+
+
+def _restore_watch_package(
+    module_name: str,
+    modules: dict[str, ModuleType],
+    module_namespaces: dict[ModuleType, dict[str, Any]],
+    parent_module: object,
+    parent_attribute: object,
+) -> None:
+    """Restore package interpreter state after a failed transactional refresh."""
+    prefix = f"{module_name}."
+    for loaded_name in tuple(sys.modules.copy()):
+        if loaded_name == module_name or loaded_name.startswith(prefix):
+            sys.modules.pop(loaded_name, None)
+    sys.modules.update(modules)
+    for original, namespace in module_namespaces.items():
+        original.__dict__.clear()
+        original.__dict__.update(namespace)
+    parent_name, _, child_name = module_name.rpartition(".")
+    if not parent_name or not isinstance(parent_module, ModuleType):
+        return
+    if parent_attribute is _MISSING_PARENT_ATTRIBUTE:
+        parent_module.__dict__.pop(child_name, None)
+    else:
+        setattr(parent_module, child_name, parent_attribute)
+
+
+_MISSING_PARENT_ATTRIBUTE = Sentinel("_MISSING_PARENT_ATTRIBUTE")
+
+
+def _fresh_watch_package(module: ModuleType) -> ModuleType:
+    """Refresh a complete formatter package as one interpreter-state transaction."""
+    if (prepared := _prepare_watch_module(module)) is None:
+        return module
+    replacement, code = prepared
+
+    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+
+    with PROCESS_STATE_LOCK:
+        prefix = f"{module.__name__}."
+        loaded_modules = sys.modules.copy()
+        original_modules = {
+            loaded_name: loaded_module
+            for loaded_name, loaded_module in loaded_modules.items()
+            if loaded_name == module.__name__ or loaded_name.startswith(prefix)
+        }
+        module_namespaces = {
+            loaded_module: loaded_module.__dict__.copy()
+            for loaded_module in original_modules.values()
+            if isinstance(loaded_module, ModuleType)
+        }
+        parent_name, _, child_name = module.__name__.rpartition(".")
+        parent_module = loaded_modules.get(parent_name)
+        parent_attribute = (
+            parent_module.__dict__.get(child_name, _MISSING_PARENT_ATTRIBUTE)
+            if isinstance(parent_module, ModuleType)
+            else _MISSING_PARENT_ATTRIBUTE
+        )
+        finder = _WatchSourceFinder(module.__name__)
+        try:
+            invalidate_caches()
+            for loaded_name in original_modules:
+                sys.modules.pop(loaded_name, None)
+            sys.modules[module.__name__] = replacement
+            _bind_watch_module(replacement)
+            sys.meta_path.insert(0, finder)
+            try:
+                exec(code, replacement.__dict__)  # noqa: S102
+            finally:
+                if finder in sys.meta_path:
+                    sys.meta_path.remove(finder)
+        except BaseException:
+            _restore_watch_package(
+                module.__name__,
+                original_modules,
+                module_namespaces,
+                parent_module,
+                parent_attribute,
+            )
+            raise
+    return replacement
+
+
+def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> ModuleType:
+    """Load or source-refresh a formatter once per watch generation."""
+    _record_watch_module_candidates(module_name, watch_dependencies)
+    generation = watch_dependencies.collector_identity()
+
+    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+
+    with PROCESS_STATE_LOCK:
+        module = sys.modules.get(module_name)
+        if module is None:
+            previous_modules = frozenset(sys.modules.copy())
+            module = import_module(module_name)
+            module_names = _local_package_modules(module, previous_modules=previous_modules)
+        else:
+            state = _WATCH_FORMATTER_STATES.get(module)
+            if state is not None and state.generation() is generation:
+                module_names = state.module_names
+            else:
+                module = (
+                    _fresh_watch_package(module)
+                    if getattr(module, "__path__", None) is not None
+                    else _fresh_watch_module(module)
+                )
+                module_names = _local_package_modules(module, previous_modules=frozenset())
+        _WATCH_FORMATTER_STATES[module] = _WatchFormatterState(ref(generation), module_names)
+    for tracked_name in module_names:
+        watch_dependencies.record_module_dependency(sys.modules.get(tracked_name))
+    return module
 
 
 # Keep the re-export shim visible to auto-fixers without changing star-import behavior.
@@ -201,116 +469,6 @@ def _is_formatter_available(formatter: Formatter) -> bool:
     return True
 
 
-class DatetimeClassType(Enum):
-    """Output datetime class type options."""
-
-    Datetime = "datetime"
-    Awaredatetime = "AwareDatetime"
-    Naivedatetime = "NaiveDatetime"
-    Pastdatetime = "PastDatetime"
-    Futuredatetime = "FutureDatetime"
-
-
-class DateClassType(Enum):
-    """Output date class type options."""
-
-    Date = "date"
-    Pastdate = "PastDate"
-    Futuredate = "FutureDate"
-
-
-class PythonVersion(Enum):
-    """Supported Python version targets for code generation."""
-
-    PY_310 = "3.10"
-    PY_311 = "3.11"
-    PY_312 = "3.12"
-    PY_313 = "3.13"
-    PY_314 = "3.14"
-
-    @cached_property
-    def version_key(self) -> tuple[int, int]:
-        """Return (major, minor) tuple for version comparison."""
-        major, minor = self.value.split(".")
-        return int(major), int(minor)
-
-    @cached_property
-    def _is_py_310_or_later(self) -> bool:  # pragma: no cover
-        return True  # 3.10+ always true since minimum is PY_310
-
-    @cached_property
-    def _is_py_311_or_later(self) -> bool:  # pragma: no cover
-        return self.version_key >= (3, 11)
-
-    @cached_property
-    def _is_py_312_or_later(self) -> bool:  # pragma: no cover
-        return self.version_key >= (3, 12)
-
-    @cached_property
-    def _is_py_313_or_later(self) -> bool:
-        return self.version_key >= (3, 13)
-
-    @cached_property
-    def _is_py_314_or_later(self) -> bool:
-        return self.version_key >= (3, 14)
-
-    @property
-    def has_union_operator(self) -> bool:  # pragma: no cover
-        """Check if Python version supports the union operator (|)."""
-        return self._is_py_310_or_later
-
-    @property
-    def has_type_alias(self) -> bool:  # pragma: no cover
-        """Check if Python version supports TypeAlias.
-
-        .. deprecated::
-            This property is unused and will be removed in a future version.
-        """
-        warn_deprecated("python-api.python-version-has-type-alias", stacklevel=2)
-        return self._is_py_310_or_later
-
-    @property
-    def has_typed_dict_non_required(self) -> bool:
-        """Check if Python version supports TypedDict NotRequired."""
-        return self._is_py_311_or_later
-
-    @property
-    def has_typed_dict_read_only(self) -> bool:
-        """Check if Python version supports TypedDict ReadOnly (PEP 705)."""
-        return self._is_py_313_or_later
-
-    @property
-    def has_typed_dict_closed(self) -> bool:
-        """Check if Python version supports TypedDict closed/extra_items (PEP 728).
-
-        PEP 728 is targeted for Python 3.15. Until then, typing_extensions is required.
-        """
-        return self.version_key >= (3, 15)
-
-    @property
-    def has_kw_only_dataclass(self) -> bool:
-        """Check if Python version supports kw_only in dataclasses."""
-        return self._is_py_310_or_later
-
-    @property
-    def has_type_statement(self) -> bool:
-        """Check if Python version supports type statements."""
-        return self._is_py_312_or_later
-
-    @property
-    def has_native_deferred_annotations(self) -> bool:
-        """Check if Python version has native deferred annotations (Python 3.14+)."""
-        return self._is_py_314_or_later
-
-    @property
-    def has_strenum(self) -> bool:
-        """Check if Python version supports StrEnum."""
-        return self._is_py_311_or_later
-
-
-PythonVersionMin = PythonVersion.PY_310
-
-
 def apply_builtin_formatter(  # noqa: PLR0913
     code: str,
     *,
@@ -346,6 +504,15 @@ def is_supported_in_black(python_version: PythonVersion) -> bool:  # pragma: no 
     return python_version in _get_black_python_version_map()
 
 
+def unsupported_black_message(python_version: PythonVersion) -> str:
+    """Return the message asking for a newer black when the installed one cannot format the target Python version."""
+    return (
+        f"Installed black doesn't support Python version {python_version.value}.\n"
+        "You have to install a newer black.\n"
+        f"Installed black version: {_get_black().__version__}"
+    )
+
+
 def black_find_project_root(sources: Sequence[Path]) -> Path:
     """Find the project root directory for black configuration."""
     from black import find_project_root as _find_project_root  # noqa: PLC0415
@@ -354,25 +521,6 @@ def black_find_project_root(sources: Sequence[Path]) -> Path:
     if isinstance(project_root, tuple):
         return project_root[0]
     return project_root  # pragma: no cover
-
-
-class Formatter(Enum):
-    """Available code formatters for generated output."""
-
-    BUILTIN = "builtin"
-    BLACK = "black"
-    ISORT = "isort"
-    RUFF_CHECK = "ruff-check"
-    RUFF_FORMAT = "ruff-format"
-
-
-DEFAULT_FORMATTERS = [Formatter.BLACK, Formatter.ISORT]
-EXTERNAL_FORMATTERS = frozenset({
-    Formatter.BLACK,
-    Formatter.ISORT,
-    Formatter.RUFF_CHECK,
-    Formatter.RUFF_FORMAT,
-})
 
 
 def resolve_use_type_checking_imports(
@@ -407,19 +555,17 @@ class CodeFormatter:
         builtin_format_line_length: int | None = None,
         use_type_checking_imports: bool = True,  # noqa: FBT001, FBT002
         defer_formatting: bool = False,  # noqa: FBT001, FBT002
+        formatter_cwd: Path | None = None,
     ) -> None:
         """Initialize code formatter with configuration for black, isort, ruff, and custom formatters."""
         if formatters is None:
             warn_deprecated(
                 "format.default-formatters",
-                details=(
-                    "To keep the current behavior, specify formatters=[Formatter.BLACK, Formatter.ISORT]. "
-                    "To prepare for dependency-free formatting, use formatters=[Formatter.BUILTIN]. "
-                    "To suppress this warning, specify formatters explicitly."
-                ),
                 stacklevel=2,
             )
             formatters = list(DEFAULT_FORMATTERS)
+        elif Formatter.BLACK in formatters or Formatter.ISORT in formatters:
+            warn_deprecated("dependency.external-formatters-optional", stacklevel=2)
 
         if not settings_path:
             settings_path = Path.cwd()
@@ -438,6 +584,7 @@ class CodeFormatter:
         self.encoding = encoding
         self.use_type_checking_imports = use_type_checking_imports
         self.python_version = python_version
+        self._formatting_generated_code = False
 
         missing_formatters = [
             formatter
@@ -513,6 +660,10 @@ class CodeFormatter:
         )
 
         if use_black:
+            if (black_target_version := _get_black_python_version_map().get(python_version)) is None:
+                from datamodel_code_generator import Error  # noqa: PLC0415
+
+                raise Error(unsupported_black_message(python_version))
             root = black_find_project_root((settings_path,))
             path = root / "pyproject.toml"
             if path.is_file():
@@ -522,6 +673,7 @@ class CodeFormatter:
                 config = {}
 
             black = _get_black()
+            warn_legacy_dependency("dependency.black-minimum", black.__version__, (24, 3, 0))
             black_mode = _get_black_mode()
 
             black_kwargs: dict[str, Any] = {}
@@ -549,19 +701,22 @@ class CodeFormatter:
                     black_kwargs["enabled_features"] = {black_mode.Preview.string_processing}
 
             self.black_mode = black.FileMode(
-                target_versions={_get_black_python_version_map()[python_version]},
+                target_versions={black_target_version},
                 line_length=config.get("line-length", black.DEFAULT_LINE_LENGTH),
                 string_normalization=not skip_string_normalization or not config.get("skip-string-normalization", True),
                 **black_kwargs,
             )
         else:
-            self.black_mode = None  # type: ignore[assignment]
+            self.black_mode = None
 
         if use_isort:
             isort = _get_isort()
+            warn_legacy_dependency("dependency.isort-minimum", isort.__version__, (6, 0, 0))
             self.isort_config_kwargs: dict[str, Any] = {}
             if known_third_party:
                 self.isort_config_kwargs["known_third_party"] = known_third_party
+            if formatter_cwd is not None:
+                self.isort_config_kwargs["directory"] = str(formatter_cwd)
 
             if isort.__version__.startswith("4."):  # pragma: no cover
                 self.isort_config = None
@@ -576,7 +731,18 @@ class CodeFormatter:
 
     def _load_custom_formatter(self, custom_formatter_import: str) -> CustomCodeFormatter:
         """Load and instantiate a custom formatter from a module path."""
-        import_ = import_module(custom_formatter_import)
+        try:
+            if (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
+                watch_dependencies.collector_is_active()
+            ):
+                import_ = _load_watch_formatter_module(custom_formatter_import, watch_dependencies)
+            else:
+                import_ = import_module(custom_formatter_import)
+        except ImportError as e:
+            from datamodel_code_generator import Error  # noqa: PLC0415
+
+            msg = f"Unable to import custom formatter {custom_formatter_import!r}: {e}"
+            raise Error(msg) from e
 
         if not hasattr(import_, "CodeFormatter"):
             msg = f"Custom formatter module `{import_.__name__}` must contains object with name CodeFormatter"
@@ -602,10 +768,28 @@ class CodeFormatter:
         code: str,
     ) -> str:
         """Apply all configured formatters to the code string."""
+        return self._format_code(code, generated=self._formatting_generated_code)
+
+    def _format_generated_code(self, code: str) -> str:
+        """Apply formatters to source rendered by the built-in generators."""
+        previous_generated = self._formatting_generated_code
+        self._formatting_generated_code = True
+        try:
+            return self.format_code(code)
+        finally:
+            self._formatting_generated_code = previous_generated
+
+    def _format_code(self, code: str, *, generated: bool) -> str:
         if Formatter.ISORT in self.formatters:
             code = self.apply_isort(code)
         if self.use_builtin_formatter:
-            code = self.apply_builtin_formatter(
+            formatter = self.apply_builtin_formatter
+            match generated:
+                case True:
+                    formatter = _builtin_formatter_attr("_apply_builtin_generated_formatter")
+                case _:
+                    pass
+            code = formatter(
                 code,
                 line_length=self.builtin_line_length,
                 known_first_party=self.builtin_known_first_party,
@@ -661,45 +845,63 @@ class CodeFormatter:
 
     def apply_ruff_lint(self, code: str) -> str:
         """Run ruff check with auto-fix on code."""
-        result = subprocess.run(  # noqa: S603
+        result = self._run_ruff_command(
             self._ruff_check_command("-"),
-            input=code.encode(self.encoding),
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
+            stdin=code.encode(self.encoding),
+            allow_stdout_on_error=True,
         )
         return result.stdout.decode(self.encoding)
 
     def apply_ruff_formatter(self, code: str) -> str:
         """Format code using ruff format."""
         ruff_path = self._find_ruff_path()
-        result = subprocess.run(  # noqa: S603
+        result = self._run_ruff_command(
             (ruff_path, "format", "-"),
-            input=code.encode(self.encoding),
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
+            stdin=code.encode(self.encoding),
         )
         return result.stdout.decode(self.encoding)
 
     def apply_ruff_check_and_format(self, code: str) -> str:
         """Run ruff check and format sequentially for reliable processing."""
         ruff_path = self._find_ruff_path()
-        check_result = subprocess.run(  # noqa: S603
+        check_result = self._run_ruff_command(
             self._ruff_check_command("-", ruff_path=ruff_path),
-            input=code.encode(self.encoding),
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
+            stdin=code.encode(self.encoding),
+            allow_stdout_on_error=True,
         )
-        format_result = subprocess.run(  # noqa: S603
+        format_result = self._run_ruff_command(
             (ruff_path, "format", "-"),
-            input=check_result.stdout,
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
+            stdin=check_result.stdout,
         )
         return format_result.stdout.decode(self.encoding)
+
+    def _run_ruff_command(
+        self,
+        command: tuple[str, ...],
+        *,
+        stdin: bytes | None = None,
+        allow_stdout_on_error: bool = False,
+    ) -> subprocess.CompletedProcess[bytes]:
+        kwargs: dict[str, Any] = {}
+        if stdin is not None:
+            kwargs["input"] = stdin
+        result = subprocess.run(  # noqa: S603
+            command,
+            capture_output=True,
+            check=False,
+            cwd=self.settings_path,
+            **kwargs,
+        )
+        if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
+            return result
+        if (message := result.stderr.decode(self.encoding, errors="replace").strip()) or (
+            message := result.stdout.decode(self.encoding, errors="replace").strip()
+        ):
+            detail = message
+        else:
+            detail = "no output"
+        msg = f"Ruff command failed with exit code {result.returncode}: {' '.join(command)}\n{detail}"
+        raise RuntimeError(msg)
 
     def _ruff_check_command(self, *paths: str, ruff_path: str | None = None) -> tuple[str, ...]:
         """Build the Ruff check command for the current formatter settings."""
@@ -718,7 +920,10 @@ class CodeFormatter:
         ruff_in_venv = bin_dir / ruff_name
         if ruff_in_venv.exists():
             return str(ruff_in_venv)
-        return shutil.which("ruff") or "ruff"  # pragma: no cover
+        if ruff_path := shutil.which("ruff"):
+            return ruff_path
+        msg = "Ruff executable was not found. Install it with `pip install 'datamodel-code-generator[ruff]'`."
+        raise RuntimeError(msg)
 
     def apply_isort(self, code: str) -> str:
         """Sort imports using isort."""
@@ -735,18 +940,12 @@ class CodeFormatter:
         """Apply ruff formatting to all Python files in a directory."""
         ruff_path = self._find_ruff_path()
         if Formatter.RUFF_CHECK in self.formatters:
-            subprocess.run(  # noqa: S603
+            self._run_ruff_command(
                 self._ruff_check_command(str(directory), ruff_path=ruff_path),
-                capture_output=True,
-                check=False,
-                cwd=self.settings_path,
             )
         if Formatter.RUFF_FORMAT in self.formatters:
-            subprocess.run(  # noqa: S603
+            self._run_ruff_command(
                 (ruff_path, "format", str(directory)),
-                capture_output=True,
-                check=False,
-                cwd=self.settings_path,
             )
 
 

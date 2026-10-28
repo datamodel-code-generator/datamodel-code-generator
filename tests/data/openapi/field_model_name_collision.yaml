@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info: {title: T, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    PerPage: {type: integer, minimum: 1, maximum: 100}
+    Field:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer, description: The id.}
+    Update:
+      type: object
+      properties:
+        fields:
+          type: array
+          items: {type: object, properties: {value: {type: string, description: V}}}

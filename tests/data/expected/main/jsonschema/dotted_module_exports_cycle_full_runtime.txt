@@ -1,0 +1,160 @@
+[
+  {
+    "module": "",
+    "exports": [
+      {
+        "name": "Node",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "b"
+        ],
+        "dump": {
+          "b": {
+            "a": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      },
+      {
+        "name": "Node_1",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "a"
+        ],
+        "dump": {
+          "a": {
+            "b": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      },
+      {
+        "name": "Version",
+        "origin": "api.v1",
+        "is_definition": true,
+        "fields": [
+          "version"
+        ],
+        "dump": {
+          "version": null
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      }
+    ],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api",
+    "exports": [
+      {
+        "name": "Version",
+        "origin": "api.v1",
+        "is_definition": true,
+        "fields": [
+          "version"
+        ],
+        "dump": {
+          "version": null
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      }
+    ],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v1",
+    "exports": [],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v2",
+    "exports": [],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v1.a",
+    "exports": [
+      {
+        "name": "Node",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "b"
+        ],
+        "dump": {
+          "b": {
+            "a": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      }
+    ],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v2.b",
+    "exports": [
+      {
+        "name": "Node",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "a"
+        ],
+        "dump": {
+          "a": {
+            "b": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      }
+    ],
+    "unknown_attribute": true
+  }
+]

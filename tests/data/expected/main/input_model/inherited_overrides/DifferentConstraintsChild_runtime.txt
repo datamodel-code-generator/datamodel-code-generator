@@ -1,0 +1,62 @@
+[
+  {
+    "bases": [
+      "DifferentConstraintsParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {
+      "value": 1
+    },
+    "source": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "greater_than_equal"
+      ]
+    }
+  },
+  {
+    "payload": {
+      "value": 5
+    },
+    "source": {
+      "value": 5
+    },
+    "generated": {
+      "value": 5
+    }
+  },
+  {
+    "payload": {
+      "value": 10
+    },
+    "source": {
+      "value": 10
+    },
+    "generated": {
+      "value": 10
+    }
+  },
+  {
+    "payload": {
+      "value": 11
+    },
+    "source": {
+      "errors": [
+        "less_than_equal"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "less_than_equal"
+      ]
+    }
+  }
+]

@@ -1,0 +1,13 @@
+code: native 'abc' json="abc"
+code-invalid: ValidationError string_pattern_mismatch@[]
+price: native Decimal('9.5') json="9.5"
+price-invalid: ValidationError less_than_equal@[]
+pet: native Dog(kind='dog') set=['kind'] json={"kind":"dog"}
+counts: native {'a': 1, 'b': 2} json={"a":1,"b":2}
+counts-invalid: ValidationError int_parsing@['a']
+words: native {'ab': 1} json={"ab":1}
+words-invalid: native {'AB': 1} json={"AB":1}
+holder: native Holder(pets=[Cat(kind='cat'), Dog(kind='dog')], label='abcd', mode='a') set=['label', 'mode', 'pets'] json={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"}
+holder-invalid: HTTP 422 {"detail":[{"type":"union_tag_invalid","loc":["body","pets",0],"msg":"Input tag 'cow' found using 'kind' does not match any of the expected tags: 'cat', 'dog'"},{"type":"string_too_long","loc":["body","label"],"msg":"String should have at most 4 characters"},{"type":"literal_error","loc":["body","mode"],"msg":"Input should be 'a' or 'b'"}]}
+name-null: native None json=null
+name-text: native 'n' json="n"

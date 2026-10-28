@@ -5,6 +5,21 @@
     "properties": {
         "foo": {
             "const": "foo"
+        },
+        "bool_default": {
+            "type": "boolean",
+            "const": true,
+            "default": false
+        },
+        "int_default": {
+            "type": "integer",
+            "const": 3,
+            "default": 0
+        },
+        "str_default": {
+            "type": "string",
+            "const": "fast",
+            "default": ""
         }
     }
 }

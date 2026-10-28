@@ -1,0 +1,183 @@
+openapi: "3.0.0"
+info:
+  title: Required inherited request response C3
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    MixedGeneratedBase:
+      type: object
+      required:
+        - mixedValue
+      properties:
+        mixedValue:
+          type: integer
+          minimum: 1
+
+    MixedGeneratedForwardDerived:
+      allOf:
+        - $ref: "#/components/schemas/MixedGeneratedBase"
+        - $ref: "#/components/schemas/MixedForwardBase"
+      properties:
+        mixedReadOnly:
+          type: string
+          readOnly: true
+
+    MixedForwardBase:
+      type: object
+      properties:
+        mixedValue:
+          type: string
+
+    DiamondDerived:
+      allOf:
+        - $ref: "#/components/schemas/DiamondLeft"
+        - $ref: "#/components/schemas/DiamondRight"
+      properties:
+        diamondReadOnly:
+          type: string
+          readOnly: true
+
+    DiamondLeft:
+      allOf:
+        - $ref: "#/components/schemas/DiamondRoot"
+
+    DiamondRight:
+      allOf:
+        - $ref: "#/components/schemas/DiamondRoot"
+      properties:
+        diamondValue:
+          type: integer
+          minimum: 1
+
+    DiamondRoot:
+      type: object
+      required:
+        - diamondValue
+      properties:
+        diamondValue:
+          type: string
+
+    RequiredOnlyDerived:
+      allOf:
+        - $ref: "#/components/schemas/RequiredOnlyMiddle"
+      properties:
+        requiredOnlyReadOnly:
+          type: string
+          readOnly: true
+
+    RequiredOnlyMiddle:
+      required:
+        - legacyValue
+      allOf:
+        - $ref: "#/components/schemas/RequiredOnlyBase"
+      properties:
+        middleReadOnly:
+          type: string
+          readOnly: true
+
+    RequiredOnlyBase:
+      type: object
+      properties:
+        legacyValue:
+          type: string
+          minLength: 2
+
+    TitleDerived:
+      allOf:
+        - $ref: "#/components/schemas/TitleBase"
+      properties:
+        titleReadOnly:
+          type: string
+          readOnly: true
+
+    TitleBase:
+      title: CanonicalTitleBase
+      type: object
+      required:
+        - titledValue
+      properties:
+        titledValue:
+          type: string
+          minLength: 2
+
+    ChainDerived:
+      allOf:
+        - $ref: "#/components/schemas/ChainParent"
+      properties:
+        detail: {}
+        chainReadOnly:
+          type: string
+          readOnly: true
+
+    ChainParent:
+      allOf:
+        - $ref: "#/components/schemas/ChainGrandparent"
+
+    ChainGrandparent:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          $ref: "#/components/schemas/ChainItem"
+
+    ChainItem:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 2
+
+    BooleanDerived:
+      allOf:
+        - $ref: "#/components/schemas/BooleanBase"
+      properties:
+        booleanReadOnly:
+          type: string
+          readOnly: true
+
+    BooleanBase:
+      type: object
+      required:
+        - acceptsAnything
+      properties:
+        acceptsAnything: true
+        rejectsAnything: false
+
+    RwC3First:
+      type: object
+      properties:
+        c3Value:
+          type: string
+          minLength: 2
+
+    RwC3Second:
+      type: object
+      properties:
+        c3Value:
+          type: integer
+
+    RwC3Combined:
+      allOf:
+        - $ref: "#/components/schemas/RwC3First"
+        - $ref: "#/components/schemas/RwC3Second"
+      properties:
+        c3Value: {}
+        responseOnly:
+          type: string
+          readOnly: true
+        requestOnly:
+          type: string
+          writeOnly: true
+
+    RwC3Reversed:
+      allOf:
+        - $ref: "#/components/schemas/RwC3Second"
+        - $ref: "#/components/schemas/RwC3First"
+      properties:
+        reversedReadOnly:
+          type: string
+          readOnly: true

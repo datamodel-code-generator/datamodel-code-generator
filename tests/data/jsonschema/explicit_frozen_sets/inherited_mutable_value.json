@@ -1,0 +1,53 @@
+{
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "x-python-type": "set[Item]"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Item": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "default": "x"
+            },
+            "parent": {
+              "$ref": "#/$defs/Base"
+            }
+          },
+          "required": [
+            "parent"
+          ]
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionRefMapping",
+  "$defs": {
+    "UniqueMapping": {
+      "type": "object",
+      "properties": {"kind": {"const": "referenced"}},
+      "required": ["kind"],
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "integer"},
+        "uniqueItems": true
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "anyOfValues": {
+      "anyOf": [
+        {"$ref": "#/$defs/UniqueMapping"},
+        {
+          "type": "object",
+          "properties": {"kind": {"const": "inline"}},
+          "required": ["kind"],
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        }
+      ]
+    },
+    "oneOfValues": {
+      "oneOf": [
+        {"$ref": "#/$defs/UniqueMapping"},
+        {
+          "type": "object",
+          "properties": {"kind": {"const": "inline"}},
+          "required": ["kind"],
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        }
+      ]
+    }
+  },
+  "required": ["anyOfValues", "oneOfValues"]
+}

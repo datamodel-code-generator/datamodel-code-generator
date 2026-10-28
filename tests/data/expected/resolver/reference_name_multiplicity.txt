@@ -1,0 +1,10 @@
+delete retained: User
+delete allocated: User1
+duplicate count: {'User': 3}
+single count: {'User': 1, 'User1': 1}
+rename retained: User
+rename allocated: User1
+refresh allocated: User1
+same-name reallocated: UserName
+legacy cache allocated: User1
+counter cache allocated: User1

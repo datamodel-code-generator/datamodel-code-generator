@@ -1,0 +1,7 @@
+valid: accepted
+invalid m: rejected (value_error)
+invalid m: rejected (string_type)
+invalid p: rejected (value_error)
+invalid p: rejected (value_error)
+invalid p: rejected (value_error)
+invalid o: rejected (value_error)

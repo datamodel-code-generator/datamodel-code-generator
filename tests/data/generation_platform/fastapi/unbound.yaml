@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: Unbound parameter types, version: "1.0"}
+paths:
+  /values/{id}:
+    get:
+      operationId: getValue
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
+        - {name: at, in: query, schema: {type: string, format: date-time}}
+        - {name: tags, in: query, schema: {type: array, items: {type: string}}}
+      responses:
+        "200":
+          description: The value.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Value"}
+components:
+  schemas:
+    Value:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}

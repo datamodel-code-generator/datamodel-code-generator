@@ -1,0 +1,51 @@
+{
+  "type": "record",
+  "name": "DurationControls",
+  "fields": [
+    {
+      "name": "ordinary",
+      "type": "bytes",
+      "default": "\u0001\u0000\u0000\u0000\u0002\u0000\u0000\u0000\u0003\u0000\u0000\u0000"
+    },
+    {
+      "name": "fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Raw",
+        "size": 12
+      },
+      "default": "\u0001\u0000\u0000\u0000\u0002\u0000\u0000\u0000\u0003\u0000\u0000\u0000"
+    },
+    {
+      "name": "wrong_type",
+      "type": {
+        "type": "bytes",
+        "logicalType": "duration"
+      },
+      "default": "\u0001\u0000\u0000\u0000\u0002\u0000\u0000\u0000\u0003\u0000\u0000\u0000"
+    },
+    {
+      "name": "wrong_value",
+      "type": {
+        "type": "fixed",
+        "name": "Elapsed",
+        "size": 12,
+        "logicalType": "duration"
+      },
+      "default": []
+    },
+    {
+      "name": "no_default",
+      "type": "Elapsed"
+    },
+    {
+      "name": "invalid_size_no_default",
+      "type": {
+        "type": "fixed",
+        "name": "Invalid",
+        "size": 8,
+        "logicalType": "duration"
+      }
+    }
+  ]
+}

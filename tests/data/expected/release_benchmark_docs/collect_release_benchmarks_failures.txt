@@ -1,0 +1,3 @@
+timeout_returncode: 124
+timeout_stderr: Timed out after 1s
+ruff_unrecognized: unsupported

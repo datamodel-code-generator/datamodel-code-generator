@@ -1,0 +1,4 @@
+# session-cyclic-metadata
+render pydantic_v2.BaseModel default
+  cyclic YAML input rejected
+  files []

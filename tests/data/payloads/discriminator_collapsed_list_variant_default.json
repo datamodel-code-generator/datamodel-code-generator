@@ -1,0 +1,17 @@
+{
+  "Owner": {
+    "valid": [
+      {},
+      {"pets": [{"type": "cat"}, {"type": "dog"}]},
+      {"chained": [{"type": "dog"}, {"type": "cat"}]},
+      {"plain": [{"type": "bird"}, {"type": "cat"}]}
+    ],
+    "invalid": [
+      {"pets": [{"type": "bird"}]},
+      {"pets": {"type": "cat"}},
+      {"chained": [{"type": "bird"}]},
+      {"plain": [{"type": "dog"}]},
+      {"plain": [{}]}
+    ]
+  }
+}

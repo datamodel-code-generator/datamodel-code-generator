@@ -1,0 +1,10 @@
+[
+  {
+    "schema_valid": true,
+    "generated": {}
+  },
+  {
+    "schema_valid": true,
+    "generated": "rejected"
+  }
+]

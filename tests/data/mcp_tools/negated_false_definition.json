@@ -1,0 +1,17 @@
+{
+  "name": "record",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "type": "string",
+        "not": {
+          "$ref": "#/$defs/Never"
+        }
+      }
+    },
+    "$defs": {
+      "Never": false
+    }
+  }
+}

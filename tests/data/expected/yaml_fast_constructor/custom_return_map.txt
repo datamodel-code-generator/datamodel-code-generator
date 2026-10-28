@@ -1,0 +1,32 @@
+fast_exception=True,warnings=True,value=True
+public_exception=True,warnings=True,value=True
+standard_callbacks=map,map,map,map
+fast_callbacks=map,map,map,map
+public_callbacks=map,map,map,map
+callback_order=True
+public_callback_order=True
+mapping_types=True
+sequence_types=True
+aliases=True
+nested_references=True
+merge=True
+cycle=False
+error_fast_exception=True,warnings=True,value=True
+error_public_exception=True,warnings=True,value=True
+error_standard=ConstructorError: while constructing a mapping
+  in "<unicode string>", line 4, column 3
+found unhashable key
+  in "<unicode string>", line 4, column 5
+error_fast=ConstructorError: while constructing a mapping
+  in "<unicode string>", line 4, column 3
+found unhashable key
+  in "<unicode string>", line 4, column 5
+error_public=ConstructorError: while constructing a mapping
+  in "<unicode string>", line 4, column 3
+found unhashable key
+  in "<unicode string>", line 4, column 5
+error_standard_callbacks=map,map
+error_fast_callbacks=map,map
+error_public_callbacks=map,map
+error_callback_order=True
+error_public_callback_order=True

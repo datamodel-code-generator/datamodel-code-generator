@@ -1,0 +1,16 @@
+{
+  "title": "LocalIdRef",
+  "type": "object",
+  "$defs": {
+    "Target": {
+      "$id": "https://example.test/target",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"}
+      }
+    }
+  },
+  "properties": {
+    "target": {"$ref": "https://example.test/target"}
+  }
+}

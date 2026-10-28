@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[type] b:M:x: int -> str"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[type] b:M:x: int -> str"
+  ]
+}

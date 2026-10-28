@@ -1,0 +1,6 @@
+{
+  "BaseFirst.mode": "base",
+  "ScopedDerivedBaseFirst.mode": "derived",
+  "ForwardBase.mode": "forward-base",
+  "ForwardScopedDerived.mode": "forward-derived"
+}

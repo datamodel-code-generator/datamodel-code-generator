@@ -1,0 +1,9 @@
+type Bar {
+  x: Int
+}
+
+type Holder {
+  Bar: Bar
+  required: [Bar!]!
+  nullable: [Bar]
+}

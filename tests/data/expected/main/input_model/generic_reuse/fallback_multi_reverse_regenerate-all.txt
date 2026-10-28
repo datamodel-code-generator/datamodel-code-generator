@@ -1,0 +1,163 @@
+[
+  {
+    "name": "RepeatedRoot",
+    "fields": [
+      "first",
+      "second",
+      "strings",
+      "items"
+    ],
+    "annotations_equal": {
+      "first": false,
+      "second": false,
+      "strings": false,
+      "items": false
+    },
+    "type_identity": {
+      "first": false,
+      "second": false,
+      "strings": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": {
+            "value": 1
+          },
+          "second": {
+            "value": 2
+          },
+          "strings": {
+            "value": "ok"
+          },
+          "items": [
+            {
+              "value": 3
+            }
+          ]
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "first": false,
+      "second": false,
+      "strings": false,
+      "items": false
+    }
+  },
+  {
+    "name": "MixedFutureRoot",
+    "fields": [
+      "mixed"
+    ],
+    "annotations_equal": {
+      "mixed": false
+    },
+    "type_identity": {
+      "mixed": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "mixed": {
+            "fallback": {
+              "first": 4,
+              "second": {
+                "count": 1
+              }
+            },
+            "defaulted": {
+              "value": 4,
+              "label": "kept"
+            },
+            "ordinary": {
+              "value": 1
+            },
+            "qualified": {
+              "value": 1
+            },
+            "alias": {
+              "value": 4
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "mixed",
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "mixed": {
+            "fallback": {
+              "first": 4,
+              "second": {
+                "count": 1
+              }
+            },
+            "defaulted": {
+              "value": 4,
+              "label": "kept"
+            },
+            "ordinary": {
+              "value": 1
+            },
+            "qualified": {
+              "value": 1
+            },
+            "alias": {
+              "value": 4
+            }
+          }
+        },
+        "invalid": [
+          [
+            [
+              "mixed",
+              "defaulted",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "mixed": false
+    }
+  }
+]

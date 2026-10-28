@@ -1,0 +1,15 @@
+# tag-fields
+render msgspec.Struct default
+  models.py
+  model_bindings.py msgspec_Struct/default
+change msgspec.Struct default unexpected-emission
+  @@ -12 +12 @@
+  -    pass
+  +    type: str = 'started'
+  @@ -17 +17 @@
+  -    pass
+  +    type: str = 'started'
+change msgspec.Struct default missing-class
+  @@ -11 +11 @@
+  -class StartedEvent(Struct, tag_field='type', tag='started'):
+  +class RenamedEvent(Struct, tag_field='type', tag='started'):

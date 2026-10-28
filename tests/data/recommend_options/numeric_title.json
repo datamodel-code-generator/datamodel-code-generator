@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "2024",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "tags": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}}}}
+  }
+}

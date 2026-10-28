@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "title": "Payload",
+  "properties": {
+    "field": {"type": "array", "items": {"type": "string"}, "default": []},
+    "other-name": {"type": "string", "default": "x"}
+  }
+}

@@ -1,0 +1,6 @@
+Add the runtime dependencies of app.server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16" "python-multipart>=0.0.32"
+Next steps: implement the stubs in app/services/photos.py, app/services/authorize.py, then run the server:
+  uv add uvicorn && uv run uvicorn app.server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev --entrypoint app.server.main:app
+See app/server/README.md.

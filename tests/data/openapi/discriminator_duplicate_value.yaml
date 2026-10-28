@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: Duplicate discriminator value
+  version: 1.0.0
+components:
+  schemas:
+    UserMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          const: message
+        role:
+          type: string
+          const: user
+        content:
+          type: string
+      required:
+        - type
+        - role
+        - content
+    AssistantMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          const: message
+        role:
+          type: string
+          const: assistant
+        content:
+          type: string
+      required:
+        - type
+        - role
+        - content
+    EasyInputMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          const: message
+        role:
+          type: string
+          const: easy
+        content:
+          type: string
+      required:
+        - type
+        - role
+        - content
+    ItemReference:
+      type: object
+      properties:
+        type:
+          type: string
+          const: item_reference
+        id:
+          type: string
+      required:
+        - type
+        - id
+    Item:
+      oneOf:
+        - $ref: '#/components/schemas/UserMessage'
+        - $ref: '#/components/schemas/AssistantMessage'
+      discriminator:
+        propertyName: type
+    InputItem:
+      oneOf:
+        - $ref: '#/components/schemas/EasyInputMessage'
+        - $ref: '#/components/schemas/Item'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    GroupedItem:
+      oneOf:
+        - $ref: '#/components/schemas/Item'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    MixedItem:
+      oneOf:
+        - type: 'null'
+        - type: string
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    MessageWrapper:
+      oneOf:
+        - $ref: '#/components/schemas/UserMessage'
+    WrappedItem:
+      oneOf:
+        - $ref: '#/components/schemas/MessageWrapper'
+        - $ref: '#/components/schemas/UserMessage'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    MissingType:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+        - value
+    MissingTypeWrapper:
+      oneOf:
+        - $ref: '#/components/schemas/MissingType'
+    NestedMissingType:
+      oneOf:
+        - $ref: '#/components/schemas/MissingTypeWrapper'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    ContainerItem:
+      oneOf:
+        - type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/UniqueA'
+              - $ref: '#/components/schemas/UniqueB'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    RecursiveItem:
+      oneOf:
+        - $ref: '#/components/schemas/RecursiveItem'
+        - $ref: '#/components/schemas/ItemReference'
+      discriminator:
+        propertyName: type
+    UniqueA:
+      type: object
+      properties:
+        type:
+          type: string
+          const: a
+      required:
+        - type
+    UniqueB:
+      type: object
+      properties:
+        type:
+          type: string
+          const: b
+      required:
+        - type
+    UniqueC:
+      type: object
+      properties:
+        type:
+          type: string
+          const: c
+      required:
+        - type
+    UniqueInner:
+      oneOf:
+        - $ref: '#/components/schemas/UniqueA'
+        - $ref: '#/components/schemas/UniqueB'
+      discriminator:
+        propertyName: type
+    UniqueOuter:
+      oneOf:
+        - $ref: '#/components/schemas/UniqueInner'
+        - $ref: '#/components/schemas/UniqueC'
+      discriminator:
+        propertyName: type
+    NullableUnique:
+      oneOf:
+        - type: 'null'
+        - $ref: '#/components/schemas/UniqueA'
+        - $ref: '#/components/schemas/UniqueB'
+      discriminator:
+        propertyName: type
+    Envelope:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InputItem'
+        grouped:
+          $ref: '#/components/schemas/GroupedItem'
+        mixed:
+          $ref: '#/components/schemas/MixedItem'
+        wrapped:
+          $ref: '#/components/schemas/WrappedItem'
+        nested_missing:
+          $ref: '#/components/schemas/NestedMissingType'
+        container:
+          $ref: '#/components/schemas/ContainerItem'
+        recursive:
+          $ref: '#/components/schemas/RecursiveItem'
+        unique:
+          $ref: '#/components/schemas/UniqueOuter'
+        nullable_unique:
+          $ref: '#/components/schemas/NullableUnique'
+      required:
+        - items
+        - grouped
+        - mixed
+        - wrapped
+        - nested_missing
+        - container
+        - recursive
+        - unique
+        - nullable_unique

@@ -1,0 +1,22 @@
+{
+  "analysis_output": {
+    "skip_changelog": "${{ steps.analysis-route.outputs.skip_changelog }}"
+  },
+  "concurrency": {
+    "cancel-in-progress": false,
+    "group": "release-draft",
+    "queue": "max"
+  },
+  "label_before_note_generation": true,
+  "label_condition": "needs.analyze.outputs.skip_changelog == 'true' && steps.analysis.outputs.has_breaking_changes != 'true'",
+  "label_request": "gh api \\\n  --method POST \\\n  -H \"Accept: application/vnd.github+json\" \\\n  \"/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels\" \\\n  -f labels[]=\"skip-changelog\" \\\n  --silent\n",
+  "release_config": {
+    "changelog": {
+      "exclude": {
+        "labels": [
+          "skip-changelog"
+        ]
+      }
+    }
+  }
+}

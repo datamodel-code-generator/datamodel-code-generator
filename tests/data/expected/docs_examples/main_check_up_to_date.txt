@@ -1,0 +1,4 @@
+return=0
+stdout:
+Docs examples are up to date.
+stderr:

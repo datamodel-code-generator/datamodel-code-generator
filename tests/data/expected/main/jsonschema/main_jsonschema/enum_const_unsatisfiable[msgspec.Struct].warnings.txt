@@ -1,0 +1,2 @@
+The schema at enum_const_unsatisfiable.json#/properties/property admits no value: its const 'c' is none of its enum values. It is generated as written.
+The schema at enum_const_unsatisfiable.json#/$defs/Disjoint admits no value: its const 3 is none of its enum values. It is generated as written.

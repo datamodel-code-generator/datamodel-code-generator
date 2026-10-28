@@ -1,0 +1,65 @@
+[
+  {
+    "name": "stacked-ancestor",
+    "merge": "ancestor",
+    "trusted": "pinned",
+    "base_ref": "ci/order-shards-by-weight",
+    "expected": "valid.txt"
+  },
+  {
+    "name": "stacked-at-snapshot",
+    "merge": "pinned",
+    "trusted": "pinned",
+    "base_ref": "ci/order-shards-by-weight",
+    "expected": "valid.txt"
+  },
+  {
+    "name": "main-later",
+    "merge": "later",
+    "trusted": "pinned",
+    "base_ref": "main",
+    "expected": "ancestry/rejected.txt"
+  },
+  {
+    "name": "stacked-later",
+    "merge": "later",
+    "trusted": "pinned",
+    "base_ref": "ci/order-shards-by-weight",
+    "expected": "ancestry/rejected.txt"
+  },
+  {
+    "name": "unrelated",
+    "merge": "unrelated",
+    "trusted": "pinned",
+    "base_ref": "ci/order-shards-by-weight",
+    "expected": "ancestry/rejected.txt"
+  },
+  {
+    "name": "missing-merge",
+    "merge": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "trusted": "pinned",
+    "base_ref": "main",
+    "expected": "ancestry/rejected.txt"
+  },
+  {
+    "name": "missing-trusted",
+    "merge": "ancestor",
+    "trusted": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "base_ref": "main",
+    "expected": "ancestry/rejected.txt"
+  },
+  {
+    "name": "invalid-trusted",
+    "merge": "ancestor",
+    "trusted": "refs/heads/main",
+    "base_ref": "main",
+    "expected": "ancestry/invalid_trusted.txt"
+  },
+  {
+    "name": "injected-trusted",
+    "merge": "ancestor",
+    "trusted": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\nfoo=bar",
+    "base_ref": "main",
+    "expected": "ancestry/invalid_trusted.txt"
+  }
+]

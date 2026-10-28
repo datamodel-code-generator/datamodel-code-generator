@@ -1,0 +1,18 @@
+{
+  "title": "Box",
+  "type": "object",
+  "$defs": {"Item": {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}},
+  "properties": {
+    "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": []},
+    "nullable_items": {"type": ["array", "null"], "items": {"anyOf": [{"$ref": "#/$defs/Item"}, {"type": "null"}]}, "default": []},
+    "nullable_container": {"type": ["array", "null"], "items": {"$ref": "#/$defs/Item"}, "default": []},
+    "nonnull_nullable_items": {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/Item"}, {"type": "null"}]}, "default": []},
+    "empty": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": []},
+    "direct_item": {"$ref": "#/$defs/Item", "default": {"n": 8}},
+    "count": {"type": "integer", "default": 9},
+    "numbers": {"type": "array", "items": {"type": "integer"}, "default": [3, 1, 2]},
+    "matrix": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}, "default": []},
+    "cube": {"type": "array", "items": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}}, "default": []},
+    "scalar_cube": {"type": "array", "items": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}}, "default": [[[3, 1], [2]]]}
+  }
+}

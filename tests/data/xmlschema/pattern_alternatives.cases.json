@@ -1,0 +1,99 @@
+{
+  "alias": {"valid": "ABC", "invalid": "ABC\n"},
+  "base": {
+    "token": "ABC",
+    "reversed": "ABC",
+    "branches": "ab",
+    "derived": "ABC",
+    "deeper": "AB",
+    "single_derivation": "AB",
+    "empty": "",
+    "escaped": "a+b",
+    "newline": "A\nB",
+    "inline": "aa"
+  },
+  "values": {
+    "token": [
+      "ABC",
+      "123",
+      "abc",
+      "A1",
+      "aABC",
+      "123a",
+      "ABC\n",
+      "\nABC",
+      ""
+    ],
+    "reversed": [
+      "ABC",
+      "123",
+      "abc",
+      "A1",
+      "aABC",
+      "123a",
+      "ABC\n",
+      "\nABC",
+      ""
+    ],
+    "branches": [
+      "ab",
+      "cd",
+      "xy",
+      "12",
+      "abxy",
+      "a",
+      "123",
+      "xy\n"
+    ],
+    "derived": [
+      "ABC",
+      "345",
+      "XYZ",
+      "012",
+      "A3",
+      "ABC\n"
+    ],
+    "deeper": [
+      "AB",
+      "45",
+      "M",
+      "37",
+      "AB45"
+    ],
+    "single_derivation": [
+      "AB",
+      "ABC",
+      "123",
+      "A",
+      "AB\n"
+    ],
+    "empty": [
+      "",
+      "Q",
+      "QQ",
+      "\n"
+    ],
+    "escaped": [
+      "a+b",
+      "x.y",
+      "ab",
+      "xay",
+      "aa+b",
+      "x.y\n"
+    ],
+    "newline": [
+      "A\nB",
+      "C",
+      "A\rB",
+      "A\nB\n",
+      "\nC"
+    ],
+    "inline": [
+      "aa",
+      "bb",
+      "ab",
+      "cc",
+      "aa\n"
+    ]
+  }
+}

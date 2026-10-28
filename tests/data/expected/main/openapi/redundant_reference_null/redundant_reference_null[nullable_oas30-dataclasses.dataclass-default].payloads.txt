@@ -1,0 +1,5 @@
+valid: accepted
+parsed: Use(items_s=['a', None], items_e=[<ItemsEEnum.a: 'a'>], str_f=None, str_a=['x', None], enum_f=None, enum_a=[<NullEnum.a: 'a'>, None], obj_f=None, obj_a=[None, NullObj(id=1)])
+invalid str_f: rejected (string_type)
+invalid enum_f: rejected (enum)
+invalid obj_f: rejected (dataclass_type)

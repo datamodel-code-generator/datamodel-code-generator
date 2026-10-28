@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+target-python-version="3.11"
+formatters=["builtin"]
+disable-timestamp=true
+parent-scoped-naming=true

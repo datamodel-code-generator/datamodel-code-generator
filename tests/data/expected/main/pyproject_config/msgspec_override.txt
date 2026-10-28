@@ -1,0 +1,17 @@
+{
+  "aliases": {
+    "userName": "display_name"
+  },
+  "apply_default_values_for_required_fields": true,
+  "class_name": "Configured",
+  "disable_timestamp": true,
+  "field_constraints": true,
+  "formatters": [
+    "builtin"
+  ],
+  "output": null,
+  "output_model_type": "msgspec.Struct",
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11",
+  "use_annotated": true
+}

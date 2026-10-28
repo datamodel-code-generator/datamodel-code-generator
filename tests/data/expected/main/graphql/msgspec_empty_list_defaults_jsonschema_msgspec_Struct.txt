@@ -1,0 +1,57 @@
+{
+  "field_order": [
+    "items",
+    "nullable_items",
+    "nullable_container",
+    "nonnull_nullable_items",
+    "empty",
+    "direct_item",
+    "count",
+    "numbers",
+    "matrix",
+    "cube",
+    "scalar_cube"
+  ],
+  "defaults": {
+    "items": [],
+    "nullable_items": [],
+    "nullable_container": [],
+    "nonnull_nullable_items": [],
+    "empty": []
+  },
+  "item_types": {
+    "items": [],
+    "nullable_items": [],
+    "nullable_container": [],
+    "nonnull_nullable_items": [],
+    "empty": []
+  },
+  "explicit_items": [
+    7,
+    4
+  ],
+  "direct_item": 8,
+  "count": 9,
+  "numbers": [
+    3,
+    1,
+    2
+  ],
+  "matrix_values": [],
+  "matrix_types": [],
+  "cube_values": [],
+  "cube_types": [],
+  "scalar_cube": [
+    [
+      [
+        3,
+        1
+      ],
+      [
+        2
+      ]
+    ]
+  ],
+  "independent_items": [],
+  "independent_direct_item": 8
+}

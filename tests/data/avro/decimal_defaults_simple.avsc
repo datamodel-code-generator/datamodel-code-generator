@@ -1,0 +1,46 @@
+{
+  "type": "record",
+  "name": "DecimalDefaults",
+  "fields": [
+    {
+      "name": "positive",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u0001\u0002"
+    },
+    {
+      "name": "negative",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u00fe\u00fe"
+    },
+    {
+      "name": "zero",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 4
+      },
+      "default": "\u0000"
+    },
+    {
+      "name": "trailing",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u0004\u00b0"
+    }
+  ]
+}

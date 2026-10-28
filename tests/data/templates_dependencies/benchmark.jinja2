@@ -1,0 +1,4 @@
+class {{ class_name }}({{ base_class }}):
+{% for field in fields %}    {{ field.name }}: {{ field.type_hint }}
+{% endfor %}{% if not fields %}    pass
+{% endif %}

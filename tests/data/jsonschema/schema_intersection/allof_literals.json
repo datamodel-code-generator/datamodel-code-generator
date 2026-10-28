@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "bound_enum": {
+      "allOf": [
+        {
+          "type": "integer",
+          "maximum": 10
+        },
+        {
+          "enum": [
+            1,
+            2,
+            30
+          ]
+        }
+      ]
+    },
+    "length_enum": {
+      "allOf": [
+        {
+          "type": "string",
+          "minLength": 2
+        },
+        {
+          "enum": [
+            "a",
+            "bb"
+          ]
+        }
+      ]
+    },
+    "pattern_enum": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^b"
+        },
+        {
+          "enum": [
+            "a",
+            "bb"
+          ]
+        }
+      ]
+    },
+    "pattern_enum_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "string",
+            "pattern": "^b"
+          },
+          {
+            "enum": [
+              "a",
+              "bb"
+            ]
+          }
+        ]
+      }
+    },
+    "own_length_enum": {
+      "allOf": [
+        {
+          "enum": [
+            "a",
+            "bb",
+            "ccc"
+          ]
+        }
+      ],
+      "maxLength": 2
+    },
+    "pattern_enum_class": {
+      "type": "string",
+      "enum": [
+        "aa",
+        "bb"
+      ],
+      "pattern": "^a"
+    }
+  }
+}

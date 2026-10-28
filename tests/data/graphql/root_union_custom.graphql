@@ -1,0 +1,22 @@
+schema { query: RootOps mutation: WriteOps subscription: EventOps }
+
+type RootOps {
+  value: String!
+  self: RootOps
+  choice: Choice
+}
+
+type WriteOps {
+  value: String!
+  self: WriteOps
+}
+
+type EventOps {
+  value: String!
+  self: EventOps
+}
+
+type Other { value: String! }
+type Query { value: String!, self: Query }
+type Holder { query: RootOps, mutation: WriteOps, subscription: EventOps }
+union Choice = WriteOps | Other | RootOps | EventOps

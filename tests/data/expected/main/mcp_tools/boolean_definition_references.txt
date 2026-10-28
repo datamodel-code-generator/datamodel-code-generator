@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "$defs": {
+    "BooleanReferencesInputAllowed": true,
+    "BooleanReferencesInputAnchor": {
+      "$anchor": "Anchor",
+      "type": "string",
+      "title": "BooleanReferencesInputAnchor"
+    },
+    "BooleanReferencesInput": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/BooleanReferencesInputAllowed"
+            },
+            {
+              "$ref": "#Anchor"
+            }
+          ]
+        },
+        "dynamic_anchor": {
+          "$dynamicRef": "#Anchor"
+        },
+        "dynamic_external": {
+          "$dynamicRef": "https://example.com/schema#Anchor"
+        },
+        "dynamic_unmapped": {
+          "$dynamicRef": "#/$defs/Missing"
+        },
+        "encoded_external_ref": {
+          "$ref": "%23/$defs/Allowed"
+        },
+        "encoded_external_dynamic_ref": {
+          "$dynamicRef": "%23%2F%24defs%2FAllowed"
+        }
+      },
+      "title": "BooleanReferencesInput"
+    }
+  }
+}

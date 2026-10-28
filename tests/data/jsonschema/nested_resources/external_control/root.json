@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "defs/child.json#/$defs/Child"
+    }
+  },
+  "required": [
+    "child"
+  ]
+}

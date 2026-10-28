@@ -1,0 +1,3 @@
+"""Module header using syntax from the target runtime."""
+
+type HeaderAlias[T] = list[T]

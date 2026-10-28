@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "blob": {
+      "$ref": "#/definitions/Blob"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^abc$"
+    }
+  },
+  "definitions": {
+    "Blob": {
+      "type": "string",
+      "format": "binary",
+      "pattern": "^(a)\\1$"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Integer callback name
+  version: '1.0'
+paths:
+  /pets:
+    post:
+      callbacks:
+        1:
+          '{$request.body#/url}':
+            post:
+              responses:
+                '200':
+                  description: OK
+      responses:
+        '200':
+          description: OK

@@ -1,0 +1,26 @@
+{
+  "collision": {
+    "schema": "typename_collision.graphql"
+  },
+  "normal": {
+    "schema": "typename_collision_control.graphql"
+  },
+  "aliases": {
+    "schema": "typename_collision_control.graphql",
+    "aliases": "typename_collision_aliases.json"
+  },
+  "snake": {
+    "schema": "typename_collision.graphql",
+    "snake_case_field": true
+  },
+  "serialization": {
+    "schema": "typename_collision.graphql",
+    "serialization_aliases": "typename_collision_serialization_aliases.json",
+    "aliases": "typename_collision_aliases.json",
+    "payload": "collision"
+  },
+  "scoped": {
+    "schema": "typename_collision_scoped.graphql",
+    "aliases": "typename_collision_scoped_aliases.json"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "anchored_tail": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "anchored_tail_sibling": {
+      "$ref": "#/$defs/Head",
+      "pattern": "b$"
+    },
+    "implied_sibling": {
+      "$ref": "#/$defs/Head",
+      "pattern": "^ab"
+    },
+    "class_prefix": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "bx+"
+        },
+        {
+          "pattern": "[ab]"
+        }
+      ]
+    },
+    "escape_prefix": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "1x"
+        },
+        {
+          "pattern": "\\d"
+        }
+      ]
+    },
+    "literal_head": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "a[0-9]"
+        },
+        {
+          "pattern": "a"
+        }
+      ]
+    },
+    "both_anchored": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^ab"
+        },
+        {
+          "pattern": "\\Aa"
+        }
+      ]
+    },
+    "anchor_mismatch": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "ab"
+        },
+        {
+          "pattern": "^a"
+        }
+      ]
+    },
+    "alternation": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "a|b"
+        },
+        {
+          "pattern": "c"
+        }
+      ]
+    },
+    "three": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b"
+        },
+        {
+          "pattern": "c$"
+        }
+      ]
+    },
+    "unportable": {
+      "allOf": [
+        {
+          "pattern": "(?=a)"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "inherited": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Head": {
+      "type": "string",
+      "pattern": "^a"
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "s": {
+          "type": "string",
+          "pattern": "^a"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "s": {
+              "type": "string",
+              "pattern": "b$"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+valid: accepted
+parsed: Use(name_f=None, name_a=['a', None], name_m={'k': None}, name_u=None, name_o=None, color_f=None, color_a=[<ColorEnum.red: 'red'>, None], color_m={'k': None}, color_u=None, size_f=<Size.s: 's'>, size_a=[<Size.m: 'm'>], size_m={'k': <Size.s: 's'>}, size_u=1, pet_f=Pet(id=1), pet_a=[], pet_m={}, pet_u=2, name_d=None)
+invalid name_f: rejected
+invalid pet_f: rejected
+invalid size_f: rejected
+invalid pet_a: rejected

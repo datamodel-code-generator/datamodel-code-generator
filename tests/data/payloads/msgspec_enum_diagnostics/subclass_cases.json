@@ -1,0 +1,38 @@
+[
+  {
+    "name": "subclass_float",
+    "indices": [
+      0
+    ],
+    "payload": {
+      "value": 1
+    }
+  },
+  {
+    "name": "subclass_bool",
+    "indices": [
+      0
+    ],
+    "payload": {
+      "value": 0
+    }
+  },
+  {
+    "name": "subclass_late",
+    "indices": [
+      2
+    ],
+    "payload": {
+      "value": 0
+    }
+  },
+  {
+    "name": "subclass_only",
+    "indices": [
+      0
+    ],
+    "payload": {
+      "value": 1
+    }
+  }
+]

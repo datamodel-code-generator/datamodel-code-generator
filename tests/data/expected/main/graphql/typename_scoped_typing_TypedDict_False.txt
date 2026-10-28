@@ -1,0 +1,222 @@
+{
+  "schema_errors": [],
+  "graphql_errors": [],
+  "graphql_data": {
+    "terminal": {
+      "value": 9,
+      "label": "terminal",
+      "spare": 19,
+      "__typename": "Terminal"
+    },
+    "item": {
+      "value": 3,
+      "label": "item",
+      "spare": 13,
+      "__typename": "Item"
+    },
+    "ordinary": {
+      "value": 4,
+      "label": "ordinary",
+      "__typename": "Ordinary"
+    },
+    "multi": {
+      "value": 7,
+      "spare": 17,
+      "__typename": "Multi"
+    },
+    "multiOrdinary": {
+      "value": 8,
+      "__typename": "MultiOrdinary"
+    }
+  },
+  "models": {
+    "Base": {
+      "fields": [
+        "typename__",
+        "value",
+        "typename___1"
+      ],
+      "values": {
+        "value": 1,
+        "typename__": "base",
+        "typename___1": "Base"
+      },
+      "attributes": {
+        "value": 1,
+        "typename__": "base",
+        "typename___1": "Base"
+      }
+    },
+    "Mid": {
+      "fields": [
+        "typename__",
+        "value",
+        "typename___1",
+        "typename___2"
+      ],
+      "values": {
+        "value": 2,
+        "typename__": "mid",
+        "typename___1": 12,
+        "typename___2": "Mid"
+      },
+      "attributes": {
+        "value": 2,
+        "typename__": "mid",
+        "typename___1": 12,
+        "typename___2": "Mid"
+      }
+    },
+    "Item": {
+      "fields": [
+        "typename__",
+        "value",
+        "typename___1",
+        "typename___2",
+        "renamed",
+        "spare"
+      ],
+      "values": {
+        "value": 3,
+        "spare": 13,
+        "renamed": "item",
+        "typename__": "item",
+        "typename___1": 13,
+        "typename___2": "Item"
+      },
+      "attributes": {
+        "value": 3,
+        "spare": 13,
+        "renamed": "item",
+        "typename__": "item",
+        "typename___1": 13,
+        "typename___2": "Item"
+      }
+    },
+    "Ordinary": {
+      "fields": [
+        "typename__",
+        "value",
+        "typename___1",
+        "label"
+      ],
+      "values": {
+        "value": 4,
+        "label": "ordinary",
+        "typename__": "ordinary",
+        "typename___1": "Ordinary"
+      },
+      "attributes": {
+        "value": 4,
+        "label": "ordinary",
+        "typename__": "ordinary",
+        "typename___1": "Ordinary"
+      }
+    },
+    "OtherBase": {
+      "fields": [
+        "value",
+        "typename__"
+      ],
+      "values": {
+        "value": 5,
+        "typename__": "OtherBase"
+      },
+      "attributes": {
+        "value": 5,
+        "typename__": "OtherBase"
+      }
+    },
+    "Side": {
+      "fields": [
+        "value",
+        "typename__",
+        "typename___1"
+      ],
+      "values": {
+        "typename__": 6,
+        "value": 6,
+        "typename___1": "Side"
+      },
+      "attributes": {
+        "typename__": 6,
+        "value": 6,
+        "typename___1": "Side"
+      }
+    },
+    "Multi": {
+      "fields": [
+        "value",
+        "typename__",
+        "typename___1",
+        "spare"
+      ],
+      "values": {
+        "value": 7,
+        "spare": 17,
+        "typename__": 17,
+        "typename___1": "Multi"
+      },
+      "attributes": {
+        "value": 7,
+        "spare": 17,
+        "typename__": 17,
+        "typename___1": "Multi"
+      }
+    },
+    "MultiOrdinary": {
+      "fields": [
+        "value",
+        "typename__"
+      ],
+      "values": {
+        "value": 8,
+        "typename__": "MultiOrdinary"
+      },
+      "attributes": {
+        "value": 8,
+        "typename__": "MultiOrdinary"
+      }
+    },
+    "Common": {
+      "fields": [
+        "value",
+        "typename__"
+      ],
+      "values": {
+        "value": 0,
+        "typename__": "Common"
+      },
+      "attributes": {
+        "value": 0,
+        "typename__": "Common"
+      }
+    },
+    "Terminal": {
+      "fields": [
+        "typename__",
+        "value",
+        "typename___1",
+        "typename___2",
+        "label",
+        "typename___3"
+      ],
+      "values": {
+        "value": 9,
+        "label": "terminal",
+        "typename__": "terminal",
+        "typename___1": 19,
+        "typename___2": 19,
+        "typename___3": "Terminal"
+      },
+      "attributes": {
+        "value": 9,
+        "label": "terminal",
+        "typename__": "terminal",
+        "typename___1": 19,
+        "typename___2": 19,
+        "typename___3": "Terminal"
+      }
+    }
+  }
+}

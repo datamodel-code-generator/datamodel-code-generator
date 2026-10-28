@@ -1,0 +1,760 @@
+[
+  {
+    "name": "integer",
+    "options": {},
+    "payload": 1,
+    "safe": true
+  },
+  {
+    "name": "mutable",
+    "input": "integer",
+    "options": {
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": false,
+    "unhashable": true
+  },
+  {
+    "name": "list",
+    "options": {},
+    "payload": [
+      1
+    ],
+    "safe": false,
+    "unhashable": true
+  },
+  {
+    "name": "any",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "opaque",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false
+  },
+  {
+    "name": "tuple",
+    "options": {},
+    "payload": [
+      1
+    ],
+    "safe": true
+  },
+  {
+    "name": "literal",
+    "options": {
+      "enum_field_as_literal": "all"
+    },
+    "payload": "a",
+    "safe": true
+  },
+  {
+    "name": "enum",
+    "options": {},
+    "payload": "a",
+    "safe": false
+  },
+  {
+    "name": "inherited",
+    "options": {},
+    "payload": 1,
+    "safe": true
+  },
+  {
+    "name": "recursive",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "classvar",
+    "options": {
+      "field_include_all_keys": true
+    },
+    "payload": 1,
+    "safe": true
+  },
+  {
+    "name": "nested",
+    "options": {},
+    "payload": {
+      "value": 1
+    },
+    "safe": false
+  },
+  {
+    "name": "custom",
+    "input": "integer",
+    "options": {},
+    "payload": 1,
+    "safe": false,
+    "custom": true
+  },
+  {
+    "name": "packaged",
+    "input": "integer",
+    "options": {},
+    "payload": 1,
+    "safe": true,
+    "packaged": true
+  },
+  {
+    "name": "custom_base",
+    "input": "integer",
+    "options": {
+      "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
+    },
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "partial_template",
+    "input": "integer",
+    "options": {},
+    "payload": 1,
+    "safe": false,
+    "partial": true
+  },
+  {
+    "name": "shadowed_builtin",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "validators",
+    "input": "integer",
+    "options": {},
+    "payload": 1,
+    "safe": false,
+    "validators": true
+  },
+  {
+    "name": "standard_datetime",
+    "options": {},
+    "payload": "2024-01-02T03:04:05Z",
+    "safe": false
+  },
+  {
+    "name": "standard_local_datetime",
+    "options": {},
+    "payload": "2024-01-02T03:04:05",
+    "safe": false
+  },
+  {
+    "name": "standard_naive_datetime",
+    "input": "standard_datetime",
+    "options": {
+      "output_datetime_class": "NaiveDatetime"
+    },
+    "payload": "2024-01-02T03:04:05",
+    "safe": false
+  },
+  {
+    "name": "standard_time",
+    "options": {},
+    "payload": "03:04:05",
+    "safe": false
+  },
+  {
+    "name": "standard_duration",
+    "options": {},
+    "payload": "P1D",
+    "safe": false
+  },
+  {
+    "name": "standard_uuid",
+    "options": {},
+    "payload": "550e8400-e29b-41d4-a716-446655440000",
+    "safe": false
+  },
+  {
+    "name": "standard_decimal",
+    "options": {},
+    "payload": "1.5",
+    "safe": false
+  },
+  {
+    "name": "standard_optional",
+    "options": {},
+    "payload": null,
+    "safe": false
+  },
+  {
+    "name": "standard_custom",
+    "input": "opaque",
+    "options": {},
+    "payload": "2024-01-02",
+    "safe": false,
+    "custom": true
+  },
+  {
+    "name": "standard_partial",
+    "input": "opaque",
+    "options": {},
+    "payload": "2024-01-02",
+    "safe": false,
+    "partial": true
+  },
+  {
+    "name": "standard_validators",
+    "input": "opaque",
+    "options": {},
+    "payload": "2024-01-02",
+    "safe": false,
+    "validators": true
+  },
+  {
+    "name": "standard_nested",
+    "options": {},
+    "payload": {
+      "value": "2024-01-02"
+    },
+    "safe": false
+  },
+  {
+    "name": "standard_inherited",
+    "options": {},
+    "payload": "2024-01-02",
+    "safe": false
+  },
+  {
+    "name": "standard_plain_datetime",
+    "input": "standard_datetime",
+    "options": {
+      "output_datetime_class": "datetime"
+    },
+    "payload": "2024-01-02T03:04:05",
+    "safe": false
+  },
+  {
+    "name": "standard_opaque_date",
+    "input": "transported_date",
+    "options": {},
+    "payload": "2024-01-02",
+    "safe": false
+  },
+  {
+    "name": "standard_unknown_import",
+    "options": {},
+    "payload": "person@example.com",
+    "safe": false
+  },
+  {
+    "name": "standard_constrained",
+    "options": {},
+    "payload": "1.5",
+    "safe": false
+  },
+  {
+    "name": "tuple_fixed",
+    "options": {},
+    "payload": [
+      1,
+      "x"
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_typing",
+    "options": {},
+    "payload": [
+      1,
+      "x"
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_builtin",
+    "options": {},
+    "payload": [
+      1,
+      "x"
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_nested",
+    "options": {},
+    "payload": [
+      [
+        1,
+        "x"
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_optional",
+    "options": {},
+    "payload": [
+      1,
+      null
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_empty",
+    "options": {},
+    "payload": [],
+    "safe": true
+  },
+  {
+    "name": "tuple_frozen_typing",
+    "options": {},
+    "payload": [
+      [
+        1,
+        2
+      ]
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_scalars",
+    "options": {},
+    "payload": [
+      1.5,
+      true,
+      "x",
+      null
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_bare",
+    "options": {},
+    "payload": [
+      []
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_mutable",
+    "options": {},
+    "payload": [
+      [
+        1
+      ]
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_any",
+    "options": {},
+    "payload": [
+      []
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_foreign",
+    "options": {},
+    "payload": [
+      1
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_literal",
+    "options": {},
+    "payload": [
+      1
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_custom",
+    "input": "tuple",
+    "options": {},
+    "payload": [
+      1,
+      2
+    ],
+    "safe": false,
+    "custom": true
+  },
+  {
+    "name": "tuple_partial",
+    "input": "tuple",
+    "options": {},
+    "payload": [
+      1,
+      2
+    ],
+    "safe": false,
+    "partial": true
+  },
+  {
+    "name": "tuple_packaged",
+    "input": "tuple",
+    "options": {},
+    "payload": [
+      1,
+      2
+    ],
+    "safe": true,
+    "packaged": true
+  },
+  {
+    "name": "tuple_collision",
+    "options": {},
+    "payload": [
+      1,
+      2
+    ],
+    "safe": true
+  },
+  {
+    "name": "tuple_custom_base",
+    "input": "tuple",
+    "options": {
+      "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
+    },
+    "payload": [
+      1,
+      2
+    ],
+    "safe": false
+  },
+  {
+    "name": "tuple_date",
+    "options": {},
+    "payload": [
+      "2026-09-08"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_date",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false
+  },
+  {
+    "name": "transported_date_tuple",
+    "input": "tuple_date",
+    "options": {},
+    "payload": [
+      "2026-09-08"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_datetime",
+    "options": {},
+    "payload": "2026-09-08T12:00:00",
+    "safe": false
+  },
+  {
+    "name": "transported_datetime_tuple",
+    "options": {},
+    "payload": [
+      "2026-09-08T12:00:00"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_time",
+    "options": {},
+    "payload": "12:00:00",
+    "safe": false
+  },
+  {
+    "name": "transported_time_tuple",
+    "options": {},
+    "payload": [
+      "12:00:00"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_duration",
+    "options": {},
+    "payload": "P1D",
+    "safe": false
+  },
+  {
+    "name": "transported_duration_tuple",
+    "options": {},
+    "payload": [
+      "P1D"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_decimal",
+    "options": {},
+    "payload": "1.5",
+    "safe": false
+  },
+  {
+    "name": "transported_decimal_tuple",
+    "options": {},
+    "payload": [
+      "1.5"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_uuid",
+    "options": {},
+    "payload": "550e8400-e29b-41d4-a716-446655440000",
+    "safe": false
+  },
+  {
+    "name": "transported_uuid_tuple",
+    "options": {},
+    "payload": [
+      "550e8400-e29b-41d4-a716-446655440000"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_aware",
+    "options": {},
+    "payload": "2026-09-08T12:00:00Z",
+    "safe": false
+  },
+  {
+    "name": "transported_aware_tuple",
+    "options": {},
+    "payload": [
+      "2026-09-08T12:00:00Z"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_naive",
+    "options": {},
+    "payload": "2026-09-08T12:00:00",
+    "safe": false
+  },
+  {
+    "name": "transported_naive_tuple",
+    "options": {},
+    "payload": [
+      "2026-09-08T12:00:00"
+    ],
+    "safe": false
+  },
+  {
+    "name": "transported_custom",
+    "input": "transported_date",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false,
+    "custom": true
+  },
+  {
+    "name": "transported_partial",
+    "input": "transported_date",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false,
+    "partial": true
+  },
+  {
+    "name": "transported_validators",
+    "input": "transported_date",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false,
+    "validators": true
+  },
+  {
+    "name": "transported_custom_base",
+    "input": "transported_date",
+    "options": {
+      "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
+    },
+    "payload": "2026-09-08",
+    "safe": false
+  },
+  {
+    "name": "transported_collision",
+    "options": {},
+    "payload": "2026-09-08",
+    "safe": false
+  },
+  {
+    "name": "transported_foreign",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "inherited_mutable_base",
+    "input": "inherited",
+    "options": {},
+    "payload": 1,
+    "safe": true,
+    "extra_data": "mutable_base"
+  },
+  {
+    "name": "inherited_mutable_value",
+    "options": {},
+    "payload": 1,
+    "safe": false,
+    "extra_data": "mutable_base",
+    "extra_payload": {
+      "parent": {
+        "value": 1
+      }
+    }
+  },
+  {
+    "name": "generic_integer",
+    "source": "integer",
+    "options": {
+      "use_generic_base_class": true
+    },
+    "payload": 1,
+    "safe": true
+  },
+  {
+    "name": "generic_inherited",
+    "source": "inherited",
+    "options": {
+      "use_generic_base_class": true
+    },
+    "payload": 1,
+    "safe": true
+  },
+  {
+    "name": "generic_mutable",
+    "source": "mutable",
+    "input": "integer",
+    "code": "mutable.py",
+    "options": {
+      "use_generic_base_class": true,
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": false,
+    "unhashable": true
+  },
+  {
+    "name": "root_mutable",
+    "source": "root_item",
+    "native": "root_mutable",
+    "options": {
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": false,
+    "unhashable": true,
+    "root": true
+  },
+  {
+    "name": "root_frozen",
+    "source": "root_item",
+    "native": "root_frozen",
+    "options": {},
+    "payload": 1,
+    "safe": true,
+    "root": true
+  },
+  {
+    "name": "custom_hash",
+    "source": "mutable",
+    "input": "integer",
+    "native": "custom_hash",
+    "options": {
+      "enable_faux_immutability": false,
+      "base_class": "tests.data.python.unique_model_sets.explicit_native.CustomHashBase"
+    },
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "primitive_union",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "bound_union",
+    "options": {},
+    "payload": 1,
+    "safe": false
+  },
+  {
+    "name": "unvalidated_default",
+    "options": {},
+    "payload": null,
+    "item_payload": {},
+    "safe": false,
+    "default_warning": true
+  },
+  {
+    "name": "default_factory",
+    "options": {
+      "field_include_all_keys": true
+    },
+    "payload": null,
+    "item_payload": {},
+    "safe": false,
+    "default_warning": true
+  },
+  {
+    "name": "bytes",
+    "options": {},
+    "payload": "x",
+    "safe": false
+  },
+  {
+    "name": "diamond_frozen",
+    "source": "diamond",
+    "native": "integer",
+    "options": {
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": true,
+    "packaged": true,
+    "extra_data": "frozen_base"
+  },
+  {
+    "name": "diamond_mutable",
+    "source": "diamond",
+    "native": "integer",
+    "options": {
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": false,
+    "packaged": true
+  },
+  {
+    "name": "diamond_thawed",
+    "source": "diamond",
+    "native": "integer",
+    "options": {
+      "enable_faux_immutability": false
+    },
+    "payload": 1,
+    "safe": false,
+    "packaged": true,
+    "extra_data": "mutable_base"
+  },
+  {
+    "name": "additional_import",
+    "source": "integer",
+    "options": {
+      "additional_imports": [
+        "tests.data.python.unique_model_sets.opaque_values.int"
+      ]
+    },
+    "payload": 1,
+    "safe": false
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "text": {
+      "$ref": "#/$defs/Text"
+    }
+  },
+  "$defs": {
+    "Name": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Other": {
+      "enum": [
+        "a",
+        1.5,
+        null
+      ],
+      "x-enum-varnames": [
+        "other_a",
+        "other_float",
+        "other_none"
+      ]
+    },
+    "Text": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Name"
+        },
+        {
+          "$ref": "#/$defs/Other"
+        }
+      ]
+    }
+  }
+}

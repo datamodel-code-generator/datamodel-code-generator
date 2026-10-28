@@ -1,0 +1,2 @@
+[tool.datamodel-codegen]
+target-python-version = "3.99"

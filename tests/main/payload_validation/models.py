@@ -8,6 +8,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
 JsonPath = tuple[str | int, ...]
@@ -60,6 +61,7 @@ class SchemaCase:
     source_schema: dict[str, Any] = field(repr=False)
     codegen_schema: dict[str, Any] = field(repr=False)
     temp_input_suffix: str
+    backend_extra_args: Mapping[PayloadBackend, tuple[str, ...]] = field(default_factory=dict, repr=False)
 
 
 @dataclass(frozen=True)

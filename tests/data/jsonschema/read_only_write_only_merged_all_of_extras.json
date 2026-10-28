@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {"count": {"type": "integer"}},
+          "additionalProperties": {"$ref": "#/definitions/Item"}
+        },
+        {"type": "object", "properties": {"count": {"type": "integer", "minimum": 0}}}
+      ]
+    },
+    "Listed": {
+      "type": "object",
+      "properties": {"count": {"type": "integer"}},
+      "additionalProperties": {
+        "type": "array",
+        "items": {"$ref": "#/definitions/Item", "customTypePath": "builtins.dict"}
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "merged": {"$ref": "#/definitions/Merged"},
+    "listed": {"$ref": "#/definitions/Listed"},
+    "item": {"$ref": "#/definitions/Item"}
+  }
+}

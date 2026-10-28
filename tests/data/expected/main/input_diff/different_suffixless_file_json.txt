@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "input-diff",
+  "success": false,
+  "content": "--- model (baseline input)\n+++ model (current input)\n@@ -8,3 +8,4 @@\n \n class Person(BaseModel):\n     name: str | None = None\n+    age: int | None = None\n",
+  "differences": [
+    {
+      "kind": "changed",
+      "path": "model",
+      "message": null,
+      "diff": "--- model (baseline input)\n+++ model (current input)\n@@ -8,3 +8,4 @@\n \n class Person(BaseModel):\n     name: str | None = None\n+    age: int | None = None\n"
+    }
+  ]
+}

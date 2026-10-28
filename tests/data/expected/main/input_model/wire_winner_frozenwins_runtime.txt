@@ -1,0 +1,16 @@
+{
+  "order": [
+    "first",
+    "shared",
+    "last"
+  ],
+  "values": {
+    "shared": {
+      "type": "frozenset",
+      "value": [
+        1,
+        2
+      ]
+    }
+  }
+}

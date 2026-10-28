@@ -1,0 +1,7 @@
+{
+  "title": "MissingExternalRef",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "missing.json#/$defs/Value"}
+  }
+}

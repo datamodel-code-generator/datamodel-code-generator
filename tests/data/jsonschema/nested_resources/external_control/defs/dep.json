@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dep.json",
+  "$defs": {
+    "Dep": {
+      "type": "object",
+      "properties": {
+        "marker": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "marker"
+      ]
+    }
+  },
+  "type": "object"
+}

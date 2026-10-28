@@ -1,0 +1,19 @@
+{
+  "properties": {
+    "value": {
+      "examples": [
+        {
+          "x-python-union-branch": 0,
+          "x-python-unserializable": true
+        }
+      ],
+      "title": "Value",
+      "type": "string"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "DocumentationControl",
+  "type": "object"
+}

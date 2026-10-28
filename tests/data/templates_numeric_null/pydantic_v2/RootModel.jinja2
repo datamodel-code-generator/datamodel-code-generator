@@ -1,0 +1,6 @@
+class {{ class_name }}(RootModel[{{ fields[0].type_hint }}]):
+{% if fields[0].constraints and fields[0].constraints.ge is not none %}
+    root: {{ fields[0].type_hint }} = Field(..., json_schema_extra={"minimum": {{ fields[0].constraints.model_dump()["ge"] }}})
+{% else %}
+    root: {{ fields[0].type_hint }}
+{% endif %}

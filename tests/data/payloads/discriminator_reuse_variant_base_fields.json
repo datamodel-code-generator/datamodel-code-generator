@@ -1,0 +1,20 @@
+{
+  "Pet": [
+    {"kind": "cat", "name": "Tom", "lives": 9},
+    {"kind": "cat"},
+    {"kind": "dog"},
+    {"kind": "bird"},
+    {}
+  ],
+  "Animal": [
+    {"kind": "cat", "name": "Tom"},
+    {"kind": "bird"},
+    {"kind": "dog"}
+  ],
+  "Holder": [
+    {"solo": {"kind": "cat", "name": "Tom"}},
+    {"solo": {"kind": "dog"}},
+    {"other": {"kind": "cat", "name": "Tom"}},
+    {"other": {"kind": "dog"}}
+  ]
+}

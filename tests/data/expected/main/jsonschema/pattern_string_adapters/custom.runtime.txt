@@ -1,0 +1,30 @@
+[
+  {
+    "native": true,
+    "dump": []
+  },
+  {
+    "native": false,
+    "dump": [
+      {
+        "x": "a"
+      }
+    ]
+  },
+  {
+    "native": true,
+    "dump": [
+      {
+        "x": "bb"
+      }
+    ]
+  },
+  {
+    "native": false,
+    "dump": [
+      {
+        "x": "cccc"
+      }
+    ]
+  }
+]

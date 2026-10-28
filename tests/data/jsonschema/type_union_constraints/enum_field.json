@@ -1,0 +1,20 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "enum": [
+        1,
+        "a"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

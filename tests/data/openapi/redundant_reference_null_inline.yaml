@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info: {title: Redundant reference null, version: "1"}
+paths: {}
+components:
+  schemas:
+    Use:
+      type: object
+      required: [tags]
+      properties:
+        tags: {type: array, items: {type: string, minLength: 1, nullable: true}}

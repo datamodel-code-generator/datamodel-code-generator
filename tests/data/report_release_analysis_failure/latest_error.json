@@ -1,0 +1,12 @@
+[
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "API Error: 401"
+  },
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "API Error: 429"
+  }
+]

@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info: {title: Server nullable results, version: "1.0"}
+paths:
+  /texts:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getText
+      responses:
+        "200":
+          description: A text or null.
+          headers:
+            X-Rate: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {type: string, nullable: true, maxLength: 5}
+        "201":
+          description: A thing or null.
+          content:
+            application/json:
+              schema: {nullable: true, oneOf: [{$ref: "#/components/schemas/Thing"}, {type: integer}]}
+        "202":
+          description: A thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+        "203":
+          description: A plain text or nothing.
+          content:
+            text/plain:
+              schema: {type: string, nullable: true}
+        2XX:
+          description: Any value.
+          content:
+            application/json: {}
+        4XX:
+          description: A color or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Color"}
+        default:
+          description: A pet or null.
+          content:
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Pet"}
+    head:
+      operationId: headText
+      responses:
+        "200":
+          description: A text or null.
+          content:
+            application/json:
+              schema: {type: string, nullable: true}
+  /lists:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getList
+      responses:
+        "200":
+          description: Numbers or null.
+          content:
+            application/json:
+              schema: {type: array, nullable: true, items: {type: integer}}
+  /names:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getName
+      responses:
+        "200":
+          description: A name or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Name"}
+  /values:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getValue
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json:
+              schema: {}
+  /anything:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getAnything
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json: {}
+  /pets:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: A pet or null.
+          content:
+            application/vnd.pet+json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /things:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getThing
+      responses:
+        "200":
+          description: A thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+  /notes:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: A plain text or nothing.
+          content:
+            text/plain:
+              schema: {type: string, nullable: true}
+components:
+  schemas:
+    Thing: {type: object, required: [id], properties: {id: {type: integer}}}
+    Pet: {type: object, nullable: true, required: [name], properties: {name: {type: string}}}
+    Name: {type: string, nullable: true}
+    Color: {type: string, nullable: true, enum: [red, blue, null]}

@@ -1,0 +1,17 @@
+{
+  "order": [
+    "first",
+    "shared",
+    "last"
+  ],
+  "values": {
+    "shared": {
+      "type": "list",
+      "value": [
+        1,
+        1,
+        2
+      ]
+    }
+  }
+}

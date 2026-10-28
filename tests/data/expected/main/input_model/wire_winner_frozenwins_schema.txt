@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "shared": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Shared",
+      "type": "array",
+      "uniqueItems": true,
+      "x-python-type": "frozenset[int]"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "shared",
+    "shared",
+    "last"
+  ],
+  "title": "FrozenWins",
+  "type": "object"
+}

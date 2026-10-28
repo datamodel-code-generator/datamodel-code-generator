@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Child": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "$ref": "shared.json#/$defs/Nested"
+        },
+        "first": {
+          "$ref": "../shared.json#/$defs/First"
+        }
+      },
+      "required": [
+        "nested",
+        "first"
+      ]
+    }
+  }
+}

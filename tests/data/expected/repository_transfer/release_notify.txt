@@ -1,0 +1,132 @@
+Found 3 potential PRs in release 1.2.3
+Found 3 potential PRs in release 1.2.3
+Found 0 potential PRs in release 1.2.3
+Found 1 potential PRs in release 1.2.3
+Found 0 potential PRs in release 1.2.3
+Skipping: running in koxudaxi/datamodel-code-generator, not datamodel-code-generator/datamodel-code-generator
+Skipping: running in another/datamodel-code-generator, not datamodel-code-generator/datamodel-code-generator
+Skipping: running in datamodel-code-generator/another, not datamodel-code-generator/datamodel-code-generator
+{
+  "results": [
+    {
+      "name": "koxudaxi",
+      "prs": [
+        1,
+        2,
+        3
+      ],
+      "closing": [
+        12,
+        11,
+        10
+      ],
+      "related": [
+        15,
+        14,
+        13,
+        18,
+        17
+      ],
+      "referencedPRs": [
+        16
+      ],
+      "duplicate": [
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "name": "datamodel-code-generator",
+      "prs": [
+        1,
+        2,
+        3
+      ],
+      "closing": [
+        12,
+        11,
+        10
+      ],
+      "related": [
+        15,
+        14,
+        13,
+        18,
+        17
+      ],
+      "referencedPRs": [
+        16
+      ],
+      "duplicate": [
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "name": "unrelated",
+      "prs": [],
+      "closing": [],
+      "related": [],
+      "referencedPRs": [],
+      "duplicate": [
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "name": "mixed-deduplicated",
+      "prs": [
+        1
+      ],
+      "closing": [
+        10
+      ],
+      "related": [],
+      "referencedPRs": [
+        16
+      ],
+      "duplicate": [
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "name": "empty",
+      "prs": [],
+      "closing": [],
+      "related": [],
+      "referencedPRs": [],
+      "duplicate": [
+        true,
+        true,
+        false
+      ]
+    }
+  ],
+  "guards": [
+    {
+      "owner": "datamodel-code-generator",
+      "result": "allowed"
+    },
+    {
+      "owner": "koxudaxi",
+      "result": "skipped"
+    },
+    {
+      "owner": "another",
+      "result": "skipped"
+    },
+    {
+      "owner": "datamodel-code-generator",
+      "repo": "another",
+      "result": "skipped"
+    },
+    {
+      "missing": "TARGET_OWNER and TARGET_REPO are required"
+    }
+  ]
+}

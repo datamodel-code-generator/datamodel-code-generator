@@ -1,0 +1,79 @@
+{
+  "standard.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "standard_webhooks"}
+  },
+  "github.push": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Hub-Signature-256",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": "sha256="
+    }
+  },
+  "rfc.sha256": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "rfc.sha512": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha512",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "shapes.drawn": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Shape"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "callbacks.delivered": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Delivery"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "disabled.hook": {
+    "kind": "webhook",
+    "enabled": false,
+    "event_schema": {"pointer": "/components/schemas/Unused"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "stripe.event": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "stripe_style"}
+  }
+}

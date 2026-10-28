@@ -1,0 +1,96 @@
+pydantic_v2.BaseModel default disjoint 1 accepted
+pydantic_v2.BaseModel default disjoint 2 accepted
+pydantic_v2.BaseModel default disjoint 3 rejected
+pydantic_v2.BaseModel default disjoint null accepted
+pydantic_v2.BaseModel default shared 2 accepted
+pydantic_v2.BaseModel default shared 1 accepted
+pydantic_v2.BaseModel default shared 3 rejected
+pydantic_v2.BaseModel default shared null accepted
+pydantic_v2.dataclass default disjoint 1 accepted
+pydantic_v2.dataclass default disjoint 2 accepted
+pydantic_v2.dataclass default disjoint 3 rejected
+pydantic_v2.dataclass default disjoint null accepted
+pydantic_v2.dataclass default shared 2 accepted
+pydantic_v2.dataclass default shared 1 accepted
+pydantic_v2.dataclass default shared 3 rejected
+pydantic_v2.dataclass default shared null accepted
+msgspec.Struct default disjoint 1 accepted
+msgspec.Struct default disjoint 2 accepted
+msgspec.Struct default disjoint 3 rejected
+msgspec.Struct default disjoint null rejected
+msgspec.Struct default shared 2 accepted
+msgspec.Struct default shared 1 accepted
+msgspec.Struct default shared 3 rejected
+msgspec.Struct default shared null rejected
+pydantic_v2.BaseModel --field-constraints disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints disjoint 2 accepted
+pydantic_v2.BaseModel --field-constraints disjoint 3 rejected
+pydantic_v2.BaseModel --field-constraints disjoint null accepted
+pydantic_v2.BaseModel --field-constraints shared 2 accepted
+pydantic_v2.BaseModel --field-constraints shared 1 accepted
+pydantic_v2.BaseModel --field-constraints shared 3 rejected
+pydantic_v2.BaseModel --field-constraints shared null accepted
+pydantic_v2.BaseModel --use-annotated disjoint 1 accepted
+pydantic_v2.BaseModel --use-annotated disjoint 2 accepted
+pydantic_v2.BaseModel --use-annotated disjoint 3 rejected
+pydantic_v2.BaseModel --use-annotated disjoint null accepted
+pydantic_v2.BaseModel --use-annotated shared 2 accepted
+pydantic_v2.BaseModel --use-annotated shared 1 accepted
+pydantic_v2.BaseModel --use-annotated shared 3 rejected
+pydantic_v2.BaseModel --use-annotated shared null accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 2 accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 3 rejected
+pydantic_v2.BaseModel --collapse-root-models disjoint null accepted
+pydantic_v2.BaseModel --collapse-root-models shared 2 accepted
+pydantic_v2.BaseModel --collapse-root-models shared 1 accepted
+pydantic_v2.BaseModel --collapse-root-models shared 3 rejected
+pydantic_v2.BaseModel --collapse-root-models shared null accepted
+msgspec.Struct --collapse-root-models disjoint 1 accepted
+msgspec.Struct --collapse-root-models disjoint 2 accepted
+msgspec.Struct --collapse-root-models disjoint 3 rejected
+msgspec.Struct --collapse-root-models disjoint null rejected
+msgspec.Struct --collapse-root-models shared 2 accepted
+msgspec.Struct --collapse-root-models shared 1 accepted
+msgspec.Struct --collapse-root-models shared 3 rejected
+msgspec.Struct --collapse-root-models shared null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared null accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint null rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs shared 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared null accepted

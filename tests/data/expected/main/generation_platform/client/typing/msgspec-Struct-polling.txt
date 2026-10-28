@@ -1,0 +1,47 @@
+mypy pets and polling.py: clean
+pyright pets and polling.py: clean
+ty pets and polling.py: clean
+polling_negative.py 13 marked lines
+mypy polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  16 assignment
+  17 call-arg
+  18 arg-type
+  19 misc
+  20 assignment
+  21 assignment
+  22 misc
+  23 call-arg
+  24 attr-defined
+  25 misc
+  26 arg-type
+  27 call-arg
+  28 assignment
+pyright polling_negative.py: 12/13 marked lines with one error, 0 elsewhere, 0 in other files
+  16 reportAssignmentType
+  17 reportCallIssue
+  18 reportArgumentType
+  19 reportGeneralTypeIssues
+  20 reportAssignmentType
+  21 reportAssignmentType
+  22 reportAttributeAccessIssue
+  23 reportCallIssue
+  24 reportAttributeAccessIssue
+  24 reportUnknownMemberType
+  25 reportGeneralTypeIssues
+  26 reportArgumentType
+  27 reportCallIssue
+  28 reportAssignmentType
+ty polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  16 invalid-assignment
+  17 missing-argument
+  18 invalid-argument-type
+  19 invalid-await
+  20 invalid-assignment
+  21 invalid-assignment
+  22 invalid-assignment
+  23 unknown-argument
+  24 unresolved-attribute
+  25 invalid-await
+  26 invalid-argument-type
+  27 unknown-argument
+  28 invalid-assignment

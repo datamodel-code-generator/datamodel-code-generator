@@ -1,0 +1,7 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" xmlns:two="urn:two">
+  <xs:import namespace="urn:one" schemaLocation="one.xsd"/>
+  <xs:import namespace="urn:two" schemaLocation="two.xsd"/>
+  <xs:element name="root"><xs:complexType>
+    <xs:attributeGroup ref="one:fields"/><xs:attributeGroup ref="two:fields"/>
+  </xs:complexType></xs:element>
+</xs:schema>

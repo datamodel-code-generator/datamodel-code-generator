@@ -1,0 +1,8 @@
+Add the runtime dependencies of client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16"
+Next steps: call the API with the client:
+  from client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.list_pets(...)
+See client/README.md.

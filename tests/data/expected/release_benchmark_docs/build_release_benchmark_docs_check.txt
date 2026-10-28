@@ -1,0 +1,4 @@
+returncode: 0
+stdout:
+Release benchmark docs are up to date.
+stderr:

@@ -1,0 +1,34 @@
+{
+  "LowerInclusive": {
+    "convert": 3,
+    "decode": 3
+  },
+  "LowerExclusive": {
+    "convert": 0,
+    "decode": 0
+  },
+  "LowerEqual": {
+    "convert": 1,
+    "decode": 1
+  },
+  "UpperInclusive": {
+    "convert": -3,
+    "decode": -3
+  },
+  "UpperExclusive": {
+    "convert": 0,
+    "decode": 0
+  },
+  "UpperEqual": {
+    "convert": -1,
+    "decode": -1
+  },
+  "FractionalLower": {
+    "convert": 1.5,
+    "decode": 1.5
+  },
+  "FractionalUpper": {
+    "convert": -1.5,
+    "decode": -1.5
+  }
+}

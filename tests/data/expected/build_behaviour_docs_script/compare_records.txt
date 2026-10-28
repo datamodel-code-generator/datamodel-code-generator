@@ -1,0 +1,150 @@
+{
+  "from": "0.70.0",
+  "to": "0.87.0",
+  "releases": [
+    "0.70.0",
+    "0.80.0",
+    "0.87.0"
+  ],
+  "types": [
+    "pydantic_v2.BaseModel"
+  ],
+  "counts": {
+    "same": 3,
+    "no-behaviour": 1,
+    "crash-fix": 3,
+    "behaviour-change": 1,
+    "now-fails": 2,
+    "unsupported": 1
+  },
+  "by_type": {
+    "pydantic_v2.BaseModel": {
+      "behaviour-change": 1,
+      "crash-fix": 3,
+      "no-behaviour": 1,
+      "now-fails": 2,
+      "same": 3,
+      "unsupported": 1
+    }
+  },
+  "changed_in": {
+    "0.80.0": {
+      "behaviour-change": 3,
+      "crash-fix": 2,
+      "now-fails": 2
+    },
+    "0.87.0": {
+      "behaviour-change": 2,
+      "crash-fix": 2,
+      "now-fails": 1
+    }
+  },
+  "aspects": {
+    "type": 2
+  },
+  "examples": {
+    "crash-fix": [
+      {
+        "input": "tests/data/jsonschema/crash_fixed_in_last_release",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.87.0"
+        ],
+        "changes": [
+          "TypeError: unhashable type: 'list'"
+        ]
+      },
+      {
+        "input": "tests/data/jsonschema/failed_then_type_changed",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.80.0",
+          "0.87.0"
+        ],
+        "changes": [
+          "TypeError: unhashable type: 'list'"
+        ]
+      },
+      {
+        "input": "tests/data/jsonschema/unusable_validator_fixed",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.80.0"
+        ],
+        "changes": [
+          "[type] Model:count: int -> str"
+        ]
+      }
+    ],
+    "behaviour-change": [
+      {
+        "input": "tests/data/jsonschema/type_changed_in_middle_release",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.80.0"
+        ],
+        "changes": [
+          "[type] Model:count: int -> str"
+        ]
+      }
+    ],
+    "now-fails": [
+      {
+        "input": "tests/data/jsonschema/fails_since_middle_release",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.80.0"
+        ],
+        "changes": [
+          "TypeError: unhashable type: 'list'"
+        ]
+      },
+      {
+        "input": "tests/data/jsonschema/type_changed_then_failed",
+        "type": "pydantic_v2.BaseModel",
+        "changed_in": [
+          "0.80.0",
+          "0.87.0"
+        ],
+        "changes": [
+          "TypeError: unhashable type: 'list'"
+        ]
+      }
+    ]
+  }
+}
+## From 0.70.0 to 0.87.0
+
+| Output model type | same | no-behaviour | crash-fix | behaviour-change | now-fails | unsupported |
+|---|---|---|---|---|---|---|
+| pydantic_v2.BaseModel | 3 | 1 | 3 | 1 | 2 | 1 |
+
+Changed in (each recorded release counts the generations it changed since the recorded release before it, classified on that pair of releases alone, so a change that was made and later undone counts under both releases although the counts above compare only the two ends):
+
+| Release | crash-fix | behaviour-change | now-fails |
+|---|---|---|---|
+| 0.80.0 | 2 | 3 | 2 |
+| 0.87.0 | 2 | 2 | 1 |
+
+Changed aspects: type 2.
+
+Examples, crash-fix:
+
+- `tests/data/jsonschema/crash_fixed_in_last_release` (pydantic_v2.BaseModel), changed in 0.87.0
+    - `TypeError: unhashable type: 'list'`
+- `tests/data/jsonschema/failed_then_type_changed` (pydantic_v2.BaseModel), changed in 0.80.0, 0.87.0
+    - `TypeError: unhashable type: 'list'`
+- `tests/data/jsonschema/unusable_validator_fixed` (pydantic_v2.BaseModel), changed in 0.80.0
+    - `[type] Model:count: int -> str`
+
+Examples, behaviour-change:
+
+- `tests/data/jsonschema/type_changed_in_middle_release` (pydantic_v2.BaseModel), changed in 0.80.0
+    - `[type] Model:count: int -> str`
+
+Examples, now-fails:
+
+- `tests/data/jsonschema/fails_since_middle_release` (pydantic_v2.BaseModel), changed in 0.80.0
+    - `TypeError: unhashable type: 'list'`
+- `tests/data/jsonschema/type_changed_then_failed` (pydantic_v2.BaseModel), changed in 0.80.0, 0.87.0
+    - `TypeError: unhashable type: 'list'`

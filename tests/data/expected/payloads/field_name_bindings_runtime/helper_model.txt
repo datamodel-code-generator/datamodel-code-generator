@@ -1,0 +1,12 @@
+{
+  "fields": [
+    "Optional",
+    "items"
+  ],
+  "items_annotation": true,
+  "Optional": "ok",
+  "items": [
+    1,
+    2
+  ]
+}

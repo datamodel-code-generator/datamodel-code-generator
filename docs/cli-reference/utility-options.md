@@ -4,16 +4,60 @@
 
 | Option | Description |
 |--------|-------------|
+| [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--help`](#help) | Show help message and exit |
+| [`--install-skill`](#install-skill) | Install the bundled Agent Skill (experimental) |
+| [`--job`](#job) | Run a named generation job from pyproject.toml (experimental) |
 | [`--list-deprecations`](#list-deprecations) | List registered deprecations and scheduled breaking changes |
 | [`--list-experimental`](#list-experimental) | List registered experimental features |
 | [`--no-color`](#no-color) | Disable colorized output |
 | [`--output-format`](#output-format) | Choose the command output format |
-| [`--output-format-json-schema`](#output-format-json-schema) | Output JSON Schema for structured command output |
+| [`--output-format-json-schema`](#output-format-json-schema) | Output JSON Schema for structured command output or JSON configuration |
+| [`--overwrite-skill`](#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](#profile) | Use a named profile from pyproject.toml |
+| [`--skill-scope`](#skill-scope) | Choose an Agent Skill installation scope |
 | [`--version`](#version) | Show program version and exit |
+
+---
+
+## `--all-jobs` {#all-jobs}
+
+Run every named generation job from `[tool.datamodel-codegen.jobs]` in declaration
+order (experimental).
+
+!!! warning "Experimental"
+
+    Named batch jobs are experimental; their configuration schema, batch output,
+    and transactional/watch execution contracts may change.
+
+**Related:** [`--job`](#job), [`--diff-against`](general-options.md#diff-against),
+[pyproject.toml Configuration](../pyproject_toml.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --all-jobs
+    datamodel-codegen --all-jobs --check
+    datamodel-codegen --all-jobs --output-format json
+    datamodel-codegen --all-jobs --watch
+    ```
+
+All selected jobs are validated before generation starts. Jobs that write to
+stdout, or whose output or model-metadata paths overlap, are rejected before
+any generated file is written. With `--output-format json`, one `batch`
+payload contains the result of every job.
+
+`--diff-against` is intentionally unavailable for every named-job execution,
+including a single selected job. Keeping one contract across `--job` and
+`--all-jobs` avoids ambiguous partial support when the selection grows. Run the
+comparison for one profile or input instead.
+
+With `--watch`, changes to `pyproject.toml` replan the complete job membership.
+All selected local dependencies are watched as one graph, and every event reruns
+and publishes the whole batch transactionally rather than rebuilding only one
+job.
 
 ---
 
@@ -54,6 +98,8 @@ Use `--output-format json` when an LLM agent or tool should consume structured
 option metadata instead of Markdown.
 Use `--output-format-json-schema generate-prompt` when the agent needs the JSON
 Schema for that structured payload, such as when defining a tool contract.
+Add `--recommend-options` (experimental) with an input schema to include the
+schema analysis and the options recommended for it in the prompt.
 
 **See also:** [LLM Integration](../llm-integration.md) for detailed usage examples
 
@@ -69,12 +115,14 @@ Schema for that structured payload, such as when defining a tool contract.
     datamodel-codegen --generate-prompt "How do I generate strict types?" # (2)!
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generate-prompt # (4)!
+    datamodel-codegen --input schema.json --generate-prompt --recommend-options # (5)!
     ```
 
     1. :material-arrow-left: `--generate-prompt` - generate prompt without a question
     2. :material-arrow-left: Include a specific question in the prompt
     3. :material-arrow-left: Emit structured JSON for LLM/tool ingestion
     4. :material-arrow-left: Emit JSON Schema for structured prompt JSON
+    5. :material-arrow-left: Include the schema analysis and recommended options (experimental)
 
 ??? example "Quick Examples"
 
@@ -147,6 +195,85 @@ Displays all available command-line options with their descriptions and default 
 
 ---
 
+## `--install-skill` {#install-skill}
+
+Install the bundled experimental `datamodel-code-generator` Agent Skill for Codex or Claude Code, then exit.
+
+The default `project` scope installs the skill in the current project's
+`.agents/skills/` directory for Codex or `.claude/skills/` directory for Claude
+Code. Use `--skill-scope user` to install the same skill below your home
+directory instead.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --install-skill codex # (1)!
+    datamodel-codegen --install-skill claude-code --skill-scope user # (2)!
+    datamodel-codegen --install-skill codex --overwrite-skill # (3)!
+    ```
+
+    1. :material-arrow-left: Install for Codex in `.agents/skills/` for the current project
+    2. :material-arrow-left: Install for Claude Code in `~/.claude/skills/`
+    3. :material-arrow-left: Replace an existing regular skill directory
+
+For safety, an existing skill directory is left untouched unless
+`--overwrite-skill` is supplied. Symlinks and non-directory targets are never
+replaced.
+
+---
+
+## `--job` {#job}
+
+Run one or more named generation jobs declared in `pyproject.toml` (experimental). Jobs are
+executed sequentially in TOML declaration order, even when `--job` is supplied
+in a different order.
+
+!!! warning "Experimental"
+
+    Named batch jobs are experimental; their configuration schema, batch output,
+    and transactional/watch execution contracts may change.
+
+**Related:** [pyproject.toml Configuration](../pyproject_toml.md),
+[`--all-jobs`](#all-jobs), [`--diff-against`](general-options.md#diff-against)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --job api
+    datamodel-codegen --job api --job events --check
+    ```
+
+??? example "Configuration (pyproject.toml)"
+
+    ```toml
+    [tool.datamodel-codegen.profiles.strict]
+    use-annotated = true
+
+    [tool.datamodel-codegen.jobs.api]
+    profile = "strict"
+    input = "schemas/openapi.yaml"
+    output = "src/models/api.py"
+
+    [tool.datamodel-codegen.jobs.events]
+    input = "schemas/events.json"
+    output = "src/models/events.py"
+    ```
+
+Jobs require their own `input` and `output`. A job can select one reusable
+profile using `profile = "name"`. Settings are resolved as base configuration,
+job profile, job settings, then safe batch-wide CLI overrides. `--input`,
+`--url`, `--input-model`, `--output`, and `--profile` cannot be combined with
+job selection. `--diff-against` also cannot be combined with named jobs: compare
+one profile or input at a time. With `--watch`, one outer scheduler watches the
+selected jobs' combined dependency graph and `pyproject.toml`. Every event replans and
+transactionally reruns the complete selection; failures retain the published
+outputs and continue watching for recovery.
+
+A job whose settings select `generate-server` also generates the FastAPI server
+package, and such jobs can share one models `output`; see [Batch jobs](../fastapi-server.md#batch-jobs).
+
+---
+
 ## `--list-deprecations` {#list-deprecations}
 
 List registered deprecations and scheduled breaking changes, then exit.
@@ -208,6 +335,13 @@ Choose the command output format.
 The default output format is `text`. Use `json` when another program or LLM
 agent should inspect structured output.
 
+For backward compatibility, text stdout concatenates generated modules and does
+not preserve their paths. Use `--fail-on-multi-module-stdout` to reject that
+case, `--output <directory>` to preserve files, or `--output-format json` for
+structured stdout. The fail option takes precedence over automatic repair of an
+unusable modular stdout result, so an explicitly requested guard always rejects
+the modular result instead of coalescing it.
+
 In normal generation mode, `--output-format json` wraps generated modules in a
 structured payload on stdout. If `--output` is also supplied, files are still
 written to disk and the JSON payload mirrors the generated files. `--check`
@@ -225,13 +359,31 @@ path relative to the output directory for directory output. For stdout-only
 single-file generation it is `null`, and for multi-module stdout generation it
 is the generated module path.
 
+With `--generate-server` or `--generate-client`, the generation, check, and
+input-diff payloads also have a `target` object: `package` is the import path
+of the generated package, and `dependencies` lists its runtime requirements as
+PEP 508 strings, the ones the `uv add` command on stderr names. A check or input
+diff lists those of the current input, and `implied` the model settings the run
+left unset and the target set, when there are any: an object with the keys
+`openapi-scopes`, `target-python-version`, `use-missing-sentinel`,
+`target-pydantic-version`, `use-msgspec-tagged-unions`, and
+`use-msgspec-nullable-enum-alias`, each present only when the target set it. Payloads of model-only generation leave `target` out. The generation payload's `target` also carries the next steps that
+stderr prints: `readme`, the path of the package README; for a server,
+`entrypoint` (`app`, the import string of the application in `main.py`, and
+`path`) and `implementation`, one entry for each module of yours that `main.py`
+imports (`module`, `name`, `path`, and `created`, true when the run wrote it with
+stubs, and whose `path` names the `__init__.py` of a module you made a package);
+and for a client, `usage`, code that calls its first operation. Its paths are
+relative like those of `files`.
+
 Use `--output-format json` with `--generate-prompt` to emit structured option
 metadata instead of Markdown. Use `--output-format-json-schema` when an LLM
-agent or tool needs the schema for a structured output payload.
+agent or tool needs the schema for a JSON payload.
 
 Schema targets are intentionally scoped. `generate-prompt` emits the
 `PromptPayload` schema for `--generate-prompt --output-format json`.
 `generation` emits only the `GenerationPayload` schema for generated-file JSON.
+`model-metadata` emits the schema for files written by `--emit-model-metadata`.
 `structured-output` emits the broader `StructuredOutputPayload` schema, a union
 covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
 `CheckOutputPayload`. Structured payloads use `kind` as the discriminator.
@@ -244,7 +396,8 @@ covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generation # (4)!
     datamodel-codegen --output-format-json-schema generate-prompt # (5)!
-    datamodel-codegen --output-format-json-schema structured-output # (6)!
+    datamodel-codegen --output-format-json-schema model-metadata # (6)!
+    datamodel-codegen --output-format-json-schema structured-output # (7)!
     ```
 
     1. :material-arrow-left: Emit the default generated Python text
@@ -252,7 +405,8 @@ covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
     3. :material-arrow-left: Emit structured JSON with current options and argparse metadata
     4. :material-arrow-left: Emit JSON Schema for generated-file JSON output
     5. :material-arrow-left: Emit JSON Schema for structured prompt JSON
-    6. :material-arrow-left: Emit JSON Schema for any structured command JSON output
+    6. :material-arrow-left: Emit JSON Schema for generated model metadata JSON
+    7. :material-arrow-left: Emit JSON Schema for any structured command JSON output
 
 ??? example "Generation JSON output"
 
@@ -285,7 +439,7 @@ covering `GenerationPayload`, `PromptPayload`, `CommandOutputPayload`, and
 
 ## `--output-format-json-schema` {#output-format-json-schema}
 
-Output JSON Schema for a structured command output format and exit.
+Output JSON Schema for a JSON output format and exit.
 
 Use this when an LLM agent, tool call definition, or validation layer needs the
 contract before consuming JSON output. The schema is emitted separately from the
@@ -296,24 +450,42 @@ Currently supported schema targets:
 
 - `generate-prompt`: schema for `--generate-prompt --output-format json`
 - `generation`: schema for normal generation with `--output-format json`
+- `model-metadata`: schema for files emitted by `--emit-model-metadata`
 - `structured-output`: tagged union schema for all structured command outputs,
   discriminated by `kind`
+- `config`: schema for JSON-valued configuration options
 
 !!! tip "Usage"
 
     ```bash
     datamodel-codegen --output-format-json-schema generate-prompt # (1)!
     datamodel-codegen --output-format-json-schema generation # (2)!
-    datamodel-codegen --output-format-json-schema structured-output # (3)!
-    datamodel-codegen --generate-prompt --output-format json # (4)!
-    datamodel-codegen --input schema.json --output-format json # (5)!
+    datamodel-codegen --output-format-json-schema model-metadata # (3)!
+    datamodel-codegen --output-format-json-schema structured-output # (4)!
+    datamodel-codegen --output-format-json-schema config # (5)!
+    datamodel-codegen --generate-prompt --output-format json # (6)!
+    datamodel-codegen --input schema.json --emit-model-metadata model-map.json # (7)!
     ```
 
     1. :material-arrow-left: Emit the JSON Schema for structured prompt output
     2. :material-arrow-left: Emit the JSON Schema for generated-file output
-    3. :material-arrow-left: Emit the JSON Schema for all structured command outputs
-    4. :material-arrow-left: Emit prompt payloads that match the prompt schema
-    5. :material-arrow-left: Emit generation payloads that match the generation schema
+    3. :material-arrow-left: Emit the JSON Schema for generated model metadata
+    4. :material-arrow-left: Emit the JSON Schema for all structured command outputs
+    5. :material-arrow-left: Emit the JSON Schema for JSON-valued configuration options
+    6. :material-arrow-left: Emit prompt payloads that match the prompt schema
+    7. :material-arrow-left: Emit metadata payloads that match the model metadata schema
+
+---
+
+## `--overwrite-skill` {#overwrite-skill}
+
+Replace an existing regular Agent Skill directory when installing with
+`--install-skill`.
+
+Without this option, an existing skill is preserved and the command exits with
+an error. Symlinks and non-directory targets are never overwritten.
+
+    datamodel-codegen --install-skill codex --overwrite-skill
 
 ---
 
@@ -360,6 +532,20 @@ file. Each profile can override the default settings with its own set of options
     # Use the dataclass profile
     datamodel-codegen --input schema.json --profile dataclass
     ```
+
+---
+
+## `--skill-scope` {#skill-scope}
+
+Choose whether `--install-skill` installs the bundled Agent Skill for the
+current project or for the current user. The default is `project`.
+
+`project` uses `.agents/skills/` for Codex and `.claude/skills/` for Claude
+Code below the current working directory. `user` uses the matching directory
+below your home directory.
+
+    datamodel-codegen --install-skill codex --skill-scope project
+    datamodel-codegen --install-skill claude-code --skill-scope user
 
 ---
 

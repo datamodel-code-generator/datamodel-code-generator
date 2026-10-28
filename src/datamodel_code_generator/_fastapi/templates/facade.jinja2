@@ -1,0 +1,13 @@
+"""{{ docstring }}"""
+{%- if imports %}
+
+{{ imports }}
+{%- endif %}
+{%- if exports %}
+
+__all__ = [
+{%- for name in exports %}
+    "{{ name }}",
+{%- endfor %}
+]
+{%- endif %}

@@ -1,0 +1,1 @@
+The schema at ref_siblings_draft07.json#/properties/enum_const admits no value: its const 'a' is none of its enum values. It is generated as written.

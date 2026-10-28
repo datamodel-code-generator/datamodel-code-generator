@@ -1,0 +1,1 @@
+{"syntax": "syntax = \"proto3\";", "edition": "edition = '2023';", "message": "// note: value"}

@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Record",
+  "type": "object",
+  "definitions": {
+    "Stamp": {
+      "type": "string",
+      "format": "binary",
+      "maxLength": 4
+    }
+  },
+  "properties": {
+    "stamp": {
+      "$ref": "#/definitions/Stamp"
+    },
+    "seal": {
+      "type": "string",
+      "format": "binary",
+      "minLength": 2
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 3,
+      "pattern": "^[A-Z]+$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "even": {
+      "type": "integer",
+      "multipleOf": 2
+    },
+    "ratio": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "step": {
+      "type": "number",
+      "multipleOf": 0.5
+    },
+    "flag": {
+      "type": "boolean"
+    }
+  }
+}

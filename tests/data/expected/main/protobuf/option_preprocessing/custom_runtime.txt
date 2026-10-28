@@ -1,0 +1,7 @@
+{
+  "text": "x(y),z]\\'\"",
+  "second": "a\\\"'[,]",
+  "count": -7,
+  "joined": "ab",
+  "absent": null
+}

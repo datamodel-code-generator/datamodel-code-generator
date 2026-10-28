@@ -1,0 +1,14 @@
+{
+  "notes": [
+    {
+      "version": "0.29.0",
+      "summary": "The inflect dependency range was widened and cold imports became slower.",
+      "details": "Release 0.29.0 allowed inflect 7.x, which resolves typeguard 4.x in modern environments. That typeguard instrumentation increased fresh-process startup cost. Small OpenAPI is especially visible because the fixture has array component names such as Pets and Users, so class-name singularization initializes inflect while the rest of the generation work is small."
+    },
+    {
+      "version": "0.64.1",
+      "summary": "This release predates the main-branch inflect import mitigation.",
+      "details": "The latest release result still includes the inflect/typeguard cold-import cost. The effect is most visible in Small/OpenAPI because the fixture has array component names such as Pets and Users, so class-name singularization initializes inflect while the rest of the generation work is small."
+    }
+  ]
+}

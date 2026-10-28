@@ -1,4 +1,4 @@
-<!-- related-cli-options: --field-constraints, --validation -->
+<!-- related-cli-options: --field-constraints -->
 
 # 🔒 Field Constraints
 
@@ -29,7 +29,7 @@ Convert simple JSON Schema `model.json` to pydantic model `model.py`:
 ### ❌ Without `--field-constraints` option
 
 ```bash
-datamodel-codegen --input model.json --input-file-type jsonschema > model.py
+datamodel-codegen --input model.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel > model.py
 ```
 
 **Generated model.py**
@@ -43,8 +43,8 @@ from __future__ import annotations
 from pydantic import BaseModel, constr
 
 
-class  Model(BaseModel):
-  name: constr(max_length=64)
+class Model(BaseModel):
+    name: constr(max_length=64)
 ```
 
 **🔴 Run mypy...**
@@ -62,7 +62,13 @@ mypy shows errors! 😱
 ### ✅ With `--field-constraints` option
 
 ```bash
-datamodel-codegen --input model.json --input-file-type jsonschema --field-constraints > model.py
+datamodel-codegen \
+  --input model.json \
+  --input-file-type jsonschema \
+  --output-model-type pydantic_v2.BaseModel \
+  --use-annotated \
+  --field-constraints \
+  > model.py
 ```
 
 **Generated model.py**
@@ -73,11 +79,13 @@ datamodel-codegen --input model.json --input-file-type jsonschema --field-constr
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, Field
 
 
 class Model(BaseModel):
-    name: str = Field(..., max_length=64)
+    name: Annotated[str, Field(max_length=64)]
 ```
 
 **🟢 Run mypy...**
@@ -90,10 +98,268 @@ No errors! 🎉
 
 ---
 
+## 🔢 Which fields keep number keywords
+
+`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field in two cases.
+
+**The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
+(`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
+are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
+Pydantic models and dataclasses write such a `Field()` argument only when a number value of the Python type written
+for the field meets it: the type takes the keyword, as the Pydantic column of the table below lists, a member of a
+union or a value of a `Literal` (also of a `const` or `enum`) does, or the type has numbers among its values, as
+`bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag` and the number protocols of `typing` do. Pydantic cannot
+build or validate a field whose `Field()` holds any other, so a keyword they leave out, such as `minimum` on the `str`
+of `{"type": "integer", "x-python-type": "str", "minimum": 0}` or `multipleOf` on the `time` of format `time`, is named
+with its field in a warning. A `--type-overrides` builtin or standard-library class replaces the `con*` type of a field
+without its arguments, which such a class does not take, and names them in the same warning; another override, such as
+`pydantic.conint` or a factory of your own, keeps them. A field override with brackets is an annotation, such as
+`typing.Literal[1, 2]` or `list[typing.Literal[1, 2]]`: it is written as `x-python-type` writes it, without the
+arguments of any `con*` call, and takes the keywords that annotation takes. A model-level override with brackets
+writes the annotation where each field names the model, and a GraphQL field or scalar override with brackets does the
+same.
+
+**The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
+`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
+written as `Any`, which takes no number keyword. Pydantic models and dataclasses write these keywords only as `Field()`
+arguments, so this case needs `--field-constraints` or `--use-annotated` (root models and type aliases follow the same
+options); without them such a field has no bound. `msgspec.Struct` writes them as `Meta(...)`.
+
+In both cases `msgspec.Struct` writes a keyword only when msgspec accepts it on the Python type, as the msgspec column
+of the tables below lists, because msgspec cannot decode a model whose `Meta(...)` holds any other. A keyword it
+leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named with its field in a warning.
+msgspec checks `multipleOf` on a `float` by its floating-point remainder, so `msgspec.Struct` writes it on a `float`
+only for a divisor a float represents exactly, such as `2`, `0.5` or `1.5`; a divisor such as `0.01`, whose multiples
+msgspec would reject, is left out with the same warning.
+msgspec takes the number keywords of an `int` only within the 64-bit range, so a bound beyond it, such as the
+`maximum` of `18446744073709551615` a `uint64` field has, is left out with the same warning; the field then takes the
+integers beyond that bound too, since msgspec decodes integers of any size.
+msgspec checks all members of a union that it decodes as one Python type against the constraints of each of them, so
+in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
+branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
+the field takes the values of every branch (`bytes` here), and names the keywords it leaves out in the same warning;
+members of different types, such as `str` and `int`, keep their constraints. msgspec counts the members of an alias of
+a union, or of a type and `null`, as members of the union that names it, so a branch that references such a schema is
+written as the alias's members there, while the alias keeps its `Meta(...)`. msgspec also decodes every integer as the
+`int` member of a union that has a `float` member, so in
+`anyOf: [{type: integer, maximum: 3}, {type: number, minimum: 5}]` the `maximum` would reject `6`, which the number
+branch accepts; the `int` member is written without its constraints, with the same warning, unless they admit every
+integer the `float` members admit.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `int`, `float` | all five keywords | all five keywords |
+| `Decimal` | all five keywords | none |
+| `timedelta` | the four bounds, read as seconds; `multipleOf` too for a number schema with an explicit `--target-pydantic-version 2.14` | none |
+| `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
+| `time` | the four bounds, read as seconds since midnight | none |
+| a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
+| `bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag`, the number protocols `SupportsAbs`, `SupportsComplex`, `SupportsFloat`, `SupportsIndex`, `SupportsInt` and `SupportsRound` of `typing` | all five keywords for a schema that holds a number, none otherwise | none |
+| any other known type: `str`, `bytes`, `None`, `date`, `UUID`, paths, IP addresses, lists, dicts and other containers | none | none |
+
+`multipleOf` is not written on `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field, 2.11 to 2.13
+ignore the keyword and 2.14 fails on valid values. On `timedelta` Pydantic 2.0 to 2.10 cannot build it either and
+2.11 to 2.13 ignore it, while 2.14 checks it on the seconds, so a number schema writes `multipleOf` on a `timedelta`
+only with an explicit `--target-pydantic-version 2.14`; otherwise it is left out with the warning, which names that
+option. A `date` takes no number keyword in any Pydantic version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
+be one of them at runtime, for example a `NewType` of `int`.
+Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
+
+A known type is a Python builtin or a standard-library type that the `--target-python-version` has, or a type the
+generator itself imports; its row above decides. A name the target does not have yet, such as `frozendict` for a
+target below 3.15, is read as a type the generator does not know. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
+`collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
+a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
+`collections.abc` name, such as `collections.abc.Callable` or `typing.SupportsBytes`, is a known type that takes no
+number keyword; only the number protocols and `Hashable` of the table take them, for a schema that holds a number. A
+union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the keywords in Pydantic
+models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
+array) on an `x-python-type` union. A `Literal` is read like a union of the types of its values (`str`, `bytes`, `int`,
+`float` or `bool`, with the values of a nested `Literal` and without `None`), so `Literal[1, 2.5]` and
+`Literal[1, None]` keep the number keywords in Pydantic models, while `Literal["a", 1]` and `Literal[True, False]` keep
+none; `msgspec` accepts no constraint on a `Literal`. Custom templates receive the same values as the built-in ones.
+
+A named schema whose `allOf` merges into one scalar type, such as
+`{"allOf": [{"type": "string", "format": "duration"}, {"minimum": 0}]}`, is a root model of that type and follows the
+same table.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": "string", "x-python-type": "int", "minimum": 0},
+    "wait": {"type": "string", "format": "duration", "minimum": 0},
+    "at": {"type": "string", "format": "date-time", "minimum": 0},
+    "day": {"type": "string", "format": "date", "minimum": 0}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    count: int | None = Field(None, ge=0)
+    wait: timedelta | None = Field(None, ge=0)
+    at: AwareDatetime | None = Field(None, ge=0)
+    day: date | None = None
+```
+
+## 🔤 Which fields keep string and array keywords
+
+`minLength`, `maxLength` and `pattern` hold for strings, and `minItems`, `maxItems` and `uniqueItems` hold for arrays.
+They follow the same two cases as number keywords: a schema type `string` takes the string keywords and a schema type
+`array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
+without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
+"pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+
+As for number keywords, Pydantic models and dataclasses write a string keyword of a schema type `string` as a
+`Field()` argument only when the Python type written for the field takes it, as the Pydantic column of the table below
+lists, with `minItems` and `maxItems` read as the lengths they are written as. Pydantic cannot validate a field whose
+`Field()` holds any other, so a keyword they leave out, such as `maxLength` on the `AwareDatetime` of format
+`date-time`, `pattern` on the `date` of format `date` or on the `SecretStr` of format `password`, or `minLength` on a
+`UUID`, is named with its field in a warning. A field whose type holds the `AnyUrl` of format `uri` is written without
+any of its constraints, also with a warning. The `Literal` of a `const` takes the keywords of its values' type, so
+`{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
+them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
+such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
+on the Python type, such as `pattern` on `bytes` or on the `Literal` of a `const`.
+
+A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
+keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
+`list`, and `Literal["a", "bb", None]` and `Literal[b"a", b"bb"]` take those of `str` and `bytes` in Pydantic models.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
+| `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
+| `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
+| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
+| the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
+| `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
+| `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
+| `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |
+| a type the generator does not know or a model that the schema references | all of them | all of them |
+| any other known type: `int`, `float`, `Decimal`, `bool`, `None`, `Any`, `date`, `datetime`, `time`, `timedelta`, `UUID`, IP addresses, `AnyUrl`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {"type": "string", "minLength": 2},
+    "any": {"minLength": 2},
+    "count": {"type": "integer", "pattern": "^1"},
+    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"},
+    "at": {"type": "string", "format": "date-time", "maxLength": 64}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    code: str | None = Field(None, min_length=2)
+    any: Any | None = None
+    count: int | None = None
+    tags: list[str] | None = Field(None, min_length=1)
+    at: AwareDatetime | None = None
+```
+
+---
+
+## 🎯 Constraints beside a `const` or an `enum`
+
+With `--filter-literal-values` (which `--omit-redundant-constraints` includes), the values of a `const` or an `enum`
+are checked against the `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`,
+`multipleOf` and `pattern` beside them that the field does not write itself, and a value that does not meet them is
+left out; without it every value stays, as in 0.86.0: an Enum class or the `Literal` of an enum keeps only the values the schema
+admits, with their `x-enum-varnames`, `x-enum-names` and `x-enum-descriptions`. The consts of a `oneOf` or `anyOf`
+are checked against their own constraints and those beside the `oneOf` or `anyOf`. A keyword of another JSON type, such
+as `minimum` beside a string, is met, as is every keyword by `null`; no bound is met by NaN, and `multipleOf` is
+checked on the decimal text of the values. A `pattern` is checked only where a static scan certifies that every regular
+expression engine reads it alike, and a `multipleOf` that is not positive or beside a value that is not finite is not
+checked.
+
+When no value meets them, the schema admits no value: the values stay as written, with a warning. A field that writes
+the keyword as a `Field()` argument beside the `Literal`, the `const` of a Pydantic model with `--field-constraints` or
+`--use-annotated` or the `Literal` of a root model, keeps its values as written, since Pydantic checks the keyword.
+`msgspec.Struct` leaves out the keywords the values decide without a warning.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "size": {"type": "string", "enum": ["s", "mm", "lll"], "minLength": 2},
+    "level": {"type": "integer", "enum": [1, 2, 3], "minimum": 2}
+  }
+}
+```
+
+```python
+class Size(Enum):
+    mm = "mm"
+    lll = "lll"
+
+
+class Level(IntEnum):
+    integer_2 = 2
+    integer_3 = 3
+```
+
+---
+
+## ✂️ Constraints the type already enforces
+
+By default a field of the field forms (`--field-constraints`, `--use-annotated`) writes some constraints again beside a
+type that enforces them: the bound of a zero-bound class from `--use-non-positive-negative-number-constrained-types`
+at a nullable property, an item or a root model, and the keywords beside the `Literal` of a `const`, or of an enum
+with `--enum-field-as-literal`. A const branch of a `oneOf` or `anyOf` beside such a keyword becomes a root model that
+writes it. `--omit-redundant-constraints` writes none of them again:
+
+- a zero-bound class, such as `NonNegativeInt` for `minimum: 0`, enforces its bound wherever it is the type, and the
+  field writes only the other keywords (`NonNegativeInt | None = Field(None, le=10)`); under `--strict-types` the
+  bound is written beside `StrictInt` or `StrictFloat` instead of a strict `conint` or `confloat` that repeats it;
+- the `Literal` of a `const` or an enum enforces each length or number keyword that all its values meet (values that
+  do not meet it are left out first), so the field writes none of them, and a const branch that meets the keywords
+  beside it stays a `Literal` instead of a root model (`Model | Literal["gpt-live-1"]`);
+- a `pattern`, a `multipleOf` the check cannot decide and a keyword no value meets stay written where they were.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": ["integer", "null"], "minimum": 0, "maximum": 10},
+    "code": {"type": "string", "const": "abc", "minLength": 1}
+  }
+}
+```
+
+```python
+# --use-annotated --use-non-positive-negative-number-constrained-types
+class Model(BaseModel):
+    count: Annotated[NonNegativeInt | None, Field(ge=0, le=10)] = None
+    code: Annotated[Literal["abc"] | None, Field(min_length=1)] = None
+
+
+# with --omit-redundant-constraints
+class Model(BaseModel):
+    count: Annotated[NonNegativeInt | None, Field(le=10)] = None
+    code: Literal["abc"] | None = None
+```
+
+The 20261027 presets turn it on.
+
+---
+
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--field-constraints`](cli-reference/field-customization.md#field-constraints) - Detailed CLI option documentation with examples
+- 🔁 [Type Mappings](type-mappings.md) - Override schema types before field constraints are applied
 
 ## 🔗 Related Issues
 
-- [pydantic/pydantic#156](https://github.com/samuelcolvin/pydantic/issues/156)
+- [pydantic/pydantic#156](https://github.com/pydantic/pydantic/issues/156)

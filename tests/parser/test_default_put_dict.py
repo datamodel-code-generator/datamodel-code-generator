@@ -61,3 +61,15 @@ def test_get_or_put_raises_when_default_and_factory_are_missing() -> None:
 
     with pytest.raises(ValueError, match=r"^Not found default and default_factory$"):
         cache.get_or_put("schema")
+
+
+@pytest.mark.allow_direct_assert
+def test_shared_runtime_types_preserve_parser_import_identity_and_metadata() -> None:
+    """Parser types remain stable after moving to the shared runtime module."""
+    from datamodel_code_generator import _shared_types
+    from datamodel_code_generator.parser import LiteralType
+
+    assert DefaultPutDict is _shared_types.DefaultPutDict
+    assert LiteralType is _shared_types.LiteralType
+    assert DefaultPutDict.__module__ == "datamodel_code_generator.parser"
+    assert LiteralType.__module__ == "datamodel_code_generator.parser"

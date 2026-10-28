@@ -1,0 +1,51 @@
+openapi: "3.0.0"
+info:
+  title: Test API referencing ancestor package models with exact imports
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    Tag:
+      type: object
+      description: Model in the root package (__init__.py)
+      properties:
+        label:
+          type: string
+    v0.Animal:
+      type: object
+      description: Base animal in the root package (v0/__init__.py)
+      properties:
+        species:
+          type: string
+    v0.bird.Owl:
+      type: object
+      description: Model in a sibling module (v0/bird.py)
+      properties:
+        wingspan:
+          type: integer
+    v0.mammal.Dog:
+      type: object
+      description: Model in a package __init__.py referencing its parent and the root package
+      properties:
+        animal:
+          $ref: '#/components/schemas/v0.Animal'
+        tag:
+          $ref: '#/components/schemas/Tag'
+    v0.mammal.Tags:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+    v0.mammal.canine.Puppy:
+      type: object
+      description: Model in a leaf module referencing ancestor packages and a sibling module
+      properties:
+        animal:
+          $ref: '#/components/schemas/v0.Animal'
+        parent:
+          $ref: '#/components/schemas/v0.mammal.Dog'
+        friend:
+          $ref: '#/components/schemas/v0.bird.Owl'
+        tag:
+          $ref: '#/components/schemas/Tag'
+        tags:
+          $ref: '#/components/schemas/v0.mammal.Tags'

@@ -1,0 +1,4 @@
+{
+  "diagnostics-json": ["--diagnostics-json", "diagnostics.json"],
+  "dependency-format": ["--dependency-format", "requirements"]
+}

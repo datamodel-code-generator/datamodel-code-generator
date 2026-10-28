@@ -1,0 +1,66 @@
+# functional-fields
+render typing.TypedDict total
+  models.py
+  model_bindings.py typing_TypedDict/total
+change typing.TypedDict total missing-symbol
+  @@ -12 +12 @@
+  -Payload = TypedDict('Payload', {
+  +Other = TypedDict('Payload', {
+change typing.TypedDict total wrong-callee
+  @@ -12 +12 @@
+  -Payload = TypedDict('Payload', {
+  +Payload = dict('Payload', {
+change typing.TypedDict total wrong-name
+  @@ -12 +12 @@
+  -Payload = TypedDict('Payload', {
+  +Payload = TypedDict('Other', {
+change typing.TypedDict total dynamic-fields
+  @@ -12 +12 @@
+  -Payload = TypedDict('Payload', {
+  +Payload = TypedDict('Payload', fields, {
+change typing.TypedDict total dynamic-key
+  @@ -14 +14 @@
+  -    'ship-to': ReadOnly[str],
+  +    field_key: ReadOnly[str],
+change typing.TypedDict total unpacked-fields
+  @@ -13 +13 @@
+  -    '': str,
+  +    **other,
+change typing.TypedDict total wrong-key
+  @@ -13 +13 @@
+  -    '': str,
+  +    'changed': str,
+change typing.TypedDict total missing-entry
+  @@ -17 +16,0 @@
+  -    'class': NotRequired[str],
+change typing.TypedDict total wrong-key-type
+  @@ -14 +14 @@
+  -    'ship-to': ReadOnly[str],
+  +    0: ReadOnly[str],
+change typing.TypedDict total shadowed-callee
+  @@ -11,0 +12 @@
+  +from custom import TypedDict
+change typing.TypedDict total trailing-expression
+  @@ -18 +18 @@
+  -    'naïve': NotRequired[str],})
+  +    'naïve': NotRequired[str],}) or 1
+change typing.TypedDict total unclosed-body
+  @@ -18 +18 @@
+  -    'naïve': NotRequired[str],})
+  +    'naïve': NotRequired[str],}
+change typing.TypedDict total invalid-unicode-key
+  @@ -14 +14 @@
+  -    'ship-to': ReadOnly[str],
+  +    u'\uZZZZ': ReadOnly[str],
+change typing.TypedDict total class-declaration
+  @@ -9,0 +10,4 @@
+  +
+  +
+  +class Payload(TypedDict):
+  +    ship_to: str
+render typing.TypedDict total-false
+  models.py
+  model_bindings.py typing_TypedDict/total
+render typing.TypedDict total-false-extensions
+  models.py
+  model_bindings.py typing_TypedDict/total

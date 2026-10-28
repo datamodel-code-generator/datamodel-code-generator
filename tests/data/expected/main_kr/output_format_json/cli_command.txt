@@ -2,7 +2,7 @@
   "version": 1,
   "format": "json",
   "kind": "cli-command",
-  "content": "datamodel-codegen --input schema.yaml --output model.py\n",
+  "content": "datamodel-codegen --input schema.yaml --output model.py",
   "config": {
     "input": "schema.yaml",
     "output": "model.py"

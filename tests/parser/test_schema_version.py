@@ -132,7 +132,7 @@ def test_jsonschema_features_draft4() -> None:
     """Test Draft 4 features."""
     assert JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft4) == snapshot(
         JsonSchemaFeatures(
-            null_in_type_array=False,
+            null_in_type_array=True,
             defs_not_definitions=False,
             const_support=False,
             property_names=False,
@@ -152,7 +152,7 @@ def test_jsonschema_features_draft6() -> None:
     """Test Draft 6 features."""
     assert JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft6) == snapshot(
         JsonSchemaFeatures(
-            null_in_type_array=False,
+            null_in_type_array=True,
             defs_not_definitions=False,
             prefix_items=False,
             boolean_schemas=True,
@@ -170,7 +170,7 @@ def test_jsonschema_features_draft7() -> None:
     """Test Draft 7 features."""
     assert JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft7) == snapshot(
         JsonSchemaFeatures(
-            null_in_type_array=False,
+            null_in_type_array=True,
             defs_not_definitions=False,
             prefix_items=False,
             boolean_schemas=True,
@@ -188,7 +188,7 @@ def test_jsonschema_features_2019_09() -> None:
     """Test Draft 2019-09 features."""
     assert JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft201909) == snapshot(
         JsonSchemaFeatures(
-            null_in_type_array=False,
+            null_in_type_array=True,
             defs_not_definitions=True,
             prefix_items=False,
             boolean_schemas=True,
@@ -809,47 +809,6 @@ def test_nullable_keyword_openapi_31_lenient_no_warning() -> None:
         parser.get_data_type(obj)
         deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
         assert len(deprecation_warnings) == 0
-
-
-def test_null_in_type_array_strict_warning_draft7() -> None:
-    """Test that null in type array emits warning in Draft 7 Strict mode."""
-    import warnings
-
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-
-    parser = JsonSchemaParser(
-        "",
-        jsonschema_version=JsonSchemaVersion.Draft7,
-        schema_version_mode=VersionMode.Strict,
-    )
-    raw_schema = {"type": ["string", "null"]}
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        parser._check_version_specific_features(raw_schema, ["test"])
-        user_warnings = [x for x in w if issubclass(x.category, UserWarning)]
-        assert len(user_warnings) == 1
-        assert "null in type array" in str(user_warnings[0].message)
-
-
-def test_null_in_type_array_no_warning_2020_12() -> None:
-    """Test that null in type array does NOT emit warning in Draft 2020-12."""
-    import warnings
-
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-
-    parser = JsonSchemaParser(
-        "",
-        jsonschema_version=JsonSchemaVersion.Draft202012,
-        schema_version_mode=VersionMode.Strict,
-    )
-    raw_schema = {"type": ["string", "null"]}
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        parser._check_version_specific_features(raw_schema, ["test"])
-        user_warnings = [x for x in w if issubclass(x.category, UserWarning)]
-        assert len(user_warnings) == 0
 
 
 def test_exclusive_as_number_strict_warning_draft4() -> None:

@@ -1,0 +1,50 @@
+{
+  "constant": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "const": 1e+100
+  },
+  "enum": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "enum": [
+      1e+100,
+      -1e+100,
+      0.25,
+      0
+    ]
+  },
+  "ordinary_constant": {
+    "type": "number",
+    "multipleOf": 0.25,
+    "const": 0.25
+  },
+  "string_constant": {
+    "const": "unchanged"
+  },
+  "mixed_enum": {
+    "enum": [
+      0.25,
+      "text"
+    ]
+  },
+  "runtime_types": {
+    "constant": [
+      "float"
+    ],
+    "enum": [
+      "int",
+      "float"
+    ],
+    "ordinary_constant": [
+      "float"
+    ],
+    "string_constant": [
+      "str"
+    ],
+    "mixed_enum": [
+      "float",
+      "str"
+    ]
+  }
+}

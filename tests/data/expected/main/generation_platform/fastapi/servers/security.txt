@@ -1,0 +1,222 @@
+# security
+serve pydantic_v2.BaseModel
+service DefaultService: get_custom, get_maybe, get_session, put_pet
+service DefaultService without its methods: TypeError
+service PetsService: list_pets
+service PetsService without its methods: TypeError
+service PublicService: get_public
+service PublicService without its methods: TypeError
+build no-authorize: TypeError: An authorize callback is required because the selected operations use security
+build missing-method: AttributeError: 'object' object has no attribute 'get_maybe'
+build sync-in-async: TypeError: The default.get_maybe method of GET /maybe is a plain method, but the operation's handler mode needs a coroutine function
+build async-in-sync: TypeError: The default.put_pet method of PUT /pets/{petId} is a coroutine function, but the operation's handler mode needs a plain method
+build operation-dependencies-unknown: ValueError: operation_dependencies names no operation of this router: /paths/~1pets/get
+build operation-dependencies-none: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
+build operation-dependencies-items: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
+build group public: ok
+build group pets: ok
+build options-unique-id: ok
+build options-unique-id-result: ok
+app default
+openapi info {"title": "Secured pets", "version": "2.0", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Pets team", "email": "pets@example.com"}, "license": {"name": "MIT", "identifier": "MIT"}}
+openapi servers [{"url": "https://pets.example.com/v2"}]
+openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "public"}]
+> GET /pets
+  global /pets
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey
+> GET /pets
+  global /pets
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=abc']
+  list_pets(principal='user-api_key')
+< 200 application/json ["rex"]
+> GET /pets
+  global /pets
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=denied']
+< 403 application/json {"detail":"Forbidden"}
+> GET /pets
+  global /pets
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=a']
+  list_pets(principal='user-api_key')
+< 200 application/json ["rex"]
+> GET /pets
+  global /pets
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=a']
+  list_pets(principal='user-api_key')
+< 200 application/json ["rex"]
+> GET /pets
+  global /pets
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey
+> GET /public
+  global /public
+  public /public
+  get_public()
+< 204 - b''
+> GET /maybe
+  global /maybe
+  get_maybe(principal=None, principal_1=None)
+< 204 - b''
+> GET /maybe?principal=x
+  global /maybe
+  authorize [(('bearer', ()),)]
+    credentials ['bearer=tok']
+  get_maybe(principal='user-bearer', principal_1='x')
+< 204 - b''
+> GET /maybe
+  global /maybe
+  get_maybe(principal=None, principal_1=None)
+< 204 - b''
+> GET /maybe
+  global /maybe
+  get_maybe(principal=None, principal_1=None)
+< 204 - b''
+> PUT /pets/1
+  global /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=tok']
+  put_pet(principal='user-oauth', petId=1)
+< 204 - b''
+> PUT /pets/1
+  global /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=tok']
+  put_pet(principal='user-oauth', petId=1)
+< 204 - b''
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
+> PUT /pets/1?key=k
+  global /pets/1
+  authorize [(('query_key', ()), ('basic', ()))]
+    credentials ['basic=user', 'query_key=k']
+  put_pet(principal='user-query_key+basic', petId=1)
+< 204 - b''
+> PUT /pets/1?key=k
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
+> PUT /pets/1
+  global /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=a']
+  put_pet(principal='user-oauth', petId=1)
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('cookie_key', ()),)]
+    credentials ['cookie_key=s1']
+  get_session(principal='user-cookie_key')
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('cookie_key', ()),)]
+    credentials ['cookie_key=b']
+  get_session(principal='user-cookie_key')
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('oidc', ('openid',)),), (('api_key', ()),)]
+    credentials ['api_key=abc', 'oidc=idt']
+  get_session(principal='user-oidc')
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('api_key', ()),), (('basic', ()),)]
+    credentials ['api_key=abc', 'basic=user']
+  get_session(principal='user-api_key')
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=abc']
+  get_session(principal='user-api_key')
+< 204 - b''
+> GET /session
+  global /session
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
+> GET /session
+  global /session
+  authorize [(('basic', ()),)]
+    credentials ['basic=ü']
+  get_session(principal='user-basic')
+< 204 - b''
+> GET /session
+  global /session
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
+> GET /custom
+  global /custom
+  authorize [(('digest', ()),)]
+    credentials ['digest=d1']
+  get_custom(principal='user-digest')
+< 204 - b''
+> GET /custom
+  global /custom
+  authorize [(('mtls', ()),)]
+    credentials ['mtls=CN=client']
+  get_custom(principal='user-mtls')
+< 204 - b''
+> GET /custom
+  global /custom
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Digest, APIKey
+app async
+openapi info {"title": "Renamed pets", "version": "2.0", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}}
+openapi servers [{"url": "https://pets.example.com/v2"}]
+openapi tags [{"name": "pets", "description": "Renamed."}]
+> GET /api/pets
+  app /api/pets
+  async authorize [(('api_key', ()),)] ['api_key']
+  list_pets(principal='async-user')
+< 200 application/json ["rex"]
+> GET /pets
+< 404 application/json {"detail":"Not Found"}
+> GET /api/public
+  app /api/public
+< 418 application/json {"detail":"I'm a teapot"}
+app awaitables
+> GET /public
+< raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
+> PUT /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=tok']
+< raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
+app authorize-lambda
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}
+app authorize-wrapped
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}
+app authorize-partial
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}

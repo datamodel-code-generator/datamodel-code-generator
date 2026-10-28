@@ -1,0 +1,58 @@
+{
+  "messages": {
+    "Payload": [
+      [
+        "text",
+        "ok"
+      ],
+      [
+        "second",
+        "value"
+      ],
+      [
+        "count",
+        "7"
+      ]
+    ]
+  },
+  "comments": [
+    [
+      [
+        4,
+        0
+      ],
+      " Pretend source:\noption (unknown) = \"keep this comment\";\n",
+      ""
+    ],
+    [
+      [
+        4,
+        0,
+        2,
+        0
+      ],
+      " Docs [x(y)\n",
+      ""
+    ],
+    [
+      [
+        4,
+        0,
+        2,
+        1
+      ],
+      " Docs [x(y)]\noption (unknown) = \"keep this comment\";\n",
+      ""
+    ],
+    [
+      [
+        4,
+        0,
+        2,
+        2
+      ],
+      " Literal quotes ' \" and /* [ ( , ]\n",
+      ""
+    ]
+  ]
+}

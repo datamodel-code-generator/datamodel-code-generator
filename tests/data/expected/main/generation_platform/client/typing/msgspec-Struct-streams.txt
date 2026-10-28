@@ -1,0 +1,31 @@
+mypy pets and streams.py: clean
+pyright pets and streams.py: clean
+ty pets and streams.py: clean
+streams_negative.py 8 marked lines
+mypy streams_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  13 call-overload
+  14 misc
+  15 assignment
+  16 arg-type
+  17 call-arg
+  18 call-arg
+  19 misc
+  20 attr-defined
+pyright streams_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  13 reportArgumentType
+  14 reportGeneralTypeIssues
+  15 reportAssignmentType
+  16 reportArgumentType
+  17 reportCallIssue
+  18 reportCallIssue
+  19 reportAttributeAccessIssue
+  20 reportAttributeAccessIssue
+ty streams_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
+  13 invalid-argument-type
+  14 invalid-await
+  15 invalid-assignment
+  16 invalid-argument-type
+  17 unknown-argument
+  18 missing-argument
+  19 invalid-assignment
+  20 unresolved-attribute

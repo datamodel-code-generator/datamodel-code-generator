@@ -43,6 +43,4 @@ class CollectionWrapper(BaseModel):
 
 
 class PaginatedDataTypeList(CollectionWrapper):
-    data: list[DataType] | None = Field(
-        None, description='Array of items in the collection.'
-    )
+    data: list[DataType] = Field(..., description='Array of items in the collection.')

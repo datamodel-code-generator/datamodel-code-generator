@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Leaf": {
+      "type": "object",
+      "properties": {
+        "code": {"type": "integer"}
+      }
+    }
+  }
+}

@@ -1,0 +1,213 @@
+{
+  "valid": {
+    "pClosedOne": {
+      "a1": 1
+    },
+    "rClosedOne": {
+      "a1": 1
+    },
+    "iClosedOne": [
+      {
+        "a1": 1
+      }
+    ],
+    "mClosedOne": {
+      "k": {
+        "a1": 1
+      }
+    },
+    "pClosedSame": {
+      "a1": 1,
+      "b1": 2
+    },
+    "rClosedSame": {
+      "a1": 1,
+      "b1": 2
+    },
+    "iClosedSame": [
+      {
+        "a1": 1,
+        "b1": 2
+      }
+    ],
+    "mClosedSame": {
+      "k": {
+        "a1": 1,
+        "b1": 2
+      }
+    },
+    "pClosedTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "rClosedTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "iClosedTwo": [
+      {
+        "a1": 1,
+        "b1": "s"
+      }
+    ],
+    "mClosedTwo": {
+      "k": {
+        "a1": 1,
+        "b1": "s"
+      }
+    },
+    "pOpenTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "rOpenTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "iOpenTwo": [
+      {
+        "a1": 1,
+        "b1": "s"
+      }
+    ],
+    "mOpenTwo": {
+      "k": {
+        "a1": 1,
+        "b1": "s"
+      }
+    },
+    "pOverlap": {
+      "ab": 5,
+      "b": -3
+    },
+    "rOverlap": {
+      "ab": 5,
+      "b": -3
+    },
+    "iOverlap": [
+      {
+        "ab": 5,
+        "b": -3
+      }
+    ],
+    "mOverlap": {
+      "k": {
+        "ab": 5,
+        "b": -3
+      }
+    },
+    "pAnyMember": {
+      "a1": [
+        1
+      ],
+      "b1": 2
+    },
+    "rAnyMember": {
+      "a1": [
+        1
+      ],
+      "b1": 2
+    },
+    "iAnyMember": [
+      {
+        "a1": [
+          1
+        ],
+        "b1": 2
+      }
+    ],
+    "mAnyMember": {
+      "k": {
+        "a1": [
+          1
+        ],
+        "b1": 2
+      }
+    },
+    "pAnnotatedSame": {
+      "a1": 1,
+      "b1": 2
+    },
+    "rAnnotatedSame": {
+      "a1": 1,
+      "b1": 2
+    },
+    "iAnnotatedSame": [
+      {
+        "a1": 1,
+        "b1": 2
+      }
+    ],
+    "mAnnotatedSame": {
+      "k": {
+        "a1": 1,
+        "b1": 2
+      }
+    },
+    "pTrueEmpty": {
+      "a1": [
+        1
+      ],
+      "b1": "s"
+    },
+    "rTrueEmpty": {
+      "a1": [
+        1
+      ],
+      "b1": "s"
+    },
+    "iTrueEmpty": [
+      {
+        "a1": [
+          1
+        ],
+        "b1": "s"
+      }
+    ],
+    "mTrueEmpty": {
+      "k": {
+        "a1": [
+          1
+        ],
+        "b1": "s"
+      }
+    },
+    "pNamesTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "rNamesTwo": {
+      "a1": 1,
+      "b1": "s"
+    },
+    "iNamesTwo": [
+      {
+        "a1": 1,
+        "b1": "s"
+      }
+    ],
+    "mNamesTwo": {
+      "k": {
+        "a1": 1,
+        "b1": "s"
+      }
+    }
+  },
+  "invalid": [
+    {
+      "pClosedOne": {
+        "a1": "s"
+      }
+    },
+    {
+      "rClosedSame": {
+        "b1": "s"
+      }
+    },
+    {
+      "pAnnotatedSame": {
+        "a1": "s"
+      }
+    }
+  ]
+}

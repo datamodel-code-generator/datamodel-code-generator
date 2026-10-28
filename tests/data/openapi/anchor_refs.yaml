@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: Anchor refs
+  version: "1.0"
+paths:
+  /tags:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#tag'
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    Tag:
+      $anchor: tag
+      type: string
+    Other:
+      type: object
+      properties:
+        label:
+          $ref: '#tag'
+        size:
+          $ref: '#size'
+      $defs:
+        size:
+          $anchor: size
+          type: integer
+    Box:
+      $id: box.json
+      type: object
+      properties:
+        item:
+          $ref: '#item'
+      $defs:
+        item:
+          $anchor: item
+          type: number

@@ -1,0 +1,51 @@
+[
+  {
+    "name": "PlainRoot",
+    "fields": [
+      "item"
+    ],
+    "annotations_equal": {
+      "item": true
+    },
+    "type_identity": {
+      "item": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "item": {
+            "count": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "item",
+              "count"
+            ],
+            "missing"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "item": {
+            "count": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "item",
+              "count"
+            ],
+            "missing"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "item": true
+    }
+  }
+]

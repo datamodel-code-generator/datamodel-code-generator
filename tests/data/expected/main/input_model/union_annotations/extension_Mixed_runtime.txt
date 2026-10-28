@@ -1,0 +1,15 @@
+[
+  {
+    "value": 1
+  },
+  "rejected",
+  {
+    "value": {
+      "callable_result": 7
+    }
+  },
+  {
+    "value": null
+  },
+  "rejected"
+]

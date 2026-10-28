@@ -77,6 +77,13 @@ function normalizeInstall(install, assetBaseUrl) {
   return null;
 }
 
+function normalizeRuntimePackages(runtimePackages) {
+  if (!Array.isArray(runtimePackages)) {
+    return [];
+  }
+  return runtimePackages.map((runtimePackage) => String(runtimePackage).trim()).filter(Boolean);
+}
+
 function normalizePlaygroundVersion(entry) {
   const id = String(entry?.id || "").trim();
   if (!id) {
@@ -96,6 +103,7 @@ function normalizePlaygroundVersion(entry) {
     ),
     appUrl: absoluteUrl(entry.app || entry.app_url || defaultApp, assetBaseUrl),
     install: normalizeInstall(entry.install, assetBaseUrl),
+    runtimePackages: normalizeRuntimePackages(entry.runtime_packages || entry.runtimePackages),
   };
 }
 

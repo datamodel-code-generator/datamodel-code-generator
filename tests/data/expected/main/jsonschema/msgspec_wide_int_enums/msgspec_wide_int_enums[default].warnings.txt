@@ -1,0 +1,6 @@
+msgspec cannot decode the enum Wide: its value 9223372036854775808 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the enum Negative: its value -9223372036854775809 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the enum Typed: its value 10000000000000000000 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the enum ListedEnum: its value 9223372036854775809 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode Model.constant: its Literal value 18446744073709551616 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
+msgspec cannot decode the union Model.either: its int-like members Either, int include an Enum, while a msgspec union holds an Enum only as its one int-like member. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes beside int and other Literal values.

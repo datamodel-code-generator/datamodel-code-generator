@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "$ref": "schemas/nested.json",
+  "$defs": {
+    "Nested": {
+      "$id": "schemas/nested.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "../values/value.json#Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "$defs": {
+        "Value": {
+          "$id": "../values/value.json",
+          "$anchor": "Value",
+          "type": "object",
+          "properties": {
+            "inner": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "inner"
+          ]
+        }
+      }
+    }
+  }
+}

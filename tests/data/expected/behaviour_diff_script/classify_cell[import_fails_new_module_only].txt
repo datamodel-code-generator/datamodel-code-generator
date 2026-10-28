@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "import now fails: E: b"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-removed] b:M: removed"
+  ]
+}

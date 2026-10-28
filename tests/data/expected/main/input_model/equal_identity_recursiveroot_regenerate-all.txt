@@ -1,0 +1,16 @@
+{
+  "values": {
+    "left": {
+      "value": "a",
+      "child": null
+    },
+    "right": {
+      "value": "b",
+      "child": null
+    }
+  },
+  "identities": {
+    "left": false,
+    "right": false
+  }
+}

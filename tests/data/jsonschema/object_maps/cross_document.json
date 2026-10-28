@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "cross_document_other.json#/$defs/Base"
+    }
+  ],
+  "patternProperties": {
+    "^x": {
+      "$ref": "#/$defs/Bound"
+    }
+  },
+  "$defs": {
+    "Bound": {
+      "type": "integer",
+      "maximum": 5
+    }
+  }
+}

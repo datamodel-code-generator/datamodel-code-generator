@@ -1,0 +1,896 @@
+pydantic_v2.BaseModel default two_items [4] accepted
+pydantic_v2.BaseModel default two_items [5] accepted
+pydantic_v2.BaseModel default two_items [3] rejected
+pydantic_v2.BaseModel default two_items [6] rejected
+pydantic_v2.BaseModel default two_items [4.5] rejected
+pydantic_v2.BaseModel default two_map {"k": 4} accepted
+pydantic_v2.BaseModel default two_map {"k": 5} accepted
+pydantic_v2.BaseModel default two_map {"k": 3} rejected
+pydantic_v2.BaseModel default two_map {"k": 6} rejected
+pydantic_v2.BaseModel default two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel default two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel default two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel default two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel default two_prop 4 accepted
+pydantic_v2.BaseModel default two_prop 5 accepted
+pydantic_v2.BaseModel default two_prop 3 rejected
+pydantic_v2.BaseModel default two_prop 6 rejected
+pydantic_v2.BaseModel default two_prop {} rejected
+pydantic_v2.BaseModel default refs_items [3] accepted
+pydantic_v2.BaseModel default refs_items [5] accepted
+pydantic_v2.BaseModel default refs_items [2] rejected
+pydantic_v2.BaseModel default refs_items [6] rejected
+pydantic_v2.BaseModel default text_items ["ab"] accepted
+pydantic_v2.BaseModel default text_items ["abcde"] accepted
+pydantic_v2.BaseModel default text_items ["a"] rejected
+pydantic_v2.BaseModel default text_items ["abcdef"] rejected
+pydantic_v2.BaseModel default text_items [1] rejected
+pydantic_v2.BaseModel default number_items [0.5] accepted
+pydantic_v2.BaseModel default number_items [3] accepted
+pydantic_v2.BaseModel default number_items [9.5] accepted
+pydantic_v2.BaseModel default number_items [0.4] rejected
+pydantic_v2.BaseModel default number_items [10] rejected
+pydantic_v2.BaseModel default list_items [[1]] accepted
+pydantic_v2.BaseModel default list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel default list_items [[]] rejected
+pydantic_v2.BaseModel default list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel default list_items [["a"]] rejected
+pydantic_v2.BaseModel default untyped_typed_items [3] accepted
+pydantic_v2.BaseModel default untyped_typed_items [5] accepted
+pydantic_v2.BaseModel default untyped_typed_items [2] rejected
+pydantic_v2.BaseModel default untyped_typed_items [6] rejected
+pydantic_v2.BaseModel default untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel default untyped_items [4] accepted
+pydantic_v2.BaseModel default untyped_items ["a"] accepted
+pydantic_v2.BaseModel default untyped_items [{}] accepted
+pydantic_v2.BaseModel default untyped_items [2] accepted
+pydantic_v2.BaseModel default untyped_items [6] accepted
+pydantic_v2.BaseModel default nullable_items [null] accepted
+pydantic_v2.BaseModel default nullable_items [3] accepted
+pydantic_v2.BaseModel default nullable_items [5] accepted
+pydantic_v2.BaseModel default nullable_items [2] rejected
+pydantic_v2.BaseModel default nullable_items [6] rejected
+pydantic_v2.BaseModel default nullable_items ["a"] rejected
+pydantic_v2.BaseModel default point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel default point_items [4] rejected
+pydantic_v2.BaseModel default name "x" accepted
+pydantic_v2.BaseModel default name "y" rejected
+pydantic_v2.BaseModel default pattern_refs "ab" accepted
+pydantic_v2.BaseModel default pattern_refs "axb" accepted
+pydantic_v2.BaseModel default pattern_refs "a" rejected
+pydantic_v2.BaseModel default pattern_refs "ba" rejected
+pydantic_v2.BaseModel default lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel default lookahead_items [] rejected
+pydantic_v2.BaseModel default lookahead_items ["b"] rejected
+pydantic_v2.dataclass default two_items [4] accepted
+pydantic_v2.dataclass default two_items [5] accepted
+pydantic_v2.dataclass default two_items [3] rejected
+pydantic_v2.dataclass default two_items [6] rejected
+pydantic_v2.dataclass default two_items [4.5] rejected
+pydantic_v2.dataclass default two_map {"k": 4} accepted
+pydantic_v2.dataclass default two_map {"k": 5} accepted
+pydantic_v2.dataclass default two_map {"k": 3} rejected
+pydantic_v2.dataclass default two_map {"k": 6} rejected
+pydantic_v2.dataclass default two_pattern_map {"k": 4} accepted
+pydantic_v2.dataclass default two_pattern_map {"k": 5} accepted
+pydantic_v2.dataclass default two_pattern_map {"k": 3} rejected
+pydantic_v2.dataclass default two_pattern_map {"k": 6} rejected
+pydantic_v2.dataclass default two_prop 4 accepted
+pydantic_v2.dataclass default two_prop 5 accepted
+pydantic_v2.dataclass default two_prop 3 rejected
+pydantic_v2.dataclass default two_prop 6 rejected
+pydantic_v2.dataclass default two_prop {} rejected
+pydantic_v2.dataclass default refs_items [3] accepted
+pydantic_v2.dataclass default refs_items [5] accepted
+pydantic_v2.dataclass default refs_items [2] rejected
+pydantic_v2.dataclass default refs_items [6] rejected
+pydantic_v2.dataclass default text_items ["ab"] accepted
+pydantic_v2.dataclass default text_items ["abcde"] accepted
+pydantic_v2.dataclass default text_items ["a"] rejected
+pydantic_v2.dataclass default text_items ["abcdef"] rejected
+pydantic_v2.dataclass default text_items [1] rejected
+pydantic_v2.dataclass default number_items [0.5] accepted
+pydantic_v2.dataclass default number_items [3] accepted
+pydantic_v2.dataclass default number_items [9.5] accepted
+pydantic_v2.dataclass default number_items [0.4] rejected
+pydantic_v2.dataclass default number_items [10] rejected
+pydantic_v2.dataclass default list_items [[1]] accepted
+pydantic_v2.dataclass default list_items [[1, 2, 3]] accepted
+pydantic_v2.dataclass default list_items [[]] rejected
+pydantic_v2.dataclass default list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.dataclass default list_items [["a"]] rejected
+pydantic_v2.dataclass default untyped_typed_items [3] accepted
+pydantic_v2.dataclass default untyped_typed_items [5] accepted
+pydantic_v2.dataclass default untyped_typed_items [2] rejected
+pydantic_v2.dataclass default untyped_typed_items [6] rejected
+pydantic_v2.dataclass default untyped_typed_items ["a"] rejected
+pydantic_v2.dataclass default untyped_items [4] accepted
+pydantic_v2.dataclass default untyped_items ["a"] accepted
+pydantic_v2.dataclass default untyped_items [{}] accepted
+pydantic_v2.dataclass default untyped_items [2] accepted
+pydantic_v2.dataclass default untyped_items [6] accepted
+pydantic_v2.dataclass default nullable_items [null] accepted
+pydantic_v2.dataclass default nullable_items [3] accepted
+pydantic_v2.dataclass default nullable_items [5] accepted
+pydantic_v2.dataclass default nullable_items [2] rejected
+pydantic_v2.dataclass default nullable_items [6] rejected
+pydantic_v2.dataclass default nullable_items ["a"] rejected
+pydantic_v2.dataclass default point_items [{"x": 1}] accepted
+pydantic_v2.dataclass default point_items [4] rejected
+pydantic_v2.dataclass default name "x" accepted
+pydantic_v2.dataclass default name "y" rejected
+pydantic_v2.dataclass default pattern_refs "ab" accepted
+pydantic_v2.dataclass default pattern_refs "axb" accepted
+pydantic_v2.dataclass default pattern_refs "a" rejected
+pydantic_v2.dataclass default pattern_refs "ba" rejected
+pydantic_v2.dataclass default lookahead_items ["ab"] accepted
+pydantic_v2.dataclass default lookahead_items [] rejected
+pydantic_v2.dataclass default lookahead_items ["b"] rejected
+msgspec.Struct default two_items [4] accepted
+msgspec.Struct default two_items [5] accepted
+msgspec.Struct default two_items [3] rejected
+msgspec.Struct default two_items [6] rejected
+msgspec.Struct default two_items [4.5] rejected
+msgspec.Struct default two_map {"k": 4} accepted
+msgspec.Struct default two_map {"k": 5} accepted
+msgspec.Struct default two_map {"k": 3} rejected
+msgspec.Struct default two_map {"k": 6} rejected
+msgspec.Struct default two_pattern_map {"k": 4} accepted
+msgspec.Struct default two_pattern_map {"k": 5} accepted
+msgspec.Struct default two_pattern_map {"k": 3} rejected
+msgspec.Struct default two_pattern_map {"k": 6} rejected
+msgspec.Struct default two_prop 4 accepted
+msgspec.Struct default two_prop 5 accepted
+msgspec.Struct default two_prop 3 rejected
+msgspec.Struct default two_prop 6 rejected
+msgspec.Struct default two_prop {} rejected
+msgspec.Struct default refs_items [3] accepted
+msgspec.Struct default refs_items [5] accepted
+msgspec.Struct default refs_items [2] rejected
+msgspec.Struct default refs_items [6] rejected
+msgspec.Struct default text_items ["ab"] accepted
+msgspec.Struct default text_items ["abcde"] accepted
+msgspec.Struct default text_items ["a"] rejected
+msgspec.Struct default text_items ["abcdef"] rejected
+msgspec.Struct default text_items [1] rejected
+msgspec.Struct default number_items [0.5] accepted
+msgspec.Struct default number_items [3] accepted
+msgspec.Struct default number_items [9.5] accepted
+msgspec.Struct default number_items [0.4] rejected
+msgspec.Struct default number_items [10] rejected
+msgspec.Struct default list_items [[1]] accepted
+msgspec.Struct default list_items [[1, 2, 3]] accepted
+msgspec.Struct default list_items [[]] rejected
+msgspec.Struct default list_items [[1, 2, 3, 4]] rejected
+msgspec.Struct default list_items [["a"]] rejected
+msgspec.Struct default untyped_typed_items [3] accepted
+msgspec.Struct default untyped_typed_items [5] accepted
+msgspec.Struct default untyped_typed_items [2] rejected
+msgspec.Struct default untyped_typed_items [6] rejected
+msgspec.Struct default untyped_typed_items ["a"] rejected
+msgspec.Struct default untyped_items [4] accepted
+msgspec.Struct default untyped_items ["a"] accepted
+msgspec.Struct default untyped_items [{}] accepted
+msgspec.Struct default untyped_items [2] accepted
+msgspec.Struct default untyped_items [6] accepted
+msgspec.Struct default nullable_items [null] accepted
+msgspec.Struct default nullable_items [3] accepted
+msgspec.Struct default nullable_items [5] accepted
+msgspec.Struct default nullable_items [2] rejected
+msgspec.Struct default nullable_items [6] rejected
+msgspec.Struct default nullable_items ["a"] rejected
+msgspec.Struct default point_items [{"x": 1}] accepted
+msgspec.Struct default point_items [4] rejected
+msgspec.Struct default name "x" accepted
+msgspec.Struct default name "y" rejected
+msgspec.Struct default pattern_refs "ab" accepted
+msgspec.Struct default pattern_refs "axb" accepted
+msgspec.Struct default pattern_refs "a" rejected
+msgspec.Struct default pattern_refs "ba" rejected
+msgspec.Struct default lookahead_items ["ab"] accepted
+msgspec.Struct default lookahead_items [] rejected
+msgspec.Struct default lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --field-constraints two_items [4] accepted
+pydantic_v2.BaseModel --field-constraints two_items [5] accepted
+pydantic_v2.BaseModel --field-constraints two_items [3] rejected
+pydantic_v2.BaseModel --field-constraints two_items [6] rejected
+pydantic_v2.BaseModel --field-constraints two_items [4.5] rejected
+pydantic_v2.BaseModel --field-constraints two_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints two_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints two_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints two_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints two_prop 4 accepted
+pydantic_v2.BaseModel --field-constraints two_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints two_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints two_prop 6 rejected
+pydantic_v2.BaseModel --field-constraints two_prop {} rejected
+pydantic_v2.BaseModel --field-constraints refs_items [3] accepted
+pydantic_v2.BaseModel --field-constraints refs_items [5] accepted
+pydantic_v2.BaseModel --field-constraints refs_items [2] rejected
+pydantic_v2.BaseModel --field-constraints refs_items [6] rejected
+pydantic_v2.BaseModel --field-constraints text_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints text_items ["abcde"] accepted
+pydantic_v2.BaseModel --field-constraints text_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --field-constraints text_items [1] rejected
+pydantic_v2.BaseModel --field-constraints number_items [0.5] accepted
+pydantic_v2.BaseModel --field-constraints number_items [3] accepted
+pydantic_v2.BaseModel --field-constraints number_items [9.5] accepted
+pydantic_v2.BaseModel --field-constraints number_items [0.4] rejected
+pydantic_v2.BaseModel --field-constraints number_items [10] rejected
+pydantic_v2.BaseModel --field-constraints list_items [[1]] accepted
+pydantic_v2.BaseModel --field-constraints list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --field-constraints list_items [[]] rejected
+pydantic_v2.BaseModel --field-constraints list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --field-constraints list_items [["a"]] rejected
+pydantic_v2.BaseModel --field-constraints untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --field-constraints untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --field-constraints untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --field-constraints untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --field-constraints untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints untyped_items [4] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items [{}] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items [2] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items [6] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [null] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [3] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [5] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [2] rejected
+pydantic_v2.BaseModel --field-constraints nullable_items [6] rejected
+pydantic_v2.BaseModel --field-constraints nullable_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --field-constraints point_items [4] rejected
+pydantic_v2.BaseModel --field-constraints name "x" accepted
+pydantic_v2.BaseModel --field-constraints name "y" rejected
+pydantic_v2.BaseModel --field-constraints pattern_refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints pattern_refs "axb" accepted
+pydantic_v2.BaseModel --field-constraints pattern_refs "a" rejected
+pydantic_v2.BaseModel --field-constraints pattern_refs "ba" rejected
+pydantic_v2.BaseModel --field-constraints lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints lookahead_items [] rejected
+pydantic_v2.BaseModel --field-constraints lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --use-annotated two_items [4] accepted
+pydantic_v2.BaseModel --use-annotated two_items [5] accepted
+pydantic_v2.BaseModel --use-annotated two_items [3] rejected
+pydantic_v2.BaseModel --use-annotated two_items [6] rejected
+pydantic_v2.BaseModel --use-annotated two_items [4.5] rejected
+pydantic_v2.BaseModel --use-annotated two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-annotated two_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated two_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated two_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-annotated two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-annotated two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-annotated two_prop 4 accepted
+pydantic_v2.BaseModel --use-annotated two_prop 5 accepted
+pydantic_v2.BaseModel --use-annotated two_prop 3 rejected
+pydantic_v2.BaseModel --use-annotated two_prop 6 rejected
+pydantic_v2.BaseModel --use-annotated two_prop {} rejected
+pydantic_v2.BaseModel --use-annotated refs_items [3] accepted
+pydantic_v2.BaseModel --use-annotated refs_items [5] accepted
+pydantic_v2.BaseModel --use-annotated refs_items [2] rejected
+pydantic_v2.BaseModel --use-annotated refs_items [6] rejected
+pydantic_v2.BaseModel --use-annotated text_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated text_items ["abcde"] accepted
+pydantic_v2.BaseModel --use-annotated text_items ["a"] rejected
+pydantic_v2.BaseModel --use-annotated text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --use-annotated text_items [1] rejected
+pydantic_v2.BaseModel --use-annotated number_items [0.5] accepted
+pydantic_v2.BaseModel --use-annotated number_items [3] accepted
+pydantic_v2.BaseModel --use-annotated number_items [9.5] accepted
+pydantic_v2.BaseModel --use-annotated number_items [0.4] rejected
+pydantic_v2.BaseModel --use-annotated number_items [10] rejected
+pydantic_v2.BaseModel --use-annotated list_items [[1]] accepted
+pydantic_v2.BaseModel --use-annotated list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --use-annotated list_items [[]] rejected
+pydantic_v2.BaseModel --use-annotated list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --use-annotated list_items [["a"]] rejected
+pydantic_v2.BaseModel --use-annotated untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --use-annotated untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --use-annotated untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --use-annotated untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --use-annotated untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --use-annotated untyped_items [4] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items [{}] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items [2] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items [6] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [null] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [3] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [5] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [2] rejected
+pydantic_v2.BaseModel --use-annotated nullable_items [6] rejected
+pydantic_v2.BaseModel --use-annotated nullable_items ["a"] rejected
+pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --use-annotated point_items [4] rejected
+pydantic_v2.BaseModel --use-annotated name "x" accepted
+pydantic_v2.BaseModel --use-annotated name "y" rejected
+pydantic_v2.BaseModel --use-annotated pattern_refs "ab" accepted
+pydantic_v2.BaseModel --use-annotated pattern_refs "axb" accepted
+pydantic_v2.BaseModel --use-annotated pattern_refs "a" rejected
+pydantic_v2.BaseModel --use-annotated pattern_refs "ba" rejected
+pydantic_v2.BaseModel --use-annotated lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated lookahead_items [] rejected
+pydantic_v2.BaseModel --use-annotated lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models two_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models two_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [4.5] rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models two_prop 4 accepted
+pydantic_v2.BaseModel --collapse-root-models two_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models two_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models two_prop 6 rejected
+pydantic_v2.BaseModel --collapse-root-models two_prop {} rejected
+pydantic_v2.BaseModel --collapse-root-models refs_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models refs_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models refs_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models refs_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models text_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models text_items ["abcde"] accepted
+pydantic_v2.BaseModel --collapse-root-models text_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --collapse-root-models text_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models number_items [0.5] accepted
+pydantic_v2.BaseModel --collapse-root-models number_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models number_items [9.5] accepted
+pydantic_v2.BaseModel --collapse-root-models number_items [0.4] rejected
+pydantic_v2.BaseModel --collapse-root-models number_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models list_items [[1]] accepted
+pydantic_v2.BaseModel --collapse-root-models list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --collapse-root-models list_items [[]] rejected
+pydantic_v2.BaseModel --collapse-root-models list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --collapse-root-models list_items [["a"]] rejected
+pydantic_v2.BaseModel --collapse-root-models untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models untyped_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items [{}] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [null] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --collapse-root-models point_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models name "x" accepted
+pydantic_v2.BaseModel --collapse-root-models name "y" rejected
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pattern_refs "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models lookahead_items [] rejected
+pydantic_v2.BaseModel --collapse-root-models lookahead_items ["b"] rejected
+msgspec.Struct --collapse-root-models two_items [4] accepted
+msgspec.Struct --collapse-root-models two_items [5] accepted
+msgspec.Struct --collapse-root-models two_items [3] rejected
+msgspec.Struct --collapse-root-models two_items [6] rejected
+msgspec.Struct --collapse-root-models two_items [4.5] rejected
+msgspec.Struct --collapse-root-models two_map {"k": 4} accepted
+msgspec.Struct --collapse-root-models two_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models two_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models two_map {"k": 6} rejected
+msgspec.Struct --collapse-root-models two_pattern_map {"k": 4} accepted
+msgspec.Struct --collapse-root-models two_pattern_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models two_pattern_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models two_pattern_map {"k": 6} rejected
+msgspec.Struct --collapse-root-models two_prop 4 accepted
+msgspec.Struct --collapse-root-models two_prop 5 accepted
+msgspec.Struct --collapse-root-models two_prop 3 rejected
+msgspec.Struct --collapse-root-models two_prop 6 rejected
+msgspec.Struct --collapse-root-models two_prop {} rejected
+msgspec.Struct --collapse-root-models refs_items [3] accepted
+msgspec.Struct --collapse-root-models refs_items [5] accepted
+msgspec.Struct --collapse-root-models refs_items [2] rejected
+msgspec.Struct --collapse-root-models refs_items [6] rejected
+msgspec.Struct --collapse-root-models text_items ["ab"] accepted
+msgspec.Struct --collapse-root-models text_items ["abcde"] accepted
+msgspec.Struct --collapse-root-models text_items ["a"] rejected
+msgspec.Struct --collapse-root-models text_items ["abcdef"] rejected
+msgspec.Struct --collapse-root-models text_items [1] rejected
+msgspec.Struct --collapse-root-models number_items [0.5] accepted
+msgspec.Struct --collapse-root-models number_items [3] accepted
+msgspec.Struct --collapse-root-models number_items [9.5] accepted
+msgspec.Struct --collapse-root-models number_items [0.4] rejected
+msgspec.Struct --collapse-root-models number_items [10] rejected
+msgspec.Struct --collapse-root-models list_items [[1]] accepted
+msgspec.Struct --collapse-root-models list_items [[1, 2, 3]] accepted
+msgspec.Struct --collapse-root-models list_items [[]] rejected
+msgspec.Struct --collapse-root-models list_items [[1, 2, 3, 4]] rejected
+msgspec.Struct --collapse-root-models list_items [["a"]] rejected
+msgspec.Struct --collapse-root-models untyped_typed_items [3] accepted
+msgspec.Struct --collapse-root-models untyped_typed_items [5] accepted
+msgspec.Struct --collapse-root-models untyped_typed_items [2] rejected
+msgspec.Struct --collapse-root-models untyped_typed_items [6] rejected
+msgspec.Struct --collapse-root-models untyped_typed_items ["a"] rejected
+msgspec.Struct --collapse-root-models untyped_items [4] accepted
+msgspec.Struct --collapse-root-models untyped_items ["a"] accepted
+msgspec.Struct --collapse-root-models untyped_items [{}] accepted
+msgspec.Struct --collapse-root-models untyped_items [2] accepted
+msgspec.Struct --collapse-root-models untyped_items [6] accepted
+msgspec.Struct --collapse-root-models nullable_items [null] accepted
+msgspec.Struct --collapse-root-models nullable_items [3] accepted
+msgspec.Struct --collapse-root-models nullable_items [5] accepted
+msgspec.Struct --collapse-root-models nullable_items [2] rejected
+msgspec.Struct --collapse-root-models nullable_items [6] rejected
+msgspec.Struct --collapse-root-models nullable_items ["a"] rejected
+msgspec.Struct --collapse-root-models point_items [{"x": 1}] accepted
+msgspec.Struct --collapse-root-models point_items [4] rejected
+msgspec.Struct --collapse-root-models name "x" accepted
+msgspec.Struct --collapse-root-models name "y" rejected
+msgspec.Struct --collapse-root-models pattern_refs "ab" accepted
+msgspec.Struct --collapse-root-models pattern_refs "axb" accepted
+msgspec.Struct --collapse-root-models pattern_refs "a" rejected
+msgspec.Struct --collapse-root-models pattern_refs "ba" rejected
+msgspec.Struct --collapse-root-models lookahead_items ["ab"] accepted
+msgspec.Struct --collapse-root-models lookahead_items [] rejected
+msgspec.Struct --collapse-root-models lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_items [4.5] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_prop 4 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_prop 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_prop 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_prop 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_prop {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs_items [3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs_items [2] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text_items ["ab"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text_items ["abcde"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs text_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number_items [0.5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number_items [3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number_items [9.5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number_items [0.4] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs number_items [10] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_items [[1]] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_items [[]] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs list_items [["a"]] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [4] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [{}] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [6] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [null] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [2] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pattern_refs "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lookahead_items [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs lookahead_items ["b"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_items [4.5] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_pattern_map {"k": 4} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_pattern_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_pattern_map {"k": 3} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_pattern_map {"k": 6} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_prop 4 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_prop 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_prop 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_prop 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_prop {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs_items [3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs_items [2] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text_items ["ab"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text_items ["abcde"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text_items ["abcdef"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs text_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number_items [0.5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number_items [3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number_items [9.5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number_items [0.4] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs number_items [10] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_items [[1]] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_items [[1, 2, 3]] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_items [[]] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs list_items [["a"]] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_typed_items [3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_typed_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_typed_items [2] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_typed_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_typed_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [4] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [{}] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [6] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [null] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [2] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pattern_refs "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lookahead_items ["ab"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lookahead_items [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs lookahead_items ["b"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_items [4] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_items [3] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_items [6] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_items [4.5] rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_pattern_map {"k": 4} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_pattern_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_pattern_map {"k": 3} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_pattern_map {"k": 6} rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_prop 4 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_prop 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_prop 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_prop 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_prop {} rejected
+msgspec.Struct --use-site-models-for-constrained-refs refs_items [3] accepted
+msgspec.Struct --use-site-models-for-constrained-refs refs_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs refs_items [2] rejected
+msgspec.Struct --use-site-models-for-constrained-refs refs_items [6] rejected
+msgspec.Struct --use-site-models-for-constrained-refs text_items ["ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs text_items ["abcde"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs text_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs text_items ["abcdef"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs text_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs number_items [0.5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs number_items [3] accepted
+msgspec.Struct --use-site-models-for-constrained-refs number_items [9.5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs number_items [0.4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs number_items [10] rejected
+msgspec.Struct --use-site-models-for-constrained-refs list_items [[1]] accepted
+msgspec.Struct --use-site-models-for-constrained-refs list_items [[1, 2, 3]] accepted
+msgspec.Struct --use-site-models-for-constrained-refs list_items [[]] rejected
+msgspec.Struct --use-site-models-for-constrained-refs list_items [[1, 2, 3, 4]] rejected
+msgspec.Struct --use-site-models-for-constrained-refs list_items [["a"]] rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped_typed_items [3] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_typed_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_typed_items [2] rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped_typed_items [6] rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped_typed_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [4] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [{}] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [6] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items [null] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items [3] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items [2] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items [6] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_items ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+msgspec.Struct --use-site-models-for-constrained-refs point_items [4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs name "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs name "y" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pattern_refs "ba" rejected
+msgspec.Struct --use-site-models-for-constrained-refs lookahead_items ["ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs lookahead_items [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_items [4.5] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_prop 4 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_prop 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_prop {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs_items [3] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs_items [2] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text_items ["abcde"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs text_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number_items [0.5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number_items [3] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number_items [9.5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number_items [0.4] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs number_items [10] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_items [[1]] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_items [[]] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs list_items [["a"]] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [4] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [{}] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [6] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items [null] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items [3] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items [2] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pattern_refs "ba" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lookahead_items [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_items [4.5] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_prop 4 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_prop 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_prop {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text_items ["abcde"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs text_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number_items [0.5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number_items [9.5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number_items [0.4] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs number_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_items [[1]] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_items [[]] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs list_items [["a"]] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [{}] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items [null] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs point_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs name "y" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "axb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pattern_refs "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lookahead_items [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs lookahead_items ["b"] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_items [4] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_items [5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_items [3] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_items [6] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_items [4.5] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_map {"k": 4} accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_map {"k": 5} accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_map {"k": 3} rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_map {"k": 6} rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_pattern_map {"k": 4} accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_pattern_map {"k": 5} accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_pattern_map {"k": 3} rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_pattern_map {"k": 6} rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_prop 4 accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_prop 5 accepted
+pydantic_v2.dataclass --target-pydantic-version 2 two_prop 3 rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_prop 6 rejected
+pydantic_v2.dataclass --target-pydantic-version 2 two_prop {} rejected
+pydantic_v2.dataclass --target-pydantic-version 2 refs_items [3] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 refs_items [5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 refs_items [2] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 refs_items [6] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 text_items ["ab"] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 text_items ["abcde"] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 text_items ["a"] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 text_items ["abcdef"] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 text_items [1] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 number_items [0.5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 number_items [3] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 number_items [9.5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 number_items [0.4] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 number_items [10] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 list_items [[1]] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 list_items [[1, 2, 3]] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 list_items [[]] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 list_items [["a"]] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_typed_items [3] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_typed_items [5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_typed_items [2] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_typed_items [6] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_typed_items ["a"] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_items [4] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_items ["a"] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_items [{}] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_items [2] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 untyped_items [6] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items [null] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items [3] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items [5] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items [2] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items [6] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 nullable_items ["a"] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 point_items [{"x": 1}] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 point_items [4] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 name "x" accepted
+pydantic_v2.dataclass --target-pydantic-version 2 name "y" rejected
+pydantic_v2.dataclass --target-pydantic-version 2 pattern_refs "ab" accepted
+pydantic_v2.dataclass --target-pydantic-version 2 pattern_refs "axb" accepted
+pydantic_v2.dataclass --target-pydantic-version 2 pattern_refs "a" rejected
+pydantic_v2.dataclass --target-pydantic-version 2 pattern_refs "ba" rejected
+pydantic_v2.dataclass --target-pydantic-version 2 lookahead_items ["ab"] accepted
+pydantic_v2.dataclass --target-pydantic-version 2 lookahead_items [] rejected
+pydantic_v2.dataclass --target-pydantic-version 2 lookahead_items ["b"] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_items [4] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_items [5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_items [3] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_items [6] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_items [4.5] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_pattern_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_pattern_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_pattern_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_pattern_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_prop 4 accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_prop 5 accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_prop 3 rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_prop 6 rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 two_prop {} rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 refs_items [3] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 refs_items [5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 refs_items [2] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 refs_items [6] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 text_items ["ab"] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 text_items ["abcde"] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 text_items ["a"] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 text_items ["abcdef"] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 text_items [1] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 number_items [0.5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 number_items [3] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 number_items [9.5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 number_items [0.4] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 number_items [10] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 list_items [[1]] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 list_items [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 list_items [[]] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 list_items [[1, 2, 3, 4]] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 list_items [["a"]] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_typed_items [3] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_typed_items [5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_typed_items [2] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_typed_items [6] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_typed_items ["a"] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_items [4] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_items ["a"] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_items [{}] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_items [2] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 untyped_items [6] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items [null] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items [3] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items [5] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items [2] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items [6] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 nullable_items ["a"] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 point_items [4] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 name "x" accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 name "y" rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 pattern_refs "ab" accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 pattern_refs "axb" accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 pattern_refs "a" rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 pattern_refs "ba" rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 lookahead_items ["ab"] accepted
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 lookahead_items [] rejected
+pydantic_v2.BaseModel --use-type-alias --target-pydantic-version 2 lookahead_items ["b"] rejected

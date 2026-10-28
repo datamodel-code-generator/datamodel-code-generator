@@ -1,0 +1,1690 @@
+# pets-protocols pydantic_v2.BaseModel
+  client imports load protocols=[]
+  dir lists lazy names=(True, True)
+  dir loads nothing=True
+  protocol errors loaded on use=True
+  lazy names cached=(True, False)
+  optional imports=[]
+  import threads unchanged=True
+  replay loaded with contracts=False
+  pagination loaded with contracts=False
+  pagination types=(True, True, True)
+  pagination optional imports=[]
+  client protocols=True
+  option identities=(True, True)
+  construction threads unchanged=True
+  configured client loads protocols=['_runtime.protocols.options']
+  BodySelector fields=('pointer',)
+  BodySelector keyword-only=True hints=('pointer',)
+  HeaderSelector fields=('name', 'occurrence')
+  HeaderSelector keyword-only=True hints=('name', 'occurrence')
+  StatusSelector fields=()
+  StatusSelector keyword-only=True hints=()
+  ParameterTarget fields=('location', 'name')
+  ParameterTarget keyword-only=True hints=('location', 'name')
+  QuerystringTarget fields=('name', 'pointer')
+  QuerystringTarget keyword-only=True hints=('name', 'pointer')
+  BodyTarget fields=('pointer',)
+  BodyTarget keyword-only=True hints=('pointer',)
+  Origin fields=('scheme', 'host', 'port')
+  Origin keyword-only=True hints=('scheme', 'host', 'port')
+  PollSnapshot fields=('state', 'terminal', 'data', 'response')
+  PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  HeaderSelector.occurrence values=('single', 'all')
+  ParameterTarget.location values=('path', 'query', 'header', 'cookie')
+  ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
+  Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
+  RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
+  ProtocolProgress mapping=True args=True
+  PollSnapshot covariance=True default=<class 'object'> subscripted=True
+  selector frozen ! FrozenInstanceError: cannot assign to field 'pointer' []
+  target frozen ! FrozenInstanceError: cannot assign to field 'name' []
+  origin frozen ! FrozenInstanceError: cannot assign to field 'port' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'interval' []
+  selector positional ! TypeError: BodySelector.__init__() takes 1 positional argument but 2 were given []
+  header positional ! TypeError: HeaderSelector.__init__() takes 1 positional argument but 2 were given []
+  status positional ! TypeError: StatusSelector.__init__() takes 1 positional argument but 2 were given []
+  target positional ! TypeError: ParameterTarget.__init__() takes 1 positional argument but 3 were given []
+  querystring positional ! TypeError: QuerystringTarget.__init__() takes 1 positional argument but 3 were given []
+  body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
+  origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
+  options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
+  equal selectors = True
+  equal status selectors = True
+  hashable targets = 1
+  body pointer '' = BodySelector(pointer='')
+  body pointer '/' = BodySelector(pointer='/')
+  body pointer '/data' = BodySelector(pointer='/data')
+  body pointer '/a~0b~1c' = BodySelector(pointer='/a~0b~1c')
+  body pointer '/items/0' = BodySelector(pointer='/items/0')
+  body pointer '/a b' = BodySelector(pointer='/a b')
+  body pointer '/é' = BodySelector(pointer='/é')
+  body pointer '//' = BodySelector(pointer='//')
+  body pointer 'data' ! ValueError: pointer is not in its required form []
+  body pointer '/~' ! ValueError: pointer is not in its required form []
+  body pointer '/~2' ! ValueError: pointer is not in its required form []
+  body pointer '/a~' ! ValueError: pointer is not in its required form []
+  body pointer '$.data' ! ValueError: pointer is not in its required form []
+  body pointer '#/data' ! ValueError: pointer is not in its required form []
+  body pointer None ! TypeError: pointer must be a string []
+  body pointer bytes ! TypeError: pointer must be a string []
+  body pointer int ! TypeError: pointer must be a string []
+  header X-Cursor single = HeaderSelector(name='X-Cursor', occurrence='single')
+  header link all = HeaderSelector(name='link', occurrence='all')
+  header x-next~page single = HeaderSelector(name='x-next~page', occurrence='single')
+  header default occurrence = 'single'
+  header space ! ValueError: name is not in its required form []
+  header empty ! ValueError: name is not in its required form []
+  header colon ! ValueError: name is not in its required form []
+  header unicode ! ValueError: name is not in its required form []
+  header None ! TypeError: name must be a string []
+  header occurrence ! ValueError: occurrence must be one of its declared values []
+  header occurrence None ! TypeError: occurrence must be a string []
+  header missing name ! TypeError: HeaderSelector.__init__() missing 1 required keyword-only argument: 'name' []
+  status selector = StatusSelector()
+  parameter path 'petId' = ParameterTarget(location='path', name='petId')
+  parameter query 'cursor' = ParameterTarget(location='query', name='cursor')
+  parameter query 'page size' = ParameterTarget(location='query', name='page size')
+  parameter query 'é' = ParameterTarget(location='query', name='é')
+  parameter header 'X-Page' = ParameterTarget(location='header', name='X-Page')
+  parameter cookie 'session' = ParameterTarget(location='cookie', name='session')
+  parameter query '' ! ValueError: name must not be empty []
+  parameter path '' ! ValueError: name must not be empty []
+  parameter header 'X Page' ! ValueError: name is not in its required form []
+  parameter cookie 'a;b' ! ValueError: name is not in its required form []
+  parameter body 'cursor' ! ValueError: location must be one of its declared values []
+  parameter querystring 'filter' ! ValueError: location must be one of its declared values []
+  parameter QUERY 'cursor' ! ValueError: location must be one of its declared values []
+  parameter None 'cursor' ! TypeError: location must be a string []
+  parameter query None ! TypeError: name must be a string []
+  querystring 'filter' '' = QuerystringTarget(name='filter', pointer='')
+  querystring 'filter' '/cursor' = QuerystringTarget(name='filter', pointer='/cursor')
+  querystring 'filter' '/page~1size' = QuerystringTarget(name='filter', pointer='/page~1size')
+  querystring '' '/cursor' ! ValueError: name must not be empty []
+  querystring 'filter' 'cursor' ! ValueError: pointer is not in its required form []
+  querystring None '' ! TypeError: name must be a string []
+  querystring 'filter' None ! TypeError: pointer must be a string []
+  body target '' = BodyTarget(pointer='')
+  body target '/cursor' = BodyTarget(pointer='/cursor')
+  body target '/page/0' = BodyTarget(pointer='/page/0')
+  body target 'cursor' ! ValueError: pointer is not in its required form []
+  body target None ! TypeError: pointer must be a string []
+  origin 'https' 'api.example.com' 443 = Origin(scheme='https', host='api.example.com', port=443)
+  origin 'http' 'localhost' 8080 = Origin(scheme='http', host='localhost', port=8080)
+  origin 'http' '127.0.0.1' 80 = Origin(scheme='http', host='127.0.0.1', port=80)
+  origin 'https' '::1' 8443 = Origin(scheme='https', host='::1', port=8443)
+  origin 'https' '2001:db8::1' 1 = Origin(scheme='https', host='2001:db8::1', port=1)
+  origin 'https' 'xn--bcher-kva.example' 65535 = Origin(scheme='https', host='xn--bcher-kva.example', port=65535)
+  origin 'https' 'example.com.' 443 = Origin(scheme='https', host='example.com.', port=443)
+  origin 'https' 'my_host.local' 443 = Origin(scheme='https', host='my_host.local', port=443)
+  origin 'https' 'a.example' 80 = Origin(scheme='https', host='a.example', port=80)
+  origin 'http' 'a.example' 80 = Origin(scheme='http', host='a.example', port=80)
+  origin 'https' '[::1]' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'HTTPS' 'api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ftp' 'api.example.com' 21 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ws' 'api.example.com' 80 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'API.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'bücher.example' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '256.0.0.1' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '01.2.3.4' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'user@api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a\x00b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '\ud800' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 0 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 65536 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' True ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' '443' ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' 443.0 ! TypeError: port must be an integer []
+  origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
+  origin 'https' None 443 ! TypeError: host must be a string []
+  origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
+  canonical nan ! ValueError: A wire number must be finite []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot secret=False data identity=True response identity=True
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
+  snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
+  snapshot terminal = True
+  snapshot terminal integer ! TypeError: terminal must be a bool []
+  snapshot terminal string ! TypeError: terminal must be a bool []
+  snapshot response None ! TypeError: response must be a ResponseInfo []
+  snapshot response mapping ! TypeError: response must be a ResponseInfo []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
+  snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
+  PaginationOptions.max_pages None = None
+  PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1 = 1
+  PaginationOptions.max_pages 2**63 = 9223372036854775808
+  PaginationOptions.max_pages -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_items None = None
+  PaginationOptions.max_items 0 = 0
+  PaginationOptions.max_items 1 = 1
+  PaginationOptions.max_items 2**63 = 9223372036854775808
+  PaginationOptions.max_items -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.max_polls None = None
+  PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1 = 1
+  PollOptions.max_polls 2**63 = 9223372036854775808
+  PollOptions.max_polls -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.interval None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.5 = 0.5
+  PollOptions.interval 1 = 1
+  PollOptions.interval -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.max_wait None = None
+  PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.5 = 0.5
+  PollOptions.max_wait 1 = 1
+  PollOptions.max_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.idle_timeout None = None
+  StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.5 = 0.5
+  StreamOptions.idle_timeout 1 = 1
+  StreamOptions.idle_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.reconnect True = True
+  StreamOptions.reconnect False = False
+  StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 'yes' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.max_reconnects None = None
+  StreamOptions.max_reconnects 0 = 0
+  StreamOptions.max_reconnects 1 = 1
+  StreamOptions.max_reconnects 2**63 = 9223372036854775808
+  StreamOptions.max_reconnects -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnect_wait None = None
+  StreamOptions.max_reconnect_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.5 = 0.5
+  StreamOptions.max_reconnect_wait 1 = 1
+  StreamOptions.max_reconnect_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
+  pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
+  poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.options' has no attribute 'MissingProtocolType' []
+  options dir = []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
+  errors dir = ['ProtocolDataError']
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured client list = PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured view list = PetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  default helper settings list = PetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  async configured client list = PetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
+# pets-protocols pydantic_v2.dataclass
+  client imports load protocols=[]
+  dir lists lazy names=(True, True)
+  dir loads nothing=True
+  protocol errors loaded on use=True
+  lazy names cached=(True, False)
+  optional imports=[]
+  import threads unchanged=True
+  replay loaded with contracts=False
+  pagination loaded with contracts=False
+  pagination types=(True, True, True)
+  pagination optional imports=[]
+  client protocols=True
+  option identities=(True, True)
+  construction threads unchanged=True
+  configured client loads protocols=['_runtime.protocols.options']
+  BodySelector fields=('pointer',)
+  BodySelector keyword-only=True hints=('pointer',)
+  HeaderSelector fields=('name', 'occurrence')
+  HeaderSelector keyword-only=True hints=('name', 'occurrence')
+  StatusSelector fields=()
+  StatusSelector keyword-only=True hints=()
+  ParameterTarget fields=('location', 'name')
+  ParameterTarget keyword-only=True hints=('location', 'name')
+  QuerystringTarget fields=('name', 'pointer')
+  QuerystringTarget keyword-only=True hints=('name', 'pointer')
+  BodyTarget fields=('pointer',)
+  BodyTarget keyword-only=True hints=('pointer',)
+  Origin fields=('scheme', 'host', 'port')
+  Origin keyword-only=True hints=('scheme', 'host', 'port')
+  PollSnapshot fields=('state', 'terminal', 'data', 'response')
+  PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  HeaderSelector.occurrence values=('single', 'all')
+  ParameterTarget.location values=('path', 'query', 'header', 'cookie')
+  ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
+  Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
+  RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
+  ProtocolProgress mapping=True args=True
+  PollSnapshot covariance=True default=<class 'object'> subscripted=True
+  selector frozen ! FrozenInstanceError: cannot assign to field 'pointer' []
+  target frozen ! FrozenInstanceError: cannot assign to field 'name' []
+  origin frozen ! FrozenInstanceError: cannot assign to field 'port' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'interval' []
+  selector positional ! TypeError: BodySelector.__init__() takes 1 positional argument but 2 were given []
+  header positional ! TypeError: HeaderSelector.__init__() takes 1 positional argument but 2 were given []
+  status positional ! TypeError: StatusSelector.__init__() takes 1 positional argument but 2 were given []
+  target positional ! TypeError: ParameterTarget.__init__() takes 1 positional argument but 3 were given []
+  querystring positional ! TypeError: QuerystringTarget.__init__() takes 1 positional argument but 3 were given []
+  body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
+  origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
+  options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
+  equal selectors = True
+  equal status selectors = True
+  hashable targets = 1
+  body pointer '' = BodySelector(pointer='')
+  body pointer '/' = BodySelector(pointer='/')
+  body pointer '/data' = BodySelector(pointer='/data')
+  body pointer '/a~0b~1c' = BodySelector(pointer='/a~0b~1c')
+  body pointer '/items/0' = BodySelector(pointer='/items/0')
+  body pointer '/a b' = BodySelector(pointer='/a b')
+  body pointer '/é' = BodySelector(pointer='/é')
+  body pointer '//' = BodySelector(pointer='//')
+  body pointer 'data' ! ValueError: pointer is not in its required form []
+  body pointer '/~' ! ValueError: pointer is not in its required form []
+  body pointer '/~2' ! ValueError: pointer is not in its required form []
+  body pointer '/a~' ! ValueError: pointer is not in its required form []
+  body pointer '$.data' ! ValueError: pointer is not in its required form []
+  body pointer '#/data' ! ValueError: pointer is not in its required form []
+  body pointer None ! TypeError: pointer must be a string []
+  body pointer bytes ! TypeError: pointer must be a string []
+  body pointer int ! TypeError: pointer must be a string []
+  header X-Cursor single = HeaderSelector(name='X-Cursor', occurrence='single')
+  header link all = HeaderSelector(name='link', occurrence='all')
+  header x-next~page single = HeaderSelector(name='x-next~page', occurrence='single')
+  header default occurrence = 'single'
+  header space ! ValueError: name is not in its required form []
+  header empty ! ValueError: name is not in its required form []
+  header colon ! ValueError: name is not in its required form []
+  header unicode ! ValueError: name is not in its required form []
+  header None ! TypeError: name must be a string []
+  header occurrence ! ValueError: occurrence must be one of its declared values []
+  header occurrence None ! TypeError: occurrence must be a string []
+  header missing name ! TypeError: HeaderSelector.__init__() missing 1 required keyword-only argument: 'name' []
+  status selector = StatusSelector()
+  parameter path 'petId' = ParameterTarget(location='path', name='petId')
+  parameter query 'cursor' = ParameterTarget(location='query', name='cursor')
+  parameter query 'page size' = ParameterTarget(location='query', name='page size')
+  parameter query 'é' = ParameterTarget(location='query', name='é')
+  parameter header 'X-Page' = ParameterTarget(location='header', name='X-Page')
+  parameter cookie 'session' = ParameterTarget(location='cookie', name='session')
+  parameter query '' ! ValueError: name must not be empty []
+  parameter path '' ! ValueError: name must not be empty []
+  parameter header 'X Page' ! ValueError: name is not in its required form []
+  parameter cookie 'a;b' ! ValueError: name is not in its required form []
+  parameter body 'cursor' ! ValueError: location must be one of its declared values []
+  parameter querystring 'filter' ! ValueError: location must be one of its declared values []
+  parameter QUERY 'cursor' ! ValueError: location must be one of its declared values []
+  parameter None 'cursor' ! TypeError: location must be a string []
+  parameter query None ! TypeError: name must be a string []
+  querystring 'filter' '' = QuerystringTarget(name='filter', pointer='')
+  querystring 'filter' '/cursor' = QuerystringTarget(name='filter', pointer='/cursor')
+  querystring 'filter' '/page~1size' = QuerystringTarget(name='filter', pointer='/page~1size')
+  querystring '' '/cursor' ! ValueError: name must not be empty []
+  querystring 'filter' 'cursor' ! ValueError: pointer is not in its required form []
+  querystring None '' ! TypeError: name must be a string []
+  querystring 'filter' None ! TypeError: pointer must be a string []
+  body target '' = BodyTarget(pointer='')
+  body target '/cursor' = BodyTarget(pointer='/cursor')
+  body target '/page/0' = BodyTarget(pointer='/page/0')
+  body target 'cursor' ! ValueError: pointer is not in its required form []
+  body target None ! TypeError: pointer must be a string []
+  origin 'https' 'api.example.com' 443 = Origin(scheme='https', host='api.example.com', port=443)
+  origin 'http' 'localhost' 8080 = Origin(scheme='http', host='localhost', port=8080)
+  origin 'http' '127.0.0.1' 80 = Origin(scheme='http', host='127.0.0.1', port=80)
+  origin 'https' '::1' 8443 = Origin(scheme='https', host='::1', port=8443)
+  origin 'https' '2001:db8::1' 1 = Origin(scheme='https', host='2001:db8::1', port=1)
+  origin 'https' 'xn--bcher-kva.example' 65535 = Origin(scheme='https', host='xn--bcher-kva.example', port=65535)
+  origin 'https' 'example.com.' 443 = Origin(scheme='https', host='example.com.', port=443)
+  origin 'https' 'my_host.local' 443 = Origin(scheme='https', host='my_host.local', port=443)
+  origin 'https' 'a.example' 80 = Origin(scheme='https', host='a.example', port=80)
+  origin 'http' 'a.example' 80 = Origin(scheme='http', host='a.example', port=80)
+  origin 'https' '[::1]' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'HTTPS' 'api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ftp' 'api.example.com' 21 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ws' 'api.example.com' 80 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'API.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'bücher.example' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '256.0.0.1' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '01.2.3.4' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'user@api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a\x00b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '\ud800' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 0 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 65536 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' True ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' '443' ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' 443.0 ! TypeError: port must be an integer []
+  origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
+  origin 'https' None 443 ! TypeError: host must be a string []
+  origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
+  canonical nan ! ValueError: A wire number must be finite []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot secret=False data identity=True response identity=True
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
+  snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
+  snapshot terminal = True
+  snapshot terminal integer ! TypeError: terminal must be a bool []
+  snapshot terminal string ! TypeError: terminal must be a bool []
+  snapshot response None ! TypeError: response must be a ResponseInfo []
+  snapshot response mapping ! TypeError: response must be a ResponseInfo []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
+  snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
+  PaginationOptions.max_pages None = None
+  PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1 = 1
+  PaginationOptions.max_pages 2**63 = 9223372036854775808
+  PaginationOptions.max_pages -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_items None = None
+  PaginationOptions.max_items 0 = 0
+  PaginationOptions.max_items 1 = 1
+  PaginationOptions.max_items 2**63 = 9223372036854775808
+  PaginationOptions.max_items -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.max_polls None = None
+  PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1 = 1
+  PollOptions.max_polls 2**63 = 9223372036854775808
+  PollOptions.max_polls -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.interval None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.5 = 0.5
+  PollOptions.interval 1 = 1
+  PollOptions.interval -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.max_wait None = None
+  PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.5 = 0.5
+  PollOptions.max_wait 1 = 1
+  PollOptions.max_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.idle_timeout None = None
+  StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.5 = 0.5
+  StreamOptions.idle_timeout 1 = 1
+  StreamOptions.idle_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.reconnect True = True
+  StreamOptions.reconnect False = False
+  StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 'yes' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.max_reconnects None = None
+  StreamOptions.max_reconnects 0 = 0
+  StreamOptions.max_reconnects 1 = 1
+  StreamOptions.max_reconnects 2**63 = 9223372036854775808
+  StreamOptions.max_reconnects -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnect_wait None = None
+  StreamOptions.max_reconnect_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.5 = 0.5
+  StreamOptions.max_reconnect_wait 1 = 1
+  StreamOptions.max_reconnect_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
+  pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
+  poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.options' has no attribute 'MissingProtocolType' []
+  options dir = []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
+  errors dir = ['ProtocolDataError']
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured client list = [Pet(id=1, name='cat', tag=MISSING)]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured view list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  default helper settings list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  async configured client list = [Pet(id=2, name='dog', tag=MISSING)]
+# pets-protocols dataclasses.dataclass
+  client imports load protocols=[]
+  dir lists lazy names=(True, True)
+  dir loads nothing=True
+  protocol errors loaded on use=True
+  lazy names cached=(True, False)
+  optional imports=[]
+  import threads unchanged=True
+  replay loaded with contracts=False
+  pagination loaded with contracts=False
+  pagination types=(True, True, True)
+  pagination optional imports=[]
+  client protocols=True
+  option identities=(True, True)
+  construction threads unchanged=True
+  configured client loads protocols=['_runtime.protocols.options']
+  BodySelector fields=('pointer',)
+  BodySelector keyword-only=True hints=('pointer',)
+  HeaderSelector fields=('name', 'occurrence')
+  HeaderSelector keyword-only=True hints=('name', 'occurrence')
+  StatusSelector fields=()
+  StatusSelector keyword-only=True hints=()
+  ParameterTarget fields=('location', 'name')
+  ParameterTarget keyword-only=True hints=('location', 'name')
+  QuerystringTarget fields=('name', 'pointer')
+  QuerystringTarget keyword-only=True hints=('name', 'pointer')
+  BodyTarget fields=('pointer',)
+  BodyTarget keyword-only=True hints=('pointer',)
+  Origin fields=('scheme', 'host', 'port')
+  Origin keyword-only=True hints=('scheme', 'host', 'port')
+  PollSnapshot fields=('state', 'terminal', 'data', 'response')
+  PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  HeaderSelector.occurrence values=('single', 'all')
+  ParameterTarget.location values=('path', 'query', 'header', 'cookie')
+  ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
+  Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
+  RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
+  ProtocolProgress mapping=True args=True
+  PollSnapshot covariance=True default=<class 'object'> subscripted=True
+  selector frozen ! FrozenInstanceError: cannot assign to field 'pointer' []
+  target frozen ! FrozenInstanceError: cannot assign to field 'name' []
+  origin frozen ! FrozenInstanceError: cannot assign to field 'port' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'interval' []
+  selector positional ! TypeError: BodySelector.__init__() takes 1 positional argument but 2 were given []
+  header positional ! TypeError: HeaderSelector.__init__() takes 1 positional argument but 2 were given []
+  status positional ! TypeError: StatusSelector.__init__() takes 1 positional argument but 2 were given []
+  target positional ! TypeError: ParameterTarget.__init__() takes 1 positional argument but 3 were given []
+  querystring positional ! TypeError: QuerystringTarget.__init__() takes 1 positional argument but 3 were given []
+  body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
+  origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
+  options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
+  equal selectors = True
+  equal status selectors = True
+  hashable targets = 1
+  body pointer '' = BodySelector(pointer='')
+  body pointer '/' = BodySelector(pointer='/')
+  body pointer '/data' = BodySelector(pointer='/data')
+  body pointer '/a~0b~1c' = BodySelector(pointer='/a~0b~1c')
+  body pointer '/items/0' = BodySelector(pointer='/items/0')
+  body pointer '/a b' = BodySelector(pointer='/a b')
+  body pointer '/é' = BodySelector(pointer='/é')
+  body pointer '//' = BodySelector(pointer='//')
+  body pointer 'data' ! ValueError: pointer is not in its required form []
+  body pointer '/~' ! ValueError: pointer is not in its required form []
+  body pointer '/~2' ! ValueError: pointer is not in its required form []
+  body pointer '/a~' ! ValueError: pointer is not in its required form []
+  body pointer '$.data' ! ValueError: pointer is not in its required form []
+  body pointer '#/data' ! ValueError: pointer is not in its required form []
+  body pointer None ! TypeError: pointer must be a string []
+  body pointer bytes ! TypeError: pointer must be a string []
+  body pointer int ! TypeError: pointer must be a string []
+  header X-Cursor single = HeaderSelector(name='X-Cursor', occurrence='single')
+  header link all = HeaderSelector(name='link', occurrence='all')
+  header x-next~page single = HeaderSelector(name='x-next~page', occurrence='single')
+  header default occurrence = 'single'
+  header space ! ValueError: name is not in its required form []
+  header empty ! ValueError: name is not in its required form []
+  header colon ! ValueError: name is not in its required form []
+  header unicode ! ValueError: name is not in its required form []
+  header None ! TypeError: name must be a string []
+  header occurrence ! ValueError: occurrence must be one of its declared values []
+  header occurrence None ! TypeError: occurrence must be a string []
+  header missing name ! TypeError: HeaderSelector.__init__() missing 1 required keyword-only argument: 'name' []
+  status selector = StatusSelector()
+  parameter path 'petId' = ParameterTarget(location='path', name='petId')
+  parameter query 'cursor' = ParameterTarget(location='query', name='cursor')
+  parameter query 'page size' = ParameterTarget(location='query', name='page size')
+  parameter query 'é' = ParameterTarget(location='query', name='é')
+  parameter header 'X-Page' = ParameterTarget(location='header', name='X-Page')
+  parameter cookie 'session' = ParameterTarget(location='cookie', name='session')
+  parameter query '' ! ValueError: name must not be empty []
+  parameter path '' ! ValueError: name must not be empty []
+  parameter header 'X Page' ! ValueError: name is not in its required form []
+  parameter cookie 'a;b' ! ValueError: name is not in its required form []
+  parameter body 'cursor' ! ValueError: location must be one of its declared values []
+  parameter querystring 'filter' ! ValueError: location must be one of its declared values []
+  parameter QUERY 'cursor' ! ValueError: location must be one of its declared values []
+  parameter None 'cursor' ! TypeError: location must be a string []
+  parameter query None ! TypeError: name must be a string []
+  querystring 'filter' '' = QuerystringTarget(name='filter', pointer='')
+  querystring 'filter' '/cursor' = QuerystringTarget(name='filter', pointer='/cursor')
+  querystring 'filter' '/page~1size' = QuerystringTarget(name='filter', pointer='/page~1size')
+  querystring '' '/cursor' ! ValueError: name must not be empty []
+  querystring 'filter' 'cursor' ! ValueError: pointer is not in its required form []
+  querystring None '' ! TypeError: name must be a string []
+  querystring 'filter' None ! TypeError: pointer must be a string []
+  body target '' = BodyTarget(pointer='')
+  body target '/cursor' = BodyTarget(pointer='/cursor')
+  body target '/page/0' = BodyTarget(pointer='/page/0')
+  body target 'cursor' ! ValueError: pointer is not in its required form []
+  body target None ! TypeError: pointer must be a string []
+  origin 'https' 'api.example.com' 443 = Origin(scheme='https', host='api.example.com', port=443)
+  origin 'http' 'localhost' 8080 = Origin(scheme='http', host='localhost', port=8080)
+  origin 'http' '127.0.0.1' 80 = Origin(scheme='http', host='127.0.0.1', port=80)
+  origin 'https' '::1' 8443 = Origin(scheme='https', host='::1', port=8443)
+  origin 'https' '2001:db8::1' 1 = Origin(scheme='https', host='2001:db8::1', port=1)
+  origin 'https' 'xn--bcher-kva.example' 65535 = Origin(scheme='https', host='xn--bcher-kva.example', port=65535)
+  origin 'https' 'example.com.' 443 = Origin(scheme='https', host='example.com.', port=443)
+  origin 'https' 'my_host.local' 443 = Origin(scheme='https', host='my_host.local', port=443)
+  origin 'https' 'a.example' 80 = Origin(scheme='https', host='a.example', port=80)
+  origin 'http' 'a.example' 80 = Origin(scheme='http', host='a.example', port=80)
+  origin 'https' '[::1]' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'HTTPS' 'api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ftp' 'api.example.com' 21 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ws' 'api.example.com' 80 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'API.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'bücher.example' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '256.0.0.1' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '01.2.3.4' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'user@api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a\x00b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '\ud800' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 0 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 65536 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' True ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' '443' ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' 443.0 ! TypeError: port must be an integer []
+  origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
+  origin 'https' None 443 ! TypeError: host must be a string []
+  origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
+  canonical nan ! ValueError: A wire number must be finite []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot secret=False data identity=True response identity=True
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
+  snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
+  snapshot terminal = True
+  snapshot terminal integer ! TypeError: terminal must be a bool []
+  snapshot terminal string ! TypeError: terminal must be a bool []
+  snapshot response None ! TypeError: response must be a ResponseInfo []
+  snapshot response mapping ! TypeError: response must be a ResponseInfo []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
+  snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
+  PaginationOptions.max_pages None = None
+  PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1 = 1
+  PaginationOptions.max_pages 2**63 = 9223372036854775808
+  PaginationOptions.max_pages -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_items None = None
+  PaginationOptions.max_items 0 = 0
+  PaginationOptions.max_items 1 = 1
+  PaginationOptions.max_items 2**63 = 9223372036854775808
+  PaginationOptions.max_items -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.max_polls None = None
+  PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1 = 1
+  PollOptions.max_polls 2**63 = 9223372036854775808
+  PollOptions.max_polls -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.interval None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.5 = 0.5
+  PollOptions.interval 1 = 1
+  PollOptions.interval -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.max_wait None = None
+  PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.5 = 0.5
+  PollOptions.max_wait 1 = 1
+  PollOptions.max_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.idle_timeout None = None
+  StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.5 = 0.5
+  StreamOptions.idle_timeout 1 = 1
+  StreamOptions.idle_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.reconnect True = True
+  StreamOptions.reconnect False = False
+  StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 'yes' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.max_reconnects None = None
+  StreamOptions.max_reconnects 0 = 0
+  StreamOptions.max_reconnects 1 = 1
+  StreamOptions.max_reconnects 2**63 = 9223372036854775808
+  StreamOptions.max_reconnects -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnect_wait None = None
+  StreamOptions.max_reconnect_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.5 = 0.5
+  StreamOptions.max_reconnect_wait 1 = 1
+  StreamOptions.max_reconnect_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
+  pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
+  poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.options' has no attribute 'MissingProtocolType' []
+  options dir = []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
+  errors dir = ['ProtocolDataError']
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured client list = [Pet(id=1, name='cat', tag=None)]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured view list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  default helper settings list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  async configured client list = [Pet(id=2, name='dog', tag=None)]
+# pets-protocols typing.TypedDict
+  client imports load protocols=[]
+  dir lists lazy names=(True, True)
+  dir loads nothing=True
+  protocol errors loaded on use=True
+  lazy names cached=(True, False)
+  optional imports=[]
+  import threads unchanged=True
+  replay loaded with contracts=False
+  pagination loaded with contracts=False
+  pagination types=(True, True, True)
+  pagination optional imports=[]
+  client protocols=True
+  option identities=(True, True)
+  construction threads unchanged=True
+  configured client loads protocols=['_runtime.protocols.options']
+  BodySelector fields=('pointer',)
+  BodySelector keyword-only=True hints=('pointer',)
+  HeaderSelector fields=('name', 'occurrence')
+  HeaderSelector keyword-only=True hints=('name', 'occurrence')
+  StatusSelector fields=()
+  StatusSelector keyword-only=True hints=()
+  ParameterTarget fields=('location', 'name')
+  ParameterTarget keyword-only=True hints=('location', 'name')
+  QuerystringTarget fields=('name', 'pointer')
+  QuerystringTarget keyword-only=True hints=('name', 'pointer')
+  BodyTarget fields=('pointer',)
+  BodyTarget keyword-only=True hints=('pointer',)
+  Origin fields=('scheme', 'host', 'port')
+  Origin keyword-only=True hints=('scheme', 'host', 'port')
+  PollSnapshot fields=('state', 'terminal', 'data', 'response')
+  PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  HeaderSelector.occurrence values=('single', 'all')
+  ParameterTarget.location values=('path', 'query', 'header', 'cookie')
+  ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
+  Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
+  RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
+  ProtocolProgress mapping=True args=True
+  PollSnapshot covariance=True default=<class 'object'> subscripted=True
+  selector frozen ! FrozenInstanceError: cannot assign to field 'pointer' []
+  target frozen ! FrozenInstanceError: cannot assign to field 'name' []
+  origin frozen ! FrozenInstanceError: cannot assign to field 'port' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'interval' []
+  selector positional ! TypeError: BodySelector.__init__() takes 1 positional argument but 2 were given []
+  header positional ! TypeError: HeaderSelector.__init__() takes 1 positional argument but 2 were given []
+  status positional ! TypeError: StatusSelector.__init__() takes 1 positional argument but 2 were given []
+  target positional ! TypeError: ParameterTarget.__init__() takes 1 positional argument but 3 were given []
+  querystring positional ! TypeError: QuerystringTarget.__init__() takes 1 positional argument but 3 were given []
+  body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
+  origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
+  options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
+  equal selectors = True
+  equal status selectors = True
+  hashable targets = 1
+  body pointer '' = BodySelector(pointer='')
+  body pointer '/' = BodySelector(pointer='/')
+  body pointer '/data' = BodySelector(pointer='/data')
+  body pointer '/a~0b~1c' = BodySelector(pointer='/a~0b~1c')
+  body pointer '/items/0' = BodySelector(pointer='/items/0')
+  body pointer '/a b' = BodySelector(pointer='/a b')
+  body pointer '/é' = BodySelector(pointer='/é')
+  body pointer '//' = BodySelector(pointer='//')
+  body pointer 'data' ! ValueError: pointer is not in its required form []
+  body pointer '/~' ! ValueError: pointer is not in its required form []
+  body pointer '/~2' ! ValueError: pointer is not in its required form []
+  body pointer '/a~' ! ValueError: pointer is not in its required form []
+  body pointer '$.data' ! ValueError: pointer is not in its required form []
+  body pointer '#/data' ! ValueError: pointer is not in its required form []
+  body pointer None ! TypeError: pointer must be a string []
+  body pointer bytes ! TypeError: pointer must be a string []
+  body pointer int ! TypeError: pointer must be a string []
+  header X-Cursor single = HeaderSelector(name='X-Cursor', occurrence='single')
+  header link all = HeaderSelector(name='link', occurrence='all')
+  header x-next~page single = HeaderSelector(name='x-next~page', occurrence='single')
+  header default occurrence = 'single'
+  header space ! ValueError: name is not in its required form []
+  header empty ! ValueError: name is not in its required form []
+  header colon ! ValueError: name is not in its required form []
+  header unicode ! ValueError: name is not in its required form []
+  header None ! TypeError: name must be a string []
+  header occurrence ! ValueError: occurrence must be one of its declared values []
+  header occurrence None ! TypeError: occurrence must be a string []
+  header missing name ! TypeError: HeaderSelector.__init__() missing 1 required keyword-only argument: 'name' []
+  status selector = StatusSelector()
+  parameter path 'petId' = ParameterTarget(location='path', name='petId')
+  parameter query 'cursor' = ParameterTarget(location='query', name='cursor')
+  parameter query 'page size' = ParameterTarget(location='query', name='page size')
+  parameter query 'é' = ParameterTarget(location='query', name='é')
+  parameter header 'X-Page' = ParameterTarget(location='header', name='X-Page')
+  parameter cookie 'session' = ParameterTarget(location='cookie', name='session')
+  parameter query '' ! ValueError: name must not be empty []
+  parameter path '' ! ValueError: name must not be empty []
+  parameter header 'X Page' ! ValueError: name is not in its required form []
+  parameter cookie 'a;b' ! ValueError: name is not in its required form []
+  parameter body 'cursor' ! ValueError: location must be one of its declared values []
+  parameter querystring 'filter' ! ValueError: location must be one of its declared values []
+  parameter QUERY 'cursor' ! ValueError: location must be one of its declared values []
+  parameter None 'cursor' ! TypeError: location must be a string []
+  parameter query None ! TypeError: name must be a string []
+  querystring 'filter' '' = QuerystringTarget(name='filter', pointer='')
+  querystring 'filter' '/cursor' = QuerystringTarget(name='filter', pointer='/cursor')
+  querystring 'filter' '/page~1size' = QuerystringTarget(name='filter', pointer='/page~1size')
+  querystring '' '/cursor' ! ValueError: name must not be empty []
+  querystring 'filter' 'cursor' ! ValueError: pointer is not in its required form []
+  querystring None '' ! TypeError: name must be a string []
+  querystring 'filter' None ! TypeError: pointer must be a string []
+  body target '' = BodyTarget(pointer='')
+  body target '/cursor' = BodyTarget(pointer='/cursor')
+  body target '/page/0' = BodyTarget(pointer='/page/0')
+  body target 'cursor' ! ValueError: pointer is not in its required form []
+  body target None ! TypeError: pointer must be a string []
+  origin 'https' 'api.example.com' 443 = Origin(scheme='https', host='api.example.com', port=443)
+  origin 'http' 'localhost' 8080 = Origin(scheme='http', host='localhost', port=8080)
+  origin 'http' '127.0.0.1' 80 = Origin(scheme='http', host='127.0.0.1', port=80)
+  origin 'https' '::1' 8443 = Origin(scheme='https', host='::1', port=8443)
+  origin 'https' '2001:db8::1' 1 = Origin(scheme='https', host='2001:db8::1', port=1)
+  origin 'https' 'xn--bcher-kva.example' 65535 = Origin(scheme='https', host='xn--bcher-kva.example', port=65535)
+  origin 'https' 'example.com.' 443 = Origin(scheme='https', host='example.com.', port=443)
+  origin 'https' 'my_host.local' 443 = Origin(scheme='https', host='my_host.local', port=443)
+  origin 'https' 'a.example' 80 = Origin(scheme='https', host='a.example', port=80)
+  origin 'http' 'a.example' 80 = Origin(scheme='http', host='a.example', port=80)
+  origin 'https' '[::1]' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'HTTPS' 'api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ftp' 'api.example.com' 21 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ws' 'api.example.com' 80 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'API.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'bücher.example' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '256.0.0.1' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '01.2.3.4' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'user@api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a\x00b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '\ud800' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 0 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 65536 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' True ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' '443' ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' 443.0 ! TypeError: port must be an integer []
+  origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
+  origin 'https' None 443 ! TypeError: host must be a string []
+  origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
+  canonical nan ! ValueError: A wire number must be finite []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot secret=False data identity=True response identity=True
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
+  snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
+  snapshot terminal = True
+  snapshot terminal integer ! TypeError: terminal must be a bool []
+  snapshot terminal string ! TypeError: terminal must be a bool []
+  snapshot response None ! TypeError: response must be a ResponseInfo []
+  snapshot response mapping ! TypeError: response must be a ResponseInfo []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
+  snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
+  PaginationOptions.max_pages None = None
+  PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1 = 1
+  PaginationOptions.max_pages 2**63 = 9223372036854775808
+  PaginationOptions.max_pages -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_items None = None
+  PaginationOptions.max_items 0 = 0
+  PaginationOptions.max_items 1 = 1
+  PaginationOptions.max_items 2**63 = 9223372036854775808
+  PaginationOptions.max_items -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.max_polls None = None
+  PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1 = 1
+  PollOptions.max_polls 2**63 = 9223372036854775808
+  PollOptions.max_polls -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.interval None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.5 = 0.5
+  PollOptions.interval 1 = 1
+  PollOptions.interval -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.max_wait None = None
+  PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.5 = 0.5
+  PollOptions.max_wait 1 = 1
+  PollOptions.max_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.idle_timeout None = None
+  StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.5 = 0.5
+  StreamOptions.idle_timeout 1 = 1
+  StreamOptions.idle_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.reconnect True = True
+  StreamOptions.reconnect False = False
+  StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 'yes' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.max_reconnects None = None
+  StreamOptions.max_reconnects 0 = 0
+  StreamOptions.max_reconnects 1 = 1
+  StreamOptions.max_reconnects 2**63 = 9223372036854775808
+  StreamOptions.max_reconnects -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnect_wait None = None
+  StreamOptions.max_reconnect_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.5 = 0.5
+  StreamOptions.max_reconnect_wait 1 = 1
+  StreamOptions.max_reconnect_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
+  pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
+  poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_typing_typeddict.options' has no attribute 'MissingProtocolType' []
+  options dir = []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
+  errors dir = ['ProtocolDataError']
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured client list = [{'id': 1, 'name': 'cat'}]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured view list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  default helper settings list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  async configured client list = [{'id': 2, 'name': 'dog'}]
+# pets-protocols msgspec.Struct
+  client imports load protocols=[]
+  dir lists lazy names=(True, True)
+  dir loads nothing=True
+  protocol errors loaded on use=True
+  lazy names cached=(True, False)
+  optional imports=[]
+  import threads unchanged=True
+  replay loaded with contracts=False
+  pagination loaded with contracts=False
+  pagination types=(True, True, True)
+  pagination optional imports=[]
+  client protocols=True
+  option identities=(True, True)
+  construction threads unchanged=True
+  configured client loads protocols=['_runtime.protocols.options']
+  BodySelector fields=('pointer',)
+  BodySelector keyword-only=True hints=('pointer',)
+  HeaderSelector fields=('name', 'occurrence')
+  HeaderSelector keyword-only=True hints=('name', 'occurrence')
+  StatusSelector fields=()
+  StatusSelector keyword-only=True hints=()
+  ParameterTarget fields=('location', 'name')
+  ParameterTarget keyword-only=True hints=('location', 'name')
+  QuerystringTarget fields=('name', 'pointer')
+  QuerystringTarget keyword-only=True hints=('name', 'pointer')
+  BodyTarget fields=('pointer',)
+  BodyTarget keyword-only=True hints=('pointer',)
+  Origin fields=('scheme', 'host', 'port')
+  Origin keyword-only=True hints=('scheme', 'host', 'port')
+  PollSnapshot fields=('state', 'terminal', 'data', 'response')
+  PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
+  PaginationOptions fields=('max_pages', 'max_items', 'total_timeout')
+  PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'total_timeout')
+  PollOptions fields=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait', 'total_timeout')
+  StreamOptions fields=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  StreamOptions keyword-only=True hints=('idle_timeout', 'reconnect', 'max_reconnects', 'max_reconnect_wait', 'total_timeout')
+  HeaderSelector.occurrence values=('single', 'all')
+  ParameterTarget.location values=('path', 'query', 'header', 'cookie')
+  ProgressKey values=('pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'messages_sent', 'messages_received')
+  Selector members=('BodySelector', 'HeaderSelector', 'StatusSelector')
+  RequestTarget members=('ParameterTarget', 'QuerystringTarget', 'BodyTarget')
+  ProtocolProgress mapping=True args=True
+  PollSnapshot covariance=True default=<class 'object'> subscripted=True
+  selector frozen ! FrozenInstanceError: cannot assign to field 'pointer' []
+  target frozen ! FrozenInstanceError: cannot assign to field 'name' []
+  origin frozen ! FrozenInstanceError: cannot assign to field 'port' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'interval' []
+  selector positional ! TypeError: BodySelector.__init__() takes 1 positional argument but 2 were given []
+  header positional ! TypeError: HeaderSelector.__init__() takes 1 positional argument but 2 were given []
+  status positional ! TypeError: StatusSelector.__init__() takes 1 positional argument but 2 were given []
+  target positional ! TypeError: ParameterTarget.__init__() takes 1 positional argument but 3 were given []
+  querystring positional ! TypeError: QuerystringTarget.__init__() takes 1 positional argument but 3 were given []
+  body target positional ! TypeError: BodyTarget.__init__() takes 1 positional argument but 2 were given []
+  origin positional ! TypeError: Origin.__init__() takes 1 positional argument but 4 were given []
+  options positional ! TypeError: PaginationOptions.__init__() takes 1 positional argument but 2 were given []
+  equal selectors = True
+  equal status selectors = True
+  hashable targets = 1
+  body pointer '' = BodySelector(pointer='')
+  body pointer '/' = BodySelector(pointer='/')
+  body pointer '/data' = BodySelector(pointer='/data')
+  body pointer '/a~0b~1c' = BodySelector(pointer='/a~0b~1c')
+  body pointer '/items/0' = BodySelector(pointer='/items/0')
+  body pointer '/a b' = BodySelector(pointer='/a b')
+  body pointer '/é' = BodySelector(pointer='/é')
+  body pointer '//' = BodySelector(pointer='//')
+  body pointer 'data' ! ValueError: pointer is not in its required form []
+  body pointer '/~' ! ValueError: pointer is not in its required form []
+  body pointer '/~2' ! ValueError: pointer is not in its required form []
+  body pointer '/a~' ! ValueError: pointer is not in its required form []
+  body pointer '$.data' ! ValueError: pointer is not in its required form []
+  body pointer '#/data' ! ValueError: pointer is not in its required form []
+  body pointer None ! TypeError: pointer must be a string []
+  body pointer bytes ! TypeError: pointer must be a string []
+  body pointer int ! TypeError: pointer must be a string []
+  header X-Cursor single = HeaderSelector(name='X-Cursor', occurrence='single')
+  header link all = HeaderSelector(name='link', occurrence='all')
+  header x-next~page single = HeaderSelector(name='x-next~page', occurrence='single')
+  header default occurrence = 'single'
+  header space ! ValueError: name is not in its required form []
+  header empty ! ValueError: name is not in its required form []
+  header colon ! ValueError: name is not in its required form []
+  header unicode ! ValueError: name is not in its required form []
+  header None ! TypeError: name must be a string []
+  header occurrence ! ValueError: occurrence must be one of its declared values []
+  header occurrence None ! TypeError: occurrence must be a string []
+  header missing name ! TypeError: HeaderSelector.__init__() missing 1 required keyword-only argument: 'name' []
+  status selector = StatusSelector()
+  parameter path 'petId' = ParameterTarget(location='path', name='petId')
+  parameter query 'cursor' = ParameterTarget(location='query', name='cursor')
+  parameter query 'page size' = ParameterTarget(location='query', name='page size')
+  parameter query 'é' = ParameterTarget(location='query', name='é')
+  parameter header 'X-Page' = ParameterTarget(location='header', name='X-Page')
+  parameter cookie 'session' = ParameterTarget(location='cookie', name='session')
+  parameter query '' ! ValueError: name must not be empty []
+  parameter path '' ! ValueError: name must not be empty []
+  parameter header 'X Page' ! ValueError: name is not in its required form []
+  parameter cookie 'a;b' ! ValueError: name is not in its required form []
+  parameter body 'cursor' ! ValueError: location must be one of its declared values []
+  parameter querystring 'filter' ! ValueError: location must be one of its declared values []
+  parameter QUERY 'cursor' ! ValueError: location must be one of its declared values []
+  parameter None 'cursor' ! TypeError: location must be a string []
+  parameter query None ! TypeError: name must be a string []
+  querystring 'filter' '' = QuerystringTarget(name='filter', pointer='')
+  querystring 'filter' '/cursor' = QuerystringTarget(name='filter', pointer='/cursor')
+  querystring 'filter' '/page~1size' = QuerystringTarget(name='filter', pointer='/page~1size')
+  querystring '' '/cursor' ! ValueError: name must not be empty []
+  querystring 'filter' 'cursor' ! ValueError: pointer is not in its required form []
+  querystring None '' ! TypeError: name must be a string []
+  querystring 'filter' None ! TypeError: pointer must be a string []
+  body target '' = BodyTarget(pointer='')
+  body target '/cursor' = BodyTarget(pointer='/cursor')
+  body target '/page/0' = BodyTarget(pointer='/page/0')
+  body target 'cursor' ! ValueError: pointer is not in its required form []
+  body target None ! TypeError: pointer must be a string []
+  origin 'https' 'api.example.com' 443 = Origin(scheme='https', host='api.example.com', port=443)
+  origin 'http' 'localhost' 8080 = Origin(scheme='http', host='localhost', port=8080)
+  origin 'http' '127.0.0.1' 80 = Origin(scheme='http', host='127.0.0.1', port=80)
+  origin 'https' '::1' 8443 = Origin(scheme='https', host='::1', port=8443)
+  origin 'https' '2001:db8::1' 1 = Origin(scheme='https', host='2001:db8::1', port=1)
+  origin 'https' 'xn--bcher-kva.example' 65535 = Origin(scheme='https', host='xn--bcher-kva.example', port=65535)
+  origin 'https' 'example.com.' 443 = Origin(scheme='https', host='example.com.', port=443)
+  origin 'https' 'my_host.local' 443 = Origin(scheme='https', host='my_host.local', port=443)
+  origin 'https' 'a.example' 80 = Origin(scheme='https', host='a.example', port=80)
+  origin 'http' 'a.example' 80 = Origin(scheme='http', host='a.example', port=80)
+  origin 'https' '[::1]' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'HTTPS' 'api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ftp' 'api.example.com' 21 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'ws' 'api.example.com' 80 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'API.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'bücher.example' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '256.0.0.1' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '01.2.3.4' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'user@api.example.com' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'a\x00b' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' '\ud800' 443 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 0 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' 65536 ! ValueError: origin must be the scheme, host, and port that the client's URL rules produce []
+  origin 'https' 'api.example.com' True ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' '443' ! TypeError: port must be an integer []
+  origin 'https' 'api.example.com' 443.0 ! TypeError: port must be an integer []
+  origin None 'api.example.com' 443 ! TypeError: scheme must be a string []
+  origin 'https' None 443 ! TypeError: host must be a string []
+  origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
+  canonical string = (b'"secret-cursor"', True)
+  canonical integer = (b'20', True)
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical float = (b'2.5', True)
+  canonical large float = (b'1e+16', True)
+  canonical small float = (b'1e-07', True)
+  canonical negative zero float = (b'-0.0', True)
+  canonical whole float = (b'100.0', True)
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical large integer = (b'1180591620717411303424', True)
+  canonical null = (b'null', True)
+  canonical boolean = (b'false', True)
+  canonical nested = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
+  canonical list = (b'[1,"two"]', True)
+  canonical tuple = (b'[1,"two"]', True)
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical integer key = (b'{"1":"secret-cursor"}', True)
+  canonical nan ! ValueError: A wire number must be finite []
+  canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
+  snapshot secret=False data identity=True response identity=True
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
+  snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
+  snapshot terminal = True
+  snapshot terminal integer ! TypeError: terminal must be a bool []
+  snapshot terminal string ! TypeError: terminal must be a bool []
+  snapshot response None ! TypeError: response must be a ResponseInfo []
+  snapshot response mapping ! TypeError: response must be a ResponseInfo []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
+  snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
+  PaginationOptions.max_pages None = None
+  PaginationOptions.max_pages 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1 = 1
+  PaginationOptions.max_pages 2**63 = 9223372036854775808
+  PaginationOptions.max_pages -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_pages '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_pages') [field_path=('max_pages',)] invalid_value
+  PaginationOptions.max_items None = None
+  PaginationOptions.max_items 0 = 0
+  PaginationOptions.max_items 1 = 1
+  PaginationOptions.max_items 2**63 = 9223372036854775808
+  PaginationOptions.max_items -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.max_items '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_items') [field_path=('max_items',)] invalid_value
+  PaginationOptions.total_timeout None = None
+  PaginationOptions.total_timeout 0 = 0
+  PaginationOptions.total_timeout 0.0 = 0.0
+  PaginationOptions.total_timeout 0.5 = 0.5
+  PaginationOptions.total_timeout 1 = 1
+  PaginationOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.max_polls None = None
+  PollOptions.max_polls 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1 = 1
+  PollOptions.max_polls 2**63 = 9223372036854775808
+  PollOptions.max_polls -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.max_polls '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_polls') [field_path=('max_polls',)] invalid_value
+  PollOptions.interval None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 0.5 = 0.5
+  PollOptions.interval 1 = 1
+  PollOptions.interval -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.interval '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='interval') [field_path=('interval',)] invalid_value
+  PollOptions.max_wait None = None
+  PollOptions.max_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 0.5 = 0.5
+  PollOptions.max_wait 1 = 1
+  PollOptions.max_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.max_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_wait') [field_path=('max_wait',)] invalid_value
+  PollOptions.total_timeout None = None
+  PollOptions.total_timeout 0 = 0
+  PollOptions.total_timeout 0.0 = 0.0
+  PollOptions.total_timeout 0.5 = 0.5
+  PollOptions.total_timeout 1 = 1
+  PollOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PollOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.idle_timeout None = None
+  StreamOptions.idle_timeout 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 0.5 = 0.5
+  StreamOptions.idle_timeout 1 = 1
+  StreamOptions.idle_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.idle_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idle_timeout') [field_path=('idle_timeout',)] invalid_value
+  StreamOptions.reconnect True = True
+  StreamOptions.reconnect False = False
+  StreamOptions.reconnect None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.reconnect 'yes' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='reconnect') [field_path=('reconnect',)] invalid_value
+  StreamOptions.max_reconnects None = None
+  StreamOptions.max_reconnects 0 = 0
+  StreamOptions.max_reconnects 1 = 1
+  StreamOptions.max_reconnects 2**63 = 9223372036854775808
+  StreamOptions.max_reconnects -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects True ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects 1.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnects '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnects') [field_path=('max_reconnects',)] invalid_value
+  StreamOptions.max_reconnect_wait None = None
+  StreamOptions.max_reconnect_wait 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 0.5 = 0.5
+  StreamOptions.max_reconnect_wait 1 = 1
+  StreamOptions.max_reconnect_wait -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.max_reconnect_wait '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_reconnect_wait') [field_path=('max_reconnect_wait',)] invalid_value
+  StreamOptions.total_timeout None = None
+  StreamOptions.total_timeout 0 = 0
+  StreamOptions.total_timeout 0.0 = 0.0
+  StreamOptions.total_timeout 0.5 = 0.5
+  StreamOptions.total_timeout 1 = 1
+  StreamOptions.total_timeout -1 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout False ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout nan ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout inf ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout 10**1000 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  StreamOptions.total_timeout '1' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='total_timeout') [field_path=('total_timeout',)] invalid_value
+  PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, total_timeout=UNSET) UNSET=True
+  PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET, total_timeout=UNSET) UNSET=True
+  StreamOptions omitted=StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=UNSET) UNSET=True
+  pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
+  poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
+  stream total timeout = StreamOptions(idle_timeout=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET, total_timeout=1)
+  stream reconnect without limit = StreamOptions(idle_timeout=UNSET, reconnect=True, max_reconnects=0, max_reconnect_wait=UNSET, total_timeout=UNSET)
+  explicit UNSET = PollOptions(max_polls=UNSET, interval=UNSET, max_wait=None, total_timeout=UNSET)
+  all limits = StreamOptions(idle_timeout=None, reconnect=True, max_reconnects=None, max_reconnect_wait=0.25, total_timeout=UNSET)
+  client helper_defaults keyword=KEYWORD_ONLY default=None helper keywords=['helper_defaults', 'cache_stores'] view keyword=False request field=False
+  client helper defaults = None
+  client empty helper defaults = None
+  client stream defaults = None
+  client defaults of a helper it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] unknown_field
+  client defaults of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client webhook options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.jobs.run') [field_path=('helper_defaults', 'jobs.run')] invalid_value
+  client defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client defaults value mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.pages.all') [field_path=('helper_defaults', 'pages.all')] invalid_value
+  client protocols ! TypeError: Client.__init__() got an unexpected keyword argument 'protocols' []
+  view helper defaults ! TypeError: ClientView.with_options() got an unexpected keyword argument 'helper_defaults' []
+  request helper defaults ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'helper_defaults' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_msgspec_struct.options' has no attribute 'MissingProtocolType' []
+  options dir = []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
+  errors dir = ['ProtocolDataError']
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured client list = [Pet(id=1, name='cat', tag=UNSET)]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  configured view list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  default helper settings list = []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  async configured client list = [Pet(id=2, name='dog', tag=UNSET)]

@@ -1,0 +1,3 @@
+# marker-references
+render pydantic_v2.BaseModel default
+  diagnostic Error: Invalid external $ref: #/components/schemas/Holder/properties/o#-datamodel-code-generator-#-a

@@ -1,0 +1,30 @@
+{
+  "omitted": {
+    "cat": {"petType": "cat", "meow": "yes"},
+    "dog": {"petType": "dog", "bark": "yes"}
+  },
+  "ordinary": {
+    "cat": {"petType": "cat", "kind": "ordinary"},
+    "dog": {"petType": "dog", "kind": "ordinary"}
+  },
+  "matching": {
+    "cat": {"petType": "cat", "kind": "cat", "meow": "yes"},
+    "dog": {"petType": "dog", "kind": "dog", "bark": "yes"}
+  },
+  "matching_outputs": {
+    "petType": {
+      "cat": {"petType": "cat", "kind": "cat", "meow": "yes"},
+      "dog": {"petType": "dog", "kind": "dog", "bark": "yes"}
+    },
+    "wireKind": {
+      "cat": {"wireKind": "cat", "kind": "cat", "meow": "yes"},
+      "dog": {"wireKind": "dog", "kind": "dog", "bark": "yes"}
+    }
+  },
+  "invalid_tag": {"petType": "bird"},
+  "unrelated": {"petType": "hello"},
+  "unrelated_outputs": {
+    "petType": {"petType": "hello"},
+    "wireKind": {"wireKind": "hello"}
+  }
+}

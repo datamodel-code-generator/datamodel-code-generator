@@ -1,0 +1,9 @@
+type Query {
+  film: Film
+}
+
+type Film {
+  title: String!
+  director: String
+  episode: Int!
+}

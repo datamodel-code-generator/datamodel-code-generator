@@ -1,0 +1,17 @@
+{{ class_name }} = dataclass(
+    type(
+        '{{ class_name }}',
+        (),
+        {
+            '__module__': __name__,
+            '__annotations__': {
+{%- for field in fields %}
+                '{{ field.name }}': {{ field.type_hint }},
+{%- endfor %}
+            },
+{%- for field in fields %}
+            '{{ field.name }}': {{ field.represented_default }},
+{%- endfor %}
+        },
+    )
+)

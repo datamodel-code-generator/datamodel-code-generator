@@ -1,0 +1,8 @@
+{
+  "code": 1,
+  "prepared": [
+    ".coverage.stale"
+  ],
+  "stderr": "Coverage destination already contains input files\n",
+  "stdout": ""
+}

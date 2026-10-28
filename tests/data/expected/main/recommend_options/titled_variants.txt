@@ -1,0 +1,74 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
+  components                       2, 0 operations
+  inline objects / enums           2 / 0, nesting depth 1
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    2 objects, most repeated 1 (Card x1, Bank Account x1)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261027
+
+Add (1 option)
+  --use-title-as-name   [titles.names-from-unique-titles]
+      Inline union variants carry titles that no other schema uses (titled variants: 2, e.g. Card
+      x1, Bank Account x1). Titles name them after what they are, instead of their parent property
+      and a number.
+      measured: Train Travel API: BookingPayment.source variants became Card and BankAccount instead
+      of Source and Source1
+      trial: preset -> recommended - union-variant-names: classes 4 -> 4, problem names 1 -> 0; 2 of
+      4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        Payment -> Card   at components/schemas/Booking > payment > oneOf 0
+        Payment1 -> BankAccount   at components/schemas/Booking > payment > oneOf 1
+
+Left out after the trial (the rules recommend these)
+  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+      sibling shares: 2; objects with one required key: 0); otherwise they are named after their
+      parent and a number.
+      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+      (Changes23 -> ChangesBody)
+      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+      WorkflowDispatchInputString, Boolean, ...)
+      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+      schemas without tagged or key branches: no change
+      trial: recommended - union-variant-names -> recommended: classes 4 -> 4, problem names 0 -> 0;
+      0 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Trial  5 candidates generated in memory without formatting; nothing written
+  candidate                          classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                                  4  1 (25.0%)         1     0        0          0       7              0
+  preset                                   4  1 (25.0%)         1     0        0          0       7              0
+  recommended                              4   0 (0.0%)         0     0        0          0       7              0
+  recommended - title-source               4   0 (0.0%)         0     0        0          0      11              0
+  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7              0   selected
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> recommended - union-variant-names)
+  2 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+    Payment -> Card   at components/schemas/Booking > payment > oneOf 0
+    Payment1 -> BankAccount   at components/schemas/Booking > payment > oneOf 1
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input titled_variants.yaml --preset standard-py314-20261027 --target-python-version 3.14 --use-title-as-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "titled_variants.yaml"
+  preset = "standard-py314-20261027"
+  target-python-version = "3.14"
+  use-title-as-name = true

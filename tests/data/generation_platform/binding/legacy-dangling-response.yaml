@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: Pet store
+  version: '1'
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          description: A page of pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        '404':
+          $ref: '#/components/responses/PetNotFound'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string

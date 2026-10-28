@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MissingSentinelPayload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["value", "requiredNullable"],
+  "properties": {
+    "value": {
+      "type": "integer"
+    },
+    "requiredNullable": {
+      "type": ["integer", "null"]
+    },
+    "optionalValue": {
+      "type": "integer"
+    },
+    "nullableOptional": {
+      "type": ["integer", "null"]
+    }
+  }
+}

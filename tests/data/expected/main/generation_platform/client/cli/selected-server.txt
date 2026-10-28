@@ -1,0 +1,2 @@
+server True
+client False

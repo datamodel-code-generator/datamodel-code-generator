@@ -1,0 +1,11 @@
+# unaccepted
+serve pydantic_v2.BaseModel
+service DefaultService: get_codes, get_file, get_item, get_menu, get_note, get_pair, get_ratios, get_serving, get_sizes, repeat, search
+service DefaultService without its methods: TypeError
+> GET /pairs/ab/2/3/of/3
+  get_pair(pair='ab', kind=2, part=3, X_Rank=None)
+< 204 - b''
+> GET /pairs/AB/x/y/of/y
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "pair.id"]}, {"type": "int_parsing", "loc": ["path", "class"]}, {"type": "int_parsing", "loc": ["path", "part"]}]
+> GET /pairs/ab/2/y/of/y
+< 422 application/json [{"type": "int_parsing", "loc": ["path", "part"]}]

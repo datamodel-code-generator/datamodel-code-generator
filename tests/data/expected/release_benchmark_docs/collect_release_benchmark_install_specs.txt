@@ -1,0 +1,3 @@
+release: datamodel-code-generator[ruff]==0.65.0
+main: datamodel-code-generator[ruff] @ git+https://github.com/datamodel-code-generator/datamodel-code-generator.git@main
+pinned-main: datamodel-code-generator[ruff] @ git+https://github.com/datamodel-code-generator/datamodel-code-generator.git@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

@@ -1,0 +1,79 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Metadata reference ownership",
+    "version": "1"
+  },
+  "security": [
+    {
+      "Key": []
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Key": {
+        "$ref": "#/components/securitySchemes/ActualKey"
+      },
+      "ActualKey": {
+        "$ref": "#/components/securitySchemes/Key"
+      }
+    },
+    "links": {
+      "Next": {
+        "operationId": "readItem",
+        "parameters": {
+          "id": "$response.body#/id"
+        }
+      }
+    }
+  },
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "readItem",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "allowReserved": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            },
+            "links": {
+              "next": {
+                "$ref": "#/components/links/Next"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

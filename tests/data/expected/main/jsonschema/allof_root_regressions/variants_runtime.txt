@@ -1,0 +1,61 @@
+[
+  {
+    "model": "RootRequest",
+    "native": true,
+    "value": [
+      {
+        "y": 2
+      }
+    ]
+  },
+  {
+    "model": "RootRequest",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootRequest",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootRequest",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootRequest",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootResponse",
+    "native": true,
+    "value": [
+      {
+        "x": 1,
+        "y": 2
+      }
+    ]
+  },
+  {
+    "model": "RootResponse",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootResponse",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootResponse",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "RootResponse",
+    "native": false,
+    "error": "ValidationError"
+  }
+]

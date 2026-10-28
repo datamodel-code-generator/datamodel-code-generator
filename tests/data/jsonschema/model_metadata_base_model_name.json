@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "base_model": {
+      "$ref": "#/$defs/BaseModel"
+    }
+  },
+  "required": ["base_model"],
+  "$defs": {
+    "BaseModel": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": ["value"]
+    }
+  }
+}

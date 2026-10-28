@@ -13,10 +13,7 @@ class RCloneConfig(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, float | str | bool | dict[str, Any] | None],
+    }
     type: str
-
-
-RCloneConfig.__annotations__['__pydantic_extra__'] = Dict[
-    str, float | str | bool | dict[str, Any] | None
-]
-RCloneConfig.model_rebuild(force=True)

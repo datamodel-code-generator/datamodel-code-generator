@@ -1,0 +1,17 @@
+{
+  "order": [
+    "first",
+    "values",
+    "last"
+  ],
+  "values": {
+    "values": {
+      "type": "list",
+      "value": [
+        1,
+        1,
+        2
+      ]
+    }
+  }
+}

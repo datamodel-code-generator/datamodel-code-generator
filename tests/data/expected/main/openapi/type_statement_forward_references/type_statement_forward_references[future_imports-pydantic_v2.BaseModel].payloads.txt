@@ -1,0 +1,11 @@
+Holder {"early": ["a"], "chain": [{"value": "x", "next": [{"value": "y"}]}], "chains": [[{"value": "z"}], []]}: schema accepts, model accepts
+Holder {"early": [1]}: schema rejects, model rejects (string_type)
+Holder {"chain": "x"}: schema rejects, model rejects (list_type)
+Holder {"chain": [1]}: schema rejects, model rejects (model_type)
+Holder {"chain": [{"value": 1}]}: schema rejects, model rejects (string_type)
+Holder {"chain": [{"next": [{"value": 2}]}]}: schema rejects, model rejects (string_type)
+Holder {"chains": [["z"]]}: schema rejects, model rejects (model_type)
+Bag {"name": "n", "extra": [{"name": "m", "other": [1]}, 3]}: schema accepts, model accepts
+Bag {"name": 1}: schema rejects, model rejects (string_type)
+Bag {"extra": "no"}: schema rejects, model rejects (list_type)
+Bag {"extra": ["no"]}: schema rejects, model rejects (model_type)

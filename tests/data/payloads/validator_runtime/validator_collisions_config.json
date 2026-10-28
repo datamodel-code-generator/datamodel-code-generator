@@ -1,0 +1,64 @@
+{
+  "Collision": {
+    "validators": [
+      {
+        "field": "x",
+        "function": "tests.data.python.validator_collision_first.validate",
+        "mode": "before"
+      },
+      {
+        "fields": [
+          "x",
+          "y"
+        ],
+        "function": "tests.data.python.validator_collision_first.validate"
+      },
+      {
+        "field": "x",
+        "function": "tests.data.python.validator_collision_second.validate"
+      },
+      {
+        "field": "y",
+        "function": "tests.data.python.validator_collision_first.plain",
+        "mode": "plain"
+      },
+      {
+        "field": "y",
+        "function": "tests.data.python.validator_collision_first.wrap",
+        "mode": "wrap"
+      },
+      {
+        "field": "x",
+        "function": "tests.data.python.validator_collision_first.Any"
+      },
+      {
+        "field": "x",
+        "function": "tests.data.python.validator_collision_first.Other"
+      }
+    ]
+  },
+  "Other": {
+    "validators": [
+      {
+        "field": "value",
+        "function": "tests.data.python.validator_collision_second.validate"
+      }
+    ]
+  },
+  "Base": {
+    "validators": [
+      {
+        "field": "value",
+        "function": "tests.data.python.validator_collision_first.validate"
+      }
+    ]
+  },
+  "Child": {
+    "validators": [
+      {
+        "field": "value",
+        "function": "tests.data.python.validator_collision_second.validate"
+      }
+    ]
+  }
+}

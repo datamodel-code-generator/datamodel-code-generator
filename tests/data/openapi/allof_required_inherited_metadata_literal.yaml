@@ -1,0 +1,31 @@
+openapi: "3.0.0"
+info:
+  title: Required inherited metadata literal
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    MetadataLiteralBase:
+      type: object
+      properties:
+        metadataOnly:
+          type: string
+          metadata:
+            note: contains default= text
+        mutableWithMetadata:
+          type: array
+          items:
+            type: string
+          default: []
+          metadata:
+            note: mutable default
+
+    MetadataLiteralChild:
+      allOf:
+        - $ref: "#/components/schemas/MetadataLiteralBase"
+        - type: object
+          required:
+            - newRequired
+          properties:
+            newRequired:
+              type: integer

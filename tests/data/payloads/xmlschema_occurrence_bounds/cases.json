@@ -1,0 +1,1242 @@
+[
+  {
+    "name": "sequence_2_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "sequence_2_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_unbounded_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_unbounded_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_None_None",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": "x"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_1_1",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": "x"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_unbounded_None",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_None_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_0_2",
+    "samples": [
+      {
+        "xml": "<Root></Root>",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "sequence_2_0",
+    "samples": [
+      {
+        "xml": "<Root></Root>",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "choice_2_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "choice_unbounded_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "choice_2_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "group_2_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "group_unbounded_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "group_2_2",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "nested_unbounded_finite",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "nested_finite_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "name": "list_2_unbounded",
+    "samples": [
+      {
+        "xml": "<Root><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2 3</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "list_unbounded_2",
+    "samples": [
+      {
+        "xml": "<Root><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2 3</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "list_2_2",
+    "samples": [
+      {
+        "xml": "<Root><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        "valid": false
+      },
+      {
+        "xml": "<Root><value>1 2 3</value></Root>",
+        "data": {
+          "value": [
+            [
+              1,
+              2,
+              3
+            ]
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "list_None_None",
+    "samples": [
+      {
+        "xml": "<Root><value>1 2</value></Root>",
+        "data": {
+          "value": [
+            1,
+            2
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>1 2 3</value></Root>",
+        "data": {
+          "value": [
+            1,
+            2,
+            3
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "name": "ref_unbounded_finite",
+    "samples": [
+      {
+        "xml": "<Root><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "xml": "<Root><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value><value>x</value></Root>",
+        "data": {
+          "value": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        "valid": true
+      }
+    ]
+  }
+]

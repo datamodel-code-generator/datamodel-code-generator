@@ -9,6 +9,7 @@ datamodel-codegen \
     --input person.json \
     --input-file-type jsonschema \
     --output-model-type pydantic_v2.BaseModel \
+    --use-annotated \
     --output model.py
 ```
 
@@ -53,19 +54,23 @@ datamodel-codegen \
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, conint
+from pydantic import BaseModel, Field
 
 
 class Person(BaseModel):
-    firstName: str | None = Field(None, description="The person's first name.")
-    lastName: str | None = Field(None, description="The person's last name.")
-    age: conint(ge=0) | None = Field(
-        None, description='Age in years which must be equal to or greater than zero.'
-    )
-    friends: list | None = None
-    comment: Any | None = None
+    firstName: Annotated[str | None, Field(description="The person's first name.")] = None
+    lastName: Annotated[str | None, Field(description="The person's last name.")] = None
+    age: Annotated[
+        int | None,
+        Field(
+            description="Age in years which must be equal to or greater than zero.",
+            ge=0,
+        ),
+    ] = None
+    friends: list[Any] | None = None
+    comment: Annotated[None, Field(None)] = None
 ```
 
 ## Tuple validation
@@ -79,6 +84,16 @@ When:
 - `minItems`/`maxItems` match the number of prefix entries
 
 datamodel-code-generator emits precise tuple annotations.
+
+With `--use-tuple-for-closed-arrays`, the length bounds of a `prefixItems` array may also fix its length: for example
+with `items: false` (or `unevaluatedItems: false`) and a `minItems` equal to the number of prefix entries. Positions
+beyond the prefix entries take the `items` schema.
+When bounds other than equal `minItems` and `maxItems` fix the length, the array stays a list with its length
+constraints if the list's item schemas (the allowed positions and the `items` schema) accept the same values; that
+list is exact as well. They are compared without annotations (`title`, `description`, `examples`, `example`,
+`default`, `deprecated`, `readOnly`, `writeOnly`, `$comment`) and `x-` keys, with a `$ref` entry read as its target
+and `type: [T]` read as `type: T`. A tuple cannot hold `uniqueItems`: with `--use-unique-items-as-set` it stays a
+tuple and a warning names the field generated without uniqueness, unless `--generate-schema-validators` checks it.
 
 ### Example
 
@@ -202,10 +217,82 @@ When multiple base class configurations are present, they are resolved in this o
 
 This allows you to set a default base class with `--base-class`, override specific models in the schema with `customBasePath`, and further override at the CLI level with `--base-class-map`.
 
+## Supported JSON Schema Features
+
+| Feature | Generation behavior |
+|---------|---------------------|
+| Object properties and required fields | Generated as model fields |
+| `$ref`, `$defs`, and `definitions` | Resolved before model generation |
+| `oneOf`, `anyOf`, `allOf` | Converted into unions and composed models where possible |
+| Scalar constraints | Generated as `Field(...)` metadata with `--field-constraints` / `--use-annotated` |
+| `format` values | Mapped to Python/Pydantic types where supported |
+| Custom extensions | `customBasePath` and related options can steer generated base classes |
+
+## Regular Expression Patterns
+
+Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the
+pattern when the model class is created. Some syntax that Python's `re` accepts is rejected by every
+pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output from JSON Schema and
+OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
+the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
+the installed pydantic-core or on the Python running the generator, and it is the same for every
+`--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
+whatever the target, and the generation warns when the target is older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
+with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
+
+| Pattern syntax | Example | Generated model |
+|----------------|---------|-----------------|
+| Lookahead and lookbehind | `(?=x)`, `(?<!x)` | `python-re` |
+| Numbered backreferences and octal escapes | `([a-z])\1`, `\0`, `[\101]` | `python-re` |
+| Named backreferences | `(?P<c>x)(?P=c)` | `python-re` |
+| Conditionals | `(<)?a(?(1)>)` | `python-re` |
+| End of string | `\Z` | `python-re` |
+| Comments | `(?#note)` | `python-re` |
+| Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
+| Backspace in a character class | `[\b]` | `python-re` |
+| ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
+| Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
+| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
+| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
+| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
+| Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
+| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
+
+Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
+Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
+Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted. A `pattern` on `bytes`
+(`format: binary`) is written only with `--field-constraints` or `--use-annotated`. On plain and optional `bytes`
+fields Pydantic 2.0 to 2.10 rejects any such pattern at import, Pydantic 2.11 to 2.13 ignores it, and Pydantic 2.14
+compiles it like a string pattern, so the rules also apply to it with `--target-pydantic-version 2.14`. With an
+unset or older target the model keeps the default engine for its other patterns, and a `bytes` pattern that the Rust
+engine rejects fails at import on Pydantic 2.14. Pydantic 2.12 also compiles the pattern of a `bytes | MISSING`
+field (`--use-missing-sentinel`), so such a pattern fails at import there too. A union that has a string member
+beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
+the generation warns about every `bytes` pattern it writes (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
+Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
+example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
+linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
+validate untrusted input.
+
+## Limitations
+
+JSON Schema input generates Python model definitions. It does not perform runtime validation by itself, and some
+schema keywords are represented as type hints or field metadata rather than full JSON Schema validator behavior. See
+[Schema Version Support](supported_formats.md) for version-specific coverage.
+
 ---
 
 ## 📖 See Also
 
+- 🚀 [Getting Started](getting-started.md) - Installation and first model
 - 🖥️ [CLI Reference](cli-reference/index.md) - Complete CLI options reference
 - 🔧 [CLI Reference: Typing Customization](cli-reference/typing-customization.md) - Type annotation options
 - 🏷️ [CLI Reference: Field Customization](cli-reference/field-customization.md) - Field naming and constraint options

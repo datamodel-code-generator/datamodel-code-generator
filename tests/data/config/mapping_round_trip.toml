@@ -1,0 +1,9 @@
+[tool.datamodel-codegen]
+disable-timestamp = true
+input = "schema.json"
+input-file-type = "jsonschema"
+output-model-type = "pydantic_v2.BaseModel"
+target-python-version = "3.10"
+aliases = {firstName = "given_name", lastName = "family_name"}
+default-values = {firstName = "O'Brien $HOME", age = 30}
+model-name-map = {Person = "Human"}

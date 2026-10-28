@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tree.json",
+  "$defs": {
+    "Tree": {"$ref": "#/$defs/node", "required": ["value"]},
+    "node": {
+      "type": "object",
+      "properties": {
+        "value": {"$dynamicRef": "#item"},
+        "children": {"type": "array", "items": {"$ref": "#/$defs/node"}}
+      }
+    },
+    "item": {"$dynamicAnchor": "item", "not": true}
+  }
+}

@@ -1,0 +1,2 @@
+# later-routes
+paths ['/pets', '/pets/mine', '/pets/{petId}', '/store/inventory']

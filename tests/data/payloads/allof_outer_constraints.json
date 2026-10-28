@@ -1,0 +1,463 @@
+[
+  {
+    "name": "length",
+    "valid": [
+      "a",
+      "abc"
+    ],
+    "invalid": [
+      "",
+      "abcd"
+    ],
+    "normal": false,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "minimum",
+    "valid": [
+      "abc",
+      "abcd"
+    ],
+    "invalid": [
+      "",
+      "ab"
+    ],
+    "normal": false,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "number",
+    "valid": [
+      0,
+      5
+    ],
+    "invalid": [
+      -1,
+      6
+    ],
+    "normal": false,
+    "error_type": "greater_than_equal"
+  },
+  {
+    "name": "multiple",
+    "valid": [
+      0,
+      6,
+      12
+    ],
+    "invalid": [
+      2,
+      3,
+      7
+    ],
+    "normal": false,
+    "error_type": "multiple_of"
+  },
+  {
+    "name": "redundant",
+    "valid": [
+      "a",
+      "abc"
+    ],
+    "invalid": [
+      "",
+      "abcd"
+    ],
+    "normal": true,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "description",
+    "valid": [
+      "a",
+      "abcd"
+    ],
+    "invalid": [
+      ""
+    ],
+    "normal": true,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "ordinary",
+    "valid": [
+      "a",
+      "abcd"
+    ],
+    "invalid": [
+      ""
+    ],
+    "normal": true,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "same_pattern",
+    "valid": [
+      "a",
+      "ba"
+    ],
+    "invalid": [
+      "",
+      "bb"
+    ],
+    "normal": true,
+    "error_type": "string_too_short"
+  },
+  {
+    "name": "enum",
+    "valid": [
+      "bb"
+    ],
+    "invalid": [
+      "a",
+      ""
+    ],
+    "normal": false,
+    "error_type": "string_too_short",
+    "literal_invalid": [
+      "ccc"
+    ]
+  },
+  {
+    "name": "const",
+    "valid": [
+      "ab"
+    ],
+    "invalid": [
+      ""
+    ],
+    "normal": false,
+    "error_type": "string_too_short",
+    "validator_error_type": "value_error",
+    "literal_invalid": [
+      "bc"
+    ]
+  },
+  {
+    "name": "format",
+    "valid": [
+      "long-email@example.com"
+    ],
+    "invalid": [
+      "not-an-email",
+      "",
+      "a@example.com"
+    ],
+    "normal": false,
+    "error_type": "value_error"
+  },
+  {
+    "name": "unknown_format",
+    "valid": [
+      "ok",
+      ""
+    ],
+    "invalid": [
+      1
+    ],
+    "error_type": "string_type",
+    "expected_constraints": false,
+    "warning": "format of 'custom-string' not understood for 'string' - using default"
+  },
+  {
+    "name": "no_format",
+    "valid": [
+      "ok",
+      ""
+    ],
+    "invalid": [
+      1
+    ],
+    "error_type": "string_type",
+    "expected_constraints": false
+  },
+  {
+    "name": "date_time",
+    "valid": [
+      "2026-01-01T00:00:00Z",
+      "1960-01-01T00:00:00Z"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "datetime_type",
+    "expected_constraints": false,
+    "dump_file": "date_time_dump.txt"
+  },
+  {
+    "name": "unknown_length",
+    "valid": [
+      "ok",
+      "yes"
+    ],
+    "invalid": [
+      ""
+    ],
+    "error_type": "string_too_short",
+    "expected_constraints": true,
+    "warning": "format of 'custom-string' not understood for 'string' - using default"
+  },
+  {
+    "name": "date_time_length",
+    "valid": [
+      "2026-01-01T00:00:00Z",
+      "1960-01-01T00:00:00Z"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "datetime_type",
+    "expected_constraints": false,
+    "dump_file": "date_time_dump.txt"
+  },
+  {
+    "name": "date_time_as_string",
+    "schema": "date_time_length",
+    "valid": [
+      "2026-01-01T00:00:00Z",
+      "1960-01-01T00:00:00Z"
+    ],
+    "invalid": [
+      "",
+      "2026-01-01T00:00:00.123456789012345Z"
+    ],
+    "error_type": "string_too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "string+date-time=string"
+    ]
+  },
+  {
+    "name": "mapped_date_time_length",
+    "valid": [
+      "2026-01-01T00:00:00Z",
+      "1960-01-01T00:00:00Z"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "datetime_type",
+    "expected_constraints": false,
+    "dump_file": "date_time_dump.txt",
+    "type_mappings": [
+      "string+custom-string=date-time"
+    ]
+  },
+  {
+    "name": "nullable_date_time_length",
+    "valid": [
+      "2026-01-01T00:00:00Z",
+      "1960-01-01T00:00:00Z",
+      null
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "datetime_type",
+    "expected_constraints": false,
+    "dump_file": "nullable_date_time_dump.txt"
+  },
+  {
+    "name": "mapped_number",
+    "schema": "unknown_format",
+    "valid": [
+      "2"
+    ],
+    "invalid": [
+      0
+    ],
+    "error_type": "greater_than_equal",
+    "expected_constraints": true,
+    "dump_file": "mapped_number_dump.txt",
+    "type_mappings": [
+      "string+custom-string=integer"
+    ]
+  },
+  {
+    "name": "integer_date_time_bounds",
+    "valid": [
+      1,
+      10
+    ],
+    "invalid": [
+      -1,
+      11
+    ],
+    "error_type": "greater_than_equal",
+    "expected_constraints": true,
+    "datetime_class": "datetime",
+    "dump_file": "numeric_date_time_dump.txt"
+  },
+  {
+    "name": "number_date_time_bounds",
+    "valid": [
+      1,
+      10
+    ],
+    "invalid": [
+      -1,
+      11
+    ],
+    "error_type": "greater_than_equal",
+    "expected_constraints": true,
+    "datetime_class": "datetime",
+    "dump_file": "numeric_date_time_dump.txt"
+  },
+  {
+    "name": "number_mapped_string_length",
+    "valid": [
+      "okay"
+    ],
+    "invalid": [
+      "x",
+      "toolong"
+    ],
+    "error_type": "string_too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "number+custom-number=string"
+    ],
+    "mapped_schema": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4
+    }
+  },
+  {
+    "name": "number_mapped_email_length",
+    "valid": [
+      "long-email@example.com"
+    ],
+    "invalid": [
+      "a@example.com",
+      "very-long-email@example.com"
+    ],
+    "error_type": "too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "number+custom-number=email"
+    ],
+    "mapped_schema": {
+      "type": "string",
+      "minLength": 18,
+      "maxLength": 24,
+      "format": "email"
+    }
+  },
+  {
+    "name": "number_mapped_binary_length",
+    "valid": [
+      "okay"
+    ],
+    "invalid": [
+      "x",
+      "toolong"
+    ],
+    "error_type": "bytes_too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "number+custom-number=binary"
+    ],
+    "mapped_schema": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4
+    },
+    "schema": "number_mapped_string_length",
+    "dump_file": "mapped_binary_dump.txt"
+  },
+  {
+    "name": "number_mapped_password_length",
+    "valid": [
+      "okay"
+    ],
+    "invalid": [
+      "x",
+      "toolong"
+    ],
+    "error_type": "too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "number+custom-number=password"
+    ],
+    "mapped_schema": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4
+    },
+    "schema": "number_mapped_string_length",
+    "dump_file": "mapped_password_dump.txt",
+    "python_validation": true
+  },
+  {
+    "name": "number_mapped_hostname_length",
+    "valid": [
+      "okay"
+    ],
+    "invalid": [
+      "x",
+      "toolong"
+    ],
+    "error_type": "string_too_short",
+    "expected_constraints": true,
+    "type_mappings": [
+      "number+custom-number=hostname"
+    ],
+    "mapped_schema": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4
+    },
+    "schema": "number_mapped_string_length",
+    "expected_case": "number_mapped_string_length"
+  },
+  {
+    "name": "date_length",
+    "valid": [
+      "2026-01-01"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "date_type",
+    "expected_constraints": false,
+    "dump_file": "date_length_dump.txt"
+  },
+  {
+    "name": "duration_length",
+    "valid": [
+      "PT1S"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "time_delta_type",
+    "expected_constraints": false,
+    "dump_file": "duration_length_dump.txt"
+  },
+  {
+    "name": "uuid4_length",
+    "valid": [
+      "00000000-0000-4000-8000-000000000000"
+    ],
+    "invalid": [
+      "",
+      []
+    ],
+    "error_type": "uuid_parsing",
+    "expected_constraints": false,
+    "dump_file": "uuid4_length_dump.txt"
+  },
+  {
+    "name": "ipv4_length",
+    "valid": [
+      "127.0.0.1"
+    ],
+    "invalid": [
+      []
+    ],
+    "error_type": "ip_v4_address",
+    "expected_constraints": false,
+    "dump_file": "ipv4_length_dump.txt"
+  }
+]

@@ -1,0 +1,29 @@
+openapi: "3.0.0"
+info:
+  title: External required inherited references
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ExternalDerived:
+      $ref: "./schemas/inherited.yaml#/ExternalDerived"
+    ExternalNestedWrapper:
+      allOf:
+        - allOf:
+            - $ref: "./schemas/inherited.yaml#/ExternalDerived"
+          properties:
+            detail: {}
+            mapping: {}
+            responseOnly:
+              type: string
+              readOnly: true
+    ExternalWriteOnlyWrapper:
+      allOf:
+        - allOf:
+            - $ref: "./schemas/inherited.yaml#/ExternalDerived"
+          properties:
+            detail: {}
+            mapping: {}
+            requestOnly:
+              type: string
+              writeOnly: true

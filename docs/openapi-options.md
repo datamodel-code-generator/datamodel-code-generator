@@ -1,8 +1,12 @@
 <!-- related-cli-options: --openapi-scopes, --include-path-parameters, --use-operation-id-as-name, --read-only-write-only-model-type, --validation -->
 
-# OpenAPI-Specific Options
+# OpenAPI Options
 
 When working with OpenAPI specifications, datamodel-code-generator provides several options to control how schemas, operations, and special properties are handled. This page explains when and how to use each option.
+
+This page is a task-oriented guide for OpenAPI-specific generation behavior. For input format basics, see
+[Generate from OpenAPI](openapi.md). For every flag, choice, and generated example, see
+[CLI Reference: OpenAPI-only Options](cli-reference/openapi-only-options.md).
 
 ## Quick Overview
 
@@ -23,8 +27,12 @@ Controls which sections of the OpenAPI specification to generate models from.
 | Scope | Description |
 |-------|-------------|
 | `schemas` | Generate from `#/components/schemas` (default) |
-| `parameters` | Generate from `#/components/parameters` |
-| `paths` | Generate from path operation parameters |
+| `api` | Generate schema declarations throughout the API, including typed components, parameters, headers, callbacks, and webhooks |
+| `parameters` | Include parameter models for operations selected by `paths` or `webhooks` |
+| `paths` | Generate models from path operation request bodies and responses |
+| `webhooks` | Generate models from webhook operation request bodies and responses |
+
+The `api` scope is available for OpenAPI input only; AsyncAPI input with `api` stops with an error. AsyncAPI input does not read the other scopes either: it generates models from every location that holds a schema.
 
 ### Default behavior (schemas only)
 
@@ -34,41 +42,114 @@ datamodel-codegen --input openapi.yaml --output models.py
 
 Generates models only from `#/components/schemas`.
 
-### Include parameters
+### Generate all API declarations
+
+```bash
+datamodel-codegen --input openapi.yaml --output models.py --openapi-scopes api
+```
+
+The `api` scope collects component schemas, typed parameter/request-body/response/header
+components, root paths, webhooks, reusable Path Items, and callbacks. It includes all
+request and response media, response headers, and applicable multipart encoding headers.
+OpenAPI version rules determine which declarations apply. Repeated references share
+one declaration's generated models, and callback cycles terminate without expanding
+models indefinitely.
+
+Parameters generate individual schema types, including path parameters regardless of
+`--include-path-parameters`. The legacy aggregate parameter wrapper is specific to the
+`parameters` scope without `api`.
+
+Parameter schemas (path, query, header, and cookie parameters) that would be emitted as
+root models are emitted exactly as `--use-type-alias` emits them, for every output model
+type and option combination: `type LimitParameter = Annotated[int, Field(ge=1, le=100)]`
+on Python 3.12+ and `TypeAliasType` below 3.12. Object parameters stay models. Anything
+that references a parameter schema, including another schema, references its alias. An
+alias has no default value, so the model no longer applies a parameter schema's scalar
+default. Component schemas, response headers, and the other scopes keep their usual
+models.
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, parameter schemas that 0.83.0 generated as root models, such as a Pydantic
+    `RootModel`, are now type aliases, as `--use-type-alias` emits them. Code that constructed one, such as
+    `LimitParameter(5)`, or read its `.root` uses the plain value instead. See
+    [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-parameters).
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, a model derived from a schema inside `paths` is named after the operation without
+    the `Field` prefix 0.83.0 put before it: `FieldPetsGetResponse` is now `PetsGetResponse`. The separators of a
+    path are dropped, `/` alone becomes `Root` (`RootGetResponse`), and a name that starts with a digit keeps `Field`
+    (`Field2faCodesGetResponse` for `/2fa/codes`). A derived name that a component schema already holds takes a
+    numeric suffix, so a component `OrdersGetResponse` keeps its name and the model of `GET /orders` becomes
+    `OrdersGetResponse1`. Code that imports a derived model by its old name uses the new one instead. Component
+    schemas and `$ref` targets keep their names.
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, a `$ref` beside only annotations in a parameter, request body, or response schema
+    is the referenced model itself, not a derived `RootModel` that wraps it, as it is for a property. The siblings
+    that count as annotations are `description`, `title`, `examples`, `example`, `default`, `deprecated`, `readOnly`,
+    `writeOnly`, `externalDocs`, `$comment`, and `x-` extensions. A `$ref` beside a keyword that changes its values,
+    such as `minLength`, `maxItems`, or `properties`, still has a derived model, and so does one beside
+    only `nullable: true`, unlike a property where it becomes `Optional`. See
+    [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-references).
+
+Adding other scopes alongside `api` does not repeat schema generation. `--openapi-include-paths` filters root paths and their reachable
+callbacks; webhooks and standalone components retain their declarations.
+
+Use standard JSON Pointer escaping in references: `~1` represents a slash in a key and
+`~0` represents a tilde. API scope rejects malformed or ambiguous pointer spellings.
+An API with no model declarations emits no model artifact and preserves an existing
+output file. Explicit model metadata can still describe an empty inventory.
+
+For Python generation, pass `openapi_scopes=[OpenAPIScope.Api]` to `generate()` or
+`GenerateConfig`. Direct parser consumers use
+`datamodel_code_generator.parser.openapi_scope.ApiOpenAPIParser` with an
+`OpenAPIParserConfig` that explicitly includes `OpenAPIScope.Api`. Existing scopes
+continue to use `OpenAPIParser`; the default remains `schemas`.
+
+### Include operation schemas
 
 ```bash
 datamodel-codegen --input openapi.yaml --output models.py \
-  --openapi-scopes schemas parameters
+  --openapi-scopes schemas paths
 ```
 
-Also generates models from `#/components/parameters`.
+Also generates models from operation request bodies and responses.
 
-### Include path-level definitions
+### Include operation parameter models
 
 ```bash
 datamodel-codegen --input openapi.yaml --output models.py \
   --openapi-scopes schemas parameters paths
 ```
 
-Generates models from all sources, including inline path operation parameters.
+Also generates a query parameter model for each operation that has query parameters.
+Add `--include-path-parameters` to include URL path parameters in these models.
+Parameters can be declared inline or referenced from `#/components/parameters`.
+Unreferenced entries in `components.parameters` do not generate standalone models,
+and the `parameters` scope alone does not select operations.
 
 ### When to use each scope
 
 | Use Case | Recommended Scopes |
 |----------|-------------------|
 | Basic model generation | `schemas` (default) |
-| Reusable parameter types | `schemas parameters` |
-| Complete API coverage | `schemas parameters paths` |
+| Request and response models | `schemas paths` |
+| Request, response, and query parameter models | `schemas paths parameters` |
 
 ---
 
 ## `--include-path-parameters`
 
-Includes path parameters as fields in generated models.
+Includes path parameters as fields in generated operation parameter models.
+Use this with `--openapi-scopes paths parameters`.
 
 ### OpenAPI Example
 
 ```yaml
+openapi: "3.0.3"
+info:
+  title: Orders API
+  version: "1.0"
 paths:
   /users/{user_id}/orders/{order_id}:
     get:
@@ -76,42 +157,41 @@ paths:
       parameters:
         - name: user_id
           in: path
+          required: true
           schema:
             type: string
         - name: order_id
           in: path
+          required: true
           schema:
             type: integer
+      responses:
+        '204':
+          description: No content
 ```
 
 ### Without `--include-path-parameters`
 
-```python
-class GetOrderResponse(BaseModel):
-    # Only response body fields
-    items: list[Item]
-    total: float
-```
+Only query parameters are included in operation parameter models. This example
+has only path parameters, so it does not generate a parameter model without the flag.
 
 ### With `--include-path-parameters`
 
 ```bash
-datamodel-codegen --input openapi.yaml --output models.py --include-path-parameters
+datamodel-codegen --input openapi.yaml --output models.py \
+  --openapi-scopes paths parameters --include-path-parameters --use-operation-id-as-name
 ```
 
 ```python
-class GetOrderResponse(BaseModel):
+class GetOrderParameters(BaseModel):
     user_id: str
     order_id: int
-    items: list[Item]
-    total: float
 ```
 
 ### When to use
 
 - Building request validation models that include URL parameters
-- Creating unified request/response types for API clients
-- Generating models for frameworks that expect all parameters in one object
+- Grouping query and URL path parameters in one operation parameter model
 
 ---
 
@@ -193,7 +273,7 @@ components:
 
 ```python
 class User(BaseModel):
-    id: Optional[int] = None      # Both included
+    id: Optional[int] = None  # Both included
     password: Optional[str] = None
     name: Optional[str] = None
 ```
@@ -208,11 +288,14 @@ datamodel-codegen --input openapi.yaml --output models.py \
 ```python
 class UserRequest(BaseModel):
     """For requests - excludes readOnly fields."""
+
     password: Optional[str] = None
     name: Optional[str] = None
 
+
 class UserResponse(BaseModel):
     """For responses - excludes writeOnly fields."""
+
     id: Optional[int] = None
     name: Optional[str] = None
 ```

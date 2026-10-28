@@ -1,0 +1,2 @@
+Discriminator 'kind' of Holder cannot be represented as msgspec tags: a base or derived struct of Lone keeps 'kind' as a field; its variants are left untagged.
+Discriminator 'kind' of Holder cannot be represented as msgspec tags: a base or derived struct of Lone keeps 'kind' as a field; its variants are left untagged.

@@ -1,0 +1,14 @@
+[
+  {
+    "payload": {
+      "value": 1
+    },
+    "native": false
+  },
+  {
+    "payload": {
+      "value": "text"
+    },
+    "native": false
+  }
+]

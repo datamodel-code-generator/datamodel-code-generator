@@ -1,0 +1,23 @@
+valid: accepted
+invalid pClosed: rejected (too_short)
+invalid rClosed: rejected (too_long)
+invalid iClosed: rejected (string_pattern_mismatch)
+invalid mClosed: rejected (int_parsing)
+invalid pNames: rejected (string_too_long)
+invalid rNames: rejected (string_pattern_mismatch)
+invalid iNames: rejected (int_parsing)
+invalid pRefNames: rejected (string_too_long)
+invalid rRefNames: rejected (string_pattern_mismatch)
+invalid mRefNames: rejected (int_parsing)
+invalid pOpen: rejected (string_pattern_mismatch)
+invalid rOpen: rejected (int_parsing)
+invalid mOpen: accepted
+invalid pNullableCount: rejected (too_short)
+invalid rNullableCount: rejected (string_pattern_mismatch)
+invalid iNullableCount: accepted
+invalid pStringOrCount: accepted
+invalid rStringOrCount: rejected (dict_type)
+invalid mStringOrCount: rejected (string_pattern_mismatch)
+invalid pNoKeys: rejected (too_long)
+invalid rNoKeys: rejected (too_long)
+invalid iNoKeys: accepted

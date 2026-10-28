@@ -1,0 +1,16 @@
+type: record
+name: DurationDefaults
+fields:
+  - name: direct
+    type:
+      type: fixed
+      name: Elapsed
+      size: 12
+      logicalType: duration
+    default: !!binary AAAAAAAAAADpAwAA
+  - name: reference
+    type: Elapsed
+    default: !!binary AAAAAAAAAAABAAAA
+  - name: ordinary
+    type: bytes
+    default: !!binary AQAAAAIAAAADAAAA

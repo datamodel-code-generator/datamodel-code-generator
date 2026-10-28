@@ -1,0 +1,42 @@
+[
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "x"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  }
+]

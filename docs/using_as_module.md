@@ -8,9 +8,40 @@ You can generate models with `datamodel_code_generator.generate` using parameter
 
 ### 📦 Installation
 
+The base package is sufficient when all inputs and references are local. To
+load an HTTP(S) input or resolve a remote `$ref`, install the stable HTTP extra:
+
 ```bash
 pip install 'datamodel-code-generator[http]'
 ```
+
+The `http` extra uses HTTPX and is supported and not deprecated. The
+experimental HTTPX2 backend is available separately:
+
+```bash
+pip install 'datamodel-code-generator[httpx2]'
+```
+
+The experimental extra is not included in `datamodel-code-generator[all]`.
+The default `HTTPBackend.AUTO` policy selects stable HTTPX when its client
+module is installed, including when both extras are installed, and selects
+HTTPX2 only when that module is absent. Require HTTPX2 with
+`--http-backend httpx2`, `http_backend = "httpx2"` under
+`[tool.datamodel-codegen]`, or the public API:
+
+```python
+from urllib.parse import urlparse
+
+from datamodel_code_generator import HTTPBackend, generate
+
+result = generate(
+    urlparse("https://example.com/schema.json"),
+    http_backend=HTTPBackend.HTTPX2,
+)
+```
+
+See [HTTP backend selection](faq.md#http-backend-selection) for the complete
+automatic and explicit selection rules.
 
 ### 📝 Getting Generated Code as String
 
@@ -42,6 +73,75 @@ result = generate(json_schema, config=config)
 print(result)
 ```
 
+### Loading Project Configuration
+
+`generate()` uses the options passed to it. The settings the command line implies
+apply the same way: `msgspec.Struct` output turns on `use_annotated` unless it is
+passed, and `use_annotated` turns on `field_constraints`. Pass
+`use_annotated=False` to keep msgspec models without `Annotated` constraints, as
+`generate()` wrote them before 0.84.0.
+
+To reuse `[tool.datamodel-codegen]` from `pyproject.toml`, explicitly load a
+`GenerateConfig`:
+
+```python
+from datamodel_code_generator import generate, load_pyproject_config
+
+config = load_pyproject_config()
+result = generate(json_schema, config=config)
+```
+
+The loader searches upward from the working directory, stopping at a Git project
+boundary, as the CLI does. Pass `path="project"`, a `Path`, or a `pyproject.toml` path
+to start elsewhere, and `profile="models"` to select a profile, including its
+`extends` inheritance. Without project settings, it returns the API defaults;
+a requested profile must exist.
+
+Both a `GenerateConfig` and a dictionary of individual Python API options can
+override the project settings:
+
+```python
+from datamodel_code_generator import GenerateConfig, InputFileType
+
+options = {"input_file_type": InputFileType.JsonSchema, "output": None}
+config = load_pyproject_config(overrides=options)
+result = generate(json_schema, config=config)
+
+existing_config = GenerateConfig(output=None, disable_timestamp=True)
+config = load_pyproject_config(profile="models", overrides=existing_config)
+result = generate(json_schema, config=config)
+```
+
+The precedence is API defaults, project settings, profile settings, then
+overrides. Only explicitly set fields of a `GenerateConfig` override are merged;
+explicit `False`, `None`, and empty lists also replace project values. Paths
+loaded from TOML are relative to its directory, including JSON configuration
+files such as `aliases`, unlike the command line, which reads those JSON files
+from the working directory. Override paths remain relative to the caller's
+working directory. The project directory supplies formatter settings unless
+`settings_path` is explicitly overridden. CLI-only settings such as `input`,
+`check`, and batch jobs are ignored: pass the schema to `generate()` yourself.
+The loader validates the merged settings and preserves the existing rule that
+`config=` cannot be combined with individual `generate()` options.
+
+### 📝 Reading Input From a File
+
+Pass a `Path` to `input_` for file input. Plain strings are treated as schema
+text; if a string points to an existing file and parsing fails, `generate()`
+warns and recommends using `Path`.
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import InputFileType, generate
+
+result = generate(
+    input_=Path("example.json"),
+    input_file_type=InputFileType.JsonSchema,
+)
+print(result)
+```
+
 ### 📝 Multiple Module Output
 
 When the schema generates multiple modules, `generate()` returns a `GeneratedModules` dictionary mapping module path tuples to generated code:
@@ -49,7 +149,7 @@ When the schema generates multiple modules, `generate()` returns a `GeneratedMod
 ```python
 from datamodel_code_generator import InputFileType, generate, GenerateConfig, GeneratedModules
 
-# Your OpenAPI specification (string, Path, or dict)
+# Your OpenAPI specification (string schema text, Path, or dict)
 openapi_spec: str = "..."  # Replace with your actual OpenAPI spec
 
 # Schema that generates multiple modules (e.g., with $ref to other files)
@@ -89,7 +189,7 @@ json_schema: str = """{
 
 with TemporaryDirectory() as temporary_directory_name:
     temporary_directory = Path(temporary_directory_name)
-    output = Path(temporary_directory / 'model.py')
+    output = Path(temporary_directory / "model.py")
     config = GenerateConfig(
         input_file_type=InputFileType.JsonSchema,
         input_filename="example.json",
@@ -117,9 +217,9 @@ from pydantic import BaseModel
 
 
 class StreetType(Enum):
-    Street = 'Street'
-    Avenue = 'Avenue'
-    Boulevard = 'Boulevard'
+    Street = "Street"
+    Avenue = "Avenue"
+    Boulevard = "Boulevard"
 
 
 class Model(BaseModel):
@@ -127,6 +227,71 @@ class Model(BaseModel):
     street_name: Optional[str] = None
     street_type: Optional[StreetType] = None
 ```
+
+---
+
+### Generating a Server or Client Package
+
+!!! warning "Experimental"
+    Server and client generation is experimental; its options and generated packages may change.
+
+`generate()` also generates the [FastAPI server](fastapi-server.md) or the [HTTPX2 client](python-client.md) package
+of an OpenAPI document together with its models. `generate_server` or `generate_client` selects the package, and
+the `server_*` or `client_*` options configure it. They are the options of `--generate-server`, `--generate-client`,
+and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
+`ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+<!-- fmt: off -->
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    OpenAPIScope,
+    ServerHandlerMode,
+    ServerType,
+    generate,
+)
+
+generate(
+    Path("openapi.yaml"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="standard-py312-20261027",
+    output=Path("app/models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("app/server"),
+    server_package="app.server",
+    server_model_package="app.models",
+    server_handler_mode=ServerHandlerMode.Async,
+    server_body_modes={"/paths/~1upload/post": "request"},
+)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+
+With an `output`, `generate()` writes the models and the package together and returns `None`; for a server, it also
+writes each missing module of the `services` package beside the package once, with stubs, as the command line does.
+Without one, it writes nothing but the model metadata and a remote lock update, no stubs among them, and returns
+`GeneratedModules` with every model and package file, each under the path its import path implies: `server_model_package="app.models"` gives `("app", "models.py")`, or
+`("app", "models", "__init__.py")` and the other modules of modular models, and `server_package="app.server"` gives
+`("app", "server", "application.py")`, `("app", "server", "README.md")`, and so on. These are the files a run with `output` and
+`server_output` in the working directory writes; `server_output` is not used. The run renders the files in a private
+directory of the working directory, which it removes afterwards, so the working directory must be writable. `load_pyproject_config()` takes the
+server and client keys of `pyproject.toml` too, so a config it loads with `overrides={"output": None}` returns the
+files of the configured run.
+
+The selector requires `server_package` and `server_model_package` (or the client ones), and `server_output` with an
+`output`. A model setting the target needs that neither the arguments nor the preset set, such as `openapi_scopes` or
+`target_python_version`, takes the value the target needs, without printing anything; see
+[Requirements](fastapi-server.md#requirements). A missing option, an option the target cannot use, and a failure of the package raise
+`datamodel_code_generator.Error` with the message the command line prints. The `server_*` and `client_*` options have
+no effect without their selector, as their `pyproject.toml` keys do.
 
 ---
 
@@ -153,10 +318,7 @@ json_schema: str = """{
     }
 }"""
 
-data_model_types = get_data_model_types(
-    DataModelType.PydanticV2BaseModel,
-    target_python_version=PythonVersion.PY_311
-)
+data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, target_python_version=PythonVersion.PY_311)
 config = JSONSchemaParserConfig(
     data_model_type=data_model_types.data_model,
     data_model_root_type=data_model_types.root_model,
@@ -187,17 +349,14 @@ json_schema: str = """{
     }
 }"""
 
-data_model_types = get_data_model_types(
-    DataModelType.PydanticV2BaseModel,
-    target_python_version=PythonVersion.PY_311
-)
+data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, target_python_version=PythonVersion.PY_311)
 parser = JsonSchemaParser(
-   json_schema,
-   data_model_type=data_model_types.data_model,
-   data_model_root_type=data_model_types.root_model,
-   data_model_field_type=data_model_types.field_model,
-   data_type_manager_type=data_model_types.data_type_manager,
-   dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
+    json_schema,
+    data_model_type=data_model_types.data_model,
+    data_model_root_type=data_model_types.root_model,
+    data_model_field_type=data_model_types.field_model,
+    data_type_manager_type=data_model_types.data_type_manager,
+    dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
 )
 result = parser.parse()
 print(result)
@@ -227,16 +386,15 @@ from pydantic import BaseModel
 
 
 class StreetType(Enum):
-    Street = 'Street'
-    Avenue = 'Avenue'
-    Boulevard = 'Boulevard'
+    Street = "Street"
+    Avenue = "Avenue"
+    Boulevard = "Boulevard"
 
 
 class Model(BaseModel):
     number: Optional[float] = None
     street_name: Optional[str] = None
     street_type: Optional[StreetType] = None
-
 ```
 
 ---
@@ -250,6 +408,9 @@ class Model(BaseModel):
 | `Path` (directory)| `None`        | `None` |
 
 📌 **Note:** When `output` is a file path and multiple modules would be generated, `generate()` raises a `datamodel_code_generator.Error` exception. Use a directory path instead.
+
+With `generate_server` or `generate_client`, `generate()` returns `None` with an `output` and `GeneratedModules` with
+every model and package file without one (see [Generating a Server or Client Package](#generating-a-server-or-client-package)).
 
 ---
 

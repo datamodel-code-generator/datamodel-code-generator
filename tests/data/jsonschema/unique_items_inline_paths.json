@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "UniqueItemsInlinePaths": {
+      "type": "object",
+      "properties": {
+        "nestedArray": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {}
+          }
+        },
+        "nullableAnyOf": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "typedMapping": {
+          "type": "object",
+          "properties": {
+            "known": {
+              "type": "array",
+              "items": {}
+            }
+          },
+          "patternProperties": {
+            "^pattern": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {}
+          }
+        },
+        "patternMapping": {
+          "type": "object",
+          "patternProperties": {
+            "^plain": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "List$": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "nestedArray",
+        "nullableAnyOf",
+        "typedMapping",
+        "patternMapping"
+      ]
+    }
+  },
+  "$ref": "#/$defs/UniqueItemsInlinePaths"
+}

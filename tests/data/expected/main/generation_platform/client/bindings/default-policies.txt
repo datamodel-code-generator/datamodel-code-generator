@@ -1,0 +1,31 @@
+# default-policies
+render pydantic_v2.BaseModel required
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/required
+render pydantic_v2.BaseModel optional
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/required
+render pydantic_v2.dataclass required
+  models.py
+  model_bindings.py pydantic_v2_dataclass/required
+render pydantic_v2.dataclass optional
+  models.py
+  model_bindings.py pydantic_v2_dataclass/required
+render dataclasses.dataclass required
+  models.py
+  model_bindings.py dataclasses_dataclass/required
+render dataclasses.dataclass optional
+  models.py
+  model_bindings.py dataclasses_dataclass/optional
+render typing.TypedDict required
+  models.py
+  model_bindings.py typing_TypedDict/required
+render typing.TypedDict optional
+  models.py
+  model_bindings.py typing_TypedDict/required
+render msgspec.Struct required
+  models.py
+  model_bindings.py msgspec_Struct/required
+render msgspec.Struct optional
+  models.py
+  model_bindings.py msgspec_Struct/required

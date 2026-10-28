@@ -1,0 +1,48 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "review",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "left": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "value": {
+                "anyOf": [
+                  false,
+                  {
+                    "type": "object",
+                    "properties": {
+                      "right": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

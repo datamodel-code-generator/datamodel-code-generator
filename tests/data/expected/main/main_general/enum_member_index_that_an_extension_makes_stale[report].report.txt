@@ -1,0 +1,1 @@
+{"area": "RENDER_MEMOS", "message": "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS: the enum member index of Kind that the memo returns differ from the value computed anew", "table": "ENUM_MEMBER_INDEX", "owner": "Kind"}

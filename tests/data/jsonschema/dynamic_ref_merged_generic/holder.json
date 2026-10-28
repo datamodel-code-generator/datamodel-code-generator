@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "numbers": {"$ref": "list.json", "minItems": 1},
+    "matrix": {"type": "array", "items": {"$ref": "list.json", "maxItems": 3}},
+    "counts": {"$ref": "#/$defs/Counts"},
+    "plain": {"$ref": "#/$defs/Plain"}
+  },
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "type": "integer"},
+    "Counts": {"$ref": "list.json", "minItems": 2},
+    "Plain": {
+      "$id": "plain",
+      "type": "object",
+      "properties": {"values": {"$ref": "list.json", "maxItems": 2}}
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "first": {
+      "$ref": "#/$defs/First"
+    },
+    "second": {
+      "$ref": "#/$defs/Second"
+    }
+  },
+  "$defs": {
+    "left.Count": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n"
+      ]
+    },
+    "right.Count": {
+      "type": "object",
+      "properties": {
+        "s": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "s"
+      ]
+    },
+    "First": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/left.Count"
+        }
+      },
+      "minProperties": 1
+    },
+    "Second": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/right.Count"
+        }
+      },
+      "minProperties": 1
+    }
+  }
+}

@@ -1,0 +1,5 @@
+exit 0
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer token-1
+> GET https://eu.shelter.example/v1/pets/2 authorization: Bearer token-2
+missing_credentials

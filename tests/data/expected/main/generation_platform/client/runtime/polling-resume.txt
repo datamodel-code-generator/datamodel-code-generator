@@ -1,0 +1,296 @@
+# polling pydantic_v2.BaseModel
+pending operations
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  pending saved {"bound": ["j1", "running"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  state type dict
+  resumed LroHandle(phase='pending', polls=0) progress {'polls': 0}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed wait = Report(rows=3)
+  resumed progress {'polls': 1}
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  before any poll saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed before any poll = Report(rows=4)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fetch written from the final poll saved {"bound": ["j1", 202], "cancel": [], "expires_at": null, "phase": "pending", "seed": [null]}
+  > GET https://api.example.com/jobs/j1?since=202
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > POST https://api.example.com/reports
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"job":"j1"}'
+  resumed fetch written from the final poll = Report(rows=9)
+  > POST https://api.example.com/exports
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  querystring saved {"bound": ["e1"], "cancel": [], "expires_at": null, "phase": "pending", "seed": []}
+  > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed querystring = None
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  closed saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed after close = Report(rows=5)
+settled operations
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  wait = Report(rows=6)
+  checkpoint of a fetched result ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  failed wait ! ProtocolDataError: status=200 data=Job:j1 operation_failed
+  failed checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.failed') [field_path=('checkpoint', 'failed')] invalid_state
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  cancelled wait ! ProtocolDataError: status=200 data=Job:j1 operation_cancelled
+  cancelled checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.cancelled') [field_path=('checkpoint', 'cancelled')] invalid_state
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  failed fetch ! InternalServerError: Error code: 500 - {} [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False]
+  fetch due saved {"bound": ["j1"], "cancel": [], "expires_at": null, "phase": "fetch", "seed": []}
+  resumed fetch status ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='status.succeeded') [field_path=('status', 'succeeded')] invalid_state
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed fetch = Report(rows=7)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  immediate checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j2?verbose=true
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline wait = Report(rows=8)
+  inline checkpoint ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
+  > POST https://api.example.com/exports
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  wait without a result = None
+  checkpoint without a result ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.succeeded') [field_path=('checkpoint', 'succeeded')] invalid_state
+errors that keep a checkpoint
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  long server delay ! SessionLimitError
+  long server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  resumed polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  status after a huge server delay ! SessionLimitError
+  wait after a huge server delay ! SessionLimitError
+  huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  resumed after the huge delay polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  first poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
+  poll limit ! SessionLimitError
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  resumed at the same limit polls afresh = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  resumed progress {'polls': 1}
+refused states
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  not a state ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  another helper's state = LroHandle(phase='pending', polls=0)
+  expired state ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
+  resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.X-Trace') [field_path=('options', 'extra_headers', 'X-Trace')] invalid_value
+  resumed with poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',)] invalid_value
+malformed states
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  unknown member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  unknown phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  fetch with values of the poll ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  fetch with values of the create response ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  fetch value of another type = LroHandle(phase='pending', polls=0)
+  null fetch value = LroHandle(phase='pending', polls=0)
+  object fetch value = LroHandle(phase='pending', polls=0)
+  short bindings ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  cancel values without a remote cancel ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  expiry without an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fetch of a helper without one ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  dot segment for a poll ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/id')] value
+  dot segment for a fetch = LroHandle(phase='pending', polls=0)
+remote cancellation
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  start = JobsTrackedHandle(phase='pending', polls=0)
+  handle class JobsTrackedHandle
+  > GET https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j9)
+  > DELETE https://api.example.com/jobs/j9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  cancel = CancelReceipt(status=202, data=Job:cancelled)
+  after the cancel JobsTrackedHandle(phase='pending', polls=1) progress {'polls': 1}
+  > DELETE https://api.example.com/jobs/j9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  cancel again = CancelReceipt(status=204, data=NoneType:None)
+  > DELETE https://api.example.com/jobs/j9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  cancel refused ! ConflictError: Error code: 409 - {"message":"conflict"} [operation_id='cancelJob', status_code=409, body=b'{"message":"conflict"}', body_bytes=b'{"message":"conflict"}', truncated=False]
+  tracked saved {"bound": ["j5"], "cancel": ["j9", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
+  resumed class JobsTrackedHandle
+  > DELETE https://api.example.com/jobs/j9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  resumed cancel = CancelReceipt(status=204, data=NoneType:None)
+  > GET https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  status after the cancel = PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j9)
+  cancel once cancelled ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.cancelled') [field_path=('cancel_remote', 'cancelled')] invalid_state
+  wait ! ProtocolDataError: status=200 data=Job:j9 operation_cancelled
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  close = None
+  cancel after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.closed') [field_path=('cancel_remote', 'closed')] invalid_state
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  poll without a cancel value ! ProtocolDataError: ProtocolDataError(operation_id='getJob', reason='missing') [operation_id='getJob', location=BodySelector(pointer='/id')] missing
+  progress {'polls': 1}
+  > POST https://api.example.com/exports
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  handle class ExportsRunHandle
+  > DELETE https://api.example.com/exports
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  cancel without bindings = CancelReceipt(status=204, data=NoneType:None)
+server expiries
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  offset date-time expires_at=2999-01-01T00:00:00.250000+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  lowercase date-time expires_at=2999-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction in UTC expires_at=2999-01-01T00:00:00.100000+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction past microseconds expires_at=2999-01-01T00:00:00.123456+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  HTTP date expires_at=2999-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  HTTP date with an offset expires_at=2999-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  leap second expires_at=2999-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  leap second with a fraction and an offset expires_at=2999-01-01T00:00:00.500000+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  resume past the expiry ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
+  JSON round trip past the expiry = True
+  > GET https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  polling past the expiry = Report(rows=4)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  missing expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='missing') [operation_id='createJob', location=BodySelector(pointer='/expires')] missing
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  null expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='null') [operation_id='createJob', location=BodySelector(pointer='/expires')] null
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  numeric expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='type') [operation_id='createJob', location=BodySelector(pointer='/expires')] type
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  unparsable expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  impossible date ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', reason='value') [operation_id='createJob', location=BodySelector(pointer='/expires')] value
+checkpoints on the client clock
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  two-digit year by the client's wall clock expires_at=2099-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  expiry before the client's wall clock = mappingproxy({'polls': 0})
+  expiry at the client's wall clock ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
+async resume
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  resumed AsyncLroHandle(phase='pending', polls=0)
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed wait = Report(rows=3)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  failed fetch ! InternalServerError: Error code: 500 - {} [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False]
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed fetch = Report(rows=4)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  async long server delay ! SessionLimitError
+async remote cancellation
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  handle class AsyncJobsTrackedHandle
+  checkpoint while waiting saved {"bound": ["j5"], "cancel": ["j5", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
+  > DELETE https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  cancel while waiting = CancelReceipt(status=202, data=Job:cancelled)
+  waiting after the cancel True AsyncJobsTrackedHandle(phase='pending', polls=0)
+  wait cancelled
+  > DELETE https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  cancel = CancelReceipt(status=202, data=Job:cancelled)
+  resumed class AsyncJobsTrackedHandle
+  > DELETE https://api.example.com/jobs/j5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
+  resumed cancel = CancelReceipt(status=204, data=NoneType:None)
+  close = None
+  cancel after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='cancel_remote.closed') [field_path=('cancel_remote', 'closed')] invalid_state

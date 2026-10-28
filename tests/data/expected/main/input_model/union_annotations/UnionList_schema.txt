@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "x-python-type": "list[Callable[[int], int]]"
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "UnionList",
+  "type": "object"
+}

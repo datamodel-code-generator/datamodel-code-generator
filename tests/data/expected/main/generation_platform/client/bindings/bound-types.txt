@@ -1,0 +1,88 @@
+# bound-types
+render pydantic_v2.BaseModel default
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default
+change pydantic_v2.BaseModel default argument-list
+  @@ -14 +14 @@
+  -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]
+  +    handler: Callable[UUID, str]
+change pydantic_v2.BaseModel default literal-value
+  @@ -14 +14 @@
+  -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]
+  +    handler: Callable[[UUID, Literal['uuid.UUID', 1, 1]], str]
+change pydantic_v2.BaseModel default literal-order
+  @@ -14 +14 @@
+  -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]
+  +    handler: Callable[[UUID, Literal[True, 'uuid.UUID', 1]], str]
+change pydantic_v2.BaseModel default bound-import
+  @@ -7 +7 @@
+  -from uuid import UUID
+  +from decimal import UUID
+change pydantic_v2.BaseModel default return-type
+  @@ -14 +14 @@
+  -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]
+  +    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], int]
+change pydantic_v2.BaseModel default ellipsis
+  @@ -15 +15 @@
+  -    variadic: Callable[..., str]
+  +    variadic: Callable[int, str]
+change pydantic_v2.BaseModel default tuple-order
+  @@ -16 +16 @@
+  -    pair: tuple[int, str]
+  +    pair: tuple[str, int]
+change pydantic_v2.BaseModel default union-order
+  @@ -17 +17 @@
+  -    choice: UUID | str
+  +    choice: str | UUID
+change pydantic_v2.BaseModel default optional-union
+  @@ -18 +18 @@
+  -    optional_choice: Optional[UUID | str] = None
+  +    optional_choice: Optional[UUID | bool] = None
+change pydantic_v2.BaseModel default empty-parameters
+  @@ -19 +19 @@
+  -    empty: Callable[[], bool]
+  +    empty: Callable[[int], bool]
+change pydantic_v2.BaseModel default empty-tuple
+  @@ -20 +20 @@
+  -    empty_tuple: tuple[()]
+  +    empty_tuple: tuple[str]
+change pydantic_v2.BaseModel default native-name
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['other-key']
+change pydantic_v2.BaseModel default native-family
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].model_fields['raw-key']
+change pydantic_v2.BaseModel default native-index
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[1].__annotations__['raw-key']
+change pydantic_v2.BaseModel default native-annotation
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].other.__args__[0].__annotations__['raw-key']
+change pydantic_v2.BaseModel default native-base
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Other.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+change pydantic_v2.BaseModel default native-without-lookup
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__
+change pydantic_v2.BaseModel default native-empty-lookup
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__[]
+change pydantic_v2.BaseModel default empty-argument-group
+  @@ -19 +19 @@
+  -    empty: Callable[[], bool]
+  +    empty: Callable[(), bool]
+change pydantic_v2.BaseModel default native-unbalanced-square
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__('raw-key']
+change pydantic_v2.BaseModel default native-unbalanced-bracket
+  @@ -21 +21 @@
+  -    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
+  +    native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__{'raw-key']

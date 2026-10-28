@@ -25,7 +25,10 @@ Sets the minimum Python version for the generated code. This automatically adjus
 |---------|--------------|-------------------|-------|
 | 3.10 | `X \| Y` | `list[T]`, `dict[K, V]` | Union operator available |
 | 3.11 | `X \| Y` | `list[T]`, `dict[K, V]` | `Self` type available |
-| 3.12+ | `X \| Y` | `list[T]`, `dict[K, V]` | `type` statement available |
+| 3.12 | `X \| Y` | `list[T]`, `dict[K, V]` | `type` statement available |
+| 3.13 | `X \| Y` | `list[T]`, `dict[K, V]` | `ReadOnly` TypedDict keys imported from `typing` |
+| 3.14 | `X \| Y` | `list[T]`, `dict[K, V]` | Native deferred annotations: `from __future__ import annotations` only where the output model needs it for forward references |
+| 3.15 | `X \| Y` | `list[T]`, `dict[K, V]` | `TypedDict` with `closed`/`extra_items` (PEP 728) imported from `typing`; `frozendict` builtin |
 
 ### Example: Python 3.10+
 
@@ -51,6 +54,7 @@ Uses the `|` operator for union types instead of `Union[X, Y]`.
 
 ```python
 from typing import Union, Optional
+
 
 class Item(BaseModel):
     value: Union[str, int]
@@ -85,6 +89,7 @@ Uses built-in collection types instead of `typing` module generics.
 
 ```python
 from typing import List, Dict, Set, Tuple
+
 
 class Data(BaseModel):
     items: List[str]
@@ -124,6 +129,7 @@ Uses `typing.Annotated` to attach metadata to types, which is the modern approac
 ```python
 from pydantic import Field
 
+
 class User(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     age: int = Field(..., ge=0, le=150)
@@ -138,6 +144,7 @@ datamodel-codegen --input schema.json --output models.py --use-annotated
 ```python
 from typing import Annotated
 from pydantic import Field
+
 
 class User(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=100)]
@@ -164,6 +171,7 @@ datamodel-codegen --input schema.json --output models.py --use-generic-container
 ```python
 from typing import Mapping, Sequence
 
+
 class Data(BaseModel):
     items: Sequence[str]
     mapping: Mapping[str, int]
@@ -186,6 +194,7 @@ Prevents adding `from __future__ import annotations` to generated files.
 ```python
 from __future__ import annotations
 
+
 class User(BaseModel):
     friends: list[User]  # Forward reference works due to PEP 563
 ```
@@ -201,6 +210,7 @@ from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import ForwardRef
+
 
 class User(BaseModel):
     friends: List["User"]  # String forward reference
@@ -232,6 +242,7 @@ Output:
 ```python
 from typing import Annotated
 from pydantic import BaseModel, Field
+
 
 class User(BaseModel):
     id: int
@@ -285,14 +296,28 @@ use-annotated = true
 
 ## Version Feature Matrix
 
-| Feature | 3.10 | 3.11 | 3.12+ |
-|---------|------|------|-------|
-| `list[T]` syntax | native | native | native |
-| `X \| Y` union | native | native | native |
-| `Annotated` | native | native | native |
-| `TypeAlias` | native | native | native |
-| `Self` | `typing_extensions` | native | native |
-| `type` statement | N/A | N/A | native |
+| Feature | 3.10 | 3.11 | 3.12 | 3.13 | 3.14 | 3.15 |
+|---------|------|------|------|------|------|------|
+| `list[T]` syntax | native | native | native | native | native | native |
+| `X \| Y` union | native | native | native | native | native | native |
+| `Annotated` | native | native | native | native | native | native |
+| `TypeAlias` | native | native | native | native | native | native |
+| `Self` | `typing_extensions` | native | native | native | native | native |
+| `type` statement | N/A | N/A | native | native | native | native |
+| TypedDict `NotRequired` | `typing_extensions` | native | native | native | native | native |
+| TypedDict `ReadOnly` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native | native | native |
+| TypedDict `closed`/`extra_items` (PEP 728) | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
+| Deferred annotations | `__future__` import | `__future__` import | `__future__` import | `__future__` import | native (`__future__` import where needed) | native (`__future__` import where needed) |
+| `frozendict` in `x-python-type` | N/A | N/A | N/A | N/A | N/A | native |
+| `TypeForm`, `NoExtraItems`, `disjoint_base` in `x-python-type` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
+
+A standard-library type named by `--type-overrides`, `customTypePath` or `x-python-import` follows the same rules as
+`x-python-type`: a `typing` or `collections.abc` name newer than the target is imported from `typing_extensions`, and
+a type that the target does not have, such as `enum.StrEnum` for 3.10 or `pathlib.DirEntryInfo` for 3.15, stops the
+generation with `<type> is unavailable for target Python <version>`. These types are checked only where the output
+imports them, after `--import-overrides`, so an override that no model uses, or a `customTypePath` that an override
+replaces, is left alone, and `--import-overrides` can move such an import to a backport module, as
+`--import-overrides '{"StrEnum": "backports.strenum"}'` does for `enum.StrEnum` on 3.10.
 
 ---
 
@@ -341,8 +366,9 @@ This occurs because Python 3.13 deprecated calling `typing._eval_type()` without
    ```
 
 !!! note
-    Python 3.14+ will use native deferred annotations (PEP 649), and the generator
-    will no longer add `from __future__ import annotations` for those versions.
+    Targets of Python 3.14 or later use native deferred annotations (PEP 649). The generator still
+    adds `from __future__ import annotations` when the output model needs explicit deferred
+    annotations for forward references or types hidden by same-named fields.
 
 ### IDE shows type errors
 

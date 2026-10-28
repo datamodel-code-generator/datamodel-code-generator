@@ -1,0 +1,15 @@
+{
+  "cat": {
+    "coerced_detail": "yes",
+    "native_identity": true,
+    "ordinary_native_identity": true,
+    "selected_variant": true
+  },
+  "dog": {
+    "coerced_detail": "yes",
+    "native_identity": true,
+    "ordinary_native_identity": true,
+    "selected_variant": true
+  },
+  "unrelated_dump_preserved": true
+}

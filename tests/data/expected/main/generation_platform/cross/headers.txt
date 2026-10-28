@@ -1,0 +1,78 @@
+models shared True
+# headers in-process sync
+# headers in-process async, socket sync, socket async
+get_text
+  > GET /text
+  get_text(X_Name=None, X_Tags=None, session=None, ids=None)
+  < 204 -
+  = (TextGetResponse204XNameHeader(root='cafe'), TextGetResponse204XTagsHeader(root=['cafe', 'b']), ('cafe',), ('cafe,b',))
+get_text with a result header beyond ASCII
+  > GET /text
+  get_text(X_Name='beyond-ascii', X_Tags=None, session=None, ids=None)
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - The X-Name response header is not header text [operation_id='getText', status_code=500, body=b'The X-Name response header is not header text', body_bytes=b'The X-Name response header is not header text', truncated=False]
+get_text with a result header name that is not a token
+  > GET /text
+  get_text(X_Name='not-a-token', X_Tags=None, session=None, ids=None)
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - The response header name 'X Name' is not a token [operation_id='getText', status_code=500, body=b"The response header name 'X Name' is not a token", body_bytes=b"The response header name 'X Name' is not a token", truncated=False]
+get_text with Latin-1 headers of the service's own response
+  > GET /text
+  get_text(X_Name='own-response', X_Tags=None, session=None, ids=None)
+  < 204 -
+  = ('café',)
+decode its X-Name
+  > GET /text
+  get_text(X_Name='own-response', X_Tags=None, session=None, ids=None)
+  < 204 -
+  ! DecodeError: DecodeError(status_code=204, operation_id='getText', reason='invalid_header', location='header.X-Name') [operation_id='getText', location=('header', 'X-Name'), body_bytes=b'', truncated=False, cause=MalformedError('A header value must be ASCII')] invalid_header
+decode its X-Tags
+  > GET /text
+  get_text(X_Name='own-response', X_Tags=None, session=None, ids=None)
+  < 204 -
+  ! DecodeError: DecodeError(status_code=204, operation_id='getText', reason='invalid_header', location='header.X-Tags') [operation_id='getText', location=('header', 'X-Tags'), body_bytes=b'', truncated=False, cause=MalformedError('A header value must be ASCII')] invalid_header
+get_text with X-Name beyond ASCII
+  ! DecodeError: DecodeError(operation_id='getText', reason='unencodable', location='header.X-Name') [operation_id='getText', location=('header', 'X-Name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+X-Name in Latin-1
+  > GET /text
+  < 400 application/json
+  = 400
+X-Name in UTF-8
+  > GET /text
+  < 400 application/json
+  = 400
+X-Name repeated in Latin-1
+  > GET /text
+  < 400 application/json
+  = 400
+X-Tags in Latin-1
+  > GET /text
+  < 400 application/json
+  = 400
+X-Tags in UTF-8
+  > GET /text
+  < 400 application/json
+  = 400
+get_text with a session cookie beyond ASCII
+  ! DecodeError: DecodeError(operation_id='getText', reason='unencodable', location='cookie.session') [operation_id='getText', location=('cookie', 'session'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
+session cookie in Latin-1
+  > GET /text
+  < 400 application/json
+  = 400
+session cookie in UTF-8
+  > GET /text
+  < 400 application/json
+  = 400
+ids cookie in Latin-1
+  > GET /text
+  < 400 application/json
+  = 400
+ids cookie in UTF-8
+  > GET /text
+  < 400 application/json
+  = 400
+another cookie in UTF-8
+  > GET /text
+  get_text(X_Name=None, X_Tags=None, session='s', ids=['a'])
+  < 204 -
+  = 204

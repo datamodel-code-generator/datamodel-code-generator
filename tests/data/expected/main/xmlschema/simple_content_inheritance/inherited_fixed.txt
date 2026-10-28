@@ -1,0 +1,8 @@
+[
+  {
+    "value": "text",
+    "id": 1,
+    "kind": "fixed",
+    "label": "label"
+  }
+]

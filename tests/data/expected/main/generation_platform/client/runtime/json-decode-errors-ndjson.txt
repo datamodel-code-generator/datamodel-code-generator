@@ -1,0 +1,71 @@
+# ndjson pydantic_v2.BaseModel
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=200010 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  non-finite: DecodeError ValidationError  context=None cause=None traceback=True prefix=5 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  integer limit: DecodeError ValidationError  context=None cause=None traceback=True prefix=5000 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  encoding: DecodeError ValidationError  context=None cause=None traceback=True prefix=12 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  parser nesting: DecodeError ValidationError  context=None cause=None traceback=True prefix=200000 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  snapshot nesting: DecodeError ValidationError  context=None cause=None traceback=True prefix=1400 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  surrogate value: DecodeError ValidationError  context=None cause=None traceback=True prefix=17 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  surrogate key: DecodeError ValidationError  context=None cause=None traceback=True prefix=14 truncated=False retained=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  stream syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  stream large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=65536 truncated=True retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=200010 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async non-finite: DecodeError ValidationError  context=None cause=None traceback=True prefix=5 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async integer limit: DecodeError ValidationError  context=None cause=None traceback=True prefix=5000 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async encoding: DecodeError ValidationError  context=None cause=None traceback=True prefix=12 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async parser nesting: DecodeError ValidationError  context=None cause=None traceback=True prefix=200000 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async snapshot nesting: DecodeError ValidationError  context=None cause=None traceback=True prefix=1400 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async surrogate value: DecodeError ValidationError  context=None cause=None traceback=True prefix=17 truncated=False retained=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async surrogate key: DecodeError ValidationError  context=None cause=None traceback=True prefix=14 truncated=False retained=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async stream syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=10 truncated=False retained=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async stream large syntax: DecodeError ValidationError  context=None cause=None traceback=True prefix=65536 truncated=True retained=False

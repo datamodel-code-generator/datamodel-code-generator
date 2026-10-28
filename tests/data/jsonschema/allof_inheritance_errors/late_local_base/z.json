@@ -1,0 +1,10 @@
+{
+  "title": "Child",
+  "allOf": [
+    {"$ref": "#/$defs/Base"},
+    {"type": "object", "properties": {"child": {"type": "string"}}}
+  ],
+  "$defs": {
+    "Base": {"type": "object", "properties": {"base": {"type": "string"}}}
+  }
+}

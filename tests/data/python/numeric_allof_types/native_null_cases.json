@@ -1,0 +1,7 @@
+[
+  "nullable_null_only",
+  "null_first_nullable",
+  "null_scalar_nullable",
+  "null_same",
+  "outside_null"
+]

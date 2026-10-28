@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "all": { "$ref": "#/$defs/All" }
+  },
+  "required": ["all"],
+  "$defs": {
+    "Leaf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number" }
+      }
+    },
+    "Condition": {
+      "oneOf": [
+        { "$ref": "#/$defs/Leaf" },
+        { "$ref": "#/$defs/All" }
+      ]
+    },
+    "All": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["all"],
+      "properties": {
+        "all": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/Condition" }
+        }
+      }
+    }
+  }
+}

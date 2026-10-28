@@ -1,0 +1,18 @@
+openapi: 3.0.0
+info:
+  title: Usable converging invalid dotted models
+  version: '1'
+paths: {}
+components:
+  schemas:
+    State:
+      type: string
+      enum: ['1', '2']
+    A.1.Foo:
+      allOf:
+        - description: same
+        - $ref: '#/components/schemas/State'
+    B.1.Foo:
+      type: string
+      description: same
+      enum: ['1', '2']

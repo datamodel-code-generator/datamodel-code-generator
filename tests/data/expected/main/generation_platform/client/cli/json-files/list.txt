@@ -1,0 +1,1 @@
+Invalid --client-protocols: Input should be a valid dictionary

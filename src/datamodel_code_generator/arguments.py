@@ -8,41 +8,63 @@ template customization, OpenAPI-specific options, and general options.
 from __future__ import annotations
 
 import json
-from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction, Namespace, RawDescriptionHelpFormatter
+from argparse import (
+    OPTIONAL,
+    ArgumentParser,
+    ArgumentTypeError,
+    BooleanOptionalAction,
+    Namespace,
+    RawDescriptionHelpFormatter,
+)
 from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
+from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import deprecation_message
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
+    AliasGenerator,
     AllExportsCollisionStrategy,
     AllExportsScope,
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
+    ConstructorFieldOrder,
+    CustomFileHeaderMode,
     DataclassArguments,
     DataModelType,
+    DefaultValueType,
     FieldTypeCollisionStrategy,
+    HTTPBackend,
     InputFileType,
     InputModelRefStrategy,
     ModuleSplitMode,
     NamingStrategy,
+    OpenAPIAsDefinitions,
     OpenAPIScope,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
+    SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     StrictTypes,
     TargetPydanticVersion,
     UnionMode,
     VersionMode,
 )
-from datamodel_code_generator.format import DateClassType, DatetimeClassType, Formatter, PythonVersion
-from datamodel_code_generator.parser import LiteralType
+from datamodel_code_generator.preset_names import PRESET_NAMES
 
 if TYPE_CHECKING:
     from argparse import Action
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -79,7 +101,7 @@ def _external_ref_mapping(value: str) -> str:
             "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
         )
         raise ArgumentTypeError(msg)
-    file_path, python_package = value.split("=", maxsplit=1)
+    file_path, python_package = value.rsplit("=", maxsplit=1)
     if not file_path.strip() or not python_package.strip():
         msg = f"Invalid --external-ref-mapping format: {value!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
         raise ArgumentTypeError(msg)
@@ -88,36 +110,21 @@ def _external_ref_mapping(value: str) -> str:
 
 def _json_value_or_file(value: str) -> dict[str, object]:
     """Parse a JSON value or load it from a JSON file path."""
-    path = Path(value).expanduser()
-
-    # In Python<=3.13, long json values would cause `path.is_file()` to raise an OSError exception
-    # because the string is too long to be interpreted as a filename.
-    # This changed in Python>=3.14 since now `path.is_file()` catches OSError and returns `false` instead.
-    # Therefore we are going to catch OSError exception raised in Python<=3.13 to replicate Python>=3.14 behavior.
-    is_file: bool
-    try:
-        is_file = path.is_file()
-    except OSError:
-        is_file = False
-
-    if is_file:
-        try:
-            json_input = path.read_text(encoding=DEFAULT_ENCODING)
-        except (OSError, UnicodeDecodeError) as e:
-            msg = f"Unable to read JSON file {value!r}: {e}"
-            raise ArgumentTypeError(msg) from e
-    else:
-        json_input = value
+    from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
 
     try:
-        result = json.loads(json_input)
-    except json.JSONDecodeError as e:
-        msg = f"Invalid JSON: {e}"
+        return validate_json_value_or_file(value)
+    except JsonConfigError as e:
+        msg = str(e)
         raise ArgumentTypeError(msg) from e
-    if not isinstance(result, dict):
-        msg = f"Expected a JSON object, got {type(result).__name__}"
+
+
+def _recommend_mode(value: str) -> str:
+    """Accept a recommendation mode, quick or full; the option is documented without a value, which picks by size."""
+    if value not in {"quick", "full"}:
+        msg = f"unknown mode {value!r}; use --recommend-options without a value"
         raise ArgumentTypeError(msg)
-    return result
+    return value
 
 
 class SortingHelpFormatter(RawDescriptionHelpFormatter):
@@ -126,6 +133,12 @@ class SortingHelpFormatter(RawDescriptionHelpFormatter):
     def _bold_cyan(self, text: str) -> str:  # noqa: PLR6301
         """Wrap text in ANSI bold cyan escape codes."""
         return f"\x1b[36;1m{text}\x1b[0m"
+
+    def _format_action_invocation(self, action: Action) -> str:
+        """Show an option whose value is optional and has an empty metavar without a value placeholder."""
+        if action.nargs == OPTIONAL and isinstance(action.metavar, str) and not action.metavar:
+            return ", ".join(action.option_strings)
+        return super()._format_action_invocation(action)
 
     def add_arguments(self, actions: Iterable[Action]) -> None:
         """Add arguments sorted by option strings."""
@@ -137,13 +150,48 @@ class SortingHelpFormatter(RawDescriptionHelpFormatter):
         return super().start_section(heading if namespace.no_color or not heading else self._bold_cyan(heading))
 
 
-arg_parser = ArgumentParser(
+class SuggestingArgumentParser(ArgumentParser):
+    """Argument parser that suggests close matches for unknown option names."""
+
+    def parse_args(self, args: Iterable[str] | None = None, namespace: Namespace | None = None) -> Namespace:
+        """Parse arguments and suggest close matches for unknown option names."""
+        parsed_args, unknown_arguments = self.parse_known_args(args, namespace)
+        if not unknown_arguments:
+            return cast("Namespace", parsed_args)
+        return self.error(self._unrecognized_arguments_message(unknown_arguments))
+
+    def _unrecognized_arguments_message(self, unknown_arguments: Sequence[str]) -> str:
+        """Format an unknown-argument message with close option-name matches."""
+        message = f"unrecognized arguments: {' '.join(unknown_arguments)}"
+        suggestions: list[str] = []
+        for unknown_argument in unknown_arguments:
+            match unknown_argument:
+                case "--":
+                    break
+                case option_name if option_name.startswith("-"):
+                    option_name = option_name.partition("=")[0]
+                case _:
+                    continue
+
+            from difflib import get_close_matches  # noqa: PLC0415
+
+            if (matches := get_close_matches(option_name, self._option_string_actions, n=1, cutoff=0.7)) and (
+                suggestion := matches[0]
+            ) not in suggestions:
+                suggestions.append(suggestion)
+        if not suggestions:
+            return message
+        return f"{message}\nDid you mean: {', '.join(suggestions)}?"
+
+
+arg_parser = SuggestingArgumentParser(
     usage="\n  datamodel-codegen [options]",
     description="Generate Python data models from schema definitions or structured data\n\n"
     "For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev",
     epilog="Documentation: https://datamodel-code-generator.koxudaxi.dev\n"
     "Agent skill: https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/\n"
-    "GitHub: https://github.com/koxudaxi/datamodel-code-generator",
+    "Option recommendations: datamodel-codegen --input SCHEMA --recommend-options (experimental)\n"
+    "GitHub: https://github.com/datamodel-code-generator/datamodel-code-generator",
     formatter_class=SortingHelpFormatter,
     add_help=False,
 )
@@ -157,6 +205,8 @@ template_options = arg_parser.add_argument_group("Template customization")
 openapi_options = arg_parser.add_argument_group("OpenAPI-only options")
 graphql_options = arg_parser.add_argument_group("GraphQL-only options")
 general_options = arg_parser.add_argument_group("General options")
+target_options = arg_parser.add_argument_group("Target generation options (experimental)")
+target_selection_options = target_options.add_mutually_exclusive_group()
 
 # ======================================================================================
 # Base options for input/output
@@ -172,6 +222,12 @@ base_options.add_argument(
     default=None,
 )
 base_options.add_argument(
+    "--strict-refs",
+    help="Treat unresolved local $ref JSON pointers as errors instead of generating fallback Any models.",
+    action="store_true",
+    default=None,
+)
+base_options.add_argument(
     "--allow-private-network",
     help=(
         "Allow HTTP(S) schema requests to private, loopback, link-local, or otherwise non-public network hosts. "
@@ -182,6 +238,16 @@ base_options.add_argument(
     ),
     action=BooleanOptionalAction,
     default=None,
+)
+base_options.add_argument(
+    "--http-backend",
+    choices=[backend.value for backend in HTTPBackend],
+    default=None,
+    help=(
+        "Select the HTTP client backend. 'auto' (default) selects stable HTTPX when its client module is installed "
+        "and only selects experimental HTTPX2 when that module is absent. 'httpx' and 'httpx2' require that exact "
+        "backend. Explicit selections and paired dependency errors do not fall back."
+    ),
 )
 base_options.add_argument(
     "--http-headers",
@@ -215,6 +281,29 @@ base_options.add_argument(
     ),
 )
 base_options.add_argument(
+    "--lockfile",
+    help=(
+        "Select the remote reference integrity lock file (experimental). "
+        "An existing selected lock is verified automatically; "
+        "a missing selected lock is ignored unless --locked is used. "
+        "The default is datamodel-codegen.lock beside the discovered pyproject.toml, or in the invocation working "
+        "directory when no project is found. Explicit relative paths resolve from the invocation working directory."
+    ),
+)
+remote_lock_options = base_options.add_mutually_exclusive_group()
+remote_lock_options.add_argument(
+    "--update-lock",
+    action="store_true",
+    default=None,
+    help="Create or atomically update the selected remote lock after generation (experimental).",
+)
+remote_lock_options.add_argument(
+    "--locked",
+    action="store_true",
+    default=None,
+    help="Require an existing remote lock and validate each fetched resource against it (experimental).",
+)
+base_options.add_argument(
     "--input",
     help="Input file/directory (default: stdin)",
 )
@@ -242,23 +331,46 @@ base_options.add_argument(
     help="Output file (default: stdout)",
 )
 base_options.add_argument(
+    "--emit-model-metadata",
+    type=Path,
+    help=(
+        "Write a separate JSON map from generated models and fields to the JSON Pointer locations of their source "
+        "schemas; module and class name identify a model."
+    ),
+)
+base_options.add_argument(
     "--output-model-type",
     help="Output model type (default: pydantic_v2.BaseModel)",
     choices=[i.value for i in DataModelType],
 )
 base_options.add_argument(
+    "--preset",
+    help=(
+        "Apply an immutable built-in option preset. "
+        "Preset names include the target Python version so generated syntax is pinned."
+    ),
+    choices=PRESET_NAMES,
+)
+base_options.add_argument(
     "--url",
-    help="Input file URL. `--input` is ignored when `--url` is used",
+    help=(
+        "Input file URL. `--input` is ignored when `--url` is used. "
+        "For HTTP(S), datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated, while "
+        "datamodel-code-generator[httpx2] is experimental. The default --http-backend auto policy selects stable "
+        "HTTPX when its client module is installed and selects HTTPX2 only when that module is absent. Select "
+        "--http-backend httpx2 to require the experimental backend. Explicit selections and paired dependency "
+        "errors do not fall back."
+    ),
 )
 base_options.add_argument(
     "--input-model",
     action="append",
-    help="Python import path to a Pydantic v2 model or schema dict "
-    "(e.g., 'mypackage.module:ClassName' or 'mypackage.schemas:SCHEMA_DICT'). "
+    help="Python import path or file path to a Pydantic v2 model or schema dict "
+    "(e.g., 'mypackage.module:ClassName', './models.py:ClassName', or 'mypackage.schemas:SCHEMA_DICT'). "
     "Can be specified multiple times for related models with inheritance. "
     "For dict input, --input-file-type is required. "
     "Cannot be used with --input or --url.",
-    metavar="MODULE:NAME",
+    metavar="MODULE_OR_PATH:NAME",
 )
 base_options.add_argument(
     "--input-model-ref-strategy",
@@ -283,12 +395,19 @@ extra_fields_model_options.add_argument(
 model_options.add_argument(
     "--allow-population-by-field-name",
     help="Allow population by field name",
-    action="store_true",
+    action=BooleanOptionalAction,
     default=None,
 )
 model_options.add_argument(
     "--class-name",
     help="Set class name of root model",
+    default=None,
+)
+model_options.add_argument(
+    "--model-name-map",
+    help="Rename generated model classes by schema ref or current generated class name "
+    "using a JSON object or JSON file.",
+    type=_json_value_or_file,
     default=None,
 )
 model_options.add_argument(
@@ -322,7 +441,7 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--collapse-root-models",
-    action="store_true",
+    action=BooleanOptionalAction,
     default=None,
     help="Models generated with a root-type field will be merged into the models using that root-type model",
 )
@@ -333,6 +452,14 @@ model_options.add_argument(
     "Requires --collapse-root-models to be set.",
     choices=[s.value for s in CollapseRootModelsNameStrategy],
     default=None,
+)
+model_options.add_argument(
+    "--collapse-shared-parent-wrappers",
+    action="store_true",
+    default=None,
+    help="Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference "
+    "the inner model that takes its name, as its first model does; without it, where --field-type-collision-strategy "
+    "rename-type can rename the wrapper apart from the inner model in their module, the later models keep the wrapper",
 )
 model_options.add_argument(
     "--collapse-reuse-models",
@@ -346,6 +473,13 @@ model_options.add_argument(
     action="store_true",
     default=None,
     help="Skip generating the model for the root schema element",
+)
+model_options.add_argument(
+    "--use-root-model-sequence-interface",
+    action="store_true",
+    default=None,
+    help="Make non-null sequence-like Pydantic v2 RootModel classes implement collections.abc.Sequence by adding "
+    "Sequence[T] inheritance and root-delegating __iter__, __getitem__, and __len__ methods",
 )
 model_options.add_argument(
     "--disable-appending-item-suffix",
@@ -396,6 +530,24 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--order-constructor-fields-by",
+    help="Decide the order of constructor fields by each given value. final-names: order the constructor fields of "
+    "dataclass and msgspec.Struct models after every field has its final name, so a field that overrides an inherited "
+    "field renamed in another module is matched to it and keeps its place; without it the override reads as a new "
+    "field after the inherited default and is written keyword-only (kw_only=True). written-defaults: order the fields "
+    "of msgspec.Struct and Pydantic dataclass models by the defaults they write, so under --strip-default-none an "
+    "optional field whose None default is stripped but still written (UNSET, or None for a type that admits None) "
+    "goes after the required fields of a Struct with the other optional fields and stays positional after an "
+    "inherited default, and a required pydantic.dataclass field redeclaring it is written Field(...) (a msgspec.Struct "
+    "writes a bare annotation); without it the "
+    "field keeps its place among the fields without a default, as before: it is keyword-only after an inherited "
+    "default, a redeclaring field inherits its None default, and the fields are reordered only where a required "
+    "field would then follow a default.",
+    choices=[constructor_field_order.value for constructor_field_order in ConstructorFieldOrder],
+    nargs="+",
+    default=None,
+)
+model_options.add_argument(
     "--keyword-only",
     help="Defined models as keyword only (for example dataclass(kw_only=True)).",
     action="store_true",
@@ -416,6 +568,33 @@ model_options.add_argument(
         'e.g. \'{"frozen": true, "kw_only": true}\'. '
         "Overrides --frozen-dataclasses and similar flags."
     ),
+)
+model_options.add_argument(
+    "--use-msgspec-tagged-unions",
+    help="msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every "
+    "variant is tagged with the document's property name and its value, or none is and a warning says why. Without "
+    "it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the "
+    "other discriminators as Literal fields.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--tag-msgspec-by-payload-name",
+    help="msgspec.Struct output only: tag the structs of a discriminated union with the property name the document "
+    "carries (for example 'pet-kind') instead of the Python name that property resolves to (pet_kind), which msgspec "
+    "looks for in the payload. --use-msgspec-tagged-unions already tags by the document's property name. Without "
+    "either option the Python name is kept.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--use-msgspec-nullable-enum-alias",
+    help="msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an "
+    "Enum | None type alias, so that msgspec can decode it. Without it a plain Enum keeps the 0.83.0 None member, "
+    "which msgspec cannot decode; an IntEnum or --use-subclass-enum enum, which cannot hold it, is written without it "
+    "and, as its one type rejects null, without the alias.",
+    action="store_true",
+    default=None,
 )
 model_options.add_argument(
     "--reuse-model",
@@ -443,16 +622,49 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--target-pydantic-version",
-    help="Target Pydantic version for generated code. "
-    "'2': Pydantic 2.0+ compatible (default, uses populate_by_name). "
-    "'2.11': Pydantic 2.11+ (uses validate_by_name).",
+    help="Oldest Pydantic version the generated code must support. "
+    "Unset: the newest supported feature forms, with populate_by_name config like '2' "
+    "and the experimental MISSING import like '2.12'. "
+    "'2': Pydantic 2.0.3+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
+    "'2.11': Pydantic 2.11+ (uses validate_by_name). "
+    "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
+    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
+    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; "
+    "a number schema keeps multipleOf on a timedelta). "
+    "Constructs without an older form are written for every target, with a warning naming the Pydantic they need.",
     choices=[v.value for v in TargetPydanticVersion],
+    default=None,
+)
+model_options.add_argument(
+    "--alias-generator",
+    help="Pydantic v2 BaseModel alias generator to use in ConfigDict. "
+    "Matching generated aliases are omitted from individual Field() calls, "
+    "except with --target-pydantic-version 2, which writes every alias.",
+    choices=[a.value for a in AliasGenerator],
+    default=None,
+)
+model_options.add_argument(
+    "--pin-aliases-with-alias-generator",
+    help="pydantic_v2.BaseModel and pydantic_v2.dataclass output: decide a field's alias by the alias generator its "
+    "model applies, the one in its config or in the config it inherits. For a dataclass and a "
+    "--target-pydantic-version older than 2.8, whose alias generators can differ from the generated aliases, write "
+    "the generated alias on every field of a dataclass whose config names an alias generator. Without it a field keeps "
+    "the alias it has without the generator, which the config then replaces.",
+    action="store_true",
     default=None,
 )
 model_options.add_argument(
     "--treat-dot-as-module",
     help="Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' "
     "becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file output.",
+    action=BooleanOptionalAction,
+    default=None,
+)
+model_options.add_argument(
+    "--strict-dotted-module-names",
+    help="Only infer dotted schema names as module paths when every segment is a canonical Python identifier. "
+    "This applies only to automatic inference and does not override --treat-dot-as-module or "
+    "--no-treat-dot-as-module.",
     action=BooleanOptionalAction,
     default=None,
 )
@@ -476,6 +688,21 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--infer-union-variant-names",
+    help='Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) '
+    "instead of Pet1, Pet2",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--use-tag-as-union-variant-name",
+    help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping "
+    'tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and '
+    'single-key branches ({"granular": ...} -> AskForApprovalGranular)',
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--use-pendulum",
     help="use pendulum instead of datetime",
     action="store_true",
@@ -486,7 +713,7 @@ model_options.add_argument(
     help="Use Python standard library types for string formats (UUID, IPv4Address, etc.) "
     "instead of str. Affects dataclass, msgspec, TypedDict output. "
     "Pydantic already uses these types by default.",
-    action="store_true",
+    action=BooleanOptionalAction,
     default=None,
 )
 model_options.add_argument(
@@ -604,14 +831,65 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-single-value-enum-as-const",
+    help="Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal: "
+    'oneOf/anyOf branches such as {"type": "string", "enum": ["low"]} merge into one Enum when there are two or more '
+    "and all hold values of one JSON type, otherwise each branch is typed as written, and a schema with one enum "
+    "value is typed Literal[...] instead of a one-member Enum, except one with `nullable: true` and a value other "
+    "than null, which is read as written",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--read-const-beside-enum",
+    help="Read a `const` beside an `enum` as JSON Schema does: a value whose schema names the enum is typed by the "
+    "const that narrows it (`Literal[Enum.member]`, a Literal or None) instead of the enum class that lists the "
+    "values the const excludes, and under --use-single-value-enum-as-const an `enum` that admits its `const` is read "
+    "as that `const` instead of an Enum, except one with `nullable: true` and a value other than null",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--filter-literal-values",
+    help="Keep only the values of a `const` or an `enum` that meet the `minLength`, `maxLength`, `pattern`, bound and "
+    "`multipleOf` constraints beside them in its `Literal` or Enum, as JSON Schema validates them; a schema none of "
+    "whose values meets them stays as written with a warning",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--intersect-allof-keywords",
+    help="Combine the keywords of every part of an `allOf`, of a `$ref` with sibling keywords and of an inherited "
+    "property override, as JSON Schema validates them: the tightest bounds, the `enum` values every part admits, "
+    "the `type` every part admits, the conjunction of the `pattern`s, no null beside a `type` that excludes it, and "
+    "the constraints of the root, item and map value positions of an `allOf`. "
+    "Without it, the keyword of the last part wins where the parts disagree",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--field-constraints",
     help="Use field constraints and not con* annotations",
     action="store_true",
     default=None,
 )
 typing_options.add_argument(
+    "--omit-redundant-constraints",
+    help="Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class "
+    "such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-site-models-for-constrained-refs",
+    help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
+    "values all parts admit, instead of the referenced type, which leaves the added assertions out",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--set-default-enum-member",
-    help="Set enum members as default values for enum field",
+    help=f"Deprecated: {deprecation_message('cli.set-default-enum-member')}",
     action="store_true",
     default=None,
 )
@@ -655,6 +933,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-decimal-in-field-forms",
+    help="Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms "
+    "(--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under "
+    "--strict-types float (Pydantic only)",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-one-literal-as-default",
     help="Use one literal as default value for one literal field",
     action="store_true",
@@ -679,6 +965,36 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-typed-nullable-map-values",
+    help="Type the values of nullable maps, schemas whose type array lists object alone or with null, such as "
+    "[object, null] or [object], with additionalProperties, as their schema says, with a model for object values. "
+    "Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-typed-map-values-beside-other-types",
+    help="With --use-typed-nullable-map-values, also type the map values of type arrays that list object beside "
+    "other types, such as [object, string], as dict[str, int] | str instead of dict[str, Any] | str",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--read-unevaluated-properties",
+    help="Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the "
+    "object in place, so it types the extra keys of a model and makes an object without properties a map",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-single-dict-for-object-maps",
+    help="Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, "
+    "as one dict whose keys are those of every key class and whose value is the union of their values, beside the "
+    "null and the other types of its type array",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-subclass-enum",
     help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
     action="store_true",
@@ -688,6 +1004,14 @@ typing_options.add_argument(
     "--use-specialized-enum",
     help="Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+",
     action=BooleanOptionalAction,
+    default=None,
+)
+typing_options.add_argument(
+    "--keep-enum-member-values",
+    help="Write an enum as a plain Enum where the value base of --use-specialized-enum or --use-subclass-enum "
+    "would change a member value, such as 2.5 in an IntEnum; without it the base follows the schema type, as in "
+    "0.86.0",
+    action="store_true",
     default=None,
 )
 typing_options.add_argument(
@@ -705,6 +1029,26 @@ typing_options.add_argument(
 typing_options.add_argument(
     "--use-tuple-for-fixed-items",
     help="Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items length",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-tuple-for-closed-arrays",
+    help="Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail "
+    "(items, unevaluatedItems or additionalItems false) whose length the length keywords fix, so that each position "
+    "keeps its own type",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-tuple-for-fixed-length-arrays",
+    help="Generate tuple types for fixed-length arrays with a single items schema",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-total-false-for-typed-dict",
+    help="Generate TypedDict with total=False and mark required fields with Required",
     action="store_true",
     default=None,
 )
@@ -739,6 +1083,12 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-type-alias-type",
+    help="Use TypeAliasType for type aliases on Python 3.10 and 3.11 (implies --use-type-alias; experimental)",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-root-model-type-alias",
     help="Use type alias format for RootModel (e.g., Foo = RootModel[Bar]) "
     "instead of class inheritance (Pydantic v2 only)",
@@ -749,6 +1099,14 @@ typing_options.add_argument(
     "--disable-future-imports",
     help="Disable __future__ imports",
     action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--import-overrides",
+    help="Override modules for generated imports by symbol name. "
+    "Format: JSON object mapping symbols to module paths. "
+    'Example: \'{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}\'.',
+    type=str,
     default=None,
 )
 typing_options.add_argument(
@@ -767,7 +1125,7 @@ typing_options.add_argument(
     "Format: JSON object mapping model names to Python import paths. "
     'Model-level: \'{"CustomType": "my_app.types.MyType"}\' replaces all references. '
     'Scoped: \'{"User.field": "my_app.Type"}\' replaces specific field only.',
-    type=json.loads,
+    type=str,
     default=None,
 )
 
@@ -837,7 +1195,7 @@ field_options.add_argument(
 field_options.add_argument(
     "--snake-case-field",
     help="Change camel-case field name to snake-case",
-    action="store_true",
+    action=BooleanOptionalAction,
     default=None,
 )
 field_options.add_argument(
@@ -852,8 +1210,16 @@ field_options.add_argument(
     default=None,
 )
 field_options.add_argument(
+    "--omit-redundant-reference-null",
+    help="Do not write None again where a field, item or member references a model that holds null itself (a root "
+    "model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model",
+    action="store_true",
+    default=None,
+)
+field_options.add_argument(
     "--strip-default-none",
-    help="Strip default None on fields",
+    help="Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to "
+    "None only when the type admits None)",
     action="store_true",
     default=None,
 )
@@ -867,6 +1233,30 @@ field_options.add_argument(
     "--use-default-kwarg",
     action="store_true",
     help="Use `default=` instead of a positional argument for Fields that have default values.",
+    default=None,
+)
+field_options.add_argument(
+    "--use-missing-sentinel",
+    help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client "
+    "require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client "
+    "generation requires it.",
+    action="store_true",
+    default=None,
+)
+field_options.add_argument(
+    "--read-nullable-beside-type-list",
+    help="Write the null that `nullable: true` declares beside a `type` list with an object into the root model of "
+    "that schema under --strict-nullable or --use-missing-sentinel, as a declared field does; without it only a "
+    "`type` list holding null makes that root admit None",
+    action="store_true",
+    default=None,
+)
+field_options.add_argument(
+    "--keep-field-defaults-off-branch-roots",
+    help="Leave the default of a property off the root models extracted from the branches of its `anyOf` or `oneOf`, "
+    "which then require their value; without it each such root takes the property's default",
+    action="store_true",
     default=None,
 )
 field_options.add_argument(
@@ -921,17 +1311,17 @@ field_options.add_argument(
 )
 field_options.add_argument(
     "--serialization-aliases",
-    help="Serialization alias mapping file (JSON) for Pydantic v2. "
+    help="Serialization alias mapping as inline JSON or a JSON file path for Pydantic v2. "
     "Format: {'<schema_field>': '<serialization_alias>'}. "
     "Supports hierarchical formats: "
     "Flat: {'name': 'fullName'} applies to all occurrences. "
     "Scoped: {'User.name': 'fullName'} applies to specific class.",
-    type=Path,
+    type=str,
 )
 field_options.add_argument(
     "--use-frozen-field",
     help="Use Field(frozen=True) for readOnly fields (Pydantic v2).",
-    action="store_true",
+    action=BooleanOptionalAction,
     default=None,
 )
 field_options.add_argument(
@@ -955,7 +1345,7 @@ field_options.add_argument(
 # ======================================================================================
 template_options.add_argument(
     "--aliases",
-    help="Alias mapping file (JSON) for renaming fields. "
+    help="Alias mapping as inline JSON or a JSON file path for renaming fields. "
     "Format: {'<schema_field>': '<python_name>'} - the schema field name becomes the Pydantic alias. "
     "Supports hierarchical formats: "
     "Flat: {'id': 'id_'} applies to all occurrences. "
@@ -963,11 +1353,11 @@ template_options.add_argument(
     "Priority: scoped > flat. "
     "Multiple aliases (Pydantic v2 only): {'field': ['alt1', 'alt2']} uses AliasChoices for validation. "
     "Example: {'User.name': 'user_name', 'id': 'id_'} generates `id_: ... = Field(alias='id')`.",
-    type=Path,
+    type=str,
 )
 template_options.add_argument(
     "--default-values",
-    help="Default value overrides file (JSON). "
+    help="Default value overrides as inline JSON or a JSON file path. "
     "Supports hierarchical formats: "
     "Flat: {'field': value} applies to all occurrences. "
     "Scoped: {'ClassName.field': value} applies to specific class. "
@@ -975,7 +1365,22 @@ template_options.add_argument(
     "Note: Scoped keys use the generated class name for JSON Schema/OpenAPI. "
     "Required fields remain required unless --use-default is also specified. "
     "Example: {'User.status': 'active', 'page': 1, 'limit': 10}",
-    type=Path,
+    type=str,
+)
+template_options.add_argument(
+    "--deserialize-default-values",
+    help="Deserialize serialized schema defaults for selected generated types. Supported values: decimal, enum.",
+    choices=[default_value_type.value for default_value_type in DefaultValueType],
+    nargs="+",
+    default=None,
+)
+template_options.add_argument(
+    "--no-deserialize-default-values",
+    dest="deserialize_default_values",
+    help="Disable schema default value deserialization.",
+    action="store_const",
+    const=(),
+    default=None,
 )
 template_options.add_argument(
     "--custom-file-header",
@@ -990,6 +1395,12 @@ template_options.add_argument(
     type=str,
 )
 template_options.add_argument(
+    "--custom-file-header-mode",
+    help="How to combine a custom file header with the generated header (default: replace)",
+    choices=[mode.value for mode in CustomFileHeaderMode],
+    default=None,
+)
+template_options.add_argument(
     "--custom-template-dir",
     help="Custom template directory",
     type=str,
@@ -1001,18 +1412,47 @@ template_options.add_argument(
 )
 template_options.add_argument(
     "--extra-template-data",
-    help="Extra template data for output models. Input is supposed to be a json/yaml file. "
+    help="Extra template data for output models as inline JSON or a JSON file path. "
     "For OpenAPI and Jsonschema the keys are the spec path of the object, or the name of the object if you want to "
     "apply the template data to multiple objects with the same name. "
     "If you are using another input file type (e.g. GraphQL), the key is the name of the object. "
     "The value is a dictionary of the template data to add.",
-    type=Path,
+    type=str,
 )
 template_options.add_argument(
     "--validators",
-    help="Validators configuration file (JSON). Defines field validators for Pydantic v2 models. "
+    help="Validators configuration as inline JSON or a JSON file path. "
+    "Defines field validators for Pydantic v2 models. "
     "Keys are model names, values contain validator definitions with field, function, and mode.",
-    type=Path,
+    type=str,
+)
+template_options.add_argument(
+    "--generate-schema-validators",
+    help="Generate Pydantic v2 model validators for JSON Schema rules that cannot be represented as type hints "
+    "(experimental).",
+    action="store_true",
+    default=None,
+)
+template_options.add_argument(
+    "--check-pattern-maps-strictly",
+    help="Under --generate-schema-validators, count every key that a pattern of patternProperties admits, check "
+    "declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a "
+    "type array of an object without properties",
+    action="store_true",
+    default=None,
+)
+template_options.add_argument(
+    "--schema-validator-type",
+    help="Select the schema-derived runtime validator backend. "
+    "'pydantic-v2' generates Pydantic v2 model validators (experimental).",
+    choices=[i.value for i in SchemaValidatorType],
+    default=None,
+)
+template_options.add_argument(
+    "--schema-validator-base-class-name",
+    help="Set the generated shared Pydantic v2 schema runtime validator base class name.",
+    type=str,
+    default=None,
 )
 template_options.add_argument(
     "--use-type-checking-imports",
@@ -1052,7 +1492,16 @@ base_options.add_argument(
 )
 base_options.add_argument(
     "--formatters",
-    help="Formatters for output (default: [black, isort]; use builtin for dependency-free formatting)",
+    help="Formatters (current default: black, isort; future default: builtin). "
+    "For Ruff projects, use --formatters ruff-check ruff-format "
+    "(install with pip install 'datamodel-code-generator[ruff]'). "
+    "Use --formatters builtin when no external formatter is used or generation speed takes priority. "
+    "Keep --formatters black isort to preserve existing formatting. "
+    "Presets dated 20260909 or later include builtin; explicit formatters override presets. "
+    "The future builtin default reduces installation dependencies and version constraints. "
+    "Black/isort remain required today; declare [black,isort] extras for their later optional installation. "
+    "Review custom-template output with builtin. "
+    "Details: https://datamodel-code-generator.koxudaxi.dev/formatter-behavior/",
     choices=[f.value for f in Formatter],
     nargs="+",
     default=None,
@@ -1065,8 +1514,8 @@ base_options.add_argument(
 )
 template_options.add_argument(
     "--custom-formatters-kwargs",
-    help="A file with kwargs for custom formatters.",
-    type=Path,
+    help="Custom formatter kwargs as inline JSON or a JSON file path.",
+    type=str,
 )
 
 # ======================================================================================
@@ -1110,6 +1559,18 @@ openapi_options.add_argument(
     default=None,
 )
 openapi_options.add_argument(
+    "--openapi-as-definitions",
+    help="Give each given kind of OpenAPI schema the model a definitions entry of the same schema gets. paths-bodies: "
+    "the request and response bodies of the paths and webhooks scopes, so an object body with a type array such as "
+    "[object, null], or with map keywords and no type, becomes a model instead of an inline type, and an object body "
+    "with patternProperties or propertyNames becomes the root model of a map. ref-components: a "
+    "component written as a $ref to a recursive schema with sibling keywords, which gets the root model; without it "
+    "such a component gets no model, and a reference to it is typed by the schema its $ref names",
+    choices=[as_definitions.value for as_definitions in OpenAPIAsDefinitions],
+    nargs="+",
+    default=None,
+)
+openapi_options.add_argument(
     "--validation",
     help=f"Deprecated: {deprecation_message('cli.validation')}",
     action="store_true",
@@ -1121,6 +1582,13 @@ openapi_options.add_argument(
     "'request-response' = Request/Response models only (no base model), "
     "'all' = Base + Request + Response models.",
     choices=[e.value for e in ReadOnlyWriteOnlyModelType],
+    default=None,
+)
+openapi_options.add_argument(
+    "--dedupe-request-response-variants",
+    help="Decide Request/Response variants from the schema graph and build each inline model once, without the "
+    "unreferenced duplicate classes and shifted class numbers of 0.86.0",
+    action="store_true",
     default=None,
 )
 openapi_options.add_argument(
@@ -1176,6 +1644,16 @@ general_options.add_argument(
     "Useful for CI to ensure generated code is committed.",
 )
 general_options.add_argument(
+    "--diff-against",
+    metavar="BASELINE_INPUT",
+    help=(
+        "Generate BASELINE_INPUT and the current --input into temporary outputs, then show the generated-code diff "
+        "from baseline to current. "
+        "Requires --input and --output; --output is a virtual output path that selects file or directory layout "
+        "and is never modified. Exits with code 1 when generated outputs differ."
+    ),
+)
+general_options.add_argument(
     "--debug",
     help="show debug message (require \"debug\". `$ pip install 'datamodel-code-generator[debug]'`)",
     action="store_true",
@@ -1198,7 +1676,7 @@ general_options.add_argument(
 )
 general_options.add_argument(
     "--list-experimental",
-    help="List registered experimental features, then exit.",
+    help="List registered experimental features and their compatibility notes, then exit.",
     nargs="?",
     const="table",
     choices=["table", "json", "markdown"],
@@ -1225,11 +1703,18 @@ general_options.add_argument(
     help="Format for command output (default: text). Use json for structured output when supported.",
 )
 general_options.add_argument(
-    "--output-format-json-schema",
-    choices=["generate-prompt", "generation", "structured-output"],
+    "--fail-on-multi-module-stdout",
+    action="store_true",
     default=None,
-    metavar="{generate-prompt,generation,structured-output}",
-    help="Output JSON Schema for the selected structured output format and exit.",
+    help="Return an error instead of concatenating multiple generated modules in text stdout. "
+    "This does not affect single-module, JSON, or file output.",
+)
+general_options.add_argument(
+    "--output-format-json-schema",
+    choices=["config", "generate-prompt", "generation", "model-metadata", "recommend-options", "structured-output"],
+    default=None,
+    metavar="{config,generate-prompt,generation,model-metadata,recommend-options,structured-output}",
+    help="Output JSON Schema for the selected JSON output or JSON configuration format and exit.",
 )
 general_options.add_argument(
     "--generate-pyproject-config",
@@ -1258,15 +1743,69 @@ general_options.add_argument(
     ),
 )
 general_options.add_argument(
+    "--recommend-options",
+    nargs="?",
+    const=True,
+    type=_recommend_mode,
+    metavar="",
+    default=None,
+    help=(
+        "Analyse the input schema and print the options to add on top of the latest dated preset, with the reasons, "
+        "as a command and a pyproject.toml block, then exit (experimental). Schemas of up to 3000 estimated models "
+        "are also compared by generating the candidate configurations in memory. With --generate-prompt, the prompt "
+        "includes the recommendation instead."
+    ),
+)
+general_options.add_argument(
     "--ignore-pyproject",
     action="store_true",
     default=False,
     help="Ignore pyproject.toml configuration",
 )
 general_options.add_argument(
+    "--install-skill",
+    choices=["codex", "claude-code"],
+    default=None,
+    metavar="{codex,claude-code}",
+    help=(
+        "Install the bundled datamodel-code-generator Agent Skill and exit (experimental). "
+        "Use --skill-scope to select a project or personal installation."
+    ),
+)
+general_options.add_argument(
+    "--skill-scope",
+    choices=["project", "user"],
+    default=None,
+    metavar="{project,user}",
+    help=(
+        "Installation scope for --install-skill (default: project). "
+        "Project installs use .agents/skills or .claude/skills; user installs use the matching home directory."
+    ),
+)
+general_options.add_argument(
+    "--overwrite-skill",
+    action="store_true",
+    default=False,
+    help="Replace an existing regular skill directory when used with --install-skill.",
+)
+general_options.add_argument(
     "--profile",
     help="Use a named profile from pyproject.toml [tool.datamodel-codegen.profiles.<name>]",
     default=None,
+)
+job_selection_options = general_options.add_mutually_exclusive_group()
+job_selection_options.add_argument(
+    "--job",
+    action="append",
+    default=None,
+    metavar="NAME",
+    help="Run a named job from pyproject.toml [tool.datamodel-codegen.jobs.<name>] (experimental). Can be repeated.",
+)
+job_selection_options.add_argument(
+    "--all-jobs",
+    action="store_true",
+    default=None,
+    help="Run every named job from pyproject.toml in declaration order (experimental).",
 )
 general_options.add_argument(
     "--watch",
@@ -1284,6 +1823,159 @@ general_options.add_argument(
     "--version",
     action="store_true",
     help="show version",
+)
+
+# ======================================================================================
+# Target generation options
+# ======================================================================================
+target_selection_options.add_argument(
+    "--generate-server",
+    choices=[server.value for server in ServerType],
+    default=None,
+    help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
+)
+target_options.add_argument(
+    "--server-output",
+    default=None,
+    help="Directory of the generated server package (experimental).",
+)
+target_options.add_argument(
+    "--server-package",
+    default=None,
+    help="Import path of the generated server package (experimental).",
+)
+target_options.add_argument(
+    "--server-model-package",
+    default=None,
+    help="Import path of the models that --output generates (experimental).",
+)
+target_options.add_argument(
+    "--server-layout",
+    choices=[layout.value for layout in ServerLayout],
+    default=None,
+    help="Write one router module per tag (default) or a single routes module (experimental).",
+)
+target_options.add_argument(
+    "--server-handler-mode",
+    choices=[mode.value for mode in ServerHandlerMode],
+    default=None,
+    help="Make service methods plain functions (default) or coroutine functions (experimental).",
+)
+target_options.add_argument(
+    "--server-handler-modes",
+    type=str,
+    default=None,
+    help="Per-operation handler modes as inline JSON or a JSON file path, keyed by operation reference such as "
+    "/paths/~1pets/get; overrides --server-handler-mode for matched operations (experimental).",
+)
+target_options.add_argument(
+    "--server-include-request",
+    action=BooleanOptionalAction,
+    default=None,
+    help="Pass the Starlette Request to every service method (experimental).",
+)
+target_options.add_argument(
+    "--server-body-mode",
+    choices=[mode.value for mode in ServerBodyMode],
+    default=None,
+    help="Pass request bodies as validated models (default) or as the raw Request (experimental).",
+)
+target_options.add_argument(
+    "--server-body-modes",
+    type=str,
+    default=None,
+    help="Per-operation body modes as inline JSON or a JSON file path, keyed by operation reference; "
+    "overrides --server-body-mode for matched operations (experimental).",
+)
+target_options.add_argument(
+    "--server-primary-responses",
+    type=str,
+    default=None,
+    help="The declared response a bare return value takes, per operation, as inline JSON or a JSON file path: "
+    'an object with "status_code" and an optional "media_type" for each operation reference (experimental).',
+)
+target_options.add_argument(
+    "--server-operation-names",
+    type=str,
+    default=None,
+    help="Service method names per operation reference as inline JSON or a JSON file path (experimental).",
+)
+target_options.add_argument(
+    "--server-router-names",
+    type=str,
+    default=None,
+    help="Router group names keyed by group key, such as tag:pets, as inline JSON or a JSON file path (experimental).",
+)
+target_options.add_argument(
+    "--server-parameter-names",
+    type=str,
+    default=None,
+    help="Argument names per operation reference, each keyed by location and name such as query:limit, "
+    "as inline JSON or a JSON file path (experimental).",
+)
+target_selection_options.add_argument(
+    "--generate-client",
+    choices=[client.value for client in ClientType],
+    default=None,
+    help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
+)
+target_options.add_argument(
+    "--client-output",
+    default=None,
+    help="Directory of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-package",
+    default=None,
+    help="Import path of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-model-package",
+    default=None,
+    help="Import path of the models that --output generates (experimental).",
+)
+target_options.add_argument(
+    "--client-signature-style",
+    choices=[style.value for style in ClientSignatureStyle],
+    default=None,
+    help="Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental).",
+)
+target_options.add_argument(
+    "--client-body-arguments",
+    choices=[arguments.value for arguments in ClientBodyArguments],
+    default=None,
+    help="Take request bodies as one body argument (default) or also as field arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-resource-names",
+    type=str,
+    default=None,
+    help='Resource namespaces keyed by tag, such as {"pets": "store.pets"}, as inline JSON or a JSON file path '
+    "(experimental).",
+)
+target_options.add_argument(
+    "--client-operations",
+    type=str,
+    default=None,
+    help="Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; "
+    "their body_arguments overrides --client-body-arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-default-base-url",
+    default=None,
+    help="Server URL of the operations that declare no servers (experimental).",
+)
+target_options.add_argument(
+    "--client-server-base-url",
+    default=None,
+    help="Base URL that relative server URLs of the document resolve against (experimental).",
+)
+target_options.add_argument(
+    "--client-protocols",
+    type=str,
+    default=None,
+    help="Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a "
+    "JSON file path (experimental).",
 )
 
 __all__ = [

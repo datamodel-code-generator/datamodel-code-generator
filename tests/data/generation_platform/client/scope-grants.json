@@ -1,0 +1,7 @@
+[
+  {"label": "known read", "grants": ["read"]},
+  {"label": "known empty", "grants": []},
+  {"label": "known write", "grants": ["write"]},
+  {"label": "hierarchical", "grants": ["read:all"]},
+  {"label": "unknown", "grants": null}
+]

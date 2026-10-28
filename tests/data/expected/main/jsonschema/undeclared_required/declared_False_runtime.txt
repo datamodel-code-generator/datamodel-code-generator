@@ -1,0 +1,54 @@
+[
+  {
+    "native": false,
+    "fields": [
+      "known"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": true,
+    "fields": [
+      "known"
+    ],
+    "python": {
+      "known": 2
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "known"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": true,
+    "fields": [
+      "known"
+    ],
+    "python": {
+      "known": 2,
+      "missing": true
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2,
+      "missing": true
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "known"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  }
+]

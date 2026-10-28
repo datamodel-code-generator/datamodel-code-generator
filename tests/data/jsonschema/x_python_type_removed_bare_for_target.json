@@ -1,0 +1,11 @@
+{
+  "title": "RemovedBareForTarget",
+  "type": "object",
+  "properties": {
+    "entry": {
+      "type": "string",
+      "x-python-type": "DirEntryInfo"
+    }
+  },
+  "required": ["entry"]
+}

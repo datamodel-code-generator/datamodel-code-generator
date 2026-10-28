@@ -1,0 +1,8 @@
+[
+  {
+    "child": {
+      "value": "ok"
+    }
+  },
+  "rejected"
+]

@@ -1,0 +1,1 @@
+message M { optional string value = 1; optional int32 count = 2; }

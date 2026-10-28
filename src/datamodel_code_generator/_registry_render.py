@@ -18,8 +18,8 @@ def _render_registry_table(rows: Sequence[Sequence[str]]) -> str:
     """Render registry rows as a stable plain text table."""
     widths = [max(len(row[index]) for row in rows) for index in range(len(rows[0]))]
     lines = [
-        "  ".join(value.ljust(widths[index]) for index, value in enumerate(rows[0])),
+        "  ".join(value.ljust(widths[index]) for index, value in enumerate(rows[0])).rstrip(),
         "  ".join("-" * width for width in widths),
     ]
-    lines.extend("  ".join(value.ljust(widths[index]) for index, value in enumerate(row)) for row in rows[1:])
+    lines.extend("  ".join(value.ljust(widths[index]) for index, value in enumerate(row)).rstrip() for row in rows[1:])
     return "\n".join(lines) + "\n"

@@ -1,0 +1,15 @@
+{
+  "things.pages": {
+    "kind": "pagination",
+    "operation": "/paths/~1things/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Thing"},
+    "continuation": {
+      "kind": "offset",
+      "write": {"in": "query", "name": "offset"},
+      "first": 0,
+      "step": {"page_items_count": true},
+      "has_more": {"from": "body", "pointer": "/has_more"}
+    }
+  }
+}

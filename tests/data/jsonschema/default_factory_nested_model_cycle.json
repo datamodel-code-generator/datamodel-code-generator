@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "b": {"$ref": "#/$defs/B"},
+        "leaf": {"$ref": "#/$defs/Leaf"}
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "a": {"$ref": "#/$defs/A"}
+      }
+    },
+    "Leaf": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer", "default": 1}
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "a": {"$ref": "#/$defs/A"},
+    "leaf": {"$ref": "#/$defs/Leaf"}
+  }
+}

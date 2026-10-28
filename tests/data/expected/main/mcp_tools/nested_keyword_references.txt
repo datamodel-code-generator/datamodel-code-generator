@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "$defs": {
+    "NestedInputOuterInner": {
+      "type": "string",
+      "title": "NestedInputOuterInner"
+    },
+    "NestedInputOuter": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/NestedInputOuterInner"
+        },
+        "const": {
+          "$ref": "#/$defs/NestedInputOuterInner"
+        },
+        "enum": {
+          "$ref": "#/$defs/NestedInputOuterInner"
+        },
+        "examples": {
+          "$ref": "#/$defs/NestedInputOuterInner"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NestedInputOuterInner"
+          }
+        },
+        "combined": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/NestedInputOuterInner"
+            }
+          ]
+        }
+      },
+      "title": "NestedInputOuter"
+    },
+    "NestedInput": {
+      "type": "object",
+      "properties": {
+        "outer": {
+          "$ref": "#/$defs/NestedInputOuter"
+        }
+      },
+      "title": "NestedInput"
+    }
+  }
+}

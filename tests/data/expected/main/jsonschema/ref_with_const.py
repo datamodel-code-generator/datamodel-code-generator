@@ -22,4 +22,4 @@ class NullableStatus(Enum):
 
 class Model(BaseModel):
     status: Literal['active']
-    nullable_status: Literal['active'] = 'active'
+    nullable_status: Literal['active'] | None = None

@@ -1,0 +1,12 @@
+{
+  "title": "Single",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

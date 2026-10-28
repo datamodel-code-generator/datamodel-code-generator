@@ -1,0 +1,107 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Discriminator field aliases",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Cat": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CatBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "meow": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Dog": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DogBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bark": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Pet": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "petType",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Unrelated": {
+        "type": "object",
+        "properties": {
+          "petType": {
+            "type": "string"
+          }
+        }
+      },
+      "CatBase": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ordinary"
+            ]
+          },
+          "petType": {
+            "type": "string",
+            "enum": [
+              "cat"
+            ]
+          }
+        },
+        "required": [
+          "petType"
+        ]
+      },
+      "DogBase": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ordinary"
+            ]
+          },
+          "petType": {
+            "type": "string",
+            "enum": [
+              "dog"
+            ]
+          }
+        },
+        "required": [
+          "petType"
+        ]
+      }
+    }
+  }
+}

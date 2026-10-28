@@ -1,0 +1,5 @@
+PatternConstraints leaf fields: ['regex', 'pattern']
+PydanticV2Constraints leaf fields: ['regex', 'pattern']
+MsgspecConstraints leaf fields: ['regex', 'pattern']
+PydanticV2 minItems dump: {'min_length': 1}
+Msgspec minItems dump: {'min_items': 1}

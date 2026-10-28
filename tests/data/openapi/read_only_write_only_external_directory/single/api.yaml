@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Read-only and write-only fields in an external directory
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Local:
+      $ref: '#/components/schemas/Foo'
+    LocalAllOf:
+      allOf:
+        - $ref: '#/components/schemas/Foo'
+    Foo:
+      type: object
+      properties:
+        bar:
+          $ref: '#/components/schemas/Bar'
+    Bar:
+      type: object
+      properties:
+        b:
+          type: string
+          writeOnly: true
+        c:
+          type: string

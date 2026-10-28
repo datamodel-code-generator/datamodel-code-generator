@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Type array response body
+  version: "1.0"
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          description: The pet names by id.
+          content:
+            application/json:
+              schema:
+                type: [object, "null"]
+                additionalProperties:
+                  type: string

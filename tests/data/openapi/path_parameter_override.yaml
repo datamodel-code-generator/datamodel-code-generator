@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Parameter override
+  version: 1.0.0
+paths:
+  /pets:
+    parameters:
+      - {$ref: '#/components/parameters/Limit'}
+    get:
+      operationId: listPets
+      parameters:
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer}

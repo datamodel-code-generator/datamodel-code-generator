@@ -1,0 +1,11 @@
+interface ZNode { camelValue: Int! label: String! }
+interface ANode implements ZNode { camelValue: Int! label: String! spare: Int! }
+type Item implements ZNode { camelValue: Int! label: String! spare: Int! }
+type Second implements ZNode { camelValue: Int! label: String! spare: Int! }
+interface Base { value: Int! }
+type Cross implements Base { value: Int! label: String! }
+type Ordinary implements Base { value: Int! }
+type Solo { label: String! }
+input ItemInput { camelValue: Int! label: String! spare: Int! }
+union Choice = Second | Item
+type Query implements ZNode { camelValue: Int! label: String! item(input: ItemInput!): Item choice: Choice cross: Cross ordinary: Ordinary solo: Solo }

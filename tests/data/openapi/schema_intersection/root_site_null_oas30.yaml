@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: t
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Tags:
+      type: array
+      items:
+        type: string
+    RefArray:
+      allOf:
+        - $ref: '#/components/schemas/Tags'
+        - minItems: 1
+      nullable: true
+    InlineArray:
+      allOf:
+        - type: array
+          items:
+            type: string
+        - minItems: 1
+      nullable: true
+    Model:
+      type: object
+      properties:
+        ref_array:
+          $ref: '#/components/schemas/RefArray'
+        inline_array:
+          $ref: '#/components/schemas/InlineArray'

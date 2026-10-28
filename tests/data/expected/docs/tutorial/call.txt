@@ -1,0 +1,4 @@
+exit 0
+id=1 name='Mimi' tag='cat'
+Mimi
+404 message='Pet 99 not found'

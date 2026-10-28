@@ -1,0 +1,10 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_stdlib_untyped",
+  "cases": [
+    {"name": "untyped-server-decode", "use": "/paths/~1untyped/post request_body", "op": "decode",
+     "value": {"inner": {"v": 1}, "seq": [1, 2]}},
+    {"name": "untyped-server-decode-scalars", "use": "/paths/~1untyped/post request_body", "op": "decode",
+     "value": {"inner": "abc", "seq": 5}}
+  ]
+}

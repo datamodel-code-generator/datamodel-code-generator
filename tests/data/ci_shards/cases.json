@@ -1,0 +1,323 @@
+{
+  "balanced": {
+    "items": [
+      {
+        "nodeid": "b[space quote' 日本語]",
+        "weight": 3
+      },
+      {
+        "nodeid": "a",
+        "weight": 4
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "second": {
+    "items": [
+      {
+        "nodeid": "b[space quote' 日本語]",
+        "weight": 3
+      },
+      {
+        "nodeid": "a",
+        "weight": 4
+      }
+    ],
+    "args": [
+      "2",
+      "2"
+    ]
+  },
+  "empty-shard": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "2",
+      "2"
+    ]
+  },
+  "zero-index": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "0",
+      "2"
+    ]
+  },
+  "zero-count": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "0"
+    ]
+  },
+  "negative-index": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "-1",
+      "2"
+    ]
+  },
+  "large-index": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "3",
+      "2"
+    ]
+  },
+  "empty": {
+    "items": [],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "not-list": {
+    "items": {},
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "duplicate": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      },
+      {
+        "nodeid": "a",
+        "weight": 2
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "zero-weight": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 0
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "negative-weight": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": -1
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "boolean-weight": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": true
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "empty-nodeid": {
+    "items": [
+      {
+        "nodeid": "",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "blank-nodeid": {
+    "items": [
+      {
+        "nodeid": "  ",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "newline-nodeid": {
+    "items": [
+      {
+        "nodeid": "a\nb",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "cr-nodeid": {
+    "items": [
+      {
+        "nodeid": "a\rb",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "invalid-item": {
+    "items": [
+      null
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "unsupported": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "version": 2,
+    "args": [
+      "1",
+      "2"
+    ]
+  },
+  "missing-index": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      }
+    ],
+    "args": []
+  },
+  "ordered": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      },
+      {
+        "nodeid": "d",
+        "weight": 3
+      },
+      {
+        "nodeid": "b",
+        "weight": 5
+      },
+      {
+        "nodeid": "c",
+        "weight": 3
+      }
+    ],
+    "args": [
+      "1",
+      "1"
+    ]
+  },
+  "parted": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 8
+      },
+      {
+        "nodeid": "b",
+        "weight": 1
+      },
+      {
+        "nodeid": "c",
+        "weight": 1
+      }
+    ],
+    "args": [
+      "1",
+      "3"
+    ]
+  },
+  "parts-apart": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 2
+      },
+      {
+        "nodeid": "b",
+        "weight": 3
+      },
+      {
+        "nodeid": "c",
+        "weight": 6
+      }
+    ],
+    "args": [
+      "1",
+      "3"
+    ]
+  },
+  "parts-exceed-shards": {
+    "items": [
+      {
+        "nodeid": "test_x@1/3",
+        "weight": 2
+      },
+      {
+        "nodeid": "test_x@2/3",
+        "weight": 2
+      },
+      {
+        "nodeid": "test_x@3/3",
+        "weight": 2
+      }
+    ],
+    "args": [
+      "1",
+      "2"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info: {title: References of operations, version: "1"}
+paths:
+  /pets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      operationId: updatePet
+      requestBody:
+        $ref: "#/components/requestBodies/PetBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Pet"
+        "404":
+          description: missing
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {$ref: "#/components/schemas/Identifier"}
+  requestBodies:
+    PetBody:
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Pet"}
+  responses:
+    Pet:
+      description: the pet
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Pet"}
+  schemas:
+    Identifier: {type: integer}
+    Error: {type: object, properties: {message: {type: string}}}
+    Pet:
+      type: object
+      properties:
+        id: {$ref: "#/components/schemas/Identifier"}

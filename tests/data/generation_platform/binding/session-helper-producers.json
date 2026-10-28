@@ -1,0 +1,54 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Helper producers",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Values": {
+        "type": "object",
+        "required": [
+          "any",
+          "list_any",
+          "choice",
+          "dictionary",
+          "pattern"
+        ],
+        "properties": {
+          "any": true,
+          "list_any": {
+            "type": "array",
+            "items": true
+          },
+          "choice": {
+            "anyOf": [
+              false,
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "dictionary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "pattern": {
+            "type": "object",
+            "patternProperties": {
+              "^x": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {}
+}

@@ -1,0 +1,224 @@
+openapi: 3.1.0
+info:
+  title: Pagination
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: X-Snapshot
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            X-Next:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+        '500':
+          description: The listing failed.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /users/search:
+    post:
+      operationId: searchUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserQuery'}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /loose:
+    get:
+      operationId: listLoose
+      tags: [loose]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: integer}
+      responses:
+        '200':
+          description: One page whose members may be absent.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LoosePage'}
+  /nested:
+    get:
+      operationId: listNested
+      tags: [nested]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page with nested items.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NestedPage'}
+  /labels:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      parameters:
+        - name: after
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of labels.
+          headers:
+            X-Next:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Label'}
+  /label-sets:
+    get:
+      operationId: listLabelSets
+      tags: [labels]
+      parameters:
+        - name: after
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of labels as a named list.
+          headers:
+            X-Next:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LabelList'}
+  /archive/{cursor}:
+    get:
+      operationId: listArchive
+      tags: [archive]
+      parameters:
+        - name: cursor
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of archived users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /statuses:
+    get:
+      operationId: listStatuses
+      tags: [statuses]
+      parameters:
+        - name: code
+          in: query
+          schema: {type: integer}
+      responses:
+        '2XX':
+          description: One page, partial until the final status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /secure/users:
+    get:
+      operationId: listSecureUsers
+      tags: [secure]
+      security:
+        - oauth: [users.read]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users behind OAuth.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            users.read: Read users.
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        name: {type: string}
+    UserQuery:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}
+    LoosePage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next: {type: [integer, 'null']}
+        token: {}
+    NestedResult:
+      type: object
+      properties:
+        items:
+          type: [array, 'null']
+          items: {$ref: '#/components/schemas/User'}
+        next: {type: string}
+    NestedPage:
+      type: object
+      properties:
+        result: {$ref: '#/components/schemas/NestedResult'}
+    Label:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    LabelList:
+      type: array
+      items: {$ref: '#/components/schemas/Label'}
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}

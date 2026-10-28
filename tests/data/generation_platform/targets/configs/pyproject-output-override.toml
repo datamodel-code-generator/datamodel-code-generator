@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+generate-server = "fastapi"
+server-output = "server"
+server-package = "example.server"
+server-model-package = "example.models"

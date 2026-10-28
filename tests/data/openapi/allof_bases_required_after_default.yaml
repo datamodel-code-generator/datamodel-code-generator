@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Inherited fields that two bases put after a default
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+    Local:
+      type: object
+      properties:
+        x:
+          type: string
+    Other:
+      type: object
+      required: [o]
+      properties:
+        o:
+          type: boolean
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - $ref: '#/components/schemas/Local'
+    Leaf:
+      allOf:
+        - $ref: '#/components/schemas/Branch'
+        - type: object
+          required: [z]
+          properties:
+            z:
+              type: integer
+            w:
+              type: string
+              default: w
+    Fork:
+      allOf:
+        - $ref: '#/components/schemas/Other'
+        - $ref: '#/components/schemas/Branch'
+    Pair:
+      allOf:
+        - $ref: '#/components/schemas/Twig'
+        - $ref: '#/components/schemas/Other'
+        - $ref: '#/components/schemas/Local'

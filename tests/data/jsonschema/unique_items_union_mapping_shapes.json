@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionMappingShapes",
+  "type": "object",
+  "properties": {
+    "anyOfFallback": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        },
+        {"type": "object"}
+      ]
+    },
+    "oneOfFallback": {
+      "oneOf": [
+        {
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        },
+        {
+          "type": "object",
+          "properties": {"kind": {"type": "string"}},
+          "required": ["kind"]
+        }
+      ]
+    },
+    "anyOfMappingOnly": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        },
+        {"type": "string"}
+      ]
+    },
+    "arrayImpossibleBranch": {
+      "anyOf": [
+        {
+          "type": "array",
+          "anyOf": [{"type": "object"}]
+        },
+        {
+          "type": "array",
+          "items": {"type": "integer"},
+          "uniqueItems": true
+        }
+      ]
+    },
+    "mappingImpossibleBranch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "anyOf": [{"type": "array"}]
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        }
+      ]
+    },
+    "arrayConstScalar": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {"type": "integer"},
+          "uniqueItems": true
+        },
+        {"const": "scalar"}
+      ]
+    },
+    "mappingEnumScalar": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        },
+        {"enum": ["scalar", 0]}
+      ]
+    },
+    "arrayConstLiteral": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {"type": "integer"},
+          "uniqueItems": true
+        },
+        {"const": [1, 1]}
+      ]
+    },
+    "mappingEnumLiteral": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "uniqueItems": true
+          }
+        },
+        {"enum": [{"x": [1, 1]}]}
+      ]
+    }
+  },
+  "required": [
+    "anyOfFallback",
+    "oneOfFallback",
+    "anyOfMappingOnly",
+    "arrayImpossibleBranch",
+    "mappingImpossibleBranch",
+    "arrayConstScalar",
+    "mappingEnumScalar",
+    "arrayConstLiteral",
+    "mappingEnumLiteral"
+  ]
+}

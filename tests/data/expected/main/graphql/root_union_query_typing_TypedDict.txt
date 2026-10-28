@@ -1,0 +1,45 @@
+{
+  "schema_errors": [],
+  "members": [
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "Query",
+          "value": "query",
+          "self": {
+            "value": "nested"
+          }
+        }
+      },
+      "name": "Query",
+      "fields": [
+        "choice",
+        "self",
+        "value",
+        "typename__"
+      ],
+      "value": "query",
+      "nested_value": "nested"
+    },
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "Other",
+          "value": "ok"
+        }
+      },
+      "name": "Other",
+      "fields": [
+        "value",
+        "typename__"
+      ],
+      "value": "ok",
+      "nested_value": null
+    }
+  ],
+  "emitted_roots": [
+    "Query"
+  ]
+}

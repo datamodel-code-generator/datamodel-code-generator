@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Legacy",
+  "type": "object",
+  "properties": {
+    "one": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    }
+  }
+}

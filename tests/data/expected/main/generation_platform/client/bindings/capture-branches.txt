@@ -1,0 +1,10 @@
+# capture-branches
+render pydantic_v2.BaseModel default
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default
+render pydantic_v2.BaseModel no-merge
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default
+render pydantic_v2.BaseModel validators
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default

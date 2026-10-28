@@ -1,0 +1,31 @@
+{
+  "description": "Restoring complete containers must retain their extension metadata.",
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "items": {
+            "type": "string",
+            "x-python-union-branch": "item"
+          },
+          "type": "array",
+          "x-python-union-branch": [
+            "container",
+            0
+          ],
+          "x-python-type": "list[Callable[[int], int]]"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "int | list[Callable[[int], int]]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "Container",
+  "type": "object"
+}

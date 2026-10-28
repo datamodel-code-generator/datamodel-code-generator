@@ -1,0 +1,8 @@
+7 Field.mark_as_keyword_only nullable: use GenerationStore.apply_literal_default() instead of writing nullable
+9 Field.mark_as_keyword_only replace_data_type(): use GenerationStore API instead of replace_data_type()
+10 Field.mark_as_keyword_only fields: use GenerationStore.set_fields() instead of assigning fields
+11 Field.mark_as_keyword_only children (read): use GenerationIndex reverse-edge queries instead of Reference.children
+17 Field._helper default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
+34 Field.path @cached_property: @cached_property caches state on a mutable DataModel; keep derived values in a per-parse store memo
+38 Field.refresh_field_config extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations
+42 deeper alias: use GenerationStore.name_reference() or rename_field() instead of writing alias

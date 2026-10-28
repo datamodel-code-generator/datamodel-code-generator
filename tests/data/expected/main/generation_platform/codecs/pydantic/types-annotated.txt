@@ -1,0 +1,7 @@
+code: native 'abc' json="abc"
+code-invalid: native 'ABC' json="ABC"
+price: native Decimal('9.5') json="9.5"
+price-invalid: native Decimal('10.5') json="10.5"
+counts: native {'a': 1, 'b': 2} json={"a":1,"b":2}
+words: native {'ab': 1} json={"ab":1}
+words-invalid: native {'AB': 1} json={"AB":1}

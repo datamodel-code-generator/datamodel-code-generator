@@ -1,0 +1,35 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/definitions/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "definitions": {
+    "Value": {
+      "type": "string"
+    },
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "definitions": {
+        "Value": {
+          "type": "integer"
+        }
+      },
+      "$id": "child.json"
+    }
+  },
+  "$id": "root.json"
+}

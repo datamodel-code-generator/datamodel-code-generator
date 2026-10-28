@@ -18,11 +18,11 @@ class First(BaseModel):
 
 
 class Target3(BaseModel):
-    source: Literal['external1'] = 'external1'
+    source: Literal['external1'] | None = None
 
 
 class Target1(BaseModel):
-    source: Literal['external2'] = 'external2'
+    source: Literal['external2'] | None = None
 
 
 class Second(BaseModel):
@@ -30,7 +30,7 @@ class Second(BaseModel):
 
 
 class Target2(BaseModel):
-    source: Literal['inline'] = 'inline'
+    source: Literal['inline'] | None = None
 
 
 class Wrapper(BaseModel):
@@ -40,7 +40,7 @@ class Wrapper(BaseModel):
 
 
 class Target(BaseModel):
-    source: Literal['main'] = 'main'
+    source: Literal['main'] | None = None
 
 
 class Combined(First, Target1):

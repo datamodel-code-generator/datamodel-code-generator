@@ -1,0 +1,4 @@
+order: G03b -> G08 -> G06 -> G12b
+problem: decision phase: G06 conflicts with G08 on DEFAULTS and needs an explicit edge
+problem: decision phase: G12b conflicts with G08 on DEFAULTS and needs an explicit edge
+problem: decision phase: G12b conflicts with G06 on DEFAULTS and needs an explicit edge

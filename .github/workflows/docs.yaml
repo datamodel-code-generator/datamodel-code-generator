@@ -2,6 +2,11 @@ name: Docs
 
 on:
   pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/data/release-benchmarks.json'
+      - '.github/workflows/docs.yaml'
   release:
     types: [published]
   workflow_dispatch:
@@ -16,15 +21,15 @@ jobs:
     uses: ./.github/workflows/docs-deploy.yaml
     with:
       checkout_ref: ${{ github.event.pull_request.head.sha }}
-      # Fork PRs run the docs build only. Only same-repo PRs get a deploy
-      # branch and Cloudflare secrets for preview deployment.
-      deploy_branch: ${{ github.event.pull_request.head.repo.full_name == github.repository && format('pr-{0}', github.event.pull_request.number) || '' }}
+      # Fork PRs and dependabot run the docs build only: they have no access to the
+      # Cloudflare secrets, so skip the deploy branch to avoid a failing wrangler step.
+      deploy_branch: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && format('pr-{0}', github.event.pull_request.number) || '' }}
     secrets:
-      CLOUDFLARE_API_TOKEN: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.CLOUDFLARE_API_TOKEN || '' }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
+      CLOUDFLARE_API_TOKEN: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && secrets.CLOUDFLARE_API_TOKEN || '' }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
 
   build-production:
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/docs-deploy.yaml
     with:
       checkout_ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
@@ -36,13 +41,13 @@ jobs:
   comment-preview:
     runs-on: ubuntu-24.04
     needs: build-preview
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     permissions:
       issues: write
       pull-requests: write
     steps:
       - name: Comment Preview URL on PR
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const previewUrl = 'https://pr-${{ github.event.pull_request.number }}.datamodel-code-generator.pages.dev';

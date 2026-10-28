@@ -1,0 +1,3 @@
+usage:
+  datamodel-codegen [options]
+pytest: error: unrecognized arguments: not-an-option

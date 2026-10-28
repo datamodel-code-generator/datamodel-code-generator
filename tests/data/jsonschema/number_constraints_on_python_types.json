@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnPythonTypes",
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "string",
+      "x-python-type": "int",
+      "minimum": 0
+    },
+    "wait": {
+      "type": "string",
+      "format": "duration",
+      "minimum": 0
+    },
+    "wait_step": {
+      "type": "string",
+      "format": "duration",
+      "multipleOf": 2
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "minimum": 0
+    },
+    "at_step": {
+      "type": "string",
+      "format": "date-time",
+      "multipleOf": 2
+    },
+    "clock": {
+      "type": "string",
+      "format": "time",
+      "maximum": 3600
+    },
+    "seconds": {
+      "type": "string",
+      "x-python-type": "tests.data.python.annotated_string_key_aliases.IntegerValueWithAVeryLongTypeAliasName",
+      "minimum": 0
+    },
+    "plain": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "price": {
+      "type": "string",
+      "x-python-type": "decimal.Decimal",
+      "exclusiveMinimum": 0
+    },
+    "step": {
+      "type": "string",
+      "x-python-type": "float",
+      "multipleOf": 0.5
+    },
+    "nullable_wait": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "duration",
+      "exclusiveMaximum": 10
+    },
+    "optional_count": {
+      "type": "string",
+      "x-python-type": "int | None",
+      "maximum": 10
+    },
+    "timeout": {
+      "$ref": "#/definitions/Timeout"
+    },
+    "delay": {
+      "$ref": "#/definitions/Delay"
+    },
+    "day": {
+      "type": "string",
+      "x-python-type": "datetime.date",
+      "minimum": 0
+    },
+    "label": {
+      "type": "string",
+      "minimum": 0
+    },
+    "count_or_label": {
+      "type": "string",
+      "x-python-type": "int | str",
+      "minimum": 0
+    },
+    "counts": {
+      "type": "string",
+      "x-python-type": "list[int]",
+      "minimum": 0
+    }
+  },
+  "definitions": {
+    "Timeout": {
+      "type": "string",
+      "format": "duration",
+      "minimum": 0
+    },
+    "Delay": {
+      "allOf": [
+        {
+          "type": "string",
+          "format": "duration"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    }
+  }
+}

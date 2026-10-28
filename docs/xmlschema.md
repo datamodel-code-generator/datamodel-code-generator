@@ -2,6 +2,9 @@
 
 Generate Python models from W3C XML Schema documents (`.xsd`).
 
+!!! warning "Experimental"
+    XML Schema input support is experimental and may change as real-world usage is validated.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -70,6 +73,22 @@ model definitions:
 
 The XML Schema input type is for generating Python model definitions. It does not
 implement XML parsing, XML serialization, or runtime XML validation.
+
+Generated Pydantic v2 `pattern` constraints that combine distinct facets in the same
+restriction, or inherited and derived facets, require **Pydantic 2.8 or later in
+the environment that runs the generated code**, for every `--target-pydantic-version`
+including `2`. These constraints use compiled
+Python regular expressions to preserve full-value matching and inherited restrictions,
+including when a generated type alias is used directly with `TypeAdapter`.
+[Pydantic 2.8 added support for compiled patterns](https://pydantic.dev/articles/pydantic-v2-8-release#respect-regex-flags-in-constrained-string-validation).
+This does not add generated validators or change the Pydantic requirement for other
+XSD inputs or input formats. Upgrading only the environment that runs
+datamodel-code-generator does not upgrade the generated code's runtime.
+
+Python properties use XML local names. Generation fails when distinct XML names
+would overwrite the same property, such as an element and attribute named `code`,
+or elements named `code` in different namespaces. Repeated uses of the same XML
+name remain supported.
 
 ## 📖 See Also
 

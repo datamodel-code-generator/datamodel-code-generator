@@ -1,0 +1,4 @@
+valid: accepted
+parsed: Use(tags=['a', None])
+invalid tags: rejected (string_too_short)
+invalid tags: rejected (string_type)

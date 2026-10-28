@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "left": {
+      "$ref": "left.json#same"
+    },
+    "right": {
+      "$ref": "right.json#same"
+    }
+  },
+  "required": [
+    "left",
+    "right"
+  ],
+  "$defs": {
+    "Left": {
+      "$id": "left.json",
+      "$anchor": "same",
+      "type": "object",
+      "properties": {
+        "left": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "left"
+      ]
+    },
+    "Right": {
+      "$id": "right.json",
+      "$anchor": "same",
+      "type": "object",
+      "properties": {
+        "right": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "right"
+      ]
+    }
+  }
+}

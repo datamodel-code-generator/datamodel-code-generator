@@ -1,0 +1,23 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2
+    }
+  }
+}

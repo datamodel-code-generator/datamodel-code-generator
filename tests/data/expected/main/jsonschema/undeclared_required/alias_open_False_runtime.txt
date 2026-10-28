@@ -1,0 +1,73 @@
+[
+  {
+    "native": false,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 4
+    },
+    "identity": "Root",
+    "json": {
+      "known": 4
+    }
+  },
+  {
+    "native": false,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 2
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 4,
+      "missing": null
+    },
+    "identity": "Root",
+    "json": {
+      "known": 4,
+      "missing": null
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 2,
+      "missing": true
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2,
+      "missing": true
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 2,
+      "missing": true
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2,
+      "missing": true
+    }
+  }
+]

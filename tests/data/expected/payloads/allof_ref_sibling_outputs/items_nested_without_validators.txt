@@ -1,0 +1,34 @@
+[
+  {
+    "accepted": true,
+    "value": [
+      {
+        "x": "bb",
+        "marker": "marker",
+        "flag": true
+      }
+    ]
+  },
+  {
+    "accepted": true,
+    "value": [
+      {
+        "x": "bbb",
+        "marker": "marker",
+        "flag": true
+      }
+    ]
+  },
+  {
+    "accepted": false
+  },
+  {
+    "accepted": false
+  },
+  {
+    "accepted": false
+  },
+  {
+    "accepted": false
+  }
+]

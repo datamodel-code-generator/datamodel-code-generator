@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "product": {"$ref": "#/$defs/Product"},
+    "variants": {"type": "array", "items": {"$ref": "#/$defs/Variant"}},
+    "price": {"oneOf": [{"type": "object", "properties": {"amount": {"type": "number"}, "currency": {"type": "string"}}}, {"type": "string"}]}
+  },
+  "$defs": {
+    "Product": {"type": "object", "properties": {"sku": {"type": "string"}, "dimensions": {"type": "object", "properties": {"width": {"type": "number"}, "height": {"type": "number"}}}}},
+    "Variant": {"type": "object", "properties": {"sku": {"type": "string"}, "dimensions": {"type": "object", "properties": {"width": {"type": "number"}, "depth": {"type": "number"}}}}}
+  }
+}

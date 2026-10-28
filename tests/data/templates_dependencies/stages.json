@@ -1,0 +1,110 @@
+[
+  {
+    "name": "initial",
+    "copy": [
+      [
+        "root.jinja2",
+        "BaseModel.jinja2"
+      ],
+      [
+        "layout.jinja2",
+        "Example.layout.jinja2"
+      ],
+      [
+        "macros_first.jinja2",
+        "macros.jinja2"
+      ],
+      [
+        "shared_first.jinja2",
+        "shared.jinja2"
+      ],
+      [
+        "body_first.jinja2",
+        "body.jinja2"
+      ]
+    ],
+    "field": "first"
+  },
+  {
+    "name": "warm",
+    "field": "first",
+    "expected": "initial"
+  },
+  {
+    "name": "include_changed",
+    "copy": [
+      [
+        "body_second.jinja2",
+        "body.jinja2"
+      ]
+    ],
+    "field": "second"
+  },
+  {
+    "name": "preferred_added",
+    "copy": [
+      [
+        "body_first.jinja2",
+        "Example.preferred.jinja2"
+      ]
+    ],
+    "field": "first",
+    "expected": "initial"
+  },
+  {
+    "name": "preferred_deleted",
+    "delete": [
+      "Example.preferred.jinja2"
+    ],
+    "field": "second",
+    "expected": "include_changed"
+  },
+  {
+    "name": "import_changed",
+    "copy": [
+      [
+        "macros_second.jinja2",
+        "macros.jinja2"
+      ]
+    ],
+    "field": "second"
+  },
+  {
+    "name": "from_import_changed",
+    "copy": [
+      [
+        "shared_second.jinja2",
+        "shared.jinja2"
+      ]
+    ],
+    "field": "second"
+  },
+  {
+    "name": "optional_added",
+    "copy": [
+      [
+        "optional.jinja2",
+        "optional.jinja2"
+      ]
+    ],
+    "field": "second"
+  },
+  {
+    "name": "optional_deleted",
+    "delete": [
+      "optional.jinja2"
+    ],
+    "field": "second",
+    "expected": "from_import_changed"
+  },
+  {
+    "name": "extends_changed",
+    "copy": [
+      [
+        "layout_changed.jinja2",
+        "Example.layout.jinja2"
+      ]
+    ],
+    "field": "second"
+  }
+]

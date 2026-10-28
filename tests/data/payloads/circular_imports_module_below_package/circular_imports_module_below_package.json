@@ -1,0 +1,34 @@
+{
+  "treasury.transaction_entry": [
+    {},
+    {"type": "received_credit"},
+    {"type": "other"},
+    {"type": 1},
+    {"flow_details": {}},
+    {"flow_details": {"received_debit": {"id": "d1"}}},
+    {"flow_details": {"received_debit": {"id": 1}}},
+    {"flow_details": {"received_debit": {"id": "d1", "detail": {"note": "n", "leaf": {"code": 3}}}}},
+    {"flow_details": {"received_debit": {"id": "d1", "detail": {"note": "n", "leaf": {"code": "three"}}}}}
+  ],
+  "flow_details": [
+    {},
+    {"received_debit": {"detail": {"leaf": {"code": 1}}}},
+    {"received_debit": {"detail": {"leaf": {"code": 1.5}}}},
+    {"received_debit": "d1"}
+  ],
+  "treasury.received_debit": [
+    {},
+    {"id": "d1", "detail": {"note": "n"}},
+    {"id": "d1", "detail": {"note": 1}},
+    {"detail": []}
+  ],
+  "treasury.sub.detail": [
+    {},
+    {"note": "n", "leaf": {}},
+    {"leaf": {"code": "one"}}
+  ],
+  "treasury.sub.deep.leaf": [
+    {},
+    {"code": 1}
+  ]
+}

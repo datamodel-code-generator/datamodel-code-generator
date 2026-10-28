@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: Structured field render plan
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Nested:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+    RenderPlan:
+      type: object
+      required:
+        - required_marker
+      properties:
+        title_marker:
+          type: string
+          title: Field(
+          default: value
+        description_marker:
+          type: string
+          description: Field(
+          default: value
+        examples_marker:
+          type: string
+          examples:
+            - Field(
+          default: value
+        json_extra_marker:
+          type: string
+          x-render-marker: Field(
+          default: value
+        Field(:
+          type: string
+          default: value
+        literal_convert_marker:
+          type: string
+          default: "lambda: convert"
+        required_marker:
+          type: string
+          title: Field(
+        nested_factory:
+          $ref: "#/components/schemas/Nested"
+        nested_convert:
+          $ref: "#/components/schemas/Nested"
+          default:
+            value: Field(
+        empty_nested_convert:
+          $ref: "#/components/schemas/Nested"
+          default: {}
+        empty_nested_list_convert:
+          type: array
+          items:
+            $ref: "#/components/schemas/Nested"
+          default: []
+        class_var_marker:
+          type: string
+          default: value
+          x-is-classvar: true

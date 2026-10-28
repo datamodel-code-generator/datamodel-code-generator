@@ -1,0 +1,12 @@
+{
+  "title": "Root",
+  "allOf": [
+    {"$ref": "#/$defs/Base"},
+    {"minLength": 1}
+  ],
+  "format": "date-time",
+  "maxLength": 30,
+  "$defs": {
+    "Base": {"type": ["string", "null"]}
+  }
+}

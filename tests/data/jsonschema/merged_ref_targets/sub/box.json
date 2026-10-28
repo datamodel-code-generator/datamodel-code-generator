@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Box", "type": "object", "properties": {"item": {"$ref": "item.json"}, "thing": {"$ref": "things.json#/$defs/Thing"}, "size": {"$dynamicRef": "#/$defs/Size"}}, "$defs": {"Size": {"type": "integer", "minimum": 0}}}

@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-REPO="koxudaxi/datamodel-code-generator"
+REPO="datamodel-code-generator/datamodel-code-generator"
 TAG=""
 PREPEND_TO=""
 

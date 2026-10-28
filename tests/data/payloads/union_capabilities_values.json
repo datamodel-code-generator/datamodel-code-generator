@@ -1,0 +1,22 @@
+{
+  "permissive_union": {
+    "valid": [
+      {
+        "item": {
+          "value": 1
+        }
+      },
+      {
+        "item": {}
+      }
+    ],
+    "invalid": [
+      {
+        "item": []
+      },
+      {
+        "item": "wrong object type"
+      }
+    ]
+  }
+}

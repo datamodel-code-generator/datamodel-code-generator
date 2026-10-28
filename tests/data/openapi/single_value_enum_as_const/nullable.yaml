@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: Nullable one-value enums
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Alert:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [fixed]
+          nullable: true
+          description: null until the alert is fixed
+        optional_state:
+          type: string
+          enum: [fixed]
+          nullable: true
+        level:
+          type: integer
+          enum: [1]
+          nullable: true
+          default: 1
+        null_default:
+          type: string
+          enum: [open]
+          nullable: true
+          default: null
+        item_list:
+          type: array
+          items:
+            type: string
+            enum: [x]
+            nullable: true
+        marker:
+          $ref: '#/components/schemas/Marker'
+        optional_marker:
+          $ref: '#/components/schemas/Marker'
+        short_marker:
+          $ref: '#/components/schemas/Marker'
+          maxLength: 10
+        null_branch:
+          oneOf:
+            - {type: string, enum: [a], nullable: true}
+            - {type: 'null'}
+      required: [state, item_list, marker, short_marker]
+    Marker:
+      type: string
+      enum: [marker]
+      nullable: true

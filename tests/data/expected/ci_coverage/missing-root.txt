@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "prepared": [],
+  "stderr": "missing input directory\n",
+  "stdout": ""
+}

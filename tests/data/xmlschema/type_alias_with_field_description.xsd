@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="https://example.com/type-alias-description"
+  targetNamespace="https://example.com/type-alias-description"
+  elementFormDefault="qualified"
+>
+  <xs:simpleType name="DescriptionAlias">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Payload">
+    <xs:sequence>
+      <xs:element name="description" type="tns:DescriptionAlias">
+        <xs:annotation>
+          <xs:documentation>Contains nan and inf as ordinary text.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="payload" type="tns:Payload"/>
+</xs:schema>

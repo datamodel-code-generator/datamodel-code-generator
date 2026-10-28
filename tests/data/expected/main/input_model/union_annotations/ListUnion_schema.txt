@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "value": {
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "title": "Value",
+      "type": "array",
+      "x-python-type": "list[int | Callable[[int], int]]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "ListUnion",
+  "type": "object"
+}

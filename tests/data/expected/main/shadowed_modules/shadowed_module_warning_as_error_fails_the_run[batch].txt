@@ -1,0 +1,5 @@
+stdout ''
+UserWarning: <root>/model/pets.py: The generated module is shadowed by the existing package directory <root>/model/pets, which Python imports instead. Remove the stale directory to import the generated module.
+model/__init__.py
+model/pets/__init__.py
+model/pets/cats.py

@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Caching",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/users/{userId}": {
+      "$ref": "caching.yaml#/paths/~1users~1{userId}"
+    },
+    "/users": {
+      "$ref": "caching.yaml#/paths/~1users"
+    },
+    "/items/{id}": {
+      "$ref": "caching.yaml#/paths/~1items~1{id}"
+    },
+    "/reports": {
+      "$ref": "caching.yaml#/paths/~1reports"
+    },
+    "/carts/current": {
+      "$ref": "caching.yaml#/paths/~1carts~1current"
+    },
+    "/secure/users/{userId}": {
+      "$ref": "caching.yaml#/paths/~1secure~1users~1{userId}"
+    },
+    "/oauth": {
+      "get": {
+        "operationId": "oauthCapability",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "oauth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Authenticated"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "User": {
+        "$ref": "caching.yaml#/components/schemas/User"
+      },
+      "UserList": {
+        "$ref": "caching.yaml#/components/schemas/UserList"
+      },
+      "UserPatch": {
+        "$ref": "caching.yaml#/components/schemas/UserPatch"
+      },
+      "Error": {
+        "$ref": "caching.yaml#/components/schemas/Error"
+      }
+    }
+  }
+}

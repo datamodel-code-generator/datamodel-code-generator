@@ -45,20 +45,33 @@ Comlink is distributed under the Apache License 2.0.
 ## Python packages
 
 The playground loads `micropip` from the Pyodide package index, then installs
-Python packages from PyPI with `micropip` inside Pyodide. The primary packages
-are:
+Python packages from PyPI with `micropip` inside Pyodide.
+
+### Current and compiled-template releases
+
+These packages are installed for the current playground and releases with
+compiled built-in templates:
 
 - `datamodel-code-generator`
 - `genson`
 - `graphql-core`
 - `inflect`
-- `jinja2`
 - `pydantic`
 - `pyyaml`
 
 The generator package is installed without its declared transitive dependencies
 so the browser runtime can use the builtin formatter without loading black or
-isort. Runtime dependencies needed by the playground are installed explicitly.
-The static playground shell is generated at build time with `tdom`. Current
-runtime assets do not install `tdom`; older version assets that still use
-`app.py` may install it for compatibility.
+isort. Current runtime assets render built-in templates without Jinja2 or
+MarkupSafe, and do not support custom Jinja2 templates. Runtime dependencies
+needed by the playground are installed explicitly.
+
+### Legacy releases without compiled templates
+
+The version selector installs these packages only for releases that need Jinja
+to render their built-in templates:
+
+- `jinja2`
+- `markupsafe`
+
+The static playground shell is generated at build time with `tdom`. Older
+version assets that still use `app.py` may install it for compatibility.

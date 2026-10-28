@@ -1,0 +1,16 @@
+a2.Mid keyword-only: code
+a2.Mid {"code": "A", "x": "a"}: schema accepts, model accepts
+a2.Mid {"x": "a"}: schema rejects, model rejects (missing)
+a2.Mid {"code": "C"}: schema rejects, model rejects (enum)
+b.Branch keyword-only: code
+b.Branch {"code": "B"}: schema accepts, model accepts
+b.Branch {}: schema rejects, model rejects (missing)
+b.Branch {"code": "C"}: schema rejects, model rejects (enum)
+b.Leaf keyword-only: code, z
+b.Leaf {"code": "B", "z": 1}: schema accepts, model accepts
+b.Leaf {"code": "B"}: schema rejects, model rejects (missing)
+b.Leaf {"z": 1}: schema rejects, model rejects (missing)
+b.Tail keyword-only: code, extra
+b.Tail {"code": "A", "extra": "B"}: schema accepts, model accepts
+b.Tail {"code": "A"}: schema rejects, model rejects (missing)
+b.Tail {"code": "A", "extra": "C"}: schema rejects, model rejects (enum)

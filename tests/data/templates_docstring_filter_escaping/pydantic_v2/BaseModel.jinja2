@@ -1,0 +1,10 @@
+class {{ class_name }}({{ base_class }}):
+{%- if description %}
+    {{ description | format_docstring(4, use_single_line_docstring=use_single_line_docstring) }}
+{%- endif %}
+{%- for field in fields %}
+    {{ field.name }}: {{ field.type_hint }}
+{%- if field.docstring %}
+    {{ field.docstring | format_docstring(4, use_single_line_docstring=use_single_line_docstring) }}
+{%- endif %}
+{%- endfor %}

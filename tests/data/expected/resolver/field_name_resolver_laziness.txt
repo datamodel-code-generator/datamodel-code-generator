@@ -1,0 +1,9 @@
+False False
+value
+False False
+dict ENUM PYDANTIC CLASS MSGSPEC
+False False
+datamodel_code_generator.reference datamodel_code_generator.reference
+PydanticFieldNameResolver MsgspecFieldNameResolver
+True True True
+True True True

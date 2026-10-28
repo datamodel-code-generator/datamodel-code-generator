@@ -1,0 +1,127 @@
+{
+  "query": "{ terminal { value label spare __typename } item { value label spare __typename } ordinary { value label __typename } multi { value spare __typename } multiOrdinary { value __typename } }",
+  "models": {
+    "Base": {
+      "value": 1,
+      "label": "base"
+    },
+    "Mid": {
+      "value": 2,
+      "label": "mid",
+      "spare": 12
+    },
+    "Item": {
+      "value": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "Ordinary": {
+      "value": 4,
+      "label": "ordinary"
+    },
+    "OtherBase": {
+      "value": 5
+    },
+    "Side": {
+      "spare": 6,
+      "value": 6
+    },
+    "Multi": {
+      "value": 7,
+      "spare": 17
+    },
+    "MultiOrdinary": {
+      "value": 8
+    },
+    "Common": {
+      "value": 0
+    },
+    "Terminal": {
+      "value": 9,
+      "label": "terminal",
+      "spare": 19
+    }
+  },
+  "python": {
+    "Base": {
+      "value": 1,
+      "typename__": "base"
+    },
+    "Mid": {
+      "value": 2,
+      "typename__": "mid",
+      "typename___1": 12
+    },
+    "Item": {
+      "value": 3,
+      "spare": 13,
+      "renamed": "item",
+      "typename__": "item",
+      "typename___1": 13
+    },
+    "Ordinary": {
+      "value": 4,
+      "label": "ordinary",
+      "typename__": "ordinary"
+    },
+    "OtherBase": {
+      "value": 5
+    },
+    "Side": {
+      "typename__": 6,
+      "value": 6
+    },
+    "Multi": {
+      "value": 7,
+      "spare": 17,
+      "typename__": 17
+    },
+    "MultiOrdinary": {
+      "value": 8
+    },
+    "Common": {
+      "value": 0
+    },
+    "Terminal": {
+      "value": 9,
+      "label": "terminal",
+      "typename__": "terminal",
+      "typename___1": 19,
+      "typename___2": 19
+    }
+  },
+  "root": {
+    "item": {
+      "value": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "ordinary": {
+      "value": 4,
+      "label": "ordinary"
+    },
+    "multi": {
+      "value": 7,
+      "spare": 17
+    },
+    "multiOrdinary": {
+      "value": 8
+    },
+    "terminal": {
+      "value": 9,
+      "label": "terminal",
+      "spare": 19
+    }
+  },
+  "variables": {},
+  "responses": {
+    "Item": "item",
+    "Ordinary": "ordinary",
+    "Multi": "multi",
+    "MultiOrdinary": "multiOrdinary",
+    "Terminal": "terminal"
+  },
+  "import_errors": {
+    "msgspec.Struct": "Multiple fields rename to the same name, field names must be unique"
+  }
+}

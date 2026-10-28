@@ -1,0 +1,9 @@
+{
+  "title": "Third",
+  "type": "object",
+  "properties": {
+    "third": {
+      "type": "boolean"
+    }
+  }
+}

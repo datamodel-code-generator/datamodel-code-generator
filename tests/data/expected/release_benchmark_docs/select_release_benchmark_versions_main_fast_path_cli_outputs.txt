@@ -1,0 +1,18 @@
+returncode: 0
+stdout:
+main
+stderr:
+selection:
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T00:00:00Z",
+  "package": "datamodel-code-generator",
+  "strategy": "explicit",
+  "history_days": 365,
+  "limit": 40,
+  "selected_versions": [
+    "main"
+  ],
+  "releases": [],
+  "download_stats": {}
+}

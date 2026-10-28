@@ -1,0 +1,81 @@
+openapi: "3.1.0"
+info:
+  title: No-merge inherited backend types
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ScalarValue:
+      type: string
+      minLength: 2
+
+    ScalarArray:
+      type: array
+      minItems: 2
+      items:
+        $ref: "#/components/schemas/ScalarValue"
+
+    ScalarMapping:
+      type: object
+      minProperties: 2
+      additionalProperties:
+        $ref: "#/components/schemas/ScalarValue"
+
+    Base:
+      type: object
+      required:
+        - direct
+        - inline
+        - array
+        - mapping
+        - deep
+        - arrayRoot
+        - mappingRoot
+      properties:
+        direct:
+          $ref: "#/components/schemas/ScalarValue"
+        inline:
+          type: string
+          minLength: 2
+        array:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalarValue"
+        mapping:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ScalarValue"
+        deep:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/ScalarValue"
+        arrayRoot:
+          $ref: "#/components/schemas/ScalarArray"
+        mappingRoot:
+          $ref: "#/components/schemas/ScalarMapping"
+
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            direct:
+              minLength: 1
+            inline:
+              minLength: 1
+            array:
+              items:
+                minLength: 1
+            mapping:
+              additionalProperties:
+                minLength: 1
+            deep:
+              items:
+                items:
+                  minLength: 1
+            arrayRoot:
+              minItems: 1
+            mappingRoot:
+              minProperties: 1

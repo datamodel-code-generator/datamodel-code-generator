@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScalarAtomicRootCollapse",
+  "type": "object",
+  "properties": {
+    "single": {
+      "$ref": "#/$defs/Value"
+    },
+    "many": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Value"
+      }
+    }
+  },
+  "$defs": {
+    "Value": {
+      "type": "string"
+    }
+  }
+}

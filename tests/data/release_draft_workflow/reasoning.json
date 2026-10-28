@@ -1,0 +1,62 @@
+{
+  "plain": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "Only internal CI infrastructure changed."
+  },
+  "unicode": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "利用者向けの変更はありません。"
+  },
+  "pr_reference": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "PR #3968 changes only CI and testing infrastructure."
+  },
+  "empty": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": ""
+  },
+  "newline": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "First paragraph.\nSecond paragraph."
+  },
+  "mention": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "Thanks @someone."
+  },
+  "html": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "<b>Changed</b>"
+  },
+  "link": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "[details](https://example.com)"
+  },
+  "control": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "This\tchanged."
+  },
+  "line_separator": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "First. Second."
+  },
+  "breaking_changes": {
+    "has_breaking_changes": true,
+    "breaking_changes_content": "### API/CLI Changes\n* Removed option - The old option is removed (#42)",
+    "reasoning": "The old option is removed."
+  },
+  "trailing_newline": {
+    "has_breaking_changes": false,
+    "breaking_changes_content": "",
+    "reasoning": "Only internal CI infrastructure changed.\n"
+  }
+}

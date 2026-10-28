@@ -1,0 +1,4 @@
+enable_parsed_source_cache: identity=True, module=datamodel_code_generator
+load_data: identity=True, module=datamodel_code_generator
+load_data_from_path: identity=True, module=datamodel_code_generator
+load_yaml: identity=True, module=datamodel_code_generator

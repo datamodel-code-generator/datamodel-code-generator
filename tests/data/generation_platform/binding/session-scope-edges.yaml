@@ -1,0 +1,67 @@
+openapi: 3.2.0
+info:
+  title: Scope edges
+  version: "1"
+paths:
+  /events:
+    $ref: '#/components/pathItems/Events'
+  /events/batch:
+    post:
+      operationId: ingestEvents
+      requestBody:
+        content:
+          application/jsonl:
+            schema: null
+            itemSchema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        "202":
+          description: Accepted
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept
+          in: header
+          schema:
+            type: string
+        - $ref: 'session-scope-edges-library.yaml#/components/parameters/Fields'
+      responses:
+        "200":
+          description: One event
+          headers:
+            X-Rate-Limit:
+              $ref: 'session-scope-edges-library.yaml#/components/headers/RateLimit'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+            application/octet-stream: {}
+components:
+  pathItems:
+    Events:
+      get:
+        operationId: listEvents
+        responses:
+          "200":
+            description: Events
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Event'
+  schemas:
+    Event:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string

@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Dangling component
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        missing:
+          $ref: '#/components/schemas/Missing'

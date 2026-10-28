@@ -1,0 +1,7 @@
+mypy pets/resources/pets/photos and media_ranges_only.py: clean
+pyright pets/resources/pets/photos and media_ranges_only.py: clean
+ty pets/resources/pets/photos and media_ranges_only.py: clean
+media_ranges_only_negative.py 0 marked lines
+mypy media_ranges_only_negative.py: 0/0 marked lines with one error, 0 elsewhere, 0 in other files
+pyright media_ranges_only_negative.py: 0/0 marked lines with one error, 0 elsewhere, 0 in other files
+ty media_ranges_only_negative.py: 0/0 marked lines with one error, 0 elsewhere, 0 in other files

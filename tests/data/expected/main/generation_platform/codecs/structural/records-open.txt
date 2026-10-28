@@ -1,0 +1,1 @@
+Error: /paths/~1pets/post/requestBody: The union of Cat and Dog needs a declared discriminator for the typing.TypedDict converter

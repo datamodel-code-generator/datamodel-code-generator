@@ -1,0 +1,5 @@
+extra_fields: value=forbid, applied=forbid, pyproject=forbid
+extra_fields: value=allow, applied=allow, pyproject=allow
+deserialize_default_values: value=[decimal, enum], applied=[decimal, enum], pyproject=['decimal', 'enum']
+enabled_cli: --deserialize-default-values decimal enum
+disabled_cli: --no-deserialize-default-values

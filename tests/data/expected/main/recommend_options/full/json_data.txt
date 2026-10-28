@@ -1,0 +1,33 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  not analysed (json input)
+
+Start from  --preset standard-py310-20261027
+
+Add  nothing on top of the preset
+
+Trial  2 candidates generated in memory without formatting; nothing written
+  candidate  classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current          6  2 (33.3%)         0     0        0          0       7              0
+  preset           6  2 (33.3%)         0     0        0          0       7              0   selected
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> preset)
+  0 of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Notes
+  - Target Python is not set: the recommendation assumes 3.10, the default. Set
+    --target-python-version to start from the preset of the Python version the project runs.
+  - Only the preset is recommended: schema rules are not available for json input; the rules cover
+    OpenAPI, AsyncAPI, and JSON Schema documents.
+
+Command
+  datamodel-codegen --input data.json --input-file-type json --preset standard-py310-20261027 --no-use-annotated
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "data.json"
+  input-file-type = "json"
+  preset = "standard-py310-20261027"
+  use-annotated = false

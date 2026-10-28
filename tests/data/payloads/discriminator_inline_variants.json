@@ -1,0 +1,39 @@
+{
+  "ServerEvent": {
+    "valid": [
+      {"type": "audio.delta", "delta": "AAAA"},
+      {"type": "audio.delta", "delta": "AAAA", "stream_id": "s1"},
+      {"type": "audio.done", "stream_id": "s1"}
+    ],
+    "invalid": [
+      {"type": "audio.delta"},
+      {"type": "audio.stop"},
+      {"type": "0#-datamodel-code-generator-#-allOf-#-special-#", "delta": "AAAA"},
+      {}
+    ]
+  },
+  "MixedEvent": {
+    "valid": [{"type": "audio.delta", "delta": "AAAA", "channel": 1}, {"type": "ping"}],
+    "invalid": [{"type": "audio.done"}, {"type": "audio.delta", "delta": "AAAA", "channel": "one"}]
+  },
+  "LiveEvent": {
+    "valid": [{"type": "started"}, {"type": "updated", "count": 2}],
+    "invalid": [{"type": "stopped"}, {"type": "updated", "count": "two"}, {}]
+  },
+  "ClashingEvent": {
+    "valid": [{"type": "audio.done"}, {"type": "audio.done", "clash": true}],
+    "invalid": [{"type": "ping"}, {"type": "audio.delta", "delta": "AAAA"}]
+  },
+  "SharedAEvent": {
+    "valid": [{"type": "audio.done"}, {"type": "audio.done", "shared": true}, {"type": "ping"}],
+    "invalid": [{"type": "audio.delta", "delta": "AAAA"}, {"type": "audio.done", "shared": 3}]
+  },
+  "SharedBEvent": {
+    "valid": [{"type": "audio.done"}, {"type": "audio.done", "shared": true}],
+    "invalid": [{"type": "ping"}, {"type": "audio.delta", "delta": "AAAA"}]
+  },
+  "UntypedEvent": {
+    "valid": [{"type": "Untyped"}, {"type": "Untyped", "label": "a", "extra": 1}],
+    "invalid": [{}, {"type": 1}, {"type": "Untyped", "label": 2}]
+  }
+}

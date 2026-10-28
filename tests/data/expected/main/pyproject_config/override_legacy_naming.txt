@@ -1,0 +1,10 @@
+{
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "naming_strategy": "numbered",
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11"
+}

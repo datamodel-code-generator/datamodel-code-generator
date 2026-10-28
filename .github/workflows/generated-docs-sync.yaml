@@ -7,16 +7,34 @@ on:
     paths:
       - 'src/datamodel_code_generator/**'
       - 'tests/main/**'
+      - 'tests/data/openapi/**'
+      - 'tests/data/jsonschema/**'
+      - 'tests/data/expected/main/openapi/**'
+      - 'tests/data/expected/main/jsonschema/**'
+      - 'tests/data/jsonschema/tutorial_pet.json'
       - 'tests/test_main_kr.py'
       - 'scripts/build_cli_docs.py'
+      - 'scripts/build_datamodel_codegen_skill_docs.py'
       - 'scripts/build_prompt_data.py'
+      - 'scripts/build_preset_docs.py'
       - 'scripts/build_schema_docs.py'
+      - 'scripts/build_docs_examples.py'
+      - 'scripts/build_conformance_docs.py'
+      - 'scripts/build_architecture_docs.py'
+      - 'scripts/build_behaviour_docs.py'
+      - 'scripts/build_release_benchmark_docs.py'
       - 'scripts/build_llms_txt.py'
       - 'scripts/update_generate_prompt_snapshots.py'
       - 'scripts/update_docs_version.py'
+      - 'docs/data/release-benchmarks.json'
+      - 'docs/data/release-benchmark-notes.json'
+      - 'docs/data/output-changes/*.json'
+      - 'docs/assets/benchmarks/release-benchmarks.css'
+      - 'docs/assets/benchmarks/release-benchmarks.js'
       - 'tox.ini'
       - '.github/workflows/generated-docs-sync.yaml'
       - 'docs/**/*.md'
+      - 'skills/datamodel-code-generator/**'
       - 'CHANGELOG.md'
       - 'README.md'
       - 'zensical.toml'
@@ -34,12 +52,12 @@ jobs:
     outputs:
       has_changes: ${{ steps.patch.outputs.has_changes }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
       - name: Setup generated docs environment
@@ -59,9 +77,25 @@ jobs:
           generated_paths=(
             README.md
             docs/index.md
+            docs/model-reuse.md
+            docs/openapi.md
+            docs/presets.md
+            docs/conformance.md
+            docs/fastapi-code-generator-migration.md
+            docs/fastapi-server.md
+            docs/getting-started.md
+            docs/python-client.md
+            docs/python-client-helpers.md
+            docs/python-client-reference.md
+            docs/using_as_module.md
+            docs/architecture.md
+            docs/performance-benchmarks.md
+            docs/output-changes/
             docs/cli-reference/
+            skills/datamodel-code-generator/references/cli-options.md
             docs/llms.txt
             docs/llms-full.txt
+            docs/supported-data-types.md
             docs/supported_formats.md
             src/datamodel_code_generator/prompt_data.py
             tests/data/expected/main_kr/generate_prompt/
@@ -74,7 +108,7 @@ jobs:
           echo "has_changes=true" >> "$GITHUB_OUTPUT"
       - name: Upload generated docs patch
         if: steps.patch.outputs.has_changes == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: generated-docs-patch
           path: ${{ runner.temp }}/generated-docs.patch
@@ -87,14 +121,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: Download generated docs patch
         if: needs.generate.outputs.has_changes == 'true'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: generated-docs-patch
           path: ${{ runner.temp }}
@@ -102,7 +136,7 @@ jobs:
       # checks without granting the workflow permission to bypass main rules.
       - name: Create GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.GENERATED_DOCS_APP_ID }}
           private-key: ${{ secrets.GENERATED_DOCS_APP_PRIVATE_KEY }}

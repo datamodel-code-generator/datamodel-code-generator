@@ -1,0 +1,6 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Token"><xs:restriction base="xs:string">
+    <xs:minLength value="2"/>
+  </xs:restriction></xs:simpleType>
+  <xs:element name="Root" type="Token"/>
+</xs:schema>

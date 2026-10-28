@@ -1,0 +1,61 @@
+[
+  {
+    "bases": [
+      "UniqueParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {
+      "value": []
+    },
+    "source": {
+      "value": []
+    },
+    "generated": {
+      "value": []
+    }
+  },
+  {
+    "payload": {
+      "value": [
+        1,
+        1
+      ]
+    },
+    "source": {
+      "value": [
+        1,
+        1
+      ]
+    },
+    "generated": {
+      "value": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "payload": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "source": {
+      "value": [
+        1,
+        2
+      ]
+    },
+    "generated": {
+      "value": [
+        1,
+        2
+      ]
+    }
+  }
+]

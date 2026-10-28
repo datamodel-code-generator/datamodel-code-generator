@@ -1,0 +1,37 @@
+[
+  {
+    "field": "value",
+    "value": "ABC",
+    "valid": true
+  },
+  {
+    "field": "value",
+    "value": "123",
+    "valid": true
+  },
+  {
+    "field": "value",
+    "value": "abc",
+    "valid": false
+  },
+  {
+    "field": "value",
+    "value": "A1",
+    "valid": false
+  },
+  {
+    "field": "value",
+    "value": "ABC\n",
+    "valid": false
+  },
+  {
+    "field": "value",
+    "value": "aABC",
+    "valid": false
+  },
+  {
+    "field": "value",
+    "value": "",
+    "valid": false
+  }
+]

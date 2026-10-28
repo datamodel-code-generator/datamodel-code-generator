@@ -1,0 +1,54 @@
+{
+  "defaults": {
+    "empty": [],
+    "flags": [
+      true,
+      false
+    ],
+    "floats": [
+      2.5,
+      1.25
+    ],
+    "ids": [
+      "id2",
+      "id1"
+    ],
+    "number": 4,
+    "numbers": [
+      3,
+      1,
+      2
+    ],
+    "strings": [
+      "z",
+      "a"
+    ],
+    "text": "unchanged",
+    "__typename": "ScalarDefaults"
+  },
+  "explicit": {
+    "empty": [],
+    "flags": [
+      true,
+      false
+    ],
+    "floats": [
+      2.5,
+      1.25
+    ],
+    "ids": [
+      "id2",
+      "id1"
+    ],
+    "number": 4,
+    "numbers": [
+      8,
+      5
+    ],
+    "strings": [
+      "explicit"
+    ],
+    "text": "unchanged",
+    "__typename": "ScalarDefaults"
+  }
+}

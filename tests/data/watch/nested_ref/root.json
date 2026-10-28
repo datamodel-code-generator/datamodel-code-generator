@@ -1,0 +1,9 @@
+{
+  "title": "WatchedRoot",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "child.json"
+    }
+  }
+}

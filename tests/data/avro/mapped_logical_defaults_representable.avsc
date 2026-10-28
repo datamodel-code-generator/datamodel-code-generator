@@ -1,0 +1,81 @@
+{
+  "type": "record",
+  "name": "MappedDefaults",
+  "fields": [
+    {
+      "name": "day",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 1
+    },
+    {
+      "name": "clock",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      },
+      "default": 1000
+    },
+    {
+      "name": "instant",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-nanos"
+      },
+      "default": 1000
+    },
+    {
+      "name": "local",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-nanos"
+      },
+      "default": 1000
+    },
+    {
+      "name": "amount",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": 2
+      },
+      "default": "{"
+    },
+    {
+      "name": "elapsed",
+      "type": {
+        "type": "fixed",
+        "name": "Elapsed",
+        "size": 12,
+        "logicalType": "duration"
+      },
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e8\u0003\u0000\u0000"
+    },
+    {
+      "name": "elapsed_again",
+      "type": [
+        "Elapsed",
+        "null"
+      ],
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e8\u0003\u0000\u0000"
+    },
+    {
+      "name": "amounts",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 4,
+          "scale": 2
+        }
+      },
+      "default": [
+        "{"
+      ]
+    }
+  ]
+}

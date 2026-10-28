@@ -1,0 +1,164 @@
+{
+  "type": "record",
+  "name": "TemporalControls",
+  "fields": [
+    {
+      "name": "ordinary_int",
+      "type": "int",
+      "default": 1
+    },
+    {
+      "name": "ordinary_long",
+      "type": "long",
+      "default": 1000
+    },
+    {
+      "name": "unknown",
+      "type": {
+        "type": "long",
+        "logicalType": "future"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_date",
+      "type": {
+        "type": "long",
+        "logicalType": "date"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_millis",
+      "type": {
+        "type": "long",
+        "logicalType": "time-millis"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_micros",
+      "type": {
+        "type": "int",
+        "logicalType": "time-micros"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_timestamp",
+      "type": {
+        "type": "int",
+        "logicalType": "timestamp-millis"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_local",
+      "type": {
+        "type": "int",
+        "logicalType": "local-timestamp-micros"
+      },
+      "default": 1000
+    },
+    {
+      "name": "wrong_logical",
+      "type": {
+        "type": "int",
+        "logicalType": 7
+      },
+      "default": 1000
+    },
+    {
+      "name": "empty_union",
+      "type": [],
+      "default": 1
+    },
+    {
+      "name": "wrong_bool",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": true
+    },
+    {
+      "name": "wrong_float",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 1.5
+    },
+    {
+      "name": "wrong_string",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": "1970-01-02"
+    },
+    {
+      "name": "no_default_0",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      }
+    },
+    {
+      "name": "no_default_1",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      }
+    },
+    {
+      "name": "no_default_2",
+      "type": {
+        "type": "long",
+        "logicalType": "time-micros"
+      }
+    },
+    {
+      "name": "no_default_3",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "no_default_4",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      }
+    },
+    {
+      "name": "no_default_5",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-nanos"
+      }
+    },
+    {
+      "name": "no_default_6",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-millis"
+      }
+    },
+    {
+      "name": "no_default_7",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-micros"
+      }
+    },
+    {
+      "name": "no_default_8",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-nanos"
+      }
+    }
+  ]
+}

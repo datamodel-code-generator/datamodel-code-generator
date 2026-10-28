@@ -1,0 +1,28 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted mixed module
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Child:
+      type: object
+      properties:
+        value:
+          type: string
+    Foo.1:
+      type: object
+      properties:
+        child:
+          type: object
+          properties:
+            value:
+              type: string
+    Foo.Valid:
+      type: object
+      properties:
+        child:
+          type: object
+          properties:
+            value:
+              type: string

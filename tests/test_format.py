@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import ast
+import pickle
+import shutil
 import subprocess
 import sys
+import tokenize
 import warnings
 from pathlib import Path
 from typing import cast
@@ -14,8 +17,11 @@ import black
 import isort
 import pytest
 
+import datamodel_code_generator
 import datamodel_code_generator._builtin_formatter as builtin_formatter
+import datamodel_code_generator._format_types as format_types
 import datamodel_code_generator.format as format_module
+from tests.conftest import assert_output
 
 DEFAULT_KNOWN_FIRST_PARTY = format_module.DEFAULT_KNOWN_FIRST_PARTY
 CodeFormatter = format_module.CodeFormatter
@@ -41,7 +47,12 @@ NOT_SUBCLASS_FORMATTER = "tests.data.python.custom_formatters.not_subclass"
 ADD_COMMENT_FORMATTER = "tests.data.python.custom_formatters.add_comment"
 ADD_LICENSE_FORMATTER = "tests.data.python.custom_formatters.add_license"
 FAKE_RUFF_PATH = "/opt/fake-ruff/bin/ruff"
+PARITY_BUCKETS = 8
 BLACK_VERSION_DEPENDENT_NORMALIZED_EXPECTED_FILES = {
+    "main/jsonschema/custom_file_header_path_prepend_multi_file/__init__.py",
+    "main/jsonschema/custom_file_header_path_prepend_multi_file/order.py",
+    "main/jsonschema/custom_file_header_path_prepend_multi_file/product.py",
+    "main/jsonschema/custom_file_header_path_prepend_multi_file/user.py",
     "main/openapi/custom_file_header_with_docstring_and_import.py",
 }
 BUILTIN_FORMATTER_LOCAL_CONSTANTS = {
@@ -53,6 +64,18 @@ BUILTIN_FORMATTER_LOCAL_CONSTANTS = {
     "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "STRING_PREFIX_PATTERN",
 }
+BUILTIN_FORMATTER_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "builtin_formatter"
+BUILTIN_STRING_NORMALIZATION_INPUT_PATH = (
+    Path(__file__).parent / "data" / "python" / "builtin_formatter_string_normalization.txt"
+)
+BUILTIN_STRING_NORMALIZATION_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
+    "string_normalization.txt" if sys.version_info[:2] >= (3, 12) else "string_normalization_legacy.txt"
+)
+BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_pep695_invalid.txt"
+BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
+    "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
+)
+BUILTIN_QUALIFIED_HEADS_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_qualified_heads.txt"
 
 
 def test_builtin_formatter_moved_names_are_reexported() -> None:
@@ -115,6 +138,66 @@ def test_format_star_import_keeps_constants_without_loading_builtin_formatter() 
     assert result.stdout == "88\nFalse\n"
 
 
+def test_package_import_does_not_load_format_module() -> None:
+    """Test package root import keeps formatter exports lazy."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            ("import sys; import datamodel_code_generator; print('datamodel_code_generator.format' in sys.modules)"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout == "False\n"
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "import datamodel_code_generator._format_types",
+        "import datamodel_code_generator.arguments",
+        "import datamodel_code_generator.config",
+        "from datamodel_code_generator import DEFAULT_FORMATTERS, PythonVersionMin",
+    ],
+)
+def test_light_format_type_imports_do_not_load_formatter_runtime(statement: str) -> None:
+    """Test light format type consumers do not import formatter runtime modules."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                f"{statement}; "
+                "print('datamodel_code_generator.format' in sys.modules); "
+                "print('datamodel_code_generator._builtin_formatter' in sys.modules)"
+            ),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout == "False\nFalse\n"
+
+
+def test_format_type_reexports_keep_public_identity() -> None:
+    """Test moved format types keep the public class identity and pickle path."""
+    assert format_module.DateClassType is format_types.DateClassType
+    assert format_module.DatetimeClassType is format_types.DatetimeClassType
+    assert format_module.Formatter is format_types.Formatter
+    assert format_module.PythonVersion is format_types.PythonVersion
+    assert format_module.PythonVersionMin is format_types.PythonVersionMin
+    assert format_module.DEFAULT_FORMATTERS is format_types.DEFAULT_FORMATTERS
+    assert datamodel_code_generator.PythonVersion is format_types.PythonVersion
+    assert datamodel_code_generator.DEFAULT_FORMATTERS is format_types.DEFAULT_FORMATTERS
+    assert format_types.PythonVersion.__module__ == "datamodel_code_generator.format"
+    assert pickle.loads(pickle.dumps(format_types.PythonVersion.PY_310)) is format_types.PythonVersion.PY_310
+
+
 def test_apply_builtin_formatter_keeps_concrete_public_python_version_type() -> None:
     """Test the public formatter wrapper keeps the concrete PythonVersion annotation."""
     assert format_module.apply_builtin_formatter.__annotations__["python_version"] == "PythonVersion | None"
@@ -126,6 +209,27 @@ def test_apply_builtin_formatter_keeps_concrete_public_python_version_type() -> 
 def test_python_version() -> None:
     """Ensure that the python version used for the tests is properly listed."""
     _ = PythonVersion("{}.{}".format(*sys.version_info[:2]))
+
+
+_PYTHON_VERSION_CAPABILITY_MINIMUMS: dict[str, tuple[int, int]] = {
+    "has_union_operator": (3, 10),
+    "has_kw_only_dataclass": (3, 10),
+    "has_typed_dict_non_required": (3, 11),
+    "has_string_arguments_in_builtin_generics": (3, 11),
+    "has_strenum": (3, 11),
+    "has_type_statement": (3, 12),
+    "has_typed_dict_read_only": (3, 13),
+    "has_native_deferred_annotations": (3, 14),
+    "has_typed_dict_closed": (3, 15),
+}
+
+
+@pytest.mark.parametrize("python_version", list(PythonVersion), ids=lambda version: version.value)
+def test_python_version_capabilities(python_version: PythonVersion) -> None:
+    """Every public capability of a target Python version holds from the release that added it."""
+    assert {name: getattr(python_version, name) for name in _PYTHON_VERSION_CAPABILITY_MINIMUMS} == {
+        name: python_version.version_key >= minimum for name, minimum in _PYTHON_VERSION_CAPABILITY_MINIMUMS.items()
+    }
 
 
 def test_python_version_has_native_deferred_annotations() -> None:
@@ -195,6 +299,33 @@ def test_format_code_builtin_formatter(tmp_path: Path, monkeypatch: pytest.Monke
         "class Model(BaseModel):\n"
         "    pet: Pet\n"
         "    name: str = Field(...)\n"
+    )
+
+
+def test_builtin_generated_formatter_edge_cases() -> None:
+    """Preserve fallback behavior for uncommon generator-owned source shapes."""
+    cases = (
+        ("unterminated-import", "from package import (\n    Item\n", {}),
+        ("newer-target", "value = 1\n", {"python_version": PythonVersion.PY_314}),
+        ("empty", "\n\n", {}),
+        ("leading-header", "# generated header\nvalue = 1\n", {}),
+        ("body-only", "class Model:\n    pass\n", {}),
+        ("invalid-import", "from package import )\n", {}),
+        ("compound-import-line", "import package; value = 1\n", {}),
+        ("import-only", "import package\n", {}),
+        ("import-class", "import package\n\n\nclass Model:\n    pass\n", {}),
+        ("import-statement", "import package\n\nvalue = 1\n", {}),
+        ("qualified-heads", BUILTIN_QUALIFIED_HEADS_INPUT_PATH.read_text(encoding="utf-8"), {}),
+    )
+    formatted_cases = [
+        f"[{name}]\n{builtin_formatter._apply_builtin_generated_formatter(source, **options)!r}"
+        for name, source, options in cases
+    ]
+    formatted_output = "\n".join(formatted_cases)
+
+    assert_output(
+        f"{formatted_output}\n",
+        BUILTIN_FORMATTER_EXPECTED_PATH / "generated_edge_cases.txt",
     )
 
 
@@ -738,6 +869,133 @@ def test_apply_builtin_formatter_normalizes_simple_string_quotes() -> None:
     )
 
 
+def test_builtin_formatter_string_normalization_fixture() -> None:
+    """Keep quote normalization and its no-op path byte-compatible across source shapes."""
+    formatted_cases: list[str] = []
+    corpus = BUILTIN_STRING_NORMALIZATION_INPUT_PATH.read_text(encoding="utf-8")
+    for case in corpus.split("\n---CASE---\n"):
+        name, source = case.split("\n", 1)
+        formatted = apply_builtin_formatter(
+            source,
+            string_normalization=True,
+        )
+        formatted_cases.append(f"[{name}]\n{formatted}")
+
+    assert_output(
+        "\n".join(formatted_cases),
+        BUILTIN_STRING_NORMALIZATION_EXPECTED_PATH,
+    )
+
+
+def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep tokenizer errors from invalid PEP 695 fallback sources unchanged."""
+    monkeypatch.setattr(builtin_formatter.sys, "version_info", (3, 11, 0, "final", 0))
+    formatted_cases: list[str] = []
+    corpus = BUILTIN_PEP695_INVALID_INPUT_PATH.read_text(encoding="utf-8")
+    for case in corpus.split("\n---CASE---\n"):
+        name, source = case.split("\n", 1)
+        try:
+            apply_builtin_formatter(
+                source,
+                python_version=PythonVersion.PY_312,
+                string_normalization=True,
+            )
+        except tokenize.TokenError as error:
+            formatted_cases.append(f"[{name}]\n{type(error).__name__}\n")
+        else:
+            formatted_cases.append(f"[{name}]\n{source}")
+
+    assert_output(
+        "\n".join(formatted_cases),
+        BUILTIN_PEP695_INVALID_EXPECTED_PATH,
+    )
+
+
+def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python() -> None:
+    """Format code the running Python cannot parse alike on every Python.
+
+    Letters the running Python lacks are lent away while formatting and given back, never as a letter the NFKC form
+    of the code uses. Joiners, which Python 3.13 lets identifiers hold, are lent in names and keep their escapes when
+    strings are rewrapped.
+    """
+    description = "joined\u200dword " * 12
+    joiners = (
+        "from pydantic import BaseModel, Field\n\n\nclass Model(BaseModel):\n"
+        f"    text: str = Field(..., description='{description}')\n"
+    )
+    compatibility = (
+        "# \u4e00\u4e01\u4e02\u4e03\u4e04\u4e05\u4e06\u4e07\u4e08\u4e09\u4e0a\u4e0b\u4e0c\n"
+        "from pydantic import BaseModel\n\nfrom .m import Y\u0c5c, X\uf967\n\n\n"
+        "class Model(BaseModel):\n    value: X\uf967 | Y\u0c5c | None = None\n"
+    )
+    joined_names = (
+        "from pydantic import BaseModel\nfrom __future__ import annotations\n\nfrom .mo\u200ddels import Pet\n"
+        "import json\nclass Mo\u200ddel(BaseModel):\n    pet: Pet\n"
+    )
+    assert_output(
+        "\n".join((
+            apply_builtin_formatter(joiners, wrap_string_literal=True, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(compatibility, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(joined_names, python_version=PythonVersion.PY_313),
+        )),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "target_identifiers.txt",
+    )
+
+
+def test_builtin_formatter_groups_each_module_of_an_import_by_target() -> None:
+    """Group each module one import statement names in its own section, as isort does, by the target's library.
+
+    tomllib joins the standard library in Python 3.11.
+    """
+    code = "import tomllib, pydantic, os\nimport yaml\n\n\nclass Model(pydantic.BaseModel):\n    pass\n"
+    assert_output(
+        "\n".join(
+            apply_builtin_formatter(code, python_version=version)
+            for version in (PythonVersion.PY_310, PythonVersion.PY_311)
+        ),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "import_modules_by_target.txt",
+    )
+
+
+def test_builtin_formatter_string_normalization_fallback_handles_private_inputs() -> None:
+    """Keep the private normalization helper safe for non-exact strings and lexical whitespace."""
+    assert (
+        builtin_formatter._normalize_string_quotes_if_needed(
+            'value = "ok"',
+            source_is_valid=False,
+        )
+        == 'value = "ok"'
+    )
+    assert (
+        builtin_formatter._normalize_string_quotes_if_needed(
+            "value\t=1",
+            source_is_valid=True,
+        )
+        == "value =1"
+    )
+    assert (
+        builtin_formatter._normalize_string_quotes_if_needed(
+            "value = 1\f+2",
+            source_is_valid=True,
+        )
+        == "value = 1 +2"
+    )
+
+    class StringSubclass(str):  # noqa: FURB189, SLOT000 - intentionally exercises a hostile string subclass
+        def __contains__(self, _item: object) -> bool:
+            raise AssertionError
+
+    assert (
+        builtin_formatter._normalize_string_quotes_if_needed(
+            StringSubclass('value = "ok"'),
+            source_is_valid=True,
+        )
+        == 'value = "ok"'
+    )
+
+
 def test_apply_builtin_formatter_normalizes_blank_after_class_docstring() -> None:
     """Test built-in formatter keeps black-compatible class docstring spacing."""
     code = (
@@ -807,6 +1065,55 @@ def test_apply_builtin_formatter_wraps_inline_type_alias_type_union() -> None:
     )
 
 
+def test_apply_builtin_formatter_keeps_fitting_annotated_type_alias_type_argument() -> None:
+    """Keep an Annotated argument inline when only the outer TypeAliasType call is long."""
+    code = (
+        'LocalTitleRefMapAdditionalProperty = TypeAliasType("LocalTitleRefMapAdditionalProperty", '
+        "Annotated[int, Field(ge=1, le=9, title='LocalValue')])\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "LocalTitleRefMapAdditionalProperty = TypeAliasType(\n"
+        '    "LocalTitleRefMapAdditionalProperty",\n'
+        "    Annotated[int, Field(ge=1, le=9, title='LocalValue')],\n"
+        ")\n"
+    )
+
+
+def test_apply_builtin_formatter_wraps_long_annotated_type_alias_type_argument() -> None:
+    """Wrap an Annotated argument when it cannot fit on its own continuation line."""
+    code = (
+        'Alias = TypeAliasType("Alias", '
+        "Annotated[VeryLongGeneratedTypeNameThatExceedsTheDefaultLineLength, Field(description='x')])\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "Alias = TypeAliasType(\n"
+        '    "Alias",\n'
+        "    Annotated[\n"
+        "        VeryLongGeneratedTypeNameThatExceedsTheDefaultLineLength, Field(description='x')\n"
+        "    ],\n"
+        ")\n"
+    )
+
+
+def test_apply_builtin_formatter_wraps_annotated_type_alias_type_union_argument() -> None:
+    """Keep an Annotated PEP 604 union expanded inside TypeAliasType."""
+    code = (
+        'Payment = TypeAliasType("Payment", '
+        "Annotated[CardPayment | CashPayment | None, Field(None, discriminator='kind')])\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "Payment = TypeAliasType(\n"
+        '    "Payment",\n'
+        "    Annotated[\n"
+        "        CardPayment | CashPayment | None, Field(None, discriminator='kind')\n"
+        "    ],\n"
+        ")\n"
+    )
+
+
 def test_apply_builtin_formatter_wraps_type_alias_union_assignment() -> None:
     """Test built-in formatter matches black for TypeAlias Union assignments."""
     code = (
@@ -833,6 +1140,15 @@ def test_apply_builtin_formatter_wraps_type_alias_union_assignment() -> None:
     )
 
 
+def test_apply_builtin_formatter_wraps_type_alias_annotated_assignment() -> None:
+    """Wrap long Annotated TypeAlias assignments like Black."""
+    code = "LocalTitleRefMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1, le=9, title='LocalValue')]\n"
+
+    assert apply_builtin_formatter(code) == (
+        "LocalTitleRefMapAdditionalProperty: TypeAlias = Annotated[\n    int, Meta(ge=1, le=9, title='LocalValue')\n]\n"
+    )
+
+
 def test_apply_builtin_formatter_keeps_inline_type_alias_union_assignment() -> None:
     """Test built-in formatter keeps short TypeAlias Union assignments inline."""
     code = "from typing import TypeAlias, Union\n\n\nSearchResult: TypeAlias = Union['A', 'B']\n"
@@ -853,11 +1169,320 @@ def test_apply_builtin_formatter_keeps_non_union_type_alias_assignment() -> None
     )
 
 
+def test_apply_builtin_formatter_wraps_long_tuple_nested_in_dict() -> None:
+    """Wrap long tuple values nested in generated class metadata like Black."""
+    code = (
+        "class Payload:\n"
+        "    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'declared_properties': ('allOfValueMap', 'arrayIrrelevantConstraintMap', "
+        "'booleanIrrelevantConstraintMap'),\n"
+        "            'rejected_patterns': (),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'declared_properties': (\n"
+        "                'allOfValueMap',\n"
+        "                'arrayIrrelevantConstraintMap',\n"
+        "                'booleanIrrelevantConstraintMap',\n"
+        "            ),\n"
+        "            'rejected_patterns': (),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "nested_value",
+    ["(1, 2)", "{'key': 1}", repr("x" * 90)],
+)
+def test_apply_builtin_formatter_keeps_existing_tuple_element(nested_value: str) -> None:
+    """Keep an existing tuple element intact while wrapping an overlong sibling."""
+    code = (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        f"        {nested_value},\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        f"        {nested_value},\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+
+def test_apply_builtin_formatter_preserves_empty_tuple_assignment_formatting() -> None:
+    """Keep the existing generic formatting for a long empty-tuple assignment."""
+    code = (
+        "class Payload:\n"
+        "    very_long_generated_registry_name_that_exceeds_the_builtin_formatter_line_length_limit: tuple = ()\n"
+    )
+
+    assert len(code.splitlines()[1]) > 88
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    very_long_generated_registry_name_that_exceeds_the_builtin_formatter_line_length_limit: tuple = (\n"
+        "        ()\n"
+        "    )\n"
+    )
+
+
+def test_apply_builtin_formatter_keeps_empty_nested_literals() -> None:
+    """Keep empty nested literals intact while formatting a long tuple sibling."""
+    code = (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "            'empty_tuple_with_a_deliberately_long_generated_key_name_that_exceeds_line_length': (),\n"
+        "            'empty_dict_with_a_deliberately_long_generated_key_name_that_exceeds_line_length': {},\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "            'empty_tuple_with_a_deliberately_long_generated_key_name_that_exceeds_line_length': (),\n"
+        "            'empty_dict_with_a_deliberately_long_generated_key_name_that_exceeds_line_length': {},\n"
+        "        },\n"
+        "    )\n"
+    )
+
+
+def test_apply_builtin_formatter_preserves_single_entry_dict_trailing_comma() -> None:
+    """Preserve magic trailing commas when rebuilding nested dictionaries."""
+    code = (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'nested': {\n"
+        "                'short': 1,\n"
+        "            },\n"
+        "        },\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'nested': {\n"
+        "                'short': 1,\n"
+        "            },\n"
+        "        },\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+
+def test_apply_builtin_formatter_preserves_long_annotated_tuple_assignment() -> None:
+    """Prefer wrapping a long Annotated field over generic tuple-value formatting."""
+    code = (
+        "class Payload:\n"
+        "    value: Annotated[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, "
+        "Field(description='metadata')] = ('a', 'b')\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: Annotated[\n"
+        "        VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow,\n"
+        "        Field(description='metadata'),\n"
+        "    ] = ('a', 'b')\n"
+    )
+
+
+def test_apply_builtin_formatter_preserves_multiline_annotated_tuple_assignment() -> None:
+    """Do not partially rewrite an unrelated multiline Annotated tuple assignment."""
+    code = (
+        "class Payload:\n"
+        "    value: Annotated[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, "
+        "Field(description='metadata')] = (\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == code
+
+
+def test_apply_builtin_formatter_preserves_overlong_classvar_tuple_header() -> None:
+    """Do not partially rewrite a multiline ClassVar assignment with an overlong header."""
+    code = (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, ...]] = (\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert len(code.splitlines()[1]) > 88
+    assert apply_builtin_formatter(code) == code
+
+
+def test_apply_builtin_formatter_preserves_comment_in_multiline_tuple() -> None:
+    """Do not reconstruct multiline tuple metadata that contains a comment."""
+    code = (
+        "class Payload:\n"
+        "    value: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            # preserve this metadata explanation\n"
+        f"            'items': {tuple('abcdefghijklmno' for _ in range(6))!r},\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == code
+
+
+def test_apply_builtin_formatter_keeps_non_name_tuple_assignment_target() -> None:
+    """Do not route non-name annotated assignments through generated-field formatting."""
+    code = (
+        "class Payload:\n"
+        "    registry['key']: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'items': ('abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno', 'abcdefghijklmno'),\n"
+        "        },\n"
+        "    )\n"
+    )
+
+    assert apply_builtin_formatter(code) == code
+
+
+def test_apply_builtin_formatter_preserves_comment_in_annotated_alias() -> None:
+    """Do not reconstruct a multiline Annotated alias that contains a comment."""
+    code = "Alias: TypeAlias = Annotated[\n    int,\n    # preserve constraint rationale\n    Field(ge=1),\n]\n"
+
+    assert apply_builtin_formatter(code) == code
+
+
 def test_apply_builtin_formatter_normalizes_blank_lines_without_imports() -> None:
     """Test built-in formatter normalizes top-level blanks when no imports exist."""
     code = "Alias = str\n\n\n\nOtherAlias = Alias\n"
 
     assert apply_builtin_formatter(code) == "Alias = str\n\n\nOtherAlias = Alias\n"
+
+
+def test_builtin_formatter_comment_token_guard_skips_lines_without_hash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test comment-token detection avoids tokenization when a line cannot contain comments."""
+
+    def fail_generate_tokens(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("comment-token guard should skip tokenization")  # pragma: no cover
+
+    monkeypatch.setattr(
+        builtin_formatter,
+        "tokenize",
+        mock.Mock(wraps=builtin_formatter.tokenize, generate_tokens=fail_generate_tokens),
+    )
+
+    assert not builtin_formatter._has_comment_token("value = 1")
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("value = '# not a comment'", False),
+        ("value = 1  # comment", True),
+    ],
+)
+def test_builtin_formatter_comment_token_guard_tokenizes_hash_lines(line: str, expected: bool) -> None:
+    """Test comment-token detection still tokenizes lines that contain a hash."""
+    assert builtin_formatter._has_comment_token(line) is expected
+
+
+def test_builtin_formatter_blank_line_guard_skips_tokenize_without_multiline_strings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test blank-line normalization avoids tokenization when multi-line strings are impossible."""
+
+    def fail_generate_tokens(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("blank-line guard should skip tokenization")  # pragma: no cover
+
+    monkeypatch.setattr(
+        builtin_formatter,
+        "tokenize",
+        mock.Mock(wraps=builtin_formatter.tokenize, generate_tokens=fail_generate_tokens),
+    )
+
+    code = "class Model:\n    pass\n\n\n\nclass OtherModel:\n    pass"
+
+    assert_output(
+        f"{builtin_formatter._normalize_top_level_blank_lines(code)}\n",
+        BUILTIN_FORMATTER_EXPECTED_PATH / "blank_line_normalization.txt",
+    )
+
+
+def test_builtin_formatter_blank_line_guard_keeps_docstring_body_lines() -> None:
+    """Test blank-line normalization tokenizes code that may contain multi-line strings."""
+    code = '"""doc\nclass NotCode:\n    pass\n"""\n\n\n\nclass Model:\n    pass'
+
+    assert builtin_formatter._normalize_top_level_blank_lines(code) == (
+        '"""doc\nclass NotCode:\n    pass\n"""\n\n\nclass Model:\n    pass'
+    )
+
+
+@pytest.mark.parametrize("line_separator", ["\n", "\r\n"])
+def test_builtin_formatter_blank_line_guard_keeps_backslash_continuation_body_lines(line_separator: str) -> None:
+    """Test backslash-continued string lines are not treated as top-level code."""
+    code = line_separator.join([
+        "value = 'first\\",
+        "class NotCode:'",
+        "",
+        "",
+        "",
+        "class Model:",
+        "    pass",
+    ])
+    expected_lines = [
+        "value = 'first\\",
+        "class NotCode:'",
+        "",
+        "",
+        "class Model:",
+        "    pass",
+    ]
+
+    assert builtin_formatter._normalize_top_level_blank_lines(code) == "\n".join(expected_lines)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
@@ -980,6 +1605,120 @@ def test_builtin_formatter_pep695_type_alias_replacement_edges() -> None:
             ],
         )
     ]
+
+
+def test_builtin_formatter_source_segment_matches_ast() -> None:
+    """Source extraction should match ast.get_source_segment, including UTF-8 byte offsets."""
+    source = (
+        "from typing import Annotated\r\n"
+        "from pydantic import Field\n"
+        "\n"
+        "EXTRA = {'emoji': '🍣'}\n"
+        "\n"
+        "class Model:\n"
+        '    """説明."""\n'
+        "    field: Annotated[\n"
+        "        str,\n"
+        "        Field(default='é', description='長い説明'),\n"
+        "    ]\n"
+        "    data = {\n"
+        "        'emoji': '🍣',\n"
+        "        **EXTRA,\n"
+        "    }\n"
+        "\n"
+        "lambda_value = lambda: '空'\n"
+    )
+
+    for node in ast.walk(ast.parse(source)):
+        expected = ast.get_source_segment(source, node)
+        if not expected:
+            continue
+
+        assert builtin_formatter._source_segment(source, node) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("", []),
+        ("first\nsecond\n", ["first", "second"]),
+        ("first\r\nsecond\r\n", ["first", "second"]),
+        ("first\rsecond", ["first", "second"]),
+        ("next\u0085line\u2028paragraph\u2029end", ["next\u0085line\u2028paragraph\u2029end"]),
+    ],
+)
+def test_builtin_formatter_splits_only_physical_python_lines(source: str, expected: list[str]) -> None:
+    """Unicode separators remain source content while physical newlines are normalized."""
+    assert builtin_formatter._split_python_lines(source) == expected
+
+
+def test_builtin_formatter_splits_nested_annotated_formatting_as_python_lines() -> None:
+    """Nested Annotated formatting uses the physical-line splitter."""
+    annotated_union_source = "Annotated[str, Field(..., description='long generated field description')] | None"
+    annotated_union = ast.parse(annotated_union_source, mode="eval").body
+    assert isinstance(annotated_union, ast.BinOp)
+    assert builtin_formatter._format_annotated_union(annotated_union, "", 40, annotated_union_source) == (
+        "(\n"
+        "    Annotated[\n"
+        "        str,\n"
+        "        Field(\n"
+        "            ...,\n"
+        "            description='long generated field description',\n"
+        "        ),\n"
+        "    ]\n"
+        "    | None\n"
+        ")"
+    )
+
+    annotated_list_source = "list[Annotated[str, Field(..., description='long generated field description')]]"
+    annotated_list = ast.parse(annotated_list_source, mode="eval").body
+    assert isinstance(annotated_list, ast.Subscript)
+    assert builtin_formatter._format_list_of_annotated(annotated_list, "", 40, annotated_list_source) == (
+        "list[\n"
+        "    Annotated[\n"
+        "        str,\n"
+        "        Field(\n"
+        "            ...,\n"
+        "            description='long generated field description',\n"
+        "        ),\n"
+        "    ]\n"
+        "]"
+    )
+
+
+def test_builtin_formatter_source_segment_reuses_split_source_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Repeated source extraction should split one source object once."""
+    source = "class Model:\n    field: str = 'é'\n    other: str = '🍣'\n"
+    nodes = [node for node in ast.walk(ast.parse(source)) if ast.get_source_segment(source, node)]
+    split_call_count = 0
+    original_splitlines = builtin_formatter._splitlines_no_ff
+
+    def spy_splitlines(value: str) -> list[str]:
+        nonlocal split_call_count
+        split_call_count += 1
+        return original_splitlines(value)
+
+    monkeypatch.setattr(builtin_formatter, "_SOURCE_LINES_CACHE", [])
+    monkeypatch.setattr(builtin_formatter, "_splitlines_no_ff", spy_splitlines)
+
+    for node in nodes:
+        builtin_formatter._source_segment(source, node)
+
+    assert split_call_count == 1
+
+
+def test_builtin_formatter_source_segment_handles_missing_locations() -> None:
+    """Source extraction should fall back when a node lacks complete location data."""
+    source = "field: str\n"
+    node_without_location = ast.Load()
+    node_without_end_location = ast.Name(id="field", ctx=ast.Load())
+    node_without_end_location.lineno = 1
+    node_without_end_location.col_offset = 0
+    node_without_end_location.end_lineno = None
+    node_without_end_location.end_col_offset = None
+
+    assert builtin_formatter._source_segment_from_cached_lines(source, node_without_location) is None
+    assert builtin_formatter._source_segment_from_cached_lines(source, node_without_end_location) is None
 
 
 def test_apply_builtin_formatter_parenthesizes_short_annotated_default() -> None:
@@ -1468,15 +2207,20 @@ def test_apply_builtin_formatter_handles_simple_edge_cases(code: str, expected_c
     assert apply_builtin_formatter(code) == expected_code
 
 
-def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(tmp_path: Path) -> None:
-    """Keep built-in formatting aligned with black + isort for generated model outputs."""
+@pytest.mark.parametrize("bucket", range(PARITY_BUCKETS))
+def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(bucket: int, tmp_path: Path) -> None:
+    """Keep built-in formatting aligned with black + isort for generated model outputs.
+
+    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once. Files
+    black cannot parse are skipped; black 24.1 reports a name holding a letter its own Python lacks as a KeyError.
+    """
     expected_path = Path(__file__).parent / "data" / "expected"
     isort_config = isort.Config(settings_path=str(tmp_path))
     black_mode = black.FileMode(line_length=88, string_normalization=False)
     checked_files = 0
     mismatches: list[str] = []
 
-    for path in sorted(expected_path.rglob("*.py")):
+    for path in sorted(expected_path.rglob("*.py"))[bucket::PARITY_BUCKETS]:
         relative_path = path.relative_to(expected_path).as_posix()
         if relative_path in BLACK_VERSION_DEPENDENT_NORMALIZED_EXPECTED_FILES:
             continue
@@ -1487,7 +2231,7 @@ def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_fil
                 isort.code(code, config=isort_config),
                 mode=black_mode,
             )
-        except black.InvalidInput:
+        except (black.InvalidInput, KeyError):
             continue
 
         if code != black_isort_code:
@@ -1497,13 +2241,13 @@ def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_fil
         if apply_builtin_formatter(code) != black_isort_code:
             mismatches.append(relative_path)  # pragma: no cover
 
-    assert checked_files > 1000
+    assert checked_files > 1000 // PARITY_BUCKETS
     assert not mismatches
 
 
 def test_format_code_un_exist_custom_formatter() -> None:
     """Test error when custom formatter module doesn't exist."""
-    with pytest.raises(ModuleNotFoundError):
+    with pytest.raises(datamodel_code_generator.Error, match="Unable to import custom formatter"):
         _ = CodeFormatter(
             PythonVersionMin,
             custom_formatters=[UN_EXIST_FORMATTER],
@@ -1608,6 +2352,7 @@ def test_format_code_ruff_format_formatter(tmp_path: Path, monkeypatch: pytest.M
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = b"output"
         formatted_code = formatter.format_code("input")
 
@@ -1632,6 +2377,7 @@ def test_format_code_ruff_check_formatter(tmp_path: Path, monkeypatch: pytest.Mo
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = b"output"
         formatted_code = formatter.format_code("input")
 
@@ -1659,6 +2405,7 @@ def test_format_code_ruff_check_formatter_without_type_checking_imports(
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = b"output"
         formatted_code = formatter.format_code("input")
 
@@ -1732,8 +2479,8 @@ def test_format_code_ruff_check_and_format_uses_resolved_ruff_path(
         mock.patch("subprocess.run") as mock_run,
     ):
         mock_run.side_effect = [
-            mock.Mock(stdout=b"checked"),
-            mock.Mock(stdout=b"formatted"),
+            mock.Mock(returncode=0, stdout=b"checked"),
+            mock.Mock(returncode=0, stdout=b"formatted"),
         ]
         formatted_code = formatter.format_code("input")
 
@@ -1755,6 +2502,131 @@ def test_format_code_ruff_check_and_format_uses_resolved_ruff_path(
             cwd=str(tmp_path),
         ),
     ]
+
+
+def test_format_code_ruff_check_failure_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test Ruff check failures do not replace generated code with stdout."""
+    monkeypatch.chdir(tmp_path)
+    formatter = CodeFormatter(
+        PythonVersionMin,
+        formatters=[Formatter.RUFF_CHECK],
+    )
+    with (
+        mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
+        mock.patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stdout = b""
+        mock_run.return_value.stderr = b"parse error"
+
+        with pytest.raises(RuntimeError, match="parse error"):
+            formatter.format_code("input")
+
+
+def test_format_code_ruff_check_uses_stdout_when_fix_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test Ruff check can return fixed stdout while reporting remaining diagnostics."""
+    monkeypatch.chdir(tmp_path)
+    formatter = CodeFormatter(
+        PythonVersionMin,
+        formatters=[Formatter.RUFF_CHECK],
+    )
+    with (
+        mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
+        mock.patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stdout = b"fixed"
+        mock_run.return_value.stderr = b"remaining lint"
+
+        formatted_code = formatter.format_code("input")
+
+    assert formatted_code == "fixed"
+
+
+def test_format_code_ruff_check_internal_error_raises_with_stdout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test Ruff check abnormal failures do not use stdout as formatted code."""
+    monkeypatch.chdir(tmp_path)
+    formatter = CodeFormatter(
+        PythonVersionMin,
+        formatters=[Formatter.RUFF_CHECK],
+    )
+    with (
+        mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
+        mock.patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 2
+        mock_run.return_value.stdout = b"partial output"
+        mock_run.return_value.stderr = b"invalid config"
+
+        with pytest.raises(RuntimeError, match="invalid config"):
+            formatter.format_code("input")
+
+
+def test_format_code_ruff_format_failure_raises_with_stdout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test Ruff format failures report stdout when stderr is empty."""
+    monkeypatch.chdir(tmp_path)
+    formatter = CodeFormatter(
+        PythonVersionMin,
+        formatters=[Formatter.RUFF_FORMAT],
+    )
+    with (
+        mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
+        mock.patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 2
+        mock_run.return_value.stdout = b"formatter output"
+        mock_run.return_value.stderr = b""
+
+        with pytest.raises(RuntimeError, match="formatter output"):
+            formatter.format_code("input")
+
+
+def test_format_code_ruff_failure_raises_without_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test Ruff failures without output still include the exit code."""
+    monkeypatch.chdir(tmp_path)
+    formatter = CodeFormatter(
+        PythonVersionMin,
+        formatters=[Formatter.RUFF_FORMAT],
+    )
+    with (
+        mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
+        mock.patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 2
+        mock_run.return_value.stdout = b""
+        mock_run.return_value.stderr = b""
+
+        with pytest.raises(RuntimeError, match="no output"):
+            formatter.format_code("input")
+
+
+def test_find_ruff_path_prefers_virtualenv_executable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test Ruff lookup prefers the executable next to the active Python."""
+    monkeypatch.setattr(Path, "exists", lambda _path: True)
+
+    ruff_name = "ruff.exe" if sys.platform == "win32" else "ruff"
+    assert CodeFormatter._find_ruff_path() == str(Path(sys.executable).parent / ruff_name)
+
+
+def test_find_ruff_path_uses_path_executable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test Ruff lookup falls back to PATH."""
+    monkeypatch.setattr(Path, "exists", lambda _path: False)
+    monkeypatch.setattr(shutil, "which", lambda _name: FAKE_RUFF_PATH)
+
+    assert CodeFormatter._find_ruff_path() == FAKE_RUFF_PATH
+
+
+def test_find_ruff_path_missing_raises_install_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test missing Ruff is detected before subprocess execution."""
+    monkeypatch.setattr(Path, "exists", lambda _path: False)
+    monkeypatch.setattr(shutil, "which", lambda _name: None)
+
+    with pytest.raises(RuntimeError, match=r"datamodel-code-generator\[ruff\]"):
+        CodeFormatter._find_ruff_path()
 
 
 def test_settings_path_with_existing_file(tmp_path: Path) -> None:
@@ -1811,6 +2683,7 @@ def test_format_directory_ruff_check(tmp_path: Path, monkeypatch: pytest.MonkeyP
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         formatter.format_directory(output_dir)
 
     mock_run.assert_called_once_with(
@@ -1835,6 +2708,7 @@ def test_format_directory_ruff_format(tmp_path: Path, monkeypatch: pytest.Monkey
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         formatter.format_directory(output_dir)
 
     mock_run.assert_called_once_with(
@@ -1859,6 +2733,7 @@ def test_format_directory_both_ruff_formatters(tmp_path: Path, monkeypatch: pyte
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         formatter.format_directory(output_dir)
 
     assert mock_run.call_count == 2
@@ -1893,6 +2768,7 @@ def test_format_directory_ruff_check_without_type_checking_imports(
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         formatter.format_directory(output_dir)
 
     mock_run.assert_called_once_with(
@@ -1920,6 +2796,7 @@ def test_format_directory_both_ruff_formatters_without_type_checking_imports(
         mock.patch.object(formatter, "_find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("subprocess.run") as mock_run,
     ):
+        mock_run.return_value.returncode = 0
         formatter.format_directory(output_dir)
 
     assert mock_run.call_count == 2
@@ -1955,8 +2832,6 @@ def test_defer_formatting_skips_ruff_in_format_code(tmp_path: Path, monkeypatch:
 
 def test_generate_with_ruff_batch_formatting(tmp_path: Path) -> None:
     """Test that generate uses batch ruff formatting for directory output."""
-    from datamodel_code_generator import ModuleSplitMode, generate
-
     schema = """
     {
         "type": "object",
@@ -1971,11 +2846,12 @@ def test_generate_with_ruff_batch_formatting(tmp_path: Path) -> None:
         mock.patch("datamodel_code_generator.format.CodeFormatter._find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("datamodel_code_generator.format.subprocess.run") as mock_run,
     ):
-        generate(
+        mock_run.return_value.returncode = 0
+        datamodel_code_generator.generate(
             input_=schema,
             output=output_dir,
             formatters=[Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT],
-            module_split_mode=ModuleSplitMode.Single,
+            module_split_mode=datamodel_code_generator.ModuleSplitMode.Single,
         )
 
     assert mock_run.call_count == 2
@@ -2003,8 +2879,6 @@ def test_generate_with_ruff_batch_formatting(tmp_path: Path) -> None:
 
 def test_generate_with_ruff_batch_formatting_and_explicit_type_checking_imports(tmp_path: Path) -> None:
     """Test explicit TYPE_CHECKING imports override the modular Pydantic Ruff default."""
-    from datamodel_code_generator import ModuleSplitMode, generate
-
     schema = """
     {
         "type": "object",
@@ -2019,11 +2893,12 @@ def test_generate_with_ruff_batch_formatting_and_explicit_type_checking_imports(
         mock.patch("datamodel_code_generator.format.CodeFormatter._find_ruff_path", return_value=FAKE_RUFF_PATH),
         mock.patch("datamodel_code_generator.format.subprocess.run") as mock_run,
     ):
-        generate(
+        mock_run.return_value.returncode = 0
+        datamodel_code_generator.generate(
             input_=schema,
             output=output_dir,
             formatters=[Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT],
-            module_split_mode=ModuleSplitMode.Single,
+            module_split_mode=datamodel_code_generator.ModuleSplitMode.Single,
             use_type_checking_imports=True,
         )
 
@@ -2045,17 +2920,16 @@ def test_generate_with_ruff_batch_formatting_and_explicit_type_checking_imports(
 def test_code_formatter_warns_when_formatters_is_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that FutureWarning is emitted when formatters is None (default)."""
     monkeypatch.chdir(tmp_path)
-    with pytest.warns(FutureWarning, match="external formatters"):
-        CodeFormatter(PythonVersionMin)
-    with pytest.warns(FutureWarning, match="dependency-free formatting"):
+    with pytest.warns(FutureWarning, match="^Default formatters will change to builtin"):
         CodeFormatter(PythonVersionMin)
 
 
-def test_code_formatter_no_warning_when_formatters_explicit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that no warning is emitted when formatters is explicitly specified."""
+def test_code_formatter_optional_warning_when_formatters_explicit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Explicit external formatters receive the separate optional-installation notice."""
     monkeypatch.chdir(tmp_path)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
+    with pytest.warns(FutureWarning, match="^Black/isort will become optional"):
         CodeFormatter(PythonVersionMin, formatters=[Formatter.BLACK, Formatter.ISORT])
 
 
@@ -2117,7 +2991,7 @@ def test_default_black_and_isort_not_installed_raises_actionable_error(
 
     with (
         mock.patch.object(format_module, "_is_formatter_available", return_value=False),
-        pytest.warns(FutureWarning, match="external formatters"),
+        pytest.warns(FutureWarning, match="Default formatters will change to builtin"),
         pytest.raises(
             ImportError,
             match=r"black and isort are not installed.*Install black and isort.*--formatters builtin",

@@ -1,0 +1,4 @@
+{
+  "3.11": "msgspec conversion cannot resolve forward references in assignment-based property-name aliases",
+  "3.12": null
+}

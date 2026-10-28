@@ -1,0 +1,3 @@
+type_array_maps.json#/properties/pArrayOrPatternCounts: one dict type cannot express this object, since it gives the keys of its patterns and the other keys different value schemas; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
+Pydantic does not take min_length on dict[Annotated[str, Field(pattern=r'^a')], Any] | list[Any] | None; ArrayOrNamesCount is generated without this constraint.
+Pydantic does not take min_length on dict[constr(pattern=r'^a'), Any] | list[Any] | None; Model.pArrayOrNamesCount is generated without this constraint.

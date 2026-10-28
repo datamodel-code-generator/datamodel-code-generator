@@ -8,27 +8,109 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 10 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 30 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 26 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 40 | Model generation behavior |
-| 🎨 [Template Customization](template-customization.md) | 22 | Output formatting and custom rendering |
-| 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
+| 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
+| 🔧 [Typing Customization](typing-customization.md) | 45 | Type annotation and import behavior |
+| 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
+| 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
+| 🎨 [Template Customization](template-customization.md) | 28 | Output formatting and custom rendering |
+| 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 18 | Utilities and meta options |
-| 📝 [Utility Options](utility-options.md) | 10 | Help, version, debug options |
+| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
+| 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
+| 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
+
+## 🎯 Focused Topics
+
+Use these pages when you know the workflow area but not the exact option name.
+
+| Topic | Options | Groups |
+|-------|---------|--------|
+| [Model Customization](topics/model-customization.md) | 24 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
+| [Typing Customization](topics/typing-customization.md) | 29 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
+
+## 🔗 Option Relationships
+
+These links are generated from CLI option metadata and summarize options that imply, require, or conflict with other options.
+
+| Source | Kind | Condition | Target | Note |
+|--------|------|-----------|--------|------|
+| [`--use-annotated`](typing-customization.md#use-annotated) | Implies | Always | [`--field-constraints`](field-customization.md#field-constraints) enabled | - |
+| [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.11+` | `--use-specialized-enum` requires `--target-python-version` 3.11 or higher. |
+| [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
+| [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Requires | Always | [`--snake-case-field`](field-customization.md#snake-case-field) enabled | `--original-field-name-delimiter` can not be used without `--snake-case-field`. |
+| [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
+| [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
+| [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
+| [`--output-model-type`](model-customization.md#output-model-type) | Implies | `--output-model-type` = `msgspec.Struct` | [`--use-annotated`](typing-customization.md#use-annotated) enabled | - |
+| [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Implies | Always | [`--naming-strategy`](model-customization.md#naming-strategy) = `parent-prefixed` | - |
+| [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
+| [`--union-mode`](model-customization.md#union-mode) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` | `--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`. |
+| [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Implies | Always | [`--target-pydantic-version`](model-customization.md#target-pydantic-version) = `2.12` | - |
+| [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) | `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`. |
+| [`--custom-file-header`](template-customization.md#custom-file-header) | Conflicts | Always | [`--custom-file-header-path`](template-customization.md#custom-file-header-path) | `--custom-file-header` can not be used with `--custom-file-header-path`. |
+| [`--custom-file-header-path`](template-customization.md#custom-file-header-path) | Conflicts | Always | [`--custom-file-header`](template-customization.md#custom-file-header) | `--custom-file-header-path` can not be used with `--custom-file-header`. |
+| [`--all-exports-collision-strategy`](general-options.md#all-exports-collision-strategy) | Requires | Always | [`--all-exports-scope`](general-options.md#all-exports-scope) = `recursive` | `--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`. |
+| [`--diff-against`](general-options.md#diff-against) | Requires | Always | [`--input`](base-options.md#input) | `--diff-against` requires --input with the current local schema path. |
+| [`--diff-against`](general-options.md#diff-against) | Requires | Always | [`--output`](base-options.md#output) | `--diff-against` requires --output to select file or directory output layout. |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--check`](general-options.md#check) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--watch`](general-options.md#watch) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--url`](base-options.md#url) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--input-model`](base-options.md#input-model) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--emit-model-metadata`](base-options.md#emit-model-metadata) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | [`--fail-on-multi-module-stdout`](general-options.md#fail-on-multi-module-stdout) | - |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--job` | `--diff-against` compares one profile or input and cannot run named jobs. |
+| [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
+| [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
+| [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
+| [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
+| [`--client-model-package`](target-generation-options.md#client-model-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-model-package` requires `--generate-client httpx2`. |
+| [`--client-operations`](target-generation-options.md#client-operations) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-operations` requires `--generate-client httpx2`. |
+| [`--client-output`](target-generation-options.md#client-output) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-output` requires `--generate-client httpx2`. |
+| [`--client-package`](target-generation-options.md#client-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-package` requires `--generate-client httpx2`. |
+| [`--client-protocols`](target-generation-options.md#client-protocols) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-protocols` requires `--generate-client httpx2`. |
+| [`--client-resource-names`](target-generation-options.md#client-resource-names) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-resource-names` requires `--generate-client httpx2`. |
+| [`--client-server-base-url`](target-generation-options.md#client-server-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-server-base-url` requires `--generate-client httpx2`. |
+| [`--client-signature-style`](target-generation-options.md#client-signature-style) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-signature-style` requires `--generate-client httpx2`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-server` requires `--input-file-type openapi`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Conflicts | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--generate-server` can not be used with `--generate-client`. |
+| [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
+| [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
+| [`--server-handler-mode`](target-generation-options.md#server-handler-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-mode` requires `--generate-server fastapi`. |
+| [`--server-handler-modes`](target-generation-options.md#server-handler-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-modes` requires `--generate-server fastapi`. |
+| [`--server-include-request`](target-generation-options.md#server-include-request) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-include-request` requires `--generate-server fastapi`. |
+| [`--server-layout`](target-generation-options.md#server-layout) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-layout` requires `--generate-server fastapi`. |
+| [`--server-model-package`](target-generation-options.md#server-model-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-model-package` requires `--generate-server fastapi`. |
+| [`--server-operation-names`](target-generation-options.md#server-operation-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-operation-names` requires `--generate-server fastapi`. |
+| [`--server-output`](target-generation-options.md#server-output) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-output` requires `--generate-server fastapi`. |
+| [`--server-package`](target-generation-options.md#server-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-package` requires `--generate-server fastapi`. |
+| [`--server-parameter-names`](target-generation-options.md#server-parameter-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-parameter-names` requires `--generate-server fastapi`. |
+| [`--server-primary-responses`](target-generation-options.md#server-primary-responses) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-primary-responses` requires `--generate-server fastapi`. |
+| [`--server-router-names`](target-generation-options.md#server-router-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-router-names` requires `--generate-server fastapi`. |
 
 ## All Options
 
-**Jump to:** [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) · [G](#g) · [H](#h) · [I](#i) · [K](#k) · [L](#l) · [M](#m) · [N](#n) · [O](#o) · [P](#p) · [R](#r) · [S](#s) · [T](#t) · [U](#u) · [V](#v) · [W](#w)
+**Jump to:** [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) · [G](#g) · [H](#h) · [I](#i) · [J](#j) · [K](#k) · [L](#l) · [M](#m) · [N](#n) · [O](#o) · [P](#p) · [R](#r) · [S](#s) · [T](#t) · [U](#u) · [V](#v) · [W](#w)
 
 
 ### A {#a}
 
 - [`--additional-imports`](template-customization.md#additional-imports)
+- [`--alias-generator`](model-customization.md#alias-generator)
 - [`--aliases`](field-customization.md#aliases)
 - [`--all-exports-collision-strategy`](general-options.md#all-exports-collision-strategy)
 - [`--all-exports-scope`](general-options.md#all-exports-scope)
+- [`--all-jobs`](utility-options.md#all-jobs)
 - [`--allof-class-hierarchy`](typing-customization.md#allof-class-hierarchy)
 - [`--allof-merge-mode`](typing-customization.md#allof-merge-mode)
 - [`--allow-extra-fields`](model-customization.md#allow-extra-fields)
@@ -46,15 +128,28 @@ This documentation is auto-generated from test cases.
 
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members)
 - [`--check`](general-options.md#check)
+- [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly)
 - [`--class-decorators`](template-customization.md#class-decorators)
 - [`--class-name`](model-customization.md#class-name)
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
+- [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
+- [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
+- [`--client-model-package`](target-generation-options.md#client-model-package)
+- [`--client-operations`](target-generation-options.md#client-operations)
+- [`--client-output`](target-generation-options.md#client-output)
+- [`--client-package`](target-generation-options.md#client-package)
+- [`--client-protocols`](target-generation-options.md#client-protocols)
+- [`--client-resource-names`](target-generation-options.md#client-resource-names)
+- [`--client-server-base-url`](target-generation-options.md#client-server-base-url)
+- [`--client-signature-style`](target-generation-options.md#client-signature-style)
 - [`--collapse-reuse-models`](model-customization.md#collapse-reuse-models)
 - [`--collapse-root-models`](model-customization.md#collapse-root-models)
 - [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy)
+- [`--collapse-shared-parent-wrappers`](model-customization.md#collapse-shared-parent-wrappers)
 - [`--custom-file-header`](template-customization.md#custom-file-header)
+- [`--custom-file-header-mode`](template-customization.md#custom-file-header-mode)
 - [`--custom-file-header-path`](template-customization.md#custom-file-header-path)
 - [`--custom-formatters`](template-customization.md#custom-formatters)
 - [`--custom-formatters-kwargs`](template-customization.md#custom-formatters-kwargs)
@@ -64,7 +159,10 @@ This documentation is auto-generated from test cases.
 
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
+- [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants)
 - [`--default-values`](field-customization.md#default-values)
+- [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
+- [`--diff-against`](general-options.md#diff-against)
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
 - [`--disable-timestamp`](template-customization.md#disable-timestamp)
@@ -73,6 +171,7 @@ This documentation is auto-generated from test cases.
 
 ### E {#e}
 
+- [`--emit-model-metadata`](base-options.md#emit-model-metadata)
 - [`--empty-enum-field-name`](field-customization.md#empty-enum-field-name)
 - [`--enable-command-header`](template-customization.md#enable-command-header)
 - [`--enable-faux-immutability`](model-customization.md#enable-faux-immutability)
@@ -87,11 +186,13 @@ This documentation is auto-generated from test cases.
 
 ### F {#f}
 
+- [`--fail-on-multi-module-stdout`](general-options.md#fail-on-multi-module-stdout)
 - [`--field-constraints`](field-customization.md#field-constraints)
 - [`--field-extra-keys`](field-customization.md#field-extra-keys)
 - [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix)
 - [`--field-include-all-keys`](field-customization.md#field-include-all-keys)
 - [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy)
+- [`--filter-literal-values`](typing-customization.md#filter-literal-values)
 - [`--force-optional`](model-customization.md#force-optional)
 - [`--formatters`](template-customization.md#formatters)
 - [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses)
@@ -99,13 +200,17 @@ This documentation is auto-generated from test cases.
 ### G {#g}
 
 - [`--generate-cli-command`](general-options.md#generate-cli-command)
+- [`--generate-client`](target-generation-options.md#generate-client)
 - [`--generate-prompt`](utility-options.md#generate-prompt)
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config)
+- [`--generate-schema-validators`](template-customization.md#generate-schema-validators)
+- [`--generate-server`](target-generation-options.md#generate-server)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename)
 
 ### H {#h}
 
 - [`--help`](utility-options.md#help)
+- [`--http-backend`](base-options.md#http-backend)
 - [`--http-headers`](general-options.md#http-headers)
 - [`--http-ignore-tls`](general-options.md#http-ignore-tls)
 - [`--http-local-ref-path`](general-options.md#http-local-ref-path)
@@ -116,14 +221,24 @@ This documentation is auto-generated from test cases.
 
 - [`--ignore-enum-constraints`](typing-customization.md#ignore-enum-constraints)
 - [`--ignore-pyproject`](general-options.md#ignore-pyproject)
+- [`--import-overrides`](typing-customization.md#import-overrides)
 - [`--include-path-parameters`](openapi-only-options.md#include-path-parameters)
+- [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names)
 - [`--input`](base-options.md#input)
 - [`--input-file-type`](base-options.md#input-file-type)
 - [`--input-model`](base-options.md#input-model)
 - [`--input-model-ref-strategy`](base-options.md#input-model-ref-strategy)
+- [`--install-skill`](utility-options.md#install-skill)
+- [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords)
+
+### J {#j}
+
+- [`--job`](utility-options.md#job)
 
 ### K {#k}
 
+- [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values)
+- [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots)
 - [`--keep-model-order`](model-customization.md#keep-model-order)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
@@ -131,11 +246,14 @@ This documentation is auto-generated from test cases.
 
 - [`--list-deprecations`](utility-options.md#list-deprecations)
 - [`--list-experimental`](utility-options.md#list-experimental)
+- [`--locked`](general-options.md#locked)
+- [`--lockfile`](general-options.md#lockfile)
 
 ### M {#m}
 
 - [`--model-extra-keys`](model-customization.md#model-extra-keys)
 - [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix)
+- [`--model-name-map`](model-customization.md#model-name-map)
 - [`--module-split-mode`](general-options.md#module-split-mode)
 
 ### N {#n}
@@ -143,6 +261,7 @@ This documentation is auto-generated from test cases.
 - [`--naming-strategy`](model-customization.md#naming-strategy)
 - [`--no-alias`](field-customization.md#no-alias)
 - [`--no-color`](utility-options.md#no-color)
+- [`--no-deserialize-default-values`](field-customization.md#no-deserialize-default-values)
 - [`--no-treat-dot-as-module`](template-customization.md#no-treat-dot-as-module)
 - [`--no-use-closed-typed-dict`](typing-customization.md#no-use-closed-typed-dict)
 - [`--no-use-specialized-enum`](typing-customization.md#no-use-specialized-enum)
@@ -152,9 +271,13 @@ This documentation is auto-generated from test cases.
 
 ### O {#o}
 
+- [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
+- [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null)
+- [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions)
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
 - [`--openapi-scopes`](openapi-only-options.md#openapi-scopes)
+- [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by)
 - [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter)
 - [`--output`](base-options.md#output)
 - [`--output-date-class`](typing-customization.md#output-date-class)
@@ -162,35 +285,61 @@ This documentation is auto-generated from test cases.
 - [`--output-format`](utility-options.md#output-format)
 - [`--output-format-json-schema`](utility-options.md#output-format-json-schema)
 - [`--output-model-type`](model-customization.md#output-model-type)
+- [`--overwrite-skill`](utility-options.md#overwrite-skill)
 
 ### P {#p}
 
 - [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming)
+- [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator)
+- [`--preset`](base-options.md#preset)
 - [`--profile`](utility-options.md#profile)
 
 ### R {#r}
 
+- [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
+- [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
+- [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
+- [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--reuse-model`](model-customization.md#reuse-model)
 - [`--reuse-scope`](model-customization.md#reuse-scope)
 
 ### S {#s}
 
+- [`--schema-validator-base-class-name`](template-customization.md#schema-validator-base-class-name)
+- [`--schema-validator-type`](template-customization.md#schema-validator-type)
 - [`--schema-version`](base-options.md#schema-version)
 - [`--schema-version-mode`](base-options.md#schema-version-mode)
 - [`--serialization-aliases`](field-customization.md#serialization-aliases)
+- [`--server-body-mode`](target-generation-options.md#server-body-mode)
+- [`--server-body-modes`](target-generation-options.md#server-body-modes)
+- [`--server-handler-mode`](target-generation-options.md#server-handler-mode)
+- [`--server-handler-modes`](target-generation-options.md#server-handler-modes)
+- [`--server-include-request`](target-generation-options.md#server-include-request)
+- [`--server-layout`](target-generation-options.md#server-layout)
+- [`--server-model-package`](target-generation-options.md#server-model-package)
+- [`--server-operation-names`](target-generation-options.md#server-operation-names)
+- [`--server-output`](target-generation-options.md#server-output)
+- [`--server-package`](target-generation-options.md#server-package)
+- [`--server-parameter-names`](target-generation-options.md#server-parameter-names)
+- [`--server-primary-responses`](target-generation-options.md#server-primary-responses)
+- [`--server-router-names`](target-generation-options.md#server-router-names)
 - [`--set-default-enum-member`](field-customization.md#set-default-enum-member)
 - [`--shared-module-name`](general-options.md#shared-module-name)
+- [`--skill-scope`](utility-options.md#skill-scope)
 - [`--skip-root-model`](model-customization.md#skip-root-model)
 - [`--snake-case-field`](field-customization.md#snake-case-field)
 - [`--special-field-name-prefix`](field-customization.md#special-field-name-prefix)
+- [`--strict-dotted-module-names`](template-customization.md#strict-dotted-module-names)
 - [`--strict-nullable`](model-customization.md#strict-nullable)
+- [`--strict-refs`](general-options.md#strict-refs)
 - [`--strict-types`](typing-customization.md#strict-types)
 - [`--strip-default-none`](model-customization.md#strip-default-none)
 
 ### T {#t}
 
+- [`--tag-msgspec-by-payload-name`](model-customization.md#tag-msgspec-by-payload-name)
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version)
 - [`--target-python-version`](model-customization.md#target-python-version)
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)
@@ -200,11 +349,13 @@ This documentation is auto-generated from test cases.
 ### U {#u}
 
 - [`--union-mode`](model-customization.md#union-mode)
+- [`--update-lock`](general-options.md#update-lock)
 - [`--url`](base-options.md#url)
 - [`--use-annotated`](typing-customization.md#use-annotated)
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings)
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict)
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of)
+- [`--use-decimal-in-field-forms`](typing-customization.md#use-decimal-in-field-forms)
 - [`--use-default`](model-customization.md#use-default)
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models)
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg)
@@ -217,25 +368,39 @@ This documentation is auto-generated from test cases.
 - [`--use-generic-base-class`](model-customization.md#use-generic-base-class)
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
+- [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
+- [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias)
+- [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)
 - [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name)
 - [`--use-pendulum`](typing-customization.md#use-pendulum)
+- [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)
 - [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias)
 - [`--use-schema-description`](field-customization.md#use-schema-description)
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias)
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
+- [`--use-single-dict-for-object-maps`](typing-customization.md#use-single-dict-for-object-maps)
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring)
+- [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const)
+- [`--use-site-models-for-constrained-refs`](field-customization.md#use-site-models-for-constrained-refs)
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum)
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name)
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
+- [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 - [`--use-title-as-name`](field-customization.md#use-title-as-name)
+- [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict)
+- [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays)
 - [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items)
+- [`--use-tuple-for-fixed-length-arrays`](typing-customization.md#use-tuple-for-fixed-length-arrays)
 - [`--use-type-alias`](typing-customization.md#use-type-alias)
+- [`--use-type-alias-type`](typing-customization.md#use-type-alias-type)
 - [`--use-type-checking-imports`](template-customization.md#use-type-checking-imports)
+- [`--use-typed-map-values-beside-other-types`](typing-customization.md#use-typed-map-values-beside-other-types)
+- [`--use-typed-nullable-map-values`](typing-customization.md#use-typed-nullable-map-values)
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 

@@ -1,0 +1,13 @@
+{
+  "Item": {
+    "validators": [
+      {
+        "fields": [
+          "value"
+        ],
+        "function": "tests.data.python.unique_model_sets.opaque_values.validate_value",
+        "mode": "after"
+      }
+    ]
+  }
+}

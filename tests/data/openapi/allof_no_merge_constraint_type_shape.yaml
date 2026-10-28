@@ -1,0 +1,360 @@
+openapi: "3.1.0"
+info:
+  title: No-merge inherited constraint type shape
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    EnumValue:
+      type: string
+      enum:
+        - ab
+
+    ConstValue:
+      type: string
+      const: ab
+
+    UuidValue:
+      type: string
+      format: uuid
+
+    SingleAnyValue:
+      anyOf:
+        - type: string
+          minLength: 2
+
+    SingleOneValue:
+      oneOf:
+        - type: string
+          minLength: 2
+
+    MixedValue:
+      anyOf:
+        - type: string
+          minLength: 2
+        - type: integer
+          minimum: 0
+
+    TupleValue:
+      type: array
+      minItems: 2
+      maxItems: 2
+      prefixItems:
+        - type: string
+          minLength: 2
+        - type: integer
+      items: false
+
+    RefSiblingInnerValue:
+      type: string
+      format: uuid
+
+    RefSiblingValue:
+      $ref: "#/components/schemas/RefSiblingInnerValue"
+      minLength: 2
+
+    UnconstrainedUnionValue:
+      anyOf:
+        - type: string
+        - true
+
+    MixedUntypedEnumValue:
+      enum:
+        - ab
+        - 1
+
+    NullableTypeListValue:
+      type:
+        - string
+        - "null"
+
+    NullableAnyValue:
+      anyOf:
+        - type: string
+        - type: "null"
+
+    NullableOneValue:
+      oneOf:
+        - type: string
+        - type: "null"
+
+    ArrayStringUnionValue:
+      anyOf:
+        - type: array
+          items:
+            type: string
+        - type: string
+
+    ObjectStringUnionValue:
+      anyOf:
+        - type: object
+          additionalProperties:
+            type: string
+        - type: string
+
+    DetailValue:
+      type: object
+      required:
+        - code
+        - count
+      properties:
+        code:
+          type: string
+        count:
+          type: integer
+
+    NodeValue:
+      type: object
+      required:
+        - detail
+        - label
+      properties:
+        detail:
+          $ref: "#/components/schemas/DetailValue"
+        label:
+          type: string
+
+    Base:
+      type: object
+      required:
+        - enumValue
+        - constValue
+        - uuidValue
+        - singleAnyValue
+        - singleOneValue
+        - mixedValue
+        - integerValue
+        - stringValue
+        - arrayValue
+        - numberValue
+        - booleanValue
+        - tupleValue
+        - containsTrueValue
+        - containsFalseValue
+        - containsCountValue
+        - propertyNamesValue
+        - nullableValue
+        - nonNullableValue
+        - refSiblingValue
+        - unconstrainedUnionValue
+        - mixedUntypedEnumValue
+        - nullableTypeListValue
+        - nullableAnyValue
+        - nullableOneValue
+        - nullableArrayValue
+        - nullableMappingValue
+        - unionArrayItemsValue
+        - unionArrayContainsValue
+        - unionArrayLengthValue
+        - unionObjectValuesValue
+        - unionObjectNamesValue
+        - unionObjectCountValue
+        - nestedObjectValue
+        - itemsTrueValue
+        - mappingTrueValue
+        - directTrueValue
+        - anyFalseValue
+        - oneFalseValue
+      properties:
+        enumValue:
+          $ref: "#/components/schemas/EnumValue"
+        constValue:
+          $ref: "#/components/schemas/ConstValue"
+        uuidValue:
+          $ref: "#/components/schemas/UuidValue"
+        singleAnyValue:
+          $ref: "#/components/schemas/SingleAnyValue"
+        singleOneValue:
+          $ref: "#/components/schemas/SingleOneValue"
+        mixedValue:
+          $ref: "#/components/schemas/MixedValue"
+        integerValue:
+          type: integer
+        stringValue:
+          type: string
+        arrayValue:
+          type: array
+          items:
+            type: integer
+        numberValue:
+          type: number
+        booleanValue:
+          type: boolean
+        tupleValue:
+          $ref: "#/components/schemas/TupleValue"
+        containsTrueValue:
+          type: array
+          items:
+            type: string
+        containsFalseValue:
+          type: array
+          items:
+            type: string
+        containsCountValue:
+          type: array
+          items:
+            type: string
+        propertyNamesValue:
+          type: object
+          additionalProperties:
+            type: string
+        nullableValue:
+          type: string
+          nullable: true
+        nonNullableValue:
+          type: string
+          nullable: true
+        refSiblingValue:
+          $ref: "#/components/schemas/RefSiblingValue"
+        unconstrainedUnionValue:
+          $ref: "#/components/schemas/UnconstrainedUnionValue"
+        mixedUntypedEnumValue:
+          $ref: "#/components/schemas/MixedUntypedEnumValue"
+        nullableTypeListValue:
+          $ref: "#/components/schemas/NullableTypeListValue"
+        nullableAnyValue:
+          $ref: "#/components/schemas/NullableAnyValue"
+        nullableOneValue:
+          $ref: "#/components/schemas/NullableOneValue"
+        nullableArrayValue:
+          type: array
+          items:
+            type: string
+            nullable: true
+        nullableMappingValue:
+          type: object
+          additionalProperties:
+            type: string
+            nullable: true
+        unionArrayItemsValue:
+          $ref: "#/components/schemas/ArrayStringUnionValue"
+        unionArrayContainsValue:
+          $ref: "#/components/schemas/ArrayStringUnionValue"
+        unionArrayLengthValue:
+          $ref: "#/components/schemas/ArrayStringUnionValue"
+        unionObjectValuesValue:
+          $ref: "#/components/schemas/ObjectStringUnionValue"
+        unionObjectNamesValue:
+          $ref: "#/components/schemas/ObjectStringUnionValue"
+        unionObjectCountValue:
+          $ref: "#/components/schemas/ObjectStringUnionValue"
+        nestedObjectValue:
+          $ref: "#/components/schemas/NodeValue"
+        itemsTrueValue:
+          type: array
+          items: true
+        mappingTrueValue:
+          type: object
+          additionalProperties: true
+        directTrueValue: true
+        anyFalseValue:
+          type: string
+        oneFalseValue:
+          type: string
+
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            enumValue:
+              minLength: 1
+            constValue:
+              minLength: 1
+            uuidValue:
+              minLength: 1
+            singleAnyValue:
+              minLength: 1
+            singleOneValue:
+              minLength: 1
+            mixedValue:
+              minLength: 1
+            integerValue:
+              minLength: 1
+            stringValue:
+              minimum: 1
+            arrayValue:
+              minimum: 1
+            numberValue:
+              pattern: "^a"
+            booleanValue:
+              maxLength: 1
+            tupleValue:
+              prefixItems:
+                - minLength: 1
+            containsTrueValue:
+              contains: true
+            containsFalseValue:
+              contains: false
+              minContains: 0
+            containsCountValue:
+              contains: true
+              minContains: 2
+            propertyNamesValue:
+              propertyNames:
+                minLength: 1
+            nullableValue:
+              minLength: 1
+            nonNullableValue:
+              nullable: false
+              minLength: 1
+            refSiblingValue:
+              minLength: 1
+            unconstrainedUnionValue:
+              minLength: 1
+            mixedUntypedEnumValue:
+              minLength: 1
+            nullableTypeListValue:
+              nullable: false
+              minLength: 1
+            nullableAnyValue:
+              nullable: false
+              minLength: 1
+            nullableOneValue:
+              nullable: false
+              minLength: 1
+            nullableArrayValue:
+              items:
+                nullable: false
+                minLength: 1
+            nullableMappingValue:
+              additionalProperties:
+                nullable: false
+                minLength: 1
+            unionArrayItemsValue:
+              items:
+                minLength: 1
+            unionArrayContainsValue:
+              contains: true
+            unionArrayLengthValue:
+              minItems: 1
+            unionObjectValuesValue:
+              additionalProperties:
+                minLength: 1
+            unionObjectNamesValue:
+              propertyNames:
+                minLength: 1
+            unionObjectCountValue:
+              minProperties: 1
+            nestedObjectValue:
+              properties:
+                detail:
+                  properties:
+                    code:
+                      minLength: 1
+            itemsTrueValue:
+              items:
+                minLength: 1
+            mappingTrueValue:
+              additionalProperties:
+                minLength: 1
+            directTrueValue:
+              minLength: 1
+            anyFalseValue:
+              anyOf:
+                - false
+                - minLength: 1
+            oneFalseValue:
+              oneOf:
+                - false
+                - minLength: 1

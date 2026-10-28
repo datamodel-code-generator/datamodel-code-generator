@@ -1,0 +1,6 @@
+# relative-override-modular
+render pydantic_v2.BaseModel default
+  models/__init__.py
+  models/child.py
+  models/defaults.py
+  model_bindings.py pydantic_v2_BaseModel/default

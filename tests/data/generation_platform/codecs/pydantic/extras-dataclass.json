@@ -1,0 +1,10 @@
+{
+  "backend": "pydantic_v2.dataclass",
+  "package": "codec_extras_dataclass",
+  "cases": [
+    {"name": "create-server-decode", "use": "/paths/~1tallies/post request_body", "op": "decode", "value": {"name": "votes", "yes": 3, "no": 1}},
+    {"name": "create-server-decode-invalid-extra", "use": "/paths/~1tallies/post request_body", "op": "decode", "value": {"name": "votes", "yes": "three"}},
+    {"name": "created-server-encode", "use": "/paths/~1tallies/post response_body 201", "op": "encode", "value": {"result": "create-server-decode", "attr": "value"}},
+    {"name": "created-server-snapshot", "use": "/paths/~1tallies/post response_body 201", "op": "snapshot", "value": {"result": "create-server-decode", "attr": "value"}, "presence": {"name": "votes", "yes": 3}}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default_factory": "list"
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "default_factory": "dict"
+    }
+  },
+  "required": ["tags"]
+}

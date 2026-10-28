@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": 1.5
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": 2.5
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "Off": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "const": false
+        }
+      },
+      "required": [
+        "on"
+      ]
+    },
+    "On": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "const": true
+        }
+      },
+      "required": [
+        "on"
+      ]
+    }
+  },
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "v": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "$ref": "#/$defs/B"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "w": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Off"
+        },
+        {
+          "$ref": "#/$defs/On"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "on"
+      }
+    }
+  }
+}

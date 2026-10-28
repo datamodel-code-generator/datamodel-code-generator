@@ -3,27 +3,139 @@ name: Publish
 on:
   push:
     tags:
-      - '**'
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+rc[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+\+backport-[0-9]+'
+  workflow_dispatch:
+    inputs:
+      skip_test_gate:
+        description: "Skip the test-gate check for an emergency release. Run only with --ref <tag>."
+        required: false
+        default: false
+        type: boolean
 
 env:
   dists-artifact-name: python-package-distributions
 
 jobs:
+  verify:
+    name: Verify release gate
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_REF" != "refs/tags/$RELEASE_TAG" ]; then
+            echo "Publish must run from a release tag ref. Use: gh workflow run publish.yaml --ref <tag>" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          tag = os.environ["RELEASE_TAG"]
+          if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:rc[0-9]+|\+backport-[0-9]+)?", tag):
+              sys.exit(0)
+          print(f"Release tag {tag!r} must look like 0.66.3, 0.66.3rc1, or 0.2.11+backport-1.", file=sys.stderr)
+          sys.exit(1)
+          PY
+      - name: Verify test-gate passed
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_test_gate == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          response="$(
+            gh api "repos/${REPOSITORY}/commits/refs/tags/${RELEASE_TAG}/check-runs?check_name=test-gate&filter=latest"
+          )"
+          runs="$(
+            jq -c '
+              [
+                .check_runs[]?
+                | select(.name == "test-gate")
+                | {
+                    status,
+                    conclusion,
+                    completed_at,
+                    started_at,
+                    head_sha,
+                    html_url,
+                    run_id: (try ((.html_url // "") | capture("/actions/runs/(?<id>[0-9]+)/job/").id) catch "")
+                  }
+              ]
+              | sort_by(.completed_at // .started_at // "")
+              | reverse
+              | .[]
+            ' <<< "$response"
+          )"
+          if [ -z "$runs" ]; then
+            echo "No test-gate check run was found for tag ${RELEASE_TAG}." >&2
+            echo "Wait for Test on main to finish, then re-run Publish. For emergency releases, dispatch with skip_test_gate=true." >&2
+            exit 1
+          fi
+
+          while IFS= read -r run; do
+            run_id="$(jq -r '.run_id' <<< "$run")"
+            head_sha="$(jq -r '.head_sha' <<< "$run")"
+            if [ -z "$run_id" ]; then
+              continue
+            fi
+            metadata="$(gh api "repos/${REPOSITORY}/actions/runs/${run_id}")"
+            if ! jq -e --arg head_sha "$head_sha" \
+              '.name == "Test" and .event == "push" and .head_branch == "main" and .head_sha == $head_sha' \
+              <<< "$metadata" > /dev/null; then
+              continue
+            fi
+            status="$(jq -r '.status' <<< "$run")"
+            conclusion="$(jq -r '.conclusion' <<< "$run")"
+            html_url="$(jq -r '.html_url' <<< "$run")"
+            if [ "$status" != "completed" ]; then
+              echo "test-gate for tag ${RELEASE_TAG} is ${status}; re-run Publish after it completes." >&2
+              exit 1
+            fi
+            if [ "$conclusion" != "success" ]; then
+              echo "test-gate for tag ${RELEASE_TAG} concluded ${conclusion}: ${html_url}" >&2
+              exit 1
+            fi
+            exit 0
+          done <<< "$runs"
+
+          echo "Found test-gate check runs for tag ${RELEASE_TAG}, but none came from the Test workflow push on main." >&2
+          echo "Wait for Test on main to finish, then re-run Publish. For emergency releases, dispatch with skip_test_gate=true." >&2
+          exit 1
+      - name: Report skipped test gate
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_test_gate }}
+        run: echo "::warning::test-gate verification was skipped for this manual release."
+
   build:
+    needs:
+      - verify
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: false
       - name: Build package
         run: uv build --python 3.13 --python-preference only-managed --sdist --wheel . --out-dir dist
       - name: Store the distribution packages
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/*
@@ -40,14 +152,61 @@ jobs:
       id-token: write
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           attestations: true
+
+  behaviour_record:
+    name: Record the release's behaviour
+    if: "success() && startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '+')"
+    runs-on: ubuntu-24.04
+    needs: release
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: false
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
+      - name: Wait for the release on PyPI
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 60); do
+            if curl -fsS "https://pypi.org/pypi/datamodel-code-generator/${RELEASE_TAG}/json" > /dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "datamodel-code-generator ${RELEASE_TAG} did not appear on PyPI." >&2
+          exit 1
+      - name: Record the release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          .venv/bin/python scripts/behaviour_diff.py record "$RELEASE_TAG" \
+            --cache-dir "$RUNNER_TEMP/behaviour-diff" --out "behaviour-record-${RELEASE_TAG}"
+          tar -czf "behaviour-record-${RELEASE_TAG}.tar.gz" "behaviour-record-${RELEASE_TAG}"
+      - name: Upload the record as a release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release upload "$RELEASE_TAG" "behaviour-record-${RELEASE_TAG}.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"
 
   push_to_registry:
     name: Push Docker image to Docker Hub
@@ -58,30 +217,48 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: koxudaxi/datamodel-code-generator
           tags: |
             type=semver,pattern={{raw}}
       - name: Login to DockerHub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Build Docker image for smoke test
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          load: true
+          pull: true
+          no-cache: true
+          tags: datamodel-code-generator:smoke
+          build-args: |
+            VERSION=${{ github.ref_name }}
+      - name: Smoke test Docker image
+        uses: ./.github/actions/smoke-docker-image
+        with:
+          image: datamodel-code-generator:smoke
       - name: Build and push
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           push: true
+          pull: true
+          no-cache: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           build-args: |
             VERSION=${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64
+          provenance: mode=max
+          sbom: true

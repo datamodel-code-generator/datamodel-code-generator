@@ -1,0 +1,8 @@
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+class {{ class_name }}({{ base_class }}):
+{%- for field in fields %}
+    # type_hint={{ field.type_hint }}; annotated={{ field.annotated or '' }}; field={{ field.field or '' }}; data_type={{ field.data_type.type_hint }}
+    {{ field.name }}: {{ field.annotated or field.type_hint }}{%- if field.field %} = {{ field.field }}{% elif not field.required %} = {{ field.represented_default }}{% endif %}
+{%- endfor %}

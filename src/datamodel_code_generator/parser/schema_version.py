@@ -49,7 +49,7 @@ class JsonSchemaFeatures:
     null_in_type_array: bool = field(
         default=False,
         metadata=FeatureMetadata(
-            introduced="2020-12",
+            introduced="Draft 4 or earlier",
             doc_name="Null in type array",
             description="Allows `type: ['string', 'null']` syntax for nullable types",
             status="supported",
@@ -265,7 +265,7 @@ class JsonSchemaFeatures:
         match version:
             case JsonSchemaVersion.Draft4:
                 return cls(
-                    null_in_type_array=False,
+                    null_in_type_array=True,
                     defs_not_definitions=False,
                     prefix_items=False,
                     boolean_schemas=False,
@@ -278,7 +278,7 @@ class JsonSchemaFeatures:
                 )
             case JsonSchemaVersion.Draft6:
                 return cls(
-                    null_in_type_array=False,
+                    null_in_type_array=True,
                     defs_not_definitions=False,
                     prefix_items=False,
                     boolean_schemas=True,
@@ -289,7 +289,7 @@ class JsonSchemaFeatures:
                 )
             case JsonSchemaVersion.Draft7:
                 return cls(
-                    null_in_type_array=False,
+                    null_in_type_array=True,
                     defs_not_definitions=False,
                     prefix_items=False,
                     boolean_schemas=True,
@@ -300,7 +300,7 @@ class JsonSchemaFeatures:
                 )
             case JsonSchemaVersion.Draft201909:
                 return cls(
-                    null_in_type_array=False,
+                    null_in_type_array=True,
                     defs_not_definitions=True,
                     prefix_items=False,
                     boolean_schemas=True,
@@ -526,6 +526,15 @@ _JSONSCHEMA_VERSION_PATTERNS: _JsonSchemaVersionPatterns = {
 }
 
 
+def _detect_declared_jsonschema_version(data: dict[str, Any]) -> JsonSchemaVersion | None:
+    """Detect a recognized declaration without applying undeclared-schema heuristics."""
+    if isinstance(schema_url := data.get("$schema", ""), str):
+        for pattern, version in _JSONSCHEMA_VERSION_PATTERNS.items():
+            if pattern in schema_url:
+                return version
+    return None
+
+
 def detect_jsonschema_version(data: dict[str, Any]) -> JsonSchemaVersion:
     """Detect JSON Schema version from $schema field or heuristics.
 
@@ -543,10 +552,8 @@ def detect_jsonschema_version(data: dict[str, Any]) -> JsonSchemaVersion:
     Returns:
         The detected JSON Schema version.
     """
-    if isinstance(schema_url := data.get("$schema", ""), str):
-        for pattern, version in _JSONSCHEMA_VERSION_PATTERNS.items():
-            if pattern in schema_url:
-                return version
+    if (version := _detect_declared_jsonschema_version(data)) is not None:
+        return version
 
     # Heuristic detection based on keywords
     # $defs was introduced in Draft 2019-09, but Draft 2020-12 also uses it.

@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "PatternBase": {
+      "type": "object",
+      "properties": {
+        "marker": {
+          "type": "integer"
+        }
+      },
+      "patternProperties": {
+        "^item": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base",
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "a"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "value"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "pattern": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base",
+          "patternProperties": {
+            "^item": {
+              "type": "integer"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "marker": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "additional": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/PatternBase",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "marker": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "closed": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/PatternBase",
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "marker": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "unevaluated": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/PatternBase",
+          "unevaluatedProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "marker": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Emitted defaults",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Defaults": {
+        "type": "object",
+        "properties": {
+          "missing": {
+            "type": "string"
+          },
+          "explicit_null": {
+            "type": "string",
+            "default": null
+          },
+          "literal": {
+            "type": "integer",
+            "default": 4
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "default": [
+              1,
+              2
+            ]
+          },
+          "mapping": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "default": {
+              "enabled": true
+            }
+          },
+          "factory": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default_factory": "list"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "required"
+        ]
+      }
+    }
+  }
+}

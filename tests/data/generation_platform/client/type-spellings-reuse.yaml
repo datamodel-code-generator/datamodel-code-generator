@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Reused type spellings
+  version: "1"
+servers:
+  - url: https://spellings.example.com
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {$ref: "#/components/schemas/Id"}
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 0}
+        - name: offset
+          in: query
+          schema: {type: integer, minimum: 0}
+      responses:
+        "204":
+          description: The pet exists.
+components:
+  schemas:
+    Id:
+      type: string

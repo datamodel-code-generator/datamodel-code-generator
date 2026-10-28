@@ -1,0 +1,1 @@
+{"title":"Holder","type":"object","properties":{"Bar":{"$ref":"b.json"}}}

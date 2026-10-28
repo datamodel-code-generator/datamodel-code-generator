@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnderscoreProperty",
+  "type": "object",
+  "properties": {
+    "_": {"type": "string"},
+    "__name": {"type": "string"}
+  },
+  "required": ["_", "__name"]
+}

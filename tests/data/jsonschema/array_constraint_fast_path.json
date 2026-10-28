@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ArrayConstraintFastPath",
+  "type": "object",
+  "properties": {
+    "plain": {
+      "type": "string"
+    },
+    "ordinaryArray": {
+      "type": "array"
+    },
+    "itemsTrue": {
+      "type": "array",
+      "items": true
+    },
+    "itemsFalse": {
+      "type": "array",
+      "items": false
+    },
+    "prefixItems": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ],
+      "items": false
+    },
+    "unevaluatedItems": {
+      "type": "array",
+      "unevaluatedItems": false
+    },
+    "contains": {
+      "type": "array",
+      "contains": true,
+      "minContains": 2,
+      "maxContains": 3
+    },
+    "explicitItemsNull": {
+      "type": "array",
+      "items": null
+    },
+    "explicitItemsEmpty": {
+      "type": "array",
+      "items": []
+    },
+    "explicitPrefixItemsEmpty": {
+      "type": "array",
+      "prefixItems": []
+    },
+    "explicitUnevaluatedItemsNull": {
+      "type": "array",
+      "unevaluatedItems": null
+    }
+  }
+}

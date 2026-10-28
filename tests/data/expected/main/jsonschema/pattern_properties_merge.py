@@ -7,7 +7,5 @@ from __future__ import annotations
 from pydantic import RootModel, constr
 
 
-class Model(
-    RootModel[dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]]
-):
-    root: dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]
+class Model(RootModel[dict[constr(pattern=r'^i-|^t-|^n-'), str | int]]):
+    root: dict[constr(pattern=r'^i-|^t-|^n-'), str | int]

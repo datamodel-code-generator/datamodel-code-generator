@@ -1,0 +1,30 @@
+{
+  "$defs": {
+    "ChoicesParent": {
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        }
+      },
+      "title": "ChoicesParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/ChoicesParent"
+    }
+  ],
+  "properties": {
+    "new": {
+      "default": 2,
+      "title": "New",
+      "type": "integer"
+    }
+  },
+  "title": "ChoicesChild",
+  "type": "object"
+}

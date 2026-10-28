@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: modular allOf inheritance
+  version: "1"
+paths: {}
+components:
+  schemas:
+    base.A:
+      type: object
+      properties:
+        a:
+          type: string
+    base.B:
+      type: object
+      properties:
+        b:
+          type: string
+    mid.C:
+      allOf:
+        - $ref: "#/components/schemas/base.A"
+        - $ref: "#/components/schemas/base.B"
+        - type: object
+          properties:
+            c:
+              type: string
+    mid.D:
+      allOf:
+        - $ref: "#/components/schemas/base.B"
+        - $ref: "#/components/schemas/base.A"
+        - type: object
+          properties:
+            d:
+              type: string
+    top.E:
+      allOf:
+        - $ref: "#/components/schemas/mid.C"
+        - $ref: "#/components/schemas/mid.D"
+        - type: object
+          properties:
+            e:
+              type: string

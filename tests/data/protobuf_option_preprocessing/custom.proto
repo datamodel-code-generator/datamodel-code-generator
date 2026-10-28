@@ -1,0 +1,19 @@
+syntax = "proto2";
+import "options.proto";
+option /* between */ (config) = {
+  note: 'semi; quote\' [,(';
+  numbers: [1, 2];
+  child: { note: "nested; } ]" }
+};
+message Payload {
+  option (message_note) = "semi; colon";
+  // Docs [x(y)
+  optional string text = 1 [
+    (field_note) = {note: "first, ]", numbers: [1, 2]},
+    default /* comment */ = /* comment */ 'x(y),z]\\\'"' // trailing comment , ]
+  ];
+  optional string second = 2 [default = "a\\\"'[,]" /* , ] */, (field_note) = {note: "last"}];
+  optional int32 count = 3 [default = -7, (field_note) = {numbers: [1]}];
+  optional string joined = 4 [default = 'a' /* preserve join */ "b", (field_note) = {}];
+  optional string absent = 5 [(field_note) = {child: {note: 'nested,]'}}];
+}

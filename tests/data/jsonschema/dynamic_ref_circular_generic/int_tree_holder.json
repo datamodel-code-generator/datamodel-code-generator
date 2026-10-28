@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "int_tree_holder.json",
+  "title": "IntTreeHolder",
+  "type": "object",
+  "properties": {"tree": {"$ref": "tree.json#/$defs/Tree"}},
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "type": "integer"}
+  }
+}

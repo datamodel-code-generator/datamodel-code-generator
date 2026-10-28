@@ -1,0 +1,6 @@
+{
+  "dump": null,
+  "rejects_invalid": true,
+  "root_model": true,
+  "rejects_object": true
+}

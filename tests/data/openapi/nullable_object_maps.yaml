@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Nullable object maps
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      required: [values, patterns, names, plain]
+      properties:
+        values:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: integer
+        patterns:
+          type: object
+          nullable: true
+          patternProperties:
+            "^a":
+              type: integer
+          additionalProperties: false
+        names:
+          type: object
+          nullable: true
+          x-propertyNames:
+            pattern: "^a"
+          additionalProperties:
+            type: integer
+        plain:
+          type: object
+          nullable: true
+        valueItems:
+          type: array
+          items:
+            type: object
+            nullable: true
+            additionalProperties:
+              type: integer
+        patternItems:
+          type: array
+          items:
+            type: object
+            nullable: true
+            patternProperties:
+              "^a":
+                type: integer
+            additionalProperties: false
+        nameValues:
+          type: object
+          additionalProperties:
+            type: object
+            nullable: true
+            x-propertyNames:
+              pattern: "^a"
+            additionalProperties:
+              type: integer
+        plainValues:
+          type: object
+          additionalProperties:
+            type: object
+            nullable: true
+        patternRoot:
+          $ref: "#/components/schemas/PatternRoot"
+        combined:
+          nullable: true
+          anyOf:
+            - type: string
+            - type: object
+              additionalProperties:
+                type: integer
+        combinedItems:
+          type: array
+          items:
+            nullable: true
+            anyOf:
+              - type: string
+              - type: object
+                additionalProperties:
+                  type: integer
+        branchNullable:
+          anyOf:
+            - type: string
+            - type: object
+              nullable: true
+              additionalProperties:
+                type: integer
+        combinedRoot:
+          $ref: "#/components/schemas/CombinedRoot"
+        trueBranch:
+          $ref: "#/components/schemas/TrueBranch"
+        refBranch:
+          nullable: true
+          anyOf:
+            - type: string
+            - $ref: "#/components/schemas/IntegerMap"
+              maxProperties: 2
+        valueRoot:
+          $ref: "#/components/schemas/ValueRoot"
+        valueRootItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValueRoot"
+    PatternRoot:
+      type: object
+      nullable: true
+      patternProperties:
+        "^a":
+          type: integer
+      additionalProperties: false
+    CombinedRoot:
+      nullable: true
+      oneOf:
+        - type: integer
+        - type: object
+          patternProperties:
+            "^a":
+              type: integer
+          additionalProperties: false
+    TrueBranch:
+      type: object
+      nullable: true
+      additionalProperties:
+        type: integer
+      anyOf:
+        - true
+        - type: object
+          maxProperties: 3
+    IntegerMap:
+      type: object
+      additionalProperties:
+        type: integer
+    ValueRoot:
+      type: object
+      nullable: true
+      additionalProperties:
+        type: integer
+      minProperties: 1

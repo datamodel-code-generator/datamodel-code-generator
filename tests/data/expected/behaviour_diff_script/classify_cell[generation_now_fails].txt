@@ -1,0 +1,11 @@
+{
+  "cls": "violation",
+  "notes": [
+    "generation now fails: Error: invalid schema"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-removed] Key: removed",
+    "[name-removed] KeyMap: removed"
+  ]
+}

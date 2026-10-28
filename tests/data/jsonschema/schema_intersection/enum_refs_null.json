@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "disjoint": {
+      "$ref": "#/$defs/Disjoint"
+    },
+    "shared": {
+      "$ref": "#/$defs/Shared"
+    }
+  },
+  "$defs": {
+    "Level": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "Extra": {
+      "enum": [
+        3,
+        null
+      ]
+    },
+    "Overlap": {
+      "enum": [
+        2,
+        null
+      ]
+    },
+    "Disjoint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "$ref": "#/$defs/Extra"
+        }
+      ]
+    },
+    "Shared": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Level"
+        },
+        {
+          "$ref": "#/$defs/Overlap"
+        }
+      ]
+    }
+  }
+}

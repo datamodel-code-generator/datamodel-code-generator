@@ -1,0 +1,14 @@
+{
+  "Code": [
+    {
+      "payload": "abc",
+      "errors": []
+    },
+    {
+      "payload": "badly",
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ]
+}

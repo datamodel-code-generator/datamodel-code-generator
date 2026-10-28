@@ -4,5 +4,8 @@
   "items": [
     2,
     "model/output.py"
-  ]
+  ],
+  "model": {
+    "name": "value"
+  }
 }

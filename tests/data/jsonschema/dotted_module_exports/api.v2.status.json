@@ -1,0 +1,1 @@
+{"title": "Status", "type": "object", "properties": {"active": {"type": "boolean"}}, "required": ["active"]}

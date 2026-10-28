@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PropertyNamesPatternPropertiesIntersection",
+  "type": "object",
+  "properties": {
+    "scores": {
+      "type": "object",
+      "propertyNames": {
+        "minLength": 4,
+        "pattern": "^x_"
+      },
+      "patternProperties": {
+        "^x_": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "scores"
+  ]
+}

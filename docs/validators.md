@@ -9,12 +9,22 @@ The `--validators` option allows you to add custom field validators to generated
 ```bash
 datamodel-codegen --input schema.json --output model.py \
   --validators validators.json \
+  --use-annotated \
   --output-model-type pydantic_v2.BaseModel
 ```
 
-## Validators File Format
+You can also pass the same JSON object inline:
 
-The validators file is a JSON file that maps model names to their validator definitions.
+```bash
+datamodel-codegen --input schema.json --output model.py \
+  --validators '{"User":{"validators":[{"field":"name","function":"myapp.validators.validate_name"}]}}' \
+  --use-annotated \
+  --output-model-type pydantic_v2.BaseModel
+```
+
+## Validators Format
+
+The validators JSON maps model names to their validator definitions. Pass it either inline or as a JSON file path.
 
 ### Structure
 
@@ -63,11 +73,8 @@ Wrap validators receive a handler to call the next validator in the chain:
 ```python
 from pydantic import ValidationInfo, ValidatorFunctionWrapHandler
 
-def wrap_validate_name(
-    v: Any,
-    handler: ValidatorFunctionWrapHandler,
-    info: ValidationInfo
-) -> Any:
+
+def wrap_validate_name(v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:
     # Pre-processing
     v = v.strip() if isinstance(v, str) else v
     # Call next validator
@@ -136,16 +143,19 @@ def plain_validate_name(v: Any) -> str:
 from typing import Any
 from pydantic import ValidationInfo
 
+
 def validate_name(v: Any, info: ValidationInfo) -> Any:
     if isinstance(v, str):
         return v.strip()
     return v
+
 
 def validate_email(v: Any, info: ValidationInfo) -> Any:
     if isinstance(v, str) and not v.endswith("@example.com"):
         # Custom email domain validation
         pass
     return v
+
 
 def validate_contact_info(v: Any, info: ValidationInfo) -> Any:
     # This runs for both name and email fields
@@ -157,28 +167,28 @@ def validate_contact_info(v: Any, info: ValidationInfo) -> Any:
 ```python
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from myapp.validators import validate_contact_info, validate_email, validate_name
-from pydantic import BaseModel, EmailStr, ValidationInfo, conint, field_validator
+from pydantic import BaseModel, EmailStr, Field, ValidationInfo, field_validator
 
 
 class User(BaseModel):
     name: str
     email: EmailStr
-    age: conint(ge=0) | None = None
+    age: Annotated[int | None, Field(ge=0)] = None
 
-    @field_validator('name', mode='before')
+    @field_validator("name", mode="before")
     @classmethod
     def validate_name_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_name(v, info)
 
-    @field_validator('email', mode='after')
+    @field_validator("email", mode="after")
     @classmethod
     def validate_email_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_email(v, info)
 
-    @field_validator('name', 'email', mode='after')
+    @field_validator("name", "email", mode="after")
     @classmethod
     def validate_contact_info_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_contact_info(v, info)
@@ -187,13 +197,14 @@ class User(BaseModel):
 ## Notes
 
 - This feature only supports Pydantic v2 (`--output-model-type pydantic_v2.BaseModel`)
-- The `ModelName` in the validators file must match the generated Python class name
+- The `ModelName` in the validators JSON must match the generated Python class name
 - Validator functions are imported automatically based on the `function` path
-- When the same validator function is used multiple times, an incrementing suffix (`_1`, `_2`, etc.) is added to ensure method name uniqueness
+- When validator method names collide with another validator, an existing field, or an inherited validator, an incrementing suffix (`_1`, `_2`, etc.) is added in registration order.
+- Functions with the same name from different modules receive stable import aliases using the same suffix format. Repeated uses of the same function share its import binding; every validator registration is retained.
 
 ---
 
 ## See Also
 
-- [CLI Reference: `--validators`](cli-reference/general-options.md) - CLI option documentation
+- [CLI Reference: `--validators`](cli-reference/template-customization.md#validators) - CLI option documentation
 - [Pydantic v2 Validators Documentation](https://docs.pydantic.dev/latest/concepts/validators/) - Official Pydantic documentation

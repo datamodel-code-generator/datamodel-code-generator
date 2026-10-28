@@ -1,0 +1,4 @@
+entries: 2
+main snapshot sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+main snapshot timestamp: True
+main snapshot run id matches collector: True

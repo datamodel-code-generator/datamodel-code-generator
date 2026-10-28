@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Type array request body
+  version: "1.0"
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: [object, "null"]
+              additionalProperties:
+                type: object
+                properties:
+                  name:
+                    type: string
+      responses:
+        "200":
+          description: The pets are stored.

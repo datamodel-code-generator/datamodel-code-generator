@@ -1,0 +1,45 @@
+{
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Parent"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "a-name": {
+          "type": "string"
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "a-name"
+          ]
+        },
+        {
+          "required": [
+            "b"
+          ]
+        }
+      ]
+    }
+  ]
+}

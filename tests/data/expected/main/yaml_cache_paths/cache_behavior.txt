@@ -1,0 +1,5 @@
+relative A cache identity: True
+relative B cache identity: True
+relative and absolute B cache identity: True
+symlink schema title: CacheFromB
+symlink remains a watch dependency: True

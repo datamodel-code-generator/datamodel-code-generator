@@ -1,0 +1,3 @@
+order: a -> b
+problem: a runs after b, which the table runs later
+problem: b conflicts with a on DEFAULTS, REQUIRED and needs an explicit edge

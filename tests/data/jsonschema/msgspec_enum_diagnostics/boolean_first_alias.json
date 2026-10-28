@@ -1,0 +1,12 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "value": {
+      "enum": [
+        true,
+        1
+      ]
+    }
+  }
+}

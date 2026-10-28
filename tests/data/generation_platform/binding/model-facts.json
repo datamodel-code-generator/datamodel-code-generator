@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Backend declarations",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Record": {
+        "type": "object",
+        "properties": {
+          "wireName": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "wireName"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

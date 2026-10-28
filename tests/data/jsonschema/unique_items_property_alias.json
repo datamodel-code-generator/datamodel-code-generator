@@ -1,0 +1,14 @@
+{
+  "title": "UniqueItemsPropertyAlias",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "my-list": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer"
+      }
+    }
+  }
+}

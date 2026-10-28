@@ -1,0 +1,21 @@
+ExternalDerived:
+  allOf:
+    - $ref: "#/ExternalBase"
+  properties:
+    detail:
+      type: object
+    mapping:
+      type: object
+
+ExternalBase:
+  type: object
+  required:
+    - detail
+    - mapping
+  properties:
+    detail:
+      $ref: "./types.yaml#/ExternalDetail"
+    mapping:
+      type: object
+      additionalProperties:
+        $ref: "./types.yaml#/ExternalDetail"

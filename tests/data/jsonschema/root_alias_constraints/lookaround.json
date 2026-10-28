@@ -1,0 +1,5 @@
+{
+  "title": "Root",
+  "type": "string",
+  "pattern": "^(?=a)"
+}

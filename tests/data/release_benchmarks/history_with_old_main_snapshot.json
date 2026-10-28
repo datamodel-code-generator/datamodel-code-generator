@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "main_snapshot_generated_at": "2026-06-01T00:00:00Z",
+    "main_snapshot_workflow_run_id": "old-run",
+    "main_snapshot_collector_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "entries": [
+    {
+      "version": "0.64.1",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    },
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    },
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "builtin"
+    }
+  ]
+}

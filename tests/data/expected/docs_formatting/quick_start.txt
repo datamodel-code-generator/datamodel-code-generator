@@ -1,0 +1,115 @@
+An explanation before the generated example:
+
+```python
+name = "before"
+```
+
+### Command
+
+```bash
+datamodel-codegen \
+  --input schema.json \
+  --input-file-type jsonschema \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset example \
+  --output model.py
+```
+
+This quick start uses `example` as the modern Python 3.12 baseline.
+Preset names include the target Python version: `py312` means Python 3.12.
+
+See [CLI Reference](cli-reference/index.md) for all options. See [Presets](presets.md),
+[`--preset`](cli-reference/base-options.md#preset), [`--input-file-type`](cli-reference/base-options.md#input-file-type), and
+[`--output-model-type`](cli-reference/model-customization.md#output-model-type) for this command.
+
+For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
+documentation, use [`practical`](presets.md#practical).
+
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See [Option recommendations](recommend-options.md).
+
+<details>
+<summary>Input (<code>schema.json</code>)</summary>
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pet",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The pet's name"
+    },
+    "species": {
+      "type": "string",
+      "enum": ["dog", "cat", "bird", "fish"],
+      "default": "dog"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Age in years"
+    },
+    "vaccinated": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
+```
+
+</details>
+
+### Output
+
+<!-- fmt: off -->
+
+```python title="model.py"
+from pydantic import BaseModel, Field
+
+
+class Pet(BaseModel):
+    name: str = Field(
+        'dog',
+        description='Pet name',
+    )
+```
+
+<!-- fmt: on -->
+
+🎉 That's it! Your schema is now a fully-typed Python model.
+
+### Choose a formatter
+
+Choose a formatter to match your project and generation priorities:
+
+- **Projects using Ruff:** use `--formatters ruff-check ruff-format` to keep generated code consistent with the
+  project's formatting and lint policy. Install it with `pip install 'datamodel-code-generator[ruff]'`.
+- **No Ruff, Black, or isort, or generation speed is the priority:** use `--formatters builtin` to avoid running
+  external formatters on standard generated model modules.
+- **Projects using Black/isort:** keep `--formatters black isort` to preserve the project's formatting and existing
+  generated output.
+
+The current default remains Black/isort, which are still required dependencies. Omitting formatter options continues
+normal generation. The future builtin default is intended to reduce required installation dependencies and version
+constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
+based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
+optional installation; their ranges and environment markers match the current required dependencies.
+Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
+Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
+
+Custom templates can emit Python outside the standard generated model patterns covered by `builtin`, so
+custom-template output is not exhaustively validated. If `--formatters builtin` produces invalid or poorly formatted
+output with a custom template, please open an issue with a small reproducer. See
+[Formatter Behavior](formatter-behavior.md) for details.
+
+See [Performance Benchmarks](performance-benchmarks.md) for release benchmark data and interactive charts.
+
+After the example:
+
+```python
+name = "after"
+```

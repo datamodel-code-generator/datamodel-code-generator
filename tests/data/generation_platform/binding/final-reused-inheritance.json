@@ -1,0 +1,11 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Final reused inheritance", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Base": {"type": "object", "properties": {"value": {"type": "string"}}},
+    "ForwardDerived": {"type": "object", "required": ["value"], "allOf": [{"$ref": "#/components/schemas/ForwardBase"}]},
+    "ForwardBase": {"type": "object", "properties": {"value": {"type": "string"}}},
+    "Holder": {"type": "object", "properties": {"base": {"$ref": "#/components/schemas/ForwardBase"}}}
+  }}
+}

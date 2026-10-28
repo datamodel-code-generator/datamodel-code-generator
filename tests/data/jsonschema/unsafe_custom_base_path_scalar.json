@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnsafeScalar",
+  "type": "object",
+  "customBasePath": "pydantic.BaseModel\nDMCG_PROBE = 1",
+  "properties": {
+    "value": {
+      "type": "string"
+    }
+  }
+}

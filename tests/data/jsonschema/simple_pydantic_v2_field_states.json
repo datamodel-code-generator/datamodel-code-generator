@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FieldStates",
+  "type": "object",
+  "required": [
+    "required_plain",
+    "required_nullable",
+    "required_default",
+    "required_nullable_default"
+  ],
+  "properties": {
+    "optional_plain": {"type": "string", "nullable": false},
+    "optional_nullable": {"type": "string", "nullable": true},
+    "optional_default": {"type": "string", "nullable": false, "default": "optional"},
+    "optional_nullable_default": {
+      "type": "string",
+      "nullable": true,
+      "default": "optional-nullable"
+    },
+    "required_plain": {"type": "string", "nullable": false},
+    "required_nullable": {"type": "string", "nullable": true},
+    "required_default": {"type": "string", "nullable": false, "default": "required"},
+    "required_nullable_default": {
+      "type": "string",
+      "nullable": true,
+      "default": "required-nullable"
+    }
+  }
+}

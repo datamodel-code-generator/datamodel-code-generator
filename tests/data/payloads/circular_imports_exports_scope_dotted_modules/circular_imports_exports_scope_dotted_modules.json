@@ -1,0 +1,37 @@
+{
+  "x.thing.json": [
+    {},
+    {"other": {"other": {}}},
+    {"other": {"other": 1}},
+    {"leaf": {"a": "one"}},
+    {"leaf": {"a": 1}}
+  ],
+  "y.thing.json": [
+    {},
+    {"other": {"leaf": {"a": "one"}}},
+    {"other": []}
+  ],
+  "p.t.leaf.json": [
+    {},
+    {"a": "one"},
+    {"a": 1}
+  ],
+  "p.item.json": [
+    {},
+    {"a": "one"},
+    {"a": 1}
+  ],
+  "p.u.user.json": [
+    {},
+    {"thing": {"other": {}}},
+    {"thing": {"leaf": {"a": "one"}}},
+    {"thing": {"leaf": {"a": 1}}},
+    {"thing": []}
+  ],
+  "root_thing.json": [
+    {},
+    {"user": {"thing": {"leaf": {"a": "one"}}}},
+    {"user": {"thing": {"leaf": {"a": 1}}}},
+    {"user": 1}
+  ]
+}

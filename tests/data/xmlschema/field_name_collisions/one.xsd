@@ -1,0 +1,5 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" targetNamespace="urn:one" attributeFormDefault="qualified">
+  <xs:element name="code" type="xs:int"/>
+  <xs:attribute name="code" type="xs:int"/>
+  <xs:attributeGroup name="fields"><xs:attribute ref="one:code" use="required"/></xs:attributeGroup>
+</xs:schema>

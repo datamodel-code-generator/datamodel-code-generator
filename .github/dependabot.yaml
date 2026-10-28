@@ -10,6 +10,9 @@ updates:
   allow:
   - dependency-type: direct
   - dependency-type: indirect
+  ignore:
+  - dependency-name: black
+  - dependency-name: isort
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
@@ -22,3 +25,11 @@ updates:
     github-actions:
       patterns:
       - "*"
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: weekly
+    day: thursday
+    time: "10:45"
+    timezone: Asia/Tokyo
+  open-pull-requests-limit: 5

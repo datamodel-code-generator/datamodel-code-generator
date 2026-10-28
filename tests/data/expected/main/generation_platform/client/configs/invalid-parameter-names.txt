@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/get'].parameter_names must be an object

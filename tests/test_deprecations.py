@@ -17,6 +17,9 @@ from datamodel_code_generator.deprecations import (
     render_release_note_deprecations,
     warn_deprecated,
 )
+from tests.conftest import assert_output, assert_warnings_do_not_contain
+
+EXPECTED_DEPRECATIONS_PATH = Path(__file__).parent / "data" / "expected" / "deprecations"
 
 
 def test_deprecation_registry_has_stable_required_metadata() -> None:
@@ -47,7 +50,7 @@ def test_deprecation_markdown_output_includes_details() -> None:
     """Markdown output contains both summary and detail sections."""
     output = render_deprecations("markdown")
 
-    assert "| ID | Kind | Target | Warning since | Removal | Replacement |" in output
+    assert "| ID | Status | Kind | Target | Since | Removal | Replacement |" in output
     assert "TBD" in output
     assert "## Details" in output
     assert "cli.parent-scoped-naming" in output
@@ -58,7 +61,7 @@ def test_deprecation_markdown_output_can_omit_header() -> None:
     output = render_deprecations_markdown(include_header=False)
 
     assert not output.startswith("# Deprecations")
-    assert output.startswith("| ID | Kind | Target | Warning since | Removal | Replacement |")
+    assert output.startswith("| ID | Status | Kind | Target | Since | Removal | Replacement |")
 
 
 def test_release_note_output_filters_by_version() -> None:
@@ -91,6 +94,31 @@ def test_release_note_output_includes_scheduled_removals(monkeypatch: pytest.Mon
     assert "Scheduled removal" in output
 
 
+def test_scheduled_deprecation_release_note_and_warning(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scheduled entries render separately without emitting runtime warnings."""
+    scheduled = Deprecation(
+        id="test.scheduled-change",
+        kind="cli-option",
+        target="--scheduled-change",
+        message="--scheduled-change will be deprecated.",
+        warning_since="8.0.0",
+        removal_version=None,
+        replacement="--replacement",
+        status="scheduled",
+    )
+    monkeypatch.setitem(DEPRECATIONS, scheduled.id, scheduled)
+
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        warn_deprecated(scheduled.id)
+
+    assert_warnings_do_not_contain(recorded_warnings, scheduled.message)
+    assert_output(
+        render_release_note_deprecations("8.0.0"),
+        EXPECTED_DEPRECATIONS_PATH / "scheduled_release_notes.txt",
+    )
+
+
 def test_warn_deprecated_uses_registered_message() -> None:
     """Warning helpers emit the registered message and category."""
     with pytest.warns(DeprecationWarning, match=deprecation_message("cli.parent-scoped-naming")):
@@ -109,3 +137,16 @@ def test_warn_deprecated_default_stacklevel_points_to_caller() -> None:
 
     assert len(recorded_warnings) == 1
     assert Path(recorded_warnings[0].filename).name == "test_deprecations.py"
+
+
+def test_dependency_notice_release_comparisons() -> None:
+    """Numeric boundaries include prereleases without changing local/postrelease ordering."""
+    from datamodel_code_generator.deprecations import _dependency_version_is_legacy
+
+    cases = json.loads(
+        (Path(__file__).parent / "data" / "config" / "migration_versions.json").read_text(encoding="utf-8")
+    )
+    assert_output(
+        "\n".join(f"{version}: {_dependency_version_is_legacy(version, tuple(minimum))}" for version, minimum in cases),
+        EXPECTED_DEPRECATIONS_PATH / "dependency_versions.txt",
+    )

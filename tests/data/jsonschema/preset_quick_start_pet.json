@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pet",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The pet's name"
+    },
+    "species": {
+      "type": "string",
+      "enum": ["dog", "cat", "bird", "fish"],
+      "default": "dog"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Age in years"
+    },
+    "vaccinated": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

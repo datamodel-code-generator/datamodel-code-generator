@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Model">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="values" minOccurs="0" default="INF -INF NaN">
+          <xs:simpleType>
+            <xs:list itemType="xs:double"/>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

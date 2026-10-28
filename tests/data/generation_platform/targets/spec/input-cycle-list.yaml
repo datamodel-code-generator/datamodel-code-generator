@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: Input metadata
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      responses:
+        "204":
+          description: None
+x-cycle: &cycle
+  - *cycle

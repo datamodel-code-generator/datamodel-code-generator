@@ -1,0 +1,13 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "headers": {
+      "Bad": {
+        "content": {
+          "text/plain": {},
+          "application/json": {}
+        }
+      }
+    }
+  }
+}

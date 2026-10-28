@@ -1,0 +1,53 @@
+Foo:
+  type: object
+  properties:
+    bar:
+      $ref: '#/Bar'
+Bar:
+  type: object
+  properties:
+    b:
+      type: string
+      writeOnly: true
+    c:
+      type: string
+Owner:
+  type: object
+  properties:
+    pet:
+      $ref: '../shapes.yaml#/components/schemas/Pet'
+Catalog:
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/Item'
+Item:
+  type: object
+  properties:
+    id:
+      type: integer
+      readOnly: true
+    name:
+      type: string
+Derived:
+  allOf:
+    - $ref: '#/Base'
+    - type: object
+      properties:
+        tag:
+          $ref: '#/Tag'
+Base:
+  type: object
+  properties:
+    id:
+      type: integer
+Tag:
+  type: object
+  properties:
+    created:
+      type: string
+      readOnly: true
+    label:
+      type: string

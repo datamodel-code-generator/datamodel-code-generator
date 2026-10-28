@@ -1,0 +1,384 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External discriminator base",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Dog": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bark": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Cat": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "meow": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Wrapper": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/Base"
+          }
+        },
+        "required": [
+          "item"
+        ]
+      },
+      "Ordinary": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "Controls": {
+        "type": "object",
+        "properties": {
+          "field0": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field1": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field2": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field3": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field4": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field5": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field6": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field7": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field8": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field9": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field10": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field11": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field12": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field13": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field14": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field15": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field16": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field17": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field18": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field19": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field20": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field21": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field22": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field23": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field24": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field25": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field26": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field27": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field28": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field29": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field30": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field31": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field32": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field33": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field34": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field35": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field36": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field37": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field38": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field39": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field40": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field41": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field42": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field43": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field44": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field45": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field46": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field47": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field48": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field49": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field50": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field51": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field52": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field53": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field54": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field55": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field56": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field57": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field58": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field59": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field60": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field61": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field62": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field63": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field64": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field65": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field66": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field67": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field68": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field69": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field70": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field71": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field72": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field73": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field74": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field75": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field76": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field77": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field78": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field79": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field80": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field81": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field82": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field83": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field84": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field85": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field86": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field87": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field88": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field89": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field90": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field91": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field92": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field93": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field94": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field95": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field96": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field97": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field98": {
+            "$ref": "#/components/schemas/Ordinary"
+          },
+          "field99": {
+            "$ref": "#/components/schemas/Ordinary"
+          }
+        }
+      }
+    }
+  }
+}

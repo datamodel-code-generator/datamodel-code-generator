@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared.json",
+  "title": "Second",
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "item.json"
+    }
+  },
+  "$defs": {
+    "Item": {
+      "$id": "item.json",
+      "type": "string"
+    }
+  }
+}

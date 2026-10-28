@@ -14,11 +14,8 @@ class Model(BaseModel):
         populate_by_name=True,
     )
     order_reference: str | None = Field(
-        None,
         alias='orderReference',
         description='Reference number of the order',
         examples=['27378669'],
     )
-    brand: Literal['OPUS', 'someday'] | None = Field(
-        None, description='purchased brand'
-    )
+    brand: Literal['OPUS', 'someday'] | None = Field(description='purchased brand')

@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: Nullable maps nested in parameters
+  version: "1.0"
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: maps
+          in: query
+          schema:
+            type: array
+            items:
+              type: [object, "null"]
+              additionalProperties:
+                $ref: "#/components/schemas/Entry"
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              tags:
+                type: [object, "null"]
+                additionalProperties:
+                  $ref: "#/components/schemas/Tag"
+      responses:
+        "200":
+          description: The items.
+components:
+  schemas:
+    Entry:
+      type: object
+      properties:
+        id:
+          type: integer
+    Tag:
+      type: object
+      properties:
+        label:
+          type: string

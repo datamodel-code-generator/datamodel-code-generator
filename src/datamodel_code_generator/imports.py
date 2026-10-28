@@ -7,13 +7,15 @@ Python import statements for generated data models.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._requirements import backport_path
+
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
 
 @dataclass(frozen=True)
@@ -24,11 +26,20 @@ class Import:
     from_: str | None = None
     alias: str | None = None
     reference_path: str | None = None
+    # Track this alias independently from ordinary imports of the same symbol.
+    keep_unaliased: bool = False
 
     @property
     def is_future(self) -> bool:
         """Check if this is a __future__ import."""
         return self.from_ == "__future__"
+
+    @property
+    def binding_name(self) -> str:
+        """Return the identifier introduced by this import statement."""
+        if self.alias:
+            return self.alias
+        return self.import_.partition(".")[0] if self.from_ is None else self.import_
 
     @classmethod
     @lru_cache(maxsize=4096)
@@ -57,7 +68,7 @@ class Imports(defaultdict[str | None, set[str]]):
     def _set_alias(self, from_: str | None, imports: set[str]) -> list[str]:
         """Apply aliases to imports and return sorted list."""
         return [
-            f"{i} as {self.alias[from_][i]}" if i in self.alias[from_] and i != self.alias[from_][i] else i
+            f"{i.partition(' as ')[0]} as {alias}" if (alias := self.alias[from_].get(i)) and i != alias else i
             for i in sorted(imports)
         ]
 
@@ -73,46 +84,91 @@ class Imports(defaultdict[str | None, set[str]]):
 
     @staticmethod
     def _storage_key(import_: Import) -> tuple[str | None, str]:
-        if "." in import_.import_:
-            return None, import_.import_
-        return import_.from_, import_.import_
+        # A helper alias has its own identity so ordinary imports can be renamed,
+        # removed and exported without changing the name used by the helper.
+        name = f"{import_.import_} as {import_.alias}" if import_.keep_unaliased and import_.alias else import_.import_
+        return (None if "." in import_.import_ else import_.from_), name
 
     def append(self, imports: Import | Iterable[Import] | None) -> None:
         """Add one or more imports to the collection."""
-        if imports:
-            if isinstance(imports, Import):
-                imports = [imports]
-            for import_ in imports:
-                if import_.reference_path:
-                    self.reference_paths[import_.reference_path] = import_
-                key = self._storage_key(import_)
-                self[key[0]].add(key[1])
-                self.counter[key] += 1
-                if "." not in import_.import_ and import_.alias:
-                    self.alias[key[0]][key[1]] = import_.alias
+        if isinstance(imports, Import):
+            imports = [imports]
+        for import_ in imports or ():
+            if import_.reference_path:
+                self.reference_paths[import_.reference_path] = import_
+            key = self._storage_key(import_)
+            self[key[0]].add(key[1])
+            self.counter[key] += 1
+            if import_.alias:
+                self.alias[key[0]][key[1]] = import_.alias
 
     def remove(self, imports: Import | Iterable[Import]) -> None:
         """Remove one or more imports from the collection."""
         if isinstance(imports, Import):
             imports = [imports]
         for import_ in imports:
-            is_dotted_import = "." in import_.import_
             key = self._storage_key(import_)
             if self.counter.get(key, 0) <= 0:
                 continue
             self.counter[key] -= 1
             if self.counter[key] == 0:
                 del self.counter[key]
-                if not is_dotted_import or (key[0] in self and key[1] in self[key[0]]):
+                if key[0] in self and key[1] in self[key[0]]:
                     self[key[0]].remove(key[1])
                     if not self[key[0]]:
                         del self[key[0]]
-                if not is_dotted_import and import_.alias and key[0] in self.alias and key[1] in self.alias[key[0]]:
+                if key[0] in self.alias and key[1] in self.alias[key[0]]:
                     del self.alias[key[0]][key[1]]
                     if not self.alias[key[0]]:
                         del self.alias[key[0]]
             if import_.reference_path and import_.reference_path in self.reference_paths:
                 del self.reference_paths[import_.reference_path]
+
+    def remap_modules(self, import_overrides: Mapping[str, str]) -> None:
+        """Move configured symbols to replacement modules in place."""
+        remapped_keys = {
+            source_key: (module, source_key[1])
+            for source_key in self.counter
+            if source_key[0] != "__future__"
+            and (module := import_overrides.get(source_key[1].partition(" as ")[0])) is not None
+            and source_key[0] != module
+        }
+        effective_names = {
+            target_key: self.alias.get(target_key[0], {}).get(target_key[1], target_key[1])
+            for target_key in remapped_keys.values()
+            if target_key in self.counter
+        }
+        for source_key, target_key in remapped_keys.items():
+            source_name = self.alias.get(source_key[0], {}).get(source_key[1], source_key[1])
+            if (target_name := effective_names.setdefault(target_key, source_name)) != source_name:
+                msg = (
+                    f"Import override for {target_key[1]!r} produces conflicting names: "
+                    f"{target_name!r} and {source_name!r}"
+                )
+                raise ValueError(msg)
+
+        for (source_module, source_import), (target_module, target_import) in remapped_keys.items():
+            source_key = (source_module, source_import)
+            target_key = (target_module, target_import)
+            self.counter[target_key] += self.counter.pop(source_key)
+            self[source_module].remove(source_import)
+            if not self[source_module]:
+                del self[source_module]
+            self[target_module].add(target_import)
+
+            source_aliases = self.alias.get(source_module)
+            if source_aliases and (alias := source_aliases.pop(source_import, None)) is not None:
+                self.alias[target_module][target_import] = alias
+                if not source_aliases:
+                    del self.alias[source_module]
+
+        for reference_path, import_ in self.reference_paths.items():
+            if (
+                not import_.is_future
+                and (module := import_overrides.get(import_.import_)) is not None
+                and import_.from_ != module
+            ):
+                self.reference_paths[reference_path] = replace(import_, from_=module)
 
     def remove_referenced_imports(self, reference_path: str) -> None:
         """Remove imports associated with a reference path."""
@@ -156,7 +212,7 @@ class Imports(defaultdict[str | None, set[str]]):
         """
         name_set: set[str] = (self._exports or set()).copy()
         for from_, imports in self.items():
-            name_set.update(self.alias.get(from_, {}).get(import_) or import_ for import_ in imports)
+            name_set.update(self.get_effective_name(from_, import_) for import_ in imports)
         name_list = sorted(name_set)
         if multiline:
             items = ",\n    ".join(f'"{name}"' for name in name_list)
@@ -165,21 +221,28 @@ class Imports(defaultdict[str | None, set[str]]):
         return f"__all__ = [{items}]"
 
     def get_effective_name(self, from_: str | None, import_: str) -> str:
-        """Get the effective name after alias resolution."""
-        return self.alias.get(from_, {}).get(import_, import_)
+        """Get the name actually bound by an import after alias resolution."""
+        if alias := self.alias.get(from_, {}).get(import_):
+            return alias
+        return import_.partition(".")[0] if from_ is None else import_
+
+    def apply_alias(self, import_: Import) -> None:
+        """Apply an alias to an exact import identity already in this aggregate."""
+        key = self._storage_key(import_)
+        if not import_.alias or not self.counter.get(key):
+            return
+        self.alias[key[0]][key[1]] = import_.alias
 
     def remove_unused(self, used_names: set[str]) -> None:
-        """Remove imports not referenced in used_names.
+        """Remove imports whose bound name is not in used_names.
 
-        Note: Checks both effective name (after alias) and original name to handle
-        cases where code may reference either form (e.g., type annotations may use
-        original name while runtime code uses alias).
+        An aliased import binds only its alias, so a use of its original name does not keep it.
         """
         unused = [
             (from_, import_)
             for from_, imports_ in self.items()
             for import_ in imports_
-            if not {self.get_effective_name(from_, import_), import_}.intersection(used_names)
+            if self.get_effective_name(from_, import_) not in used_names
         ]
         # Build reverse lookup dict for O(1) access instead of O(n) linear scan per import
         reverse_lookup: dict[tuple[str | None, str], str | None] = {
@@ -202,7 +265,7 @@ IMPORT_OPTIONAL = Import.from_full_path("typing.Optional")
 IMPORT_LITERAL = Import.from_full_path("typing.Literal")
 IMPORT_TUPLE = Import.from_full_path("typing.Tuple")
 IMPORT_TYPE_ALIAS = Import.from_full_path("typing.TypeAlias")
-IMPORT_TYPE_ALIAS_TYPE = Import.from_full_path("typing_extensions.TypeAliasType")
+IMPORT_TYPE_ALIAS_TYPE = Import.from_full_path(backport_path("python.type_statement"))
 IMPORT_SEQUENCE = Import.from_full_path("typing.Sequence")
 IMPORT_FROZEN_SET = Import.from_full_path("typing.FrozenSet")
 IMPORT_MAPPING = Import.from_full_path("typing.Mapping")

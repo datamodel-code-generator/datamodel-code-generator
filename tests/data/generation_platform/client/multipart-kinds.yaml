@@ -1,0 +1,162 @@
+openapi: 3.1.0
+info:
+  title: Kinds of form-data parts
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /choices:
+    post:
+      operationId: sendChoices
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Choices"}
+      responses:
+        "204":
+          description: Stored.
+    get:
+      operationId: readChoices
+      responses:
+        "200":
+          description: The stored choices.
+          content:
+            multipart/form-data:
+              schema: {$ref: "#/components/schemas/Choices"}
+  /choice-files:
+    post:
+      operationId: sendChoiceFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/ChoiceFiles"}
+      responses:
+        "204":
+          description: Stored.
+    get:
+      operationId: readChoiceFiles
+      responses:
+        "200":
+          description: The stored choices and their file.
+          content:
+            multipart/form-data:
+              schema: {$ref: "#/components/schemas/ChoiceFiles"}
+  /words:
+    post:
+      operationId: sendWords
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Words"}
+      responses:
+        "204":
+          description: Stored.
+  /word-files:
+    post:
+      operationId: sendWordFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/WordFiles"}
+      responses:
+        "204":
+          description: Stored.
+  /filters:
+    post:
+      operationId: sendFilters
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Filters"}
+      responses:
+        "204":
+          description: Stored.
+  /filter-files:
+    post:
+      operationId: sendFilterFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/FilterFiles"}
+      responses:
+        "204":
+          description: Stored.
+  /bases:
+    get:
+      operationId: readBases
+      responses:
+        "200":
+          description: A form that inherits the type of its other properties.
+          content:
+            multipart/form-data:
+              schema: {$ref: "#/components/schemas/Bases"}
+  /base-files:
+    get:
+      operationId: readBaseFiles
+      responses:
+        "200":
+          description: A form with a file that inherits the type of its other properties.
+          content:
+            multipart/form-data:
+              schema: {$ref: "#/components/schemas/BaseFiles"}
+components:
+  schemas:
+    Others:
+      type: object
+      properties:
+        base: {type: string}
+      additionalProperties: {$ref: "#/components/schemas/Filter"}
+    Bases:
+      allOf:
+        - {$ref: "#/components/schemas/Others"}
+        - {type: object, properties: {name: {type: string}}}
+    BaseFiles:
+      allOf:
+        - {$ref: "#/components/schemas/Others"}
+        - {type: object, properties: {name: {type: string}, file: {type: string, format: binary}}}
+    Words:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {anyOf: [{type: array, items: {type: string}}, {type: string}]}
+    WordFiles:
+      type: object
+      properties:
+        name: {type: string}
+        file: {type: string, format: binary}
+      additionalProperties: {anyOf: [{type: array, items: {type: string}}, {type: string}]}
+    Filters:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+    FilterFiles:
+      type: object
+      properties:
+        name: {type: string}
+        file: {type: string, format: binary}
+      additionalProperties: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+    Choices:
+      type: object
+      properties:
+        either: {anyOf: [{$ref: "#/components/schemas/Filter"}, {type: string}]}
+        level: {enum: [1, a]}
+        words: {anyOf: [{type: array, items: {type: string}}, {type: string}]}
+        lists: {anyOf: [{type: array, items: {type: integer}}, {type: array, items: {type: string}}]}
+        filters: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+        tags: {type: array, items: {type: string}}
+        count: {type: integer}
+    ChoiceFiles:
+      allOf:
+        - {$ref: "#/components/schemas/Choices"}
+        - {type: object, properties: {file: {type: string, format: binary}}}
+    Filter:
+      type: object
+      properties:
+        color: {type: string}

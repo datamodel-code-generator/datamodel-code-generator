@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ArrayTypeUnionSelfRef",
+  "type": ["array", "string"],
+  "minItems": 1,
+  "items": {
+    "$ref": "#"
+  },
+  "definitions": {
+    "UnconstrainedArrayTypeUnionSelfRef": {
+      "type": ["array", "string"],
+      "items": {
+        "$ref": "#/definitions/UnconstrainedArrayTypeUnionSelfRef"
+      }
+    },
+    "UnconstrainedObjectArraySelfRef": {
+      "type": ["array", "object"],
+      "items": {
+        "$ref": "#/definitions/UnconstrainedObjectArraySelfRef"
+      }
+    }
+  }
+}

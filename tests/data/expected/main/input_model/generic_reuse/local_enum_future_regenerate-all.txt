@@ -1,0 +1,85 @@
+[
+  {
+    "name": "FutureLocalEnumRoot",
+    "fields": [
+      "box",
+      "validated"
+    ],
+    "annotations_equal": {
+      "box": false,
+      "validated": false
+    },
+    "type_identity": {
+      "box": false,
+      "validated": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": "a"
+          },
+          "validated": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "validated",
+              "value"
+            ],
+            "value_error"
+          ]
+        ],
+        "extra_invalid": [
+          [
+            [
+              [
+                "box",
+                "value"
+              ],
+              "literal_error"
+            ]
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": "a"
+          },
+          "validated": {
+            "value": 1
+          }
+        },
+        "invalid": null,
+        "extra_invalid": [
+          [
+            [
+              [
+                "box",
+                "value"
+              ],
+              "literal_error"
+            ]
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": false,
+      "validated": false
+    },
+    "instances": {
+      "box": {
+        "type_identity": false,
+        "value_identity": false
+      },
+      "validated": {
+        "type_identity": false,
+        "value_identity": false
+      }
+    }
+  }
+]

@@ -11,10 +11,16 @@ import pytest
 
 from datamodel_code_generator import InputFileType, inferred_message
 from datamodel_code_generator.__main__ import Exit
+from datamodel_code_generator.parser.asyncapi import AsyncAPIParser
+from tests.conftest import assert_output
 from tests.main.asyncapi.conftest import assert_file_content
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
+    BACKEND_GOLDEN_CASES,
+    BACKEND_GOLDEN_TARGET_ARGS,
     DATA_PATH,
+    EXPECTED_ASYNC_API_PATH,
+    assert_generated_model_json_validation,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
@@ -82,6 +88,39 @@ def test_main_asyncapi_2_yaml(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("version", ["v2", "v3"])
+@pytest.mark.parametrize(
+    ("directory", "extra_args"),
+    [
+        pytest.param("single_value_enum_as_const", ["--use-single-value-enum-as-const"], id="enum"),
+        pytest.param("single_value_enum_as_const/written_as_const", [], id="written-as-const"),
+    ],
+)
+def test_main_asyncapi_single_value_enum_as_const(
+    directory: str, extra_args: list[str], version: str, output_file: Path
+) -> None:
+    """Read single-value enums of payloads and parameters as const, with entries named like keywords."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / directory / f"{version}.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file=f"single_value_enum_as_const_{version}.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_asyncapi_single_value_enum_as_const_keeps_xml_schema(extra_args: list[str], output_file: Path) -> None:
+    """Keep the fixed value of a nillable element in an embedded XML Schema, which is converted, not read as JSON."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "single_value_enum_as_const" / "xml_schema.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_asyncapi_3_json(output_file: Path) -> None:
     """Generate models from an AsyncAPI 3.x JSON document."""
     run_main_and_assert(
@@ -90,6 +129,40 @@ def test_main_asyncapi_3_json(output_file: Path) -> None:
         input_file_type="asyncapi",
         assert_func=assert_file_content,
         expected_file="order_events.py",
+    )
+
+
+def test_main_asyncapi_discriminator_state_isolated_per_document(output_dir: Path) -> None:
+    """Reset document-local discriminator metadata for directory inputs."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "discriminator_state_isolation",
+        output_path=output_dir,
+        input_file_type="asyncapi",
+        expected_directory=EXPECTED_ASYNC_API_PATH / "discriminator_state_isolation",
+        extra_args=["--disable-timestamp"],
+        runtime_validation_module="b",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"pet": {"name": "Milo"}},
+    )
+
+
+@pytest.mark.parametrize(("output_model_type", "expected_name"), BACKEND_GOLDEN_CASES)
+def test_main_asyncapi_output_model_types(
+    output_file: Path,
+    output_model_type: str,
+    expected_name: str,
+) -> None:
+    """Generate representative AsyncAPI models across supported output backends."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "order-events.json",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file=f"output_model_types/order_events_{expected_name}.py",
+        extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
+        force_exec_validation=True,
+        importable_module_name=f"generated_asyncapi_{expected_name}",
+        importable_module_attribute="Order",
     )
 
 
@@ -178,6 +251,28 @@ def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
     )
 
 
+def test_main_asyncapi_root_message_ref(output_file: Path) -> None:
+    """Resolve a message reference whose pointer has only empty segments to the root of its document."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "root-message-ref.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_dynamic_ref(output_file: Path) -> None:
+    """Resolve $dynamicRef in component schemas and in merged references to another document's components."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "dynamic_ref" / "events.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref.py",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_stable_surface(output_file: Path) -> None:
     """Generate models from the stable AsyncAPI schema-bearing surface."""
     run_main_and_assert(
@@ -199,6 +294,24 @@ def test_main_asyncapi_multi_format_schema_objects(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="multi_format_schemas.py",
         extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_avro_named_types(output_file: Path) -> None:
+    """Resolve the named types of an embedded Avro schema in the document the converted schema is kept in."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "avro-named-types.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_avro_named_types",
+        model_name="OrdersOrderPayload",
+        valid_json='{"address": {"street": "a"}, "billing": {"street": "b"}, "color": "RED", "favorite": "GREEN"}',
+        invalid_json='{"address": {"street": 1}, "billing": {"street": "b"}, "color": "RED", "favorite": "GREEN"}',
+        expected_error_type="string_type",
     )
 
 
@@ -247,6 +360,28 @@ def test_main_asyncapi_xml_schema_format(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="xml_schema_format.py",
         extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_non_finite_embedded_schemas(output_file: Path) -> None:
+    """Render source-safe non-finite defaults from embedded schema formats."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "non_finite_embedded_schemas.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file="non_finite_embedded_schemas.py",
+        force_exec_validation=True,
+    )
+
+
+def test_asyncapi_parser_renders_non_finite_embedded_schemas() -> None:
+    """Render embedded schema defaults without a subprocess boundary."""
+    parser = AsyncAPIParser(ASYNC_API_DATA_PATH / "non_finite_embedded_schemas.yaml")
+
+    assert_output(
+        f"{parser.parse(format_=False)}\n",
+        DATA_PATH / "expected/parser/asyncapi/non_finite_embedded_schemas.py",
     )
 
 

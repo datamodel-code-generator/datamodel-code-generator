@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EmptyFieldRoot",
+  "$defs": {
+    "RequiredEmpty": {
+      "type": "object",
+      "properties": {
+        "": {
+          "type": "string"
+        },
+        "a": {
+          "type": "string"
+        }
+      },
+      "required": [
+        ""
+      ]
+    },
+    "OptionalEmpty": {
+      "type": "object",
+      "properties": {
+        "": {
+          "type": "string"
+        },
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "AllOfRequiredEmpty": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "": {
+              "type": "string"
+            },
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            ""
+          ]
+        }
+      ]
+    },
+    "AllOfOverrideEmpty": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OptionalEmpty"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "": {
+              "type": "string"
+            }
+          },
+          "required": [
+            ""
+          ]
+        }
+      ]
+    },
+    "ReadWriteEmpty": {
+      "type": "object",
+      "properties": {
+        "": {
+          "type": "string",
+          "readOnly": true
+        },
+        "field_": {
+          "type": "integer",
+          "writeOnly": true
+        },
+        "shared": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "",
+        "field_"
+      ]
+    }
+  },
+  "$ref": "#/$defs/RequiredEmpty"
+}

@@ -1,0 +1,17 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="Base">
+    <xs:simpleContent>
+      <xs:extension base="xs:decimal">
+        <xs:attribute name="id" type="xs:int" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:extension base="Base">
+        <xs:attribute name="label" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

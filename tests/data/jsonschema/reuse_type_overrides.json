@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "C": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        }
+      }
+    },
+    "D": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        }
+      }
+    },
+    "E": {
+      "type": "object",
+      "properties": {
+        "flag": {
+          "type": "boolean"
+        }
+      }
+    },
+    "F": {
+      "type": "object",
+      "properties": {
+        "flag": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "#/$defs/A"
+    },
+    "b": {
+      "$ref": "#/$defs/B"
+    },
+    "c": {
+      "$ref": "#/$defs/C"
+    },
+    "d": {
+      "$ref": "#/$defs/D"
+    },
+    "e": {
+      "$ref": "#/$defs/E"
+    },
+    "f": {
+      "$ref": "#/$defs/F"
+    }
+  }
+}

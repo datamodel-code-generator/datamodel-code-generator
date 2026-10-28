@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Operations API
+  version: 1.0.0
+paths:
+  /pets:
+    summary: Pets
+    parameters:
+      - name: trace
+        in: header
+        schema:
+          type: string
+    get:
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, sold]
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Pets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+                  page:
+                    type: object
+                    properties:
+                      next:
+                        type: string
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  type: object
+                  properties:
+                    size:
+                      type: integer
+      responses:
+        '201':
+          description: Created
+  /stores:
+    get:
+      responses:
+        '200':
+          description: Stores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [open, closed]
+webhooks:
+  petAdopted:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Adoption'
+      responses:
+        '200':
+          description: Received
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+  requestBodies:
+    PetBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [available, sold]
+  schemas:
+    Pet:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, sold]
+    Adoption:
+      type: object
+      properties:
+        pet:
+          $ref: '#/components/schemas/Pet'
+    Unused:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [lost]

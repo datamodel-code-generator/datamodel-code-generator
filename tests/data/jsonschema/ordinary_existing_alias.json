@@ -1,0 +1,18 @@
+{
+  "title": "OrdinaryExistingAliasModel",
+  "type": "object",
+  "$defs": {
+    "ExternalDatetime": {
+      "x-python-import": {
+        "module": "datetime",
+        "name": "datetime"
+      }
+    }
+  },
+  "properties": {
+    "datetime": {
+      "$ref": "#/$defs/ExternalDatetime"
+    }
+  },
+  "required": ["datetime"]
+}

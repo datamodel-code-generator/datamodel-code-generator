@@ -1,0 +1,640 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "enum_member_prop": {
+      "allOf": [
+        {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "enum_member_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "enum_member_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "narrow_prop": {
+      "allOf": [
+        {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "enum": [
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    "narrow_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "enum": [
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    "narrow_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "enum": [
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    "literal_prop": {
+      "allOf": [
+        {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    },
+    "literal_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          {
+            "minimum": 0
+          }
+        ]
+      }
+    },
+    "literal_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          {
+            "minimum": 0
+          }
+        ]
+      }
+    },
+    "const_prop": {
+      "allOf": [
+        {
+          "type": "string"
+        },
+        {
+          "const": "a"
+        }
+      ]
+    },
+    "const_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "const": "a"
+          }
+        ]
+      }
+    },
+    "const_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "const": "a"
+          }
+        ]
+      }
+    },
+    "nested_prop": {
+      "allOf": [
+        {
+          "allOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "minimum": 1
+            }
+          ]
+        },
+        {
+          "maximum": 3
+        }
+      ]
+    },
+    "nested_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "minimum": 1
+              }
+            ]
+          },
+          {
+            "maximum": 3
+          }
+        ]
+      }
+    },
+    "nested_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "minimum": 1
+              }
+            ]
+          },
+          {
+            "maximum": 3
+          }
+        ]
+      }
+    },
+    "nested_untyped_prop": {
+      "allOf": [
+        {
+          "allOf": [
+            {
+              "minimum": 1
+            }
+          ]
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "nested_untyped_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "minimum": 1
+              }
+            ]
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "nested_untyped_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "minimum": 1
+              }
+            ]
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "nullable_prop": {
+      "allOf": [
+        {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        {
+          "minimum": 1
+        }
+      ]
+    },
+    "nullable_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          {
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "nullable_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          {
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "outer_prop": {
+      "allOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        }
+      ],
+      "maximum": 9,
+      "description": "site"
+    },
+    "outer_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          }
+        ],
+        "maximum": 9,
+        "description": "site"
+      }
+    },
+    "outer_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          }
+        ],
+        "maximum": 9,
+        "description": "site"
+      }
+    },
+    "multiple_prop": {
+      "allOf": [
+        {
+          "type": "integer",
+          "multipleOf": 2
+        },
+        {
+          "multipleOf": 3
+        }
+      ]
+    },
+    "multiple_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer",
+            "multipleOf": 2
+          },
+          {
+            "multipleOf": 3
+          }
+        ]
+      }
+    },
+    "multiple_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer",
+            "multipleOf": 2
+          },
+          {
+            "multipleOf": 3
+          }
+        ]
+      }
+    },
+    "const_conflict_prop": {
+      "allOf": [
+        {
+          "type": "string"
+        },
+        {
+          "const": "a"
+        },
+        {
+          "const": "b"
+        }
+      ]
+    },
+    "const_conflict_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "const": "a"
+          },
+          {
+            "const": "b"
+          }
+        ]
+      }
+    },
+    "const_conflict_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "const": "a"
+          },
+          {
+            "const": "b"
+          }
+        ]
+      }
+    },
+    "not_sibling_prop": {
+      "allOf": [
+        {
+          "type": "integer"
+        }
+      ],
+      "minimum": 1,
+      "not": {
+        "const": 3
+      }
+    },
+    "not_sibling_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer"
+          }
+        ],
+        "minimum": 1,
+        "not": {
+          "const": 3
+        }
+      }
+    },
+    "not_sibling_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer"
+          }
+        ],
+        "minimum": 1,
+        "not": {
+          "const": 3
+        }
+      }
+    },
+    "enum_bound_prop": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "enum": [
+            1,
+            2,
+            30
+          ]
+        }
+      ],
+      "maximum": 10
+    },
+    "enum_bound_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "enum": [
+              1,
+              2,
+              30
+            ]
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "enum_bound_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "enum": [
+              1,
+              2,
+              30
+            ]
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "enum_length_prop": {
+      "allOf": [
+        {
+          "type": "string"
+        },
+        {
+          "enum": [
+            "a",
+            "bcdefg"
+          ]
+        }
+      ],
+      "maxLength": 3
+    },
+    "enum_length_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "a",
+              "bcdefg"
+            ]
+          }
+        ],
+        "maxLength": 3
+      }
+    },
+    "enum_length_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "a",
+              "bcdefg"
+            ]
+          }
+        ],
+        "maxLength": 3
+      }
+    },
+    "two_patterns_prop": {
+      "allOf": [
+        {
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "two_patterns_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "pattern": "^a"
+          },
+          {
+            "pattern": "b$"
+          }
+        ]
+      }
+    },
+    "two_patterns_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "pattern": "^a"
+          },
+          {
+            "pattern": "b$"
+          }
+        ]
+      }
+    }
+  }
+}

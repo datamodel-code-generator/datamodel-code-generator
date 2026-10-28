@@ -1,0 +1,16 @@
+{
+  "fields": [
+    "Union",
+    "Annotated",
+    "choice",
+    "count",
+    "list"
+  ],
+  "values": {
+    "Union": "list",
+    "Annotated": "list",
+    "choice": "list",
+    "count": 3,
+    "list": "list"
+  }
+}

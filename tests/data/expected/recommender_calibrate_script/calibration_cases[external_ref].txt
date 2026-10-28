@@ -1,0 +1,8 @@
+exit=1
+--- stdout
+fetch pets@v1: fetched
+fetch pets@v2: fetched
+fetch shop@v1: fetched
+
+--- stderr
+error: config@v1: 1 $ref value(s) point outside the document (first: 'logging.schema.json#/definitions/logging'); set stub_external_refs = true to replace them

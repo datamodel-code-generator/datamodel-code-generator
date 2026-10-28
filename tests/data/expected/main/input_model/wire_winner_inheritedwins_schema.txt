@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "ListWins": {
+      "properties": {
+        "first": {
+          "title": "First",
+          "type": "integer"
+        },
+        "shared": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shared",
+          "type": "array"
+        },
+        "last": {
+          "title": "Last",
+          "type": "string"
+        }
+      },
+      "required": [
+        "first",
+        "shared",
+        "shared",
+        "last"
+      ],
+      "title": "ListWins",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/ListWins"
+    }
+  ],
+  "properties": {
+    "shared": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Shared",
+      "type": "array"
+    },
+    "label": {
+      "default": "extra",
+      "title": "Label",
+      "type": "string"
+    }
+  },
+  "required": [
+    "shared",
+    "shared"
+  ],
+  "title": "InheritedWins",
+  "type": "object"
+}

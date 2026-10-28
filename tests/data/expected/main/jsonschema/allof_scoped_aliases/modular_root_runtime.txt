@@ -1,0 +1,66 @@
+{
+  "data": {
+    "child": {
+      "base": 1,
+      "x": "ok",
+      "y": 2,
+      "z": true
+    }
+  },
+  "schema": {
+    "$defs": {
+      "ApiChildSchema": {
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "integer"
+          },
+          "x": {
+            "title": "X",
+            "type": "string"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 2,
+            "title": "Y"
+          },
+          "z": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": true,
+            "title": "Z"
+          }
+        },
+        "required": [
+          "base",
+          "x"
+        ],
+        "title": "ApiChildSchema",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "child": {
+        "$ref": "#/$defs/ApiChildSchema"
+      }
+    },
+    "required": [
+      "child"
+    ],
+    "title": "ApiRootSchema",
+    "type": "object"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "unicode": {
+    "valid": [
+      "猫犬",
+      "犬猫",
+      "prefix猫middle犬suffix"
+    ],
+    "invalid": [
+      "猫",
+      "犬",
+      "",
+      1
+    ]
+  }
+}

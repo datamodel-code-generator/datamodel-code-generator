@@ -1,0 +1,1 @@
+object_map_bodies.yaml#/paths/~1closed-patterns/post/responses/200/content/application~1json/schema: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.

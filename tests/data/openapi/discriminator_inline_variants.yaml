@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: Discriminated unions whose variants are inline allOf schemas that extend a component
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    AudioDelta:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [audio.delta]
+        delta:
+          type: string
+      required: [type, delta]
+    AudioDone:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [audio.done]
+      required: [type]
+    Ping:
+      type: object
+      properties:
+        type:
+          type: string
+          const: ping
+      required: [type]
+    ServerEvent:
+      discriminator:
+        propertyName: type
+      anyOf:
+        - allOf:
+            - $ref: "#/components/schemas/AudioDelta"
+            - type: object
+              properties:
+                stream_id:
+                  type: string
+        - allOf:
+            - $ref: "#/components/schemas/AudioDone"
+            - type: object
+              properties:
+                stream_id:
+                  type: string
+    MixedEvent:
+      discriminator:
+        propertyName: type
+      oneOf:
+        - allOf:
+            - $ref: "#/components/schemas/AudioDelta"
+            - type: object
+              properties:
+                channel:
+                  type: integer
+        - $ref: "#/components/schemas/Ping"
+    Started:
+      type: object
+      properties:
+        type:
+          type: string
+          const: started
+      required: [type]
+    Updated:
+      type: object
+      properties:
+        type:
+          type: string
+          const: updated
+        count:
+          type: integer
+      required: [type]
+    LiveEvent2:
+      discriminator:
+        propertyName: type
+      oneOf:
+        - $ref: "#/components/schemas/Started"
+        - $ref: "#/components/schemas/Updated"
+    LiveEvent:
+      discriminator:
+        propertyName: type
+      allOf:
+        - $ref: "#/components/schemas/LiveEvent2"
+    ClashingEvent:
+      discriminator:
+        propertyName: type
+      anyOf:
+        - allOf:
+            - $ref: "#/components/schemas/AudioDone"
+            - type: object
+              properties:
+                clash:
+                  type: boolean
+        - $ref: "#/components/schemas/AudioDone"
+    SharedAEvent:
+      discriminator:
+        propertyName: type
+      oneOf:
+        - allOf:
+            - $ref: "#/components/schemas/AudioDone"
+            - type: object
+              properties:
+                shared:
+                  type: boolean
+        - $ref: "#/components/schemas/Ping"
+    SharedBEvent:
+      discriminator:
+        propertyName: type
+      anyOf:
+        - allOf:
+            - $ref: "#/components/schemas/AudioDone"
+            - type: object
+              properties:
+                shared:
+                  type: boolean
+        - $ref: "#/components/schemas/AudioDone"
+    Untyped:
+      type: object
+      properties:
+        type:
+          type: string
+        label:
+          type: string
+      required: [type]
+    UntypedEvent:
+      discriminator:
+        propertyName: type
+      anyOf:
+        - $ref: "#/components/schemas/Untyped"
+        - allOf:
+            - $ref: "#/components/schemas/Untyped"
+            - type: object
+              properties:
+                extra:
+                  type: integer

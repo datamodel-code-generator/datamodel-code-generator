@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info: {title: Names that look like references, version: "1"}
+servers: [{url: https://api.example.com}]
+security: [{oauth: []}]
+paths:
+  /things:
+    get:
+      operationId: getThing
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Target"}
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.com/auth
+          scopes:
+            $ref: read things
+            write: write things
+  schemas:
+    Target:
+      type: object
+      meta:
+        $ref: "#/components/schemas/Other"
+      properties:
+        kind: {type: string}
+    Other: {type: string}
+    Kind:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          $ref: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Cat: {type: object, properties: {kind: {type: string, const: $ref}}}
+    Dog: {type: object, properties: {kind: {type: string, const: dog}}}

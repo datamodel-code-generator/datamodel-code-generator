@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "anyOf": [
+      {
+        "enum": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "type": "string"
+      }
+    ]
+  },
+  "additionalProperties": {}
+}

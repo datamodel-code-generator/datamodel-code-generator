@@ -1,0 +1,35 @@
+warning UserWarning: msgspec cannot decode the enum Ratio: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
+use /paths/~1holders/post request_body: MsgspecCodec
+use /paths/~1limits/post request_body: MsgspecCodec
+use /paths/~1limits/post response_body 200: MsgspecCodec
+use /paths/~1coded/post request_body: MsgspecCodec
+use /paths/~1coded/post response_body 200: MsgspecCodec
+use /paths/~1batches/post request_body: MsgspecCodec
+use /paths/~1small/post request_body: MsgspecCodec
+use /paths/~1stamps/post request_body: MsgspecCodec
+use /paths/~1rated/post request_body: MsgspecCodec
+use /paths/~1moments/post request_body: MsgspecCodec
+use /paths/~1worded/post request_body: MsgspecCodec
+use /paths/~1wallets/post request_body: MsgspecCodec
+holder-server-decode: ValidationError
+holder-server-decode-large: native Holder(pet=Large(), address=UNSET, count=0) json={"pet":{"size":"large"},"count":0}
+limits-server-decode: ValidationError
+limits-client-decode: native Limits(id=1, low=2, name='abc') json={"id":1,"low":2,"name":"abc"}
+coded-server-decode: native Coded(code='abc', note=UNSET, low=1, high=9, ratio=1.5, name='ab', tags=['x'], scores={'a': 1}) json={"code":"abc","low":1,"high":9,"ratio":1.5,"name":"ab","tags":["x"],"scores":{"a":1}}
+coded-server-response: json={"code":"abc","low":1,"high":9,"ratio":1.5,"name":"ab","tags":["x"],"scores":{"a":1}}
+batch-server-decode: native Batch(entries=[Entry(amount=Decimal('1.5'))], index={'k': Entry(amount=Decimal('2'))}, a_b=Decimal('3')) json={"entries":[{"amount":"1.5"}],"index":{"k":{"amount":"2"}},"a.b":"3"}
+batch-server-decode-bad-entry: ValidationError
+batch-server-decode-bad-index: ValidationError
+batch-server-decode-bad-dotted: ValidationError
+stamps-server-decode: native Stamped(when=datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc), pair=UNSET) json={"when":"2020-01-02T03:04:05Z"}
+rated-server-decode: TypeError
+rated-server-decode-bad: TypeError
+moment-server-decode-now: TypeError
+moment-server-decode-time: TypeError
+worded-server-decode: native Worded(word='any', level=0) json={"word":"any","level":0}
+worded-server-decode-other: native Worded(word='x', level=5) json={"word":"x","level":5}
+wallet-server-decode: ValidationError
+wallet-server-decode-float-tag: ValidationError
+holder-client-encode: KeyError
+holder-client-encode-defaults: json={"count":0}
+wallet-client-encode: KeyError

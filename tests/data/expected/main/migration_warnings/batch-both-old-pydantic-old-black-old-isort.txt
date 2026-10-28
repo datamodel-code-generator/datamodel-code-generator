@@ -1,0 +1,4 @@
+Support for DCG runtime Pydantic <2.8.2 will end in a future release.
+Black/isort will become optional. Declare the corresponding extras; see --help.
+Support for Black <24.3.0 will end in a future release.
+Support for isort <6 will end in a future release.

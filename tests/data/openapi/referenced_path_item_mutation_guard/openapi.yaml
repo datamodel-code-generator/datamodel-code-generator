@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Path Item Mutation Guard
+  version: 1.0.0
+security:
+  - api_key: []
+paths:
+  /cached:
+    $ref: ./path-item.yml#/paths/~1items
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        name:
+          type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      in: header
+      name: X-API-Key

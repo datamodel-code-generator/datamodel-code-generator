@@ -113,4 +113,4 @@ The `--class-decorators` option works with any output model type:
 
 ## Related Issues
 
-- [#2358](https://github.com/koxudaxi/datamodel-code-generator/issues/2358) - Feature request for dataclasses_json support
+- [#2358](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2358) - Feature request for dataclasses_json support

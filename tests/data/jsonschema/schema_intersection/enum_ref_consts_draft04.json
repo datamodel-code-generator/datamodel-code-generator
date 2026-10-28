@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "cst": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB"
+        },
+        {
+          "const": "b"
+        }
+      ]
+    },
+    "one": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB"
+        },
+        {
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    }
+  }
+}

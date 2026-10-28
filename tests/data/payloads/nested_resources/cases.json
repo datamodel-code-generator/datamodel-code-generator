@@ -1,0 +1,384 @@
+{
+  "embedded": {
+    "payloads": [
+      {
+        "child": {
+          "nested": {
+            "kind": "nested",
+            "value": "ok"
+          }
+        }
+      },
+      {
+        "child": {
+          "nested": {
+            "kind": "wrong",
+            "value": 1
+          }
+        }
+      }
+    ],
+    "resources": [
+      "root.json",
+      "child.json"
+    ],
+    "http_requests": [
+      "/root.json",
+      "/child.json"
+    ],
+    "normal": false
+  },
+  "physical_collision": {
+    "payloads": [
+      {
+        "child": {
+          "nested": {
+            "embedded_marker": "ok"
+          }
+        }
+      },
+      {
+        "child": {
+          "nested": {
+            "external_marker": "ok"
+          }
+        }
+      }
+    ],
+    "resources": [
+      "root.json",
+      "child.json"
+    ],
+    "http_requests": [
+      "/root.json",
+      "/child.json"
+    ],
+    "normal": false
+  },
+  "relative_base": {
+    "payloads": [
+      {
+        "child": {
+          "nested": {
+            "dep": {
+              "right_marker": "ok"
+            }
+          }
+        }
+      },
+      {
+        "child": {
+          "nested": {
+            "dep": {
+              "wrong_marker": "ok"
+            }
+          }
+        }
+      }
+    ],
+    "resources": [
+      "root.json",
+      "defs/child.json",
+      "defs/dep.json"
+    ],
+    "http_requests": [
+      "/root.json",
+      "/defs/child.json",
+      "/defs/dep.json"
+    ],
+    "normal": false
+  },
+  "external_control": {
+    "payloads": [
+      {
+        "child": {
+          "dep": {
+            "marker": "ok"
+          }
+        }
+      },
+      {
+        "child": {
+          "dep": {}
+        }
+      }
+    ],
+    "resources": [
+      "root.json",
+      "defs/child.json",
+      "defs/dep.json"
+    ],
+    "http_requests": [
+      "/root.json",
+      "/defs/child.json",
+      "/defs/dep.json"
+    ],
+    "normal": true
+  },
+  "anchors": {
+    "payloads": [
+      {
+        "left": {
+          "left": 1
+        },
+        "right": {
+          "right": "ok"
+        }
+      },
+      {
+        "left": {
+          "right": "ok"
+        },
+        "right": {
+          "left": 1
+        }
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "nested_defs": {
+    "payloads": [
+      {
+        "value": {
+          "inner": "ok"
+        }
+      },
+      {
+        "value": {}
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "oneof": {
+    "payloads": [
+      {
+        "chosen": {
+          "left": "ok"
+        },
+        "again": {
+          "left": "again"
+        }
+      },
+      {
+        "chosen": {
+          "right": 2
+        },
+        "again": {
+          "right": 2
+        }
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "array": {
+    "payloads": [
+      {
+        "items": [
+          {
+            "n": 1
+          },
+          {
+            "n": 2
+          }
+        ],
+        "again": {
+          "n": 3
+        }
+      },
+      {
+        "items": [
+          {
+            "n": 1
+          }
+        ],
+        "again": {}
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "metadata": {
+    "payloads": [
+      {
+        "value": {
+          "n": 1
+        }
+      },
+      {
+        "value": {}
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "normal_root_uri": {
+    "payloads": [
+      {
+        "value": {
+          "n": 1
+        }
+      },
+      {
+        "value": {}
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": true
+  },
+  "legacy": {
+    "payloads": [
+      {
+        "value": {
+          "n": 1
+        }
+      },
+      {
+        "value": {}
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": true
+  },
+  "oneof_pointer_control": {
+    "payloads": [
+      {
+        "chosen": {
+          "left": "ok"
+        },
+        "again": {
+          "left": "again"
+        }
+      },
+      {
+        "chosen": {
+          "right": 2
+        },
+        "again": {
+          "right": 2
+        }
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": true
+  },
+  "sequence_reference": {
+    "payloads": [
+      {
+        "value": "ok"
+      },
+      {
+        "value": null
+      },
+      {
+        "value": 7
+      },
+      {}
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "normal": false
+  },
+  "id_metadata": {
+    "payloads": [
+      {
+        "child": {
+          "value": "ok"
+        }
+      },
+      {
+        "child": {
+          "value": 123
+        }
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "http_requests": [
+      "/root.json"
+    ],
+    "normal": true
+  },
+  "mixed_drafts": {
+    "payloads": [
+      {
+        "legacy": {
+          "value": "ok"
+        },
+        "modern": {
+          "value": "also ok"
+        }
+      },
+      {
+        "legacy": {
+          "value": 123
+        },
+        "modern": {
+          "value": 456
+        }
+      }
+    ],
+    "resources": [
+      "root.json",
+      "legacy.json",
+      "modern.json"
+    ],
+    "http_requests": [
+      "/root.json",
+      "/legacy.json",
+      "/modern.json"
+    ],
+    "normal": false
+  },
+  "mixed_resources": {
+    "payloads": [
+      {
+        "legacy": {
+          "value": "ok"
+        },
+        "current": {
+          "child": {
+            "value": "also ok"
+          }
+        }
+      },
+      {
+        "legacy": {
+          "value": 123
+        },
+        "current": {
+          "child": {
+            "value": 456
+          }
+        }
+      }
+    ],
+    "resources": [
+      "root.json"
+    ],
+    "http_requests": [
+      "/root.json"
+    ],
+    "normal": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "scope.member": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/paths/~1events/get/responses/200/content/text~1event-stream/schema"},
+    "completion": {"kind": "eof"}
+  }
+}

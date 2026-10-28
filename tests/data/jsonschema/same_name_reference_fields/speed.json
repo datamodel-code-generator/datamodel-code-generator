@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Speed",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {"$ref": "#/$defs/leaf"}
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Bar": {"$ref": "#/$defs/Bar"}
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer"}
+      }
+    }
+  }
+}

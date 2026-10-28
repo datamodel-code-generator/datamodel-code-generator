@@ -1,0 +1,47 @@
+asyncapi: 3.0.0
+info:
+  title: Order events
+  version: 1.0.0
+channels:
+  orders:
+    address: orders
+    messages:
+      OrderPlaced:
+        $ref: '#/components/messages/OrderPlaced'
+      OrderCancelled:
+        payload:
+          schemaFormat: application/schema+json;version=draft-07
+          schema:
+            type: object
+            properties:
+              order:
+                type: object
+                properties:
+                  id:
+                    type: string
+operations:
+  placeOrder:
+    action: send
+    channel:
+      $ref: '#/channels/orders'
+components:
+  messages:
+    OrderPlaced:
+      payload:
+        schema:
+          type: object
+          properties:
+            order:
+              type: object
+              properties:
+                total:
+                  type: number
+  schemas:
+    Customer:
+      schemaFormat: application/vnd.aai.asyncapi+json;version=3.0.0
+      schema:
+        type: object
+        properties:
+          tier:
+            type: string
+            enum: [basic, gold]

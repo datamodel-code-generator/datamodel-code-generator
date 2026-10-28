@@ -1,0 +1,27 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "freeze:1:True",
+    "dispose:1",
+    "construct:2",
+    "parse:2",
+    "dispose:2",
+    "discard:2",
+    "accept:1",
+    "close"
+  ],
+  "error": null,
+  "batch": [
+    1,
+    "580905b81c1200b1fb651889a7713d83957c89a3d79a0b88a25d589292585379"
+  ],
+  "result_sha256": {
+    "A/__init__.py": "7262d22258fa8e27223033fc82cd4b14cedfbc23531ff40721904d2a204641a3",
+    "A/field_1.py": "52faf3aa0a77c62cfef6cd887a941bee63fa5bcc054e9b5b0f3b82cc40b0fed0",
+    "B/__init__.py": "7262d22258fa8e27223033fc82cd4b14cedfbc23531ff40721904d2a204641a3",
+    "B/field_1.py": "52faf3aa0a77c62cfef6cd887a941bee63fa5bcc054e9b5b0f3b82cc40b0fed0",
+    "__init__.py": "7262d22258fa8e27223033fc82cd4b14cedfbc23531ff40721904d2a204641a3"
+  },
+  "retained_parsers": 0
+}

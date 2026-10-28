@@ -1,0 +1,8 @@
+{
+  "notes.current": {
+    "kind": "cache",
+    "operation": "/paths/~1notes~1\"\"\"\\café/get",
+    "validator": "etag",
+    "authenticated": false
+  }
+}

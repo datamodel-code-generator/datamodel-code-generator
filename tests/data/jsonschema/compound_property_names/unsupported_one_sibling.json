@@ -1,0 +1,12 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "oneOf": [
+      {},
+      false
+    ],
+    "maxLength": 2
+  },
+  "additionalProperties": {}
+}

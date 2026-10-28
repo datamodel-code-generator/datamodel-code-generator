@@ -1,0 +1,4 @@
+usage:
+  datamodel-codegen [options]
+pytest: error: unrecognized arguments: --output-model-tipe=pydantic_v2.BaseModel
+Did you mean: --output-model-type?

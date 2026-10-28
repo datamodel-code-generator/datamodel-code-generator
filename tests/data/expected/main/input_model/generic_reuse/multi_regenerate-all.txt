@@ -1,0 +1,94 @@
+[
+  {
+    "name": "IntRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": false
+    },
+    "type_identity": {
+      "box": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": 1
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": 1
+          }
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "box": false
+    }
+  },
+  {
+    "name": "NamedRoot",
+    "fields": [
+      "number",
+      "text"
+    ],
+    "annotations_equal": {
+      "number": false,
+      "text": false
+    },
+    "type_identity": {
+      "number": false,
+      "text": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "number": {
+            "value": 1
+          },
+          "text": {
+            "value": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "number",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "number": {
+            "value": 1
+          },
+          "text": {
+            "value": "ok"
+          }
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "number": false,
+      "text": false
+    }
+  }
+]

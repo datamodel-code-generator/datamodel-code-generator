@@ -1,0 +1,9 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "empty": {
+      "$ref": "a_target.json#/$defs/Empty"
+    }
+  }
+}

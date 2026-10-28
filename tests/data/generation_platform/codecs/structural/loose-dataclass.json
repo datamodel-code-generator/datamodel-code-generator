@@ -1,0 +1,12 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_loose_dataclass",
+  "cases": [
+    {"name": "holder-server-decode-tag", "use": "/paths/~1loose/put request_body", "op": "decode",
+     "value": {"value": {"label": "x"}}},
+    {"name": "holder-server-decode-other", "use": "/paths/~1loose/put request_body", "op": "decode",
+     "value": {"value": {"other": 1}}},
+    {"name": "holder-server-convert-other", "use": "/paths/~1loose/put request_body", "op": "convert",
+     "value": {"value": {"other": 1}}}
+  ]
+}

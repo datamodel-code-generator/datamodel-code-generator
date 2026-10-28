@@ -1,0 +1,19 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+This changelog is automatically generated from GitHub Releases.
+
+---
+
+## [0.57.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.57.0) - 2026-05-07
+
+## What's Changed
+* Fixed changelog generation
+
+---
+
+## [0.56.1](https://github.com/koxudaxi/datamodel-code-generator/releases/tag/0.56.1) - 2026-04-16
+
+Previous release body
+
+---

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "tree": {"$ref": "#/$defs/Node", "minProperties": 1},
+    "copy": {"$ref": "#/properties/tree"}
+  },
+  "$defs": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "children": {"type": "array", "items": {"$ref": "#/$defs/Node"}}
+      }
+    }
+  }
+}

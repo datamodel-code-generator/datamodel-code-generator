@@ -1,0 +1,63 @@
+[
+  {
+    "native": false,
+    "fields": [
+      "renamed"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [
+      "renamed"
+    ],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 4,
+      "missing": null
+    },
+    "identity": "Root",
+    "json": {
+      "known": 4,
+      "missing": null
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 2,
+      "missing": true
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2,
+      "missing": true
+    }
+  },
+  {
+    "native": true,
+    "fields": [
+      "renamed"
+    ],
+    "python": {
+      "known": 2,
+      "missing": true
+    },
+    "identity": "Root",
+    "json": {
+      "known": 2,
+      "missing": true
+    }
+  }
+]

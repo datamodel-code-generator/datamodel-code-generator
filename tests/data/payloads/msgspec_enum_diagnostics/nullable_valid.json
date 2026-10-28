@@ -1,0 +1,15 @@
+[
+  {
+    "color": null
+  },
+  {
+    "color": "red",
+    "level": 2,
+    "status": "ready"
+  },
+  {
+    "color": "green",
+    "level": null,
+    "status": null
+  }
+]

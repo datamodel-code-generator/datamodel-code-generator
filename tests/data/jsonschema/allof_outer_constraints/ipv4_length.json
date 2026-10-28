@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "minLength": 1,
+      "maxLength": 100
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "string"
+    }
+  },
+  "format": "ipv4"
+}

@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel
 
 
@@ -33,7 +31,7 @@ class Person(ProjectedPerson):
     nickname: str | None = None
     id: int
     name: str
-    address: dict[str, Any]
+    address: Address
     metadata: dict[str, str]
     contact: ContactInfo
     tags: list[str]

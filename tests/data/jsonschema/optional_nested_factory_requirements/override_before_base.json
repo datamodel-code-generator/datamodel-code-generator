@@ -1,0 +1,38 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Item"
+    }
+  },
+  "$defs": {
+    "Item": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "default": 11
+            }
+          }
+        }
+      ]
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  }
+}

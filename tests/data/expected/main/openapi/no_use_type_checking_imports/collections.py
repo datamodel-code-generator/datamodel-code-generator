@@ -2,9 +2,12 @@
 #   filename:  modular.yaml
 
 from __future__ import annotations
-from pydantic import AnyUrl, BaseModel, Field, RootModel
-from . import models
+
 from enum import Enum
+
+from pydantic import AnyUrl, BaseModel, Field, RootModel
+
+from . import models
 
 
 class Pets(RootModel[list[models.Pet]]):

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CountedValues": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 3,
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "values": {
+      "$ref": "#/$defs/CountedValues"
+    }
+  },
+  "required": [
+    "values"
+  ]
+}

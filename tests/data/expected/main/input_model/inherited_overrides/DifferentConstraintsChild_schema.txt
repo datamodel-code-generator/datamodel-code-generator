@@ -1,0 +1,38 @@
+{
+  "$defs": {
+    "DifferentConstraintsParent": {
+      "properties": {
+        "value": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "DifferentConstraintsParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/DifferentConstraintsParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "maximum": 10,
+      "minimum": 5,
+      "title": "Value",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "DifferentConstraintsChild",
+  "type": "object"
+}

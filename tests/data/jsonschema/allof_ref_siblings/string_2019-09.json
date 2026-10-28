@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Token",
+      "maxLength": 3
+    }
+  ],
+  "$defs": {
+    "Token": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 5
+    }
+  }
+}

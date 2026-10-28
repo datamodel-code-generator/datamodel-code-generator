@@ -1,0 +1,38 @@
+{
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "A": {
+      "enum": [
+        "a"
+      ]
+    },
+    "B": {
+      "enum": [
+        "b"
+      ]
+    }
+  },
+  "patternProperties": {
+    "^x": {
+      "$ref": "#/$defs/A"
+    },
+    "x$": {
+      "$ref": "#/$defs/B"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "left": {
+      "$ref": "#/$defs/A"
+    },
+    "right": {
+      "$ref": "#/$defs/B"
+    }
+  },
+  "required": [
+    "left",
+    "right"
+  ],
+  "x-note": "enum"
+}

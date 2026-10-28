@@ -1,0 +1,46 @@
+# session-nullable-aliases
+render pydantic_v2.BaseModel plain
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/plain
+render pydantic_v2.BaseModel collapsed
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/plain
+render pydantic_v2.BaseModel annotated-remapped
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/plain
+render pydantic_v2.dataclass plain
+  models.py
+  model_bindings.py pydantic_v2_dataclass/plain
+render pydantic_v2.dataclass collapsed
+  models.py
+  model_bindings.py pydantic_v2_dataclass/plain
+render pydantic_v2.dataclass annotated-remapped
+  models.py
+  model_bindings.py pydantic_v2_dataclass/plain
+render dataclasses.dataclass plain
+  models.py
+  model_bindings.py dataclasses_dataclass/plain
+render dataclasses.dataclass collapsed
+  models.py
+  model_bindings.py dataclasses_dataclass/plain
+render dataclasses.dataclass annotated-remapped
+  models.py
+  model_bindings.py dataclasses_dataclass/plain
+render typing.TypedDict plain
+  models.py
+  model_bindings.py typing_TypedDict/plain
+render typing.TypedDict collapsed
+  models.py
+  model_bindings.py typing_TypedDict/plain
+render typing.TypedDict annotated-remapped
+  models.py
+  model_bindings.py typing_TypedDict/plain
+render msgspec.Struct plain
+  models.py
+  model_bindings.py msgspec_Struct/plain
+render msgspec.Struct collapsed
+  models.py
+  model_bindings.py msgspec_Struct/plain
+render msgspec.Struct annotated-remapped
+  models.py
+  model_bindings.py msgspec_Struct/plain

@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CatalogDocument",
+  "description": "Catalog payload accepted by the public API.",
+  "type": "object",
+  "properties": {
+    "primaryAddress": {
+      "$ref": "#/definitions/Address"
+    },
+    "externalAddress": {
+      "$ref": "practical_preset_external.json#/definitions/Address"
+    },
+    "billingAddress": {
+      "title": "Address",
+      "description": "Inline billing address that should not take the primary Address name.",
+      "type": "object",
+      "properties": {
+        "streetName": {
+          "description": "Street name shown on invoices.",
+          "type": "string",
+          "examples": [
+            "Main Street"
+          ]
+        },
+        "postalCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "createdBy": {
+      "title": "AuditActor",
+      "description": "Actor associated with the catalog entry.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "description": "Human readable actor name.",
+          "type": "string",
+          "examples": [
+            "Jane Admin"
+          ]
+        },
+        "identifier": {
+          "type": "string"
+        }
+      }
+    },
+    "updatedBy": {
+      "title": "AuditActor",
+      "description": "Actor associated with the catalog entry.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "description": "Human readable actor name.",
+          "type": "string",
+          "examples": [
+            "Jane Admin"
+          ]
+        },
+        "identifier": {
+          "type": "string"
+        }
+      }
+    },
+    "metadata": {
+      "description": "Additional metadata stored without a declared shape.",
+      "type": "object"
+    },
+    "coordinates": {
+      "description": "Fixed latitude and longitude pair.",
+      "type": "array",
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "labels": {
+      "description": "Unique labels attached to the catalog entry.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "tier": {
+      "description": "Default catalog tier.",
+      "type": "string",
+      "enum": [
+        "standard",
+        "premium"
+      ],
+      "default": "standard"
+    },
+    "rank": {
+      "description": "Display rank with a default value.",
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "status": {
+      "description": "Single allowed catalog status.",
+      "type": "string",
+      "enum": [
+        "active"
+      ]
+    }
+  },
+  "definitions": {
+    "Address": {
+      "type": "object",
+      "description": "Primary reusable address definition.",
+      "properties": {
+        "streetName": {
+          "description": "Street name stored in the canonical address.",
+          "type": "string"
+        },
+        "countryCode": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

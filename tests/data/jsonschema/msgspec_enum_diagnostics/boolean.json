@@ -1,0 +1,13 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "enum": [
+        true,
+        false
+      ]
+    }
+  }
+}

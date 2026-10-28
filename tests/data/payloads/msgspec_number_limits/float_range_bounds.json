@@ -1,0 +1,35 @@
+{
+  "valid": [
+    {
+      "below": 1.5,
+      "negative": -1.5,
+      "nullable": null,
+      "divisor": 0,
+      "member": "x",
+      "count": 5,
+      "site": 1.5,
+      "finite": 1.5
+    },
+    {
+      "member": 1.5,
+      "count": 9223372036854775808
+    }
+  ],
+  "invalid": [
+    {
+      "above": 1.5
+    },
+    {
+      "nullable": -1.5
+    },
+    {
+      "divisor": 1
+    },
+    {
+      "finite": -1.5
+    },
+    {
+      "finite": 1.7e+308
+    }
+  ]
+}

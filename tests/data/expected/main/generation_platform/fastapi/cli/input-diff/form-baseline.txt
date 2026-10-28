@@ -1,0 +1,55 @@
+--- server/routers/pets.py (baseline input)
++++ server/routers/pets.py (current input)
+@@ -8,7 +8,7 @@
+ from uuid import UUID
+ 
+ import models
+-from fastapi import APIRouter, Cookie, Form, Header, Path, Query, params
++from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
+ from fastapi.responses import Response
+ from pydantic import AwareDatetime, Field
+ 
+@@ -79,7 +79,7 @@
+ 
+     def create_pet(
+         *,
+-        body: Annotated[models.NewPet, Form(media_type='application/x-www-form-urlencoded')],
++        body: Annotated[models.NewPet, Body(media_type='application/json')],
+     ) -> object:
+         return dispatch(
+             create_pet_handler(
+--- server/_generated/openapi.json (baseline input)
++++ server/_generated/openapi.json (current input)
+@@ -103,7 +103,7 @@
+     "requestBody": {
+      "required": true,
+      "content": {
+-      "application/x-www-form-urlencoded": {
++      "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NewPet"
+        }
+--- server/README.md (baseline input)
++++ server/README.md (current input)
+@@ -141,12 +141,11 @@
+ - `fastapi>=0.141.1`
+ - `pydantic>=2.14.0`
+ - `typing-extensions>=4.16`
+-- `python-multipart>=0.0.32`
+ 
+ Add them to your project with the command each generation prints:
+ 
+ ```console
+-uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16" "python-multipart>=0.0.32"
++uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+ ```
+ 
+ Running the application also needs an ASGI server: `uvicorn`, or `fastapi[standard]` for `fastapi dev`, as in [Next steps](#next-steps).
+@@ -226,7 +225,6 @@
+ A repeated single value is taken as FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+ A cookie parameter with a single value arrives as the request sent it, without percent-decoding.
+ Adapters accept integers and numbers as JSON writes them and booleans as `true` or `false`, which is fewer spellings than FastAPI accepts for the parameters it reads.
+-URL-encoded form bodies are FastAPI form models, so FastAPI's form extraction applies; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+ 
+ ## Production settings
+ 

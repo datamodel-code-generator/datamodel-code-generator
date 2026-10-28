@@ -1,0 +1,262 @@
+[
+  {
+    "name": "default",
+    "file": "basic.toml"
+  },
+  {
+    "name": "directory",
+    "file": "basic.toml",
+    "path": "directory",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "file",
+    "file": "basic.toml",
+    "path": "file",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "relative_file",
+    "file": "basic.toml",
+    "path": "relative",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "string_directory",
+    "file": "basic.toml",
+    "path": "string_directory",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "string_file",
+    "file": "basic.toml",
+    "path": "string_file",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "string_relative_file",
+    "file": "basic.toml",
+    "path": "string_relative",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "profile",
+    "file": "profiles.toml",
+    "profile": "child"
+  },
+  {
+    "name": "multiple_profiles",
+    "file": "profiles.toml",
+    "profile": "multiple"
+  },
+  {
+    "name": "mapping",
+    "file": "basic.toml",
+    "overrides": {
+      "output": null,
+      "class_name": null,
+      "aliases": null,
+      "apply_default_values_for_required_fields": false
+    }
+  },
+  {
+    "name": "config",
+    "file": "basic.toml",
+    "kind": "config",
+    "overrides": {
+      "output": null,
+      "class_name": null,
+      "aliases": null,
+      "apply_default_values_for_required_fields": false
+    },
+    "expected_code": "mapping",
+    "expected_config": "mapping"
+  },
+  {
+    "name": "empty_mapping",
+    "file": "basic.toml",
+    "overrides": {},
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "empty_config",
+    "file": "basic.toml",
+    "kind": "config",
+    "overrides": {},
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "no_config",
+    "overrides": {
+      "formatters": [
+        "builtin"
+      ],
+      "disable_timestamp": true
+    }
+  },
+  {
+    "name": "no_section",
+    "file": "no_section.toml",
+    "overrides": {
+      "formatters": [
+        "builtin"
+      ],
+      "disable_timestamp": true
+    },
+    "expected_code": "no_config",
+    "expected_config": "no_config"
+  },
+  {
+    "name": "cli_only",
+    "file": "cli_only.toml",
+    "overrides": {
+      "formatters": [
+        "builtin"
+      ],
+      "disable_timestamp": true
+    },
+    "expected_code": "no_config"
+  },
+  {
+    "name": "all_overridden",
+    "file": "minimal.toml",
+    "overrides": {
+      "formatters": [
+        "builtin"
+      ],
+      "disable_timestamp": true
+    },
+    "expected_code": "no_config",
+    "expected_config": "cli_only"
+  },
+  {
+    "name": "json_files",
+    "file": "json_files.toml",
+    "child": true,
+    "path": "directory"
+  },
+  {
+    "name": "inline_json",
+    "file": "inline_json.toml"
+  },
+  {
+    "name": "msgspec",
+    "file": "msgspec.toml"
+  },
+  {
+    "name": "msgspec_override",
+    "file": "basic.toml",
+    "overrides": {
+      "output_model_type": "msgspec.Struct",
+      "output": null
+    }
+  },
+  {
+    "name": "annotated_false",
+    "file": "annotated.toml",
+    "overrides": {
+      "use_annotated": false
+    }
+  },
+  {
+    "name": "constraints_false",
+    "file": "msgspec.toml",
+    "overrides": {
+      "field_constraints": false,
+      "use_annotated": false
+    },
+    "expected_code": "annotated_false",
+    "expected_config": "annotated_false"
+  },
+  {
+    "name": "python_310",
+    "file": "basic.toml",
+    "overrides": {
+      "target_python_version": "3.10",
+      "output": null
+    }
+  },
+  {
+    "name": "relative_output",
+    "file": "basic.toml",
+    "overrides": {
+      "output": "override.py"
+    },
+    "child": true,
+    "path": "directory",
+    "expected_code": "default"
+  },
+  {
+    "name": "settings_reset",
+    "file": "basic.toml",
+    "overrides": {
+      "settings_path": null,
+      "output": null
+    }
+  },
+  {
+    "name": "empty_formatters",
+    "file": "basic.toml",
+    "overrides": {
+      "formatters": [],
+      "additional_imports": [],
+      "output": null
+    }
+  },
+  {
+    "name": "overridden_invalid_alias",
+    "file": "invalid_alias.toml",
+    "overrides": {
+      "formatters": [
+        "builtin"
+      ],
+      "disable_timestamp": true,
+      "aliases": {
+        "userName": "safe_name"
+      }
+    }
+  },
+  {
+    "name": "string_template_imports",
+    "file": "json_string_imports.toml",
+    "expected_code": "json_files",
+    "expected_config": "json_files"
+  },
+  {
+    "name": "discover_parent",
+    "file": "basic.toml",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "legacy_naming",
+    "file": "legacy.toml"
+  },
+  {
+    "name": "override_legacy_naming",
+    "file": "legacy.toml",
+    "overrides": {
+      "naming_strategy": "numbered"
+    },
+    "expected_code": "mapping"
+  },
+  {
+    "name": "preset",
+    "file": "preset.toml"
+  }
+]

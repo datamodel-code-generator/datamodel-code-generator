@@ -1,0 +1,2 @@
+{"pass_name": "<IMPORTS>", "rule": "frozen", "row": "DataModel.fields", "facts": ["FIELD_ORDER", "FIELD_SET"], "model": "Person", "phase": "IMPORTS", "known": false}
+{"pass_name": "<IMPORTS>", "rule": "unattributed", "row": "DataModel.fields", "facts": ["FIELD_ORDER", "FIELD_SET"], "model": "Person", "phase": "IMPORTS", "known": false}

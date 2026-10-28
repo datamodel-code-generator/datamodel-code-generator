@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, RootModel
+
+
+class Id(RootModel[str]):
+    root: str
+
+
+class Pet(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+
+
+class PetModel(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    written: Optional[str] = None
+
+
+class Parent(BaseModel):
+    id: Optional[Id] = None
+    name: Optional[str] = None
+    pet: Optional[Pet] = None
+
+
+class Child(BaseModel):
+    id: Optional[Id] = None
+    parent_id: Optional[Id] = None
+    name: Optional[str] = None
+    pet: Optional[PetModel] = None

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Targets",
+  "type": "object",
+  "properties": {
+    "boolean": {
+      "$ref": "#/$defs/Anything",
+      "description": "A boolean schema target.",
+      "type": "string"
+    },
+    "nested": {
+      "$ref": "#/$defs/HoldsBoolean",
+      "description": "Reaches a boolean schema.",
+      "required": [
+        "value"
+      ]
+    },
+    "missing": {
+      "$ref": "#/$defs/HoldsMissingDocument",
+      "description": "Reaches a missing document.",
+      "required": [
+        "value"
+      ]
+    },
+    "scalar_pointer": {
+      "$ref": "#/$defs/HoldsScalarPointer",
+      "description": "Reaches a pointer through a scalar.",
+      "required": [
+        "value"
+      ]
+    },
+    "unknown_anchor": {
+      "$ref": "#/$defs/HoldsUnknownAnchor",
+      "description": "Reaches an unknown anchor.",
+      "required": [
+        "value"
+      ]
+    }
+  },
+  "$defs": {
+    "Anything": true,
+    "HoldsBoolean": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/Anything"
+        }
+      }
+    },
+    "HoldsMissingDocument": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "not": {
+        "$ref": "missing.json#/Value"
+      }
+    },
+    "HoldsScalarPointer": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "not": {
+        "$ref": "#/$defs/Anything/value"
+      }
+    },
+    "HoldsUnknownAnchor": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "not": {
+        "$ref": "#unknown"
+      }
+    }
+  }
+}

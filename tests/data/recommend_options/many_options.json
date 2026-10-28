@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "invoice": {"$ref": "#/$defs/billing.Invoice"},
+    "shipment": {"$ref": "#/$defs/shipping.Shipment"},
+    "payment": {
+      "oneOf": [
+        {"type": "object", "properties": {"kind": {"const": "card"}, "number": {"type": "string"}}},
+        {"type": "object", "properties": {"kind": {"const": "bank"}, "iban": {"type": "string"}}}
+      ]
+    }
+  },
+  "$defs": {
+    "billing.Invoice": {
+      "type": "object",
+      "properties": {
+        "status": {"type": "string", "enum": ["draft", "paid"]},
+        "owner": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}},
+        "billingAddress": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "shipment": {"$ref": "#/$defs/shipping.Shipment"}
+      }
+    },
+    "shipping.Shipment": {
+      "type": "object",
+      "properties": {
+        "status": {"type": "string", "enum": ["packed", "sent"]},
+        "owner": {"type": "object", "properties": {"name": {"type": "string"}, "phone": {"type": "string"}}},
+        "origin": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "destination": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "invoice": {"$ref": "#/$defs/billing.Invoice"}
+      }
+    },
+    "Store": {
+      "type": "object",
+      "properties": {
+        "status": {"type": "string", "enum": ["open", "closed"]},
+        "size": {"type": "string", "enum": ["small", "large"]},
+        "address": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "returnAddress": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "warehouses": {
+          "type": "array",
+          "items": {"type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}}
+        }
+      }
+    },
+    "Customer": {
+      "type": "object",
+      "properties": {
+        "tier": {"type": "string", "enum": ["basic", "gold"]},
+        "home": {"title": "Address", "type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "work": {"title": "Address", "type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "previous": {"title": "Address", "type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "delivery": {"title": "Address", "type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}},
+        "pickup": {"title": "Address", "type": "object", "properties": {"street": {"type": "string"}, "city": {"type": "string"}}}
+      }
+    }
+  }
+}

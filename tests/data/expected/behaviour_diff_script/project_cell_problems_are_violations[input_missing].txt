@@ -1,0 +1,1 @@
+{"stubs": [["base_mod/base.py", "x = 1\n"]], "cls": "violation", "note": "project input missing in the checkout"}

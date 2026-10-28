@@ -1,0 +1,182 @@
+openapi: "3.0.0"
+info:
+  title: Required inherited dataclass metadata
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    InitBase:
+      type: object
+      properties:
+        inheritedScalar:
+          type: string
+          minLength: 2
+          default: inherited
+          init: false
+        inheritedFactory:
+          type: array
+          items:
+            type: string
+          default_factory: list
+          init: false
+        inheritedMetadata:
+          type: string
+          init: false
+
+    RequiredOverrideChild:
+      allOf:
+        - $ref: "#/components/schemas/InitBase"
+        - type: object
+          required:
+            - inheritedScalar
+            - inheritedFactory
+            - inheritedMetadata
+            - newRequired
+          properties:
+            inheritedScalar: {}
+            inheritedFactory: {}
+            inheritedMetadata:
+              repr: false
+            newRequired:
+              type: integer
+
+    ExplicitInitBase:
+      type: object
+      properties:
+        explicitInit:
+          type: string
+          default: inherited
+          init: false
+
+    ExplicitInitChild:
+      allOf:
+        - $ref: "#/components/schemas/ExplicitInitBase"
+        - type: object
+          required:
+            - explicitInit
+            - newAfterExplicitInit
+          properties:
+            explicitInit:
+              init: false
+            newAfterExplicitInit:
+              type: integer
+
+    InheritedInitDefaultChild:
+      allOf:
+        - $ref: "#/components/schemas/InitBase"
+        - type: object
+          required:
+            - newAfterInheritedInit
+          properties:
+            newAfterInheritedInit:
+              type: integer
+
+    RequiredAliasBase:
+      type: object
+      required:
+        - aliased-value
+      properties:
+        aliased-value:
+          type: string
+
+    RequiredAliasChild:
+      allOf:
+        - $ref: "#/components/schemas/RequiredAliasBase"
+        - type: object
+          required:
+            - newAfterAlias
+          properties:
+            newAfterAlias:
+              type: integer
+
+    RequiredMetadataBase:
+      type: object
+      required:
+        - requiredMetadata
+      properties:
+        requiredMetadata:
+          type: string
+
+    RequiredMetadataChild:
+      allOf:
+        - $ref: "#/components/schemas/RequiredMetadataBase"
+        - type: object
+          required:
+            - requiredMetadata
+            - newAfterMetadata
+          properties:
+            requiredMetadata:
+              repr: false
+            newAfterMetadata:
+              type: integer
+
+    KeywordOverrideBase:
+      type: object
+      properties:
+        retainedDefault:
+          type: string
+          default: retained
+        positionalOverride:
+          type: string
+          default: inherited
+          kw_only: true
+
+    KeywordOverrideChild:
+      allOf:
+        - $ref: "#/components/schemas/KeywordOverrideBase"
+        - type: object
+          required:
+            - positionalOverride
+          properties:
+            positionalOverride:
+              kw_only: false
+
+    OrderingBase:
+      type: object
+      properties:
+        earlyFactory:
+          type: array
+          items:
+            type: string
+          default_factory: list
+        priorDefault:
+          type: string
+          default: inherited
+        lateFactory:
+          type: array
+          items:
+            type: string
+          default_factory: list
+
+    OrderingChild:
+      allOf:
+        - $ref: "#/components/schemas/OrderingBase"
+        - type: object
+          required:
+            - earlyFactory
+            - lateFactory
+            - newRequired
+          properties:
+            earlyFactory: {}
+            lateFactory: {}
+            newRequired:
+              type: integer
+
+    LiteralDefaultBase:
+      type: object
+      properties:
+        literalDefault:
+          type: string
+          default: contains default_factory= marker
+
+    LiteralDefaultChild:
+      allOf:
+        - $ref: "#/components/schemas/LiteralDefaultBase"
+        - type: object
+          required:
+            - literalDefault
+            - afterLiteral
+          properties:
+            literalDefault: {}
+            afterLiteral:
+              type: integer

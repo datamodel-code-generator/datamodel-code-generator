@@ -1,0 +1,22 @@
+schema { query: Query mutation: Mutation subscription: Subscription }
+
+type Query {
+  value: String!
+  self: Query
+  choice: Choice
+}
+
+type Mutation {
+  value: String!
+  self: Mutation
+}
+
+type Subscription {
+  value: String!
+  self: Subscription
+}
+
+type Other { value: String! }
+type Second { value: String!, self: Second }
+type Holder { query: Query, mutation: Mutation, subscription: Subscription }
+union Choice = Second | Other

@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "components": {
+    "schemas": {
+      "Foo": {"type": "object", "properties": {"id": {"type": "integer"}}},
+      "Unused": {"type": "string", "enum": ["available", "missing"]}
+    },
+    "parameters": {"Page": {"name": "page", "in": "query", "schema": {"type": "integer"}}},
+    "headers": {"Trace": {"schema": {"type": "string"}}}
+  },
+  "paths": {
+    "/pets": {
+      "parameters": [{"name": "limit", "in": "query", "schema": {"type": "string"}}],
+      "get": {
+        "operationId": "listPets",
+        "parameters": [{"name": "limit", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {
+          "200": {"description": "ok", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/%46oo"}}}},
+          "201": {"description": "ok", "content": {"application/json": {"schema": {"$ref": "#%2Fcomponents/schemas/Foo"}}}}
+        }
+      }
+    }
+  }
+}

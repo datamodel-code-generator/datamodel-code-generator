@@ -1,0 +1,129 @@
+openapi: 3.1.0
+info:
+  title: Pagination targets
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: code
+          in: query
+          schema: {type: integer}
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items: {type: string}
+        - name: X-Cursor
+          in: header
+          schema: {type: string}
+        - name: X-Snapshot
+          in: header
+          schema: {type: string}
+        - name: page_token
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            X-Snapshot:
+              schema: {type: string}
+            X-Tag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /folders/{folder}:
+    get:
+      operationId: listFolder
+      tags: [folders]
+      parameters:
+        - name: folder
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /searches:
+    post:
+      operationId: search
+      tags: [searches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchQuery'}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SearchPage'}
+components:
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}
+    SearchPosition:
+      type: object
+      properties:
+        cursor: {type: string, maxLength: 3}
+        mode: {type: string}
+    SearchQuery:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string}
+        page: {$ref: '#/components/schemas/SearchPosition'}
+        after: {type: [string, 'null']}
+        size: {type: integer}
+        filter:
+          type: object
+          properties:
+            states:
+              type: array
+              items: {type: string}
+        range:
+          allOf:
+            - {$ref: '#/components/schemas/Lower'}
+            - type: object
+              properties:
+                to: {type: string}
+    Lower:
+      type: object
+      properties:
+        from: {type: string}
+    SearchPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next: {type: string}
+        last: {type: [string, 'null']}

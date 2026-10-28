@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "definitions": {
+    "google__protobuf__UserState": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "READY"
+      ],
+      "title": "UserState",
+      "x-enum-varnames": [
+        "UNKNOWN",
+        "READY"
+      ]
+    },
+    "google__protobuf__UserChild": {
+      "type": "object",
+      "title": "UserChild",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "additionalProperties": false
+    },
+    "google__protobuf__Payload": {
+      "type": "object",
+      "title": "Payload",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/google__protobuf__UserState",
+          "default": "UNKNOWN"
+        },
+        "child": {
+          "$ref": "#/definitions/google__protobuf__UserChild"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

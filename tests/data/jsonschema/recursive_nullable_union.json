@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "data": {
+      "$ref": "#/$defs/JsonValue"
+    }
+  },
+  "required": [
+    "data"
+  ]
+}

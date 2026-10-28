@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class FieldStates(BaseModel):
+    optional_plain: str = None
+    optional_nullable: Optional[str] = None
+    optional_default: str = 'optional'
+    optional_nullable_default: Optional[str] = 'optional-nullable'
+    required_plain: str
+    required_nullable: Optional[str] = Field(...)
+    required_default: str = 'required'
+    required_nullable_default: Optional[str] = 'required-nullable'

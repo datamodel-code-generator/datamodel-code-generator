@@ -1,0 +1,4 @@
+# synthetic-origins
+rewrite pydantic_v2.BaseModel default PydanticV2BaseModel-extra-annotations
+  @@ -15,0 +16 @@
+  +        'other': int,

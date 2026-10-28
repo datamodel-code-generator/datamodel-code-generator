@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import subprocess
 import sys
 from collections import defaultdict
@@ -33,8 +34,16 @@ import operator
 
 from datamodel_code_generator.cli_options import (
     MANUAL_DOCS,
+    OPTION_RELATION_KINDS,
+    OPTION_TOPIC_ALLOWED_GROUPS,
+    CLIOptionMeta,
     OptionCategory,
+    OptionGroup,
+    OptionTopic,
     get_canonical_option,
+    get_cli_doc_slug,
+    get_cli_option_doc_name,
+    get_cli_option_doc_path,
     get_option_meta,
     is_manual_doc,
 )
@@ -54,6 +63,7 @@ class CLIDocExample:
     version_outputs: dict[str, str] | None = None
     model_outputs: dict[str, str] | None = None
     expected_stdout: str | None = None
+    extra_outputs: list[dict[str, str]] = field(default_factory=list)
     aliases: list[str] = field(default_factory=list)
     related_options: list[str] = field(default_factory=list)
     is_primary: bool = False
@@ -73,6 +83,7 @@ class CLIDocExample:
             version_outputs=kwargs.get("version_outputs"),
             model_outputs=kwargs.get("model_outputs"),
             expected_stdout=kwargs.get("expected_stdout"),
+            extra_outputs=kwargs.get("extra_outputs", []),
             aliases=kwargs.get("aliases", []),
             related_options=kwargs.get("related_options", []),
             is_primary=kwargs.get("primary", False),
@@ -146,11 +157,21 @@ class CLIDocOption:
         return list(types.keys())
 
 
+@dataclass(frozen=True)
+class CategoryRecipe:
+    """A concise set of options that solve a common category workflow."""
+
+    title: str
+    description: str
+    options: tuple[str, ...]
+
+
 COLLECTION_PATH = Path(__file__).parent.parent / "tests" / "cli_doc" / ".cli_doc_collection.json"
 DATA_PATH = Path(__file__).parent.parent / "tests" / "data"
 EXPECTED_BASE_PATH = DATA_PATH / "expected"
 EXPECTED_PATH = EXPECTED_BASE_PATH / "main"
 DOCS_OUTPUT = Path(__file__).parent.parent / "docs" / "cli-reference"
+TOPICS_OUTPUT = DOCS_OUTPUT / "topics"
 MANUAL_DOCS_DIR = DOCS_OUTPUT / "manual"
 DOCS_ROOT = Path(__file__).parent.parent / "docs"
 
@@ -160,6 +181,13 @@ DESC_LENGTH_LONG = 80
 # Regex pattern for extracting CLI options from markdown files
 # Format: <!-- related-cli-options: --option1, --option2, ... -->
 CLI_OPTIONS_TAG_PATTERN = re.compile(r"<!--\s*related-cli-options:\s*([^>]+?)\s*-->", re.IGNORECASE)
+DOC_EXAMPLE_BLOCK_PATTERN = re.compile(
+    r"(?ms)^<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: (?P<example_id>[^>]+) -->\n"
+    r".*?"
+    r"^<!-- END AUTO-GENERATED DOC EXAMPLE: (?P=example_id) -->\n?"
+)
+OPTION_HEADING_PATTERN = re.compile(r"^## `(?P<option>--[^`]+)` \{#(?P<slug>[^}]+)\}\n", re.MULTILINE)
+EXAMPLES_ADMONITION = '??? example "Examples"'
 
 # Emoji mapping for categories
 CATEGORY_EMOJIS = {
@@ -170,7 +198,164 @@ CATEGORY_EMOJIS = {
     OptionCategory.TEMPLATE: "🎨",
     OptionCategory.OPENAPI: "📘",
     OptionCategory.GENERAL: "⚙️",
+    OptionCategory.TARGET: "🚀",
 }
+CATEGORY_INTROS = {
+    OptionCategory.OPENAPI: (
+        "This generated reference lists every OpenAPI-only CLI flag and its tested examples. "
+        "For a workflow-oriented guide, see [OpenAPI Options](../openapi-options.md). "
+        "For input format basics, see [Generate from OpenAPI](../openapi.md)."
+    ),
+}
+
+OPTION_CATEGORY_ORDER = (
+    OptionCategory.BASE,
+    OptionCategory.TYPING,
+    OptionCategory.FIELD,
+    OptionCategory.MODEL,
+    OptionCategory.TEMPLATE,
+    OptionCategory.OPENAPI,
+    OptionCategory.GRAPHQL,
+    OptionCategory.GENERAL,
+    OptionCategory.TARGET,
+)
+
+TOPIC_DESCRIPTIONS = {
+    OptionTopic.MODEL_CUSTOMIZATION: "Choose model class shape, naming, reuse, and root-model behavior.",
+    OptionTopic.TEMPLATE_CUSTOMIZATION: "Tune generated file headers, imports, decorators, templates, and formatting.",
+    OptionTopic.TYPING_CUSTOMIZATION: "Control Python annotation syntax, collection types, imports, and type mappings.",
+    OptionTopic.OPENAPI: "Handle OpenAPI operation naming, path selection, scopes, and readOnly/writeOnly behavior.",
+}
+
+GROUP_DESCRIPTIONS = {
+    OptionGroup.MODEL_NAMING: "Class names, suffixes, prefixes, and duplicate-name behavior.",
+    OptionGroup.MODEL_REUSE: "Schema deduplication and shared generated modules.",
+    OptionGroup.MODEL_SHAPE: "Output model family and compatibility targets.",
+    OptionGroup.ROOT_MODEL: "Root model creation, collapse, and alias behavior.",
+    OptionGroup.CUSTOM_TEMPLATES: "Custom templates and extra template data.",
+    OptionGroup.GENERATED_OUTPUT: "Generated file headers and reproducible output.",
+    OptionGroup.IMPORTS: "Generated imports and type-checking import behavior.",
+    OptionGroup.OUTPUT_FORMATTING: "Formatter selection, quote style, and string wrapping.",
+    OptionGroup.COLLECTION_TYPES: "Collection and tuple/set generation.",
+    OptionGroup.TYPE_ALIAS: "TypeAlias and root-model alias output.",
+    OptionGroup.TYPE_MAPPING: "Scalar, date/time, and custom type mapping.",
+    OptionGroup.TYPE_SYNTAX: "Modern annotation syntax and Annotated usage.",
+    OptionGroup.OPENAPI_NAMING: "Operation and response model naming.",
+    OptionGroup.OPENAPI_PATHS: "Path selection and path parameter output.",
+    OptionGroup.OPENAPI_SCOPES: "OpenAPI generation scopes.",
+    OptionGroup.READ_ONLY_WRITE_ONLY: "readOnly/writeOnly model behavior.",
+}
+
+OPTION_TOPIC_ORDER = tuple(OPTION_TOPIC_ALLOWED_GROUPS)
+
+CATEGORY_RECIPES: dict[OptionCategory, tuple[CategoryRecipe, ...]] = {
+    OptionCategory.BASE: (
+        CategoryRecipe(
+            title="Generate a local schema file",
+            description="Pin the input type and destination when the source extension is ambiguous or generated output "
+            "needs a stable path.",
+            options=("--input", "--input-file-type", "--output"),
+        ),
+        CategoryRecipe(
+            title="Fetch a protected remote schema",
+            description="Use URL input together with HTTP request controls for schemas served behind headers or slower "
+            "endpoints.",
+            options=("--url", "--http-headers", "--http-timeout"),
+        ),
+    ),
+    OptionCategory.TYPING: (
+        CategoryRecipe(
+            title="Use modern Python annotations",
+            description="Target a recent Python version and prefer built-in collection and union syntax in generated "
+            "types.",
+            options=("--target-python-version", "--use-union-operator", "--use-standard-collections"),
+        ),
+        CategoryRecipe(
+            title="Keep validation constraints in type hints",
+            description="Combine Annotated hints with strict scalar handling when downstream tooling reads type "
+            "metadata.",
+            options=("--use-annotated", "--field-constraints", "--strict-types"),
+        ),
+    ),
+    OptionCategory.FIELD: (
+        CategoryRecipe(
+            title="Normalize incoming field names",
+            description="Convert source names to Python identifiers while preserving explicit alias data for runtime "
+            "IO.",
+            options=("--snake-case-field", "--original-field-name-delimiter", "--aliases"),
+        ),
+        CategoryRecipe(
+            title="Carry schema documentation into models",
+            description="Promote schema and field descriptions into generated docstrings or field metadata.",
+            options=("--use-schema-description", "--use-field-description", "--use-field-description-example"),
+        ),
+    ),
+    OptionCategory.MODEL: (
+        CategoryRecipe(
+            title="Target Pydantic v2 on modern Python",
+            description="Set the output model family and Python/Pydantic compatibility targets together.",
+            options=("--output-model-type", "--target-python-version", "--target-pydantic-version"),
+        ),
+        CategoryRecipe(
+            title="Deduplicate reusable schemas",
+            description="Reuse equivalent models and tune the scope or root-model behavior when schemas repeat.",
+            options=("--reuse-model", "--reuse-scope", "--collapse-root-models"),
+        ),
+    ),
+    OptionCategory.TEMPLATE: (
+        CategoryRecipe(
+            title="Control generated file headers",
+            description="Choose a header source and remove volatile timestamp content for reproducible output.",
+            options=("--custom-file-header", "--custom-file-header-path", "--disable-timestamp"),
+        ),
+        CategoryRecipe(
+            title="Inject project-specific code",
+            description="Add imports, decorators, or custom templates when generated classes must fit local framework "
+            "conventions.",
+            options=("--additional-imports", "--class-decorators", "--custom-template-dir"),
+        ),
+    ),
+    OptionCategory.OPENAPI: (
+        CategoryRecipe(
+            title="Generate operation-focused models",
+            description="Limit OpenAPI output to operation shapes and name models from operation IDs and status codes.",
+            options=("--openapi-scopes", "--use-operation-id-as-name", "--use-status-code-in-response-name"),
+        ),
+        CategoryRecipe(
+            title="Trim an OpenAPI build",
+            description="Restrict generation to selected paths while preserving parameter and info-version context.",
+            options=("--openapi-include-paths", "--include-path-parameters", "--openapi-include-info-version"),
+        ),
+    ),
+    OptionCategory.GRAPHQL: (
+        CategoryRecipe(
+            title="Trim GraphQL metadata fields",
+            description="Skip injected typename fields when generated models should expose only business data.",
+            options=("--graphql-no-typename",),
+        ),
+    ),
+    OptionCategory.GENERAL: (
+        CategoryRecipe(
+            title="Resolve remote references deliberately",
+            description="Enable remote `$ref` loading and configure request metadata, timeouts, or local ref roots.",
+            options=("--allow-remote-refs", "--http-headers", "--http-timeout", "--http-local-ref-path"),
+        ),
+        CategoryRecipe(
+            title="Regenerate during schema edits",
+            description="Watch input files with a short debounce while writing output to a stable target path.",
+            options=("--watch", "--watch-delay", "--output"),
+        ),
+    ),
+}
+
+HOMEPAGE_RECIPE_CATEGORIES: tuple[OptionCategory, ...] = (
+    OptionCategory.BASE,
+    OptionCategory.MODEL,
+    OptionCategory.TYPING,
+    OptionCategory.FIELD,
+    OptionCategory.OPENAPI,
+    OptionCategory.GENERAL,
+)
 
 # Manual option descriptions for utility options
 MANUAL_OPTION_DESCRIPTIONS = {
@@ -178,10 +363,15 @@ MANUAL_OPTION_DESCRIPTIONS = {
     "--version": "Show program version and exit",
     "--debug": "Show debug messages during code generation",
     "--profile": "Use a named profile from pyproject.toml",
+    "--job": "Run a named generation job from pyproject.toml (experimental)",
+    "--all-jobs": "Run every named generation job from pyproject.toml (experimental)",
     "--output-format": "Choose the command output format",
-    "--output-format-json-schema": "Output JSON Schema for structured command output",
+    "--output-format-json-schema": "Output JSON Schema for structured command output or JSON configuration",
     "--no-color": "Disable colorized output",
     "--generate-prompt": "Generate a prompt for consulting LLMs about CLI options",
+    "--install-skill": "Install the bundled Agent Skill (experimental)",
+    "--skill-scope": "Choose an Agent Skill installation scope",
+    "--overwrite-skill": "Replace an existing Agent Skill installation",
     "--list-deprecations": "List registered deprecations and scheduled breaking changes",
     "--list-experimental": "List registered experimental features",
 }
@@ -275,7 +465,9 @@ def parse_docstring(docstring: str) -> ParsedDocstring:
     )
 
 
-def scan_docs_for_cli_option_tags() -> dict[str, list[tuple[str, str]]]:
+def scan_docs_for_cli_option_tags(
+    documented_options: frozenset[str] | None = None,
+) -> dict[str, list[tuple[str, str]]]:
     """Scan markdown files in docs/ for related-cli-options tags.
 
     Returns:
@@ -313,29 +505,16 @@ def scan_docs_for_cli_option_tags() -> dict[str, list[tuple[str, str]]]:
         page_path = str(md_file.relative_to(DOCS_ROOT))
 
         # Parse all matched tags
+        available_options = documented_options or frozenset()
         for match in matches:
             options = [opt.strip() for opt in match.split(",")]
             for option in options:
                 if option.startswith("--"):
-                    canonical = get_canonical_option(option)
+                    canonical = _documented_related_option(option, available_options)
                     option_to_pages[canonical].append((page_path, page_title))
 
     # Sort the page lists for each option to ensure consistent ordering
     return {option: sorted(pages) for option, pages in sorted(option_to_pages.items())}
-
-
-def slugify(text: str) -> str:
-    """Convert text to safe slug for filenames and anchors.
-
-    Examples:
-        --frozen-dataclasses -> frozen-dataclasses
-        Model Customization -> model-customization
-    """
-    slug = text.lstrip("-").lower()
-    slug = re.sub(r"[^a-z0-9-]", "-", slug)
-    slug = re.sub(r"-+", "-", slug)
-    slug = slug.strip("-")
-    return slug or "unknown"
 
 
 def safe_read_file(base_path: Path, relative_path: str, file_types: tuple[str, ...] = ("*.py",)) -> str:
@@ -395,13 +574,13 @@ def read_expected_file(relative_path: str) -> str:
         return safe_read_file(EXPECTED_BASE_PATH, relative_path)
 
 
-def indent_code_block(content: str, prefix: str) -> str:
-    """Indent a code block for MkDocs Material tabs."""
+def indent_code_block(content: str, prefix: str, language: str = "python") -> str:
+    """Indent a fixture for MkDocs tabs and preserve its original formatting."""
     lines = content.strip().split("\n")
-    result = f"{prefix}```python\n"
+    result = f"{prefix}<!-- fmt: off -->\n\n{prefix}```{language}\n"
     for line in lines:
         result += f"{prefix}{line}\n" if line else "\n"
-    result += f"{prefix}```\n\n"
+    result += f"{prefix}```\n\n{prefix}<!-- fmt: on -->\n\n"
     return result
 
 
@@ -443,7 +622,9 @@ def format_cli_args(cli_args: list[str]) -> list[str]:
         arg = cli_args[i]
         if arg.startswith("-") and i + 1 < len(cli_args) and not cli_args[i + 1].startswith("-"):
             value = cli_args[i + 1]
-            if " " in value or not value:
+            if '"' in value or "'" in value:
+                value = shlex.quote(value)
+            elif " " in value or not value:
                 value = f'"{value}"'
             formatted.append(f"{arg} {value}")
             i += 2
@@ -463,6 +644,11 @@ def _get_schema_lang(schema_path: str) -> str:
     return "json"
 
 
+def _usage_input(example: CLIDocExample) -> str:
+    """Return the input file name of a usage line: that of the example's input schema, or `schema.json` without one."""
+    return Path(example.input_schema).name if example.input_schema else "schema.json"
+
+
 def _generate_single_example_output(example: CLIDocExample, prefix: str = "    ") -> str:
     """Generate output section for a single example."""
     md = ""
@@ -471,17 +657,11 @@ def _generate_single_example_output(example: CLIDocExample, prefix: str = "    "
         if "/" in stdout_value or stdout_value.endswith((".py", ".txt")):
             try:
                 content = read_expected_file(stdout_value)
-                md += f"{prefix}```\n"
-                for line in content.strip().split("\n"):
-                    md += f"{prefix}{line}\n" if line else "\n"
-                md += f"{prefix}```\n\n"
+                md += indent_code_block(content, prefix, language="")
             except (FileNotFoundError, ValueError) as e:
                 md += f"{prefix}> **Error:** {e}\n\n"
         else:
-            md += f"{prefix}```\n"
-            for line in stdout_value.strip().split("\n"):
-                md += f"{prefix}{line}\n" if line else "\n"
-            md += f"{prefix}```\n\n"
+            md += indent_code_block(stdout_value, prefix, language="")
     elif example.comparison_output and example.model_outputs:
         model_labels = dict(ORDERED_MODEL_OUTPUT_LABELS)
         for model_key, output_file in validated_model_outputs(example):
@@ -536,10 +716,27 @@ def _generate_single_example_output(example: CLIDocExample, prefix: str = "    "
     elif example.golden_output:
         try:
             content = read_expected_file(example.golden_output)
-            md += f"{prefix}```python\n"
-            for line in content.strip().split("\n"):
-                md += f"{prefix}{line}\n" if line else "\n"
-            md += f"{prefix}```\n\n"
+            md += indent_code_block(content, prefix)
+        except (FileNotFoundError, ValueError) as e:
+            md += f"{prefix}> **Error:** {e}\n\n"
+    return md
+
+
+def _generate_extra_outputs(example: CLIDocExample, prefix: str = "    ") -> str:
+    """Generate additional output files for a single example."""
+    md = ""
+    for output in example.extra_outputs:
+        title = output.get("title", "Additional Output")
+        output_path = output.get("path")
+        language = output.get("language", "")
+        if not output_path:
+            md += f"{prefix}> **Error:** extra output is missing a path\n\n"
+            continue
+
+        md += f"{prefix}**{title}:**\n\n"
+        try:
+            content = read_expected_file(output_path)
+            md += indent_code_block(content, prefix, language=language)
         except (FileNotFoundError, ValueError) as e:
             md += f"{prefix}> **Error:** {e}\n\n"
     return md
@@ -573,6 +770,7 @@ def _generate_example_with_input_output(example: CLIDocExample, prefix: str = " 
     # Output section
     md += f"{prefix}**Output:**\n\n"
     md += _generate_single_example_output(example, prefix)
+    md += _generate_extra_outputs(example, prefix)
 
     return md
 
@@ -581,6 +779,7 @@ def generate_option_section(
     option: str,
     cli_doc_option: CLIDocOption,
     option_related_pages: dict[str, list[tuple[str, str]]] | None = None,
+    documented_options: frozenset[str] | None = None,
 ) -> str:
     """Generate Markdown section for a single CLI option."""
     meta = get_option_meta(option)
@@ -588,7 +787,7 @@ def generate_option_section(
     if not primary:
         return ""
 
-    md = f"## `{option}` {{#{slugify(option)}}}\n\n"
+    md = f"## `{option}` {{#{get_cli_doc_slug(get_cli_option_doc_name(option))}}}\n\n"
 
     # Parse option_description to separate description from admonitions
     option_description = cli_doc_option.get_option_description()
@@ -617,16 +816,17 @@ def generate_option_section(
             # Skip self-references
             if r == option:
                 continue
-            canonical = get_canonical_option(r)
+            canonical = _documented_related_option(r, documented_options or frozenset())
             # Also skip if canonical form is the current option
             if canonical == option:
                 continue
-            r_meta = get_option_meta(canonical)
-            if r_meta:
-                cat_slug = slugify(r_meta.category.value)
-                related_links.append(f"[`{canonical}`]({cat_slug}.md#{slugify(canonical)})")
-            else:
-                related_links.append(f"`{canonical}`")
+            related_links.append(
+                _format_option_link(
+                    canonical,
+                    documented_options or frozenset(),
+                    current_category=meta.category if meta else None,
+                )
+            )
         if related_links:  # Only add Related if there are non-self-referencing options
             meta_parts.append(f"**Related:** {', '.join(related_links)}")
 
@@ -639,13 +839,18 @@ def generate_option_section(
             related_page_links.append(f"[{page_title}](../{page_path})")
         md += f"**See also:** {', '.join(related_page_links)}\n\n"
 
+    md += _generate_option_relationships(option, meta, documented_options or frozenset())
+
     # Usage section (from primary example)
     md += '!!! tip "Usage"\n\n'
     md += "    ```bash\n"
-    if primary.config_content:
+    has_explicit_input = any(
+        arg in {"--input", "--url"} or arg.startswith(("--input=", "--url=")) for arg in primary.cli_args
+    )
+    if primary.config_content or has_explicit_input:
         md += "    datamodel-codegen "
     else:
-        md += "    datamodel-codegen --input schema.json "
+        md += f"    datamodel-codegen --input {_usage_input(primary)} "
     formatted_args = format_cli_args(primary.cli_args)
     md += " ".join(formatted_args)
     md += " # (1)!\n"
@@ -706,19 +911,216 @@ def generate_option_section(
 
         md += "    **Output:**\n\n"
         md += _generate_single_example_output(example, "    ")
+        md += _generate_extra_outputs(example, "    ")
 
     md += "---\n\n"
     return md
+
+
+def _documented_related_option(option: str, documented_options: frozenset[str]) -> str:
+    """Return the related option name that has a generated section."""
+    canonical = get_canonical_option(option)
+    for candidate in (option, canonical):
+        if candidate in documented_options:
+            return candidate
+    return canonical
+
+
+def _format_option_link(
+    option: str,
+    documented_options: frozenset[str],
+    *,
+    current_category: OptionCategory | None = None,
+    root: str = "",
+    extension: str = ".md",
+) -> str:
+    """Return a Markdown link to a generated option section when metadata is available."""
+    documented_option = _documented_related_option(option, documented_options)
+    if not (meta := get_option_meta(documented_option)):
+        return f"`{documented_option}`"
+
+    if current_category == meta.category:
+        target = f"#{get_cli_doc_slug(get_cli_option_doc_name(documented_option))}"
+    elif doc_path := get_cli_option_doc_path(documented_option, root=root, extension=extension):
+        target = doc_path
+    else:
+        return f"`{documented_option}`"
+    return f"[`{documented_option}`]({target})"
+
+
+def _recipe_option_names(recipes: tuple[CategoryRecipe, ...]) -> frozenset[str]:
+    """Return recipe option names for preserving generated documentation aliases."""
+    return frozenset(option for recipe in recipes for option in recipe.options)
+
+
+def _homepage_recipes() -> tuple[CategoryRecipe, ...]:
+    """Return a bounded recipe set for README and docs-home quick-start sections."""
+    return tuple(recipes[0] for category in HOMEPAGE_RECIPE_CATEGORIES if (recipes := CATEGORY_RECIPES.get(category)))
+
+
+def generate_homepage_recipe_quick_starts(
+    *,
+    cli_reference_root: str,
+    cli_reference_extension: str,
+    cli_reference_index: str,
+) -> str:
+    """Generate concise CLI recipe quick-starts for README and docs home."""
+    if not (recipes := _homepage_recipes()):
+        return ""
+
+    documented_options = _recipe_option_names(recipes)
+    md = "### CLI option quick starts\n\n"
+    md += (
+        "Use these starting points when combining options; each option links to the generated CLI reference for "
+        "details and examples.\n\n"
+    )
+    for recipe in recipes:
+        option_links = ", ".join(
+            _format_option_link(
+                option,
+                documented_options,
+                root=cli_reference_root,
+                extension=cli_reference_extension,
+            )
+            for option in recipe.options
+        )
+        md += f"- **{recipe.title}:** {recipe.description} Options: {option_links}.\n"
+    md += f"\nSee the [CLI Reference]({cli_reference_index}) for the full option list and category-specific recipes.\n"
+    return md
+
+
+def generate_category_recipes(
+    category: OptionCategory,
+    documented_options: frozenset[str],
+) -> str:
+    """Generate category recipes that link to option details."""
+    if not (recipes := CATEGORY_RECIPES.get(category)):
+        return ""
+
+    md = "## 🍳 Recipes\n\n"
+    for recipe in recipes:
+        option_links = ", ".join(
+            _format_option_link(option, documented_options, current_category=category) for option in recipe.options
+        )
+        md += f"### {recipe.title}\n\n"
+        md += f"{recipe.description}\n\n"
+        md += f"**Options:** {option_links}\n\n"
+    return md
+
+
+def _format_relation_value(value: Any) -> str:
+    """Format a relationship value for Markdown output."""
+    if value is True:
+        return "enabled"
+    if value is False:
+        return "disabled"
+    if value is None:
+        return ""
+    return f"= `{value}`"
+
+
+def _format_relation_condition(option: str, when: Any) -> str:
+    """Format the source option condition for a relationship."""
+    if when is True:
+        return f"When `{option}` is enabled, "
+    if when is False:
+        return f"When `{option}` is disabled, "
+    if when is None:
+        return ""
+    return f"When `{option}={when}`, "
+
+
+def _generate_option_relationships(
+    option: str,
+    meta: CLIOptionMeta | None,
+    documented_options: frozenset[str],
+) -> str:
+    """Generate Markdown for CLI option relationship metadata."""
+    if not meta:
+        return ""
+
+    relationship_lines: list[str] = []
+    for relation_kind in OPTION_RELATION_KINDS:
+        for relation in getattr(meta, relation_kind):
+            option_link = _format_option_link(relation.option, documented_options)
+            relation_value = _format_relation_value(relation.value)
+            target = f"{option_link} {relation_value}".rstrip()
+            condition = _format_relation_condition(option, relation.when)
+            message = f" - {relation.message}" if relation.message else ""
+            relationship_lines.append(f"- **{relation_kind.capitalize()}:** {condition}{target}{message}")
+
+    if not relationship_lines:
+        return ""
+
+    return "**Option relationships:**\n\n" + "\n".join(relationship_lines) + "\n\n"
+
+
+def _escape_relationship_table_cell(value: str) -> str:
+    """Escape Markdown table delimiters while preserving generated links."""
+    return value.replace("|", "\\|")
+
+
+def _format_relation_condition_cell(option: str, when: Any) -> str:
+    """Format a relationship condition for a summary table cell."""
+    if when is True:
+        return f"`{option}` enabled"
+    if when is False:
+        return f"`{option}` disabled"
+    if when is None:
+        return "Always"
+    return f"`{option}` = `{when}`"
+
+
+def generate_relationship_summary(
+    categories: dict[OptionCategory, dict[str, CLIDocOption]],
+    documented_options: frozenset[str],
+) -> str:
+    """Generate an index-level summary of CLI option relationship metadata."""
+    rows: list[tuple[str, str, str, str, str]] = []
+    for category in OPTION_CATEGORY_ORDER:
+        for option in sorted(categories.get(category, {})):
+            if not (meta := get_option_meta(option)):
+                continue
+            source = _format_option_link(option, documented_options)
+            for relation_kind in OPTION_RELATION_KINDS:
+                for relation in getattr(meta, relation_kind):
+                    target = _format_option_link(relation.option, documented_options)
+                    if relation_value := _format_relation_value(relation.value):
+                        target = f"{target} {relation_value}"
+                    rows.append((
+                        source,
+                        relation_kind.capitalize(),
+                        _format_relation_condition_cell(option, relation.when),
+                        target,
+                        relation.message or "-",
+                    ))
+
+    if not rows:
+        return ""
+
+    md = "## 🔗 Option Relationships\n\n"
+    md += (
+        "These links are generated from CLI option metadata and summarize options that imply, require, "
+        "or conflict with other options.\n\n"
+    )
+    md += "| Source | Kind | Condition | Target | Note |\n"
+    md += "|--------|------|-----------|--------|------|\n"
+    for row in rows:
+        md += "| " + " | ".join(_escape_relationship_table_cell(cell) for cell in row) + " |\n"
+    return md + "\n"
 
 
 def generate_category_page(
     category: OptionCategory,
     options: dict[str, CLIDocOption],
     option_related_pages: dict[str, list[tuple[str, str]]] | None = None,
+    documented_options: frozenset[str] | None = None,
 ) -> str:
     """Generate a category page with all options."""
     emoji = CATEGORY_EMOJIS.get(category, "📋")
     md = f"# {emoji} {category.value}\n\n"
+    if intro := CATEGORY_INTROS.get(category):
+        md += f"{intro}\n\n"
     md += "## 📋 Options\n\n"
     md += "| Option | Description |\n"
     md += "|--------|-------------|\n"
@@ -726,12 +1128,22 @@ def generate_category_page(
         cli_doc_option = options[option]
         option_description = cli_doc_option.get_option_description()
         desc = summarize_description(option_description, DESC_LENGTH_SHORT) if option_description else ""
-        md += f"| [`{option}`](#{slugify(option)}) | {desc} |\n"
+        md += f"| [`{option}`](#{get_cli_doc_slug(option)}) | {desc} |\n"
     md += "\n---\n\n"
+
+    category_documented_options = documented_options or frozenset(options)
+    if recipes := generate_category_recipes(category, category_documented_options):
+        md += recipes
+        md += "---\n\n"
 
     for option in sorted(options.keys()):
         cli_doc_option = options[option]
-        md += generate_option_section(option, cli_doc_option, option_related_pages)
+        md += generate_option_section(
+            option,
+            cli_doc_option,
+            option_related_pages,
+            category_documented_options,
+        )
 
     return md
 
@@ -775,7 +1187,7 @@ def generate_quick_reference(
         if not options:
             continue
 
-        slug_cat = slugify(category.value)
+        slug_cat = get_cli_doc_slug(category.value)
         emoji = CATEGORY_EMOJIS.get(category, "📋")
         md += f"### {emoji} {category.value}\n\n"
         md += "| Option | Description |\n"
@@ -785,7 +1197,7 @@ def generate_quick_reference(
             cli_doc_option = options[option]
             option_description = cli_doc_option.get_option_description()
             desc = summarize_description(option_description, DESC_LENGTH_LONG) if option_description else ""
-            slug_opt = slugify(option)
+            slug_opt = get_cli_doc_slug(option)
             md += f"| [`{option}`]({slug_cat}.md#{slug_opt}) | {desc} |\n"
 
         md += "\n"
@@ -796,7 +1208,7 @@ def generate_quick_reference(
         md += "|--------|-------------|\n"
         for option in sorted(manual_docs.keys()):
             desc = MANUAL_OPTION_DESCRIPTIONS.get(option, "")
-            slug_opt = slugify(option)
+            slug_opt = get_cli_doc_slug(option)
             md += f"| [`{option}`](utility-options.md#{slug_opt}) | {desc} |\n"
         md += "\n"
 
@@ -807,13 +1219,110 @@ def generate_quick_reference(
 
     for option, desc, category in all_options:
         if category is None:
-            md += f"- [`{option}`](utility-options.md#{slugify(option)}) - {desc}\n"
+            md += f"- [`{option}`]({get_cli_option_doc_path(option)}) - {desc}\n"
         else:
-            slug_cat = slugify(category.value)
-            slug_opt = slugify(option)
+            slug_cat = get_cli_doc_slug(category.value)
+            slug_opt = get_cli_doc_slug(option)
             short_desc = desc[:DESC_LENGTH_SHORT] + "..." if len(desc) > DESC_LENGTH_SHORT else desc
             md += f"- [`{option}`]({slug_cat}.md#{slug_opt}) - {short_desc}\n"
 
+    return md
+
+
+TopicOptions = dict[OptionTopic, dict[OptionGroup, list[tuple[str, CLIDocOption]]]]
+
+
+def _title_from_slug(value: str) -> str:
+    """Return a display title for enum values stored as URL slugs."""
+    return value.replace("openapi", "OpenAPI").replace("-", " ").title().replace("Openapi", "OpenAPI")
+
+
+def _topic_title(topic: OptionTopic) -> str:
+    """Return a stable topic title."""
+    return _title_from_slug(topic.value)
+
+
+def _group_title(group: OptionGroup) -> str:
+    """Return a stable group title."""
+    return _title_from_slug(group.value)
+
+
+def _iter_topic_groups(topic: OptionTopic) -> tuple[OptionGroup, ...]:
+    """Return topic groups in enum order."""
+    allowed_groups = OPTION_TOPIC_ALLOWED_GROUPS.get(topic, frozenset())
+    return tuple(group for group in OptionGroup if group in allowed_groups)
+
+
+def _escape_table_cell(value: str) -> str:
+    """Escape Markdown syntax that is ambiguous inside generated tables."""
+    return value.replace("|", r"\|").replace("[", r"\[").replace("]", r"\]")
+
+
+def collect_topic_options(categories: dict[OptionCategory, dict[str, CLIDocOption]]) -> TopicOptions:
+    """Collect documented options by focused topic and subgroup."""
+    topics: TopicOptions = defaultdict(lambda: defaultdict(list))
+    for options in categories.values():
+        for option, cli_doc_option in options.items():
+            if not (meta := get_option_meta(option)):
+                continue
+            if meta.topic is None or meta.group is None:
+                continue
+            topics[meta.topic][meta.group].append((option, cli_doc_option))
+
+    for groups in topics.values():
+        for group_options in groups.values():
+            group_options.sort(key=operator.itemgetter(0))
+    return dict(topics)
+
+
+def generate_topic_index(topic_options: TopicOptions) -> str:
+    """Generate the CLI reference topic index section."""
+    if not topic_options:
+        return ""
+
+    md = "## 🎯 Focused Topics\n\n"
+    md += "Use these pages when you know the workflow area but not the exact option name.\n\n"
+    md += "| Topic | Options | Groups |\n"
+    md += "|-------|---------|--------|\n"
+    for topic in OPTION_TOPIC_ORDER:
+        if not (groups := topic_options.get(topic)):
+            continue
+        option_count = sum(len(options) for options in groups.values())
+        group_names = ", ".join(_group_title(group) for group in _iter_topic_groups(topic) if group in groups)
+        md += f"| [{_topic_title(topic)}](topics/{topic.value}.md) | {option_count} | {group_names} |\n"
+    return md + "\n"
+
+
+def generate_topic_page(topic: OptionTopic, groups: dict[OptionGroup, list[tuple[str, CLIDocOption]]]) -> str:
+    """Generate one focused CLI topic page."""
+    title = _topic_title(topic)
+    md = f"# {title}\n\n"
+    if description := TOPIC_DESCRIPTIONS.get(topic):
+        md += f"{description}\n\n"
+    md += "Options are grouped from shared CLI metadata and link back to their generated reference sections.\n\n"
+    md += "## Groups\n\n"
+    md += "| Group | Options | Description |\n"
+    md += "|-------|---------|-------------|\n"
+    for group in _iter_topic_groups(topic):
+        if group not in groups:
+            continue
+        md += f"| [{_group_title(group)}](#{get_cli_doc_slug(group.value)}) | {len(groups[group])} | "
+        md += f"{GROUP_DESCRIPTIONS.get(group, '')} |\n"
+    md += "\n"
+
+    for group in _iter_topic_groups(topic):
+        if not (options := groups.get(group)):
+            continue
+        md += f"## {_group_title(group)} {{#{get_cli_doc_slug(group.value)}}}\n\n"
+        if description := GROUP_DESCRIPTIONS.get(group):
+            md += f"{description}\n\n"
+        md += "| Option | Description |\n"
+        md += "|--------|-------------|\n"
+        for option, cli_doc_option in options:
+            option_description = cli_doc_option.get_option_description()
+            desc = summarize_description(option_description, DESC_LENGTH_LONG) if option_description else ""
+            md += f"| [`{option}`]({get_cli_option_doc_path(option, root='..')}) | {_escape_table_cell(desc)} |\n"
+        md += "\n"
     return md
 
 
@@ -838,13 +1347,14 @@ def generate_index_page(
         OptionCategory.TEMPLATE: "Output formatting and custom rendering",
         OptionCategory.OPENAPI: "OpenAPI-specific features",
         OptionCategory.GENERAL: "Utilities and meta options",
+        OptionCategory.TARGET: "Server and client generation with the models (experimental)",
     }
 
     for category in OptionCategory:
         if category in categories:
             count = len(categories[category])
             desc = category_descriptions.get(category, "")
-            slug = slugify(category.value)
+            slug = get_cli_doc_slug(category.value)
             emoji = CATEGORY_EMOJIS.get(category, "📋")
             md += f"| {emoji} [{category.value}]({slug}.md) | {count} | {desc} |\n"
 
@@ -852,6 +1362,11 @@ def generate_index_page(
         md += f"| 📝 [Utility Options](utility-options.md) | {len(manual_docs)} | Help, version, debug options |\n"
 
     md += "\n"
+    md += generate_topic_index(collect_topic_options(categories))
+    documented_options = frozenset(option for options in categories.values() for option in options)
+    if relationship_summary := generate_relationship_summary(categories, documented_options):
+        md += relationship_summary
+
     md += "## All Options\n\n"
     all_options: list[tuple[str, OptionCategory | None]] = []
     for category, options in categories.items():
@@ -872,13 +1387,50 @@ def generate_index_page(
             current_letter = first_letter
             md += f"\n### {current_letter} {{#{current_letter.lower()}}}\n\n"
         if category is None:
-            md += f"- [`{option}`](utility-options.md#{slugify(option)})\n"
+            md += f"- [`{option}`]({get_cli_option_doc_path(option)})\n"
         else:
-            slug_cat = slugify(category.value)
-            slug_opt = slugify(option)
+            slug_cat = get_cli_doc_slug(category.value)
+            slug_opt = get_cli_doc_slug(option)
             md += f"- [`{option}`]({slug_cat}.md#{slug_opt})\n"
 
     return md
+
+
+def _doc_example_blocks_by_option_slug(existing_text: str) -> dict[str, str]:
+    """Return existing injected docs example blocks keyed by CLI option heading slug."""
+    headings = list(OPTION_HEADING_PATTERN.finditer(existing_text))
+    blocks: dict[str, str] = {}
+    for block_match in DOC_EXAMPLE_BLOCK_PATTERN.finditer(existing_text):
+        heading = next((heading for heading in reversed(headings) if heading.end() <= block_match.start()), None)
+        if heading is None:
+            continue
+        blocks[heading.group("slug")] = block_match.group(0).rstrip()
+    return blocks
+
+
+def _replace_option_example_block(generated_text: str, *, option_slug: str, replacement: str) -> str:
+    """Replace a generated option example admonition with a preserved docs example block."""
+    heading_match = re.search(rf"^## `[^`]+` \{{#{re.escape(option_slug)}\}}\n", generated_text, re.MULTILINE)
+    if heading_match is None:
+        return generated_text
+
+    next_heading = OPTION_HEADING_PATTERN.search(generated_text, heading_match.end())
+    section_end = next_heading.start() if next_heading else len(generated_text)
+    example_start = generated_text.find(EXAMPLES_ADMONITION, heading_match.end(), section_end)
+    if example_start == -1:
+        return generated_text
+
+    divider_start = generated_text.find("\n---\n", example_start, section_end)
+    example_end = divider_start if divider_start != -1 else section_end
+    return generated_text[:example_start] + replacement.rstrip() + "\n" + generated_text[example_end:]
+
+
+def preserve_existing_doc_example_sections(generated_text: str, existing_text: str) -> str:
+    """Preserve docs example sections injected after CLI docs generation."""
+    updated_text = generated_text
+    for option_slug, block in _doc_example_blocks_by_option_slug(existing_text).items():
+        updated_text = _replace_option_example_block(updated_text, option_slug=option_slug, replacement=block)
+    return updated_text
 
 
 def read_manual_docs() -> dict[str, str]:
@@ -910,15 +1462,17 @@ def generate_manual_docs_section(manual_docs: dict[str, str]) -> str:
 
     for option in sorted(manual_docs.keys()):
         desc = MANUAL_OPTION_DESCRIPTIONS.get(option, "")
-        md += f"| [`{option}`](#{slugify(option)}) | {desc} |\n"
+        md += f"| [`{option}`](#{get_cli_doc_slug(option)}) | {desc} |\n"
 
     md += "\n---\n\n"
 
     for option in sorted(manual_docs.keys()):
         content = manual_docs[option]
-        # Adjust relative paths: manual docs are in manual/ subdirectory,
-        # but utility-options.md is in cli-reference/, so ../../ becomes ../
-        content = content.replace("](../../", "](../")
+        # Manual docs move one directory up when embedded in utility-options.md.
+        content = content.replace("](../", "](")
+        for related_option in manual_docs:
+            related_slug = get_cli_doc_slug(related_option)
+            content = content.replace(f"]({related_slug}.md#{related_slug})", f"](#{related_slug})")
         md += content
         if not content.endswith("\n"):
             md += "\n"
@@ -984,11 +1538,19 @@ def build_docs(*, check: bool = False) -> int:
             categories[OptionCategory.GENERAL][option] = cli_doc_option
 
     # Scan markdown files for CLI option tags
-    option_related_pages = scan_docs_for_cli_option_tags()
+    documented_options = frozenset(options_map)
+    option_related_pages = scan_docs_for_cli_option_tags(documented_options)
+
+    existing_docs: dict[Path, str] = {}
+    if DOCS_OUTPUT.exists():
+        existing_docs = {path: path.read_text(encoding="utf-8") for path in DOCS_OUTPUT.rglob("*.md")}
 
     if not check:
         DOCS_OUTPUT.mkdir(parents=True, exist_ok=True)
+        TOPICS_OUTPUT.mkdir(parents=True, exist_ok=True)
         for old_file in DOCS_OUTPUT.glob("*.md"):
+            old_file.unlink()
+        for old_file in TOPICS_OUTPUT.glob("*.md"):
             old_file.unlink()
 
     generated = 0
@@ -999,6 +1561,11 @@ def build_docs(*, check: bool = False) -> int:
         """Write content to file or check if it matches existing content."""
         nonlocal generated, errors
         normalized_content = content.rstrip() + "\n"
+        existing_text = (
+            output_path.read_text(encoding="utf-8") if output_path.exists() else existing_docs.get(output_path)
+        )
+        if existing_text:
+            normalized_content = preserve_existing_doc_example_sections(normalized_content, existing_text)
         if check:
             if not output_path.exists():
                 mismatches.append(f"{label}: file does not exist")
@@ -1020,8 +1587,8 @@ def build_docs(*, check: bool = False) -> int:
         if not options:
             continue
         try:
-            md = generate_category_page(category, options, option_related_pages)
-            output_path = DOCS_OUTPUT / f"{slugify(category.value)}.md"
+            md = generate_category_page(category, options, option_related_pages, documented_options)
+            output_path = DOCS_OUTPUT / f"{get_cli_doc_slug(category.value)}.md"
             write_or_check(output_path, md, f"{output_path.name} ({len(options)} options)")
         except (OSError, ValueError, KeyError) as e:
             print(f"Error generating {category.value}: {e}", file=sys.stderr)
@@ -1034,6 +1601,19 @@ def build_docs(*, check: bool = False) -> int:
             write_or_check(output_path, md, f"utility-options.md ({len(manual_docs)} options)")
         except (OSError, ValueError, KeyError) as e:
             print(f"Error generating utility-options.md: {e}", file=sys.stderr)
+            errors += 1
+
+    topic_options = collect_topic_options(categories)
+    for topic in OPTION_TOPIC_ORDER:
+        if not (groups := topic_options.get(topic)):
+            continue
+        try:
+            md = generate_topic_page(topic, groups)
+            output_path = TOPICS_OUTPUT / f"{topic.value}.md"
+            count = sum(len(options) for options in groups.values())
+            write_or_check(output_path, md, f"topics/{output_path.name} ({count} options)")
+        except (OSError, ValueError, KeyError) as e:
+            print(f"Error generating topics/{topic.value}.md: {e}", file=sys.stderr)
             errors += 1
 
     try:

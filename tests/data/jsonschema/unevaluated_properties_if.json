@@ -1,0 +1,12 @@
+{
+    "title": "Resource",
+    "type": "object",
+    "properties": {
+        "name": { "type": "string" }
+    },
+    "if": { "properties": { "a": { "type": "integer" } }, "required": ["a"] },
+    "then": { "required": ["name"] },
+    "unevaluatedProperties": {
+        "type": "string"
+    }
+}

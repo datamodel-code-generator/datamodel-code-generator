@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Reused duplicates used by other modules
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Top:
+      type: object
+      properties:
+        counts:
+          $ref: "#/components/schemas/c.Rank"
+        totals:
+          $ref: "#/components/schemas/c.Rank"
+        nodes:
+          $ref: "#/components/schemas/a.Rank"
+        kind:
+          $ref: "#/components/schemas/c.Kind"
+    a.Item:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/b.Node"
+    a.Rank:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/b.Node"
+    b.Node:
+      type: object
+      properties:
+        rank:
+          $ref: "#/components/schemas/a.Rank"
+    c.Item:
+      type: object
+      additionalProperties:
+        type: integer
+    c.Rank:
+      type: object
+      additionalProperties:
+        type: integer
+    c.Color:
+      type: string
+      enum: [red, green]
+    c.Kind:
+      type: string
+      enum: [red, green]
+    z.Holder:
+      type: object
+      properties:
+        counts:
+          $ref: "#/components/schemas/c.Rank"
+        nodes:
+          $ref: "#/components/schemas/a.Rank"
+        kind:
+          $ref: "#/components/schemas/c.Kind"

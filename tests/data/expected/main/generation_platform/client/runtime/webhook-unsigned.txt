@@ -1,0 +1,18 @@
+# webhooks-adapters pydantic_v2.BaseModel
+  public names=['decode_unverified'] has verify=False
+  message = Message(test=1)
+  invoice by nested type = Invoice(type='invoice', id='in_1', amount=5)
+  customer = Customer(type='c', id='cus_1', email='a@b')
+  no type member ! ProtocolDataError: ProtocolDataError(reason='missing') [location=BodySelector(pointer='/meta/type')] missing
+  meta not an object ! ProtocolDataError: ProtocolDataError(reason='missing') [location=BodySelector(pointer='/meta/type')] missing
+  null type ! ProtocolDataError: ProtocolDataError(reason='null') [location=BodySelector(pointer='/meta/type')] null
+  numeric type ! ProtocolDataError: ProtocolDataError(reason='type') [location=BodySelector(pointer='/meta/type')] type
+  list type ! ProtocolDataError: ProtocolDataError(reason='type') [location=BodySelector(pointer='/meta/type')] type
+  unknown type ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  type in another case ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  type with a space ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
+  known type, invalid event ! ProtocolDataError: ProtocolDataError(reason='value') [] value
+  not JSON ! ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  text body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  bytearray body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  headers argument=TypeError options argument=TypeError

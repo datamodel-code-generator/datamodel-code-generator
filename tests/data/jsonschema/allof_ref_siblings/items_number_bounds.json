@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "$defs": {
+    "Base": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base",
+      "items": {
+        "type": "number",
+        "maximum": 2
+      }
+    }
+  ]
+}

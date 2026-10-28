@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: Integer header name of a form encoding
+  version: '1.0'
+servers:
+  - url: https://example.com
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+            encoding:
+              name:
+                headers:
+                  1:
+                    schema:
+                      type: integer
+      responses:
+        '200':
+          description: OK

@@ -1,0 +1,72 @@
+{%- if schema_runtime_validation %}
+{%- set schema_validator_state = namespace(has_prior=description or config or class_body_lines) %}
+{%- if schema_runtime_validation.pattern_properties %}
+{%- if schema_validator_state.has_prior %}
+{{ '\n' }}
+{%- endif %}
+    __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in schema_runtime_validation.pattern_properties %}
+        {
+            'declared_properties': {{ rule.declared_properties|repr }},
+            'rejected_patterns': {{ rule.rejected_patterns|repr }},
+            'pattern_properties': {% if rule.pattern_properties|length == 1 %}{%- set pattern_property = rule.pattern_properties[0] -%}(({{ pattern_property[0]|repr }}, {{ pattern_property[1].type_hint }}),){% else %}(
+{%- for pattern, data_type in rule.pattern_properties %}
+                ({{ pattern|repr }}, {{ data_type.type_hint }}),
+{%- endfor %}
+            ){% endif %},
+            'additional_property_type': {% if rule.additional_property_type %}{{ rule.additional_property_type.type_hint }}{% else %}None{% endif %},
+            'allow_unmatched': {{ rule.allow_unmatched|repr }},
+        },
+{%- endfor %}
+    )
+{{ '\n' }}
+{%- set schema_validator_state.has_prior = true %}
+{%- endif %}
+{%- set one_of_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'oneOf')|list %}
+{%- if one_of_required_groups %}
+{%- if schema_validator_state.has_prior %}
+{{ '\n' }}
+{%- endif %}
+    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in one_of_required_groups %}
+        {{ rule.groups|repr }},
+{%- endfor %}
+    )
+{{ '\n' }}
+{%- set schema_validator_state.has_prior = true %}
+{%- endif %}
+{%- set any_of_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'anyOf')|list %}
+{%- if any_of_required_groups %}
+{%- if schema_validator_state.has_prior %}
+{{ '\n' }}
+{%- endif %}
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in any_of_required_groups %}
+        {{ rule.groups|repr }},
+{%- endfor %}
+    )
+{{ '\n' }}
+{%- set schema_validator_state.has_prior = true %}
+{%- endif %}
+{%- if schema_runtime_validation.conditional_required %}
+{%- if schema_validator_state.has_prior %}
+{{ '\n' }}
+{%- endif %}
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in schema_runtime_validation.conditional_required %}
+        {
+            'condition': {{ rule.condition|repr }},
+            'then_required_groups': {{ rule.then_groups|repr }},
+            'else_required_groups': {{ rule.else_groups|repr }},
+        },
+{%- endfor %}
+    )
+{{ '\n' }}
+{%- endif %}
+{%- endif %}
+
+{% if schema_runtime_validation %}
+{% for rule in schema_runtime_validation.pattern_properties %}
+    # Pattern rule fields: {{ rule.__dataclass_fields__ | list | join(', ') }}
+{% endfor %}
+{% endif %}

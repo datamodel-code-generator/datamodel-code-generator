@@ -4,7 +4,15 @@
 
 `datamodel-codegen` formats generated Python code after model generation. The default formatter list is currently `black` and `isort`.
 
-This default will change in a future release. External formatters will become opt-in so that generated output can be produced without installing formatter packages.
+!!! warning "Experimental"
+    The built-in formatter (`--formatters builtin`) is experimental and may change as generated-output coverage is
+    expanded.
+
+This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
+see [Code Formatting](formatting.md).
+
+This default will change in a future release. The default formatter will become `builtin`, and external formatter
+dependencies will become opt-in so that generated output can be produced without installing formatter packages.
 
 ## Formatter selection
 
@@ -32,6 +40,26 @@ single-file output is processed as isort, built-in formatter, Black, then Ruff c
 selected.
 The built-in formatter is an alternative to external formatting, not a pre-formatter.
 If `builtin` is passed together with `black`, `isort`, `ruff-check`, or `ruff-format`, `builtin` is ignored.
+
+### Choose a formatter
+
+Choose a formatter to match your project and generation priorities:
+
+- **Projects using Ruff:** use `--formatters ruff-check ruff-format` to keep generated code consistent with the
+  project's formatting and lint policy. Install it with `pip install 'datamodel-code-generator[ruff]'`.
+- **No Ruff, Black, or isort, or generation speed is the priority:** use `--formatters builtin` to avoid running
+  external formatters on standard generated model modules.
+- **Projects using Black/isort:** keep `--formatters black isort` to preserve the project's formatting and existing
+  generated output.
+
+The current default remains Black/isort, which are still required dependencies. Omitting formatter options continues
+normal generation. The future builtin default is intended to reduce required installation dependencies and version
+constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
+based on installed packages or Ruff configuration.
+
+Custom templates can emit Python outside the standard generated model patterns covered by `builtin`, so
+custom-template output is not exhaustively validated. If `--formatters builtin` produces invalid or poorly formatted
+output with a custom template, please open an issue with a small reproducer.
 
 ## Built-in formatter scope
 
@@ -63,6 +91,11 @@ The built-in formatter does not currently format:
 - Comment placement beyond preserving commented import lines.
 - Import section rules beyond the simple groups listed above.
 
+This scope matters when using `--custom-template-dir`. Custom templates can emit arbitrary Python code outside the
+generated model patterns listed above, so custom-template output is not exhaustively validated with the built-in
+formatter. If `--formatters builtin` produces invalid or poorly formatted output with a custom template, please open an
+issue with a small reproducer.
+
 For exact Black, isort, or Ruff behavior, continue to pass those formatters explicitly.
 The built-in formatter is not run before external formatters.
 
@@ -79,16 +112,17 @@ formatters = ["builtin"]
 builtin-format-line-length = 100
 ```
 
-When `builtin-format-line-length` is not set, the built-in formatter reuses existing formatter configuration in this order:
+The built-in formatter uses line length in this order:
 
-1. `[tool.ruff].line-length`
-2. `[tool.black].line-length`
-3. `[tool.isort].line_length`
-4. `88`
+1. API `builtin_format_line_length`
+2. `[tool.datamodel-codegen].builtin-format-line-length` or `[tool.datamodel-codegen].builtin_format_line_length`
+3. `[tool.ruff].line-length`
+4. `[tool.black].line-length`
+5. `[tool.isort].line_length`
+6. `88`
 
-This fallback only reads configuration values. It does not require Ruff, Black, or isort to be installed.
-
-An explicit API value always wins over `pyproject.toml`.
+The fallback formatter settings only read configuration values. They do not require Ruff, Black, or isort to be
+installed.
 
 ## String normalization
 
@@ -138,3 +172,9 @@ datamodel-codegen \
 ```
 
 Generated output may differ from Black or isort output in places outside the built-in formatter scope. Treat those differences as expected unless they change Python semantics or produce invalid code.
+
+## Dependency migration
+
+See [Dependency migration notices](dependency-migration.md) for Black/isort extras, separate optional-installation
+and old-version warnings, unchanged current requirements, and the distinction between DCG runtime Pydantic and
+generated-code compatibility. Old presets without formatters retain the implicit-default warning.

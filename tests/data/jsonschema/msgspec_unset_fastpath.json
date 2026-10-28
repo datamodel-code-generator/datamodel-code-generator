@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnsetFastPath",
+  "type": "object",
+  "required": ["required_value"],
+  "properties": {
+    "required_value": {
+      "type": "string"
+    },
+    "plain": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "constrained": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nullable": {
+      "type": ["string", "null"]
+    },
+    "combined": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "integer"}
+      ]
+    },
+    "nested": {
+      "$ref": "#/$defs/Nested"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "waiting"]
+    }
+  },
+  "$defs": {
+    "Nested": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

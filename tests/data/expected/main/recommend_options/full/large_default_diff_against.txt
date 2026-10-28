@@ -1,0 +1,60 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
+  components                       1, 0 operations
+  inline objects / enums           4095 / 0, nesting depth 12
+  shared property names            2 (left x2047, right x2047)
+  inline names = component names   0
+  repeated inline objects / enums  4094 of 11 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261027
+
+Add (3 options)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 2, e.g. left x2047, right
+      x2047; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on
+      parse order and shift when the schema grows; full-path names each inline model after its
+      parent.
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+  --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]
+      The schema repeats shapes (inline objects repeating a shape: 4094, in 11 shapes; inline enums
+      repeating a value set: 0, in 0 sets; union branches that only constrain their parent's
+      properties, which generation copies per branch: 0). Reuse emits each shape once, and collapse
+      refers to it instead of an empty subclass.
+      measured: GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663
+      measured: Stripe API description: 2512 -> 2022 types
+      measured: SchemaStore workflow schema: the step branches' copies With1 to With11 became one
+      With1
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+  - Candidates were not compared: the input and --diff-against are estimated at 8192 models, more
+    than the 3000 compared by default. Run --recommend-options full to generate each candidate
+    configuration in memory and compare their class names.
+
+Command
+  datamodel-codegen --collapse-reuse-models --input large.yaml --naming-strategy full-path --output models.py --preset standard-py314-20261027 --reuse-model --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  collapse-reuse-models = true
+  input = "large.yaml"
+  naming-strategy = "full-path"
+  output = "models.py"
+  preset = "standard-py314-20261027"
+  reuse-model = true
+  target-python-version = "3.14"

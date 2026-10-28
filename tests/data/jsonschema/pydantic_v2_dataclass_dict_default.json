@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "$defs": {
+    "Tags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "properties": {
+    "empty": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {}
+    },
+    "nonempty": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {
+        "one": 1
+      }
+    },
+    "untyped": {
+      "type": "object",
+      "default": {
+        "enabled": true
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/Tags",
+      "default": {}
+    }
+  }
+}

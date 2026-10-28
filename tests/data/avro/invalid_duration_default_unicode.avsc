@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "DurationDefaults",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "fixed",
+        "name": "Elapsed",
+        "size": 12,
+        "logicalType": "duration"
+      },
+      "default": "\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100"
+    }
+  ]
+}

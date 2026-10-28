@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info:
+  title: Force Optional Discriminator
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    CardPayment:
+      type: object
+      required:
+        - kind
+        - card_number
+      properties:
+        kind:
+          type: string
+          const: card
+        card_number:
+          type: integer
+    CashPayment:
+      type: object
+      required:
+        - kind
+        - received_amount
+      properties:
+        kind:
+          type: string
+        received_amount:
+          type: integer
+    Payment:
+      oneOf:
+        - $ref: "#/components/schemas/CardPayment"
+        - $ref: "#/components/schemas/CashPayment"
+      discriminator:
+        propertyName: kind
+        mapping:
+          card: "#/components/schemas/CardPayment"
+          cash: "#/components/schemas/CashPayment"

@@ -19,7 +19,7 @@ patched version ranges for each issue.
 Please report suspected vulnerabilities privately through GitHub Private
 Vulnerability Reporting:
 
-https://github.com/koxudaxi/datamodel-code-generator/security/advisories/new
+https://github.com/datamodel-code-generator/datamodel-code-generator/security/advisories/new
 
 Do not publish exploit details in a public issue, pull request, discussion, or
 social media post before a fix is available and the advisory has been published.

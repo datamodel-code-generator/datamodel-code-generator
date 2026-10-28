@@ -1,0 +1,5 @@
+components:
+  links:
+    Pets: {operationId: listPets, description: The pets of a document that only this link loads.}
+  securitySchemes:
+    key: {type: apiKey, in: query, name: metadata_key}

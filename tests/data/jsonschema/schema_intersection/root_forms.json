@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "#/$defs/Arr"
+    },
+    "b": {
+      "$ref": "#/$defs/ArrRef"
+    },
+    "c": {
+      "$ref": "#/$defs/EnumC"
+    },
+    "d": {
+      "$ref": "#/$defs/EnumD"
+    },
+    "v": {
+      "$ref": "#/$defs/Value"
+    },
+    "p": {
+      "$ref": "#/$defs/Pat"
+    },
+    "u": {
+      "$ref": "#/$defs/Untyped"
+    },
+    "two_refs": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "$ref": "#/$defs/Big"
+        }
+      ]
+    },
+    "m": {
+      "$ref": "#/$defs/NullableMap"
+    },
+    "m2": {
+      "allOf": [
+        {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "path_a": {
+      "$ref": "#/$defs/PathA"
+    },
+    "root_multi": {
+      "$ref": "#/$defs/RootMulti"
+    },
+    "inline_root": {
+      "$ref": "#/$defs/InlineRoot"
+    }
+  },
+  "$defs": {
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Small": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "Big": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "Arr": {
+      "allOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "minItems": 1
+        }
+      ]
+    },
+    "ArrRef": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Tags"
+        },
+        {
+          "minItems": 1
+        }
+      ]
+    },
+    "EnumC": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "maxLength": 1
+        }
+      ]
+    },
+    "EnumD": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        }
+      ],
+      "description": "described"
+    },
+    "Value": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "$ref": "#/$defs/Big"
+        }
+      ]
+    },
+    "Pat": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "Untyped": {
+      "allOf": [
+        {
+          "minLength": 1
+        },
+        {
+          "maxLength": 5
+        }
+      ]
+    },
+    "NullableMap": {
+      "allOf": [
+        {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "Base": {
+      "type": "string",
+      "title": "BaseT",
+      "default": "base",
+      "examples": [
+        "bb"
+      ]
+    },
+    "PathA": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "minLength": 2
+        }
+      ],
+      "description": "D",
+      "default": "zz",
+      "examples": [
+        "ab"
+      ]
+    },
+    "RootMulti": {
+      "allOf": [
+        {
+          "type": "string",
+          "examples": [
+            "m1"
+          ],
+          "description": "MD"
+        },
+        {
+          "minLength": 2,
+          "examples": [
+            "m2"
+          ]
+        }
+      ],
+      "examples": [
+        "s"
+      ]
+    },
+    "InlineRoot": {
+      "allOf": [
+        {
+          "type": "string"
+        },
+        {
+          "minLength": 2
+        }
+      ],
+      "description": "D",
+      "default": "zz",
+      "examples": [
+        "ab"
+      ]
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Overridden discriminator copied by a forward child",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "app.Beagle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/zoo.Dog"
+          }
+        ],
+        "required": [
+          "kind"
+        ]
+      },
+      "zoo.Kind": {
+        "type": "string",
+        "enum": [
+          "dog",
+          "cat"
+        ]
+      },
+      "zoo.Dog": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/zoo.Kind"
+          },
+          "bark": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "zoo.Cat": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/zoo.Kind"
+          },
+          "purr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "zoo.Selector": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/zoo.Dog"
+          },
+          {
+            "$ref": "#/components/schemas/zoo.Cat"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "dog": "#/components/schemas/zoo.Dog",
+            "cat": "#/components/schemas/zoo.Cat"
+          }
+        }
+      }
+    }
+  }
+}

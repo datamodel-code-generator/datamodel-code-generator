@@ -1,0 +1,7 @@
+returncode: 2
+stdout:
+stderr:
+--runs must be greater than 0, got 0
+--warmups must be greater than or equal to 0, got -1
+--timeout must be greater than 0, got 0
+--install-retries must be greater than 0, got 0

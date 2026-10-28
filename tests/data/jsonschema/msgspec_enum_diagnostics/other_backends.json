@@ -1,0 +1,32 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "enum": [
+        true,
+        false
+      ]
+    },
+    "always": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    },
+    "never": {
+      "type": "boolean",
+      "enum": [
+        false
+      ]
+    },
+    "amount": {
+      "type": "number",
+      "enum": [
+        1.5,
+        2.5
+      ]
+    }
+  }
+}

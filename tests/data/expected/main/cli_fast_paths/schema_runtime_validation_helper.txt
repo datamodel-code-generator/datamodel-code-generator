@@ -1,0 +1,4 @@
+{
+  "generated_helper": true,
+  "imported_jinja2": false
+}

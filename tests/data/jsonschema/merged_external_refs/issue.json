@@ -1,0 +1,9 @@
+{
+  "definitions": {
+    "a": {"properties": {"q": {}}},
+    "b": {"properties": {"q": {"type": "string"}}}
+  },
+  "properties": {
+    "rules": {"allOf": [{"$ref": "#/definitions/a"}, {"$ref": "#/definitions/b"}, {"$ref": "issue-ext.json"}]}
+  }
+}

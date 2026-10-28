@@ -1,0 +1,54 @@
+{
+  "title": "Record",
+  "description": "Field Optional list metadata",
+  "type": "object",
+  "properties": {
+    "list": {
+      "type": "string",
+      "default": "Field Optional list — 名前"
+    },
+    "list_aliased": {
+      "type": "string"
+    },
+    "list_aliased_1": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "Field": {
+      "type": "string"
+    },
+    "count": {
+      "type": "integer",
+      "description": "Field list"
+    },
+    "choice": {
+      "type": "string",
+      "enum": [
+        "list",
+        "Optional",
+        "Field"
+      ]
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Child": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        },
+        "sibling": {
+          "$ref": "#/$defs/Child"
+        }
+      }
+    }
+  }
+}

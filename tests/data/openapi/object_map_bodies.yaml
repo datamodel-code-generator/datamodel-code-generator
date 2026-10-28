@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Object map bodies
+  version: "1.0"
+paths:
+  /closed-patterns:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              patternProperties:
+                "^a":
+                  type: integer
+              additionalProperties: false
+      responses:
+        "200":
+          description: Keys outside the pattern are open.
+          content:
+            application/json:
+              schema:
+                type: object
+                patternProperties:
+                  "^a":
+                    type: integer
+  /key-names:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              propertyNames:
+                pattern: "^[a-z]+$"
+              additionalProperties:
+                type: string
+      responses:
+        "200":
+          description: The stored names.

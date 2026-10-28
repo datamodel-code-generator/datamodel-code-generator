@@ -1,0 +1,11 @@
+{
+  "valid": {
+    "mode": "a",
+    "a-name": "ok",
+    "p": "parent"
+  },
+  "invalid": {
+    "mode": "a",
+    "p": "parent"
+  }
+}

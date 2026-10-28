@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "DefaultParent": {
+      "properties": {
+        "before": {
+          "default": 10,
+          "title": "Before",
+          "type": "integer"
+        },
+        "value": {
+          "default": 1,
+          "title": "Value",
+          "type": "integer"
+        },
+        "after": {
+          "default": 30,
+          "title": "After",
+          "type": "integer"
+        }
+      },
+      "title": "DefaultParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/DefaultParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "title": "Value",
+      "type": "string"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "TypeChild",
+  "type": "object"
+}

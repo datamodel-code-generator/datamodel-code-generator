@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info: {title: Server variants, version: "1.0"}
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /pets/{id}:
+    get:
+      operationId: getPet
+      parameters:
+        - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/PetId"}}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /owners:
+    get:
+      operationId: listOwners
+      responses:
+        "200":
+          description: The owners.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "server-variants-shared.yaml#/components/schemas/Owner"}
+components:
+  schemas:
+    PetId: {type: integer, minimum: 1}
+    Name: {type: string, minLength: 1}
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {$ref: "#/components/schemas/Name"}
+        secret: {type: string, writeOnly: true}
+        owner: {$ref: "server-variants-shared.yaml#/components/schemas/Owner"}

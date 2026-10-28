@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import Field, RootModel, constr
 
 
 class ImportedCode(RootModel[constr(min_length=5, max_length=5)]):
     root: constr(min_length=5, max_length=5) = Field(..., title='ImportedCode')
 
 
-class Code(BaseModel):
-    pass
+class Code(RootModel[ImportedCode]):
+    root: ImportedCode = Field(..., title='Code')

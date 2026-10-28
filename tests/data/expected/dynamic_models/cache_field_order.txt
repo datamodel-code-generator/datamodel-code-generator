@@ -1,0 +1,80 @@
+{
+  "first_then_second": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Example": true
+    },
+    "cached_followup_model_order": [
+      "Example"
+    ],
+    "uncached_followup_model_order": [
+      "Example"
+    ],
+    "cached_followup_fields": {
+      "Example": [
+        "second",
+        "first"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Example": [
+        "second",
+        "first"
+      ]
+    },
+    "cached_followup_json": {
+      "Example": "{\"second\":2,\"first\":\"alpha\"}"
+    },
+    "uncached_followup_json": {
+      "Example": "{\"second\":2,\"first\":\"alpha\"}"
+    }
+  },
+  "second_then_first": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Example": true
+    },
+    "cached_followup_model_order": [
+      "Example"
+    ],
+    "uncached_followup_model_order": [
+      "Example"
+    ],
+    "cached_followup_fields": {
+      "Example": [
+        "first",
+        "second"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Example": [
+        "first",
+        "second"
+      ]
+    },
+    "cached_followup_json": {
+      "Example": "{\"first\":\"alpha\",\"second\":2}"
+    },
+    "uncached_followup_json": {
+      "Example": "{\"first\":\"alpha\",\"second\":2}"
+    }
+  }
+}

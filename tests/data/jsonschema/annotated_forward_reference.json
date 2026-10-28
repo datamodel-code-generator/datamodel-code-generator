@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tree",
+  "type": "object",
+  "properties": {
+    "treeName": {
+      "type": "string"
+    },
+    "rootNode": {
+      "$ref": "#/definitions/Node",
+      "description": "The first node"
+    },
+    "spare-node": {
+      "$ref": "#/definitions/Node"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Node"
+      },
+      "minItems": 1
+    },
+    "labels": {
+      "$ref": "#/definitions/Labels"
+    },
+    "pick": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Node"
+        }
+      ],
+      "default": {},
+      "title": "Pick"
+    },
+    "spare": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Node"
+        }
+      ],
+      "default": {
+        "nodeValue": 8
+      }
+    },
+    "branches": {
+      "$ref": "#/definitions/Branches"
+    }
+  },
+  "required": [
+    "rootNode"
+  ],
+  "definitions": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "nodeValue": {
+          "type": "integer"
+        },
+        "owner-tree": {
+          "$ref": "#"
+        },
+        "next-node": {
+          "$ref": "#/definitions/Node"
+        },
+        "kind": {
+          "type": "string",
+          "default": "leaf"
+        }
+      }
+    },
+    "Labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "Branches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Twigs"
+      },
+      "minItems": 1,
+      "title": "Branch list"
+    },
+    "Twigs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Branches"
+      }
+    }
+  }
+}

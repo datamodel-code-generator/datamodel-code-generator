@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "closed": {"$ref": "#/$defs/Closed"},
+    "closedBesideRef": {"$ref": "#/$defs/ClosedBesideRef"},
+    "open": {"$ref": "#/$defs/Open"},
+    "member": {"$ref": "#/$defs/Member"}
+  },
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Closed": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"allOf": [false, {"$ref": "#/$defs/Item"}]}
+    },
+    "ClosedBesideRef": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/$defs/Item", "allOf": [false]}
+    },
+    "Open": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/$defs/Item"}
+    },
+    "Member": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "patternProperties": {"^x-": {"type": "string"}},
+      "allOf": [{"additionalProperties": {"$ref": "#/$defs/Item"}}]
+    }
+  }
+}

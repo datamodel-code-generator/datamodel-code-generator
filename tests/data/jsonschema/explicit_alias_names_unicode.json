@@ -1,0 +1,19 @@
+{
+  "title": "AliasNames",
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "#/$defs/Text"
+    },
+    "b": true
+  },
+  "required": [
+    "a",
+    "b"
+  ],
+  "$defs": {
+    "Text": {
+      "type": "string"
+    }
+  }
+}

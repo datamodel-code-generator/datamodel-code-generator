@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: External helper records
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Record:
+      type: object
+      properties:
+        id: {type: string}
+        value: {type: string}

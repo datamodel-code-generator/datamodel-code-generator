@@ -1,0 +1,2 @@
+ConfigDict module: datamodel_code_generator.model.pydantic_v2
+ConfigDict in __all__: False

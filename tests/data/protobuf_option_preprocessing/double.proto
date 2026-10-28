@@ -1,0 +1,7 @@
+syntax = "proto2";
+message Payload {
+  optional string text = 1 [default = "x(y),z"];
+  optional string second = 2 [default = "a]b\\'\""];
+  optional string marker = 3 [default = "option (unknown) = \"x\"; // /* [,"];
+  optional int32 count = 4 [default = 7];
+}

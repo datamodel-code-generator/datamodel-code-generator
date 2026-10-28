@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Independent directional binding regression", "version": "1"},
+  "paths": {
+    "/records": {"post": {
+      "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}},
+      "responses": {"200": {"description": "ok", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}}}
+    }},
+    "/envelopes": {"post": {
+      "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Envelope"}}}},
+      "responses": {"200": {"description": "ok", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Envelope"}}}}}
+    }}
+  },
+  "components": {"schemas": {
+    "Record": {"type": "object", "required": ["id", "secret", "name"], "properties": {
+      "id": {"type": "integer", "readOnly": true},
+      "secret": {"type": "string", "writeOnly": true},
+      "name": {"type": "string"}
+    }},
+    "Envelope": {"type": "object", "required": ["record", "records"], "properties": {
+      "record": {"$ref": "#/components/schemas/Record"},
+      "records": {"type": "array", "items": {"$ref": "#/components/schemas/Record"}}
+    }}
+  }}
+}

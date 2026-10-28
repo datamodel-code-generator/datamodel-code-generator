@@ -1,0 +1,19 @@
+{
+  "title": "BuiltinTarget315Model",
+  "type": "object",
+  "properties": {
+    "frozen": {
+      "type": "object",
+      "x-python-type": "frozendict[str, int]"
+    },
+    "qualified_frozen": {
+      "type": "object",
+      "x-python-type": "builtins.frozendict[str, int]"
+    },
+    "builtins": {
+      "type": "string",
+      "x-python-type": "tuple[sentinel, ImportCycleError]"
+    }
+  },
+  "required": ["frozen", "qualified_frozen", "builtins"]
+}

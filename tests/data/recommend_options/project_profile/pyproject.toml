@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+input-file-type = "openapi"
+profiles.api.input = "api.yaml"
+profiles.api.target-python-version = "3.14"

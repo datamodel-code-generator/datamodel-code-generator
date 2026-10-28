@@ -1,0 +1,22 @@
+[tool.datamodel-codegen]
+input = "retries.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1idempotent/post" = { runtime = { retry_safety = "idempotent" } }
+"/paths/~1keyed/post" = { runtime = { idempotency = { header_name = "Idempotency-Key" } } }
+"/paths/~1key-only/post" = { runtime = { idempotency = { header_name = "Idempotency-Key" } } }
+"/paths/~1never/get" = { runtime = { retry_safety = "never" } }
+"/paths/~1never/post" = { runtime = { retry_safety = "never" } }
+"/paths/~1vendor/get" = { runtime = { retry_after_ms_header = "X-Retry-In-Ms", should_retry_header = "X-Retry-Permitted" } }
+"/paths/~1keyed-safe/get" = { runtime = { idempotency = { header_name = "Idempotency-Key" } } }

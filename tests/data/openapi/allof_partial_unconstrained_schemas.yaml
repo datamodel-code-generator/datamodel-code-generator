@@ -1,0 +1,300 @@
+openapi: "3.1.0"
+info:
+  title: Partial inherited unconstrained schemas
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ScalarValue:
+      type: string
+      minLength: 2
+
+    ScalarArray:
+      type: array
+      minItems: 2
+      items:
+        $ref: "#/components/schemas/ScalarValue"
+
+    ScalarMapping:
+      type: object
+      minProperties: 2
+      additionalProperties:
+        $ref: "#/components/schemas/ScalarValue"
+
+    Item:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 2
+
+    Base:
+      type: object
+      required:
+        - arrayValue
+        - mappingValue
+        - anyEmptyValue
+        - anyTrueValue
+        - oneEmptyValue
+        - oneTrueValue
+        - allEmptyValue
+        - allTrueValue
+        - nullableValue
+        - nullableObjectValue
+        - directScalarValue
+        - directScalarInferred
+        - inlineScalarInferred
+        - scalarArrayInferred
+        - scalarMappingInferred
+        - scalarDeepInferred
+        - scalarArrayRootInferred
+        - scalarMappingRootInferred
+        - arrayNeutralComposition
+        - mappingNeutralComposition
+        - deepArrayNeutralComposition
+        - scalarArrayWeaker
+        - scalarMappingWeaker
+        - scalarDeepWeaker
+        - prefixItemsNeutral
+        - legacyItemsNeutral
+        - unevaluatedItemsNeutral
+        - inlineObjectNeutral
+        - refObjectNeutral
+      properties:
+        arrayValue:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        mappingValue:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Item"
+        anyEmptyValue:
+          $ref: "#/components/schemas/Item"
+        anyTrueValue:
+          $ref: "#/components/schemas/Item"
+        oneEmptyValue:
+          $ref: "#/components/schemas/Item"
+        oneTrueValue:
+          $ref: "#/components/schemas/Item"
+        allEmptyValue:
+          $ref: "#/components/schemas/Item"
+        allTrueValue:
+          $ref: "#/components/schemas/Item"
+        nullableValue:
+          $ref: "#/components/schemas/Item"
+        nullableObjectValue:
+          $ref: "#/components/schemas/Item"
+        directScalarValue:
+          $ref: "#/components/schemas/ScalarValue"
+        directScalarInferred:
+          $ref: "#/components/schemas/ScalarValue"
+        inlineScalarInferred:
+          type: string
+          minLength: 2
+        scalarArrayInferred:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalarValue"
+        scalarMappingInferred:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ScalarValue"
+        scalarDeepInferred:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/ScalarValue"
+        scalarArrayRootInferred:
+          $ref: "#/components/schemas/ScalarArray"
+        scalarMappingRootInferred:
+          $ref: "#/components/schemas/ScalarMapping"
+        arrayNeutralComposition:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        mappingNeutralComposition:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Item"
+        deepArrayNeutralComposition:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/Item"
+        scalarArrayWeaker:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalarValue"
+        scalarMappingWeaker:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ScalarValue"
+        scalarDeepWeaker:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/ScalarValue"
+        prefixItemsNeutral:
+          type: array
+          minItems: 2
+          maxItems: 2
+          prefixItems:
+            - type: string
+              minLength: 2
+            - type: integer
+          items: false
+        legacyItemsNeutral:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            - type: string
+              minLength: 2
+            - type: integer
+          additionalItems: false
+        unevaluatedItemsNeutral:
+          type: array
+          minItems: 2
+          maxItems: 2
+          prefixItems:
+            - type: string
+              minLength: 2
+            - type: integer
+          unevaluatedItems: false
+        inlineObjectNeutral:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              minLength: 2
+        refObjectNeutral:
+          $ref: "#/components/schemas/Item"
+
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            arrayValue:
+              type: array
+              items: true
+            mappingValue:
+              type: object
+              additionalProperties: {}
+            anyEmptyValue:
+              anyOf:
+                - {}
+                - type: "null"
+            anyTrueValue:
+              anyOf:
+                - true
+                - type: "null"
+            oneEmptyValue:
+              oneOf:
+                - {}
+            oneTrueValue:
+              oneOf:
+                - true
+            allEmptyValue:
+              allOf:
+                - {}
+            allTrueValue:
+              allOf:
+                - true
+            nullableValue:
+              nullable: true
+            nullableObjectValue:
+              type: object
+              nullable: true
+            directScalarValue:
+              type: string
+              minLength: 1
+            directScalarInferred:
+              minLength: 1
+            inlineScalarInferred:
+              minLength: 1
+            scalarArrayInferred:
+              items:
+                minLength: 1
+            scalarMappingInferred:
+              additionalProperties:
+                minLength: 1
+            scalarDeepInferred:
+              items:
+                items:
+                  minLength: 1
+            scalarArrayRootInferred:
+              minItems: 1
+            scalarMappingRootInferred:
+              minProperties: 1
+            arrayNeutralComposition:
+              type: array
+              items:
+                allOf:
+                  - true
+            mappingNeutralComposition:
+              type: object
+              additionalProperties:
+                allOf:
+                  - true
+            deepArrayNeutralComposition:
+              type: array
+              items:
+                type: array
+                items:
+                  allOf:
+                    - {}
+            scalarArrayWeaker:
+              type: array
+              items:
+                type: string
+                minLength: 1
+            scalarMappingWeaker:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+            scalarDeepWeaker:
+              type: array
+              items:
+                type: array
+                items:
+                  type: string
+                  minLength: 1
+            prefixItemsNeutral:
+              type: array
+              prefixItems:
+                - {}
+                - true
+                - {}
+              items: true
+            legacyItemsNeutral:
+              type: array
+              items:
+                - {}
+                - true
+                - {}
+              additionalItems: true
+            unevaluatedItemsNeutral:
+              type: array
+              prefixItems:
+                - true
+                - {}
+                - true
+              unevaluatedItems: true
+            inlineObjectNeutral:
+              type: object
+              properties:
+                code: {}
+            refObjectNeutral:
+              type: object
+              properties:
+                code: {}

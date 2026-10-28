@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AliasDefaults",
+  "type": "object",
+  "properties": {
+    "direct_amount": {
+      "$ref": "#/$defs/Amount",
+      "default": "12.34"
+    },
+    "wrapped_amount": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Amount"
+        }
+      ],
+      "default": "56.78"
+    }
+  },
+  "$defs": {
+    "Amount": {
+      "type": "string",
+      "format": "decimal"
+    }
+  }
+}

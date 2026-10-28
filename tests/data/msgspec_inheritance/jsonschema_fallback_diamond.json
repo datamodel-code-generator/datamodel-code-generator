@@ -1,0 +1,67 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Joined"
+    },
+    {
+      "$ref": "#/$defs/Other"
+    }
+  ],
+  "$defs": {
+    "Seed": {
+      "type": "object",
+      "properties": {
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seed"
+      ]
+    },
+    "Left": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Seed"
+        },
+        {
+          "type": "object",
+          "properties": {}
+        }
+      ]
+    },
+    "Right": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Seed"
+        },
+        {
+          "type": "object",
+          "properties": {}
+        }
+      ]
+    },
+    "Joined": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Left"
+        },
+        {
+          "$ref": "#/$defs/Right"
+        }
+      ]
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "other": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "other"
+      ]
+    }
+  }
+}

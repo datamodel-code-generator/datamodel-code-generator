@@ -1,0 +1,7 @@
+{
+  "title": "Example",
+  "type": "object",
+  "properties": {
+    "trigger": {"type": "string"}
+  }
+}

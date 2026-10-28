@@ -1,0 +1,12 @@
+[
+  {
+    "roots": 128,
+    "dependencies": 128,
+    "missing_overflow": true
+  },
+  {
+    "roots": 1,
+    "dependencies": 1,
+    "missing_overflow": false
+  }
+]

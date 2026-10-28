@@ -1,0 +1,107 @@
+[
+  {
+    "root": 0,
+    "fields": [
+      "data0"
+    ],
+    "dump": {
+      "data0": {
+        "inner": {
+          "text": "ok",
+          "number": 3,
+          "wire-name": "on-wire"
+        }
+      }
+    },
+    "nested": [
+      {
+        "origin": "schema_0.outer",
+        "name": "Outer",
+        "identity": true,
+        "fields": [
+          "inner"
+        ]
+      },
+      {
+        "origin": "shared",
+        "name": "Inner",
+        "identity": true,
+        "fields": [
+          "text",
+          "number",
+          "wire_name"
+        ]
+      }
+    ]
+  },
+  {
+    "root": 1,
+    "fields": [
+      "data1"
+    ],
+    "dump": {
+      "data1": {
+        "inner": {
+          "text": "ok",
+          "number": 3,
+          "wire-name": "on-wire"
+        }
+      }
+    },
+    "nested": [
+      {
+        "origin": "schema_1.outer",
+        "name": "Outer",
+        "identity": true,
+        "fields": [
+          "inner"
+        ]
+      },
+      {
+        "origin": "shared",
+        "name": "Inner",
+        "identity": true,
+        "fields": [
+          "text",
+          "number",
+          "wire_name"
+        ]
+      }
+    ]
+  },
+  {
+    "root": 2,
+    "fields": [
+      "data2"
+    ],
+    "dump": {
+      "data2": {
+        "inner": {
+          "text": "ok",
+          "number": 3,
+          "wire-name": "on-wire"
+        }
+      }
+    },
+    "nested": [
+      {
+        "origin": "schema_2.outer",
+        "name": "Outer",
+        "identity": true,
+        "fields": [
+          "inner"
+        ]
+      },
+      {
+        "origin": "shared",
+        "name": "Inner",
+        "identity": true,
+        "fields": [
+          "text",
+          "number",
+          "wire_name"
+        ]
+      }
+    ]
+  }
+]

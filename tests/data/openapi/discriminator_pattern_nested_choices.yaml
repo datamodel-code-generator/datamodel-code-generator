@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info: {title: discriminator with pattern in nested choices, version: "1"}
+paths: {}
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        type: {type: string, const: a, pattern: '^[a-d]$'}
+      required: [type]
+    B:
+      type: object
+      properties:
+        type: {type: string, const: b, pattern: '^[a-d]$'}
+      required: [type]
+    C:
+      type: object
+      properties:
+        type: {type: string, const: c, pattern: '^[a-d]$'}
+      required: [type]
+    DBase:
+      type: object
+      properties:
+        type: {type: string, const: d, pattern: '^[a-d]$'}
+      required: [type]
+    D:
+      allOf:
+        - $ref: '#/components/schemas/DBase'
+        - type: object
+          properties:
+            x: {type: string}
+    Inner:
+      oneOf: [{$ref: '#/components/schemas/B'}, {$ref: '#/components/schemas/D'}]
+    Outer:
+      type: object
+      properties:
+        v:
+          oneOf: [{$ref: '#/components/schemas/A'}, {$ref: '#/components/schemas/Inner'}]
+          discriminator: {propertyName: type}
+        w:
+          oneOf:
+            - $ref: '#/components/schemas/A'
+            - oneOf: [{$ref: '#/components/schemas/B'}, {$ref: '#/components/schemas/C'}]
+          discriminator: {propertyName: type}

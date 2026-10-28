@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: Field names
+  version: "1"
+paths:
+  /camels:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Camel"
+      responses:
+        "200":
+          description: The stored camel.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Camel"
+  /kebabs:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Kebab"
+      responses:
+        "200":
+          description: The stored kebab.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kebab"
+components:
+  schemas:
+    Camel:
+      type: object
+      required: [petName]
+      properties:
+        petName:
+          type: string
+        age:
+          type: integer
+    Kebab:
+      type: object
+      required: [pet-name]
+      properties:
+        pet-name:
+          type: string
+        age:
+          type: integer

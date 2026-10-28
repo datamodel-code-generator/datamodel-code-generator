@@ -1,3 +1,5 @@
+<!-- related-cli-options: --use-type-alias, --use-type-alias-type, --target-python-version -->
+
 # 📦 Root Models and Type Aliases
 
 When a schema defines a simple type (not an object with properties), `datamodel-code-generator` creates a root model. If you don't want to introduce a new level of attribute access (`.root`) or want to use generated types as plain Python types in non-Pydantic code, you can use the `--use-type-alias` flag to generate type aliases instead of root models.
@@ -9,6 +11,34 @@ When a schema defines a simple type (not an object with properties), `datamodel-
 - 📌 RootModel and type aliases do not fully support field-specific metadata (default, alias, etc). See [Named Type Aliases](https://docs.pydantic.dev/latest/concepts/types/#named-type-aliases) for details.
 - 🚫 Type aliases do not support some RootModel features (e.g. `model_config`)
 - 📄 A RootModel or type alias is also generated for the main schema, allowing you to define a single type alias from a schema file (e.g. `model.json` containing `{"title": "MyString", "type": "string"}`)
+- 🧩 Pydantic v2 type aliases express constraints as `Annotated[int, Field(ge=1)]` instead of `conint(ge=1)`, because mypy and Pyright reject call expressions in type aliases. A `Decimal` `multipleOf` uses `annotated_types.MultipleOf`, because `Field` types `multiple_of` as a float. Validation, serialization, and JSON schema stay the same, except that on Pydantic 2.0.x a string alias with `minLength: 0` now keeps `minLength: 0` in its JSON schema.
+- 🔤 Pydantic v2 type aliases (`--use-type-alias` and `pydantic_v2.dataclass` output) cannot select Python's regex engine through `model_config`, so patterns that need it, such as lookaround assertions, are generated as compiled `re.compile(...)` patterns. These aliases require **Pydantic 2.8 or later in the environment that runs the generated code**, because [Pydantic 2.8 added support for compiled patterns](https://pydantic.dev/articles/pydantic-v2-8-release#respect-regex-flags-in-constrained-string-validation). With `--target-pydantic-version 2` these patterns stay strings and every generated model that reaches the alias, directly or through other models, sets `regex_engine="python-re"`, which works from Pydantic 2.5; hand-written models that embed generated ones must set it themselves, and an alias validated on its own then needs `TypeAdapter(Alias, config=ConfigDict(regex_engine="python-re"))`. See [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version).
+
+When `--use-root-model-type-alias` is enabled, roots with field constraints or
+patterns that require Python regex configuration use a regular `RootModel` class
+to preserve validation. Unconstrained roots and constraints already represented
+in the alias type keep the alias form. This does not change `--use-type-alias`.
+An existing custom `pydantic_v2/RootModelTypeAlias.jinja2` remains selected;
+that template is responsible for preserving its root constraints.
+
+## API scope parameters
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, OpenAPI path, query, header, and cookie parameter schemas that would be root models
+    are always generated as type aliases, exactly as `--use-type-alias` emits them, whatever the output model type
+    and options; 0.83.0 generated root models for them. Object parameters stay models, and component schemas keep
+    their usual root models. See
+    [OpenAPI Options: Generate all API declarations](openapi-options.md#generate-all-api-declarations).
+
+## API scope references
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, a `$ref` beside only annotations such as `description`, `title`, `examples`, or
+    `x-` extensions is the referenced model itself, so a parameter, body, or response that refers to a `RootModel`
+    component is that `RootModel` rather than a second one wrapping it. Siblings that change the values, or
+    `nullable: true`, still give a derived model. See
+    [OpenAPI Options: Generate all API declarations](openapi-options.md#generate-all-api-declarations).
+
 ## 📊 Type Alias Behavior by Output Type and Python Version
 
 The type of type alias generated depends on the output model type and target Python version:
@@ -20,10 +50,16 @@ The type of type alias generated depends on the output model type and target Pyt
 | **dataclasses** | `type` statement | `TypeAlias` |
 | **msgspec** | `type` statement | `TypeAlias` |
 
+Use `--use-type-alias-type` to force `TypeAliasType` for TypedDict,
+dataclass, and msgspec output targeting Python 3.10 or 3.11. This option
+implies `--use-type-alias`, so the two flags do not need to be combined.
+Python 3.12 and newer still use the native `type` statement.
+
 ### 🤔 Why the difference?
 
 - **Pydantic v2** requires `TypeAliasType` because it cannot properly handle `TypeAlias` annotations
 - **Other output types** (TypedDict, dataclasses, msgspec) use `TypeAlias` for better compatibility with libraries that may not expect `TypeAliasType` objects
+- **`--use-type-alias-type`** opts into runtime `TypeAliasType` objects for those output types on Python 3.10-3.11
 - **Python 3.12+** uses the native `type` statement for all output types
 
 ## 📝 Example
@@ -129,4 +165,5 @@ class User(BaseModel):
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--use-type-alias`](cli-reference/typing-customization.md#use-type-alias) - Detailed CLI option documentation
+- 🖥️ [CLI Reference: `--use-type-alias-type`](cli-reference/typing-customization.md#use-type-alias-type) - Force runtime type alias objects before Python 3.12
 - 🎯 [CLI Reference: `--target-python-version`](cli-reference/model-customization.md#target-python-version) - Control Python version-specific syntax

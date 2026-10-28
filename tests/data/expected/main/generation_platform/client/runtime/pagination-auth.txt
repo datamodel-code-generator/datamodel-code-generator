@@ -1,0 +1,13 @@
+# pagination pydantic_v2.BaseModel
+  > GET https://api.example.com/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
+  > GET https://api.example.com/secure/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
+  pages share one token ['1', '2']
+    progress {'pages': 2, 'items': 2} token sends=1
+  > GET https://api.example.com/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
+  > GET https://api.example.com/secure/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
+  async pages share one token ['1', '2']
+    progress {'pages': 2, 'items': 2} token sends=1

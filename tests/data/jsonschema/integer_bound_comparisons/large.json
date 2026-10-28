@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegerBounds",
+  "type": "object",
+  "properties": {
+    "positiveMinimum": {
+      "$ref": "#/$defs/PositiveMinimum"
+    },
+    "positiveMinimumReversed": {
+      "$ref": "#/$defs/PositiveMinimumReversed"
+    },
+    "positiveMaximum": {
+      "$ref": "#/$defs/PositiveMaximum"
+    },
+    "positiveMaximumReversed": {
+      "$ref": "#/$defs/PositiveMaximumReversed"
+    },
+    "negativeMinimum": {
+      "$ref": "#/$defs/NegativeMinimum"
+    },
+    "negativeMinimumReversed": {
+      "$ref": "#/$defs/NegativeMinimumReversed"
+    },
+    "negativeMaximum": {
+      "$ref": "#/$defs/NegativeMaximum"
+    },
+    "negativeMaximumReversed": {
+      "$ref": "#/$defs/NegativeMaximumReversed"
+    },
+    "mixedMinimum": {
+      "$ref": "#/$defs/MixedMinimum"
+    },
+    "mixedMaximum": {
+      "$ref": "#/$defs/MixedMaximum"
+    },
+    "belowExactLimit": {
+      "$ref": "#/$defs/BelowExactLimit"
+    }
+  },
+  "$defs": {
+    "PositiveMinimumBase": {
+      "type": "integer",
+      "minimum": 9007199254740992
+    },
+    "PositiveMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositiveMinimumBase"
+        },
+        {
+          "type": "integer",
+          "minimum": 9007199254740993
+        },
+        {
+          "type": "integer",
+          "minimum": 9007199254740992
+        }
+      ]
+    },
+    "PositiveMinimumReversedBase": {
+      "type": "integer",
+      "minimum": 9007199254740993
+    },
+    "PositiveMinimumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositiveMinimumReversedBase"
+        },
+        {
+          "type": "integer",
+          "minimum": 9007199254740992
+        }
+      ]
+    },
+    "PositiveMaximumBase": {
+      "type": "integer",
+      "maximum": 9007199254740993
+    },
+    "PositiveMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositiveMaximumBase"
+        },
+        {
+          "type": "integer",
+          "maximum": 9007199254740992
+        },
+        {
+          "type": "integer",
+          "maximum": 9007199254740993
+        }
+      ]
+    },
+    "PositiveMaximumReversedBase": {
+      "type": "integer",
+      "maximum": 9007199254740992
+    },
+    "PositiveMaximumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositiveMaximumReversedBase"
+        },
+        {
+          "type": "integer",
+          "maximum": 9007199254740993
+        }
+      ]
+    },
+    "NegativeMinimumBase": {
+      "type": "integer",
+      "minimum": -9007199254740993
+    },
+    "NegativeMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/NegativeMinimumBase"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740992
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740993
+        }
+      ]
+    },
+    "NegativeMinimumReversedBase": {
+      "type": "integer",
+      "minimum": -9007199254740992
+    },
+    "NegativeMinimumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/NegativeMinimumReversedBase"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740993
+        }
+      ]
+    },
+    "NegativeMaximumBase": {
+      "type": "integer",
+      "maximum": -9007199254740992
+    },
+    "NegativeMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/NegativeMaximumBase"
+        },
+        {
+          "type": "integer",
+          "maximum": -9007199254740993
+        },
+        {
+          "type": "integer",
+          "maximum": -9007199254740992
+        }
+      ]
+    },
+    "NegativeMaximumReversedBase": {
+      "type": "integer",
+      "maximum": -9007199254740993
+    },
+    "NegativeMaximumReversed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/NegativeMaximumReversedBase"
+        },
+        {
+          "type": "integer",
+          "maximum": -9007199254740992
+        }
+      ]
+    },
+    "MixedMinimumBase": {
+      "type": "integer",
+      "minimum": 9007199254740992.0
+    },
+    "MixedMinimum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixedMinimumBase"
+        },
+        {
+          "type": "number",
+          "minimum": 9007199254740993
+        },
+        {
+          "type": "number",
+          "minimum": 9007199254740992.0
+        }
+      ]
+    },
+    "MixedMaximumBase": {
+      "type": "integer",
+      "maximum": -9007199254740992.0
+    },
+    "MixedMaximum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MixedMaximumBase"
+        },
+        {
+          "type": "number",
+          "maximum": -9007199254740993
+        },
+        {
+          "type": "number",
+          "maximum": -9007199254740992.0
+        }
+      ]
+    },
+    "BelowExactLimitBase": {
+      "type": "integer",
+      "minimum": 9007199254740990
+    },
+    "BelowExactLimit": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BelowExactLimitBase"
+        },
+        {
+          "type": "integer",
+          "minimum": 9007199254740991
+        }
+      ]
+    }
+  }
+}

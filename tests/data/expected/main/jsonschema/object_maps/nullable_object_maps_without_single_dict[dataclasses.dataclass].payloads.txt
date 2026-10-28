@@ -1,0 +1,7 @@
+valid: rejected (dict_type)
+invalid patternItems: rejected (dict_type)
+invalid values: rejected (int_parsing)
+invalid combined: rejected (dict_type)
+invalid branchNullable: rejected (dict_type)
+invalid combinedRoot: rejected (dict_type)
+invalid valueRootItems: rejected (dict_type)

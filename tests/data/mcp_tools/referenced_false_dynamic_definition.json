@@ -1,0 +1,14 @@
+{
+  "name": "denied",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "denied": {
+        "$dynamicRef": "#/$defs/Denied"
+      }
+    },
+    "$defs": {
+      "Denied": false
+    }
+  }
+}

@@ -1,0 +1,75 @@
+[
+  {
+    "name": "AnnotatedRepeatedRoot",
+    "fields": [
+      "first",
+      "second"
+    ],
+    "annotations_equal": {
+      "first": true,
+      "second": true
+    },
+    "type_identity": {
+      "first": true,
+      "second": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "first": {
+            "value": 4
+          },
+          "second": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "second",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": {
+            "value": 4
+          },
+          "second": {
+            "value": 4
+          }
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "second",
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "first": true,
+      "second": true
+    }
+  }
+]

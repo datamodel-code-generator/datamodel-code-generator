@@ -1,0 +1,51 @@
+{
+  "values": [
+    {
+      "native": true,
+      "json": {},
+      "python": {}
+    },
+    {
+      "native": true,
+      "json": {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      "python": {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      }
+    },
+    {
+      "native": false,
+      "json": {
+        "x": {
+          "a": 1
+        }
+      },
+      "python": {
+        "x": {
+          "a": 1
+        }
+      }
+    },
+    {
+      "native": false,
+      "json": {
+        "x": {
+          "b": 2
+        }
+      },
+      "python": {
+        "x": {
+          "b": 2
+        }
+      }
+    }
+  ],
+  "metadata": {}
+}

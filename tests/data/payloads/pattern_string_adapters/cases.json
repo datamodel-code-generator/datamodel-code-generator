@@ -1,0 +1,170 @@
+[
+  {
+    "name": "direct",
+    "options": {},
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "inherited",
+    "options": {},
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "minimum",
+    "options": {},
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "maximum",
+    "options": {},
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "empty_only",
+    "options": {},
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "unconstrained",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "vacuous",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "impossible",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "titled",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "override",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "constraints_off",
+    "source": "direct",
+    "options": {
+      "field_constraints": false
+    },
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "validators_off",
+    "source": "direct",
+    "options": {
+      "generate_schema_validators": false
+    },
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "force_optional",
+    "source": "direct",
+    "options": {
+      "force_optional_for_required_fields": true
+    },
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "force_defaults",
+    "source": "direct",
+    "options": {
+      "apply_default_values_for_required_fields": true
+    },
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "strip_defaults",
+    "source": "direct",
+    "options": {
+      "strip_default_none": true
+    },
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "annotated",
+    "source": "direct",
+    "options": {
+      "use_annotated": true
+    },
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "strict",
+    "source": "direct",
+    "options": {
+      "strict_types": [
+        "str"
+      ]
+    },
+    "changed": true,
+    "custom": false
+  },
+  {
+    "name": "unreachable",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "unreachable_item",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "declared",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "suffix",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "boolean",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "ordinary",
+    "options": {},
+    "changed": false,
+    "custom": false
+  },
+  {
+    "name": "custom",
+    "source": "direct",
+    "options": {},
+    "changed": false,
+    "custom": true
+  }
+]

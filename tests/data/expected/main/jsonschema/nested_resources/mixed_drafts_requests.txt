@@ -1,0 +1,5 @@
+[
+  "/root.json",
+  "/legacy.json",
+  "/modern.json"
+]

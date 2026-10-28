@@ -1,0 +1,233 @@
+{
+  "integer_null": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "null_integer": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "null_number": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "number_null": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "outside_field": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "outside_null": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "outside_root": {
+    "empty_strategy": true,
+    "classification": "allOf has no schema-valid payload strategy",
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "integer_number": {
+    "empty_strategy": false,
+    "classification": null,
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "number_integer": {
+    "empty_strategy": false,
+    "classification": null,
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "nullable_integer_first": {
+    "empty_strategy": false,
+    "classification": null,
+    "source_acceptance": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "ordinary": {
+    "empty_strategy": false,
+    "classification": null,
+    "source_acceptance": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  }
+}

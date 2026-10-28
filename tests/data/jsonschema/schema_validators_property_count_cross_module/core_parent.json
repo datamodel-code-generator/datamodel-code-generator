@@ -1,0 +1,14 @@
+{
+  "title": "CoreParent",
+  "type": "object",
+  "properties": {
+    "base": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^extra_": {
+      "type": "integer"
+    }
+  }
+}

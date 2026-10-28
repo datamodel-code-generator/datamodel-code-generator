@@ -1,0 +1,6 @@
+{
+  "file_d.json": 1,
+  "file_b.json": 1,
+  "file_a.json": 1,
+  "file_c.json": 1
+}

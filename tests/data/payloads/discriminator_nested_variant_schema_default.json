@@ -1,0 +1,6 @@
+{
+  "DefaultedPets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}, {"pet": {"type": "bird"}}],
+    "invalid": [{"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  }
+}

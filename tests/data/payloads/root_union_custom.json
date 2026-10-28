@@ -1,0 +1,41 @@
+{
+  "members": [
+    "WriteOps",
+    "Other",
+    "RootOps",
+    "EventOps"
+  ],
+  "roots": [
+    "RootOps",
+    "WriteOps",
+    "EventOps"
+  ],
+  "query": "{ choice { __typename ... on Other { value } ... on WriteOps { value self { value } } ... on RootOps { value self { value } } ... on EventOps { value self { value } } } }",
+  "samples": [
+    {
+      "__typename": "WriteOps",
+      "value": "writeops",
+      "self": {
+        "value": "nested"
+      }
+    },
+    {
+      "__typename": "Other",
+      "value": "ok"
+    },
+    {
+      "__typename": "RootOps",
+      "value": "rootops",
+      "self": {
+        "value": "nested"
+      }
+    },
+    {
+      "__typename": "EventOps",
+      "value": "eventops",
+      "self": {
+        "value": "nested"
+      }
+    }
+  ]
+}

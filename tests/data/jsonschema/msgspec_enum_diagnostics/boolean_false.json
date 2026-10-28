@@ -1,0 +1,20 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "$defs": {
+    "Flag": {
+      "type": "boolean",
+      "enum": [
+        false
+      ]
+    }
+  },
+  "properties": {
+    "flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Flag"
+      }
+    }
+  }
+}

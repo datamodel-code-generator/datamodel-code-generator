@@ -1,0 +1,22 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "shared": {
+      "title": "Shared"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "shared",
+    "last"
+  ],
+  "title": "SkippedCallable",
+  "type": "object"
+}

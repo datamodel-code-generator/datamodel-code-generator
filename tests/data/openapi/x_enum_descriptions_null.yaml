@@ -1,0 +1,24 @@
+openapi: 3.0.1
+info:
+  title: Test nullable x-enum-descriptions
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    TrafficLightColor:
+      type: string
+      x-enumNames:
+        - Unknown
+        - Red
+        - Yellow
+        - Green
+      x-enum-descriptions:
+        - null
+        - Red
+        - Yellow
+        - Green
+      enum:
+        - Unknown
+        - Red
+        - Yellow
+        - Green

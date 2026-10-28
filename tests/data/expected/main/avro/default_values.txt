@@ -1,0 +1,9 @@
+nullDefault: NoneType = None
+booleanDefault: bool = False
+bytesDefault: bytes = b'\xff'
+recordDefault: DefaultRecord = DefaultRecord(value=1)
+enumDefault: str = 'FOO'
+arrayDefault: list = [1]
+mapDefault: dict = {'a': 1}
+fixedDefault: DefaultFixed = DefaultFixed(root=b'\xff')
+nullableAfterValue: str = 'value'

@@ -1,0 +1,24 @@
+{
+  "title": "NotRequired",
+  "type": "object",
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "not": {
+    "required": [
+      "rules",
+      "signals"
+    ]
+  }
+}

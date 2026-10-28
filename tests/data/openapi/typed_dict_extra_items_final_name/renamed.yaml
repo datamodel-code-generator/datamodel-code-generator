@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Foo:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: {$ref: 'renamed_external.yaml#/components/schemas/Bar'}
+    Bar:
+      type: object
+      properties:
+        local: {type: string}

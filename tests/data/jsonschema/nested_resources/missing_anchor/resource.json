@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "resource.json",
+  "$anchor": "missing",
+  "type": "object",
+  "properties": {
+    "outside": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "outside"
+  ]
+}

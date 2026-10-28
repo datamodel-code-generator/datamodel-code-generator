@@ -1,0 +1,62 @@
+{
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Parent"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "a-name": {
+          "type": "string"
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "a"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "a-name"
+        ]
+      },
+      "else": {
+        "required": [
+          "b"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "uniqueItems": true
+    }
+  }
+}

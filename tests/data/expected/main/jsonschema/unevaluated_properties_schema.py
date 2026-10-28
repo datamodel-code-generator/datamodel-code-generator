@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Dict
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -11,4 +13,7 @@ class Resource(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, str],
+    }
     name: str

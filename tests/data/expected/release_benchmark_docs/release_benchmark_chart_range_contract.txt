@@ -1,0 +1,76 @@
+main snapshot input: 2026-09-04T12:00:00Z
+generated chart host: True
+node chart model:
+{
+  "defaultRange": "10",
+  "rangeOptions": [
+    "10",
+    "25",
+    "all"
+  ],
+  "latest10": {
+    "firstRelease": "0.66.0",
+    "lastRelease": "0.75.0",
+    "timingEntries": 11,
+    "detachedMainEntries": 1,
+    "hasMainTiming": true,
+    "yMax": 144.9
+  },
+  "latest25": {
+    "firstRelease": "0.51.0",
+    "lastRelease": "0.75.0",
+    "timingEntries": 26,
+    "detachedMainEntries": 1,
+    "hasMainTiming": true,
+    "yMax": 144.9
+  },
+  "all": {
+    "firstRelease": "0.50.0",
+    "lastRelease": "0.75.0",
+    "timingEntries": 27,
+    "detachedMainEntries": 1,
+    "hasMainTiming": true,
+    "yMax": 11500
+  },
+  "smallWidth": {
+    "left": 247,
+    "right": 312,
+    "plotRight": 187
+  },
+  "noMainPanel": null,
+  "failedMain": {
+    "cappedRange": {
+      "firstRelease": "0.1.0",
+      "lastRelease": "0.2.0",
+      "timingEntries": 2,
+      "detachedMainEntries": 1,
+      "hasMainTiming": false,
+      "yMax": 46
+    },
+    "invalidRange": {
+      "firstRelease": "0.1.0",
+      "lastRelease": "0.2.0",
+      "timingEntries": 2,
+      "detachedMainEntries": 1,
+      "hasMainTiming": false,
+      "yMax": 46
+    },
+    "status": "Main measured 2026-09-05 01:02 UTC · abcdef012345 · no successful timing"
+  },
+  "emptyTimings": {
+    "selection": {
+      "firstRelease": "0.3.0",
+      "lastRelease": "0.3.0",
+      "timingEntries": 0,
+      "detachedMainEntries": 1,
+      "hasMainTiming": false,
+      "yMax": 1
+    },
+    "noSnapshotStatus": "No main snapshot in this scenario"
+  }
+}
+main timestamp: True
+canvas clears before empty status: True
+main split: True
+range fast path: True
+range controls style: True

@@ -1,0 +1,3 @@
+# binary-mapped
+render pydantic_v2.BaseModel
+  Error: /components/schemas/Record/properties/secret: The application/json request body of POST /records carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part; /paths/~1digests/post/requestBody/content/text~1plain/schema/anyOf/1: The text/plain request body of POST /digests carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part

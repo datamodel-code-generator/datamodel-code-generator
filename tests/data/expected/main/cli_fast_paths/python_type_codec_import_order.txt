@@ -1,0 +1,5 @@
+{
+  "same_expression": true,
+  "same_parser": true,
+  "value": "tuple[str, int]"
+}

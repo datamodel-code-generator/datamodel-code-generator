@@ -1,0 +1,30 @@
+# pets-protocols pydantic_v2.BaseModel
+  ConfigurationError: base=SDKError reason=binding_mismatch
+    fields=attempt_count,cause,elapsed,field_path,helper_id,info,operation_id,reason
+    context=True/True retained=True
+    str=ConfigurationError(operation_id='webhook', reason='binding_mismatch', field_path='private-webhook-marker') secret=True
+  ProtocolDataError: base=SDKError reason=malformed
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='malformed') secret=False
+  ProtocolDataError: base=SDKError reason=too_large
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='too_large') secret=False
+  ProtocolDataError: base=SDKError reason=malformed_signature
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='malformed_signature') secret=False
+  ProtocolDataError: base=SDKError reason=invalid_signature
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='invalid_signature') secret=False
+  ProtocolDataError: base=SDKError reason=missing_key
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='missing_key') secret=False
+  ProtocolDataError: base=SDKError reason=timestamp_window
+    fields=attempt_count,cause,data,elapsed,helper_id,info,location,operation,operation_id,reason
+    context=True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', reason='timestamp_window') secret=False
+  copied configuration path: True

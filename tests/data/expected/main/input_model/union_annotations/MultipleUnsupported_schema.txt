@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "object",
+          "x-python-type": "tests.data.python.input_model.union_annotations.CustomValue"
+        },
+        {
+          "type": "string",
+          "x-python-type": "Callable[[int], int]"
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "MultipleUnsupported",
+  "type": "object"
+}

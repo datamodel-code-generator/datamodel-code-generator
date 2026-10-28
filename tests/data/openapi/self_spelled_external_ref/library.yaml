@@ -1,0 +1,22 @@
+openapi: 3.2.0
+$self: https://library.example.com/v2/library.yaml
+info:
+  title: Library
+  version: '1'
+paths: {}
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        $ref: 'https://library.example.com/v2/library.yaml#/components/schemas/Page'
+  schemas:
+    Page:
+      type: integer
+      minimum: 1
+    Listing:
+      type: object
+      properties:
+        page:
+          $ref: 'https://library.example.com/v2/library.yaml#/components/schemas/Page'

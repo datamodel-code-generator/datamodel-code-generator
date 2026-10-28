@@ -1,0 +1,7 @@
+{
+  "formats": ["--use-pendulum"],
+  "type-aliases": ["--use-pendulum", "--use-type-alias", "--target-python-version", "3.12"],
+  "additional-imports": ["--additional-imports", "pendulum.DateTime"],
+  "additional-modules": ["--additional-imports", "pendulum"],
+  "header-text": ["--custom-file-header", "\"\"\"Contacts.\n\nimport pendulum\nfrom ulid import ULID\n\"\"\""]
+}

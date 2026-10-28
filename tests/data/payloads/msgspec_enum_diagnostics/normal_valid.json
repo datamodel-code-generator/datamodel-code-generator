@@ -1,0 +1,13 @@
+[
+  {},
+  {
+    "status": "ready",
+    "level": 2,
+    "enabled": true
+  },
+  {
+    "status": "waiting",
+    "level": 1,
+    "enabled": false
+  }
+]

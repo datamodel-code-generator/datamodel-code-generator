@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "type": "string",
+      "pattern": "ba"
+    }
+  ],
+  "definitions": {
+    "Base": {
+      "type": "string",
+      "pattern": "a"
+    }
+  }
+}

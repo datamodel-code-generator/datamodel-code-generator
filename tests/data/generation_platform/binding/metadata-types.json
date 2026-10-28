@@ -1,0 +1,74 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Metadata types",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "a"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "B": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "b"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/A"
+              },
+              {
+                "$ref": "#/components/schemas/B"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind"
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/A"
+                },
+                {
+                  "$ref": "#/components/schemas/B"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind"
+              }
+            }
+          }
+        },
+        "required": [
+          "value",
+          "values"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+valid: accepted
+invalid count: rejected (greater_than_equal)
+invalid counts: rejected (greater_than_equal)
+invalid counts: rejected (int_parsing)
+invalid tallies: rejected (greater_than_equal)
+invalid tallies: rejected (int_parsing)

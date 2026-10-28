@@ -1,0 +1,9 @@
+exit=0
+identical: person.json | pydantic_v2.BaseModel | --base-class=missing_compare_release_module.Base: [import fails on both sides: ModuleNotFoundError: No module named 'missing_compare_release_module']
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+
+exit=0
+identical: person.json | pydantic_v2.BaseModel | --base-class=missing_compare_release_module.Base: [import fails on both sides: ModuleNotFoundError: No module named 'missing_compare_release_module']
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 1 of 1

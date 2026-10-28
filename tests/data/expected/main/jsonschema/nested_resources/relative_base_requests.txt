@@ -1,0 +1,5 @@
+[
+  "/root.json",
+  "/defs/child.json",
+  "/defs/dep.json"
+]

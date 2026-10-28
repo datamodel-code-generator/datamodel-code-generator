@@ -1,0 +1,3 @@
+{%- for field in fields if field.name in ('pos_inf', 'neg_inf', 'not_a_number', 'positive', 'positiveXsd11', 'negative', 'notNumber', 'limit', 'values') %}
+{{ field.name | upper }} = {{ field.default }}
+{%- endfor %}

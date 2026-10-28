@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: Maps and arrays that admit nothing
+  version: '1.0'
+paths:
+  /maps:
+    put:
+      operationId: putMap
+      parameters:
+      - name: ids
+        in: query
+        schema:
+          type: array
+          items: false
+      - name: filter
+        in: query
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: false
+components:
+  schemas:
+    Empty:
+      type: object
+      additionalProperties: false
+    Nothing:
+      type: array
+      items: false
+    Holder:
+      type: object
+      properties:
+        m:
+          type: object
+          additionalProperties: false
+        l:
+          type: array
+          items: false

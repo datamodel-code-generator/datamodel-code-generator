@@ -1,0 +1,55 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Synthetic origins",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "required": [
+          "undeclared"
+        ],
+        "properties": {
+          "normal": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      },
+      "Dictionary": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "Choice": {
+        "oneOf": [
+          {
+            "const": "first"
+          },
+          {
+            "const": "second"
+          }
+        ]
+      },
+      "Required": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Payload"
+          },
+          {
+            "type": "object",
+            "required": [
+              "undeclared"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

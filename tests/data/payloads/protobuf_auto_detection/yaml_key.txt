@@ -1,0 +1,5 @@
+syntax = "proto3"; : value
+type: object
+properties:
+  value:
+    type: string

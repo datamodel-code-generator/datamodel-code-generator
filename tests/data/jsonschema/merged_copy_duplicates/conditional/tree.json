@@ -1,0 +1,5 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "$recursiveAnchor": true, "title": "Tree", "type": "object",
+ "properties": {"value": {"type": "integer"},
+   "node": {"$id": "node.json", "title": "Node", "type": "object", "properties": {"kids": {"type": "array", "items": {"$recursiveRef": "#"}}}},
+   "branch": {"$id": "branch.json", "$recursiveAnchor": true, "title": "Branch", "type": "object", "properties": {"children": {"type": "array", "items": {"$recursiveRef": "#"}}}}},
+ "if": {"required": ["value"]}, "then": {"properties": {"label": {"type": "string"}}}}

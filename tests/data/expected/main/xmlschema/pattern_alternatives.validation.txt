@@ -1,0 +1,312 @@
+[
+  {
+    "field": "token",
+    "value": "ABC",
+    "valid": true
+  },
+  {
+    "field": "token",
+    "value": "123",
+    "valid": true
+  },
+  {
+    "field": "token",
+    "value": "abc",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "A1",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "aABC",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "123a",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "ABC\n",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "\nABC",
+    "valid": false
+  },
+  {
+    "field": "token",
+    "value": "",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "ABC",
+    "valid": true
+  },
+  {
+    "field": "reversed",
+    "value": "123",
+    "valid": true
+  },
+  {
+    "field": "reversed",
+    "value": "abc",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "A1",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "aABC",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "123a",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "ABC\n",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "\nABC",
+    "valid": false
+  },
+  {
+    "field": "reversed",
+    "value": "",
+    "valid": false
+  },
+  {
+    "field": "branches",
+    "value": "ab",
+    "valid": true
+  },
+  {
+    "field": "branches",
+    "value": "cd",
+    "valid": true
+  },
+  {
+    "field": "branches",
+    "value": "xy",
+    "valid": true
+  },
+  {
+    "field": "branches",
+    "value": "12",
+    "valid": true
+  },
+  {
+    "field": "branches",
+    "value": "abxy",
+    "valid": false
+  },
+  {
+    "field": "branches",
+    "value": "a",
+    "valid": false
+  },
+  {
+    "field": "branches",
+    "value": "123",
+    "valid": false
+  },
+  {
+    "field": "branches",
+    "value": "xy\n",
+    "valid": false
+  },
+  {
+    "field": "derived",
+    "value": "ABC",
+    "valid": true
+  },
+  {
+    "field": "derived",
+    "value": "345",
+    "valid": true
+  },
+  {
+    "field": "derived",
+    "value": "XYZ",
+    "valid": false
+  },
+  {
+    "field": "derived",
+    "value": "012",
+    "valid": false
+  },
+  {
+    "field": "derived",
+    "value": "A3",
+    "valid": false
+  },
+  {
+    "field": "derived",
+    "value": "ABC\n",
+    "valid": false
+  },
+  {
+    "field": "deeper",
+    "value": "AB",
+    "valid": true
+  },
+  {
+    "field": "deeper",
+    "value": "45",
+    "valid": true
+  },
+  {
+    "field": "deeper",
+    "value": "M",
+    "valid": false
+  },
+  {
+    "field": "deeper",
+    "value": "37",
+    "valid": false
+  },
+  {
+    "field": "deeper",
+    "value": "AB45",
+    "valid": false
+  },
+  {
+    "field": "single_derivation",
+    "value": "AB",
+    "valid": true
+  },
+  {
+    "field": "single_derivation",
+    "value": "ABC",
+    "valid": false
+  },
+  {
+    "field": "single_derivation",
+    "value": "123",
+    "valid": false
+  },
+  {
+    "field": "single_derivation",
+    "value": "A",
+    "valid": false
+  },
+  {
+    "field": "single_derivation",
+    "value": "AB\n",
+    "valid": false
+  },
+  {
+    "field": "empty",
+    "value": "",
+    "valid": true
+  },
+  {
+    "field": "empty",
+    "value": "Q",
+    "valid": true
+  },
+  {
+    "field": "empty",
+    "value": "QQ",
+    "valid": false
+  },
+  {
+    "field": "empty",
+    "value": "\n",
+    "valid": false
+  },
+  {
+    "field": "escaped",
+    "value": "a+b",
+    "valid": true
+  },
+  {
+    "field": "escaped",
+    "value": "x.y",
+    "valid": true
+  },
+  {
+    "field": "escaped",
+    "value": "ab",
+    "valid": false
+  },
+  {
+    "field": "escaped",
+    "value": "xay",
+    "valid": false
+  },
+  {
+    "field": "escaped",
+    "value": "aa+b",
+    "valid": false
+  },
+  {
+    "field": "escaped",
+    "value": "x.y\n",
+    "valid": false
+  },
+  {
+    "field": "newline",
+    "value": "A\nB",
+    "valid": true
+  },
+  {
+    "field": "newline",
+    "value": "C",
+    "valid": true
+  },
+  {
+    "field": "newline",
+    "value": "A\rB",
+    "valid": false
+  },
+  {
+    "field": "newline",
+    "value": "A\nB\n",
+    "valid": false
+  },
+  {
+    "field": "newline",
+    "value": "\nC",
+    "valid": false
+  },
+  {
+    "field": "inline",
+    "value": "aa",
+    "valid": true
+  },
+  {
+    "field": "inline",
+    "value": "bb",
+    "valid": true
+  },
+  {
+    "field": "inline",
+    "value": "ab",
+    "valid": false
+  },
+  {
+    "field": "inline",
+    "value": "cc",
+    "valid": false
+  },
+  {
+    "field": "inline",
+    "value": "aa\n",
+    "valid": false
+  }
+]

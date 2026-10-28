@@ -1,0 +1,222 @@
+{
+  "type": "record",
+  "name": "DecimalDefaults",
+  "namespace": "money",
+  "fields": [
+    {
+      "name": "Decimal",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "positive",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u0001\u0002"
+    },
+    {
+      "name": "negative",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u00fe\u00fe"
+    },
+    {
+      "name": "zero",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 4
+      },
+      "default": "\u0000"
+    },
+    {
+      "name": "trailing",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": "\u0004\u00b0"
+    },
+    {
+      "name": "no_scale",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 10
+      },
+      "default": "{"
+    },
+    {
+      "name": "large",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 90,
+        "scale": 29
+      },
+      "default": "j\u009e\u008e\u00a2<\u00b6<\"\u008f1\u00ad\u0092h\u00b4\t\u007f\u0015mj\u00a1\u001d\u00cb)\u00f1K\u00ac\u00cf\u00f1\u0096\u00ce?\n\u00d2"
+    },
+    {
+      "name": "fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Money",
+        "size": 2,
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": 2
+      },
+      "default": "\u0001\u0002"
+    },
+    {
+      "name": "reference",
+      "type": "Money",
+      "default": "\u00fe\u00fe"
+    },
+    {
+      "name": "array",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 20,
+          "scale": 2
+        }
+      },
+      "default": [
+        "\u0001",
+        "\u00ff"
+      ]
+    },
+    {
+      "name": "map",
+      "type": {
+        "type": "map",
+        "values": "Money"
+      },
+      "default": {
+        "z": "\u0000\u0000",
+        "a": "\u0004\u00b0"
+      }
+    },
+    {
+      "name": "union",
+      "type": [
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 20,
+          "scale": 2
+        },
+        "null"
+      ],
+      "default": "\u0001"
+    },
+    {
+      "name": "string_first",
+      "type": [
+        "string",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 20,
+          "scale": 2
+        }
+      ],
+      "default": "12"
+    },
+    {
+      "name": "nullable",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 20,
+          "scale": 2
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "record",
+      "type": {
+        "type": "record",
+        "name": "Ledger",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "Money"
+          }
+        ]
+      },
+      "default": {
+        "amount": "\u0001\u0002"
+      }
+    },
+    {
+      "name": "record_array",
+      "type": {
+        "type": "array",
+        "items": "Ledger"
+      },
+      "default": [
+        {
+          "amount": "\u00fe\u00fe"
+        }
+      ]
+    },
+    {
+      "name": "nested",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "map",
+          "values": {
+            "type": "bytes",
+            "logicalType": "decimal",
+            "precision": 20,
+            "scale": 3
+          }
+        }
+      },
+      "default": [
+        {
+          "z": "\f",
+          "a": "\u00f4"
+        }
+      ]
+    },
+    {
+      "name": "ordinary",
+      "type": "bytes",
+      "default": "\u00ff"
+    },
+    {
+      "name": "plain_fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Raw",
+        "size": 2
+      },
+      "default": "\u0001\u0002"
+    }
+  ]
+}

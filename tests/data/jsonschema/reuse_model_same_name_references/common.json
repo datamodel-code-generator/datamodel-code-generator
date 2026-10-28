@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Field": {"type": "object", "properties": {"size": {"type": "integer"}}},
+    "Labelled": {"type": "object", "properties": {"label": {"type": "string", "description": "A label"}}}
+  }
+}

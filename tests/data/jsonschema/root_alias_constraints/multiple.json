@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "type": "integer",
+  "minimum": 3,
+  "maximum": 8,
+  "$defs": {
+    "First": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 8
+    },
+    "Second": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 8
+    }
+  }
+}

@@ -1,0 +1,30 @@
+datetime_module: datetime_module.date.fromisoformat('1970-01-01')
+date_before: datetime_module.date.fromisoformat('1969-12-31')
+date_after: datetime_module.date.fromisoformat('1970-01-02')
+date_min: datetime_module.date.fromisoformat('0001-01-01')
+date_max: datetime_module.date.fromisoformat('9999-12-31')
+time_millis_zero: datetime_module.time.fromisoformat('00:00:00')
+time_millis: datetime_module.time.fromisoformat('00:00:01.001000')
+time_millis_last: datetime_module.time.fromisoformat('23:59:59.999000')
+time_micros: datetime_module.time.fromisoformat('00:00:01.234567')
+time_micros_last: datetime_module.time.fromisoformat('23:59:59.999999')
+timestamp_millis: datetime_module.datetime.fromisoformat('1970-01-01T00:00:01.001000+00:00')
+timestamp_micros_before: datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')
+timestamp_micros_exact: datetime_module.datetime.fromisoformat('2255-06-05T23:47:34.740991+00:00')
+timestamp_micros_min: datetime_module.datetime.fromisoformat('0001-01-01T00:00:00+00:00')
+timestamp_micros_max: datetime_module.datetime.fromisoformat('9999-12-31T23:59:59.999999+00:00')
+timestamp_nanos: datetime_module.datetime.fromisoformat('1970-01-01T00:00:00.000001+00:00')
+timestamp_nanos_before: datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')
+local_millis: datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999000')
+local_micros: datetime_module.datetime.fromisoformat('1970-01-01T00:00:01.000001')
+local_nanos: datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999999')
+date_union: datetime_module.date.fromisoformat('1970-01-02')
+plain_union: 1000
+nullable: None
+wrapped: datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999999')
+wrapped_union: datetime_module.time.fromisoformat('00:00:01')
+date_array: [datetime_module.date.fromisoformat('1970-01-02'), datetime_module.date.fromisoformat('1969-12-31')]
+time_map: {'z': datetime_module.time.fromisoformat('00:00:00.001001'), 'a': datetime_module.time.fromisoformat('00:00:00.000001')}
+record: {'instant': datetime_module.datetime.fromisoformat('1970-01-01T00:00:01.000001+00:00'), 'day': datetime_module.date.fromisoformat('1970-01-02')}
+record_array: [{'day': datetime_module.date.fromisoformat('1969-12-31'), 'instant': datetime_module.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')}]
+ordinary: 1000

@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info:
+  title: Directional models only
+  version: "1"
+paths:
+  /users:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+components:
+  schemas:
+    User:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        password:
+          type: string
+          writeOnly: true

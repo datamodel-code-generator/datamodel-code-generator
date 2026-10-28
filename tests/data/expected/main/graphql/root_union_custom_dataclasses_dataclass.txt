@@ -1,0 +1,87 @@
+{
+  "schema_errors": [],
+  "members": [
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "WriteOps",
+          "value": "writeops",
+          "self": {
+            "value": "nested"
+          }
+        }
+      },
+      "name": "WriteOps",
+      "fields": [
+        "value",
+        "self",
+        "typename__"
+      ],
+      "value": "writeops",
+      "nested_value": "nested"
+    },
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "Other",
+          "value": "ok"
+        }
+      },
+      "name": "Other",
+      "fields": [
+        "value",
+        "typename__"
+      ],
+      "value": "ok",
+      "nested_value": null
+    },
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "RootOps",
+          "value": "rootops",
+          "self": {
+            "value": "nested"
+          }
+        }
+      },
+      "name": "RootOps",
+      "fields": [
+        "value",
+        "choice",
+        "self",
+        "typename__"
+      ],
+      "value": "rootops",
+      "nested_value": "nested"
+    },
+    {
+      "graphql_errors": [],
+      "graphql_data": {
+        "choice": {
+          "__typename": "EventOps",
+          "value": "eventops",
+          "self": {
+            "value": "nested"
+          }
+        }
+      },
+      "name": "EventOps",
+      "fields": [
+        "value",
+        "self",
+        "typename__"
+      ],
+      "value": "eventops",
+      "nested_value": "nested"
+    }
+  ],
+  "emitted_roots": [
+    "RootOps",
+    "WriteOps",
+    "EventOps"
+  ]
+}

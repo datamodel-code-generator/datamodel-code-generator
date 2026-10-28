@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted future import
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Foo.1:
+      type: object
+      properties:
+        value:
+          type: string
+    Bar:
+      type: object
+      properties:
+        count:
+          type: integer

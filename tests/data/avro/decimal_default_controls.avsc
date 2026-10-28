@@ -1,0 +1,142 @@
+{
+  "type": "record",
+  "name": "DecimalControls",
+  "fields": [
+    {
+      "name": "ordinary",
+      "type": "bytes",
+      "default": "\u00ff"
+    },
+    {
+      "name": "empty_union",
+      "type": [],
+      "default": "value"
+    },
+    {
+      "name": "big_decimal",
+      "type": {
+        "type": "bytes",
+        "logicalType": "big-decimal"
+      },
+      "default": "\u0001\u0002"
+    },
+    {
+      "name": "wrong_type",
+      "type": {
+        "type": "string",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": 2
+      },
+      "default": "text"
+    },
+    {
+      "name": "missing_precision",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal"
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "zero_precision",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 0,
+        "scale": 0
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "wrong_precision",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": "4",
+        "scale": 0
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "bool_precision",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": true,
+        "scale": 0
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "wrong_scale",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": "2"
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "bool_scale",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": true
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "negative_scale",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": -1
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "scale_above_precision",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 4,
+        "scale": 5
+      },
+      "default": "\u0001"
+    },
+    {
+      "name": "wrong_value",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      },
+      "default": []
+    },
+    {
+      "name": "no_default_bytes",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 20,
+        "scale": 2
+      }
+    },
+    {
+      "name": "no_default_fixed",
+      "type": {
+        "type": "fixed",
+        "name": "Money",
+        "size": 4,
+        "logicalType": "decimal",
+        "precision": 8,
+        "scale": 2
+      }
+    }
+  ]
+}

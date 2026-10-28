@@ -1,0 +1,1 @@
+TemporalDefaults(day='1970-01-02', clock='00:00:01')

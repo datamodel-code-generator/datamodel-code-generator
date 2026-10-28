@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {
+    "product": {"type": "object", "properties": {"sku": {"type": "string"}, "size": {"$ref": "common.json#/$defs/Dimensions"}}},
+    "variant": {"type": "object", "properties": {"sku": {"type": "string"}, "size": {"$ref": "common.json#/$defs/Dimensions"}}}
+  }
+}

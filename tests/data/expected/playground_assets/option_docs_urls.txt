@@ -1,0 +1,10 @@
+[
+  {
+    "docs_url": "/cli-reference/model-customization/#output-model-type",
+    "name": "--output-model-type"
+  },
+  {
+    "docs_url": "/cli-reference/field-customization/#capitalize-enum-members",
+    "name": "--capitalise-enum-members"
+  }
+]

@@ -1,0 +1,150 @@
+{
+  "Request": {
+    "fields": [
+      "name",
+      "secret"
+    ],
+    "validation": [
+      {
+        "python": {
+          "name": null,
+          "secret": null
+        },
+        "json": {
+          "name": null,
+          "secret": null
+        }
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1
+        }
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "other_extra": 0
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "other_extra": 0
+        }
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional"
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional"
+        }
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        }
+      }
+    ]
+  },
+  "Response": {
+    "fields": [
+      "id",
+      "name"
+    ],
+    "validation": [
+      {
+        "python": {
+          "id": null,
+          "name": null
+        },
+        "json": {
+          "id": null,
+          "name": null
+        }
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1
+        }
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "other_extra": 0
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "other_extra": 0
+        }
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional"
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional"
+        }
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        }
+      }
+    ]
+  }
+}

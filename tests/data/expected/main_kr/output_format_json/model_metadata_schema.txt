@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "GeneratedModelMetadata": {
+      "additionalProperties": false,
+      "description": "One generated model entry in --emit-model-metadata output.",
+      "properties": {
+        "class_name": {
+          "title": "Class Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "source_path": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Path"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Title"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/ModelFieldMetadata"
+          },
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class_name",
+        "name",
+        "module",
+        "source_ref",
+        "source_path",
+        "title",
+        "fields"
+      ],
+      "title": "GeneratedModelMetadata",
+      "type": "object"
+    },
+    "ModelFieldMetadata": {
+      "additionalProperties": false,
+      "description": "One generated model field entry in --emit-model-metadata output.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "alias": {
+          "title": "Alias",
+          "type": "string"
+        },
+        "original_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Original Name"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "alias",
+        "original_name",
+        "type",
+        "required"
+      ],
+      "title": "ModelFieldMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "JSON payload emitted by --emit-model-metadata.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "models": {
+      "items": {
+        "$ref": "#/$defs/GeneratedModelMetadata"
+      },
+      "title": "Models",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "models"
+  ],
+  "title": "ModelMetadata",
+  "type": "object"
+}

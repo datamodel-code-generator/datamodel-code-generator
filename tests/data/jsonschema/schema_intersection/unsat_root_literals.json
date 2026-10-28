@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "const_member": {
+      "$ref": "#/$defs/ConstMember"
+    },
+    "sibling_enum": {
+      "$ref": "#/$defs/SiblingEnum"
+    },
+    "item_enums": {
+      "$ref": "#/$defs/ItemEnums"
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "string",
+      "const": "a"
+    },
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "ConstMember": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "minLength": 1
+        }
+      ],
+      "const": "c"
+    },
+    "SiblingEnum": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "ItemEnums": {
+      "allOf": [
+        {
+          "type": "array",
+          "items": {
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        },
+        {
+          "items": {
+            "enum": [
+              "c"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

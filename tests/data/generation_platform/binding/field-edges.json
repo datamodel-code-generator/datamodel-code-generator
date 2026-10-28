@@ -1,0 +1,22 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Field edges", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Base": {"type": "object", "properties": {"optional": {"type": "string"}}},
+    "Edges": {"allOf": [
+      {"$ref": "#/components/schemas/Base"},
+      {
+        "type": "object",
+        "required": ["needed"],
+        "properties": {
+          "needed": {"type": "integer"},
+          "strict": {"type": "string", "nullable": false},
+          "wire-name": {"type": "integer", "default": 1},
+          "alias_ref": {"$ref": "#/components/schemas/NullableName"}
+        }
+      }
+    ]},
+    "NullableName": {"type": "string", "nullable": true}
+  }}
+}

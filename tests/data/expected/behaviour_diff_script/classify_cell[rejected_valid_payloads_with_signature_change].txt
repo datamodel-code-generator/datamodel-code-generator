@@ -1,0 +1,12 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[type] Payload:a: int -> str",
+    "crash-fix [payload-verdict] payload v0: reject -> accept",
+    "crash-fix [payload-verdict] payload v1: reject -> accept"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[type] Payload:a: int -> str"
+  ]
+}

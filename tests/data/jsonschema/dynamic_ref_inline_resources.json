@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/holder",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "first": {
+      "$id": "first",
+      "title": "First",
+      "type": "object",
+      "properties": {"value": {"$dynamicRef": "#item"}},
+      "$defs": {"item": {"$dynamicAnchor": "item", "type": "string"}}
+    },
+    "second": {
+      "$id": "https://example.com/second",
+      "title": "Second",
+      "type": "object",
+      "properties": {
+        "value": {"$dynamicRef": "#item"},
+        "values": {"$ref": "item-list"}
+      },
+      "$defs": {"item": {"$dynamicAnchor": "item", "type": "integer"}}
+    },
+    "labelled": {"$ref": "#/$defs/Labelled"}
+  },
+  "$defs": {
+    "ItemList": {
+      "$id": "https://example.com/item-list",
+      "type": "array",
+      "items": {"$dynamicRef": "#item"},
+      "$defs": {"item": {"$dynamicAnchor": "item", "not": true}}
+    },
+    "Labelled": {
+      "$id": "https://example.com/labelled",
+      "type": "object",
+      "properties": {
+        "tagged": {
+          "$id": "https://example.com/tagged",
+          "title": "Tagged",
+          "type": "object",
+          "properties": {"value": {"$dynamicRef": "#label"}},
+          "$defs": {"label": {"$dynamicAnchor": "label", "type": "integer"}}
+        }
+      },
+      "$defs": {"label": {"$dynamicAnchor": "label", "type": "string"}}
+    }
+  }
+}

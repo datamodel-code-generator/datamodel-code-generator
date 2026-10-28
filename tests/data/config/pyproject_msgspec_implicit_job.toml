@@ -1,0 +1,8 @@
+[tool.datamodel-codegen]
+input-file-type = "jsonschema"
+output-model-type = "msgspec.Struct"
+target-python-version = "3.10"
+
+[tool.datamodel-codegen.jobs.models]
+input = "msgspec_array_length_constraints.json"
+output = "model.py"

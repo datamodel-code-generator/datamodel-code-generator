@@ -13,6 +13,7 @@ from .constants import (
     EXCLUDED_CASES,
     EXCLUDED_FILES,
     JSON_SCHEMA_KEYS,
+    PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID,
     PAYLOAD_CLASS_NAME,
     SCHEMA_FILE_SUFFIXES,
 )
@@ -111,6 +112,7 @@ def _make_jsonschema_case(path: Path, schema: dict[str, Any]) -> SchemaCase:
         source_schema=deepcopy(normalized_schema),
         codegen_schema=deepcopy(normalized_schema),
         temp_input_suffix=path.suffix,
+        backend_extra_args=PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID.get(case_id, {}),
     )
 
 
@@ -144,6 +146,7 @@ def _make_openapi_case(path: Path, document: dict[str, Any], candidate_name: str
         source_schema=json_schema,
         codegen_schema=codegen_schema,
         temp_input_suffix=".yaml",
+        backend_extra_args=PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID.get(case_id, {}),
     )
 
 

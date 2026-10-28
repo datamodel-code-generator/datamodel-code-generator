@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "p1": {"type": "object", "properties": {"pet": {"type": "object", "title": "Pet", "properties": {"x": {"type": "string"}}}}},
+    "p2": {"type": "object", "properties": {"pet": {"type": "object", "title": "Pet", "properties": {"y": {"type": "integer"}}}}},
+    "p3": {"type": "object", "properties": {"pet": {"type": "object", "properties": {"z": {"type": "boolean"}}}}}
+  }
+}

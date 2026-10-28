@@ -1,0 +1,11 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Dynamic builtin member names", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Mode": {"type": "string", "enum": ["train", "eval"]},
+      "Model": {"type": "object", "properties": {"mode": {"$ref": "#/components/schemas/Mode", "default": "eval"}}}
+    }
+  }
+}

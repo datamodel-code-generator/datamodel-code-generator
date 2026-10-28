@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "child.json",
+  "$defs": {
+    "Nested": {
+      "$id": "schemas/nested.json",
+      "$anchor": "Nested",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "nested"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ]
+    },
+    "Child": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "$ref": "schemas/nested.json#Nested"
+        }
+      },
+      "required": [
+        "nested"
+      ]
+    }
+  },
+  "type": "object"
+}

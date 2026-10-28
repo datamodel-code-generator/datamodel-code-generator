@@ -1,0 +1,1 @@
+NoSuchAnchor: 'missing' does not exist within {'$id': 'resource.json', '$anchor': 'present', 'type': 'object', 'properties': {'inside': {'type': 'integer'}}, 'required': ['inside']}

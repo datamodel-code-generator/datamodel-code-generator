@@ -1,0 +1,22 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted relative import
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Bad.1.Child:
+      type: object
+      properties:
+        value:
+          type: string
+    Other.2.Parent:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Bad.1.Child'
+    Good.Widget:
+      type: object
+      properties:
+        enabled:
+          type: boolean

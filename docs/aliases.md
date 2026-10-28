@@ -14,9 +14,19 @@ datamodel-codegen \
     --aliases aliases.json
 ```
 
-## 📋 Alias File Format
+You can also pass the same mapping inline:
 
-The alias file is a JSON file that maps original field names to their Python aliases.
+```bash
+datamodel-codegen \
+    --input schema.json \
+    --output-model-type pydantic_v2.BaseModel \
+    --output model.py \
+    --aliases '{"id": "id_", "type": "type_"}'
+```
+
+## 📋 Alias Format
+
+The alias JSON maps original field names to their Python aliases. Pass it either inline or as a JSON file path.
 
 ### 📝 Flat Format (Traditional)
 
@@ -80,7 +90,7 @@ When you have the same field name in multiple classes but want different aliases
 }
 ```
 
-### 🏷️ Alias File
+### 🏷️ Alias Mapping
 
 ```json
 {
@@ -95,16 +105,19 @@ When you have the same field name in multiple classes but want different aliases
 ```python
 from pydantic import BaseModel, Field
 
+
 class User(BaseModel):
-    user_name: str | None = Field(None, alias='name')
+    user_name: str | None = Field(None, alias="name")
     id: int | None = None
 
+
 class Address(BaseModel):
-    address_name: str | None = Field(None, alias='name')
+    address_name: str | None = Field(None, alias="name")
     city: str | None = None
 
+
 class Root(BaseModel):
-    root_name: str | None = Field(None, alias='name')
+    root_name: str | None = Field(None, alias="name")
     user: User | None = None
     address: Address | None = None
 ```
@@ -112,6 +125,7 @@ class Root(BaseModel):
 ## 📌 Notes
 
 - The `ClassName` in scoped format must match the generated Python class name (after title conversion)
+- For `allOf` models, the final generated class name includes any configured prefix, suffix, or collision suffix. A matching final-name alias takes priority over a legacy alias using the original schema name; legacy aliases remain a fallback when no final-name alias is supplied.
 - When using `--use-title-as-name`, the class name is derived from the `title` property in the schema
 - Aliases are applied during code generation, so the original field names are preserved as Pydantic `alias` values for proper serialization/deserialization
 

@@ -1,0 +1,166 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "parameters": {
+      "Content": {
+        "name": "content",
+        "in": "query",
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "X-Parameter": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "trace": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Authorization": {
+        "name": "Authorization",
+        "in": "header",
+        "schema": {
+          "type": "integer"
+        },
+        "content": {
+          "application/json": {}
+        }
+      }
+    },
+    "requestBodies": {
+      "Json": {
+        "content": {
+          "application/json": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "X-Ignored": {
+                    "$ref": "must-not-load.json#/Header"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Form": {
+        "content": {
+          "application/x-www-form-urlencoded": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "X-Ignored": {
+                    "$ref": "must-not-load.json#/Header"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Upload": {
+        "content": {
+          "multipart/form-data; boundary=example": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "Content-Type": {
+                    "$ref": "#/components/headers/Shared"
+                  },
+                  "X-Request": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "trace": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Result": {
+        "description": "Result",
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "X-Response": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "trace": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "application/json": {
+            "encoding": false
+          }
+        },
+        "headers": {
+          "Content-Type": {
+            "$ref": "#/components/headers/Shared"
+          }
+        }
+      }
+    },
+    "headers": {
+      "Shared": {
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Content-Type": {
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Content": {
+        "content": {
+          "multipart/form-data": {
+            "encoding": {
+              "part": {
+                "headers": {
+                  "X-Header": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "trace": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {}
+}

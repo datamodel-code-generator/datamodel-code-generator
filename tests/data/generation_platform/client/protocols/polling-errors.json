@@ -1,0 +1,199 @@
+{
+  "statuses.empty": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "statuses.range": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [99, 600],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "statuses.boolean": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [true],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "statuses.repeated": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202, 202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "bindings.missing": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "pending.empty": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": [],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "states.repeated": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued", "queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "states.shared": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done", "queued"],
+    "result": {"kind": "none"}
+  },
+  "failed.literal": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "failed": [Infinity]
+  },
+  "result.inline": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "inline", "selector": {"from": "body", "pointer": "/output"}}
+  },
+  "result.kind": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "later"}
+  },
+  "interval.zero": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "interval": {"seconds": 0}
+  },
+  "interval.text": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "interval": {"seconds": "1"}
+  },
+  "interval.header": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "interval": {"seconds": 1, "retry_after_header": "Retry After"}
+  },
+  "immediate.shared": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "immediate_result": {
+      "statuses": [200, 202],
+      "selector": {"from": "body", "pointer": ""},
+      "schema": {"pointer": "/components/schemas/Job"}
+    }
+  },
+  "cancel.missing": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "remote_cancel": {"bindings": []}
+  },
+  "expires.source": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "state": {"from": "body", "pointer": "/status"},
+    "accepted_statuses": [202],
+    "bindings": [],
+    "pending": ["queued"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"},
+    "expires_at": {"from": "cookie", "name": "expires"}
+  }
+}

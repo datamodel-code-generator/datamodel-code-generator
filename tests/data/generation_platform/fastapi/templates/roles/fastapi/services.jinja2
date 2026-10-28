@@ -1,0 +1,29 @@
+"""Customized: Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- if typevar %}
+
+PrincipalT_contra = {{ typevar }}("PrincipalT_contra", contravariant=True)
+{%- endif %}
+{%- for protocol in protocols %}
+
+
+class {{ protocol.name }}({{ protocol.base }}):
+    """{{ protocol.docstring }}"""
+{%- for method in protocol.methods %}
+
+    @{{ abstract }}
+    {% if method.asynchronous %}async {% endif %}def {{ method.name }}(
+        self,
+{%- if method.parameters %}
+        *,
+{%- for parameter in method.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+{%- endif %}
+    ) -> {{ method.returns }}:
+        {{ method.docstring }}
+{%- endfor %}
+{%- endfor %}

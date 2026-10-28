@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        twigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+      required:
+        - id
+    Leafy:
+      type: object
+      properties:
+        twigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+        shape:
+          type: object
+          properties:
+            round:
+              type: boolean
+        color:
+          type: string
+          enum:
+            - green
+            - brown
+    Bud:
+      type: object
+      properties:
+        size:
+          type: integer
+    Unused:
+      type: object
+      properties:
+        note:
+          type: string

@@ -1,0 +1,114 @@
+{
+  "alternation": [
+    {
+      "payload": "arn:::::0",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "arn:::::0\n",
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    },
+    {
+      "payload": "*",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "*\n",
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    },
+    {
+      "payload": "x\n",
+      "source_valid": false,
+      "sampled": false,
+      "model_accepts": false
+    }
+  ],
+  "top_level": [
+    {
+      "payload": "a",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "a\n",
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    },
+    {
+      "payload": "a\n\n",
+      "source_valid": false,
+      "sampled": false,
+      "model_accepts": false
+    }
+  ],
+  "repeated_group": [
+    {
+      "payload": "a",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "a\n",
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    }
+  ],
+  "class_and_escape": [
+    {
+      "payload": "$a$",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "$a$\n",
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    }
+  ],
+  "no_anchor": [
+    {
+      "payload": "a",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": "a\n",
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    }
+  ],
+  "property_names": [
+    {
+      "payload": {
+        "k": 1
+      },
+      "source_valid": true,
+      "sampled": true,
+      "model_accepts": true
+    },
+    {
+      "payload": {
+        "k\n": 1
+      },
+      "source_valid": true,
+      "sampled": false,
+      "model_accepts": false
+    }
+  ]
+}

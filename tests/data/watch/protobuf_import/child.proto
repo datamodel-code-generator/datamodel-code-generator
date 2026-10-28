@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Child {
+  string name = 1;
+}

@@ -1,0 +1,29 @@
+[
+  {
+    "native": true,
+    "json": {
+      "x": null
+    },
+    "python": {
+      "x": null
+    }
+  },
+  {
+    "native": true,
+    "json": {
+      "x": 1
+    },
+    "python": {
+      "x": 1
+    }
+  },
+  {
+    "native": false,
+    "json": {
+      "x": "x"
+    },
+    "python": {
+      "x": "x"
+    }
+  }
+]

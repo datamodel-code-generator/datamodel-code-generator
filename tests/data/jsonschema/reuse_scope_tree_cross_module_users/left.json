@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Kind": {"type": "string", "enum": ["up", "down"]},
+    "Point": {
+      "type": "object",
+      "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}}
+    }
+  }
+}

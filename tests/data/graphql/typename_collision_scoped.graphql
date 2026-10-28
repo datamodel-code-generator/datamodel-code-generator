@@ -1,0 +1,11 @@
+interface Base { value: Int! label: String! }
+interface Mid implements Base { value: Int! label: String! spare: Int! }
+type Item implements Base & Mid { value: Int! label: String! spare: Int! }
+type Ordinary implements Base { value: Int! label: String! }
+interface Common { value: Int! }
+interface OtherBase implements Common { value: Int! }
+interface Side implements Common { value: Int! spare: Int! }
+type Multi implements Common & OtherBase & Side { value: Int! spare: Int! }
+type MultiOrdinary implements Common & OtherBase { value: Int! }
+type Terminal implements Base & Mid { value: Int! label: String! spare: Int! }
+type Query { terminal: Terminal item: Item ordinary: Ordinary multi: Multi multiOrdinary: MultiOrdinary }

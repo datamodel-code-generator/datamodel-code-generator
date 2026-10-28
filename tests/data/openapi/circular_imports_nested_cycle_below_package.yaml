@@ -1,0 +1,38 @@
+openapi: 3.0.0
+info:
+  title: A cycle through the root package and a package, which imports another cycle below that package
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    # root_thing, in the root package, and a form one cycle.
+    root_thing:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/a.item'
+
+    a.item:
+      type: object
+      properties:
+        root:
+          $ref: '#/components/schemas/root_thing'
+        sub:
+          $ref: '#/components/schemas/a.sub.s'
+
+    # a.sub and a.peer form another cycle below the package a: both cycles join one merge.
+    a.sub.s:
+      type: object
+      properties:
+        note:
+          type: string
+        peer:
+          $ref: '#/components/schemas/a.peer.p'
+
+    a.peer.p:
+      type: object
+      properties:
+        sub:
+          $ref: '#/components/schemas/a.sub.s'

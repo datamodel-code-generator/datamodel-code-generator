@@ -1,0 +1,11 @@
+asyncapi: 3.0.0
+info:
+  title: Integer channel name beside an invalid schemaFormat
+  version: '1.0'
+channels:
+  1:
+    messages:
+      petAdded:
+        schemaFormat: 1
+        payload:
+          type: string

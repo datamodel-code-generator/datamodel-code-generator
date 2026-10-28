@@ -1,0 +1,11 @@
+{
+  "title": "UnavailableBuiltin",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string",
+      "x-python-type": "builtins.ExceptionGroup"
+    }
+  },
+  "required": ["value"]
+}

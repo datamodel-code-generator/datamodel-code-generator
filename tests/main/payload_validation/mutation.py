@@ -253,8 +253,15 @@ def _iter_combined_schema_constraint_ids(
 ) -> Iterator[str]:
     for keyword in COMBINED_SCHEMA_KEYS:
         if isinstance(subschemas := schema.get(keyword), list):
-            for subschema in subschemas:
-                yield from _iter_schema_constraint_ids(root_schema, subschema, seen_refs)
+            branch_constraints = [
+                set(_iter_schema_constraint_ids(root_schema, subschema, seen_refs)) for subschema in subschemas
+            ]
+            # A permissive alternative can accept every structural mutation of
+            # another branch. Only advertise constraints shared by all choices.
+            if keyword == "allOf":
+                yield from set().union(*branch_constraints)
+            elif branch_constraints:
+                yield from set.intersection(*branch_constraints)
 
 
 def _iter_schema_constraint_ids(root_schema: dict[str, Any], schema: Any, seen_refs: frozenset[str]) -> Iterator[str]:

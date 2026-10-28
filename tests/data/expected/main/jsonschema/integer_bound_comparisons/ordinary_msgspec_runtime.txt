@@ -1,0 +1,58 @@
+{
+  "Minimum": {
+    "convert": 3,
+    "decode": 3
+  },
+  "Maximum": {
+    "convert": 4,
+    "decode": 4
+  },
+  "DecimalMinimum": {
+    "convert": 0.5,
+    "decode": 0.5
+  },
+  "DecimalMaximum": {
+    "convert": 1.25,
+    "decode": 1.25
+  },
+  "MixedIntegerMinimum": {
+    "convert": 2,
+    "decode": 2
+  },
+  "MixedIntegerMaximum": {
+    "convert": -2,
+    "decode": -2
+  },
+  "ExclusiveMinimum": {
+    "convert": 9007199254740993,
+    "decode": 9007199254740993
+  },
+  "ExclusiveMaximum": {
+    "convert": -9007199254740993,
+    "decode": -9007199254740993
+  },
+  "ExclusiveNumberMinimum": {
+    "convert": 1.75,
+    "decode": 1.75
+  },
+  "ExclusiveNumberMaximum": {
+    "convert": -1.75,
+    "decode": -1.75
+  },
+  "ExclusiveMinimumReversed": {
+    "convert": 9007199254740993,
+    "decode": 9007199254740993
+  },
+  "ExclusiveMaximumReversed": {
+    "convert": -9007199254740993,
+    "decode": -9007199254740993
+  },
+  "ExclusiveNegativeMinimum": {
+    "convert": -9007199254740991,
+    "decode": -9007199254740991
+  },
+  "ExclusivePositiveMaximum": {
+    "convert": 9007199254740991,
+    "decode": 9007199254740991
+  }
+}

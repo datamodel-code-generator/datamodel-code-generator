@@ -1,0 +1,10 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Root edges", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Obj": {"type": "object", "properties": {"k": {"type": "string"}}},
+    "Base": {"type": "array", "items": {"$ref": "#/components/schemas/Obj", "properties": {"k": {"maxLength": 5}}}},
+    "Value": {"allOf": [{"$ref": "#/components/schemas/Base", "items": {"$ref": "#/components/schemas/Obj", "maxProperties": 2}}]}
+  }}
+}

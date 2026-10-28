@@ -1,0 +1,8 @@
+{
+  "title": "Thing",
+  "type": "object",
+  "properties": {
+    "other": {"$ref": "y.thing.json"},
+    "leaf": {"$ref": "p.t.leaf.json"}
+  }
+}

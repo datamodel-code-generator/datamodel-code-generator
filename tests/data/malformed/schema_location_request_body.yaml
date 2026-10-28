@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info:
+  title: Invalid request body schema
+  version: '1.0'
+paths:
+  /pets/{id}:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: name
+      responses:
+        '200':
+          description: OK

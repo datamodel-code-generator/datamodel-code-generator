@@ -1,0 +1,3 @@
+[tool.datamodel-codegen]
+http-timeout = 1.5
+

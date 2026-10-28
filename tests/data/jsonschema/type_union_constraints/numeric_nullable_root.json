@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": [
+    "null",
+    "number",
+    "integer"
+  ],
+  "minimum": 2,
+  "maximum": 5
+}

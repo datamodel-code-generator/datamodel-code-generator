@@ -1,0 +1,7 @@
+{
+  "title": "DirectoryExternalRef",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "directory/#/$defs/Child"}
+  }
+}

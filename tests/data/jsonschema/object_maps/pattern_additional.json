@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pMatrix": {
+      "type": "object",
+      "patternProperties": {
+        "^(in|ex)clude$": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "rMatrix": {
+      "$ref": "#/$defs/Matrix"
+    },
+    "pSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "description": "Any other key."
+      }
+    },
+    "rSame": {
+      "$ref": "#/$defs/Same"
+    },
+    "pNames": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rNames": {
+      "$ref": "#/$defs/Names"
+    },
+    "pAnyOther": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "description": "Any other key."
+      }
+    },
+    "rAnyOther": {
+      "$ref": "#/$defs/AnyOther"
+    },
+    "pNoPatternKeys": {
+      "type": "object",
+      "patternProperties": {
+        "^x": false
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rNoPatternKeys": {
+      "$ref": "#/$defs/NoPatternKeys"
+    },
+    "iMatrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^(in|ex)clude$": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "mMatrix": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^(in|ex)clude$": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "iSame": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "type": "integer",
+          "description": "Any other key."
+        }
+      }
+    },
+    "mSame": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "type": "integer",
+          "description": "Any other key."
+        }
+      }
+    },
+    "iNames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mNames": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "iAnyOther": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "description": "Any other key."
+        }
+      }
+    },
+    "mAnyOther": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": {
+          "description": "Any other key."
+        }
+      }
+    },
+    "iNoPatternKeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^x": false
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mNoPatternKeys": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^x": false
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "required": [
+    "pMatrix",
+    "rMatrix",
+    "pSame",
+    "rSame",
+    "pNames",
+    "rNames",
+    "pAnyOther",
+    "rAnyOther",
+    "pNoPatternKeys",
+    "rNoPatternKeys"
+  ],
+  "$defs": {
+    "Matrix": {
+      "type": "object",
+      "patternProperties": {
+        "^(in|ex)clude$": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "Same": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "description": "Any other key."
+      }
+    },
+    "Names": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "AnyOther": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "description": "Any other key."
+      }
+    },
+    "NoPatternKeys": {
+      "type": "object",
+      "patternProperties": {
+        "^x": false
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema_errors": [],
+  "graphql_errors": [],
+  "graphql_data": {
+    "terminal": {
+      "value": 9,
+      "label": "terminal",
+      "spare": 19,
+      "__typename": "Terminal"
+    },
+    "item": {
+      "value": 3,
+      "label": "item",
+      "spare": 13,
+      "__typename": "Item"
+    },
+    "ordinary": {
+      "value": 4,
+      "label": "ordinary",
+      "__typename": "Ordinary"
+    },
+    "multi": {
+      "value": 7,
+      "spare": 17,
+      "__typename": "Multi"
+    },
+    "multiOrdinary": {
+      "value": 8,
+      "__typename": "MultiOrdinary"
+    }
+  },
+  "models": {},
+  "import_error": "Multiple fields rename to the same name, field names must be unique"
+}

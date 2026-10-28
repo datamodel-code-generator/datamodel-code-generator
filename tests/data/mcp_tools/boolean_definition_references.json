@@ -1,0 +1,43 @@
+{
+  "name": "boolean references",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "values": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "$ref": "#/$defs/Allowed"
+          },
+          {
+            "$ref": "#Anchor"
+          }
+        ]
+      },
+      "dynamic_anchor": {
+        "$dynamicRef": "#Anchor"
+      },
+      "dynamic_external": {
+        "$dynamicRef": "https://example.com/schema#Anchor"
+      },
+      "dynamic_unmapped": {
+        "$dynamicRef": "#/$defs/Missing"
+      },
+      "encoded_external_ref": {
+        "$ref": "%23/$defs/Allowed"
+      },
+      "encoded_external_dynamic_ref": {
+        "$dynamicRef": "%23%2F%24defs%2FAllowed"
+      }
+    },
+    "$defs": {
+      "Allowed": true,
+      "Unused": false,
+      "Anchor": {
+        "$anchor": "Anchor",
+        "type": "string"
+      },
+      "Ignored": null
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# first run
+UserWarning: <root>/schemas.py: The generated module is shadowed by the existing package directory <root>/schemas, which Python imports instead. Remove the stale directory to import the generated module.
+UserWarning: <root>/models.py: The generated module is shadowed by the existing package directory <root>/models, which Python imports instead. Remove the stale directory to import the generated module.
+# unchanged run
+UserWarning: <root>/models.py: The generated module is shadowed by the existing package directory <root>/models, which Python imports instead. Remove the stale directory to import the generated module.
+UserWarning: <root>/schemas.py: The generated module is shadowed by the existing package directory <root>/schemas, which Python imports instead. Remove the stale directory to import the generated module.
+# check run

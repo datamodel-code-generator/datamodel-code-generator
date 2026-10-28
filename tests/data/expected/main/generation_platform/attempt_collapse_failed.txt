@@ -1,0 +1,20 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "dispose:1",
+    "discard:1",
+    "construct:2",
+    "parse:2",
+    "dispose:2",
+    "discard:2",
+    "close"
+  ],
+  "error": [
+    "RecursionError",
+    "collapse failed"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0
+}

@@ -1,0 +1,29 @@
+{
+  "title": "ConditionalParent",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "metric": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "metric"
+      }
+    },
+    "required": ["kind"]
+  },
+  "then": {
+    "required": ["metric"]
+  },
+  "else": {
+    "required": ["note"]
+  }
+}

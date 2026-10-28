@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "BaseCount": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 4,
+      "properties": {
+        "base": {
+          "type": "string"
+        }
+      }
+    },
+    "ComposedCount": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCount"
+        },
+        {
+          "type": "object",
+          "minProperties": 2,
+          "maxProperties": 3,
+          "properties": {
+            "child": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "CountOnlyDerived": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCount"
+        },
+        {
+          "type": "object",
+          "minProperties": 2,
+          "maxProperties": 3
+        }
+      ]
+    },
+    "RefSiblingCount": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCount",
+          "minProperties": 3
+        },
+        {
+          "type": "object",
+          "properties": {
+            "child": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "DirectCount": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 3,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "child": {
+          "$ref": "#/$defs/NestedCount"
+        }
+      }
+    },
+    "NestedCount": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "NoOpMinimum": {
+      "type": "object",
+      "minProperties": 0,
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "ZeroMaximum": {
+      "type": "object",
+      "maxProperties": 0,
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "PropertyBag": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 2,
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "RequiredChoice": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "left"
+          ]
+        },
+        {
+          "required": [
+            "right"
+          ]
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/DirectCount"
+}

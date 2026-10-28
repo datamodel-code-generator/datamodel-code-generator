@@ -144,7 +144,7 @@
       ]
     },
     "RefToNestedAllOfAllOf": {
-      "description": "Ref to nested allOf - not a root model.",
+      "description": "Ref to nested allOf root model.",
       "allOf": [
         { "$ref": "#/definitions/NestedAllOfDatatype" },
         { "maxLength": 100 }

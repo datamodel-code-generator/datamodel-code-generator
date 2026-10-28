@@ -1,0 +1,16 @@
+{
+  "$defs": {
+    "StrictParent": {
+      "type": "object",
+      "title": "StrictParent",
+      "properties": {"value": {"type": "integer", "minimum": 5, "title": "Value"}},
+      "required": ["value"]
+    }
+  },
+  "allOf": [{"$ref": "#/$defs/StrictParent"}],
+  "type": "object",
+  "title": "RawSchemaIntersection",
+  "properties": {"value": {"type": "integer", "minimum": 0, "title": "Value"}},
+  "required": ["value"],
+  "x-python-field-overrides": {"value": "value"}
+}

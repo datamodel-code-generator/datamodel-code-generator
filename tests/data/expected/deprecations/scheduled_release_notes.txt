@@ -1,0 +1,3 @@
+## Scheduled Breaking Changes
+
+- `--scheduled-change` is registered without a runtime warning. Planned removal: TBD. --scheduled-change will be deprecated.

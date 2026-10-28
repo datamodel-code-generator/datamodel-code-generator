@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/post'].runtime.should_retry_header: Retry control response headers must have distinct names

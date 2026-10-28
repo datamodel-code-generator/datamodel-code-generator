@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from typing import List, Union
+
+from msgspec import UNSET, Struct, UnsetType, field
+
+
+class M(Struct):
+    a: int
+    b: Union[List[str], UnsetType] = 'changed'
+    c: int
+    d: Union[str, UnsetType] = UNSET
+    e: Union[float, UnsetType] = UNSET
+    f: Union[List[str], UnsetType] = field(default_factory=lambda: ['y', 'z'])

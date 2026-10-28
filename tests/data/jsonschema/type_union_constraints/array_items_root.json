@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": [
+    "object",
+    "array"
+  ],
+  "items": {
+    "type": "integer"
+  },
+  "minItems": 1
+}

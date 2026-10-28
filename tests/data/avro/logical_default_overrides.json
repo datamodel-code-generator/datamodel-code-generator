@@ -1,0 +1,171 @@
+[
+  {
+    "name": "nanos",
+    "fixture": "invalid_temporal_default_nanos_precision",
+    "model": "Invalid",
+    "overrides": {
+      "Invalid.value": "builtins.int"
+    },
+    "args": []
+  },
+  {
+    "name": "decimal",
+    "fixture": "decimal_defaults_simple",
+    "model": "DecimalDefaults",
+    "overrides": {
+      "DecimalDefaults.positive": "builtins.bytes"
+    },
+    "args": [],
+    "auxiliary_models": [
+      "DecimalDefaults1"
+    ]
+  },
+  {
+    "name": "duration",
+    "fixture": "invalid_duration_default_days",
+    "model": "DurationDefaults",
+    "overrides": {
+      "DurationDefaults.value": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models"
+    ]
+  },
+  {
+    "name": "mixed",
+    "fixture": "mapped_logical_defaults",
+    "model": "MappedDefaults",
+    "overrides": {
+      "MappedDefaults.instant": "builtins.int",
+      "MappedDefaults.local": "builtins.int",
+      "MappedDefaults.amount": "builtins.bytes",
+      "MappedDefaults.elapsed": "builtins.bytes",
+      "MappedDefaults.elapsed_again": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models"
+    ]
+  },
+  {
+    "name": "renamed",
+    "fixture": "invalid_temporal_default_nanos_precision",
+    "model": "Renamed",
+    "overrides": {
+      "Renamed.count": "builtins.int"
+    },
+    "args": [
+      "--class-name",
+      "Renamed",
+      "--aliases",
+      "{\"Renamed.value\": \"count\"}"
+    ]
+  },
+  {
+    "name": "nested",
+    "fixture": "duration_defaults",
+    "model": "DurationDefaults",
+    "overrides": {
+      "Frame.elapsed": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models"
+    ]
+  },
+  {
+    "name": "model",
+    "fixture": "duration_defaults",
+    "model": "DurationDefaults",
+    "overrides": {
+      "Elapsed": "builtins.bytes"
+    },
+    "args": []
+  },
+  {
+    "name": "logical",
+    "fixture": "temporal_defaults_simple",
+    "model": "TemporalDefaults",
+    "overrides": {
+      "TemporalDefaults.day": "datetime.date"
+    },
+    "args": []
+  },
+  {
+    "name": "model_collapsed",
+    "fixture": "duration_defaults",
+    "model": "DurationDefaults",
+    "overrides": {
+      "Elapsed": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models"
+    ]
+  },
+  {
+    "name": "representable",
+    "fixture": "mapped_logical_defaults_representable",
+    "model": "MappedDefaults",
+    "overrides": {
+      "MappedDefaults.instant": "builtins.int",
+      "MappedDefaults.local": "builtins.int",
+      "MappedDefaults.amount": "builtins.bytes",
+      "MappedDefaults.elapsed": "builtins.bytes",
+      "MappedDefaults.elapsed_again": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models"
+    ],
+    "auxiliary_models": [
+      "MappedDefaults1"
+    ]
+  },
+  {
+    "name": "decimal_default_override",
+    "fixture": "decimal_defaults_simple",
+    "model": "DecimalDefaults",
+    "overrides": {
+      "DecimalDefaults.positive": "builtins.bytes"
+    },
+    "args": [
+      "--default-values",
+      "{\"DecimalDefaults1.positive\":3}",
+      "--deserialize-default-values",
+      "decimal"
+    ],
+    "auxiliary_models": [
+      "DecimalDefaults1"
+    ]
+  },
+  {
+    "name": "decimal_mapped",
+    "fixture": "decimal_defaults_simple",
+    "model": "DecimalDefaults",
+    "overrides": {
+      "DecimalDefaults.positive": "builtins.bytes"
+    },
+    "args": [
+      "--type-mappings",
+      "decimal=binary"
+    ],
+    "auxiliary_models": [
+      "DecimalDefaults1"
+    ]
+  },
+  {
+    "name": "representable_default_override",
+    "fixture": "mapped_logical_defaults_representable",
+    "model": "MappedDefaults",
+    "overrides": {
+      "MappedDefaults.instant": "builtins.int",
+      "MappedDefaults.local": "builtins.int",
+      "MappedDefaults.amount": "builtins.bytes",
+      "MappedDefaults.elapsed": "builtins.bytes",
+      "MappedDefaults.elapsed_again": "builtins.bytes"
+    },
+    "args": [
+      "--collapse-root-models",
+      "--default-values",
+      "{\"MappedDefaults1.instant\":1000}"
+    ],
+    "auxiliary_models": []
+  }
+]

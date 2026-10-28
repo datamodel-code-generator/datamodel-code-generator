@@ -1,0 +1,8 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Remote", "version": "1.0.0"},
+  "paths": {
+    "/orders": {"get": {"operationId": "listOrders", "responses": {"200": {"description": "Orders", "content": {"application/json": {"schema": {"$ref": "common.json#/Order"}}}}}}},
+    "/archive": {"get": {"operationId": "listArchive", "responses": {"200": {"description": "Archive", "content": {"application/json": {"schema": {"$ref": "sub/copy.json#/Order"}}}}}}}
+  }
+}

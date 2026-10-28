@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "#/definitions/A"
+    }
+  },
+  "definitions": {
+    "A": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/B"
+      },
+      "minItems": 1
+    },
+    "B": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/C"
+      }
+    },
+    "C": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/D"
+      },
+      "maxItems": 2
+    },
+    "D": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/A"
+      }
+    }
+  }
+}

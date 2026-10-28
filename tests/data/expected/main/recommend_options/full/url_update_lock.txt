@@ -1,0 +1,59 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
+  components                       0, 0 operations
+  inline objects / enums           2 / 0, nesting depth 1
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  2 of 1 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+  root schema                      object model 1, title words 1
+
+Start from  --preset standard-py314-20261027
+
+Add  nothing on top of the preset
+
+Left out after the trial (the rules recommend these)
+  --class-name Catalog   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: Catalog), and full-path prefixes that name onto root-level
+      models. The suggested name comes from the input file name; replace it with the name the
+      project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+      trial: preset -> recommended: classes 4 -> 4, problem names 0 -> 0; 0 of 4 classes matched by
+      schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Trial  3 candidates generated in memory without formatting; nothing written
+  candidate    classes  problems  numbered  long  doubled  displaced  median  unconstrained
+  current            4  0 (0.0%)         0     0        0          0       7              0
+  preset             4  0 (0.0%)         0     0        0          0       7              0   selected
+  recommended        4  0 (0.0%)         0     0        0          0       7              0
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> preset)
+  0 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
+
+Notes
+  - --url is repeated without its user information, query, and fragment; add them again.
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --preset standard-py314-20261027 --target-python-version 3.14 --update-lock --url https://api.example.com/specs/catalog.json
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  preset = "standard-py314-20261027"
+  target-python-version = "3.14"
+  update-lock = true
+  url = "https://api.example.com/specs/catalog.json"

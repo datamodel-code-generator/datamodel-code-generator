@@ -1,0 +1,20 @@
+{
+  "title": "ExternalCoreRequiredChild",
+  "allOf": [
+    {
+      "$ref": "required_parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

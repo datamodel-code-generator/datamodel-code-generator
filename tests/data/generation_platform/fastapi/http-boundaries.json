@@ -1,0 +1,59 @@
+{
+  "inputs": [
+    {
+      "media": "text/plain",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=iso-8859-1",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; charset=\"ISO-8859-1\"",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=ascii",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=unknown",
+      "hex": "616263"
+    },
+    {
+      "media": "text/plain; charset=utf-8",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/markdown; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; format=flowed",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; note=\"x;charset=iso-8859-1\"",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; note=\"x;charset=ascii\"; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=idna",
+      "hex": "786e2d2d61"
+    }
+  ],
+  "labels": [
+    ".normal",
+    "%2E",
+    "%2E%2E",
+    "%2e%2e",
+    "%2E%2E%2E"
+  ]
+}

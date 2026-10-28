@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/catalog",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {
+    "numbers": {"$ref": "numberList"},
+    "names": {"$ref": "nameList"},
+    "labels": {"$ref": "#/$defs/labels"}
+  },
+  "$defs": {
+    "numberList": {
+      "$id": "numberList",
+      "type": "array",
+      "items": {"$dynamicRef": "#item"},
+      "$defs": {
+        "item": {"$dynamicAnchor": "item", "type": "number"}
+      }
+    },
+    "nameList": {
+      "$id": "nameList",
+      "type": "array",
+      "items": {"$dynamicRef": "#item"},
+      "$defs": {
+        "item": {"$dynamicAnchor": "item", "type": "string"}
+      }
+    },
+    "labels": {
+      "type": "array",
+      "items": {"$dynamicRef": "#label"}
+    },
+    "label": {"$dynamicAnchor": "label", "type": "string", "maxLength": 3}
+  }
+}

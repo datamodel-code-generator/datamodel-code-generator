@@ -1,0 +1,3 @@
+redacted=yes
+secret_absent=yes
+following_option_preserved=yes

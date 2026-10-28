@@ -1,0 +1,78 @@
+{
+  "ClosedPatternsPostRequest": {
+    "schema": [
+      "paths",
+      "/closed-patterns",
+      "post",
+      "requestBody",
+      "content",
+      "application/json",
+      "schema"
+    ],
+    "valid": [
+      {},
+      {
+        "a1": 1,
+        "a2": 2
+      }
+    ],
+    "invalid": [
+      {
+        "a1": "x"
+      },
+      {
+        "b": 1
+      }
+    ]
+  },
+  "ClosedPatternsPostResponse": {
+    "schema": [
+      "paths",
+      "/closed-patterns",
+      "post",
+      "responses",
+      "200",
+      "content",
+      "application/json",
+      "schema"
+    ],
+    "valid": [
+      {
+        "a1": 1
+      },
+      {
+        "a1": 1,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "a1": "x"
+      }
+    ]
+  },
+  "KeyNamesPostRequest": {
+    "schema": [
+      "paths",
+      "/key-names",
+      "post",
+      "requestBody",
+      "content",
+      "application/json",
+      "schema"
+    ],
+    "valid": [
+      {
+        "ab": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "Ab": "x"
+      },
+      {
+        "ab": 1
+      }
+    ]
+  }
+}

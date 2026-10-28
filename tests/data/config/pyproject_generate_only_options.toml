@@ -1,0 +1,12 @@
+[tool.datamodel-codegen]
+input-file-type = "jsonschema"
+formatters = ["builtin"]
+disable-timestamp = true
+input-filename = "ignored.json"
+command-line = "ignored command"
+apply-default-values-for-required-fields = true
+force-optional-for-required-fields = true
+custom-class-name-generator = "ignored"
+graphql-scopes = ["schemas"]
+settings-path = "ignored.toml"
+default-value-overrides = { name = "ignored" }

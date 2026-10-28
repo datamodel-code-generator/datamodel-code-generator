@@ -1,0 +1,7 @@
+{
+  "title": "SymlinkExternalRef",
+  "type": "object",
+  "properties": {
+    "child": {"$ref": "child.json#/$defs/Child"}
+  }
+}

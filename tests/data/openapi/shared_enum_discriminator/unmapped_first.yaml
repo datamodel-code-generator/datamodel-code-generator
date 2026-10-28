@@ -1,0 +1,44 @@
+openapi: '3.0.0'
+info: {title: Shared enum discriminator, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Kind:
+      type: string
+      enum:
+        - cat
+        - dog-breed
+    Animal:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/Kind'
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+      properties:
+        meow:
+          type: string
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+      properties:
+        bark:
+          type: string
+    Unmapped:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+    Mapped:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog-breed: '#/components/schemas/Dog'

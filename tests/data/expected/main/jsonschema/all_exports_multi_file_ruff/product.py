@@ -2,6 +2,7 @@
 #   filename:  product.json
 
 from __future__ import annotations
+
 from pydantic import BaseModel
 
 

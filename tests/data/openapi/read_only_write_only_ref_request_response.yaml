@@ -5,14 +5,14 @@ info:
 paths: {}
 components:
   schemas:
-    # Child with only readOnly fields - should generate base model when referenced directly
+    # Child with only readOnly fields - both variants must remain referenceable
     ChildOnlyReadOnly:
       type: object
       properties:
         id:
           readOnly: true
           type: integer
-    # Child with only writeOnly fields - should generate base model when referenced directly
+    # Child with only writeOnly fields - both variants must remain referenceable
     ChildOnlyWriteOnly:
       type: object
       properties:
@@ -66,3 +66,22 @@ components:
         name:
           readOnly: true
           type: string
+    # Recursive one-sided schemas must point each retained field at the matching variant
+    RecursiveOnlyReadOnly:
+      type: object
+      properties:
+        id:
+          readOnly: true
+          type: integer
+        child:
+          $ref: "#/components/schemas/RecursiveOnlyReadOnly"
+          readOnly: true
+    RecursiveOnlyWriteOnly:
+      type: object
+      properties:
+        secret:
+          writeOnly: true
+          type: string
+        child:
+          $ref: "#/components/schemas/RecursiveOnlyWriteOnly"
+          writeOnly: true

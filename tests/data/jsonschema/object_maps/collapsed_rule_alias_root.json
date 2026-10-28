@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "w": {
+      "$ref": "#/$defs/a.Wrapper"
+    }
+  },
+  "$defs": {
+    "a.Wrapper": {
+      "$ref": "#/$defs/a.Holder"
+    },
+    "a.Holder": {
+      "type": "object",
+      "patternProperties": {
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 3
+      }
+    }
+  }
+}

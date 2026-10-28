@@ -1,0 +1,22 @@
+[
+  {
+    "convert": {},
+    "decode": {}
+  },
+  {
+    "convert": {
+      "enabled": true
+    },
+    "decode": {
+      "enabled": true
+    }
+  },
+  {
+    "convert": {
+      "enabled": false
+    },
+    "decode": {
+      "enabled": false
+    }
+  }
+]

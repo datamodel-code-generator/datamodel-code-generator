@@ -1,0 +1,7 @@
+mapped: /$defs/mapped
+sequence: /allOf/0
+single: /not
+mixed-object: /extends
+mixed-list: /items/0
+instance-only: None
+non-object root: None

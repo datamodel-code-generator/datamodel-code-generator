@@ -1,0 +1,21 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Final default provenance", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Defaults": {
+        "type": "object",
+        "required": ["required_value", "required_nullable"],
+        "properties": {
+          "implicit": {"type": "string"},
+          "schema_null": {"type": "string", "default": null},
+          "override_null": {"type": "string", "default": null},
+          "nullable": {"type": "string", "nullable": true},
+          "required_value": {"type": "integer"},
+          "required_nullable": {"type": "string", "nullable": true}
+        }
+      }
+    }
+  }
+}

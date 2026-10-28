@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  title: Current models
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    collections.Current:
+      type: object
+      properties:
+        name:
+          type: string

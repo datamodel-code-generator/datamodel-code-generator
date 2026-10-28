@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Integer discriminator with mapping keys
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        u:
+          oneOf:
+            - $ref: '#/components/schemas/Foo'
+            - $ref: '#/components/schemas/Bar'
+          discriminator:
+            propertyName: kind
+            mapping:
+              '1': '#/components/schemas/Foo'
+              '2': '#/components/schemas/Bar'
+    Foo:
+      type: object
+      properties:
+        kind:
+          type: integer
+          enum:
+            - 1
+      required:
+        - kind
+    Bar:
+      type: object
+      properties:
+        kind:
+          type: integer
+          enum:
+            - 2
+      required:
+        - kind

@@ -1,0 +1,7 @@
+Holder {"early": ["a"], "chain": [{"value": "x", "next": [{"value": "y"}]}], "chains": [[{"value": "z"}], []]}: schema accepts, model accepts
+Holder {"early": [1]}: schema rejects, model rejects
+Holder {"chain": "x"}: schema rejects, model rejects
+Holder {"chain": [1]}: schema rejects, model rejects
+Holder {"chain": [{"value": 1}]}: schema rejects, model rejects
+Holder {"chain": [{"next": [{"value": 2}]}]}: schema rejects, model rejects
+Holder {"chains": [["z"]]}: schema rejects, model rejects

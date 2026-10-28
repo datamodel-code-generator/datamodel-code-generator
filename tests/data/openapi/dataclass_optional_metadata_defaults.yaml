@@ -1,0 +1,26 @@
+openapi: "3.0.0"
+info:
+  title: Dataclass optional metadata defaults
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Nested:
+      type: object
+      properties:
+        value:
+          type: string
+
+    Model:
+      type: object
+      properties:
+        metadata:
+          type: string
+          repr: false
+        keywordOnly:
+          type: string
+          kw_only: true
+        nested:
+          allOf:
+            - $ref: "#/components/schemas/Nested"
+          init: false

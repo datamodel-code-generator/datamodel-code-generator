@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info:
+  title: Embedded ids
+  version: "1.0"
+paths:
+  /boxes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: box.json
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        box:
+          $id: box.json
+          type: object
+          properties:
+            item:
+              $ref: '#/$defs/item'
+            size:
+              type: integer
+          $defs:
+            item:
+              type: integer
+    Other:
+      type: object
+      properties:
+        again:
+          $ref: box.json
+        size:
+          $ref: box.json#/properties/size
+    Pet:
+      $id: pet.json
+      type: object
+      properties:
+        tag:
+          $ref: '#/components/schemas/Tag'
+    Tag:
+      type: string
+    Shared:
+      $id: shared.json
+      type: object
+      properties:
+        id:
+          type: integer
+    UsesShared:
+      type: object
+      properties:
+        shared:
+          $ref: shared.json
+        common:
+          $ref: common.json

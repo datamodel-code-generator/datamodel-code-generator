@@ -1,0 +1,34 @@
+{
+  "standard.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "standard_webhooks"}
+  },
+  "github.push": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Hub-Signature-256",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": "sha256="
+    }
+  },
+  "callbacks.delivered": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Delivery"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "stripe.event": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "stripe_style"}
+  }
+}

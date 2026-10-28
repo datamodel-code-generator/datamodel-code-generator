@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "handler": {
+      "type": "string",
+      "x-python-type": "Callable[[foo.Bar, foo.BarExtra, Literal['foo.Bar']], baz.Qux]"
+    },
+    "customIterable": {
+      "type": "string",
+      "x-python-type": "my.custom.Iterable[str]"
+    },
+    "customUnionIterable": {
+      "type": "string",
+      "x-python-type": "my.custom.Iterable[str] | None"
+    }
+  }
+}

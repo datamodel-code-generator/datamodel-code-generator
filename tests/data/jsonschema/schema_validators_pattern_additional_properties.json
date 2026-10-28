@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PatternAdditionalProperties",
+  "type": "object",
+  "properties": {
+    "known": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^pattern-": {
+      "type": "integer"
+    },
+    "^__pydantic_extra__$": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": {
+    "type": "string"
+  }
+}

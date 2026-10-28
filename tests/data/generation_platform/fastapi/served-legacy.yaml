@@ -1,0 +1,44 @@
+openapi: 3.0.3
+info: {title: Legacy, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+          links:
+            others: {operationRef: "#/paths/~1other/get"}
+            uses: {operationRef: "#/paths/~1uses/get"}
+  /other:
+    get:
+      operationId: other
+      parameters:
+        - {name: q, in: query, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /uses:
+    get:
+      operationId: uses
+      parameters:
+        - $ref: "#/paths/~1other/get/parameters/0"
+      responses:
+        "204": {description: Done.}
+      callbacks:
+        onDone:
+          "{$request.query.url}":
+            $ref: served-event.yaml
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [petType]
+      properties: {petType: {type: string}}
+      discriminator: {propertyName: petType}
+    Cat:
+      allOf: [{$ref: "#/components/schemas/Pet"}, {type: object, properties: {meow: {type: boolean}}}]
+    Dog:
+      allOf: [{$ref: "#/components/schemas/Pet"}, {type: object, properties: {bark: {type: boolean}}}]

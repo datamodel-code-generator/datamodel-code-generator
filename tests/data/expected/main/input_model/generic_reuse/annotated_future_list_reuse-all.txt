@@ -1,0 +1,57 @@
+[
+  {
+    "name": "FutureListRoot",
+    "fields": [
+      "box"
+    ],
+    "annotations_equal": {
+      "box": true
+    },
+    "type_identity": {
+      "box": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "box": {
+            "value": [
+              4
+            ]
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              0
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "box": {
+            "value": [
+              4
+            ]
+          }
+        },
+        "invalid": [
+          [
+            [
+              "box",
+              "value",
+              0
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "box": true
+    }
+  }
+]

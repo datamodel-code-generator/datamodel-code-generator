@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Global parameters
+  version: '1'
+paths:
+  parameters:
+    - name: tenant
+      in: query
+      schema:
+        type: string
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string

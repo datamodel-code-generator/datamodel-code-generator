@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shape",
+  "oneOf": [
+    {"$ref": "#/definitions/Circle"},
+    {"$ref": "#/definitions/Square"}
+  ],
+  "definitions": {
+    "Circle": {
+      "type": "object",
+      "required": ["ratio", "kind"],
+      "properties": {
+        "ratio": {"const": 1.5},
+        "kind": {"const": "circle"},
+        "radius": {"type": "number"}
+      }
+    },
+    "Square": {
+      "type": "object",
+      "required": ["ratio", "kind"],
+      "properties": {
+        "ratio": {"const": 2.5},
+        "kind": {"const": "square"},
+        "side": {"type": "number"}
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: Optional Literal Discriminator Nested Choices
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - cat
+          nullable: false
+        name:
+          type: string
+    Dog:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - dog
+        bark:
+          type: boolean
+    Bird:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - bird
+          nullable: false
+        wings:
+          type: integer
+    DogOrBird:
+      oneOf:
+        - $ref: "#/components/schemas/Dog"
+        - $ref: "#/components/schemas/Bird"
+    InlineChoice:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - oneOf:
+                - $ref: "#/components/schemas/Dog"
+                - $ref: "#/components/schemas/Bird"
+          discriminator:
+            propertyName: type
+    RootChoice:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/DogOrBird"
+          discriminator:
+            propertyName: type

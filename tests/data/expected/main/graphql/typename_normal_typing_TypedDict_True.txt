@@ -1,0 +1,162 @@
+{
+  "schema_errors": [],
+  "graphql_errors": [],
+  "graphql_data": {
+    "item": {
+      "__typename": "Item",
+      "camelValue": 3,
+      "label": "item",
+      "spare": 13
+    },
+    "choice": {
+      "__typename": "Second",
+      "camelValue": 4,
+      "label": "second",
+      "spare": 14
+    },
+    "cross": {
+      "__typename": "Cross",
+      "value": 6,
+      "label": "cross"
+    },
+    "ordinary": {
+      "__typename": "Ordinary",
+      "value": 8
+    },
+    "solo": {
+      "__typename": "Solo",
+      "label": "solo"
+    }
+  },
+  "models": {
+    "ZNode": {
+      "fields": [
+        "camelValue",
+        "label"
+      ],
+      "values": {
+        "camelValue": 1,
+        "label": "node"
+      },
+      "attributes": {
+        "camelValue": 1,
+        "label": "node"
+      }
+    },
+    "ANode": {
+      "fields": [
+        "camelValue",
+        "label",
+        "spare"
+      ],
+      "values": {
+        "camelValue": 2,
+        "label": "child",
+        "spare": 12
+      },
+      "attributes": {
+        "camelValue": 2,
+        "label": "child",
+        "spare": 12
+      }
+    },
+    "Item": {
+      "fields": [
+        "camelValue",
+        "label",
+        "spare"
+      ],
+      "values": {
+        "camelValue": 3,
+        "label": "item",
+        "spare": 13
+      },
+      "attributes": {
+        "camelValue": 3,
+        "label": "item",
+        "spare": 13
+      }
+    },
+    "Second": {
+      "fields": [
+        "camelValue",
+        "label",
+        "spare"
+      ],
+      "values": {
+        "camelValue": 4,
+        "label": "second",
+        "spare": 14
+      },
+      "attributes": {
+        "camelValue": 4,
+        "label": "second",
+        "spare": 14
+      }
+    },
+    "Base": {
+      "fields": [
+        "value"
+      ],
+      "values": {
+        "value": 5
+      },
+      "attributes": {
+        "value": 5
+      }
+    },
+    "Cross": {
+      "fields": [
+        "value",
+        "label"
+      ],
+      "values": {
+        "value": 6,
+        "label": "cross"
+      },
+      "attributes": {
+        "value": 6,
+        "label": "cross"
+      }
+    },
+    "Solo": {
+      "fields": [
+        "label"
+      ],
+      "values": {
+        "label": "solo"
+      },
+      "attributes": {
+        "label": "solo"
+      }
+    },
+    "ItemInput": {
+      "fields": [
+        "camelValue",
+        "label",
+        "spare"
+      ],
+      "values": {
+        "camelValue": 7,
+        "label": "input",
+        "spare": 17
+      },
+      "attributes": {
+        "camelValue": 7,
+        "label": "input",
+        "spare": 17
+      }
+    },
+    "Ordinary": {
+      "fields": [
+        "value"
+      ],
+      "values": {
+        "value": 8
+      },
+      "attributes": {
+        "value": 8
+      }
+    }
+  }
+}

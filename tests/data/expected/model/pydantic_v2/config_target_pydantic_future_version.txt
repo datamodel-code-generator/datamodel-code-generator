@@ -1,0 +1,4 @@
+base model config keys: ['extra', 'validate_by_name', 'use_attribute_docstrings']
+base model config: {'extra': "'forbid'", 'validate_by_name': True, 'use_attribute_docstrings': True}
+dataclass config keys: ['extra', 'validate_by_name', 'use_attribute_docstrings']
+dataclass config: {'extra': "'forbid'", 'validate_by_name': True, 'use_attribute_docstrings': True}

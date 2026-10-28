@@ -1,0 +1,993 @@
+{
+ "rows": [
+  {
+   "aspects": {
+    "alias": 6,
+    "bases": 138,
+    "config": 205,
+    "constraints": 72,
+    "constructor-order": 126,
+    "default": 1280,
+    "enum-base": 81,
+    "enum-member-added": 29,
+    "enum-member-removed": 36,
+    "enum-value": 6,
+    "field-added": 119,
+    "field-removed": 108,
+    "import-path-removed": 107,
+    "kind": 234,
+    "module-removed": 4,
+    "name-removed": 128,
+    "numbered-name-removed": 25,
+    "required": 299,
+    "type": 2231
+   },
+   "by_type": {
+    "dataclasses.dataclass": {
+     "behaviour-change": 554,
+     "both-fail": 74,
+     "crash-fix": 258,
+     "no-behaviour": 714,
+     "now-fails": 27,
+     "same": 87,
+     "unsupported": 1969
+    },
+    "msgspec.Struct": {
+     "behaviour-change": 1044,
+     "both-fail": 80,
+     "crash-fix": 400,
+     "no-behaviour": 84,
+     "now-fails": 28,
+     "same": 78,
+     "unsupported": 1969
+    },
+    "pydantic_v2.BaseModel": {
+     "behaviour-change": 547,
+     "both-fail": 74,
+     "crash-fix": 295,
+     "no-behaviour": 673,
+     "now-fails": 35,
+     "same": 90,
+     "unsupported": 1969
+    },
+    "pydantic_v2.dataclass": {
+     "unsupported": 3683
+    },
+    "typing.TypedDict": {
+     "behaviour-change": 559,
+     "both-fail": 71,
+     "crash-fix": 227,
+     "no-behaviour": 827,
+     "now-fails": 29,
+     "same": 1,
+     "unsupported": 178
+    }
+   },
+   "changed_in": {
+    "0.45.0": {
+     "behaviour-change": 2012,
+     "crash-fix": 582,
+     "now-fails": 197
+    },
+    "0.70.0": {
+     "behaviour-change": 1841,
+     "crash-fix": 747,
+     "now-fails": 226
+    },
+    "0.80.0": {
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
+    },
+    "0.86.0": {
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
+    },
+    "0.87.0": {
+     "behaviour-change": 17,
+     "crash-fix": 414
+    }
+   },
+   "counts": {
+    "behaviour-change": 2704,
+    "both-fail": 299,
+    "crash-fix": 1180,
+    "no-behaviour": 2298,
+    "now-fails": 119,
+    "same": 256,
+    "unsupported": 9768
+   },
+   "examples": {
+    "behaviour-change": [
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "[type] A:typename__: Union[Literal['A'], None] -> Union[Literal['A'], msgspec.UnsetType]"
+      ],
+      "input": "tests/data/graphql/additional-imports.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "[type] A:typename__: Union[Literal['A'], None] -> Union[Literal['A'], msgspec.UnsetType]",
+       "[type] B:typename__: Union[Literal['B'], None] -> Union[Literal['B'], msgspec.UnsetType]"
+      ],
+      "input": "tests/data/graphql/alias_generator_empty_union.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "[default] A:optionalListField: 'factory:list' -> 'None'",
+       "[default] A:optionalListOptionalField: 'factory:list' -> 'None'"
+      ],
+      "input": "tests/data/graphql/annotated.graphql",
+      "type": "pydantic_v2.BaseModel"
+     }
+    ],
+    "crash-fix": [
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "ValueError: cannot specify both default and default_factory"
+      ],
+      "input": "tests/data/graphql/annotated.graphql",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "ValueError: cannot specify both default and default_factory"
+      ],
+      "input": "tests/data/graphql/collection-options.graphql",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "ValueError: cannot specify both default and default_factory"
+      ],
+      "input": "tests/data/graphql/different-types-of-fields.graphql",
+      "type": "dataclasses.dataclass"
+     }
+    ],
+    "now-fails": [
+     {
+      "changed_in": [
+       "0.45.0"
+      ],
+      "changes": [
+       "signature timed out after 300s"
+      ],
+      "input": "tests/data/graphql/github-api.graphql",
+      "type": "typing.TypedDict"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'"
+      ],
+      "input": "tests/data/jsonschema/builtin_field_names_python_315_builtins.json",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'"
+      ],
+      "input": "tests/data/jsonschema/builtin_field_names_target_python_version.json",
+      "type": "pydantic_v2.BaseModel"
+     }
+    ]
+   },
+   "from": "0.25.9",
+   "releases": [
+    "0.25.9",
+    "0.45.0",
+    "0.70.0",
+    "0.80.0",
+    "0.86.0",
+    "0.87.0"
+   ],
+   "to": "0.87.0",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "aspects": {
+    "alias": 7,
+    "bases": 20,
+    "config": 239,
+    "constraints": 313,
+    "constructor-order": 37,
+    "default": 417,
+    "enum-member-added": 35,
+    "enum-member-removed": 53,
+    "field-added": 56,
+    "field-removed": 47,
+    "import-path-removed": 27,
+    "kind": 395,
+    "module-removed": 4,
+    "name-removed": 165,
+    "numbered-name-removed": 25,
+    "parsed-value": 169,
+    "payload-verdict": 343,
+    "required": 197,
+    "type": 1488
+   },
+   "by_type": {
+    "dataclasses.dataclass": {
+     "behaviour-change": 529,
+     "both-fail": 72,
+     "crash-fix": 259,
+     "no-behaviour": 1949,
+     "now-fails": 29,
+     "same": 647,
+     "unsupported": 198
+    },
+    "msgspec.Struct": {
+     "behaviour-change": 617,
+     "both-fail": 79,
+     "crash-fix": 484,
+     "no-behaviour": 1672,
+     "now-fails": 30,
+     "same": 603,
+     "unsupported": 198
+    },
+    "pydantic_v2.BaseModel": {
+     "behaviour-change": 787,
+     "both-fail": 73,
+     "crash-fix": 318,
+     "no-behaviour": 1671,
+     "now-fails": 38,
+     "same": 595,
+     "unsupported": 201
+    },
+    "pydantic_v2.dataclass": {
+     "unsupported": 3683
+    },
+    "typing.TypedDict": {
+     "behaviour-change": 360,
+     "both-fail": 70,
+     "crash-fix": 153,
+     "no-behaviour": 697,
+     "now-fails": 30,
+     "same": 404,
+     "unsupported": 178
+    }
+   },
+   "changed_in": {
+    "0.70.0": {
+     "behaviour-change": 1841,
+     "crash-fix": 747,
+     "now-fails": 226
+    },
+    "0.80.0": {
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
+    },
+    "0.86.0": {
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
+    },
+    "0.87.0": {
+     "behaviour-change": 17,
+     "crash-fix": 414
+    }
+   },
+   "counts": {
+    "behaviour-change": 2293,
+    "both-fail": 294,
+    "crash-fix": 1214,
+    "no-behaviour": 5989,
+    "now-fails": 127,
+    "same": 2249,
+    "unsupported": 4458
+   },
+   "examples": {
+    "behaviour-change": [
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "[field-removed] A:field: removed",
+       "[field-added] A:field_: required"
+      ],
+      "input": "tests/data/graphql/annotated.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "[field-removed] A:field: removed",
+       "[field-added] A:field_: required"
+      ],
+      "input": "tests/data/graphql/different-types-of-fields.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "[required] PodSpec:container_list: True -> False",
+       "[default] PodSpec:container_list: None -> 'factory:list'"
+      ],
+      "input": "tests/data/graphql/empty_list_default.graphql",
+      "type": "dataclasses.dataclass"
+     }
+    ],
+    "crash-fix": [
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "[kind] IssueFilters: error -> msgspec.Struct"
+      ],
+      "input": "tests/data/graphql/github-api-issue-states.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.80.0",
+       "0.86.0"
+      ],
+      "changes": [
+       "TypeError: Required field 'id' cannot follow optional fields. Either reorder the struct fields, or set `kw_only=True` in"
+      ],
+      "input": "tests/data/graphql/github-api.graphql",
+      "type": "msgspec.Struct"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "TypeError: Cannot create a consistent method resolution order (MRO) for bases object, Node, Notification"
+      ],
+      "input": "tests/data/graphql/interface_mro.graphql",
+      "type": "dataclasses.dataclass"
+     }
+    ],
+    "now-fails": [
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'"
+      ],
+      "input": "tests/data/jsonschema/builtin_field_names_python_315_builtins.json",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'"
+      ],
+      "input": "tests/data/jsonschema/builtin_field_names_target_python_version.json",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.70.0"
+      ],
+      "changes": [
+       "ModuleNotFoundError: No module named 'mypkg'"
+      ],
+      "input": "tests/data/jsonschema/constraints_on_typing_lookalikes.json",
+      "type": "dataclasses.dataclass"
+     }
+    ]
+   },
+   "from": "0.45.0",
+   "releases": [
+    "0.45.0",
+    "0.70.0",
+    "0.80.0",
+    "0.86.0",
+    "0.87.0"
+   ],
+   "to": "0.87.0",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "aspects": {
+    "alias": 1,
+    "bases": 8,
+    "config": 14,
+    "constraints": 330,
+    "constructor-order": 51,
+    "default": 319,
+    "enum-member-removed": 24,
+    "field-added": 24,
+    "field-removed": 7,
+    "import-path-removed": 25,
+    "kind": 376,
+    "module-removed": 5,
+    "name-removed": 35,
+    "numbered-name-removed": 16,
+    "parsed-value": 63,
+    "payload-verdict": 379,
+    "required": 257,
+    "type": 1024
+   },
+   "by_type": {
+    "dataclasses.dataclass": {
+     "behaviour-change": 198,
+     "both-fail": 94,
+     "crash-fix": 194,
+     "no-behaviour": 32,
+     "now-fails": 53,
+     "same": 3092,
+     "unsupported": 20
+    },
+    "msgspec.Struct": {
+     "behaviour-change": 252,
+     "both-fail": 101,
+     "crash-fix": 345,
+     "no-behaviour": 50,
+     "now-fails": 51,
+     "same": 2864,
+     "unsupported": 20
+    },
+    "pydantic_v2.BaseModel": {
+     "behaviour-change": 243,
+     "both-fail": 100,
+     "crash-fix": 185,
+     "no-behaviour": 23,
+     "now-fails": 52,
+     "same": 3059,
+     "unsupported": 21
+    },
+    "pydantic_v2.dataclass": {
+     "behaviour-change": 551,
+     "both-fail": 101,
+     "crash-fix": 274,
+     "no-behaviour": 33,
+     "now-fails": 53,
+     "same": 2650,
+     "unsupported": 21
+    },
+    "typing.TypedDict": {
+     "behaviour-change": 155,
+     "both-fail": 93,
+     "crash-fix": 91,
+     "no-behaviour": 13,
+     "now-fails": 27,
+     "same": 1513
+    }
+   },
+   "changed_in": {
+    "0.80.0": {
+     "behaviour-change": 919,
+     "crash-fix": 406,
+     "now-fails": 221
+    },
+    "0.86.0": {
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
+    },
+    "0.87.0": {
+     "behaviour-change": 17,
+     "crash-fix": 414
+    }
+   },
+   "counts": {
+    "behaviour-change": 1399,
+    "both-fail": 489,
+    "crash-fix": 1089,
+    "no-behaviour": 151,
+    "now-fails": 236,
+    "same": 13178,
+    "unsupported": 82
+   },
+   "examples": {
+    "behaviour-change": [
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "[required] UserSignupUserSignupPayload:age: True -> False",
+       "[default] UserSignupUserSignupPayload:age: None -> 'None'"
+      ],
+      "input": "tests/data/asyncapi/multi-format-schemas.yaml",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "[default] ProtoEvent:children: 'FieldInfo(annotation=NoneType, required=False, default=[], validate_default=True)' -> 'FieldInfo(annotation=NoneType, require..."
+      ],
+      "input": "tests/data/asyncapi/protobuf-schema-format.yaml",
+      "type": "pydantic_v2.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "[required] Address:zip: True -> False",
+       "[default] Address:zip: None -> 'None'"
+      ],
+      "input": "tests/data/avro/constructs.avsc",
+      "type": "dataclasses.dataclass"
+     }
+    ],
+    "crash-fix": [
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "NotADirectoryError: [Errno 20] Not a directory: 'tests/data/asyncapi/avro-named-types.yaml/__asyncapi_schemas__/channels"
+      ],
+      "input": "tests/data/asyncapi/avro-named-types.yaml",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "PydanticUserError: Model 'User' needs field 'kind' to be of type `Literal`"
+      ],
+      "input": "tests/data/asyncapi/edge-cases.yaml",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "[type] ContainerDefaults:array: list[bytes] -> Union[list[bytes], msgspec.UnsetType]",
+       "[required] ContainerDefaults:array: True -> False"
+      ],
+      "input": "tests/data/avro/container_bytes_defaults.avsc",
+      "type": "msgspec.Struct"
+     }
+    ],
+    "now-fails": [
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "Avro fixed decimal default must contain exactly 2 bytes: 3"
+      ],
+      "input": "tests/data/avro/invalid_decimal_default_fixed_long.avsc",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "Avro fixed decimal default must contain exactly 2 bytes: 1"
+      ],
+      "input": "tests/data/avro/invalid_decimal_default_fixed_reference.avsc",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.80.0"
+      ],
+      "changes": [
+       "Avro fixed decimal default must contain exactly 2 bytes: 1"
+      ],
+      "input": "tests/data/avro/invalid_decimal_default_fixed_short.avsc",
+      "type": "dataclasses.dataclass"
+     }
+    ]
+   },
+   "from": "0.70.0",
+   "releases": [
+    "0.70.0",
+    "0.80.0",
+    "0.86.0",
+    "0.87.0"
+   ],
+   "to": "0.87.0",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "aspects": {
+    "alias": 1,
+    "bases": 6,
+    "config": 11,
+    "constraints": 283,
+    "constructor-order": 4,
+    "default": 39,
+    "enum-member-removed": 4,
+    "field-added": 7,
+    "field-removed": 7,
+    "import-path-removed": 25,
+    "kind": 119,
+    "module-removed": 5,
+    "name-removed": 6,
+    "numbered-name-removed": 4,
+    "parsed-value": 3,
+    "payload-verdict": 157,
+    "required": 4,
+    "type": 574
+   },
+   "by_type": {
+    "dataclasses.dataclass": {
+     "behaviour-change": 37,
+     "both-fail": 128,
+     "crash-fix": 128,
+     "no-behaviour": 8,
+     "now-fails": 14,
+     "same": 3348,
+     "unsupported": 20
+    },
+    "msgspec.Struct": {
+     "behaviour-change": 63,
+     "both-fail": 135,
+     "crash-fix": 266,
+     "no-behaviour": 10,
+     "now-fails": 12,
+     "same": 3177,
+     "unsupported": 20
+    },
+    "pydantic_v2.BaseModel": {
+     "behaviour-change": 68,
+     "both-fail": 133,
+     "crash-fix": 126,
+     "no-behaviour": 19,
+     "now-fails": 14,
+     "same": 3302,
+     "unsupported": 21
+    },
+    "pydantic_v2.dataclass": {
+     "behaviour-change": 420,
+     "both-fail": 134,
+     "crash-fix": 157,
+     "no-behaviour": 35,
+     "now-fails": 15,
+     "same": 2901,
+     "unsupported": 21
+    },
+    "typing.TypedDict": {
+     "behaviour-change": 28,
+     "both-fail": 103,
+     "crash-fix": 63,
+     "no-behaviour": 8,
+     "now-fails": 13,
+     "same": 1677
+    }
+   },
+   "changed_in": {
+    "0.86.0": {
+     "behaviour-change": 599,
+     "crash-fix": 332,
+     "now-fails": 68
+    },
+    "0.87.0": {
+     "behaviour-change": 17,
+     "crash-fix": 414
+    }
+   },
+   "counts": {
+    "behaviour-change": 616,
+    "both-fail": 633,
+    "crash-fix": 740,
+    "no-behaviour": 80,
+    "now-fails": 68,
+    "same": 14405,
+    "unsupported": 82
+   },
+   "examples": {
+    "behaviour-change": [
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "[type] MD5: Annotated[bytes, None, Len(max_length=16,min_length=16)] -> Annotated[bytes, MinLen(min_length=16),MaxLen(max_length=16)]",
+       "[constraints] User:hash: Annotated[bytes, None, Len(max_length=16,min_length=16)] -> Annotated[bytes, MinLen(min_length=16),MaxLen(max_length=16)]"
+      ],
+      "input": "tests/data/avro/constructs.avsc",
+      "type": "pydantic_v2.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "[constraints] ContainerDefaults:fixed_array: Union[None, list[Annotated[bytes, None, Len(max_length=1,min_length=1)]]] -> Union[None, list[Annotated[bytes, M...",
+       "[constraints] ContainerDefaults:fixed_map: Union[None, dict[str, list[Annotated[bytes, None, Len(max_length=1,min_length=1)]]]] -> Union[None, dict[str, list..."
+      ],
+      "input": "tests/data/avro/container_bytes_defaults.avsc",
+      "type": "pydantic_v2.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "[constraints] DecimalDefaults:plain_fixed: Union[Annotated[bytes, None, Len(max_length=2,min_length=2)], None] -> Union[Annotated[bytes, MinLen(min_length=2)...",
+       "[type] Raw: Annotated[bytes, None, Len(max_length=2,min_length=2)] -> Annotated[bytes, MinLen(min_length=2),MaxLen(max_length=2)]"
+      ],
+      "input": "tests/data/avro/decimal_defaults.avsc",
+      "type": "pydantic_v2.dataclass"
+     }
+    ],
+    "crash-fix": [
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "NotADirectoryError: [Errno 20] Not a directory: 'tests/data/asyncapi/avro-named-types.yaml/__asyncapi_schemas__/channels"
+      ],
+      "input": "tests/data/asyncapi/avro-named-types.yaml",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "PydanticUserError: Model 'User' needs field 'kind' to be of type `Literal`"
+      ],
+      "input": "tests/data/asyncapi/edge-cases.yaml",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "[constraints] SpecMatrix:sameKindNamedUnion: Union[Annotated[bytes, Meta(max_length=4,min_length=4)], Annotated[bytes, Meta(max_length=8,min_length=8)], EA, ..."
+      ],
+      "input": "tests/data/avro/spec_matrix.avsc",
+      "type": "msgspec.Struct"
+     }
+    ],
+    "now-fails": [
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "Generated model inheritance cycle: A (cycle_multi_base.json#/$defs/A) -> B (cycle_multi_base.json#/$defs/B) -> A (cycle_multi_base.json#/$defs/A)"
+      ],
+      "input": "tests/data/jsonschema/allof_inheritance_errors/cycle_multi_base.json",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "Generated model inheritance cycle: A (cycle_multi_base.json#/$defs/A) -> B (cycle_multi_base.json#/$defs/B) -> A (cycle_multi_base.json#/$defs/A)"
+      ],
+      "input": "tests/data/jsonschema/allof_inheritance_errors",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.86.0"
+      ],
+      "changes": [
+       "enum.StrEnum is unavailable for target Python 3.10"
+      ],
+      "input": "tests/data/jsonschema/custom_type_path_overridden.json",
+      "type": "dataclasses.dataclass"
+     }
+    ]
+   },
+   "from": "0.80.0",
+   "releases": [
+    "0.80.0",
+    "0.86.0",
+    "0.87.0"
+   ],
+   "to": "0.87.0",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  {
+   "aspects": {
+    "config": 5,
+    "constraints": 8,
+    "default": 1,
+    "kind": 2,
+    "parsed-value": 2,
+    "payload-verdict": 7,
+    "type": 38
+   },
+   "by_type": {
+    "dataclasses.dataclass": {
+     "behaviour-change": 1,
+     "both-fail": 139,
+     "crash-fix": 80,
+     "no-behaviour": 10,
+     "same": 3433,
+     "unsupported": 20
+    },
+    "msgspec.Struct": {
+     "both-fail": 143,
+     "crash-fix": 103,
+     "no-behaviour": 6,
+     "same": 3411,
+     "unsupported": 20
+    },
+    "pydantic_v2.BaseModel": {
+     "behaviour-change": 13,
+     "both-fail": 142,
+     "crash-fix": 91,
+     "no-behaviour": 17,
+     "same": 3399,
+     "unsupported": 21
+    },
+    "pydantic_v2.dataclass": {
+     "behaviour-change": 2,
+     "both-fail": 142,
+     "crash-fix": 90,
+     "no-behaviour": 17,
+     "same": 3411,
+     "unsupported": 21
+    },
+    "typing.TypedDict": {
+     "behaviour-change": 1,
+     "both-fail": 113,
+     "crash-fix": 50,
+     "no-behaviour": 7,
+     "same": 1721
+    }
+   },
+   "changed_in": {
+    "0.87.0": {
+     "behaviour-change": 17,
+     "crash-fix": 414
+    }
+   },
+   "counts": {
+    "behaviour-change": 17,
+    "both-fail": 679,
+    "crash-fix": 414,
+    "no-behaviour": 57,
+    "same": 15375,
+    "unsupported": 82
+   },
+   "examples": {
+    "behaviour-change": [
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "[type] KeyMap: dict[Key, int] -> dict[str, int]"
+      ],
+      "input": "tests/data/jsonschema/collapse_root_models_property_names_reference.json",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "[type] allof_branch_title:Root: dict[Root1, int] -> dict[str, int]",
+       "[type] allof_lookbehind:Root: dict[Root2, int] -> dict[str, int]"
+      ],
+      "input": "tests/data/jsonschema/compound_property_names",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "[type] root:ExternalAnchor:anchored: Union[NestedChild, None] -> Union[AnchoredChild, None]",
+       "[type] root:ExternalAnchor:anchored_again: Union[NestedChild, None] -> Union[AnchoredChild, None]"
+      ],
+      "input": "tests/data/jsonschema/external_anchor",
+      "type": "dataclasses.dataclass"
+     }
+    ],
+    "crash-fix": [
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "NotADirectoryError: [Errno 20] Not a directory: 'tests/data/asyncapi/avro-named-types.yaml/__asyncapi_schemas__/channels"
+      ],
+      "input": "tests/data/asyncapi/avro-named-types.yaml",
+      "type": "dataclasses.dataclass"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "PydanticUserError: Model 'User' needs field 'kind' to be of type `Literal`"
+      ],
+      "input": "tests/data/asyncapi/edge-cases.yaml",
+      "type": "pydantic_v2.BaseModel"
+     },
+     {
+      "changed_in": [
+       "0.87.0"
+      ],
+      "changes": [
+       "[type] anchored_disjoint:Root: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]",
+       "[type] minimum:Root: Union[dict[str, Root3], dict[str, Root4]] -> dict[str, Union[Root3, Root4]]"
+      ],
+      "input": "tests/data/jsonschema/additional_pattern_intersections",
+      "type": "msgspec.Struct"
+     }
+    ]
+   },
+   "from": "0.86.0",
+   "releases": [
+    "0.86.0",
+    "0.87.0"
+   ],
+   "to": "0.87.0",
+   "types": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  }
+ ],
+ "schema_version": 1,
+ "to": "0.87.0"
+}

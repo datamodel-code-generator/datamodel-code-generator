@@ -1,0 +1,8 @@
+wide={"k": 9223372036854775808}: schema accepts, model type refused by msgspec
+edge={"k": 9223372036854775807}: schema accepts, model accepts
+pet={"kind": 1, "name": "Tom"}: schema accepts, model accepts
+animal={"kind": 4}: schema accepts, model type refused by msgspec
+wide={"k": 2}: schema rejects, model type refused by msgspec
+edge={"k": 0}: schema rejects, model rejects
+pet={"kind": 3}: schema rejects, model rejects
+animal={"kind": -9223372036854775809}: schema rejects, model type refused by msgspec

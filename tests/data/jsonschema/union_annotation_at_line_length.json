@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnionAnnotationAtLineLength",
+  "type": "object",
+  "properties": {
+    "under_limit": {
+      "type": "string",
+      "title": "LineLengthBoundaryTitles"
+    },
+    "at_the_limit": {
+      "type": "string",
+      "title": "LineLengthBoundaryTitles"
+    },
+    "beyond_limits": {
+      "type": "string",
+      "title": "LineLengthBoundaryTitles"
+    }
+  }
+}

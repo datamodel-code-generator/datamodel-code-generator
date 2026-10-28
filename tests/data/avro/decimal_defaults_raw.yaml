@@ -1,0 +1,26 @@
+type: record
+name: DecimalDefaults
+namespace: money
+fields:
+  - name: direct
+    type:
+      type: bytes
+      logicalType: decimal
+      precision: 6
+      scale: 2
+    default: !!binary AQI=
+  - name: fixed
+    type:
+      type: fixed
+      name: Money
+      size: 2
+      logicalType: decimal
+      precision: 4
+      scale: 2
+    default: !!binary /v4=
+  - name: reference
+    type: Money
+    default: !!binary BLA=
+  - name: ordinary
+    type: bytes
+    default: !!binary /w==

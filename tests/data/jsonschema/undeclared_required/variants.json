@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer", "readOnly": true},
+    "name": {"type": "string"},
+    "secret": {"type": "string", "writeOnly": true}
+  },
+  "required": ["extra_required"],
+  "additionalProperties": true,
+  "if": {"properties": {"mode": {"const": "conditional"}}, "required": ["mode"]},
+  "then": {"required": ["conditional_extra"]},
+  "else": {"required": ["other_extra"]}
+}

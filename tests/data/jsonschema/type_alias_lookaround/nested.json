@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "inner": {"$ref": "#/definitions/Inner"}
+  },
+  "definitions": {
+    "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$"},
+    "Inner": {
+      "type": "object",
+      "properties": {
+        "first": {"$ref": "#/definitions/Code"},
+        "second": {"$ref": "#/definitions/Code"}
+      }
+    }
+  }
+}

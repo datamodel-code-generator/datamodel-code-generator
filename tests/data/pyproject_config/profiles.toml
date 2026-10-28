@@ -1,0 +1,16 @@
+[tool.datamodel-codegen]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+[tool.datamodel-codegen.profiles.base]
+snake-case-field = true
+class-name = "Parent"
+[tool.datamodel-codegen.profiles.second]
+class-name = "Second"
+use-default = true
+[tool.datamodel-codegen.profiles.child]
+extends = "base"
+class-name = "Child"
+force-optional = true
+[tool.datamodel-codegen.profiles.multiple]
+extends = ["base", "second"]

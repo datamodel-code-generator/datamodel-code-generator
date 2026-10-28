@@ -1,0 +1,33 @@
+{
+  "title": "Root1",
+  "type": "object",
+  "properties": {
+    "data1": {
+      "$ref": "#/$defs/Outer"
+    }
+  },
+  "$defs": {
+    "Inner": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "number": {
+          "type": "integer"
+        },
+        "wire-name": {
+          "type": "string"
+        }
+      }
+    },
+    "Outer": {
+      "type": "object",
+      "properties": {
+        "inner": {
+          "$ref": "#/$defs/Inner"
+        }
+      }
+    }
+  }
+}

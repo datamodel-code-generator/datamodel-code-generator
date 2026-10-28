@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Alias null dependencies", "version": "1"},
+  "paths": {
+    "/items": {
+      "post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Model"}}}},
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Plain": {"type": "string"},
+      "Nullable": {"type": "string", "nullable": true},
+      "Either": {"anyOf": [{"$ref": "#/components/schemas/Plain"}, {"$ref": "#/components/schemas/Nullable"}]},
+      "Bound": {"type": "string", "x-python-type": "int | None"},
+      "Mixed": {"anyOf": [{"$ref": "#/components/schemas/Plain"}, {"type": "string", "x-python-type": "int"}]},
+      "Model": {
+        "type": "object",
+        "properties": {
+          "either": {"$ref": "#/components/schemas/Either"},
+          "bound": {"$ref": "#/components/schemas/Bound"},
+          "mixed": {"$ref": "#/components/schemas/Mixed"}
+        }
+      }
+    }
+  }
+}

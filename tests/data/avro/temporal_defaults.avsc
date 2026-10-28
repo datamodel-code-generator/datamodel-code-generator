@@ -1,0 +1,295 @@
+{
+  "type": "record",
+  "name": "TemporalDefaults",
+  "fields": [
+    {
+      "name": "datetime_module",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 0
+    },
+    {
+      "name": "date_before",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": -1
+    },
+    {
+      "name": "date_after",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 1
+    },
+    {
+      "name": "date_min",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": -719162
+    },
+    {
+      "name": "date_max",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 2932896
+    },
+    {
+      "name": "time_millis_zero",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      },
+      "default": 0
+    },
+    {
+      "name": "time_millis",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      },
+      "default": 1001
+    },
+    {
+      "name": "time_millis_last",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      },
+      "default": 86399999
+    },
+    {
+      "name": "time_micros",
+      "type": {
+        "type": "long",
+        "logicalType": "time-micros"
+      },
+      "default": 1234567
+    },
+    {
+      "name": "time_micros_last",
+      "type": {
+        "type": "long",
+        "logicalType": "time-micros"
+      },
+      "default": 86399999999
+    },
+    {
+      "name": "timestamp_millis",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "default": 1001
+    },
+    {
+      "name": "timestamp_micros_before",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      },
+      "default": -1
+    },
+    {
+      "name": "timestamp_micros_exact",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      },
+      "default": 9007199254740991
+    },
+    {
+      "name": "timestamp_micros_min",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      },
+      "default": -62135596800000000
+    },
+    {
+      "name": "timestamp_micros_max",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      },
+      "default": 253402300799999999
+    },
+    {
+      "name": "timestamp_nanos",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-nanos"
+      },
+      "default": 1000
+    },
+    {
+      "name": "timestamp_nanos_before",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-nanos"
+      },
+      "default": -1000
+    },
+    {
+      "name": "local_millis",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-millis"
+      },
+      "default": -1
+    },
+    {
+      "name": "local_micros",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-micros"
+      },
+      "default": 1000001
+    },
+    {
+      "name": "local_nanos",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-nanos"
+      },
+      "default": -1000
+    },
+    {
+      "name": "date_union",
+      "type": [
+        {
+          "type": "int",
+          "logicalType": "date"
+        },
+        "null"
+      ],
+      "default": 1
+    },
+    {
+      "name": "plain_union",
+      "type": [
+        "int",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "default": 1000
+    },
+    {
+      "name": "nullable",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "wrapped",
+      "type": {
+        "type": {
+          "type": "long",
+          "logicalType": "local-timestamp-micros"
+        }
+      },
+      "default": -1
+    },
+    {
+      "name": "wrapped_union",
+      "type": {
+        "type": [
+          {
+            "type": "int",
+            "logicalType": "time-millis"
+          },
+          "null"
+        ]
+      },
+      "default": 1000
+    },
+    {
+      "name": "date_array",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "int",
+          "logicalType": "date"
+        }
+      },
+      "default": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "time_map",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "long",
+          "logicalType": "time-micros"
+        }
+      },
+      "default": {
+        "z": 1001,
+        "a": 1
+      }
+    },
+    {
+      "name": "record",
+      "type": {
+        "type": "record",
+        "name": "scope.LogicalRecord",
+        "fields": [
+          {
+            "name": "day",
+            "type": {
+              "type": "int",
+              "logicalType": "date"
+            }
+          },
+          {
+            "name": "instant",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-micros"
+            }
+          }
+        ]
+      },
+      "default": {
+        "instant": 1000001,
+        "day": 1
+      }
+    },
+    {
+      "name": "record_array",
+      "type": {
+        "type": "array",
+        "items": "scope.LogicalRecord"
+      },
+      "default": [
+        {
+          "day": -1,
+          "instant": -1
+        }
+      ]
+    },
+    {
+      "name": "ordinary",
+      "type": "long",
+      "default": 1000
+    }
+  ]
+}

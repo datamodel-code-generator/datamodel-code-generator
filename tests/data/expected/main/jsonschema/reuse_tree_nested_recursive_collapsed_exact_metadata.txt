@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "shared",
+      "source_ref": "schema_2.json#/$defs/Inner",
+      "source_path": [
+        "$defs",
+        "Inner"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "text",
+          "alias": "text",
+          "original_name": "text",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "number",
+          "alias": "number",
+          "original_name": "number",
+          "type": "int | None",
+          "required": false
+        },
+        {
+          "name": "wire_name",
+          "alias": "wire-name",
+          "original_name": "wire-name",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "next",
+          "alias": "next",
+          "original_name": "next",
+          "type": "Inner | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Root2",
+      "name": "Root2",
+      "module": "schema_2.root2",
+      "source_ref": "schema_2.json#",
+      "source_path": [],
+      "title": "Root2",
+      "fields": [
+        {
+          "name": "data2",
+          "alias": "data2",
+          "original_name": "data2",
+          "type": "Outer | None",
+          "required": false
+        },
+        {
+          "name": "next",
+          "alias": "next",
+          "original_name": "next",
+          "type": "Root2 | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Outer",
+      "name": "Outer",
+      "module": "schema_2.outer",
+      "source_ref": "schema_2.json#/$defs/Outer",
+      "source_path": [
+        "$defs",
+        "Outer"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Root1",
+      "name": "Root1",
+      "module": "schema_1.root1",
+      "source_ref": "schema_1.json#",
+      "source_path": [],
+      "title": "Root1",
+      "fields": [
+        {
+          "name": "data1",
+          "alias": "data1",
+          "original_name": "data1",
+          "type": "Outer | None",
+          "required": false
+        },
+        {
+          "name": "next",
+          "alias": "next",
+          "original_name": "next",
+          "type": "Root1 | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Outer",
+      "name": "Outer",
+      "module": "schema_1.outer",
+      "source_ref": "schema_1.json#/$defs/Outer",
+      "source_path": [
+        "$defs",
+        "Outer"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Root0",
+      "name": "Root0",
+      "module": "schema_0.root0",
+      "source_ref": "schema_0.json#",
+      "source_path": [],
+      "title": "Root0",
+      "fields": [
+        {
+          "name": "data0",
+          "alias": "data0",
+          "original_name": "data0",
+          "type": "Outer | None",
+          "required": false
+        },
+        {
+          "name": "next",
+          "alias": "next",
+          "original_name": "next",
+          "type": "Root0 | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Outer",
+      "name": "Outer",
+      "module": "schema_0.outer",
+      "source_ref": "schema_0.json#/$defs/Outer",
+      "source_path": [
+        "$defs",
+        "Outer"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

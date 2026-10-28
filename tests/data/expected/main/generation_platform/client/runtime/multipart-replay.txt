@@ -1,0 +1,9 @@
+# media pydantic_v2.BaseModel
+    multipart payload count=2
+  shared file parts = b'ok'
+    multipart payload count=2
+  caller file in another call = b'ok'
+    multipart caller file open=True
+    async multipart payload count=2
+  async shared file parts = b'ok'
+    async multipart caller file open=True

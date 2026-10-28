@@ -1,0 +1,3 @@
+[tool.datamodel-codegen]
+preset = "unknown-preset"
+target-python-version = "3.10"

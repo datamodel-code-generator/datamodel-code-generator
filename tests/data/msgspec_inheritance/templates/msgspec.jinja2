@@ -1,0 +1,51 @@
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+{%- if base_class %}
+class {{ class_name }}(Struct{%- for key, value in (base_class_kwargs|default({})).items() -%}
+, {{ key }}={{ value }}
+{%- endfor -%}):
+{%- else %}
+class {{ class_name }}:
+{%- endif %}
+{%- if description %}
+    {{ description }}
+{%- endif %}
+{%- set ns = namespace(has_rendered_field=false) -%}
+{%- for field in fields -%}
+    {%- if field.extras.get('is_classvar') %}
+    {#- Skip fields with is_classvar=True - they are managed by msgspec tag_field -#}
+    {%- elif not field.annotated and field.field %}
+    {%- set ns.has_rendered_field = true %}
+    {{ field.name }}: {{ field.type_hint }} = {{ field.field }}
+    {%- else %}
+    {%- set ns.has_rendered_field = true %}
+    {%- if field.annotated and not field.field %}
+    {{ field.name }}: {{ field.annotated }}
+    {%- elif field.annotated and field.field %}
+    {{ field.name }}: {{ field.annotated }} = {{ field.field }}
+    {%- else %}
+    {{ field.name }}: {{ field.type_hint }}
+    {%- endif %}
+    {%- if not field.field and (not field.required or field.use_default_with_required)
+            %} = {{ field.represented_default }}
+    {%- endif -%}
+    {%- endif %}
+
+
+
+    {%- if not field.extras.get('is_classvar') and field.docstring %}
+    {{ field.docstring }}
+{%- if field.use_inline_field_description and not loop.last %}
+
+{% endif %}
+    {%- elif not field.extras.get('is_classvar') and field.inline_field_docstring %}
+    {{ field.inline_field_docstring }}
+{%- if not loop.last %}
+
+{% endif %}
+    {%- endif %}
+{%- endfor -%}
+{%- if not ns.has_rendered_field and not description %}
+    pass
+{%- endif -%}

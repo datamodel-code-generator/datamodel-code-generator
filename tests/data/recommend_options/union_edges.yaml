@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Union edge cases
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      responses:
+        '200':
+          description: Events
+    parameters: []
+components:
+  schemas:
+    event-envelope:
+      type: object
+      properties:
+        kind:
+          type: string
+        body:
+          type: object
+          properties:
+            text:
+              type: string
+        payload:
+          oneOf:
+            - $ref: '#/components/schemas/audit_entry'
+            - allOf:
+                - $ref: '#/components/schemas/tagged_base'
+            - allOf:
+                - $ref: '#/components/schemas/loopStart'
+            - allOf:
+                - $ref: '#/components/schemas/missing'
+                - $ref: 'external.yaml#/Shared'
+            - type: object
+              properties:
+                id:
+                  type: string
+              required: [id]
+            - type: object
+              properties:
+                level:
+                  enum: [high]
+            - type: object
+              properties:
+                level:
+                  enum: [low]
+                note:
+                  type: string
+            - type: object
+              properties:
+                shared:
+                  const: same
+                a:
+                  type: string
+                any: true
+            - type: object
+              properties:
+                shared:
+                  const: same
+                b:
+                  type: string
+            - type: string
+              title: Plain text
+            - type: 'null'
+        source:
+          discriminator:
+            propertyName: kind
+          anyOf:
+            - $ref: '#/components/schemas/audit_entry'
+            - type: object
+              properties:
+                kind:
+                  type: string
+        detail:
+          anyOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+            - type: 'null'
+      oneOf:
+        - required: [kind]
+        - required: [body]
+          minProperties: 1
+    audit_entry:
+      type: object
+      properties:
+        actor:
+          type: string
+    tagged_base:
+      type: object
+      properties:
+        type:
+          const: base
+    loopStart:
+      allOf:
+        - $ref: '#/components/schemas/loopnext'
+    loopnext:
+      allOf:
+        - $ref: '#/components/schemas/loopStart'
+    flag: true

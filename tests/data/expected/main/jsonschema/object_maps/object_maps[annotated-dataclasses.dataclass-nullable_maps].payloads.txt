@@ -1,0 +1,5 @@
+valid: accepted
+invalid pNullableCount: accepted
+invalid rNullableCount: accepted
+invalid pNullableOpenCount: accepted
+invalid rPatternCount: accepted

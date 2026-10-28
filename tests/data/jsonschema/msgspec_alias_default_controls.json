@@ -1,0 +1,17 @@
+{
+  "title": "DefaultControls",
+  "type": "object",
+  "$defs": {
+    "Item": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
+    "Numbers": {"type": "array", "items": {"type": "integer"}},
+    "ItemMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Item"}}
+  },
+  "properties": {
+    "direct": {"$ref": "#/$defs/Item", "default": {"id": 1}},
+    "direct_list": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": [{"id": 2}]},
+    "empty_list": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": []},
+    "numbers": {"$ref": "#/$defs/Numbers", "default": [1, 2]},
+    "mapping": {"$ref": "#/$defs/ItemMap", "default": {"item": {"id": 3}}},
+    "empty_mapping": {"$ref": "#/$defs/ItemMap", "default": {}}
+  }
+}

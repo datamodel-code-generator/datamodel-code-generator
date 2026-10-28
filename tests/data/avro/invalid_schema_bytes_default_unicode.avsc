@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "InvalidBytesDefault",
+  "fields": [
+    {
+      "name": "payload",
+      "type": "bytes",
+      "default": "Ā"
+    }
+  ]
+}

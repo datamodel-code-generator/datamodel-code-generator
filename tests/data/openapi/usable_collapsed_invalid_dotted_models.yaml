@@ -1,0 +1,21 @@
+openapi: 3.0.0
+info:
+  title: Usable collapsed invalid dotted models
+  version: '1'
+paths: {}
+components:
+  schemas:
+    A.1.StringA:
+      type: string
+    A.1.Foo:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/A.1.StringA'
+    B.1.StringB:
+      type: string
+    B.1.Foo:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/B.1.StringB'

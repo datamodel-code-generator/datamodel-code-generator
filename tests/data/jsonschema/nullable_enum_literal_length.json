@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Status",
+  "type": ["string", "null"],
+  "enum": ["a", "bb", null],
+  "minLength": 2
+}

@@ -1,0 +1,14 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Distinct inherited TypedDict keys", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "A": {"type": "object", "required": ["foo-bar"], "properties": {"foo-bar": {"type": "string"}}},
+    "B": {"type": "object", "required": ["foo_bar"], "properties": {"foo_bar": {"type": "integer"}}},
+    "Leaf": {"allOf": [
+      {"$ref": "#/components/schemas/A"},
+      {"$ref": "#/components/schemas/B"},
+      {"type": "object", "required": ["leaf-key"], "properties": {"leaf-key": {"type": "boolean"}}}
+    ]}
+  }}
+}

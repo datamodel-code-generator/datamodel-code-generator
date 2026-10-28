@@ -1,0 +1,6 @@
+day
+email
+secret
+blob
+code
+slot

@@ -1,0 +1,11 @@
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+
+[tool.datamodel-codegen.jobs.models]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "models.py"

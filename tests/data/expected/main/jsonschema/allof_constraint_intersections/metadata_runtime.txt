@@ -1,0 +1,125 @@
+{
+  "native_valid": [
+    true,
+    true
+  ],
+  "native_invalid": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "members": {
+    "both_names": [
+      "ParentB",
+      "ParentC"
+    ],
+    "both_alt": [
+      "ParentB",
+      "ParentC"
+    ],
+    "child_names": [
+      "ChildB",
+      "ChildC"
+    ],
+    "child_alt": [
+      "ChildB",
+      "ChildC"
+    ],
+    "short_names": [
+      "ChildB",
+      "ChildC"
+    ],
+    "short_alt": [
+      "ChildB",
+      "ChildC"
+    ],
+    "short_child_names": [
+      "b",
+      "ChildC"
+    ],
+    "short_child_alt": [
+      "b",
+      "ChildC"
+    ],
+    "parent_names": [
+      "ParentB",
+      "ParentC"
+    ],
+    "parent_alt": [
+      "ParentB",
+      "ParentC"
+    ],
+    "parent_short_names": [
+      "b",
+      "c"
+    ],
+    "parent_short_alt": [
+      "b",
+      "c"
+    ],
+    "empty_names": [
+      "b",
+      "c"
+    ],
+    "empty_alt": [
+      "b",
+      "c"
+    ],
+    "nullable_metadata_names": [
+      "b",
+      "c"
+    ],
+    "nullable_metadata_alt": [
+      "b",
+      "c"
+    ],
+    "complex_names": [
+      "Object",
+      "Array"
+    ],
+    "complex_alt": [
+      "Object",
+      "Array"
+    ],
+    "numeric_boolean_names": [
+      "One",
+      "Two"
+    ],
+    "numeric_boolean_alt": [
+      "One",
+      "Two"
+    ],
+    "combined": [
+      "ChildB",
+      "ChildC"
+    ]
+  }
+}

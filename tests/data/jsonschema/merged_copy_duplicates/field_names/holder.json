@@ -1,0 +1,4 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Holder", "type": "object",
+ "properties": {"other": {"$ref": "#/$defs/Tree"}, "tree": {"$ref": "tree.json", "minProperties": 1}},
+ "$defs": {"Tree": {"type": "object", "properties": {"Foo": {"$ref": "#/$defs/Foo"}}},
+           "Foo": {"type": "object", "properties": {"x": {"type": "integer"}}}}}

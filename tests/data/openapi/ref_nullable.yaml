@@ -21,8 +21,83 @@ components:
       required:
         - nullableChild
         - nonNullableChild
+        - requiredDescribedNullableChild
+        - requiredDescribedInline
       properties:
         nullableChild:
           $ref: "#/components/schemas/NullableChild"
         nonNullableChild:
           $ref: "#/components/schemas/NonNullableChild"
+        optionalNullableChild:
+          $ref: "#/components/schemas/NullableChild"
+        optionalNullableWrapper:
+          $ref: "#/components/schemas/NullableWrapper"
+        optionalNullableExtended:
+          $ref: "#/components/schemas/NullableExtended"
+        optionalNullableMerged:
+          $ref: "#/components/schemas/NullableMerged"
+        describedNullableChild:
+          description: A nullable child with a description.
+          allOf:
+            - $ref: "#/components/schemas/NullableChild"
+        requiredDescribedNullableChild:
+          description: A required nullable child with a description.
+          allOf:
+            - $ref: "#/components/schemas/NullableChild"
+        optionalDescribedInline:
+          description: An optional nullable inline object with a description.
+          type: object
+          nullable: true
+          properties:
+            size:
+              type: integer
+        requiredDescribedInline:
+          description: A required nullable inline object with a description.
+          type: object
+          nullable: true
+          properties:
+            size:
+              type: integer
+        optionalTitledInlineAllOf:
+          title: Titled
+          nullable: true
+          allOf:
+            - type: object
+              properties:
+                first:
+                  type: string
+            - type: object
+              properties:
+                second:
+                  type: string
+        nullableChildren:
+          type: array
+          items:
+            $ref: "#/components/schemas/NullableChild"
+        nullableChildMap:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/NullableChild"
+    NullableWrapper:
+      nullable: true
+      allOf:
+        - $ref: "#/components/schemas/NonNullableChild"
+    NullableExtended:
+      nullable: true
+      allOf:
+        - $ref: "#/components/schemas/NonNullableChild"
+        - type: object
+          properties:
+            note:
+              type: string
+    NullableMerged:
+      nullable: true
+      allOf:
+        - type: object
+          properties:
+            first:
+              type: string
+        - type: object
+          properties:
+            second:
+              type: integer

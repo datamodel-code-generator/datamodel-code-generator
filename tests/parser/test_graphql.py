@@ -94,6 +94,19 @@ def test_graphql_parser_options_path_collection_options_parse(output_file: Path)
     _assert_collection_options_output(output_file, output)
 
 
+def test_graphql_parser_text_collection_options_parse(output_file: Path) -> None:
+    """Exercise in-memory GraphQL input without changing generated output."""
+    parser = GraphQLParser(
+        source=GRAPHQL_COLLECTION_OPTIONS_PATH.read_text(encoding="utf-8"),
+        use_standard_collections=True,
+        use_union_operator=True,
+    )
+
+    output = parser.parse()
+
+    _assert_collection_options_output(output_file, output)
+
+
 def test_graphql_parser_config_path_collection_options_parse(output_file: Path) -> None:
     """Exercise GraphQLParser config object options that are consumed while parsing."""
     parser = GraphQLParser(

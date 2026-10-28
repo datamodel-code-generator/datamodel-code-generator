@@ -1,0 +1,15 @@
+{
+  "valid": [
+    {"integer_values": 1, "string_values": "x", "nullable_values": null, "values": []},
+    {"integer_values": 2, "string_values": "y", "nullable_values": 3, "optional_value": "a", "amount": "1.5", "values": [1, 2]},
+    {"integer_values": 2, "string_values": "y", "nullable_values": 3, "optional_value": null, "values": [2]}
+  ],
+  "invalid": [
+    {"integer_values": 3, "string_values": "x", "nullable_values": null, "values": []},
+    {"integer_values": 1, "string_values": "z", "nullable_values": null, "values": []},
+    {"integer_values": 1, "string_values": "x", "nullable_values": 4, "values": []},
+    {"integer_values": 1, "string_values": "x", "nullable_values": null, "optional_value": "b", "values": []},
+    {"integer_values": 1, "string_values": "x", "nullable_values": null, "values": [3]},
+    {"integer_values": 1, "string_values": "x", "nullable_values": null, "amount": "many", "values": []}
+  ]
+}

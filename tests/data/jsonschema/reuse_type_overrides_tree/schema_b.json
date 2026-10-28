@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "Common": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "child": {
+          "$ref": "#/$defs/Node"
+        }
+      }
+    },
+    "Replaced": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "shared": {
+      "$ref": "#/$defs/Common"
+    },
+    "tree": {
+      "$ref": "#/$defs/Node"
+    },
+    "external": {
+      "$ref": "#/$defs/Replaced"
+    }
+  }
+}

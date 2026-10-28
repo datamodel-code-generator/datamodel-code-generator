@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Input metadata
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      responses:
+        "204":
+          description: None
+x-shared: &shared
+  values: &values [1, .inf, .nan, true, null]
+  7: integer key
+  false: boolean key
+  1.5: float key
+x-repeated:
+  first: *shared
+  second: *shared
+  list: [*values, *values]

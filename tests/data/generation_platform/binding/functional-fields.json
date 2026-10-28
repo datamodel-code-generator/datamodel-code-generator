@@ -1,0 +1,40 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Functional fields",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "": {
+            "type": "string"
+          },
+          "ship-to": {
+            "type": "string",
+            "readOnly": true
+          },
+          "quote'": {
+            "type": "string"
+          },
+          "back\\slash": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string"
+          },
+          "naïve": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "",
+          "ship-to"
+        ]
+      }
+    }
+  }
+}

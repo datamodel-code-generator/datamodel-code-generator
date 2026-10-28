@@ -1,0 +1,4 @@
+msgspec cannot decode the enum Kept: its values are neither all str nor all int.
+msgspec cannot decode the enum Mapped: its values are neither all str nor all int.
+msgspec cannot decode the enum Listed: its values are neither all str nor all int.
+msgspec cannot decode the union Model.choice: its str-like members Letters, str include an Enum, while a msgspec union holds an Enum only as its one str-like member.

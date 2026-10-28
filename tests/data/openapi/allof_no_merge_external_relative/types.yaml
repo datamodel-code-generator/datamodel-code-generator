@@ -1,0 +1,3 @@
+ScopedInner:
+  type: string
+  minLength: 2

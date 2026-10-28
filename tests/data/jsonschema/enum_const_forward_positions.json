@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "keyed": {"type": "object", "propertyNames": {"$ref": "#/$defs/Kind"}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Fields": {
+      "type": "object",
+      "properties": {
+        "keyed": {"type": "object", "propertyNames": {"$ref": "#/$defs/Kind"}, "additionalProperties": {"type": "integer"}},
+        "property": {"$ref": "#/$defs/Kind"},
+        "listed": {"type": "array", "items": {"$ref": "#/$defs/Kind"}},
+        "byName": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Kind"}}
+      }
+    },
+    "Kind": {"type": "string", "enum": ["a", "b"], "const": "b"}
+  }
+}

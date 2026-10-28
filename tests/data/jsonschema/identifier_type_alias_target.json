@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "\u540d\u524d": {
+      "type": "string"
+    },
+    "Root": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/\u540d\u524d"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/Root"
+}

@@ -1,0 +1,225 @@
+[
+  {
+    "module": "",
+    "exports": [
+      {
+        "name": "ModelModel",
+        "origin": "api.v2.schema_b.model",
+        "is_definition": true,
+        "fields": [
+          "info"
+        ],
+        "dump": {
+          "info": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SchemaAModelModel",
+        "origin": "api.v1.schema_a.model",
+        "is_definition": true,
+        "fields": [
+          "data"
+        ],
+        "dump": {
+          "data": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SharedModelSharedModel",
+        "origin": "api.v1.schema_a.shared_model",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "shared"
+        }
+      },
+      {
+        "name": "SharedSharedModel",
+        "origin": "shared",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "shared"
+        }
+      }
+    ]
+  },
+  {
+    "module": "shared",
+    "exports": []
+  },
+  {
+    "module": "api",
+    "exports": [
+      {
+        "name": "ModelModel",
+        "origin": "api.v2.schema_b.model",
+        "is_definition": true,
+        "fields": [
+          "info"
+        ],
+        "dump": {
+          "info": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SchemaAModelModel",
+        "origin": "api.v1.schema_a.model",
+        "is_definition": true,
+        "fields": [
+          "data"
+        ],
+        "dump": {
+          "data": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SharedModel",
+        "origin": "api.v1.schema_a.shared_model",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "shared"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1",
+    "exports": [
+      {
+        "name": "Model",
+        "origin": "api.v1.schema_a.model",
+        "is_definition": true,
+        "fields": [
+          "data"
+        ],
+        "dump": {
+          "data": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SharedModel",
+        "origin": "api.v1.schema_a.shared_model",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "shared"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2",
+    "exports": [
+      {
+        "name": "Model",
+        "origin": "api.v2.schema_b.model",
+        "is_definition": true,
+        "fields": [
+          "info"
+        ],
+        "dump": {
+          "info": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.schema_a",
+    "exports": [
+      {
+        "name": "Model",
+        "origin": "api.v1.schema_a.model",
+        "is_definition": true,
+        "fields": [
+          "data"
+        ],
+        "dump": {
+          "data": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "SharedModel",
+        "origin": "api.v1.schema_a.shared_model",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "shared"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2.schema_b",
+    "exports": [
+      {
+        "name": "Model",
+        "origin": "api.v2.schema_b.model",
+        "is_definition": true,
+        "fields": [
+          "info"
+        ],
+        "dump": {
+          "info": {
+            "id": 7,
+            "name": "shared"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.schema_a.model",
+    "exports": []
+  },
+  {
+    "module": "api.v1.schema_a.shared_model",
+    "exports": []
+  },
+  {
+    "module": "api.v2.schema_b.model",
+    "exports": []
+  }
+]

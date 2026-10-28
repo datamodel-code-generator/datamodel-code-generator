@@ -1,0 +1,11 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "#/definitions/NullableValue"}
+  },
+  "required": ["value"],
+  "definitions": {
+    "NullableValue": {"type": ["string", "null"]}
+  }
+}

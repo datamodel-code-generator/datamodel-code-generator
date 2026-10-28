@@ -1,0 +1,62 @@
+{
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "backreference",
+    "end_anchor",
+    "lookbehind"
+  ],
+  "properties": {
+    "backreference": {
+      "type": "object",
+      "propertyNames": {
+        "anyOf": [
+          {
+            "type": "object",
+            "pattern": "^a"
+          },
+          {
+            "pattern": "(b)\\1"
+          }
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "end_anchor": {
+      "type": "object",
+      "propertyNames": {
+        "anyOf": [
+          {
+            "type": "object",
+            "pattern": "^a"
+          },
+          {
+            "pattern": "b$"
+          }
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "lookbehind": {
+      "type": "object",
+      "propertyNames": {
+        "anyOf": [
+          {
+            "type": "object",
+            "pattern": "^a"
+          },
+          {
+            "pattern": "(?<=b)c"
+          }
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  }
+}

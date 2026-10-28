@@ -1,0 +1,228 @@
+{
+  "valid": {
+    "pClosed": {
+      "a1": 1
+    },
+    "rClosed": {
+      "a1": 1
+    },
+    "iClosed": [
+      {
+        "a1": 1,
+        "a2": 2
+      }
+    ],
+    "mClosed": {
+      "k": {
+        "a1": 1,
+        "a2": 2
+      }
+    },
+    "pNames": {
+      "a1": 1
+    },
+    "rNames": {
+      "a1": 1
+    },
+    "pRefNames": {
+      "a1": 1
+    },
+    "rRefNames": {
+      "a1": 1
+    },
+    "iNames": [
+      {
+        "abc": 1
+      }
+    ],
+    "mNames": {
+      "k": {
+        "abc": 1
+      }
+    },
+    "iRefNames": [
+      {
+        "abc": 1
+      }
+    ],
+    "mRefNames": {
+      "k": {
+        "abc": 1
+      }
+    },
+    "pOpen": {
+      "a1": 1
+    },
+    "rOpen": {
+      "a1": 1
+    },
+    "iOpen": [
+      {
+        "a1": 1
+      }
+    ],
+    "mOpen": {
+      "k": {
+        "a1": 1
+      }
+    },
+    "pNullableCount": null,
+    "rNullableCount": null,
+    "iNullableCount": [
+      null,
+      {
+        "a1": 1
+      }
+    ],
+    "mNullableCount": {
+      "k": {
+        "a1": 1
+      }
+    },
+    "pStringOrCount": "s",
+    "rStringOrCount": "s",
+    "iStringOrCount": [
+      "s",
+      {
+        "a1": 1
+      }
+    ],
+    "mStringOrCount": {
+      "k": {
+        "a1": 1
+      }
+    },
+    "pNoKeys": {},
+    "rNoKeys": {},
+    "iNoKeys": [
+      {}
+    ],
+    "mNoKeys": {
+      "k": {}
+    }
+  },
+  "invalid": [
+    {
+      "pClosed": {}
+    },
+    {
+      "rClosed": {
+        "a1": 1,
+        "a2": 2,
+        "a3": 3
+      }
+    },
+    {
+      "iClosed": [
+        {
+          "b": 1
+        }
+      ]
+    },
+    {
+      "mClosed": {
+        "k": {
+          "a1": "s"
+        }
+      }
+    },
+    {
+      "pNames": {
+        "abcd": 1
+      }
+    },
+    {
+      "rNames": {
+        "b": 1
+      }
+    },
+    {
+      "iNames": [
+        {
+          "a1": "s"
+        }
+      ]
+    },
+    {
+      "pRefNames": {
+        "abcd": 1
+      }
+    },
+    {
+      "rRefNames": {
+        "b": 1
+      }
+    },
+    {
+      "mRefNames": {
+        "k": {
+          "a1": "s"
+        }
+      }
+    },
+    {
+      "pOpen": {
+        "a1": 1,
+        "a2": 2,
+        "zz": "s"
+      }
+    },
+    {
+      "rOpen": {
+        "a1": "s"
+      }
+    },
+    {
+      "mOpen": {
+        "k": {
+          "a1": 1,
+          "a2": 2,
+          "a3": 3
+        }
+      }
+    },
+    {
+      "pNullableCount": {}
+    },
+    {
+      "rNullableCount": {
+        "b": 1
+      }
+    },
+    {
+      "iNullableCount": [
+        {}
+      ]
+    },
+    {
+      "pStringOrCount": {}
+    },
+    {
+      "rStringOrCount": 1
+    },
+    {
+      "mStringOrCount": {
+        "k": {
+          "b": 1
+        }
+      }
+    },
+    {
+      "pNoKeys": {
+        "a1": 1
+      }
+    },
+    {
+      "rNoKeys": {
+        "b": 1
+      }
+    },
+    {
+      "iNoKeys": [
+        {
+          "a1": 1
+        }
+      ]
+    }
+  ]
+}

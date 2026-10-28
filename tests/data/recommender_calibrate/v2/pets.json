@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Pets", "version": "2.0.0"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "status": {"type": "string", "enum": ["available", "pending", "sold"]},
+          "owner": {"type": "object", "properties": {"name": {"type": "string"}}}
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "enum": ["placed", "delivered"]},
+          "owner": {"type": "object", "properties": {"email": {"type": "string"}}}
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "enum": ["open", "closed"]},
+          "kind": {"type": "string", "enum": ["retail", "online"]}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "model": "Root",
+    "native": true,
+    "value": "text"
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": [
+      1
+    ]
+  },
+  {
+    "model": "Root",
+    "native": true,
+    "value": [
+      1,
+      1
+    ]
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  },
+  {
+    "model": "Root",
+    "native": false,
+    "error": "ValidationError"
+  }
+]

@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A model that inherits a mapped schema and uses a model of another module
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Branch:
+      allOf:
+        - $ref: '../external_ref_mapping_all_of/shared.yaml#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+            bush:
+              $ref: 'b.yaml#/components/schemas/Bush'

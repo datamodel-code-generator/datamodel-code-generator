@@ -1,0 +1,8 @@
+syntax = "proto2";
+message Payload {
+  // Ordinary description
+  optional string text = 1 [default = "ok"];
+  optional int32 count = 2 [default = 7];
+}
+service Echo { rpc option (Payload) returns (Payload); }
+service Commented { rpc /* method */ option /* input */ (Payload) returns (Payload) {} }

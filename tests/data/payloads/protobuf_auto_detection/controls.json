@@ -1,0 +1,13 @@
+{
+  "json": "json",
+  "yaml": "jsonschema",
+  "yaml_comment": "jsonschema",
+  "yaml_block": "jsonschema",
+  "csv": "csv",
+  "csv_comment": "csv",
+  "jsonschema": "jsonschema",
+  "csv_leading": "csv",
+  "yaml_key": "jsonschema",
+  "csv_header_suffix": "csv",
+  "yaml_key_suffix": "jsonschema"
+}

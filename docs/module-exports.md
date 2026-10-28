@@ -1,4 +1,4 @@
-<!-- related-cli-options: --all-exports-scope, --all-exports-collision-strategy, --treat-dot-as-module -->
+<!-- related-cli-options: --all-exports-scope, --all-exports-collision-strategy, --treat-dot-as-module, --strict-dotted-module-names -->
 
 # Module Structure and Exports
 
@@ -11,6 +11,7 @@ When generating models to a directory structure, datamodel-code-generator can au
 | `--all-exports-scope` | Control which modules get `__all__` exports |
 | `--all-exports-collision-strategy` | Handle name collisions in recursive exports |
 | `--treat-dot-as-module` | Convert dots in names to nested modules |
+| `--strict-dotted-module-names` | Restrict automatic dotted-name inference to canonical Python identifiers |
 
 ---
 
@@ -38,7 +39,7 @@ datamodel-codegen --input schemas/ --output models/
 ### Example: `local`
 
 ```bash
-datamodel-codegen --input schemas/ --output models/ --all-exports-scope local
+datamodel-codegen --input schemas/ --output models/ --all-exports-scope children
 ```
 
 ```python
@@ -136,8 +137,7 @@ Schema with `title: "api.v1.User"` generates:
 
 ```python
 # models.py
-class ApiV1User(BaseModel):
-    ...
+class ApiV1User(BaseModel): ...
 ```
 
 ### With `--treat-dot-as-module`
@@ -159,20 +159,54 @@ models/
 ```
 
 This is useful for:
+
 - Organizing large schemas by namespace
 - Mirroring API versioning structure
 - Keeping related models together
+
+When writing plain Python text to stdout with the standard renderer and without
+an explicit `--treat-dot-as-module` setting, historical automatic module
+inference is preserved whenever the final concatenated result remains usable. A
+retry coalesces the stdout models into one flat namespace only when a
+non-canonical inferred module boundary leaves conflicting generated
+definitions, repeats a future import after generated code, hides a generated
+model with a later import, or emits a relative import that cannot resolve in
+standalone stdout. Existing root and canonical model names are reserved first.
+Directory output, JSON output, schema runtime validator or generic-base
+generation, custom rendering, and the Python API retain their existing default
+inference. Use directory or JSON output when module paths must be preserved.
+
+## `--strict-dotted-module-names`
+
+By default, automatic inference retains the historical behavior of treating dots
+as module separators. Enable `--strict-dotted-module-names` to infer a module path
+only when every raw segment, including the model name, is a canonical Python
+identifier. Hard keywords, numeric or empty segments, punctuation, and names that
+change under NFKC normalization fall back to a flat model name.
+
+```bash
+datamodel-codegen \
+  --input schema.json \
+  --output models.py \
+  --strict-dotted-module-names
+```
+
+This option affects automatic inference only. Explicit
+`--treat-dot-as-module` or `--no-treat-dot-as-module` takes precedence. The
+negative form, `--no-strict-dotted-module-names`, can disable a value enabled in
+`pyproject.toml`; it does not disable the narrow unusable-stdout repair described
+above. Use explicit `--treat-dot-as-module` when module boundaries must be kept.
 
 ---
 
 ## Common Patterns
 
-### Pattern 1: Flat output with local exports
+### Pattern 1: Flat directory output with child exports
 
-Best for small to medium projects with a single output file or simple structure.
+Best for small to medium projects with a single generated package or simple directory structure.
 
 ```bash
-datamodel-codegen --input schema.yaml --output models/ --all-exports-scope local
+datamodel-codegen --input schema.yaml --output models/ --all-exports-scope children
 ```
 
 ### Pattern 2: Hierarchical with recursive exports
@@ -206,7 +240,7 @@ If you see `ImportError: cannot import name 'X'`:
 
 1. Check if `__all__` is generated correctly
 2. Verify the module structure matches your imports
-3. Try `--all-exports-scope local` first, then `recursive`
+3. Try `--all-exports-scope children` first, then `recursive`
 
 ### Name collisions
 
@@ -221,7 +255,7 @@ If you see duplicate class names:
 If you encounter circular import errors:
 
 1. Check the generated `__init__.py` files
-2. Consider using `--all-exports-scope local` instead of `recursive`
+2. Consider using `--all-exports-scope children` instead of `recursive`
 3. Use lazy imports in your application code
 
 ---
@@ -231,4 +265,5 @@ If you encounter circular import errors:
 - [CLI Reference: `--all-exports-scope`](cli-reference/general-options.md#all-exports-scope)
 - [CLI Reference: `--all-exports-collision-strategy`](cli-reference/general-options.md#all-exports-collision-strategy)
 - [CLI Reference: `--treat-dot-as-module`](cli-reference/template-customization.md#treat-dot-as-module)
+- [CLI Reference: `--strict-dotted-module-names`](cli-reference/template-customization.md#strict-dotted-module-names)
 - [Model Reuse and Deduplication](model-reuse.md)

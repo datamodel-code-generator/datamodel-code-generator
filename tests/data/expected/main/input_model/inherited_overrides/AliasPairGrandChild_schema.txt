@@ -1,0 +1,79 @@
+{
+  "$defs": {
+    "AliasParent": {
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        }
+      },
+      "title": "AliasParent",
+      "type": "object",
+      "x-is-base-class": true
+    },
+    "AliasPairParent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AliasParent"
+        }
+      ],
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        },
+        "old_other": {
+          "default": 4,
+          "title": "Old Other",
+          "type": "integer"
+        }
+      },
+      "title": "AliasPairParent",
+      "type": "object",
+      "x-is-base-class": true
+    },
+    "AliasPairChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AliasPairParent"
+        }
+      ],
+      "properties": {
+        "new": {
+          "default": 2,
+          "title": "New",
+          "type": "integer"
+        },
+        "new_other": {
+          "default": 5,
+          "title": "New Other",
+          "type": "integer"
+        }
+      },
+      "title": "AliasPairChild",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/AliasPairChild"
+    }
+  ],
+  "properties": {
+    "newest": {
+      "default": 3,
+      "title": "Newest",
+      "type": "integer"
+    },
+    "newest_other": {
+      "default": 6,
+      "title": "Newest Other",
+      "type": "integer"
+    }
+  },
+  "title": "AliasPairGrandChild",
+  "type": "object"
+}

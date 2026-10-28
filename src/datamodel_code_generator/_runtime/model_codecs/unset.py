@@ -1,0 +1,8 @@
+"""The single HTTP omission marker owned by one generated package runtime."""
+
+from __future__ import annotations
+
+from typing_extensions import Sentinel
+
+UNSET = Sentinel("UNSET")
+"""Mark an omitted HTTP value, distinct from JSON null and native model sentinels; annotate it as `X | UNSET`."""

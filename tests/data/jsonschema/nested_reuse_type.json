@@ -1,0 +1,36 @@
+{
+  "title": "ContainerRoot",
+  "type": "object",
+  "$defs": {
+    "Inner": {
+      "x-python-import": {
+        "module": "tests.data.python.input_model.nested_reuse",
+        "name": "Inner",
+        "qualname": "Outer.Inner"
+      }
+    }
+  },
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Inner"
+      },
+      "x-python-type": "deque[Inner]"
+    },
+    "tests": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "items"
+  ]
+}

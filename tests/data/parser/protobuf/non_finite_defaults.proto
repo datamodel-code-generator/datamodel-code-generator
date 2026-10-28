@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message NonFiniteDefaults {
+  optional double positive = 1 [default = inf];
+  optional double negative = 2 [default = -inf];
+  optional float not_a_number = 3 [default = nan];
+}

@@ -1,0 +1,206 @@
+# retries pydantic_v2.BaseModel
+  retry initial_delay bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry initial_delay none ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay none ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry initial_delay overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.initial_delay') [field_path=('retry', 'initial_delay')] out_of_range
+  retry max_delay overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  retry max_retry_after overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry cap zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_retry_after') [field_path=('retry', 'max_retry_after')] out_of_range
+  retry delay order ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  client max_retries bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  view max_retries bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  call max_retries bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  client max_retries negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  view max_retries negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  call max_retries negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  client max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  view max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  call max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
+  client max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  client max_retries zero pending responses=1
+  view max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  view max_retries zero pending responses=1
+  call max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  call max_retries zero pending responses=1
+  retry statuses bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses low ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses high ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses unauthorized ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses forbidden ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  retry statuses proxy ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
+  omitted RetryOptions=(('initial_delay', True), ('max_delay', True), ('jitter', True), ('statuses', True), ('max_retry_after', True), ('respect_retry_after', True), ('retry_after_ms_header', True), ('should_retry_header', True), ('retry_on_pool_timeout', True))
+  frozen statuses=[408, 409, 500, 501] frozenset=True
+  retry empty statuses = RetryOptions(initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=frozenset(), max_retry_after=UNSET, respect_retry_after=UNSET, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=UNSET)
+  retry explicit defaults = RetryOptions(initial_delay=0.5, max_delay=8.0, jitter='full', statuses=UNSET, max_retry_after=60.0, respect_retry_after=True, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=False)
+  retry explicit switches = RetryOptions(initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=UNSET, max_retry_after=UNSET, respect_retry_after=False, retry_after_ms_header=None, should_retry_header=None, retry_on_pool_timeout=True)
+  follow redirects False = RequestOptions(base_url=None, server=None, timeout=UNSET, total_timeout=UNSET, max_retries=None, retry=None, extra_headers=None, extra_query=None, follow_redirects=False, idempotency_key=UNSET)
+  follow redirects True = RequestOptions(base_url=None, server=None, timeout=UNSET, total_timeout=UNSET, max_retries=None, retry=None, extra_headers=None, extra_query=None, follow_redirects=True, idempotency_key=UNSET)
+  immutable RetryOptions rejected=True unchanged=True slotted=True
+  immutable RequestOptions rejected=True unchanged=True slotted=True
+  hints RetryOptions=('initial_delay', 'max_delay', 'jitter', 'statuses', 'max_retry_after', 'respect_retry_after', 'retry_after_ms_header', 'should_retry_header', 'retry_on_pool_timeout')
+  init hints RetryOptions=('initial_delay', 'max_delay', 'jitter', 'statuses', 'max_retry_after', 'respect_retry_after', 'retry_after_ms_header', 'should_retry_header', 'retry_on_pool_timeout', 'return')
+  hints RequestOptions=('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'extra_headers', 'extra_query', 'follow_redirects', 'idempotency_key', 'auth')
+  init hints RequestOptions=('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'extra_headers', 'extra_query', 'follow_redirects', 'idempotency_key', 'auth', 'return')
+  init hints Client=('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'clock', 'http_client', 'return')
+  init hints with_options=('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'return')
+  option omitted RequestOptions=(True, True, True, True)
+  optional-free public options=True
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  retry nested client/view/view/call = SafeGetResponse(root='merged')
+  merged retry statuses=[501, 501, 200] waits=(0.25, 0.5) pending responses=0
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  partial delay inherits larger maximum = SafeGetResponse(root='valid inherited delay')
+  invalid delay after request merge ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='out_of_range', field_path='retry.max_delay') [operation_id='getSafe', field_path=('retry', 'max_delay')] out_of_range
+  invalid delay after view merge ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  merged delay pending responses=0
+  invalid delay after client merge ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/one
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/two
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  redirects and a retry within the final fields = (SafeGetResponse(root='four sends'), 2)
+  merged redirect pending responses=0
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 17] b'removed after 303'
+  > GET https://other.example.com/accepted
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream] b''
+  a view's redirect choice over the client's, and the call's over the view's = UnsafePostResponse(root='inherited destination and method permission')
+  merged redirect permissions pending responses=0
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor inherited declaration = VendorGetResponse(root='accepted')
+  vendor inherited declaration arrivals=2
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor case-insensitive match = VendorGetResponse(root='accepted')
+  vendor case-insensitive match arrivals=2
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor disabled ! InternalServerError: Error code: 501 - vendor [operation_id='getVendor', status_code=501, body=VendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False]
+  vendor disabled arrivals=1
+  vendor mismatched retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', reason='invalid_value', field_path='retry.retry_after_ms_header') [operation_id='getVendor', field_path=('retry', 'retry_after_ms_header')] invalid_value
+  vendor undeclared retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='invalid_value', field_path='retry.retry_after_ms_header') [operation_id='getSafe', field_path=('retry', 'retry_after_ms_header')] invalid_value
+  vendor mismatched should_retry_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', reason='invalid_value', field_path='retry.should_retry_header') [operation_id='getVendor', field_path=('retry', 'should_retry_header')] invalid_value
+  vendor undeclared should_retry_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='invalid_value', field_path='retry.should_retry_header') [operation_id='getSafe', field_path=('retry', 'should_retry_header')] invalid_value
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
+  automatic key retained through retry = KeyedPostResponse(root='accepted')
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 8] b'new call'
+  automatic key fresh next call = KeyedPostResponse(root='accepted')
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
+  automatic key suppressed = KeyedPostResponse(root='accepted')
+  explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  refused key ' k ' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key '\tk' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key 5 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key b'k' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  automatic keys count=4 same retry=True fresh call=True suppressed=True
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
+  caller key retained through retry = KeyedPostResponse(root='accepted')
+  caller key observed=['caller-owned', 'caller-owned']
+  key sync h1 value='a b' = KeyedPostResponse(root='ready')
+  key wire=(b'a b',)
+  key sync h1 value='a\tb' = KeyedPostResponse(root='ready')
+  key wire=(b'a\tb',)
+  key sync h1 value='a \t b' = KeyedPostResponse(root='ready')
+  key wire=(b'a \t b',)
+  key sync h1 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='a b' = KeyedPostResponse(root='ready')
+  key wire=(b'a b',)
+  key async h1 value='a\tb' = KeyedPostResponse(root='ready')
+  key wire=(b'a\tb',)
+  key async h1 value='a \t b' = KeyedPostResponse(root='ready')
+  key wire=(b'a \t b',)
+  key async h1 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key h1 arrivals=6 alpn=[]
+  key sync h2 value='a b' = KeyedPostResponse(root='ready')
+  key wire=(b'a b',)
+  key sync h2 value='a\tb' = KeyedPostResponse(root='ready')
+  key wire=(b'a\tb',)
+  key sync h2 value='a \t b' = KeyedPostResponse(root='ready')
+  key wire=(b'a \t b',)
+  key sync h2 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='a b' = KeyedPostResponse(root='ready')
+  key wire=(b'a b',)
+  key async h2 value='a\tb' = KeyedPostResponse(root='ready')
+  key wire=(b'a\tb',)
+  key async h2 value='a \t b' = KeyedPostResponse(root='ready')
+  key wire=(b'a \t b',)
+  key async h2 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key h2 arrivals=6 alpn=['h2', 'h2']

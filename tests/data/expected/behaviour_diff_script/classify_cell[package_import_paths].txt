@@ -1,0 +1,16 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[import-path-removed] Pet: from __init__ import Pet",
+    "[import-path-removed] legacy:Old: from legacy import Old",
+    "[module-removed] legacy: removed",
+    "[kind] pets:Pet: BaseModel -> TypedDict"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[import-path-removed] Pet: from __init__ import Pet",
+    "[import-path-removed] legacy:Old: from legacy import Old",
+    "[module-removed] legacy: removed",
+    "[kind] pets:Pet: BaseModel -> TypedDict"
+  ]
+}

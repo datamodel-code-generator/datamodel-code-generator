@@ -1,0 +1,124 @@
+Option recommendations (experimental; full mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.0.3 (OpenAPI scopes: api, schemas)
+  components                       4, 1 operations
+  inline objects / enums           15 / 6, nesting depth 2
+  shared property names            3 (status x2, type x2, owner x2)
+  inline names = component names   2
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (4 of 4); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   9
+
+Start from  --preset standard-py311-20261027
+  already sets --use-single-value-enum-as-const --read-const-beside-enum   [enums.read-as-their-const]
+
+Add (2 options)
+  --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
+      Most enums are inline value sets of one property (inline enums: 6 of 6). As Enum classes they
+      add one class name each, the longest and most numbered names; Literal types keep the values
+      without a class.
+      measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
+      measured: Stripe API description: problem names 348 -> 158
+      measured: SchemaStore workflow schema: Type1 to Type19 disappear
+      trial: recommended - naming-strategy - enum-shape -> recommended - naming-strategy: classes 24
+      -> 20, problem names 7 -> 5; 0 of 20 classes matched by schema location renamed (0 only
+      renumbered), 4 removed, 0 added
+  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+      sibling shares: 2; objects with one required key: 0); otherwise they are named after their
+      parent and a number.
+      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+      (Changes23 -> ChangesBody)
+      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+      WorkflowDispatchInputString, Boolean, ...)
+      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+      schemas without tagged or key branches: no change
+      trial: recommended - naming-strategy - union-variant-names -> recommended - naming-strategy:
+      classes 20 -> 20, problem names 7 -> 5; 2 of 20 classes matched by schema location renamed (0
+      only renumbered), 0 removed, 0 added, e.g.
+        Shape1 -> ShapeCircle   at components/schemas/Shape > oneOf 0
+        Shape2 -> ShapeSquare   at components/schemas/Shape > oneOf 1
+
+Left out after the trial (the rules recommend these)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 3, e.g. status x2, type
+      x2, owner x2; inline names equal to a component name: 2). Numbered names (Status, Status1)
+      depend on parse order and shift when the schema grows; full-path names each inline model after
+      its parent.
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+      trial: recommended - naming-strategy -> recommended: classes 20 -> 20, problem names 5 -> 5;
+      16 of 20 classes matched by schema location renamed (1 only renumbered), 0 removed, 0 added,
+      e.g.
+        Pet -> AccountProfilePet   at components/schemas/Account > profile > pet
+        Order1 -> OrderOrder   at components/schemas/Order > order
+        Owner1 -> OrderOwner   at components/schemas/Order > owner
+
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 9 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
+Trial  8 candidates generated in memory without formatting; nothing written
+  candidate                                            classes    problems  numbered  long  doubled  displaced  median  unconstrained
+  current                                                   26  10 (38.5%)         8     0        0          1       6              0
+  preset                                                    24   9 (37.5%)         7     0        0          1       6              0
+  recommended                                               20   5 (25.0%)         0     1        3          0      11              0
+  recommended - naming-strategy                             20   5 (25.0%)         3     0        0          1       7              0   selected
+  recommended - enum-shape                                  24   5 (20.8%)         0     1        3          0      10              0
+  recommended - union-variant-names                         20   5 (25.0%)         1     1        3          0      10              0
+  recommended - naming-strategy - enum-shape                24   7 (29.2%)         5     0        0          1       6              0
+  recommended - naming-strategy - union-variant-names       20   7 (35.0%)         5     0        0          1       6              0
+  current: the configuration as set, without the preset; never selected
+  the last 2 rows: the selected configuration without or with one option, to measure each option on
+  it; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> recommended - naming-strategy)
+  2 of 17 classes matched by schema location renamed (0 only renumbered), 9 removed, 3 added, e.g.
+    Shape1 -> ShapeCircle   at components/schemas/Shape > oneOf 0
+    Shape2 -> ShapeSquare   at components/schemas/Shape > oneOf 1
+
+Notes
+  - Target Python is not set: the recommendation assumes 3.11, the lowest --generate-server
+    supports. Set --target-python-version to start from the preset of the Python version the project
+    runs.
+  - The rules were calibrated on the 20261017 presets.
+  - The trial compares the models only; the package --generate-server generates is not generated
+    here.
+
+Command
+  datamodel-codegen --enum-field-as-literal all --generate-server fastapi --input store.yaml --input-file-type openapi --output app/models.py --preset standard-py311-20261027 --server-model-package app.models --server-output app/server --server-package app.server --use-tag-as-union-variant-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  enum-field-as-literal = "all"
+  generate-server = "fastapi"
+  input = "store.yaml"
+  input-file-type = "openapi"
+  output = "app/models.py"
+  preset = "standard-py311-20261027"
+  server-model-package = "app.models"
+  server-output = "app/server"
+  server-package = "app.server"
+  use-tag-as-union-variant-name = true

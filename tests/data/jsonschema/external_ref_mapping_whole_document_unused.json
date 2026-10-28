@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Api",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "unevaluatedProperties": {
+    "$ref": "external_ref_mapping_whole_document/common.json"
+  }
+}

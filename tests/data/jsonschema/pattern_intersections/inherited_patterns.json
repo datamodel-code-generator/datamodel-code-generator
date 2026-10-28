@@ -1,0 +1,14 @@
+{
+  "title": "Root",
+  "type": "object",
+  "allOf": [
+    {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    }
+  ]
+}

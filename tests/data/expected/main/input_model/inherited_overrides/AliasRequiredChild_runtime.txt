@@ -1,0 +1,49 @@
+[
+  {
+    "bases": [
+      "AliasParent"
+    ],
+    "fields": [
+      "old"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "errors": [
+        "missing"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "missing"
+      ]
+    }
+  },
+  {
+    "payload": {
+      "new": 8
+    },
+    "source": {
+      "new": 8
+    },
+    "generated": {
+      "new": 8
+    }
+  },
+  {
+    "payload": {
+      "old": 8
+    },
+    "source": {
+      "errors": [
+        "missing"
+      ]
+    },
+    "generated": {
+      "errors": [
+        "missing"
+      ]
+    }
+  }
+]

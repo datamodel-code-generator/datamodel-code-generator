@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: Nullable enums, version: "1"}
+paths: {}
+components:
+  schemas:
+    Color:
+      type: [string, "null"]
+      enum: [red, green, null]
+    Size:
+      type: [integer, "null"]
+      enum: [1, 2, null]
+      default: 1
+    Pet:
+      type: object
+      required: [name, color]
+      properties:
+        name: {type: string}
+        color: {$ref: "#/components/schemas/Color"}
+        size: {$ref: "#/components/schemas/Size"}
+        sizes: {type: array, items: {$ref: "#/components/schemas/Size"}}

@@ -1,33 +1,34 @@
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit.ci"
-  skip: [readme, config-types, schema-docs]
+  skip: [readme, config-types, schema-docs, compiled-templates]
 
 repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.35.0
+  rev: 0.38.0
   hooks:
     - id: check-github-workflows
       args: [ "--verbose" ]
 - repo: https://github.com/tox-dev/tox-ini-fmt
-  rev: "1.7.1"
+  rev: "1.9.0"
   hooks:
     - id: tox-ini-fmt
       args: ["-p", "fix"]
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: v2.11.1
+  rev: v2.29.4
   hooks:
     - id: pyproject-fmt
-      args: ["--max-supported-python=3.14"]
+      args: ["--max-supported-python=3.15"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.14.9'
+  rev: 'v0.16.8'
   hooks:
   - id: ruff-format
-    exclude: "^tests/data|^src/datamodel_code_generator/_types/"
+    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/"
   - id: ruff
-    exclude: "^tests/data|^src/datamodel_code_generator/_types/"
-    args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix"]
+    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/"
+    # Autouse fixtures intentionally isolate shared state and block accidental network access.
+    args: ["--preview", "--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--extend-ignore", "D421,PLW0717,RUF067,RUF069,RUF074,RUF075,RUF105,pytest-fixture-autouse"]
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.1
+  rev: v2.4.3
   hooks:
   - id: codespell
     additional_dependencies:
@@ -58,4 +59,16 @@ repos:
     entry: python scripts/check_generation_store_usage.py
     language: python
     files: ^src/datamodel_code_generator/parser/.*\.py$
+    pass_filenames: false
+  - id: architecture-boundaries
+    name: Check architecture boundaries
+    entry: python scripts/check_architecture_boundaries.py
+    language: python
+    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py)$
+    pass_filenames: false
+  - id: compiled-templates
+    name: Check generated built-in template renderers
+    entry: bash -c '[ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; test -x "$PYTHON" || tox run -e dev --notest -qq; "$PYTHON" scripts/compile_builtin_templates.py --check'
+    language: system
+    files: ^(src/datamodel_code_generator/(model/template|_fastapi/templates|_client/templates)/.*\.jinja2|scripts/_template_compiler/.*\.py|scripts/compile_builtin_templates\.py|src/datamodel_code_generator/model/_compiled_template_runtime\.py|src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/.*\.py)$
     pass_filenames: false

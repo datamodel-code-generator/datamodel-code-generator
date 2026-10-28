@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/collections",
+  "title": "Collections",
+  "type": "object",
+  "properties": {
+    "numbers": {
+      "$ref": "numberList"
+    },
+    "names": {
+      "$ref": "nameList"
+    },
+    "counts": {
+      "$ref": "countTree"
+    }
+  },
+  "$defs": {
+    "list": {
+      "$id": "list",
+      "type": "array",
+      "items": {
+        "$dynamicRef": "#item"
+      },
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "not": true
+        }
+      }
+    },
+    "numberList": {
+      "$id": "numberList",
+      "$ref": "list",
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "type": "number"
+        }
+      }
+    },
+    "nameList": {
+      "$id": "nameList",
+      "$ref": "list",
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "type": "string"
+        }
+      }
+    },
+    "tree": {
+      "$id": "tree",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#item"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/child"
+          }
+        }
+      },
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "not": true
+        },
+        "child": {
+          "$ref": "#"
+        }
+      }
+    },
+    "countTree": {
+      "$id": "countTree",
+      "$ref": "tree",
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

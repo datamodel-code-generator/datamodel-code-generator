@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Ranks
+  version: "1.0"
+paths:
+  /holders:
+    get:
+      operationId: getHolder
+      responses:
+        "200":
+          description: The holder.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+components:
+  schemas:
+    Value:
+      type: object
+      properties:
+        id:
+          type: integer
+    stats.Rank:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Value"
+    Holder:
+      type: object
+      properties:
+        ranks:
+          $ref: "#/components/schemas/stats.Rank"

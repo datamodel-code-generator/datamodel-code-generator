@@ -1,0 +1,7 @@
+uses: datamodel-code-generator/datamodel-code-generator@9.8.7
+uses: datamodel-code-generator/datamodel-code-generator@v1.2.3
+uses: datamodel-code-generator/datamodel-code-generator@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+uses: actions/checkout@1.2.3
+uses: another/datamodel-code-generator@1.2.3
+uses: ./local-action
+docker pull koxudaxi/datamodel-code-generator:1.2.3

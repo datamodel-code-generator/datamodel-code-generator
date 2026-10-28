@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "BraceWhitespace": {
+      "type": "string",
+      "pattern": "^[a-z]{2, 3}$"
+    },
+    "UnicodeProperty": {
+      "type": "string",
+      "pattern": "^\\p{L}+$"
+    },
+    "WordBoundary": {
+      "type": "string",
+      "pattern": "\\b{start}[a-z]+\\b{end}"
+    },
+    "HexBrace": {
+      "type": "string",
+      "pattern": "^\\x{41}+$"
+    },
+    "NestedClass": {
+      "type": "string",
+      "pattern": "^[[a-z]{]+$"
+    },
+    "BracketedCaptureName": {
+      "type": "string",
+      "pattern": "^(?P<ids[]>[0-9]+)\\b"
+    },
+    "ClassBeforeCaptureName": {
+      "type": "string",
+      "pattern": "^[](?<m]>\\bx$"
+    }
+  }
+}

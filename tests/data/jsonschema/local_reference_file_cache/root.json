@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "first": {
+      "$ref": "shared.json#/$defs/First"
+    },
+    "second": {
+      "$ref": "shared.json#/$defs/Second"
+    },
+    "local": {
+      "$ref": "#/$defs/Local"
+    },
+    "child": {
+      "$ref": "nested/child.json#/$defs/Child"
+    }
+  },
+  "required": [
+    "first",
+    "second",
+    "local",
+    "child"
+  ],
+  "$defs": {
+    "Local": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+[
+  {
+    "payload": [],
+    "native": false,
+    "generated": false
+  },
+  {
+    "payload": [
+      1
+    ],
+    "native": false,
+    "generated": false
+  },
+  {
+    "payload": [
+      1,
+      2
+    ],
+    "native": true,
+    "generated": true
+  },
+  {
+    "payload": [
+      1,
+      2,
+      3
+    ],
+    "native": true,
+    "generated": true
+  },
+  {
+    "payload": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "native": false,
+    "generated": false
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "module": "",
+    "exports": [
+      {
+        "name": "ApiV1UserUserUser",
+        "origin": "api.v1.user.user",
+        "is_definition": true,
+        "fields": [
+          "id"
+        ],
+        "dump": {
+          "id": 7
+        }
+      },
+      {
+        "name": "ApiV2UserUserUser",
+        "origin": "api.v2.user.user",
+        "is_definition": true,
+        "fields": [
+          "name"
+        ],
+        "dump": {
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api",
+    "exports": [
+      {
+        "name": "V1UserUserUser",
+        "origin": "api.v1.user.user",
+        "is_definition": true,
+        "fields": [
+          "id"
+        ],
+        "dump": {
+          "id": 7
+        }
+      },
+      {
+        "name": "V2UserUserUser",
+        "origin": "api.v2.user.user",
+        "is_definition": true,
+        "fields": [
+          "name"
+        ],
+        "dump": {
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v1.user.user",
+        "is_definition": true,
+        "fields": [
+          "id"
+        ],
+        "dump": {
+          "id": 7
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v2.user.user",
+        "is_definition": true,
+        "fields": [
+          "name"
+        ],
+        "dump": {
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.user",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v1.user.user",
+        "is_definition": true,
+        "fields": [
+          "id"
+        ],
+        "dump": {
+          "id": 7
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2.user",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v2.user.user",
+        "is_definition": true,
+        "fields": [
+          "name"
+        ],
+        "dump": {
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.user.user",
+    "exports": []
+  },
+  {
+    "module": "api.v2.user.user",
+    "exports": []
+  }
+]

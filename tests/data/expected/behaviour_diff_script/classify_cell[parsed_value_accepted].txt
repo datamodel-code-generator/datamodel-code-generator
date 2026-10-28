@@ -1,0 +1,13 @@
+{
+  "cls": "accepted",
+  "notes": [
+    "accepted (propertyNames keys) [type] KeyMap: dict[Key, int] -> dict[str, int]",
+    "accepted (propertyNames keys) [parsed-value] payload v1: the parsed value differs"
+  ],
+  "accepted_by": [
+    0
+  ],
+  "changes": [
+    "[type] KeyMap: dict[Key, int] -> dict[str, int]"
+  ]
+}

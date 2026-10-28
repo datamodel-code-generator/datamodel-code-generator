@@ -16,7 +16,7 @@ from packaging import version
 
 from datamodel_code_generator import DataModelType, OpenAPIScope, OpenAPIVersion, PythonVersionMin
 from datamodel_code_generator.format import Formatter
-from datamodel_code_generator.http import _get_httpx
+from datamodel_code_generator.http import _get_http_stack
 from datamodel_code_generator.model import DataModelFieldBase, get_data_model_types
 from datamodel_code_generator.model.pydantic_v2 import DataModelField
 from datamodel_code_generator.parser.base import Result, dump_templates
@@ -42,7 +42,7 @@ EXPECTED_OPEN_API_PATH = Path(__file__).parents[1] / "data" / "expected" / "pars
 
 @pytest.fixture(autouse=True)
 def block_dns_by_default(mocker: Any) -> None:
-    """Keep tests that mock httpx.get independent from external DNS."""
+    """Keep tests that mock HTTP requests independent from external DNS."""
     mocker.patch("socket.getaddrinfo", side_effect=OSError)
 
 
@@ -76,6 +76,35 @@ def test_update_openapi_info_version_warns_when_missing() -> None:
 
     with pytest.warns(UserWarning, match="info.version was not found"):
         parser._update_openapi_info_version({"info": {"title": "Test"}})
+
+
+def test_collect_discriminator_schemas_override_keeps_no_arg_contract() -> None:
+    """Keep existing subclass overrides compatible with the no-argument hook."""
+
+    class CustomOpenAPIParser(OpenAPIParser):
+        collect_calls = 0
+
+        def _collect_discriminator_schemas(self) -> None:
+            self.collect_calls += 1
+            super()._collect_discriminator_schemas()
+
+    parser = CustomOpenAPIParser(
+        """
+openapi: 3.0.3
+info:
+  title: Compatibility
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    User:
+      type: object
+"""
+    )
+
+    parser.parse(format_=False)
+
+    assert parser.collect_calls == 1
 
 
 @pytest.mark.parametrize(
@@ -581,6 +610,21 @@ def test_openapi_parser_parse_modular(tmp_path: Path, monkeypatch: pytest.Monkey
     assert_parser_modules(modules, EXPECTED_OPEN_API_PATH / "openapi_parser_parse_modular")
 
 
+def test_openapi_parser_parse_invalid_dotted_without_imports() -> None:
+    """Inspect multiple final modules when import rendering is disabled."""
+    parser = OpenAPIParser(
+        (DATA_PATH / "invalid_dotted_schema_name.yaml").resolve(),
+        data_model_field_type=DataModelFieldBase,
+        formatters=[Formatter.BUILTIN],
+    )
+    parser.repair_invalid_dotted_stdout = True
+    modules = parser.parse(with_import=False, format_=True)
+    assert_parser_modules(
+        modules,
+        EXPECTED_OPEN_API_PATH / "openapi_parser_parse_invalid_dotted_without_imports",
+    )
+
+
 def test_openapi_parser_parse_modular_pydantic_v2_ruff_keeps_runtime_imports(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -697,7 +741,10 @@ schemas:
         "socket.getaddrinfo",
         return_value=[(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0))],
     )
-    mock_fetch = mocker.patch("datamodel_code_generator.http._get_http_response", return_value=mock_response)
+    mock_fetch = mocker.patch(
+        "datamodel_code_generator.http._HTTPFetchSession.get_response",
+        return_value=mock_response,
+    )
 
     parser = OpenAPIParser(
         data_model_field_type=DataModelFieldBase,
@@ -709,7 +756,7 @@ schemas:
 
     assert_output(parser.parse(), expected_file)
     mock_fetch.assert_called_once_with(
-        _get_httpx(),
+        _get_http_stack(),
         "https://teamdigitale.github.io/openapi/0.0.6/definitions.yaml",
         headers=None,
         verify=True,
@@ -1136,6 +1183,50 @@ def test_parse_all_parameters_strict_nullable() -> None:
     assert len(fields) == 2
     assert fields[0].nullable is True
     assert fields[1].nullable is False
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "validates_structured_default"),
+    [
+        pytest.param(DataModelType.PydanticV2BaseModel, True, id="pydantic-v2"),
+        pytest.param(DataModelType.PydanticV2Dataclass, True, id="pydantic-v2-dataclass"),
+        pytest.param(DataModelType.DataclassesDataclass, False, id="dataclass"),
+        pytest.param(DataModelType.TypingTypedDict, False, id="typed-dict"),
+        pytest.param(DataModelType.MsgspecStruct, False, id="msgspec"),
+    ],
+)
+def test_parameter_field_policy_is_output_owned(
+    output_model_type: DataModelType,
+    validates_structured_default: bool,
+) -> None:
+    """Keep content flags and structured-default policy in their output layers."""
+    data_model_types = get_data_model_types(output_model_type, target_python_version=PythonVersionMin)
+    parser = OpenAPIParser(
+        source=Path(DATA_PATH / "parameter_field_policy.yaml"),
+        data_model_type=data_model_types.data_model,
+        data_model_root_type=data_model_types.root_model,
+        data_model_field_type=data_model_types.field_model,
+        data_type_manager_type=data_model_types.data_type_manager,
+        dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
+        openapi_scopes=[OpenAPIScope.Paths, OpenAPIScope.Schemas, OpenAPIScope.Parameters],
+        use_operation_id_as_name=True,
+        use_frozen_field=True,
+        use_default_factory_for_optional_nested_models=True,
+    )
+
+    parser.parse(format_=False)
+    models = {model.class_name: model for model in parser.results}
+    parameter_fields = {field.name: field for field in models["ListItemsParametersQuery"].fields}
+    defaulted_field = models["Defaulted"].fields[0]
+
+    assert parameter_fields["schema_read_only"].read_only is True
+    assert parameter_fields["content_read_only"].read_only is True
+    assert parameter_fields["schema_write_only"].write_only is True
+    assert parameter_fields["content_write_only"].write_only is True
+    assert parameter_fields["schema_nested"].use_default_factory_for_optional_nested_models is True
+    assert parameter_fields["content_nested"].use_default_factory_for_optional_nested_models is True
+    assert parameter_fields["content_multi"].use_default_factory_for_optional_nested_models is True
+    assert (defaulted_field.extras.get("validate_default") is True) is validates_structured_default
 
 
 def test_openapi_parser_with_request_bodies_scope() -> None:

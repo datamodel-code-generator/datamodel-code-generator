@@ -1,0 +1,4 @@
+valid: accepted
+parsed: Model2(kind='b', item=None)
+invalid kind: rejected (dataclass_type)
+invalid item: rejected (literal_error)

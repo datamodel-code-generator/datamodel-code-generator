@@ -1,0 +1,11 @@
+config type: dict
+config keys: ['extra', 'populate_by_name', 'use_attribute_docstrings']
+
+from pydantic.dataclasses import dataclass
+from pydantic import ConfigDict
+
+
+
+@dataclass(config=ConfigDict(extra='forbid', populate_by_name=True, use_attribute_docstrings=True))
+class Model:
+    a: str

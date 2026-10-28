@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "x": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^x": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "x"
+  ]
+}

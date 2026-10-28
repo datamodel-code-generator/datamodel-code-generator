@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pNullablePatterns": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rNullablePatterns": {
+      "$ref": "#/$defs/NullablePatterns"
+    },
+    "pNullableNames": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rNullableNames": {
+      "$ref": "#/$defs/NullableNames"
+    },
+    "pNullableCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "minProperties": 1,
+      "maxProperties": 3
+    },
+    "rNullableCount": {
+      "$ref": "#/$defs/NullableCount"
+    },
+    "pNullableOpenCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "minProperties": 1
+    },
+    "rNullableOpenCount": {
+      "$ref": "#/$defs/NullableOpenCount"
+    },
+    "pPatternCount": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "rPatternCount": {
+      "$ref": "#/$defs/PatternCount"
+    },
+    "iNullablePatterns": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mNullablePatterns": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iNullableNames": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mNullableNames": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "iNullableCount": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "minProperties": 1,
+        "maxProperties": 3
+      }
+    },
+    "mNullableCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "minProperties": 1,
+        "maxProperties": 3
+      }
+    },
+    "iNullableOpenCount": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "minProperties": 1
+      }
+    },
+    "mNullableOpenCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "minProperties": 1
+      }
+    },
+    "iPatternCount": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^[a-z]+$": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    },
+    "mPatternCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^[a-z]+$": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    }
+  },
+  "required": [
+    "pNullablePatterns",
+    "rNullablePatterns",
+    "pNullableNames",
+    "rNullableNames",
+    "pNullableCount",
+    "rNullableCount",
+    "pNullableOpenCount",
+    "rNullableOpenCount",
+    "pPatternCount",
+    "rPatternCount"
+  ],
+  "$defs": {
+    "NullablePatterns": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NullableNames": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "NullableCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "minProperties": 1,
+      "maxProperties": 3
+    },
+    "NullableOpenCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "minProperties": 1
+    },
+    "PatternCount": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
+  }
+}

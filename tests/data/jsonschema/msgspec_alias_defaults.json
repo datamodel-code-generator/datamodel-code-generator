@@ -1,0 +1,38 @@
+{
+  "title": "AliasDefaults",
+  "type": "object",
+  "$defs": {
+    "Item": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
+    "ItemAlias": {"$ref": "#/$defs/Item"},
+    "ChainedAlias": {"$ref": "#/$defs/ItemAlias"},
+    "ItemList": {"type": "array", "items": {"$ref": "#/$defs/Item"}},
+    "ListAlias": {"$ref": "#/$defs/ItemList"},
+    "NullableItem": {"anyOf": [{"$ref": "#/$defs/Item"}, {"type": "null"}]},
+    "NullableList": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Item"}}, {"type": "null"}]},
+    "EmptyItem": {"type": "object", "properties": {"state": {"type": "string", "default": "initial"}}},
+    "EmptyAlias": {"$ref": "#/$defs/EmptyItem"},
+    "Number": {"type": "integer"},
+    "Numbers": {"type": "array", "items": {"type": "integer"}},
+    "ItemMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Item"}},
+    "Choice": {"type": "string", "enum": ["a", "b"]},
+    "Choices": {"type": "array", "items": {"$ref": "#/$defs/Choice"}}
+  },
+  "properties": {
+    "direct": {"$ref": "#/$defs/Item", "default": {"id": 1}},
+    "aliased": {"$ref": "#/$defs/ItemAlias", "default": {"id": 2}},
+    "chained": {"$ref": "#/$defs/ChainedAlias", "default": {"id": 3}},
+    "direct_list": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": [{"id": 4}]},
+    "alias_list": {"$ref": "#/$defs/ItemList", "default": [{"id": 5}]},
+    "chained_list": {"$ref": "#/$defs/ListAlias", "default": [{"id": 6}]},
+    "nullable_item": {"$ref": "#/$defs/NullableItem", "default": {"id": 7}},
+    "nullable_list": {"$ref": "#/$defs/NullableList", "default": [{"id": 8}]},
+    "empty_object": {"$ref": "#/$defs/EmptyAlias", "default": {}},
+    "empty_alias_list": {"$ref": "#/$defs/ItemList", "default": []},
+    "empty_direct_list": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": []},
+    "number": {"$ref": "#/$defs/Number", "default": 9},
+    "numbers": {"$ref": "#/$defs/Numbers", "default": [1, 2]},
+    "mapping": {"$ref": "#/$defs/ItemMap", "default": {"item": {"id": 10}}},
+    "empty_mapping": {"$ref": "#/$defs/ItemMap", "default": {}},
+    "choices": {"$ref": "#/$defs/Choices", "default": ["a"]}
+  }
+}

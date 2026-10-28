@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Union members
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /shapes:
+    get:
+      operationId: getShape
+      responses:
+        "200":
+          description: A shape told apart by its required properties.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Circle"
+                  - $ref: "#/components/schemas/Square"
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: A pet told apart by its discriminator.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+                discriminator:
+                  propertyName: kind
+                  mapping:
+                    cat: "#/components/schemas/Cat"
+                    dog: "#/components/schemas/Dog"
+  /overlaps:
+    get:
+      operationId: getOverlap
+      responses:
+        "200":
+          description: A value both members may hold, which the first member's schema may still refuse.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Paired"
+                  - $ref: "#/components/schemas/Single"
+components:
+  schemas:
+    Circle:
+      type: object
+      required: [radius]
+      properties:
+        radius:
+          type: integer
+    Square:
+      type: object
+      required: [side]
+      properties:
+        side:
+          type: integer
+    Cat:
+      type: object
+      required: [kind, lives]
+      properties:
+        kind:
+          const: cat
+        lives:
+          type: integer
+    Dog:
+      type: object
+      required: [kind, good]
+      properties:
+        kind:
+          const: dog
+        good:
+          type: boolean
+    Paired:
+      type: object
+      properties:
+        x:
+          type: string
+        y:
+          type: string
+      dependentRequired:
+        x: [y]
+    Single:
+      type: object
+      properties:
+        x:
+          type: string

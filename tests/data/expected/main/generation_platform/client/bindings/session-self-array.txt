@@ -1,0 +1,171 @@
+# session-self-array
+render pydantic_v2.BaseModel typing
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/typing
+render pydantic_v2.BaseModel standard
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/typing
+change pydantic_v2.BaseModel standard list(object)
+  @@ -9,2 +9,2 @@
+  -class Model(RootModel[list]):
+  -    root: list
+  +class Model(RootModel[list[object]]):
+  +    root: list[object]
+change pydantic_v2.BaseModel standard list(())
+  @@ -9,2 +9,2 @@
+  -class Model(RootModel[list]):
+  -    root: list
+  +class Model(RootModel[list[()]]):
+  +    root: list[()]
+change pydantic_v2.BaseModel standard list()
+  @@ -9,2 +9,2 @@
+  -class Model(RootModel[list]):
+  -    root: list
+  +class Model(RootModel[list[]]):
+  +    root: list[]
+change pydantic_v2.BaseModel standard tuple(())
+  @@ -9,2 +9,2 @@
+  -class Model(RootModel[list]):
+  -    root: list
+  +class Model(RootModel[tuple[()]]):
+  +    root: tuple[()]
+change pydantic_v2.BaseModel standard dict
+  @@ -9,2 +9,2 @@
+  -class Model(RootModel[list]):
+  -    root: list
+  +class Model(RootModel[dict]):
+  +    root: dict
+render pydantic_v2.BaseModel generic
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/typing
+render pydantic_v2.BaseModel standard-collapsed
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/typing
+render pydantic_v2.dataclass typing
+  models.py
+  model_bindings.py pydantic_v2_dataclass/typing
+render pydantic_v2.dataclass standard
+  models.py
+  model_bindings.py pydantic_v2_dataclass/typing
+change pydantic_v2.dataclass standard list(object)
+  @@ -10 +10 @@
+  -Model = TypeAliasType("Model", list)
+  +Model = TypeAliasType("Model", list[object])
+change pydantic_v2.dataclass standard list(())
+  @@ -10 +10 @@
+  -Model = TypeAliasType("Model", list)
+  +Model = TypeAliasType("Model", list[()])
+change pydantic_v2.dataclass standard list()
+  @@ -10 +10 @@
+  -Model = TypeAliasType("Model", list)
+  +Model = TypeAliasType("Model", list[])
+change pydantic_v2.dataclass standard tuple(())
+  @@ -10 +10 @@
+  -Model = TypeAliasType("Model", list)
+  +Model = TypeAliasType("Model", tuple[()])
+change pydantic_v2.dataclass standard dict
+  @@ -10 +10 @@
+  -Model = TypeAliasType("Model", list)
+  +Model = TypeAliasType("Model", dict)
+render pydantic_v2.dataclass generic
+  models.py
+  model_bindings.py pydantic_v2_dataclass/typing
+render pydantic_v2.dataclass standard-collapsed
+  models.py
+  model_bindings.py pydantic_v2_dataclass/typing
+render dataclasses.dataclass typing
+  models.py
+  model_bindings.py dataclasses_dataclass/typing
+render dataclasses.dataclass standard
+  models.py
+  model_bindings.py dataclasses_dataclass/typing
+change dataclasses.dataclass standard list(object)
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[object]
+change dataclasses.dataclass standard list(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[()]
+change dataclasses.dataclass standard list()
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[]
+change dataclasses.dataclass standard tuple(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = tuple[()]
+change dataclasses.dataclass standard dict
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = dict
+render dataclasses.dataclass generic
+  models.py
+  model_bindings.py dataclasses_dataclass/typing
+render dataclasses.dataclass standard-collapsed
+  models.py
+  model_bindings.py dataclasses_dataclass/typing
+render typing.TypedDict typing
+  models.py
+  model_bindings.py typing_TypedDict/typing
+render typing.TypedDict standard
+  models.py
+  model_bindings.py typing_TypedDict/typing
+change typing.TypedDict standard list(object)
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[object]
+change typing.TypedDict standard list(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[()]
+change typing.TypedDict standard list()
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[]
+change typing.TypedDict standard tuple(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = tuple[()]
+change typing.TypedDict standard dict
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = dict
+render typing.TypedDict generic
+  models.py
+  model_bindings.py typing_TypedDict/typing
+render typing.TypedDict standard-collapsed
+  models.py
+  model_bindings.py typing_TypedDict/typing
+render msgspec.Struct typing
+  models.py
+  model_bindings.py msgspec_Struct/typing
+render msgspec.Struct standard
+  models.py
+  model_bindings.py msgspec_Struct/typing
+change msgspec.Struct standard list(object)
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[object]
+change msgspec.Struct standard list(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[()]
+change msgspec.Struct standard list()
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = list[]
+change msgspec.Struct standard tuple(())
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = tuple[()]
+change msgspec.Struct standard dict
+  @@ -10 +10 @@
+  -Model: TypeAlias = list
+  +Model: TypeAlias = dict
+render msgspec.Struct generic
+  models.py
+  model_bindings.py msgspec_Struct/typing
+render msgspec.Struct standard-collapsed
+  models.py
+  model_bindings.py msgspec_Struct/typing

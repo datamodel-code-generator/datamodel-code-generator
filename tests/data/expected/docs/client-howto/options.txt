@@ -1,0 +1,4 @@
+exit 0
+> GET https://us.shelter.example/v1/pets?limit=20 x-app: shelter-cli authorization: Bearer s3cret
+> GET https://us.shelter.example/v1/pets?limit=20 x-app: shelter-cli x-trace: on authorization: Bearer s3cret
+> GET https://staging.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret

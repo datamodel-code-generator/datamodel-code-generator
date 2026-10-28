@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
+from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion
 
 if TYPE_CHECKING:
@@ -26,12 +27,16 @@ _CONFIG_EXTRA_KEYS: frozenset[str] = frozenset({
     "additionalProperties",
     "allow_extra_fields",
     "extra_fields",
+    "force_extra_allow",
     "unevaluatedProperties",
 })
 
 
 def get_config_extra(extra_template_data: dict[str, Any]) -> ConfigExtra | None:
     """Get extra field configuration for ConfigDict."""
+    if extra_template_data.get("force_extra_allow"):
+        return "'allow'"
+
     additional_properties = extra_template_data.get("additionalProperties")
     unevaluated_properties = extra_template_data.get("unevaluatedProperties")
     allow_extra_fields = extra_template_data.get("allow_extra_fields")
@@ -63,9 +68,11 @@ def get_config_attributes(
 ) -> list[ConfigAttribute]:
     """Get config attributes based on target Pydantic version."""
     target_version = extra_template_data.get("target_pydantic_version")
-    if target_version == TargetPydanticVersion.V2_11:
-        return config_attributes_v2_11
-    return config_attributes_v2
+    match target_version:
+        case TargetPydanticVersion() | str() if pydantic_target_meets("pydantic.validate_by_name", target_version):
+            return config_attributes_v2_11
+        case _:
+            return config_attributes_v2
 
 
 def build_base_config_parameters(

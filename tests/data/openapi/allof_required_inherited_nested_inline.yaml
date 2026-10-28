@@ -1,0 +1,121 @@
+openapi: "3.1.0"
+info:
+  title: Nested inline allOf inherited fields
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    BaseFirstItem:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+
+    BaseFirstBase:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          $ref: "#/components/schemas/BaseFirstItem"
+
+    BaseFirstDerived:
+      allOf:
+        - allOf:
+            - $ref: "#/components/schemas/BaseFirstBase"
+          properties:
+            detail: {}
+            responseOnly:
+              type: string
+              readOnly: true
+
+    BaseFirstGrandchild:
+      required:
+        - detail
+      allOf:
+        - $ref: "#/components/schemas/BaseFirstDerived"
+
+    ForwardGrandchild:
+      required:
+        - detail
+      allOf:
+        - $ref: "#/components/schemas/ForwardDerived"
+
+    ForwardDerived:
+      allOf:
+        - allOf:
+            - $ref: "#/components/schemas/ForwardBase"
+          properties:
+            detail: {}
+            responseOnly:
+              type: string
+              readOnly: true
+
+    ForwardBase:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          $ref: "#/components/schemas/ForwardItem"
+
+    ForwardItem:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+
+    DeepDerived:
+      allOf:
+        - allOf:
+            - allOf:
+                - $ref: "#/components/schemas/BaseFirstBase"
+              properties:
+                detail: {}
+                responseOnly:
+                  type: string
+                  readOnly: true
+
+    DiamondItem:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+
+    DiamondRoot:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          $ref: "#/components/schemas/DiamondItem"
+
+    DiamondLeft:
+      allOf:
+        - allOf:
+            - $ref: "#/components/schemas/DiamondRoot"
+
+    DiamondRight:
+      allOf:
+        - allOf:
+            - $ref: "#/components/schemas/DiamondRoot"
+          properties:
+            detail: {}
+
+    DiamondDerived:
+      required:
+        - detail
+      allOf:
+        - $ref: "#/components/schemas/DiamondLeft"
+        - $ref: "#/components/schemas/DiamondRight"
+        - type: object
+          properties:
+            responseOnly:
+              type: string
+              readOnly: true

@@ -1,0 +1,1 @@
+Error: could not clean batch output staging: simulated post-generation cleanup failure

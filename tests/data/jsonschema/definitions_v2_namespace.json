@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "type": "object",
+  "properties": {
+    "user": {
+      "$ref": "#/definitions/v2/User"
+    }
+  },
+  "definitions": {
+    "v2": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      },
+      "Audit": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

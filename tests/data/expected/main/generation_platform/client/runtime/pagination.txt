@@ -1,0 +1,278 @@
+# pagination pydantic_v2.BaseModel
+  created pager {'pages': 0, 'items': 0}
+  > GET https://api.example.com/users?limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=b&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  items ['1', '2', '3']
+  progress {'pages': 3, 'items': 3}
+  items again []
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first item = '1'
+  after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  closed after one page {'pages': 1, 'items': 1}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  retried items ['1', '2']
+  retried progress {'pages': 2, 'items': 2}
+  after block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  > GET https://api.example.com/users?cursor=start
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  started items ['9']
+  pages then items ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.pages') [field_path=('next', 'pages')] invalid_state
+  pages then iter ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter.pages') [field_path=('iter', 'pages')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pages ['[1]', '[2]']
+  pages again []
+  pages iter_pages again = []
+  iterable = True
+  items then pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.items') [field_path=('iter_pages', 'items')] invalid_state
+  items of closed pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1] continuation='a' status=200 attempts=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [2] continuation='b' status=200 attempts=1
+  > GET https://api.example.com/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  last page = [3] continuation=None status=200 attempts=1
+  after the last page = None
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  same page again = [1] continuation='a' status=200 attempts=1
+  page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  page a caller made ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  not a page ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  page repr = 'Page(items=0'
+  page items ! TypeError: items must be a tuple []
+  page response ! TypeError: response must be a ResponseInfo []
+  page continuation = "[] continuation='a' status=200 attempts=1"
+  page frozen ! FrozenInstanceError: Page is immutable []
+  page equality = (True, False, True)
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing end ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null end ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty cursor ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=n1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  header end value ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty header end ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing header end ['1']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing loose cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/next')] missing
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null nested cursor [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='null') [operation_id='listNested', location=BodySelector(pointer='/result/next')] null
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='missing') [operation_id='listLoose', location=BodySelector(pointer='/data')] missing
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', reason='null') [operation_id='listLoose', location=BodySelector(pointer='/data')] null
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  items of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":{"id":"1"},"next":null}', truncated=False, cause=1 validation error for LoosePage
+data
+  Input should be a valid array [type=list_type, input_value={'id': '1'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing nested result [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='missing') [operation_id='listNested', location=BodySelector(pointer='/result/items')] missing
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null nested items [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', reason='null') [operation_id='listNested', location=BodySelector(pointer='/result/items')] null
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  duplicate cursor header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='malformed') [operation_id='listUsers', location=HeaderSelector(name='x-next', occurrence='single')] malformed
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  invalid page [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_syntax') [operation_id='listLoose', body_bytes=b'{', truncated=False, cause=1 validation error for LoosePage
+  Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page its model refuses [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":[{"name":"x"}]}', truncated=False, cause=1 validation error for LoosePage
+data.0.id
+  Field required [type=missing, input_value={'name': 'x'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=7
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  integer cursor ['1']
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested items ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  broken coding [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='malformed_coding') [operation_id='listUsers', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: unknown compression method')] malformed_coding
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cycle pages ['[1]', '[2]', '[3]'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
+  cycle progress {'pages': 3, 'items': 3}
+  after the cycle ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.failed') [field_path=('iter_pages', 'failed')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cycle page = [1] continuation='a' status=200 attempts=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  repeating page = [2] continuation='a' status=200 attempts=1
+  after the repeating page ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cycle of integer cursors [] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page limit at the last page ['1', '2']
+    progress {'pages': 2, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='pages', limit=2) [limit=2] pages
+    progress {'pages': 2, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no page limit ['1', '2']
+    progress {'pages': 2, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit at the last item ['1', '2']
+    progress {'pages': 1, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit with items left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='items', limit=2) [limit=2] items
+    progress {'pages': 1, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit with pages left ['1', '2'] ! SessionLimitError: SessionLimitError(reason='items', limit=2) [limit=2] items
+    progress {'pages': 1, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no item limit ['1', '2', '3']
+    progress {'pages': 2, 'items': 3}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit of pages ['[1,2]'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+    progress {'pages': 1, 'items': 2}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit of the last page ['[1,2]']
+    progress {'pages': 1, 'items': 2}
+  zero items []
+    progress {'pages': 0, 'items': 0}
+  zero items of pages []
+    progress {'pages': 0, 'items': 0}
+  zero items page ! SessionLimitError: SessionLimitError(reason='items', limit=0) [limit=0] items
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page for limits = [1] continuation='a' status=200 attempts=1
+  next page past its page limit ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
+  next page past its item limit ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+  > GET https://api.example.com/archive/a1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/archive/b2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  path cursor ['1', '2']
+  > GET https://api.example.com/statuses
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/statuses?code=206
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  status cursor ['1', '2']
+  > POST https://api.example.com/users/search
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"name":"a"}'
+  > POST https://api.example.com/users/search?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"name":"a"}'
+  body sent again ['1', '2']
+  > POST https://api.example.com/users/search
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"name":"a"}'
+  body media ['1']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', cause='RemoteProtocolError') [operation_id='listLoose', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  root list ['a', 'b']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  named root list ['a', 'b']
+  async created pager {'pages': 0, 'items': 0}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async items ['1', '2', '3']
+  async items again []
+  async progress {'pages': 3, 'items': 3}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async cycle pages ['[1]', '[2]', '[3]'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
+  async after the cycle ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.failed') [field_path=('iter_pages', 'failed')] invalid_state
+  async after block ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.closed') [field_path=('iter_pages', 'closed')] invalid_state
+  async items then pages ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='iter_pages.items') [field_path=('iter_pages', 'items')] invalid_state
+  async pages then aiter ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.pages') [field_path=('aiter', 'pages')] invalid_state
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async item limit ['[1]'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
+  async zero items []
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async page = [1] continuation='a' status=200 attempts=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async next page = [2] continuation=None status=200 attempts=1
+  async after the last page = None
+  async page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
+  async zero items page ! SessionLimitError: SessionLimitError(reason='items', limit=0) [limit=0] items
+  async after close [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.closed') [field_path=('aiter', 'closed')] invalid_state

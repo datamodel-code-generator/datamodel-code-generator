@@ -1,0 +1,1 @@
+This fixture is intentionally not JSON. The main-only selection fast path must not read it.

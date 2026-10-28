@@ -1,0 +1,17 @@
+{
+  "custom_template_option": {
+    "browser_supported": false,
+    "unsupported_reason": "Custom Jinja2 templates are not available in the browser playground."
+  },
+  "release_runtime_packages": {
+    "compiled": [],
+    "legacy": [
+      "jinja2>=2.10.1,<4"
+    ]
+  },
+  "worker": {
+    "current_installs_jinja2": false,
+    "merges_version_runtime_packages": true,
+    "standard_packages_declared": true
+  }
+}

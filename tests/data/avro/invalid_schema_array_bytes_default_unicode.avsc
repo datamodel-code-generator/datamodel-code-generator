@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "Invalid",
+  "fields": [
+    {
+      "name": "value",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      },
+      "default": [
+        "\u0100"
+      ]
+    }
+  ]
+}

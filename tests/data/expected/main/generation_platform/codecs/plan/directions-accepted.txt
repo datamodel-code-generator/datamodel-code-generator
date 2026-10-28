@@ -1,0 +1,5 @@
+# directions-accepted
+https://dcg.invalid/inputs/root#/components/schemas/Item {"name":"a","token":"t"} -> request NativeValidationError missing@/id | response NativeValidationError missing@/id
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":"a"} -> request NativeValidationError missing@/token | response NativeValidationError missing@/token
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":"a","token":"t","tags":[{"label":"l"}],"pair":[{}],"x-a":{}} -> request NativeValidationError missing@/tags/0/secret,missing@/pair/0/key | response NativeValidationError missing@/tags/0/secret,missing@/pair/0/key
+https://dcg.invalid/inputs/root#/components/schemas/Item {"name":"a","token":"t","tags":[{"label":"l","secret":"s"}],"pair":[{"key":"k"}],"x-a":{"hidden":"h"}} -> request NativeValidationError missing@/id | response NativeValidationError missing@/id

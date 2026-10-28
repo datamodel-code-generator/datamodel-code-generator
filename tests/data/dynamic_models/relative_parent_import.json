@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "left.Shared": {
+      "type": "object",
+      "properties": {
+        "left_value": {
+          "type": "string"
+        }
+      }
+    },
+    "right.Shared": {
+      "type": "object",
+      "properties": {
+        "right_value": {
+          "type": "integer"
+        }
+      }
+    },
+    "right.deep.Consumer": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/left.Shared"
+        },
+        "right": {
+          "$ref": "#/$defs/right.Shared"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/right.deep.Consumer"
+}

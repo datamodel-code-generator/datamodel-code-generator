@@ -1,0 +1,20 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "minLength": 2
+    }
+  ],
+  "enum": [
+    "a",
+    "bb"
+  ],
+  "definitions": {
+    "Base": {
+      "type": "string"
+    }
+  }
+}

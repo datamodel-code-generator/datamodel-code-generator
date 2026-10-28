@@ -1,0 +1,23 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External discriminator base",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Wrapper": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "$ref": "./right/base.json#/components/schemas/Base"
+          }
+        },
+        "required": [
+          "item"
+        ]
+      }
+    }
+  }
+}

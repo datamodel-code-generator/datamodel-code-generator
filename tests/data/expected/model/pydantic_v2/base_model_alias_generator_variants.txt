@@ -1,0 +1,24 @@
+# to_pascal
+
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_pascal
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_pascal,
+    )
+    first_name: str
+
+# to_snake
+
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_snake
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_snake,
+    )
+    firstName: str
+

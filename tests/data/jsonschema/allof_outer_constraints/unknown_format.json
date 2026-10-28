@@ -1,0 +1,11 @@
+{
+  "title": "Root",
+  "allOf": [
+    {"$ref": "#/$defs/Base"},
+    {"minimum": 1}
+  ],
+  "format": "custom-string",
+  "$defs": {
+    "Base": {"type": "string"}
+  }
+}

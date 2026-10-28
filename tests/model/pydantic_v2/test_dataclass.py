@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
-
 from datamodel_code_generator.model import DataModelFieldBase
-from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass, DataModelField
+from datamodel_code_generator.model.base import DataModel
+from datamodel_code_generator.model.pydantic_v2.base_model import Constraints, has_lookaround_pattern
+from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass, DataModelField, DataModelFieldBackport
+from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONFIG_DICT
 from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType, StrictTypes, Types
 
@@ -170,13 +170,9 @@ def test_data_model_field() -> None:
     assert field.required is True
 
 
-@pytest.mark.skipif(
-    not PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK,
-    reason="Pydantic 2.4+ accepts non-identifier dataclass aliases without generator fallback",
-)
 def test_data_model_field_keeps_existing_alias_fallback_state_pydantic20() -> None:
     """Test fallback does not duplicate aliases or overwrite serialization aliases."""
-    field = DataModelField(
+    field = DataModelFieldBackport(
         name="test_field",
         data_type=DataType(type="str"),
         required=True,
@@ -188,6 +184,36 @@ def test_data_model_field_keeps_existing_alias_fallback_state_pydantic20() -> No
     assert field.alias is None
     assert field.validation_aliases == ["not-valid"]
     assert field.serialization_alias == "wire-name"
+
+
+def test_has_lookaround_pattern_skips_reference_without_fields() -> None:
+    """Following a reference whose source is not a model (no ``fields``) is safe."""
+    sourceless_ref = Reference(name="Plain", path="plain")
+    sourceless_ref.source = DataType(type="str")
+    field = DataModelFieldBase(name="value", data_type=DataType(reference=sourceless_ref), required=False)
+
+    assert has_lookaround_pattern([field], follow_references=True) is False
+
+
+def test_data_class_imports_cache_clears_after_lookaround_regex_engine() -> None:
+    """Lookaround regex config imports are visible after an earlier imports read."""
+    field = DataModelFieldBase(
+        name="a",
+        data_type=DataType(type="str"),
+        constraints=Constraints(pattern="(?<=prefix)value"),
+        required=True,
+    )
+    data_class = DataClass(fields=[field], reference=Reference(name="Model", path="model"))
+
+    base_imports_getter = DataModel.imports.fget
+
+    assert base_imports_getter is not None
+    base_imports = base_imports_getter(data_class)
+    assert IMPORT_CONFIG_DICT not in base_imports
+
+    data_class.render()
+
+    assert IMPORT_CONFIG_DICT in data_class.imports
 
 
 def test_create_reuse_model() -> None:

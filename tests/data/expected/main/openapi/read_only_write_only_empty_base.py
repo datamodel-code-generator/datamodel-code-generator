@@ -16,8 +16,9 @@ class HasFieldBase(BaseModel):
 
 
 class ChildRequest(BaseModel):
-    base_field: str | None = None
+    base_field: str
 
 
 class Child(EmptyBase, HasFieldBase):
     id: int | None = None
+    base_field: str

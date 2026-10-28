@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Unresolved reference reuse
+  version: "1"
+paths:
+  /notes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Missing'
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payload'
+components:
+  schemas:
+    Payload: {}

@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+disable-timestamp = true
+
+[tool.ruff]
+line-length = 88

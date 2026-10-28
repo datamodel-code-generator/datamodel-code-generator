@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "c1": {
+      "$ref": "#/$defs/C1",
+      "default": {}
+    },
+    "c2": {
+      "$ref": "#/$defs/C2",
+      "default": {}
+    }
+  },
+  "$defs": {
+    "C1": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#/$defs/D2/reuse",
+          "default": {}
+        },
+        "d": {
+          "$ref": "#/$defs/D2",
+          "default": {}
+        }
+      }
+    },
+    "D1": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#/$defs/D2/reuse",
+          "default": {}
+        },
+        "d": {
+          "$ref": "#/$defs/D2",
+          "default": {}
+        }
+      },
+      "reuse": {
+        "type": "object",
+        "properties": {
+          "z": {
+            "type": "integer",
+            "default": 0
+          }
+        }
+      }
+    },
+    "C2": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#/$defs/D1/reuse",
+          "default": {}
+        },
+        "d": {
+          "$ref": "#/$defs/D1",
+          "default": {}
+        }
+      }
+    },
+    "D2": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "$ref": "#/$defs/D1/reuse",
+          "default": {}
+        },
+        "d": {
+          "$ref": "#/$defs/D1",
+          "default": {}
+        }
+      },
+      "reuse": {
+        "type": "object",
+        "properties": {
+          "w": {
+            "type": "string",
+            "default": "w"
+          }
+        }
+      }
+    }
+  }
+}

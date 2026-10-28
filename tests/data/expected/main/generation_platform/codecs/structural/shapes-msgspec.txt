@@ -1,0 +1,25 @@
+warning UserWarning: msgspec.Meta does not take ge on Decimal; Values.amount is generated without this constraint.
+warning UserWarning: msgspec cannot decode the union AnimalsAnyPutRequest: its Struct types Cat, Dog are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+warning UserWarning: msgspec cannot decode the union KinPutRequest: its Struct types Animal, Cat are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+use /paths/~1animals~1any/put request_body: MsgspecCodec
+use /paths/~1kin/put request_body: MsgspecCodec
+use /paths/~1tree/put request_body: MsgspecCodec
+use /paths/~1tree/put response_body 200: MsgspecCodec
+use /paths/~1mixed/post request_body: MsgspecCodec
+use /paths/~1values/post request_body: MsgspecCodec
+use /paths/~1values/post response_body 200: MsgspecCodec
+animal-client-cat: TypeError
+animal-server-dog: TypeError
+animal-any-decode-cat: TypeError
+animal-any-decode-dog: TypeError
+animal-any-encode-cat: json={"id":1,"nick-name":"Tom","meow":true}
+kin-client-encode-cat: json={"id":1,"meow":true}
+kin-client-encode-dog: json={"id":2,"bark":3}
+tree-client-decode: native Node(value=1, children=[Node(value=2, children=UNSET, pair=UNSET, contact=UNSET, index=UNSET)], pair=(1, 'a@example.com'), contact=UNSET, index={'a': Node(value=3, children=UNSET, pair=UNSET, contact=UNSET, index=UNSET)}) json={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
+tree-server-encode: json={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
+tree-client-decode-bad-child: ValidationError
+mixed-server-decode: native Small(contact=UNSET) json={"size":"small"}
+mixed-server-decode-large: native Large() json={"size":"large"}
+values-server-decode: native Values(amount=Decimal('1.1'), day=UNSET, clock=UNSET, span=datetime.timedelta(days=1, seconds=3600), uid=UNSET, secret=UNSET, blob=UNSET, level=<Level.integer_2: 2>, link=UNSET, any={'k': [1]}, list=UNSET, codes=UNSET, un=5, mark=(1, 'a')) json={"amount":"1.1","span":"P1DT3600S","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"]}
+values-server-response: json={"amount":"1.1","span":"P1DT3600S","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"]}
+animals-any-convert: TypeError

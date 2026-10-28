@@ -1,0 +1,1 @@
+msgspec cannot decode the union Either: its Struct types SpanB, Span are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

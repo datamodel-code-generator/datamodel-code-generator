@@ -1,0 +1,11 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "oneOf": [
+      true,
+      false
+    ]
+  },
+  "additionalProperties": {}
+}

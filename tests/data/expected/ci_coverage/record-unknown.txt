@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "prepared": [],
+  "stderr": "Invalid coverage file: unknown\n",
+  "stdout": ""
+}

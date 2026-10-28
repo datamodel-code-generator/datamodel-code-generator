@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "x-python-type": "Callable[[int], int]"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "CallableFirst",
+  "type": "object"
+}

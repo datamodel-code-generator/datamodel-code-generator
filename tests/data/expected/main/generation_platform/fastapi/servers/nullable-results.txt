@@ -1,0 +1,315 @@
+# nullable-results
+serve pydantic_v2.BaseModel
+service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_any_alias, post_count, post_memo, post_ok
+service DefaultService without its methods: TypeError
+> GET /texts?case=none
+  get_text(none)
+< 200 application/json null
+> GET /texts?case=null
+  get_text(null)
+< 200 application/json null
+< x-rate: 5
+> GET /texts?case=missing-body
+  get_text(missing-body)
+< 200 application/json null
+> GET /texts?case=word
+  get_text(word)
+< 200 application/json "abc"
+> GET /texts?case=long-word
+  get_text(long-word)
+< ResponseValidationError: ['String should have at most 5 characters']
+> GET /texts?case=null-201
+  get_text(null-201)
+< 201 application/json null
+> GET /texts?case=created
+  get_text(created)
+< 201 application/json {"id":1}
+< location: /things/1
+> GET /texts?case=null-202
+  get_text(null-202)
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
+> GET /texts?case=null-203
+  get_text(null-203)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /texts?case=null-206
+  get_text(null-206)
+< 206 application/json null
+> GET /texts?case=no-content
+  get_text(no-content)
+< 204 - b''
+> GET /texts?case=null-404
+  get_text(null-404)
+< 404 application/json null
+> GET /texts?case=null-500
+  get_text(null-500)
+< 500 application/problem+json null
+> HEAD /texts?case=head-none
+  head_text(head-none)
+< 200 - b''
+> HEAD /texts?case=head-empty
+  head_text(head-empty)
+< 200 - b''
+> GET /lists?case=none
+  get_list(none)
+< 200 application/json null
+> GET /lists?case=missing-body
+  get_list(missing-body)
+< 200 application/json null
+> GET /lists?case=numbers
+  get_list(numbers)
+< 200 application/json [1,2]
+> GET /names?case=none
+  get_name(none)
+< 200 application/json null
+> GET /names?case=missing-body
+  get_name(missing-body)
+< 200 application/json null
+> GET /names?case=word
+  get_name(word)
+< 200 application/json "abc"
+> GET /values?case=none
+  get_value(none)
+< 200 application/json null
+> GET /values?case=missing-body
+  get_value(missing-body)
+< 200 application/json null
+> GET /values?case=numbers
+  get_value(numbers)
+< 200 application/json [1,2]
+> GET /anything?case=none
+  get_anything(none)
+< 200 application/json null
+> GET /anything?case=missing-body
+  get_anything(missing-body)
+< 200 application/json null
+> GET /anything?case=numbers
+  get_anything(numbers)
+< 200 application/json [1,2]
+> GET /pets?case=none
+  get_pet(none)
+< 200 application/vnd.pet+json null
+> GET /pets?case=missing-body
+  get_pet(missing-body)
+< 200 application/vnd.pet+json null
+> GET /things?case=none
+  get_thing(none)
+< ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
+> GET /things?case=missing-body
+  get_thing(missing-body)
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
+> GET /things?case=bare
+  get_thing(bare)
+< 200 application/json {"id":1}
+> GET /notes?case=none
+  get_note(none)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /notes?case=missing-body
+  get_note(missing-body)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /notes?case=word
+  get_note(word)
+< 200 text/plain; charset=utf-8 abc
+> POST /memos?case=none
+  post_memo(none)
+< 200 application/json null
+> POST /memos?case=null
+  post_memo(null)
+< 200 application/json null
+> POST /memos?case=none
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> GET /ranges?case=none
+  get_range(none)
+< 200 application/json null
+> GET /ranges?case=word
+  get_range(word)
+< 200 application/json "abc"
+> GET /accepted?case=bare
+  get_accepted(bare)
+< 202 application/json {"id":1}
+> GET /accepted?case=none
+  get_accepted(none)
+< ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
+> GET /defaults?case=none
+  get_default(none)
+< ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
+> GET /defaults?case=bare
+  get_default(bare)
+< 200 application/json {"id":1}
+> GET /errors?case=word
+  get_error(word)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=none
+  get_error(none)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=client-error
+  get_error(client-error)
+< 404 text/plain; charset=utf-8 missing
+> GET /oks?case=none
+  get_ok(none)
+< 200 application/json null
+> GET /oks?case=undeclared
+  get_ok(undeclared)
+< 404 application/json null
+> GET /any-aliases?case=none
+  get_any_alias(none)
+< 200 application/json null
+> GET /any-aliases?case=numbers
+  get_any_alias(numbers)
+< 200 application/json [1,2]
+serve pydantic_v2.dataclass
+service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_any_alias, post_count, post_memo, post_ok
+service DefaultService without its methods: TypeError
+> GET /texts?case=none
+  get_text(none)
+< 200 application/json null
+> GET /texts?case=null
+  get_text(null)
+< 200 application/json null
+< x-rate: 5
+> GET /texts?case=missing-body
+  get_text(missing-body)
+< 200 application/json null
+> GET /texts?case=word
+  get_text(word)
+< 200 application/json "abc"
+> GET /texts?case=long-word
+  get_text(long-word)
+< ResponseValidationError: ['String should have at most 5 characters']
+> GET /texts?case=null-201
+  get_text(null-201)
+< 201 application/json null
+> GET /texts?case=created
+  get_text(created)
+< 201 application/json {"id":1}
+< location: /things/1
+> GET /texts?case=null-202
+  get_text(null-202)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
+> GET /texts?case=null-203
+  get_text(null-203)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /texts?case=null-206
+  get_text(null-206)
+< 206 application/json null
+> GET /texts?case=no-content
+  get_text(no-content)
+< 204 - b''
+> GET /texts?case=null-404
+  get_text(null-404)
+< 404 application/json null
+> GET /texts?case=null-500
+  get_text(null-500)
+< 500 application/problem+json null
+> HEAD /texts?case=head-none
+  head_text(head-none)
+< 200 - b''
+> HEAD /texts?case=head-empty
+  head_text(head-empty)
+< 200 - b''
+> GET /lists?case=none
+  get_list(none)
+< 200 application/json null
+> GET /lists?case=missing-body
+  get_list(missing-body)
+< 200 application/json null
+> GET /lists?case=numbers
+  get_list(numbers)
+< 200 application/json [1,2]
+> GET /names?case=none
+  get_name(none)
+< 200 application/json null
+> GET /names?case=missing-body
+  get_name(missing-body)
+< 200 application/json null
+> GET /names?case=word
+  get_name(word)
+< 200 application/json "abc"
+> GET /values?case=none
+  get_value(none)
+< 200 application/json null
+> GET /values?case=missing-body
+  get_value(missing-body)
+< 200 application/json null
+> GET /values?case=numbers
+  get_value(numbers)
+< 200 application/json [1,2]
+> GET /anything?case=none
+  get_anything(none)
+< 200 application/json null
+> GET /anything?case=missing-body
+  get_anything(missing-body)
+< 200 application/json null
+> GET /anything?case=numbers
+  get_anything(numbers)
+< 200 application/json [1,2]
+> GET /pets?case=none
+  get_pet(none)
+< 200 application/vnd.pet+json null
+> GET /pets?case=missing-body
+  get_pet(missing-body)
+< 200 application/vnd.pet+json null
+> GET /things?case=none
+  get_thing(none)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
+> GET /things?case=missing-body
+  get_thing(missing-body)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
+> GET /things?case=bare
+  get_thing(bare)
+< 200 application/json {"id":1}
+> GET /notes?case=none
+  get_note(none)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /notes?case=missing-body
+  get_note(missing-body)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /notes?case=word
+  get_note(word)
+< 200 text/plain; charset=utf-8 abc
+> POST /memos?case=none
+  post_memo(none)
+< 200 application/json null
+> POST /memos?case=null
+  post_memo(null)
+< 200 application/json null
+> POST /memos?case=none
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> GET /ranges?case=none
+  get_range(none)
+< 200 application/json null
+> GET /ranges?case=word
+  get_range(word)
+< 200 application/json "abc"
+> GET /accepted?case=bare
+  get_accepted(bare)
+< 202 application/json {"id":1}
+> GET /accepted?case=none
+  get_accepted(none)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
+> GET /defaults?case=none
+  get_default(none)
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
+> GET /defaults?case=bare
+  get_default(bare)
+< 200 application/json {"id":1}
+> GET /errors?case=word
+  get_error(word)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=none
+  get_error(none)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=client-error
+  get_error(client-error)
+< 404 text/plain; charset=utf-8 missing
+> GET /oks?case=none
+  get_ok(none)
+< 200 application/json null
+> GET /oks?case=undeclared
+  get_ok(undeclared)
+< 404 application/json null
+> GET /any-aliases?case=none
+  get_any_alias(none)
+< 200 application/json null
+> GET /any-aliases?case=numbers
+  get_any_alias(numbers)
+< 200 application/json [1,2]

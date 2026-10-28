@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SharedSeparator",
+  "type": "object",
+  "properties": {
+    "separator": {
+      "$ref": "#/x-shared/Separator"
+    }
+  },
+  "required": [
+    "separator"
+  ],
+  "x-shared": {
+    "Separator": {
+      "type": "string",
+      "pattern": "^\\s+$"
+    }
+  }
+}

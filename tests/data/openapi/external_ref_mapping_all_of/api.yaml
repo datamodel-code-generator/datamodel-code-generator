@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info:
+  title: allOf members that reference a schema of a mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Branch:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+            other:
+              $ref: '#/components/schemas/Twig'
+    Twig:
+      type: object
+      properties:
+        local:
+          type: string
+    Shrub:
+      $ref: 'shared.yaml#/components/schemas/Twig'
+      minProperties: 1
+    Bush:
+      allOf:
+        - $ref: '#/components/schemas/Shrub'
+        - type: object
+          properties:
+            height:
+              type: integer
+    Tree:
+      type: object
+      properties:
+        crown:
+          allOf:
+            - $ref: 'shared.yaml#/components/schemas/Twig'
+            - type: object
+              properties:
+                leaves:
+                  type: integer
+    Grove:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Leafy'
+        - type: object
+          required:
+            - twigs
+    Thicket:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Leafy'
+        - type: object
+          properties:
+            twigs:
+              description: Twigs the thicket requires.
+          required:
+            - twigs
+    Bed:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Leafy'
+        - type: object
+          properties:
+            soil:
+              type: string
+    Hedge:
+      allOf:
+        - $ref: '#/components/schemas/Bed'
+        - type: object
+          required:
+            - twigs
+    Sprout:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Leafy'
+        - type: object
+          properties:
+            name:
+              type: string
+          required:
+            - name
+    Arbor:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Leafy'
+        - type: object
+          required:
+            - shape
+            - color
+    Pod:
+      type: object
+      properties:
+        size:
+          type: integer
+    Blossom:
+      allOf:
+        - $ref: 'shared.yaml#/components/schemas/Bud'
+        - type: object
+          properties:
+            petals:
+              type: integer
+            pod:
+              $ref: '#/components/schemas/Pod'

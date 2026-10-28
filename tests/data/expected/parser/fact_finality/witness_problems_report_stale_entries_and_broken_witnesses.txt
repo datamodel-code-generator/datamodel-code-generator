@@ -1,0 +1,2 @@
+stale KNOWN_WRITES entry apply_discriminator_type other-module DataModel.fields: its witness '--input tests/data/jsonschema/person.json --input-file-type jsonschema' no longer makes it; remove the entry
+the witnesses could not run: witness '--input missing.json' fails

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Inner": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x"
+      ]
+    },
+    "Wrapper": {
+      "$ref": "#/$defs/Inner"
+    }
+  },
+  "properties": {
+    "w": {
+      "$ref": "#/$defs/Wrapper"
+    },
+    "ws": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "$ref": "#/$defs/Wrapper"
+        }
+      }
+    }
+  }
+}

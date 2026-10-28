@@ -1,0 +1,12 @@
+{
+  "apply_default_values_for_required_fields": true,
+  "class_name": "Second",
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT",
+  "snake_case_field": true,
+  "target_python_version": "3.11"
+}

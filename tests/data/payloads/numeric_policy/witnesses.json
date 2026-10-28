@@ -1,0 +1,9 @@
+{
+  "absent": {},
+  "ordinary": {"decimal_multiple_field": 0.6},
+  "another_multiple": {"decimal_multiple_field": 1.2},
+  "weakened_constraint": {"decimal_multiple_field": 0.3},
+  "moderate_native_rejection": {"decimal_multiple_field": 10066330.8},
+  "large_native_rejection": {"decimal_multiple_field": 1.5901107559605153e24},
+  "source_false_positive": {"decimal_multiple_field": 1176156745098786.2}
+}

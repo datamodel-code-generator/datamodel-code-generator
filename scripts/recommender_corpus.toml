@@ -1,0 +1,270 @@
+# Corpus for scripts/recommender_calibrate.py: public specs pinned to a commit and a sha256.
+# Content is downloaded at run time and never committed. `represents` says which schema style an entry stands for;
+# calibration entries tune the rules, holdout entries only check that a proposal does not make them worse.
+format_version = 1
+
+# Decision grid scored for every schema on top of the latest standard preset (each table = config fields; an empty
+# table leaves the decision to the preset, so an unset naming strategy is a value of its own).
+[grid]
+title-source = [{ use_title_as_name = false }, { use_title_as_name = true }]
+naming-strategy = [
+  {},
+  { naming_strategy = "numbered" },
+  { naming_strategy = "primary-first" },
+  { naming_strategy = "full-path" },
+]
+enum-shape = [{ enum_field_as_literal = "one" }, { enum_field_as_literal = "all" }]
+reuse = [{ reuse_model = false }, { reuse_model = true, collapse_reuse_models = true }]
+union-variant-names = [
+  { use_tag_as_union_variant_name = false },
+  { use_tag_as_union_variant_name = true, infer_union_variant_names = false },
+]
+
+[[schema]]
+id = "github"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://github.com/github/rest-api-description"
+url = "https://raw.githubusercontent.com/github/rest-api-description/{ref}/descriptions/api.github.com/api.github.com.json"
+represents = "large OAS 3.0 REST API: kebab-case keys, thousands of inline objects and enums under webhooks, shared and duplicate titles, many structurally identical inline shapes"
+versions = [
+  { ref = "17e90ee011db113db0c8e5593c264f16630ba685", date = "2026-06-12", sha256 = "8d7a2ddc367e44940709b0b4994e21619142c96c779dce3b29fef24ff951fe95" },
+  { ref = "02a2bc3d6b42b69c18938c31b434342aa08fcd2b", date = "2026-10-14", sha256 = "b54b0422c877219c149f02ccdcaf90ee2194b2ad773a5f027c4aa757f15f3442" },
+]
+
+[[schema]]
+id = "stripe"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://github.com/stripe/openapi"
+url = "https://raw.githubusercontent.com/stripe/openapi/{ref}/openapi/spec3.json"
+represents = "large OAS 3.0 API with dotted snake_case keys whose namespaces reference each other in cycles, expandable anyOf [string, $ref] fields and titles that change between versions"
+layout = "package"
+versions = [
+  { ref = "fbd00919865b69647f714ba1c02adced187d4664", date = "2026-05-23", sha256 = "7c7b7b0c3b02c899fb3a0301d99b8489b9e5f7bfd2ca699994b459abc09914e8" },
+  { ref = "bcfd59f49dcac84a84d63d304c62793dff6e5916", date = "2026-09-29", sha256 = "7cff4cc46d0654101a36a3302f7544640f5f73e4f3cad6f264f0e23c19fa1776" },
+]
+
+[[schema]]
+id = "openai"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://github.com/openai/openai-openapi"
+url = "https://raw.githubusercontent.com/openai/openai-openapi/{ref}/openapi.yaml"
+represents = "large OAS 3.1 YAML API: heavy oneOf/anyOf with discriminators, inline tagged variants, tags behind allOf, nullable object wrappers"
+versions = [
+  { ref = "5162af98d3147432c14680df789e8e12d4891e6b", date = "2026-05-13", sha256 = "74cbcf73838f4cd7e209b2d3f2e9ddc9fa155f21a44360b6fac7646a6d4f5f8b" },
+  { ref = "0fce13ce46465f8876e4a968a73c7bca3aa8e335", date = "2026-10-14", sha256 = "6e0ebb1ed7fce4b0af7da4e5b805cc91fd6a096d2d4cfc308510d695f67406fe" },
+]
+
+[[schema]]
+id = "k8s-apps-v1"
+kind = "openapi"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/kubernetes/kubernetes"
+url = "https://raw.githubusercontent.com/kubernetes/kubernetes/{ref}/api/openapi-spec/v3/apis__apps__v1_openapi.json"
+represents = "generated OAS 3.0 with dotted Java-style keys mapping to modules, no inline shapes and no titles (tag v1.37.1)"
+layout = "package"
+versions = [
+  { ref = "f78e722310e50bcaca9276be22276d9e91d91308", date = "2026-09-23", sha256 = "e1326db2904fd6356d2f16e6179f8ad8e4800c0112cb74ab3b21da7286df4dbe" },
+]
+
+[[schema]]
+id = "petstore"
+kind = "openapi"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/swagger-api/swagger-petstore"
+url = "https://raw.githubusercontent.com/swagger-api/swagger-petstore/{ref}/src/main/resources/openapi.yaml"
+represents = "small OAS 3.0 YAML API whose inline enums share a property name (status) across parents"
+versions = [
+  { ref = "d57941e8fe959e508796b27469b1e8bba73392dc", date = "2026-08-17", sha256 = "e1a2480ffa440e44b981db5b038374214c532ffc92026fd51fb957c88bfbdd88" },
+]
+
+[[schema]]
+id = "train-travel"
+kind = "openapi"
+role = "calibration"
+license = "CC-BY-NC-SA-4.0"
+source = "https://github.com/bump-sh-examples/train-travel-api"
+url = "https://raw.githubusercontent.com/bump-sh-examples/train-travel-api/{ref}/openapi.yaml"
+represents = "small OAS 3.1 YAML API with titled oneOf variants and usable titles (last 3.1 version before the upstream moved to 3.2; its x-topics $ref to a Markdown page is stubbed)"
+stub_external_refs = true
+versions = [
+  { ref = "ff649fc378145fc055b5bbf39521271f6e960e93", date = "2026-09-22", sha256 = "983942c6c71b141dfbf80b351409053ff3c4999c574f170bfe49a45bce356349" },
+]
+
+[[schema]]
+id = "schemastore-package"
+kind = "jsonschema"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/SchemaStore/schemastore"
+url = "https://raw.githubusercontent.com/SchemaStore/schemastore/{ref}/src/schemas/json/package.json"
+represents = "draft-07 configuration schema with a sentence-like root title, definitions and external $refs to other SchemaStore files (stubbed as objects)"
+stub_external_refs = true
+versions = [
+  { ref = "0500f757f7e87d66262f362ed29ebd208ddfd1d1", date = "2026-10-16", sha256 = "76767b4e0b941f048f20d6de3eef2b8dd5f2b09816913a26b4bbf1afbd31fd79" },
+]
+
+[[schema]]
+id = "schemastore-tsconfig"
+kind = "jsonschema"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/SchemaStore/schemastore"
+url = "https://raw.githubusercontent.com/SchemaStore/schemastore/{ref}/src/schemas/json/tsconfig.json"
+represents = "draft-07 configuration schema composed with allOf of definitions, a long sentence root title and many inline enums"
+versions = [
+  { ref = "0500f757f7e87d66262f362ed29ebd208ddfd1d1", date = "2026-10-16", sha256 = "4323b790e65e979876bd48c7387a5150520e0c4cf1e36c221252a7234c2bd70a" },
+]
+
+[[schema]]
+id = "schemastore-github-workflow"
+kind = "jsonschema"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/SchemaStore/schemastore"
+url = "https://raw.githubusercontent.com/SchemaStore/schemastore/{ref}/src/schemas/json/github-workflow.json"
+represents = "draft-07 schema with nested oneOf, required-only branches and repeated inline step shapes"
+versions = [
+  { ref = "0500f757f7e87d66262f362ed29ebd208ddfd1d1", date = "2026-10-16", sha256 = "d10c9f4656e1bd5bc6727e9b35080e017dc167154726fca93da33c7a6bd1c4f3" },
+]
+
+[[schema]]
+id = "compose-spec"
+kind = "jsonschema"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/compose-spec/compose-spec"
+url = "https://raw.githubusercontent.com/compose-spec/compose-spec/{ref}/schema/compose-spec.json"
+represents = "draft-07 schema with deeply nested inline objects whose small shapes repeat under different definitions"
+versions = [
+  { ref = "de28432802a367d650bd4ad6748b19491b6cf986", date = "2026-10-14", sha256 = "d61cc3df8c6e6a727043e84f3405c69ffd63d341f629db8480f1d2ee5405b10c" },
+]
+
+[[schema]]
+id = "box"
+kind = "openapi"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/box/box-openapi"
+url = "https://raw.githubusercontent.com/box/box-openapi/{ref}/openapi.json"
+represents = "large OAS 3.0 API built from allOf layers of one resource (File--Base, File--Mini, File--Full) with titled components"
+versions = [
+  { ref = "a4f3e23d5bd01d9f4398bc1a764d410df3e607a7", date = "2026-10-16", sha256 = "1b7848282862071cf2c929f7af101819060018cdebb89f8f024fe3ef965a1529" },
+]
+
+[[schema]]
+id = "xero-accounting"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://github.com/XeroAPI/Xero-OpenAPI"
+url = "https://raw.githubusercontent.com/XeroAPI/Xero-OpenAPI/{ref}/xero_accounting.yaml"
+represents = "OAS 3.0 YAML API with PascalCase component keys and many inline enums on shared property names"
+versions = [
+  { ref = "fd9d44b04bf4934a7509b8e7ece51a9e0e462e4f", date = "2026-10-01", sha256 = "1afca0717bb0d323210c0f88f3802684c068059f6e5161ee24ddde7ee6294a64" },
+]
+
+[[schema]]
+id = "asyncapi-streetlights"
+kind = "asyncapi"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/asyncapi/spec"
+url = "https://raw.githubusercontent.com/asyncapi/spec/{ref}/examples/streetlights-kafka-asyncapi.yml"
+represents = "small AsyncAPI 3.0 document: messages with component payloads and traits"
+versions = [
+  { ref = "b3fac5bb522771428ea57b16129b273cd3ea0180", date = "2026-01-31", sha256 = "916c6d5a3c16ce9d2837f24ffc27509044de4fe8c2685de50917438b0d5b2076" },
+]
+
+[[schema]]
+id = "schemastore-dependabot"
+kind = "jsonschema"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://github.com/SchemaStore/schemastore"
+url = "https://raw.githubusercontent.com/SchemaStore/schemastore/{ref}/src/schemas/json/dependabot-2.0.json"
+represents = "draft-07 configuration schema with nested inline objects and enums repeated per package ecosystem"
+versions = [
+  { ref = "b3525279d82321c1a80d1b597a901641e729ea88", date = "2026-09-15", sha256 = "57efbbcba05d2c26ad8e00b2ab295f797931652174d4e7d5272615069ecea61f" },
+]
+
+[[schema]]
+id = "discord"
+kind = "openapi"
+role = "holdout"
+license = "MIT"
+source = "https://github.com/discord/discord-api-spec"
+url = "https://raw.githubusercontent.com/discord/discord-api-spec/{ref}/specs/openapi.json"
+represents = "large OAS 3.1 API with oneOf unions, type arrays for nullability and response/request component pairs"
+versions = [
+  { ref = "ed014089afa986f2b532ae081c456a85de074d0c", date = "2026-10-14", sha256 = "79e3faff046cd35e432e4cbaacd457c5f4b0e01149c541c010366191e38bc18a" },
+]
+
+[[schema]]
+id = "twilio-api-v2010"
+kind = "openapi"
+role = "holdout"
+license = "MIT"
+source = "https://github.com/twilio/twilio-oai"
+url = "https://raw.githubusercontent.com/twilio/twilio-oai/{ref}/spec/json/twilio_api_v2010.json"
+represents = "large OAS 3.0 API with dotted namespace keys (api.v2010.account.call) and inline enums named after their property"
+layout = "package"
+versions = [
+  { ref = "157fb094bd08957183278242d7622c8560b7a4c4", date = "2026-10-06", sha256 = "bfdf249a129819af274d6bdc7672156ea3416ad48670a6f0544def6ef386ba87" },
+]
+
+[[schema]]
+id = "spotify"
+kind = "openapi"
+role = "holdout"
+license = "MIT"
+source = "https://github.com/sonallux/spotify-web-api"
+url = "https://raw.githubusercontent.com/sonallux/spotify-web-api/{ref}/fixed-spotify-open-api.yml"
+represents = "medium OAS 3.0 YAML API composed with allOf (simplified and full objects) and inline response objects"
+versions = [
+  { ref = "39207c4ba600deb34b0913975d01983ba60be583", date = "2026-05-31", sha256 = "ddeb078a50208d94c4538bd891bec0c9e67c9f3406617a2d887f0a482a4501f4" },
+]
+
+[[schema]]
+id = "asyncapi-slack-rtm"
+kind = "asyncapi"
+role = "holdout"
+license = "Apache-2.0"
+source = "https://github.com/asyncapi/spec"
+url = "https://raw.githubusercontent.com/asyncapi/spec/{ref}/examples/slack-rtm-asyncapi.yml"
+represents = "AsyncAPI document with many event messages whose payloads are inline objects sharing property names"
+versions = [
+  { ref = "b3fac5bb522771428ea57b16129b273cd3ea0180", date = "2026-01-31", sha256 = "714f0635858eef8ed5e54262c073aea93309a087291da959f8932158ca9efa83" },
+]
+
+[[schema]]
+id = "vega-lite"
+kind = "jsonschema"
+role = "holdout"
+license = "BSD-3-Clause"
+source = "https://github.com/vega/schema"
+url = "https://raw.githubusercontent.com/vega/schema/{ref}/vega-lite/v5.23.0.json"
+represents = "large generated JSON Schema: thousands of definitions, anyOf everywhere, generic definition names, no titles"
+versions = [
+  { ref = "b60b1cbd5ded5fa59a38648f012c08d6527a81b6", date = "2024-12-10", sha256 = "1aeeda8aa44dcce60f6b6fb7d8b650487e3e389a8284a2040e590be9a4c7610e" },
+]
+
+[[schema]]
+id = "cyclonedx-bom"
+kind = "jsonschema"
+role = "holdout"
+license = "Apache-2.0"
+source = "https://github.com/CycloneDX/specification"
+url = "https://raw.githubusercontent.com/CycloneDX/specification/{ref}/schema/bom-1.6.schema.json"
+represents = "draft-07 specification schema with a title on nearly every property and external $refs to companion schemas (stubbed as objects)"
+stub_external_refs = true
+versions = [
+  { ref = "0bd48c88d1b1877c7a3536252e06893850763190", date = "2026-02-25", sha256 = "18f57f7482593bad9f21b4feed09084640cbeff419d62ad5090c5ceccca5b37d" },
+]

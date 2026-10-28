@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "whole": {"$dynamicRef": "thing.json"},
+    "pointer": {"$dynamicRef": "shapes.json#/$defs/Circle"},
+    "rows": {"type": "array", "items": {"type": "object", "properties": {"n": {"type": "integer"}}}},
+    "row": {"$dynamicRef": "#/properties/rows/items"},
+    "local": {"$dynamicRef": "#/$defs/Local"},
+    "shared": {"$ref": "shared.json"},
+    "again": {"$dynamicRef": "shared.json"}
+  },
+  "$defs": {"Local": {"type": "integer"}}
+}

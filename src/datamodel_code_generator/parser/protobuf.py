@@ -9,7 +9,9 @@ from __future__ import annotations
 import contextlib
 import io
 import re
+import sys
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 from warnings import warn
@@ -17,18 +19,23 @@ from warnings import warn
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
-from datamodel_code_generator.parser._math_imports import apply_math_imports_to_parse_result
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.python_literal import _safe_non_finite_float
+from datamodel_code_generator.util import record_watch_dependency
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Iterator, Sequence
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._types import ProtobufParserConfigDict
     from datamodel_code_generator.config import ProtobufParserConfig
 
-CUSTOM_OPTION_STATEMENT_PATTERN = re.compile(r"(?ms)^[ \t]*option\s+\([^)]+\)\s*=\s*.*?;")
+PROTO_TOKEN_PATTERN = re.compile(
+    r"(?P<comment>//[^\n]*|/\*[\s\S]*?(?:\*/|\Z))"
+    r"|\"(?:\\[\s\S]|[^\"\\])*\"|'(?:\\[\s\S]|[^'\\])*'|[a-zA-Z_][a-zA-Z_0-9]*|[^\s]"
+)
 WEAK_IMPORT_PATTERN = re.compile(r'^\s*import\s+weak\s+"([^"]+)"\s*;', re.MULTILINE)
+IMPORT_PATTERN = re.compile(r'^\s*import\s+(?:public\s+|weak\s+)?"([^"]+)"\s*;', re.MULTILINE)
 
 LABEL_REQUIRED = 2
 LABEL_REPEATED = 3
@@ -88,6 +95,15 @@ SCALAR_SCHEMAS: dict[int, dict[str, Any]] = {
     TYPE_BYTES: {"type": "string", "format": "binary"},
 }
 SCALAR_OR_ENUM_TYPES = frozenset({*SCALAR_SCHEMAS, TYPE_ENUM})
+
+
+def _watch_dependency_collection_is_active() -> bool:
+    """Check the optional watch collector without importing it on regular generation."""
+    return (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
+        watch_dependencies.collector_is_active()
+    )
+
+
 MAP_KEY_PYTHON_TYPES: dict[int, str] = {
     TYPE_INT32: "int",
     TYPE_INT64: "int",
@@ -153,7 +169,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
     except ImportError as exc:  # pragma: no cover
         msg = "protobuf input requires grpcio-tools. Install datamodel-code-generator[protobuf]."
         raise Error(msg) from exc
-    return protoc, Path(cast("str", grpc_tools.__file__)).parent / "_proto"
+    return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
 
 def _load_descriptor_pb2() -> Any:
@@ -178,58 +194,75 @@ def _clean_comment(comment: str) -> str:
 
 
 def _sanitize_proto_source(text: str) -> str:
-    """Drop custom option uses that do not affect model generation."""
-    text = CUSTOM_OPTION_STATEMENT_PATTERN.sub("", text)
-    return _replace_field_options(text)
-
-
-def _replace_field_options(text: str) -> str:
+    """Drop custom options while preserving comments and both string delimiters."""
+    if "(" not in text:
+        return text
+    tokens = (token for token in PROTO_TOKEN_PATTERN.finditer(text) if token.lastgroup != "comment")
     result: list[str] = []
-    index = 0
-    while index < len(text):
-        char = text[index]
-        if char != "[":
-            result.append(char)
-            index += 1
-            continue
-
-        end = _find_option_end(text, index + 1)
-        if end is None:  # pragma: no cover
-            result.append(char)
-            index += 1
-            continue
-
-        options = text[index + 1 : end]
-        if "(" not in options:
-            result.append(text[index : end + 1])
-        else:
-            default_value = _extract_default_option(options)
-            if default_value is not None:
-                result.append(f"[default = {default_value}]")
-        index = end + 1
-
+    copied = 0
+    previous = None
+    before_previous = ""
+    for token in tokens:
+        match token[0]:
+            case "[":
+                end, replacement = _replace_field_options(text, tokens, token.end())
+                if replacement is not None:
+                    result.extend((text[copied : token.start()], replacement))
+                    copied = end
+            case "(" if previous is not None and previous[0] == "option" and before_previous != "rpc":
+                depth = 0
+                for end_token in tokens:
+                    match end_token[0]:
+                        case "{" | "[":
+                            depth += 1
+                        case "}" | "]":
+                            depth -= 1
+                        case ";" if depth == 0:
+                            result.append(text[copied : previous.start()])
+                            copied = end_token.end()
+                            break
+        before_previous = previous[0] if previous is not None else ""
+        previous = token
+    if not result:
+        return text
+    result.append(text[copied:])
     return "".join(result)
 
 
-def _find_option_end(text: str, start: int) -> int | None:
-    in_quote = False
-    escaped = False
-
-    for index in range(start, len(text)):
-        char = text[index]
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\" and in_quote:
-            escaped = True
-            continue
-        if char == '"':
-            in_quote = not in_quote
-            continue
-        if char == "]" and not in_quote:
-            return index
-
-    return None  # pragma: no cover
+def _replace_field_options(text: str, tokens: Iterator[re.Match[str]], start: int) -> tuple[int, str | None]:
+    """Consume a field option list, retaining its default when custom options occur."""
+    depth = 0
+    custom = False
+    name = ""
+    value_start = value_end = start
+    default = None
+    for token in tokens:
+        value = token[0]
+        if depth == 0 and value in {",", "]"}:
+            if name == "default":
+                default = (value_start, value_end)
+            if value == "]":
+                if not custom:
+                    return token.end(), None
+                replacement = f"[default = {text[default[0] : default[1]]}]" if default is not None else ""
+                return token.end(), replacement
+            name = ""
+        else:
+            if not name:
+                name = value
+                custom |= value == "("
+            elif name == "default" and value == "=":
+                value_start = value_end = token.end()
+            elif name == "default":
+                if value_start == value_end:
+                    value_start = token.start()
+                value_end = token.end()
+            match value:
+                case "(" | "{" | "[":
+                    depth += 1
+                case ")" | "}" | "]":
+                    depth -= 1
+    return start, None
 
 
 def convert_protobuf_schema_data(
@@ -241,6 +274,26 @@ def convert_protobuf_schema_data(
     encoding: str = "utf-8",
 ) -> dict[str, Any]:
     """Convert a Protocol Buffers schema source to JSON Schema data."""
+    return _convert_protobuf_schema_data(
+        raw_schema,
+        base_path=base_path,
+        protobuf_version=protobuf_version,
+        schema_version_mode=schema_version_mode,
+        encoding=encoding,
+        source_safe_non_finite=False,
+    )
+
+
+def _convert_protobuf_schema_data(  # noqa: PLR0913
+    raw_schema: Any,
+    *,
+    base_path: Path | None = None,
+    protobuf_version: ProtobufVersion | None = None,
+    schema_version_mode: VersionMode | None = None,
+    encoding: str = "utf-8",
+    source_safe_non_finite: bool,
+) -> dict[str, Any]:
+    """Convert Protocol Buffers data for a parser that may need source-safe float values."""
     if not isinstance(raw_schema, str):
         msg = "Protocol Buffers schemaFormat requires a .proto schema string"
         raise Error(msg)
@@ -251,40 +304,7 @@ def convert_protobuf_schema_data(
         schema_version_mode=schema_version_mode,
         encoding=encoding,
     )
-    return parser.convert_to_json_schema_data()
-
-
-def _extract_default_option(options: str) -> str | None:
-    current: list[str] = []
-    parts: list[str] = []
-    in_quote = False
-    escaped = False
-
-    for char in options:
-        if escaped:
-            current.append(char)
-            escaped = False
-            continue
-        if char == "\\":
-            current.append(char)
-            escaped = in_quote
-            continue
-        if char == '"':
-            current.append(char)
-            in_quote = not in_quote
-            continue
-        if char == "," and not in_quote:
-            parts.append("".join(current))
-            current.clear()
-            continue
-        current.append(char)
-    parts.append("".join(current))
-
-    for part in parts:
-        name, separator, value = part.partition("=")
-        if separator and name.strip() == "default":
-            return value.strip()
-    return None
+    return parser._convert_to_json_schema_data(source_safe_non_finite=source_safe_non_finite)  # noqa: SLF001
 
 
 def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
@@ -304,16 +324,21 @@ class _ProtoInputPreparer:
 
     def __enter__(self) -> tuple[list[Path], list[Path], frozenset[str]]:
         self.temp_dir = tempfile.TemporaryDirectory()
-        temp_path = Path(self.temp_dir.name)
-        include_paths = [temp_path, self.parser.base_path]
-        input_files = self._input_files(temp_path)
-        input_file_names = frozenset(path.relative_to(temp_path).as_posix() for path in input_files)
-        include_paths.extend(self._additional_include_paths(input_files))
-        self.weak_import_dir = temp_path / "__weak_imports__"
-        self._write_missing_weak_imports(input_files, include_paths)
-        if self.weak_import_dir.exists():
-            include_paths.append(self.weak_import_dir)
-        return input_files, include_paths, input_file_names
+        try:
+            temp_path = Path(self.temp_dir.name)
+            include_paths = [temp_path, self.parser.base_path]
+            input_files = self._input_files(temp_path)
+            input_file_names = frozenset(path.relative_to(temp_path).as_posix() for path in input_files)
+            include_paths.extend(self._additional_include_paths(input_files))
+            self.weak_import_dir = temp_path / "__weak_imports__"
+            self._write_missing_weak_imports(input_files, include_paths)
+            if self.weak_import_dir.exists():
+                include_paths.append(self.weak_import_dir)
+        except Exception:
+            self.temp_dir.cleanup()
+            raise
+        else:
+            return input_files, include_paths, input_file_names
 
     def _additional_include_paths(self, input_files: Sequence[Path]) -> list[Path]:
         paths = {path.parent for path in input_files}
@@ -349,6 +374,7 @@ class _ProtoInputPreparer:
         return input_files
 
     def _write_sanitized_file(self, source_path: Path, temp_path: Path, root: Path) -> Path:
+        record_watch_dependency(source_path)
         if source_path.is_relative_to(root):
             target = temp_path / source_path.relative_to(root)
         else:  # pragma: no cover
@@ -361,13 +387,17 @@ class _ProtoInputPreparer:
 
     def _write_missing_weak_imports(self, input_files: Iterable[Path], include_paths: Sequence[Path]) -> None:
         assert self.weak_import_dir is not None
+        weak_import_dir = self.weak_import_dir.resolve()
         for input_file in input_files:
             text = input_file.read_text(encoding=self.parser.encoding)
             syntax = 'syntax = "proto3";\n' if 'syntax = "proto3"' in text else 'syntax = "proto2";\n'
             for import_path in WEAK_IMPORT_PATTERN.findall(text):
+                stub = (weak_import_dir / import_path).resolve()
+                if not stub.is_relative_to(weak_import_dir):
+                    msg = f"Invalid Protocol Buffers weak import path: {import_path!r}"
+                    raise SchemaParseError(msg)
                 if any((include_path / import_path).exists() for include_path in include_paths):
                     continue
-                stub = self.weak_import_dir / import_path
                 stub.parent.mkdir(parents=True, exist_ok=True)
                 stub.write_text(syntax, encoding=self.parser.encoding)
 
@@ -379,16 +409,19 @@ class _ProtobufDescriptorConverter:
         protobuf_version: ProtobufVersion | None,
         schema_version_mode: VersionMode | None,
         input_file_names: frozenset[str],
+        source_safe_non_finite: bool,
     ) -> None:
         self.protobuf_version = protobuf_version
         self.schema_version_mode = schema_version_mode or VersionMode.Lenient
         self.input_file_names = input_file_names
+        self.source_safe_non_finite = source_safe_non_finite
         self.definitions: dict[str, dict[str, Any]] = {}
         self.enums: dict[str, Any] = {}
         self.messages: dict[str, Any] = {}
         self.map_entries: dict[str, Any] = {}
         self.definition_keys: dict[str, str] = {}
         self.used_definition_keys: dict[str, str] = {}
+        self._referenced_standard_types: dict[str, None] | None = None
 
     def convert(self, file_descriptor_set: Any) -> dict[str, Any]:
         for file_descriptor in file_descriptor_set.file:
@@ -422,11 +455,65 @@ class _ProtobufDescriptorConverter:
                     effective_version,
                 )
 
+        if referenced := self._referenced_standard_types:
+            omitted_files = [
+                file
+                for file in file_descriptor_set.file
+                if file.name in WELL_KNOWN_PROTO_PATHS and file.name not in self.input_file_names
+            ]
+            self._convert_referenced_standard_types(omitted_files, referenced)
+
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": "Model",
             "definitions": self.definitions,
         }
+
+    def _convert_referenced_standard_types(self, omitted_files: list[Any], referenced: dict[str, None]) -> None:
+        locations: dict[str, tuple[Any, tuple[str, ...], tuple[int, ...]]] = {}
+        for file_descriptor in omitted_files:
+            pending: list[tuple[Any, tuple[str, ...], tuple[int, ...]]] = [(file_descriptor, (), ())]
+            while pending:
+                container, parents, path = pending.pop()
+                for index, enum_descriptor in enumerate(container.enum_type):
+                    full_name = _full_name(file_descriptor.package, parents, enum_descriptor.name)
+                    locations[full_name] = (file_descriptor, parents, (*path, 4 if parents else 5, index))
+                messages = container.nested_type if parents else container.message_type
+                for index, message in enumerate(messages):
+                    full_name = _full_name(file_descriptor.package, parents, message.name)
+                    message_path = (*path, 3 if parents else 4, index)
+                    locations[full_name] = (file_descriptor, parents, message_path)
+                    pending.append((message, (*parents, message.name), message_path))
+        comments_by_file: dict[str, dict[tuple[int, ...], str]] = {}
+        while referenced:
+            pending_names = tuple(referenced)
+            referenced.clear()
+            for full_name in pending_names:
+                if self._definition_key(full_name) in self.definitions:
+                    continue
+                file_descriptor, parents, path = locations[full_name]
+                if file_descriptor.name not in comments_by_file:
+                    comments_by_file[file_descriptor.name] = _comment_map(file_descriptor)
+                comments = comments_by_file[file_descriptor.name]
+                if full_name in self.enums:
+                    self._convert_enum(self.enums[full_name], full_name, comments, path)
+                else:
+                    self._convert_message(
+                        self.messages[full_name],
+                        file_descriptor.package,
+                        parents,
+                        comments,
+                        path,
+                        self._effective_version(file_descriptor),
+                        include_nested=False,
+                    )
+
+    def _reference_schema(self, full_name: str) -> dict[str, Any]:
+        if full_name.startswith("google.protobuf."):
+            if self._referenced_standard_types is None:
+                self._referenced_standard_types = {}
+            self._referenced_standard_types.setdefault(full_name, None)
+        return {"$ref": f"#/definitions/{self._definition_key(full_name)}"}
 
     def _collect_symbols(self, messages: Iterable[Any], package: str, parents: tuple[str, ...]) -> None:
         for message_descriptor in messages:
@@ -502,28 +589,31 @@ class _ProtobufDescriptorConverter:
         comments: dict[tuple[int, ...], str],
         path: tuple[int, ...],
         syntax: ProtobufVersion,
+        *,
+        include_nested: bool = True,
     ) -> None:
         full_name = _full_name(package, parents, message_descriptor.name)
         if message_descriptor.options.map_entry:
             return
 
-        for index, enum_descriptor in enumerate(message_descriptor.enum_type):
-            enum_path = (*path, 4, index)
-            self._convert_enum(
-                enum_descriptor,
-                _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name),
-                comments,
-                enum_path,
-            )
-        for index, nested_descriptor in enumerate(message_descriptor.nested_type):
-            self._convert_message(
-                nested_descriptor,
-                package,
-                (*parents, message_descriptor.name),
-                comments,
-                (*path, 3, index),
-                syntax,
-            )
+        if include_nested:
+            for index, enum_descriptor in enumerate(message_descriptor.enum_type):
+                enum_path = (*path, 4, index)
+                self._convert_enum(
+                    enum_descriptor,
+                    _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name),
+                    comments,
+                    enum_path,
+                )
+            for index, nested_descriptor in enumerate(message_descriptor.nested_type):
+                self._convert_message(
+                    nested_descriptor,
+                    package,
+                    (*parents, message_descriptor.name),
+                    comments,
+                    (*path, 3, index),
+                    syntax,
+                )
 
         properties: dict[str, Any] = {}
         required: list[str] = []
@@ -583,12 +673,12 @@ class _ProtobufDescriptorConverter:
         if field.type in SCALAR_SCHEMAS:
             return dict(SCALAR_SCHEMAS[field.type])
         if field.type == TYPE_ENUM:
-            return {"$ref": f"#/definitions/{self._definition_key(_type_name(field.type_name))}"}
+            return self._reference_schema(_type_name(field.type_name))
         if field.type in {TYPE_MESSAGE, TYPE_GROUP}:
             type_name = _type_name(field.type_name)
             if type_name in WELL_KNOWN_SCHEMAS:
-                return dict(WELL_KNOWN_SCHEMAS[type_name])
-            return {"$ref": f"#/definitions/{self._definition_key(type_name)}"}
+                return deepcopy(WELL_KNOWN_SCHEMAS[type_name])
+            return self._reference_schema(type_name)
         return {}  # pragma: no cover
 
     def _map_field_schema(self, field: Any) -> dict[str, Any] | None:
@@ -628,8 +718,7 @@ class _ProtobufDescriptorConverter:
             return enum.value[0].name if enum and enum.value else None
         return PROTO2_DEFAULTS.get(field.type)
 
-    @staticmethod
-    def _parse_default(field: Any) -> Any:
+    def _parse_default(self, field: Any) -> Any:
         value = field.default_value
         if field.type == TYPE_BOOL:
             return value == "true"
@@ -638,7 +727,8 @@ class _ProtobufDescriptorConverter:
 
             return text_encoding.CUnescape(value)
         if field.type in {TYPE_DOUBLE, TYPE_FLOAT}:
-            return float(value)
+            number = float(value)
+            return _safe_non_finite_float(number) if self.source_safe_non_finite else number
         if field.type in {
             TYPE_INT32,
             TYPE_INT64,
@@ -659,6 +749,8 @@ class ProtobufParser(JsonSchemaParser):
     """Parse Protocol Buffers schemas by converting descriptors to JSON Schema."""
 
     _config_class_name: ClassVar[str] = "ProtobufParserConfig"
+    _cache_local_sources_during_parse: ClassVar[bool] = False
+    _cache_parsed_sources_from_path: ClassVar[bool] = False
 
     def __init__(
         self,
@@ -670,10 +762,6 @@ class ProtobufParser(JsonSchemaParser):
         """Initialize the Protobuf parser with JSON Schema parser configuration."""
         super().__init__(source=source, config=config, **options)
 
-    def parse(self, *args: Any, **kwargs: Any) -> str | dict[tuple[str, ...], Any]:
-        """Parse Protocol Buffers schemas and add imports for non-finite defaults."""
-        return apply_math_imports_to_parse_result(super().parse(*args, **kwargs))
-
     def _compile_descriptor_set(self) -> tuple[Any, frozenset[str]]:
         protoc, well_known_include = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
@@ -683,7 +771,13 @@ class ProtobufParser(JsonSchemaParser):
                 raise SchemaParseError(msg)
             with tempfile.NamedTemporaryFile(suffix=".pb", delete=False) as output_file:
                 output_path = Path(output_file.name)
+            collect_dependencies = _watch_dependency_collection_is_active()
+            persistent_include_paths: tuple[Path, ...] = ()
             try:
+                if collect_dependencies:
+                    lexical_sources = self._lexical_source_files()
+                    persistent_include_paths = self._persistent_include_paths(lexical_sources)
+                    self._record_lexical_import_candidates(lexical_sources, persistent_include_paths)
                 args = [
                     "grpc_tools.protoc",
                     *(f"-I{path}" for path in [*include_paths, well_known_include]),
@@ -701,31 +795,88 @@ class ProtobufParser(JsonSchemaParser):
                     raise SchemaParseError(msg)
                 descriptor_set = descriptor_pb2.FileDescriptorSet()
                 descriptor_set.ParseFromString(output_path.read_bytes())
+                if collect_dependencies:
+                    self._record_descriptor_dependencies(descriptor_set, persistent_include_paths)
                 return descriptor_set, input_file_names
             finally:
                 with contextlib.suppress(OSError):
                     output_path.unlink()
 
+    def _lexical_source_files(self) -> Sequence[Path]:
+        """Return persistent local sources without protoc's temporary sanitized copies."""
+        if isinstance(self.source, Path):
+            return sorted(self.source.rglob("*.proto")) if self.source.is_dir() else [self.source]
+        return self.source if isinstance(self.source, list) else ()
+
+    def _persistent_include_paths(self, input_files: Sequence[Path]) -> tuple[Path, ...]:
+        """Return lexical include roots that survive preparer cleanup."""
+        return tuple(dict.fromkeys((self.base_path, *(path.parent for path in input_files))))
+
+    def _record_lexical_import_candidates(self, input_files: Sequence[Path], include_paths: Sequence[Path]) -> None:
+        """Depth-first record source imports before ``protoc`` can reject a nested missing file."""
+        candidate_roots = tuple(dict.fromkeys(path.resolve(strict=False) for path in include_paths))
+        pending_files = [path.resolve(strict=False) for path in input_files]
+        visited_files: set[Path] = set()
+        while pending_files:
+            source_path = pending_files.pop()
+            if source_path in visited_files:
+                continue
+            visited_files.add(source_path)
+            try:
+                text = source_path.read_text(encoding=self.config.encoding)
+            except OSError:
+                continue
+            source_root = source_path.parent
+            source_candidate_roots = (
+                candidate_roots if source_root in candidate_roots else (source_root, *candidate_roots)
+            )
+            for import_path in IMPORT_PATTERN.findall(text):
+                candidates = tuple(
+                    (candidate_root / import_path).resolve(strict=False) for candidate_root in source_candidate_roots
+                )
+                existing_candidate = next((candidate for candidate in candidates if candidate.is_file()), None)
+                if existing_candidate is not None:
+                    record_watch_dependency(existing_candidate)
+                    pending_files.append(existing_candidate)
+                else:
+                    for candidate in candidates:
+                        record_watch_dependency(candidate)
+
+    @staticmethod
+    def _record_descriptor_dependencies(descriptor_set: Any, include_paths: Sequence[Path]) -> None:
+        """Record local ``protoc`` imports without retaining descriptor contents."""
+        for descriptor in descriptor_set.file:
+            for include_path in include_paths:
+                candidate = include_path / descriptor.name
+                if candidate.is_file():
+                    record_watch_dependency(candidate)
+                    break
+
     def convert_to_json_schema_data(self) -> dict[str, Any]:
         """Convert Protocol Buffers input sources into JSON Schema data."""
+        return self._convert_to_json_schema_data(source_safe_non_finite=False)
+
+    def _convert_to_json_schema_data(self, *, source_safe_non_finite: bool) -> dict[str, Any]:
+        """Convert Protocol Buffers input sources for an internal parser consumer."""
         config = cast("ProtobufParserConfig", self.config)
         descriptor_set, input_file_names = self._compile_descriptor_set()
         converter = _ProtobufDescriptorConverter(
             protobuf_version=config.protobuf_version,
             schema_version_mode=config.schema_version_mode,
             input_file_names=input_file_names,
+            source_safe_non_finite=source_safe_non_finite,
         )
         return converter.convert(descriptor_set)
 
     def parse_raw(self) -> None:
         """Parse all Protocol Buffers input sources into data models."""
-        raw_obj = self.convert_to_json_schema_data()
+        raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
         source = next(self.iter_source)
         source.raw_data = raw_obj
         self.raw_obj = raw_obj
         self._parse_file(raw_obj, "Model", [])
         self._resolve_unparsed_json_pointer()
-        self._generate_forced_base_models()
+        self._end_schema_parsing()
 
 
 __all__ = ["ProtobufParser", "convert_protobuf_schema_data"]

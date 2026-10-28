@@ -1,0 +1,6 @@
+exit=1
+--- stdout
+fetch pets@v1: fetched
+
+--- stderr
+error: pets@v2: sha256 <sha256 of v2/pets.json> does not match the pinned 0000000000000000000000000000000000000000000000000000000000000000

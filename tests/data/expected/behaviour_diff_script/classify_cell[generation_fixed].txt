@@ -1,0 +1,11 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "generation fixed: Error: unhashable type"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[name-added] Key: added",
+    "[name-added] KeyMap: added"
+  ]
+}

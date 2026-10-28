@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Base": {
+      "type": "object",
+      "required": ["a"],
+      "properties": {
+        "a": {"type": "string"},
+        "d": {"type": "string", "default": "x"}
+      }
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/definitions/Base"},
+        {"type": "object", "properties": {"n": {"type": ["string", "null"]}}}
+      ]
+    },
+    "Child2": {
+      "allOf": [
+        {"$ref": "#/definitions/Base"},
+        {"type": "object", "required": ["r"], "properties": {"r": {"type": "string"}, "o": {"type": "string"}}}
+      ]
+    },
+    "Flat": {
+      "type": "object",
+      "required": ["r"],
+      "properties": {
+        "d": {"type": "string", "default": "x"},
+        "n": {"type": ["string", "null"]},
+        "r": {"type": "string"}
+      }
+    },
+    "LevelDefault": {"type": "integer", "default": 2},
+    "Pet": {
+      "type": "object",
+      "required": ["level"],
+      "properties": {
+        "level": {"type": "integer"},
+        "level_default": {"$ref": "#/definitions/LevelDefault"},
+        "untyped": {"type": ["string", "null"]}
+      }
+    },
+    "Cat": {
+      "type": "object",
+      "properties": {"kind": {"type": ["string", "null"]}}
+    },
+    "NamedCat": {
+      "allOf": [
+        {"$ref": "#/definitions/Cat"},
+        {"type": "object", "required": ["kind"], "properties": {"kind": {"type": "string"}}}
+      ]
+    },
+    "GrandCat": {
+      "allOf": [
+        {"$ref": "#/definitions/NamedCat"},
+        {"type": "object", "required": ["tag"], "properties": {"tag": {"type": "string"}}}
+      ]
+    },
+    "TaggedCat": {
+      "allOf": [
+        {"$ref": "#/definitions/Cat"},
+        {"type": "object", "required": ["kind", "tag"], "properties": {"kind": {"type": "string"}, "tag": {"type": "string"}}}
+      ]
+    }
+  }
+}

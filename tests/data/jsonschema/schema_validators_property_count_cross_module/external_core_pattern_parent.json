@@ -1,0 +1,14 @@
+{
+  "title": "ExternalCorePatternParent",
+  "type": "object",
+  "properties": {
+    "base": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^base-": {
+      "type": "string"
+    }
+  }
+}

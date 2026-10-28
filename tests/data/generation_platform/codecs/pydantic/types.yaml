@@ -1,0 +1,159 @@
+openapi: 3.1.0
+info:
+  title: Inline codec types
+  version: "1"
+paths:
+  /scalars:
+    post:
+      parameters:
+        - name: code
+          in: query
+          schema:
+            $ref: "#/components/schemas/CodeQuery"
+        - name: count
+          in: query
+          schema:
+            $ref: "#/components/schemas/CountQuery"
+        - name: ratio
+          in: query
+          schema:
+            $ref: "#/components/schemas/RatioQuery"
+        - name: when
+          in: query
+          schema:
+            $ref: "#/components/schemas/WhenQuery"
+        - name: mode
+          in: query
+          schema:
+            $ref: "#/components/schemas/ModeQuery"
+        - name: price
+          in: query
+          schema:
+            $ref: "#/components/schemas/PriceQuery"
+        - name: tags
+          in: query
+          schema:
+            $ref: "#/components/schemas/TagsQuery"
+        - name: pet
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/Pets"
+        - name: X-Counts
+          in: header
+          schema:
+            $ref: "#/components/schemas/Counts"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Holder"
+      responses:
+        "200":
+          description: Word counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Words"
+        "201":
+          description: A name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Name"
+components:
+  schemas:
+    Filters:
+      type: object
+      properties:
+        code:
+          $ref: "#/components/schemas/CodeQuery"
+        count:
+          $ref: "#/components/schemas/CountQuery"
+        ratio:
+          $ref: "#/components/schemas/RatioQuery"
+        when:
+          $ref: "#/components/schemas/WhenQuery"
+        mode:
+          $ref: "#/components/schemas/ModeQuery"
+        price:
+          $ref: "#/components/schemas/PriceQuery"
+        tags:
+          $ref: "#/components/schemas/TagsQuery"
+        name:
+          $ref: "#/components/schemas/Name"
+        counts:
+          $ref: "#/components/schemas/Counts"
+        words:
+          $ref: "#/components/schemas/Words"
+    CodeQuery:
+      type: string
+      pattern: "^[a-z]+$"
+    CountQuery:
+      type: integer
+      minimum: 1
+    RatioQuery:
+      type: number
+      maximum: 1.5
+    WhenQuery:
+      type: string
+      format: date-time
+    ModeQuery:
+      type: string
+      enum: [a, b]
+    PriceQuery:
+      type: string
+      format: decimal
+      maximum: 10
+    Name:
+      type: [string, "null"]
+    Counts:
+      type: object
+      additionalProperties:
+        type: integer
+    Words:
+      type: object
+      patternProperties:
+        "^[a-z]+$":
+          type: integer
+      additionalProperties: false
+    TagsQuery:
+      type: array
+      items:
+        type: string
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: cat
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: dog
+    Pets:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+    Holder:
+      type: object
+      required: [pets]
+      properties:
+        pets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pets"
+        label:
+          type: string
+          maxLength: 4
+        mode:
+          type: string
+          enum: [a, b]

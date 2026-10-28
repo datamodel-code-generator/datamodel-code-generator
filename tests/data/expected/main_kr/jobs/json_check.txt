@@ -1,0 +1,15 @@
+{
+  "kind": "batch",
+  "jobs": [
+    {
+      "kind": "check",
+      "name": "plain",
+      "success": true
+    },
+    {
+      "kind": "check",
+      "name": "strict",
+      "success": false
+    }
+  ]
+}

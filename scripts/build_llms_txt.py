@@ -34,6 +34,8 @@ EMOJI_RE = re.compile(
     r"\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002600-\U000026FF"
     r"\U00002300-\U000023FF\U0000FE00-\U0000FE0F\U0000200D]+",
 )
+MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)]\([^)]+\)")
+MARKDOWN_ATTR_RE = re.compile(r"\s*\{#[^}]+}\s*$")
 
 
 class SiteConfig(TypedDict):
@@ -96,6 +98,20 @@ def flatten_nav(nav: list[dict[str, Any]], depth: int = 0) -> list[NavSection]:
     return sections
 
 
+def clean_summary_text(text: str) -> str:
+    """Remove Markdown-only syntax from llms.txt titles and summaries."""
+    text = EMOJI_RE.sub("", text)
+    text = MARKDOWN_LINK_RE.sub(r"\1", text)
+    text = MARKDOWN_ATTR_RE.sub("", text)
+    return " ".join(text.split())
+
+
+def strip_trailing_whitespace(text: str) -> str:
+    """Remove trailing spaces and tabs without changing line structure."""
+    lines = [line.rstrip() for line in text.splitlines()]
+    return "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+
+
 def extract_page_info(md_path: Path, url: str, depth: int = 0) -> PageInfo | None:
     """Extract title and description from a Markdown file."""
     if not md_path.exists():
@@ -112,7 +128,7 @@ def extract_page_info(md_path: Path, url: str, depth: int = 0) -> PageInfo | Non
         elif in_code:
             pass
         elif s.startswith("# ") and not found_h1:
-            title, found_h1 = EMOJI_RE.sub("", s[2:]).strip(), True
+            title, found_h1 = clean_summary_text(s[2:]), True
         elif found_h1:
             if s.startswith("## "):
                 break
@@ -125,11 +141,16 @@ def extract_page_info(md_path: Path, url: str, depth: int = 0) -> PageInfo | Non
                 if len(desc_lines) >= MAX_DESC_LINES:
                     break
 
-    desc = EMOJI_RE.sub("", " ".join(desc_lines)).strip() if desc_lines else ""
+    desc = clean_summary_text(" ".join(desc_lines)) if desc_lines else ""
     if len(desc) > MAX_DESC_LEN:
         desc = desc[: MAX_DESC_LEN - 3] + "..."
     return PageInfo(
-        title=title, path=str(md_path.relative_to(DOCS_DIR)), url=url, description=desc, content=content, depth=depth
+        title=title,
+        path=md_path.relative_to(DOCS_DIR).as_posix(),
+        url=url,
+        description=desc,
+        content=content,
+        depth=depth,
     )
 
 
@@ -198,6 +219,7 @@ def generate_llms_full_txt(pages: list[PageInfo]) -> str:
         content = page.content.strip()
         if content.startswith("# ") and (nl := content.find("\n")) != -1:
             content = content[nl + 1 :].strip()
+        content = strip_trailing_whitespace(content)
         parts.extend([f"# {page.title}", "", f"Source: {page.url}", "", content, "", "---", ""])
     return "\n".join(parts)
 

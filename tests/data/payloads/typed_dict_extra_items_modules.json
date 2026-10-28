@@ -1,0 +1,70 @@
+{
+  "Root": {
+    "valid": [
+      {
+        "name": "n",
+        "extra": {
+          "x": "1"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "name": "n",
+        "extra": {
+          "x": 1
+        }
+      },
+      {
+        "extra": 5
+      }
+    ]
+  },
+  "a.Foo": {
+    "valid": [
+      {
+        "name": "n",
+        "extra": {
+          "x": "1"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "name": "n",
+        "extra": {
+          "x": 1
+        }
+      },
+      {
+        "extra": 5
+      }
+    ]
+  },
+  "a.Deep": {
+    "valid": [
+      {
+        "name": "n",
+        "bar": {
+          "x": "1"
+        },
+        "baz": {
+          "z": "1"
+        },
+        "near": {
+          "n": 1
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "extra": 5
+      },
+      {
+        "extra": [
+          1
+        ]
+      }
+    ]
+  }
+}

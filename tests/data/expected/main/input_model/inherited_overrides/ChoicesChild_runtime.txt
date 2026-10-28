@@ -1,0 +1,30 @@
+[
+  {
+    "bases": [
+      "ChoicesParent"
+    ],
+    "fields": [
+      "old"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "new": 2
+    },
+    "generated": {
+      "new": 2
+    }
+  },
+  {
+    "payload": {
+      "new": 8
+    },
+    "source": {
+      "new": 8
+    },
+    "generated": {
+      "new": 8
+    }
+  }
+]

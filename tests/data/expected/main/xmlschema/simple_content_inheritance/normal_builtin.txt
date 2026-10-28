@@ -1,0 +1,6 @@
+[
+  {
+    "value": "text",
+    "label": "kept"
+  }
+]

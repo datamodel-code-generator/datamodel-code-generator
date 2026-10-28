@@ -1,0 +1,121 @@
+{
+  "valid": [
+    {
+      "both_names": "b",
+      "both_alt": "b",
+      "both_descriptions": "b",
+      "child_names": "b",
+      "child_alt": "b",
+      "child_descriptions": "b",
+      "short_names": "b",
+      "short_alt": "b",
+      "short_descriptions": "b",
+      "short_child_names": "b",
+      "short_child_alt": "b",
+      "short_child_descriptions": "b",
+      "parent_names": "b",
+      "parent_alt": "b",
+      "parent_descriptions": "b",
+      "parent_short_names": "b",
+      "parent_short_alt": "b",
+      "parent_short_descriptions": "b",
+      "empty_names": "b",
+      "empty_alt": "b",
+      "empty_descriptions": "b",
+      "nullable_metadata_names": "b",
+      "nullable_metadata_alt": "b",
+      "nullable_metadata_descriptions": "b",
+      "complex_names": {
+        "key": 1
+      },
+      "complex_alt": {
+        "key": 1
+      },
+      "complex_descriptions": {
+        "key": 1
+      },
+      "numeric_boolean_names": 1,
+      "numeric_boolean_alt": 1,
+      "numeric_boolean_descriptions": 1,
+      "combined": "b"
+    },
+    {
+      "both_names": "c",
+      "both_alt": "c",
+      "both_descriptions": "c",
+      "child_names": "c",
+      "child_alt": "c",
+      "child_descriptions": "c",
+      "short_names": "c",
+      "short_alt": "c",
+      "short_descriptions": "c",
+      "short_child_names": "c",
+      "short_child_alt": "c",
+      "short_child_descriptions": "c",
+      "parent_names": "c",
+      "parent_alt": "c",
+      "parent_descriptions": "c",
+      "parent_short_names": "c",
+      "parent_short_alt": "c",
+      "parent_short_descriptions": "c",
+      "empty_names": "c",
+      "empty_alt": "c",
+      "empty_descriptions": "c",
+      "nullable_metadata_names": "c",
+      "nullable_metadata_alt": "c",
+      "nullable_metadata_descriptions": "c",
+      "complex_names": [
+        2
+      ],
+      "complex_alt": [
+        2
+      ],
+      "complex_descriptions": [
+        2
+      ],
+      "numeric_boolean_names": 2,
+      "numeric_boolean_alt": 2,
+      "numeric_boolean_descriptions": 2,
+      "combined": "c"
+    }
+  ],
+  "invalid": {
+    "both_names": "gone",
+    "both_alt": "gone",
+    "both_descriptions": "gone",
+    "child_names": "gone",
+    "child_alt": "gone",
+    "child_descriptions": "gone",
+    "short_names": "gone",
+    "short_alt": "gone",
+    "short_descriptions": "gone",
+    "short_child_names": "gone",
+    "short_child_alt": "gone",
+    "short_child_descriptions": "gone",
+    "parent_names": "gone",
+    "parent_alt": "gone",
+    "parent_descriptions": "gone",
+    "parent_short_names": "gone",
+    "parent_short_alt": "gone",
+    "parent_short_descriptions": "gone",
+    "empty_names": "gone",
+    "empty_alt": "gone",
+    "empty_descriptions": "gone",
+    "nullable_metadata_names": "gone",
+    "nullable_metadata_alt": "gone",
+    "nullable_metadata_descriptions": "gone",
+    "complex_names": {
+      "key": 7
+    },
+    "complex_alt": {
+      "key": 7
+    },
+    "complex_descriptions": {
+      "key": 7
+    },
+    "numeric_boolean_names": 3,
+    "numeric_boolean_alt": 3,
+    "numeric_boolean_descriptions": 3,
+    "combined": "gone"
+  }
+}

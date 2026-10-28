@@ -1,0 +1,28 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "waiting"
+      ]
+    },
+    "level": {
+      "type": "integer",
+      "enum": [
+        2,
+        1
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "enum": [
+        true,
+        false
+      ],
+      "x-enum-field-as-literal": true
+    }
+  }
+}

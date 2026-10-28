@@ -1,0 +1,17 @@
+{
+  "additional_imports": [
+    "decimal.Decimal",
+    "typing.Any"
+  ],
+  "aliases": {
+    "userName": "inline_name"
+  },
+  "capitalise_enum_members": true,
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11"
+}

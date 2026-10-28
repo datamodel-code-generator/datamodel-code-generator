@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parameterised.schema.json",
+  "title": "ParameterisedValue",
+  "$defs": {
+    "leaf": {
+      "$dynamicAnchor": "T",
+      "not": true
+    }
+  },
+  "type": "object",
+  "required": [
+    "gender"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "gender": {
+      "title": "GenderValues",
+      "type": "object",
+      "required": [
+        "male",
+        "female"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "male": {
+          "$dynamicRef": "#T"
+        },
+        "female": {
+          "$dynamicRef": "#T"
+        }
+      }
+    }
+  }
+}

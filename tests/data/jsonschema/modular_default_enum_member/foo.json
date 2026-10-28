@@ -12,9 +12,12 @@
     },
     "OtherLoggerLevels": {
       "items": {
-        "$ref": "nested_bar/bar.json#/definitions/logLevels"
+        "anyOf": [
+          {"$ref": "nested_bar/bar.json#/definitions/logLevels"},
+          {"$ref": "bar.json#/definitions/logLevels"}
+        ]
       },
-      "default": ["INFO", "ERROR", "INVALID"]
+      "default": ["ERROR", "WARN", "INVALID"]
     }
   }
 }

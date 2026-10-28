@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: t
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Parent'
+        - type: object
+          properties:
+            payload:
+              properties:
+                extra:
+                  type: string
+    Parent:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        payload:
+          type: object
+          properties:
+            value:
+              type: object
+              properties:
+                code:
+                  type: integer

@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Targets
+  version: 1.0.0
+x-limit: .inf
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      responses:
+        "200":
+          description: Pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+    post:
+      operationId: createPet
+      tags: [pets, admin]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "201":
+          description: Created
+  /store/orders:
+    get:
+      operationId: listOrders
+      tags: [store]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/Order"
+  /health:
+    get:
+      operationId: health
+      responses:
+        "204":
+          description: Healthy
+webhooks:
+  petAdded:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "200":
+          description: Accepted
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        tag:
+          type: string

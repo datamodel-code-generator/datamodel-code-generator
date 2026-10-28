@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "enum": [
+            {
+              "kind": [
+                true,
+                1
+              ]
+            },
+            {
+              "kind": [
+                false,
+                0
+              ]
+            },
+            {
+              "other": []
+            }
+          ]
+        },
+        "equal": {
+          "enum": [
+            {
+              "a": 1
+            },
+            {
+              "b": 2
+            }
+          ]
+        },
+        "nullable": {
+          "enum": [
+            null,
+            "a",
+            "b"
+          ]
+        },
+        "number": {
+          "enum": [
+            1,
+            2
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "equal",
+        "nullable",
+        "number"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "enum": [
+            {
+              "kind": [
+                false,
+                0
+              ]
+            },
+            {
+              "kind": [
+                true,
+                1
+              ]
+            },
+            {
+              "extra": []
+            }
+          ]
+        },
+        "equal": {
+          "enum": [
+            {
+              "b": 2
+            },
+            {
+              "a": 1
+            }
+          ]
+        },
+        "nullable": {
+          "enum": [
+            "b",
+            "c"
+          ]
+        },
+        "number": {
+          "enum": [
+            1.0,
+            3
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "equal",
+        "nullable",
+        "number"
+      ]
+    }
+  ]
+}

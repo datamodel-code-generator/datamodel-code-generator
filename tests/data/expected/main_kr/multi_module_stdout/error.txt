@@ -1,0 +1,1 @@
+Error: Multiple modules were generated. Use --output <directory> to write them as files or --output-format json for structured stdout.

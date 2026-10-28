@@ -1,0 +1,28 @@
+mypy pets and ndjson.py: clean
+pyright pets and ndjson.py: clean
+ty pets and ndjson.py: clean
+ndjson_negative.py 7 marked lines
+mypy ndjson_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  13 call-overload
+  14 misc
+  15 assignment
+  16 assignment
+  17 arg-type
+  18 call-arg
+  19 call-arg
+pyright ndjson_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  13 reportArgumentType
+  14 reportGeneralTypeIssues
+  15 reportAssignmentType
+  16 reportAssignmentType
+  17 reportArgumentType
+  18 reportCallIssue
+  19 reportCallIssue
+ty ndjson_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  13 invalid-argument-type
+  14 invalid-await
+  15 invalid-assignment
+  16 invalid-assignment
+  17 invalid-argument-type
+  18 missing-argument
+  19 unknown-argument

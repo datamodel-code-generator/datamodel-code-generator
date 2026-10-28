@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/definitions/Foo"
+    },
+    "related": {
+      "$ref": "#/definitions/Bar"
+    },
+    "original": {
+      "$ref": "#/definitions/model-name"
+    }
+  },
+  "definitions": {
+    "Foo": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "foo": {
+          "$ref": "#/definitions/Foo"
+        }
+      }
+    },
+    "model-name": {
+      "type": "object",
+      "properties": {
+        "bar": {
+          "$ref": "#/definitions/Bar"
+        }
+      }
+    }
+  }
+}

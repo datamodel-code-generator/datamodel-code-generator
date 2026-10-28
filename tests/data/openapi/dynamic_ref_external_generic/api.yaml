@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Lists API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    IntList:
+      $ref: ./int_list.json
+    StrList:
+      $ref: ./str_list.json

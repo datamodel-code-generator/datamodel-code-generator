@@ -1,0 +1,62 @@
+{
+  "valid": {
+    "count": 0,
+    "plain": 0,
+    "negative": -1,
+    "positive": 0.5,
+    "both": 10,
+    "counts": [
+      0,
+      null
+    ],
+    "root_count": 0,
+    "nullable_count": null,
+    "bounded": 9,
+    "ratio": 0.5,
+    "model": "gpt-live-1",
+    "const_model": "gpt-live-1",
+    "direct": "abc",
+    "number": 5,
+    "codes": [
+      "abc"
+    ],
+    "code": "abc",
+    "level": "bb",
+    "ratios": [
+      1.5
+    ],
+    "patterned": [
+      "abc"
+    ]
+  },
+  "invalid": {
+    "count": -1,
+    "plain": -1,
+    "negative": 0,
+    "positive": 0,
+    "both": 11,
+    "counts": [
+      -1
+    ],
+    "root_count": -1,
+    "nullable_count": -1,
+    "bounded": 10,
+    "ratio": 0,
+    "model": "",
+    "const_model": "",
+    "direct": "abd",
+    "number": 4,
+    "codes": [
+      "abd"
+    ],
+    "code": "abd",
+    "level": "a",
+    "unmet": "abc",
+    "ratios": [
+      2.5
+    ],
+    "patterned": [
+      "abd"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Positions",
+  "type": "object",
+  "properties": {
+    "property": {"type": "string", "enum": ["a", "b"], "const": "a"},
+    "propertySingle": {"type": "string", "enum": ["a"], "const": "a"},
+    "words": {"type": "array", "items": {"type": "string", "enum": ["a", "b"], "const": "b"}},
+    "counts": {"type": "object", "additionalProperties": {"type": "integer", "enum": [1, 2, 3], "const": 2}},
+    "branch": {"anyOf": [{"type": "string", "enum": ["a", "b"], "const": "a"}, {"type": "integer"}]},
+    "refSibling": {"$ref": "#/$defs/Switch", "const": "on"},
+    "keys": {"type": "object", "propertyNames": {"enum": ["a", "b"], "const": "a"}, "additionalProperties": {"type": "integer"}},
+    "refKeys": {"type": "object", "propertyNames": {"$ref": "#/$defs/Narrowed"}, "additionalProperties": {"type": "integer"}},
+    "definition": {"$ref": "#/$defs/Narrowed"},
+    "definitionSingle": {"$ref": "#/$defs/Single"},
+    "allOfDefinition": {"$ref": "#/$defs/AllOfNarrowed"},
+    "besideNull": {"$ref": "#/$defs/BesideNull"},
+    "constNull": {"$ref": "#/$defs/ConstNull"}
+  },
+  "$defs": {
+    "Switch": {"type": "string", "enum": ["on", "off"]},
+    "Narrowed": {
+      "type": "string",
+      "enum": ["a", "b", "c"],
+      "const": "b",
+      "x-enum-varnames": ["ALPHA", "BRAVO", "CHARLIE"],
+      "x-enum-descriptions": ["First.", "Second.", "Third."]
+    },
+    "Single": {"type": "string", "enum": ["a"], "const": "a"},
+    "AllOfNarrowed": {"allOf": [{"type": "string", "enum": ["a", "b"], "const": "b"}]},
+    "BesideNull": {"type": "string", "enum": ["a", null, "b"], "const": "b", "x-enum-varnames": ["ALPHA", "BRAVO"]},
+    "ConstNull": {"type": "string", "enum": ["a", null, "b"], "const": null}
+  }
+}

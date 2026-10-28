@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Values",
+  "type": "array",
+  "items": {
+    "anyOf": [
+      {
+        "$ref": "#/$defs/A"
+      },
+      {
+        "$ref": "#/$defs/B"
+      }
+    ]
+  },
+  "$defs": {
+    "A": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TypeAdapter"
+      }
+    },
+    "B": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ClassVar"
+      }
+    },
+    "TypeAdapter": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "ClassVar": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Pattern": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

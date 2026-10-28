@@ -1,0 +1,60 @@
+format_version = 1
+
+[grid]
+naming-strategy = [{}, { naming_strategy = "full-path" }]
+enum-shape = [{ enum_field_as_literal = "one" }, { enum_field_as_literal = "all" }]
+title-source = [{ use_title_as_name = false }, { use_title_as_name = true }]
+
+[[schema]]
+id = "pets"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://example.com/pets"
+url = "@FIXTURES@/{ref}/pets.json"
+represents = "inline objects and enums that share property names across parents"
+versions = [
+  { ref = "v1", date = "2026-01-01", sha256 = "@SHA256:v1/pets.json@" },
+  { ref = "v2", date = "2026-02-01", sha256 = "@SHA256:v2/pets.json@" },
+]
+
+[[schema]]
+id = "shop"
+kind = "openapi"
+role = "calibration"
+license = "Apache-2.0"
+source = "https://example.com/shop"
+url = "@FIXTURES@/{ref}/shop.yaml"
+represents = "YAML API with duplicate titles"
+versions = [{ ref = "v1", date = "2026-01-15", sha256 = "@SHA256:v1/shop.yaml@" }]
+
+[[schema]]
+id = "config"
+kind = "jsonschema"
+role = "holdout"
+license = "BSD-3-Clause"
+source = "https://example.com/config"
+url = "@FIXTURES@/{ref}/config.json"
+represents = "configuration schema with a sentence root title and an external $ref"
+stub_external_refs = true
+versions = [{ ref = "v1", date = "2026-01-20", sha256 = "@SHA256:v1/config.json@" }]
+
+[[schema]]
+id = "broken"
+kind = "jsonschema"
+role = "holdout"
+license = "MIT"
+source = "https://example.com/broken"
+url = "@FIXTURES@/{ref}/broken.json"
+represents = "JSON document whose top level is an array, which the recommender rejects"
+versions = [{ ref = "v1", date = "2026-01-25", sha256 = "@SHA256:v1/broken.json@" }]
+
+[[schema]]
+id = "enums"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://example.com/enums"
+url = "@FIXTURES@/{ref}/enums.json"
+represents = "inline enums that share a property name, 6 of 14 enums inline (a ratio of 3/7)"
+versions = [{ ref = "v1", date = "2026-01-30", sha256 = "@SHA256:v1/enums.json@" }]

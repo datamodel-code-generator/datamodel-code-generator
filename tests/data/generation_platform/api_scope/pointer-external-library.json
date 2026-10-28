@@ -1,0 +1,1 @@
+{"components": {"schemas": {"a/b": {"type": "string"}, "a": {"b": {"type": "number"}}}}}

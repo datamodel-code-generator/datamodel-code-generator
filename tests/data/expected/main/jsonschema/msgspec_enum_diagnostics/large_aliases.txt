@@ -1,0 +1,26 @@
+[
+  {
+    "convert": {
+      "value": 0
+    },
+    "decode": {
+      "value": 0
+    }
+  },
+  {
+    "convert": {
+      "value": 255
+    },
+    "decode": {
+      "value": 255
+    }
+  },
+  {
+    "convert": {
+      "value": 256
+    },
+    "decode": {
+      "value": 256
+    }
+  }
+]

@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Mapped document beside the input
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Twig:
+      type: object
+      properties:
+        id:
+          type: integer
+        kids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Twig'
+        leaf:
+          $ref: '#/components/schemas/Leaf'
+      required:
+        - id
+    Leaf:
+      type: object
+      properties:
+        color:
+          type: string

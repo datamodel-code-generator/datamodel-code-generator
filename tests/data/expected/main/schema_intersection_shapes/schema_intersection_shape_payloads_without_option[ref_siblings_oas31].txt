@@ -1,0 +1,2076 @@
+pydantic_v2.BaseModel default pick "b" accepted
+pydantic_v2.BaseModel default pick "a" accepted
+pydantic_v2.BaseModel default pick "c" rejected
+pydantic_v2.BaseModel default pick_prop "b" accepted
+pydantic_v2.BaseModel default pick_prop "a" accepted
+pydantic_v2.BaseModel default pick_prop "c" rejected
+pydantic_v2.BaseModel default pick_items ["b"] accepted
+pydantic_v2.BaseModel default pick_items ["a"] accepted
+pydantic_v2.BaseModel default pick_items ["c"] rejected
+pydantic_v2.BaseModel default pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel default pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel default pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel default w1 "a" accepted
+pydantic_v2.BaseModel default w1 "b" accepted
+pydantic_v2.BaseModel default w1 "c" rejected
+pydantic_v2.BaseModel default w1_prop "a" accepted
+pydantic_v2.BaseModel default w1_prop "b" accepted
+pydantic_v2.BaseModel default w1_prop "c" rejected
+pydantic_v2.BaseModel default w1_items ["a"] accepted
+pydantic_v2.BaseModel default w1_items ["b"] accepted
+pydantic_v2.BaseModel default w1_items ["c"] rejected
+pydantic_v2.BaseModel default w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel default w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel default w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel default q_sib 1 accepted
+pydantic_v2.BaseModel default q_sib 10 accepted
+pydantic_v2.BaseModel default q_sib 0 rejected
+pydantic_v2.BaseModel default q_sib 11 rejected
+pydantic_v2.BaseModel default q_sib_prop 1 accepted
+pydantic_v2.BaseModel default q_sib_prop 10 accepted
+pydantic_v2.BaseModel default q_sib_prop 0 rejected
+pydantic_v2.BaseModel default q_sib_prop 11 rejected
+pydantic_v2.BaseModel default q_sib_items [1] accepted
+pydantic_v2.BaseModel default q_sib_items [10] accepted
+pydantic_v2.BaseModel default q_sib_items [0] rejected
+pydantic_v2.BaseModel default q_sib_items [11] rejected
+pydantic_v2.BaseModel default q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel default q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel default q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel default q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel default looser 1 accepted
+pydantic_v2.BaseModel default looser 5 accepted
+pydantic_v2.BaseModel default looser -1 rejected
+pydantic_v2.BaseModel default looser 0 accepted
+pydantic_v2.BaseModel default looser_prop 1 accepted
+pydantic_v2.BaseModel default looser_prop 5 accepted
+pydantic_v2.BaseModel default looser_prop -1 rejected
+pydantic_v2.BaseModel default looser_prop 0 accepted
+pydantic_v2.BaseModel default looser_items [1] accepted
+pydantic_v2.BaseModel default looser_items [5] accepted
+pydantic_v2.BaseModel default looser_items [-1] rejected
+pydantic_v2.BaseModel default looser_items [0] accepted
+pydantic_v2.BaseModel default looser_map {"k": 1} accepted
+pydantic_v2.BaseModel default looser_map {"k": 5} accepted
+pydantic_v2.BaseModel default looser_map {"k": -1} rejected
+pydantic_v2.BaseModel default looser_map {"k": 0} accepted
+pydantic_v2.BaseModel default w3 {"k": "a"} accepted
+pydantic_v2.BaseModel default w3 {"k": "b"} accepted
+pydantic_v2.BaseModel default w3 {"k": "c"} rejected
+pydantic_v2.BaseModel default redundant_type 1 accepted
+pydantic_v2.BaseModel default redundant_type 0 rejected
+pydantic_v2.BaseModel default redundant_allof 1 accepted
+pydantic_v2.BaseModel default redundant_allof 0 rejected
+pydantic_v2.BaseModel default code_type "A" accepted
+pydantic_v2.BaseModel default code_type "AB" accepted
+pydantic_v2.BaseModel default code_type "a" rejected
+pydantic_v2.BaseModel default q_desc 1 accepted
+pydantic_v2.BaseModel default q_desc 0 rejected
+pydantic_v2.BaseModel default examples_max 1 accepted
+pydantic_v2.BaseModel default examples_max 9 accepted
+pydantic_v2.BaseModel default examples_max 0 rejected
+pydantic_v2.BaseModel default examples_max 10 rejected
+pydantic_v2.BaseModel default examples_only 1 accepted
+pydantic_v2.BaseModel default examples_only 0 rejected
+pydantic_v2.BaseModel default titled "ab" accepted
+pydantic_v2.BaseModel default titled "a" rejected
+pydantic_v2.BaseModel default titled 1 rejected
+pydantic_v2.BaseModel default wa "a" accepted
+pydantic_v2.BaseModel default wa "b" accepted
+pydantic_v2.BaseModel default wa "c" rejected
+pydantic_v2.BaseModel default wa_prop "a" accepted
+pydantic_v2.BaseModel default wa_prop "b" accepted
+pydantic_v2.BaseModel default wa_prop "c" rejected
+pydantic_v2.BaseModel default wa_items ["a"] accepted
+pydantic_v2.BaseModel default wa_items ["b"] accepted
+pydantic_v2.BaseModel default wa_items ["c"] rejected
+pydantic_v2.BaseModel default wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wb "b" accepted
+pydantic_v2.BaseModel default wb "a" accepted
+pydantic_v2.BaseModel default wb "c" rejected
+pydantic_v2.BaseModel default wb_prop "b" accepted
+pydantic_v2.BaseModel default wb_prop "a" accepted
+pydantic_v2.BaseModel default wb_prop "c" rejected
+pydantic_v2.BaseModel default wb_items ["b"] accepted
+pydantic_v2.BaseModel default wb_items ["a"] accepted
+pydantic_v2.BaseModel default wb_items ["c"] rejected
+pydantic_v2.BaseModel default wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wc "a" accepted
+pydantic_v2.BaseModel default wc "b" accepted
+pydantic_v2.BaseModel default wc "c" rejected
+pydantic_v2.BaseModel default wc_prop "a" accepted
+pydantic_v2.BaseModel default wc_prop "b" accepted
+pydantic_v2.BaseModel default wc_prop "c" rejected
+pydantic_v2.BaseModel default wc_items ["a"] accepted
+pydantic_v2.BaseModel default wc_items ["b"] accepted
+pydantic_v2.BaseModel default wc_items ["c"] rejected
+pydantic_v2.BaseModel default wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wd 1 accepted
+pydantic_v2.BaseModel default wd 10 accepted
+pydantic_v2.BaseModel default wd 0 rejected
+pydantic_v2.BaseModel default wd 11 accepted
+pydantic_v2.BaseModel default wd_prop 1 accepted
+pydantic_v2.BaseModel default wd_prop 10 accepted
+pydantic_v2.BaseModel default wd_prop 0 rejected
+pydantic_v2.BaseModel default wd_prop 11 accepted
+pydantic_v2.BaseModel default wd_items [1] accepted
+pydantic_v2.BaseModel default wd_items [10] accepted
+pydantic_v2.BaseModel default wd_items [0] rejected
+pydantic_v2.BaseModel default wd_items [11] accepted
+pydantic_v2.BaseModel default wd_map {"k": 1} accepted
+pydantic_v2.BaseModel default wd_map {"k": 10} accepted
+pydantic_v2.BaseModel default wd_map {"k": 0} rejected
+pydantic_v2.BaseModel default wd_map {"k": 11} accepted
+pydantic_v2.BaseModel default we 1 accepted
+pydantic_v2.BaseModel default we 0 rejected
+pydantic_v2.BaseModel default we_prop 1 accepted
+pydantic_v2.BaseModel default we_prop 0 rejected
+pydantic_v2.BaseModel default we_items [1] accepted
+pydantic_v2.BaseModel default we_items [0] rejected
+pydantic_v2.BaseModel default we_map {"k": 1} accepted
+pydantic_v2.BaseModel default we_map {"k": 0} rejected
+pydantic_v2.BaseModel default wf 1 accepted
+pydantic_v2.BaseModel default wf 0 rejected
+pydantic_v2.BaseModel default wf 1.5 rejected
+pydantic_v2.BaseModel default wf_prop 1 accepted
+pydantic_v2.BaseModel default wf_prop 0 rejected
+pydantic_v2.BaseModel default wf_prop 1.5 rejected
+pydantic_v2.BaseModel default wf_items [1] accepted
+pydantic_v2.BaseModel default wf_items [0] rejected
+pydantic_v2.BaseModel default wf_items [1.5] rejected
+pydantic_v2.BaseModel default wf_map {"k": 1} accepted
+pydantic_v2.BaseModel default wf_map {"k": 0} rejected
+pydantic_v2.BaseModel default wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel default wg "a" accepted
+pydantic_v2.BaseModel default wg "b" accepted
+pydantic_v2.BaseModel default wg "c" rejected
+pydantic_v2.BaseModel default wg_prop "a" accepted
+pydantic_v2.BaseModel default wg_prop "b" accepted
+pydantic_v2.BaseModel default wg_prop "c" rejected
+pydantic_v2.BaseModel default wg_items ["a"] accepted
+pydantic_v2.BaseModel default wg_items ["b"] accepted
+pydantic_v2.BaseModel default wg_items ["c"] rejected
+pydantic_v2.BaseModel default wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wh "a" accepted
+pydantic_v2.BaseModel default wh "b" accepted
+pydantic_v2.BaseModel default wh "c" rejected
+pydantic_v2.BaseModel default wh_prop "a" accepted
+pydantic_v2.BaseModel default wh_prop "b" accepted
+pydantic_v2.BaseModel default wh_prop "c" rejected
+pydantic_v2.BaseModel default wh_items ["a"] accepted
+pydantic_v2.BaseModel default wh_items ["b"] accepted
+pydantic_v2.BaseModel default wh_items ["c"] rejected
+pydantic_v2.BaseModel default wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wh_map {"k": "c"} rejected
+pydantic_v2.dataclass default pick "b" accepted
+pydantic_v2.dataclass default pick "a" accepted
+pydantic_v2.dataclass default pick "c" rejected
+pydantic_v2.dataclass default pick_prop "b" accepted
+pydantic_v2.dataclass default pick_prop "a" accepted
+pydantic_v2.dataclass default pick_prop "c" rejected
+pydantic_v2.dataclass default pick_items ["b"] accepted
+pydantic_v2.dataclass default pick_items ["a"] accepted
+pydantic_v2.dataclass default pick_items ["c"] rejected
+pydantic_v2.dataclass default pick_map {"k": "b"} accepted
+pydantic_v2.dataclass default pick_map {"k": "a"} accepted
+pydantic_v2.dataclass default pick_map {"k": "c"} rejected
+pydantic_v2.dataclass default w1 "a" accepted
+pydantic_v2.dataclass default w1 "b" accepted
+pydantic_v2.dataclass default w1 "c" rejected
+pydantic_v2.dataclass default w1_prop "a" accepted
+pydantic_v2.dataclass default w1_prop "b" accepted
+pydantic_v2.dataclass default w1_prop "c" rejected
+pydantic_v2.dataclass default w1_items ["a"] accepted
+pydantic_v2.dataclass default w1_items ["b"] accepted
+pydantic_v2.dataclass default w1_items ["c"] rejected
+pydantic_v2.dataclass default w1_map {"k": "a"} accepted
+pydantic_v2.dataclass default w1_map {"k": "b"} accepted
+pydantic_v2.dataclass default w1_map {"k": "c"} rejected
+pydantic_v2.dataclass default q_sib 1 accepted
+pydantic_v2.dataclass default q_sib 10 accepted
+pydantic_v2.dataclass default q_sib 0 rejected
+pydantic_v2.dataclass default q_sib 11 rejected
+pydantic_v2.dataclass default q_sib_prop 1 accepted
+pydantic_v2.dataclass default q_sib_prop 10 accepted
+pydantic_v2.dataclass default q_sib_prop 0 rejected
+pydantic_v2.dataclass default q_sib_prop 11 rejected
+pydantic_v2.dataclass default q_sib_items [1] accepted
+pydantic_v2.dataclass default q_sib_items [10] accepted
+pydantic_v2.dataclass default q_sib_items [0] rejected
+pydantic_v2.dataclass default q_sib_items [11] rejected
+pydantic_v2.dataclass default q_sib_map {"k": 1} accepted
+pydantic_v2.dataclass default q_sib_map {"k": 10} accepted
+pydantic_v2.dataclass default q_sib_map {"k": 0} rejected
+pydantic_v2.dataclass default q_sib_map {"k": 11} rejected
+pydantic_v2.dataclass default looser 1 accepted
+pydantic_v2.dataclass default looser 5 accepted
+pydantic_v2.dataclass default looser -1 rejected
+pydantic_v2.dataclass default looser 0 accepted
+pydantic_v2.dataclass default looser_prop 1 accepted
+pydantic_v2.dataclass default looser_prop 5 accepted
+pydantic_v2.dataclass default looser_prop -1 rejected
+pydantic_v2.dataclass default looser_prop 0 accepted
+pydantic_v2.dataclass default looser_items [1] accepted
+pydantic_v2.dataclass default looser_items [5] accepted
+pydantic_v2.dataclass default looser_items [-1] rejected
+pydantic_v2.dataclass default looser_items [0] accepted
+pydantic_v2.dataclass default looser_map {"k": 1} accepted
+pydantic_v2.dataclass default looser_map {"k": 5} accepted
+pydantic_v2.dataclass default looser_map {"k": -1} rejected
+pydantic_v2.dataclass default looser_map {"k": 0} accepted
+pydantic_v2.dataclass default w3 {"k": "a"} accepted
+pydantic_v2.dataclass default w3 {"k": "b"} accepted
+pydantic_v2.dataclass default w3 {"k": "c"} rejected
+pydantic_v2.dataclass default redundant_type 1 accepted
+pydantic_v2.dataclass default redundant_type 0 rejected
+pydantic_v2.dataclass default redundant_allof 1 accepted
+pydantic_v2.dataclass default redundant_allof 0 rejected
+pydantic_v2.dataclass default code_type "A" accepted
+pydantic_v2.dataclass default code_type "AB" accepted
+pydantic_v2.dataclass default code_type "a" rejected
+pydantic_v2.dataclass default q_desc 1 accepted
+pydantic_v2.dataclass default q_desc 0 rejected
+pydantic_v2.dataclass default examples_max 1 accepted
+pydantic_v2.dataclass default examples_max 9 accepted
+pydantic_v2.dataclass default examples_max 0 rejected
+pydantic_v2.dataclass default examples_max 10 rejected
+pydantic_v2.dataclass default examples_only 1 accepted
+pydantic_v2.dataclass default examples_only 0 rejected
+pydantic_v2.dataclass default titled "ab" accepted
+pydantic_v2.dataclass default titled "a" rejected
+pydantic_v2.dataclass default titled 1 rejected
+pydantic_v2.dataclass default wa "a" accepted
+pydantic_v2.dataclass default wa "b" accepted
+pydantic_v2.dataclass default wa "c" rejected
+pydantic_v2.dataclass default wa_prop "a" accepted
+pydantic_v2.dataclass default wa_prop "b" accepted
+pydantic_v2.dataclass default wa_prop "c" rejected
+pydantic_v2.dataclass default wa_items ["a"] accepted
+pydantic_v2.dataclass default wa_items ["b"] accepted
+pydantic_v2.dataclass default wa_items ["c"] rejected
+pydantic_v2.dataclass default wa_map {"k": "a"} accepted
+pydantic_v2.dataclass default wa_map {"k": "b"} accepted
+pydantic_v2.dataclass default wa_map {"k": "c"} rejected
+pydantic_v2.dataclass default wb "b" accepted
+pydantic_v2.dataclass default wb "a" accepted
+pydantic_v2.dataclass default wb "c" rejected
+pydantic_v2.dataclass default wb_prop "b" accepted
+pydantic_v2.dataclass default wb_prop "a" accepted
+pydantic_v2.dataclass default wb_prop "c" rejected
+pydantic_v2.dataclass default wb_items ["b"] accepted
+pydantic_v2.dataclass default wb_items ["a"] accepted
+pydantic_v2.dataclass default wb_items ["c"] rejected
+pydantic_v2.dataclass default wb_map {"k": "b"} accepted
+pydantic_v2.dataclass default wb_map {"k": "a"} accepted
+pydantic_v2.dataclass default wb_map {"k": "c"} rejected
+pydantic_v2.dataclass default wc "a" accepted
+pydantic_v2.dataclass default wc "b" accepted
+pydantic_v2.dataclass default wc "c" rejected
+pydantic_v2.dataclass default wc_prop "a" accepted
+pydantic_v2.dataclass default wc_prop "b" accepted
+pydantic_v2.dataclass default wc_prop "c" rejected
+pydantic_v2.dataclass default wc_items ["a"] accepted
+pydantic_v2.dataclass default wc_items ["b"] accepted
+pydantic_v2.dataclass default wc_items ["c"] rejected
+pydantic_v2.dataclass default wc_map {"k": "a"} accepted
+pydantic_v2.dataclass default wc_map {"k": "b"} accepted
+pydantic_v2.dataclass default wc_map {"k": "c"} rejected
+pydantic_v2.dataclass default wd 1 accepted
+pydantic_v2.dataclass default wd 10 accepted
+pydantic_v2.dataclass default wd 0 rejected
+pydantic_v2.dataclass default wd 11 accepted
+pydantic_v2.dataclass default wd_prop 1 accepted
+pydantic_v2.dataclass default wd_prop 10 accepted
+pydantic_v2.dataclass default wd_prop 0 rejected
+pydantic_v2.dataclass default wd_prop 11 accepted
+pydantic_v2.dataclass default wd_items [1] accepted
+pydantic_v2.dataclass default wd_items [10] accepted
+pydantic_v2.dataclass default wd_items [0] rejected
+pydantic_v2.dataclass default wd_items [11] accepted
+pydantic_v2.dataclass default wd_map {"k": 1} accepted
+pydantic_v2.dataclass default wd_map {"k": 10} accepted
+pydantic_v2.dataclass default wd_map {"k": 0} rejected
+pydantic_v2.dataclass default wd_map {"k": 11} accepted
+pydantic_v2.dataclass default we 1 accepted
+pydantic_v2.dataclass default we 0 rejected
+pydantic_v2.dataclass default we_prop 1 accepted
+pydantic_v2.dataclass default we_prop 0 rejected
+pydantic_v2.dataclass default we_items [1] accepted
+pydantic_v2.dataclass default we_items [0] rejected
+pydantic_v2.dataclass default we_map {"k": 1} accepted
+pydantic_v2.dataclass default we_map {"k": 0} rejected
+pydantic_v2.dataclass default wf 1 accepted
+pydantic_v2.dataclass default wf 0 rejected
+pydantic_v2.dataclass default wf 1.5 rejected
+pydantic_v2.dataclass default wf_prop 1 accepted
+pydantic_v2.dataclass default wf_prop 0 rejected
+pydantic_v2.dataclass default wf_prop 1.5 rejected
+pydantic_v2.dataclass default wf_items [1] accepted
+pydantic_v2.dataclass default wf_items [0] rejected
+pydantic_v2.dataclass default wf_items [1.5] rejected
+pydantic_v2.dataclass default wf_map {"k": 1} accepted
+pydantic_v2.dataclass default wf_map {"k": 0} rejected
+pydantic_v2.dataclass default wf_map {"k": 1.5} rejected
+pydantic_v2.dataclass default wg "a" accepted
+pydantic_v2.dataclass default wg "b" accepted
+pydantic_v2.dataclass default wg "c" rejected
+pydantic_v2.dataclass default wg_prop "a" accepted
+pydantic_v2.dataclass default wg_prop "b" accepted
+pydantic_v2.dataclass default wg_prop "c" rejected
+pydantic_v2.dataclass default wg_items ["a"] accepted
+pydantic_v2.dataclass default wg_items ["b"] accepted
+pydantic_v2.dataclass default wg_items ["c"] rejected
+pydantic_v2.dataclass default wg_map {"k": "a"} accepted
+pydantic_v2.dataclass default wg_map {"k": "b"} accepted
+pydantic_v2.dataclass default wg_map {"k": "c"} rejected
+pydantic_v2.dataclass default wh "a" accepted
+pydantic_v2.dataclass default wh "b" accepted
+pydantic_v2.dataclass default wh "c" rejected
+pydantic_v2.dataclass default wh_prop "a" accepted
+pydantic_v2.dataclass default wh_prop "b" accepted
+pydantic_v2.dataclass default wh_prop "c" rejected
+pydantic_v2.dataclass default wh_items ["a"] accepted
+pydantic_v2.dataclass default wh_items ["b"] accepted
+pydantic_v2.dataclass default wh_items ["c"] rejected
+pydantic_v2.dataclass default wh_map {"k": "a"} accepted
+pydantic_v2.dataclass default wh_map {"k": "b"} accepted
+pydantic_v2.dataclass default wh_map {"k": "c"} rejected
+msgspec.Struct default pick "b" accepted
+msgspec.Struct default pick "a" accepted
+msgspec.Struct default pick "c" rejected
+msgspec.Struct default pick_prop "b" accepted
+msgspec.Struct default pick_prop "a" accepted
+msgspec.Struct default pick_prop "c" rejected
+msgspec.Struct default pick_items ["b"] accepted
+msgspec.Struct default pick_items ["a"] accepted
+msgspec.Struct default pick_items ["c"] rejected
+msgspec.Struct default pick_map {"k": "b"} accepted
+msgspec.Struct default pick_map {"k": "a"} accepted
+msgspec.Struct default pick_map {"k": "c"} rejected
+msgspec.Struct default w1 "a" accepted
+msgspec.Struct default w1 "b" accepted
+msgspec.Struct default w1 "c" rejected
+msgspec.Struct default w1_prop "a" accepted
+msgspec.Struct default w1_prop "b" accepted
+msgspec.Struct default w1_prop "c" rejected
+msgspec.Struct default w1_items ["a"] accepted
+msgspec.Struct default w1_items ["b"] accepted
+msgspec.Struct default w1_items ["c"] rejected
+msgspec.Struct default w1_map {"k": "a"} accepted
+msgspec.Struct default w1_map {"k": "b"} accepted
+msgspec.Struct default w1_map {"k": "c"} rejected
+msgspec.Struct default q_sib 1 accepted
+msgspec.Struct default q_sib 10 accepted
+msgspec.Struct default q_sib 0 rejected
+msgspec.Struct default q_sib 11 rejected
+msgspec.Struct default q_sib_prop 1 accepted
+msgspec.Struct default q_sib_prop 10 accepted
+msgspec.Struct default q_sib_prop 0 rejected
+msgspec.Struct default q_sib_prop 11 rejected
+msgspec.Struct default q_sib_items [1] accepted
+msgspec.Struct default q_sib_items [10] accepted
+msgspec.Struct default q_sib_items [0] rejected
+msgspec.Struct default q_sib_items [11] rejected
+msgspec.Struct default q_sib_map {"k": 1} accepted
+msgspec.Struct default q_sib_map {"k": 10} accepted
+msgspec.Struct default q_sib_map {"k": 0} rejected
+msgspec.Struct default q_sib_map {"k": 11} rejected
+msgspec.Struct default looser 1 accepted
+msgspec.Struct default looser 5 accepted
+msgspec.Struct default looser -1 rejected
+msgspec.Struct default looser 0 accepted
+msgspec.Struct default looser_prop 1 accepted
+msgspec.Struct default looser_prop 5 accepted
+msgspec.Struct default looser_prop -1 rejected
+msgspec.Struct default looser_prop 0 accepted
+msgspec.Struct default looser_items [1] accepted
+msgspec.Struct default looser_items [5] accepted
+msgspec.Struct default looser_items [-1] rejected
+msgspec.Struct default looser_items [0] accepted
+msgspec.Struct default looser_map {"k": 1} accepted
+msgspec.Struct default looser_map {"k": 5} accepted
+msgspec.Struct default looser_map {"k": -1} rejected
+msgspec.Struct default looser_map {"k": 0} accepted
+msgspec.Struct default w3 {"k": "a"} accepted
+msgspec.Struct default w3 {"k": "b"} accepted
+msgspec.Struct default w3 {"k": "c"} rejected
+msgspec.Struct default redundant_type 1 accepted
+msgspec.Struct default redundant_type 0 rejected
+msgspec.Struct default redundant_allof 1 accepted
+msgspec.Struct default redundant_allof 0 rejected
+msgspec.Struct default code_type "A" accepted
+msgspec.Struct default code_type "AB" accepted
+msgspec.Struct default code_type "a" rejected
+msgspec.Struct default q_desc 1 accepted
+msgspec.Struct default q_desc 0 rejected
+msgspec.Struct default examples_max 1 accepted
+msgspec.Struct default examples_max 9 accepted
+msgspec.Struct default examples_max 0 rejected
+msgspec.Struct default examples_max 10 rejected
+msgspec.Struct default examples_only 1 accepted
+msgspec.Struct default examples_only 0 rejected
+msgspec.Struct default titled "ab" accepted
+msgspec.Struct default titled "a" rejected
+msgspec.Struct default titled 1 rejected
+msgspec.Struct default wa "a" accepted
+msgspec.Struct default wa "b" accepted
+msgspec.Struct default wa "c" rejected
+msgspec.Struct default wa_prop "a" accepted
+msgspec.Struct default wa_prop "b" accepted
+msgspec.Struct default wa_prop "c" rejected
+msgspec.Struct default wa_items ["a"] accepted
+msgspec.Struct default wa_items ["b"] accepted
+msgspec.Struct default wa_items ["c"] rejected
+msgspec.Struct default wa_map {"k": "a"} accepted
+msgspec.Struct default wa_map {"k": "b"} accepted
+msgspec.Struct default wa_map {"k": "c"} rejected
+msgspec.Struct default wb "b" accepted
+msgspec.Struct default wb "a" accepted
+msgspec.Struct default wb "c" rejected
+msgspec.Struct default wb_prop "b" accepted
+msgspec.Struct default wb_prop "a" accepted
+msgspec.Struct default wb_prop "c" rejected
+msgspec.Struct default wb_items ["b"] accepted
+msgspec.Struct default wb_items ["a"] accepted
+msgspec.Struct default wb_items ["c"] rejected
+msgspec.Struct default wb_map {"k": "b"} accepted
+msgspec.Struct default wb_map {"k": "a"} accepted
+msgspec.Struct default wb_map {"k": "c"} rejected
+msgspec.Struct default wc "a" accepted
+msgspec.Struct default wc "b" accepted
+msgspec.Struct default wc "c" rejected
+msgspec.Struct default wc_prop "a" accepted
+msgspec.Struct default wc_prop "b" accepted
+msgspec.Struct default wc_prop "c" rejected
+msgspec.Struct default wc_items ["a"] accepted
+msgspec.Struct default wc_items ["b"] accepted
+msgspec.Struct default wc_items ["c"] rejected
+msgspec.Struct default wc_map {"k": "a"} accepted
+msgspec.Struct default wc_map {"k": "b"} accepted
+msgspec.Struct default wc_map {"k": "c"} rejected
+msgspec.Struct default wd 1 accepted
+msgspec.Struct default wd 10 accepted
+msgspec.Struct default wd 0 rejected
+msgspec.Struct default wd 11 accepted
+msgspec.Struct default wd_prop 1 accepted
+msgspec.Struct default wd_prop 10 accepted
+msgspec.Struct default wd_prop 0 rejected
+msgspec.Struct default wd_prop 11 accepted
+msgspec.Struct default wd_items [1] accepted
+msgspec.Struct default wd_items [10] accepted
+msgspec.Struct default wd_items [0] rejected
+msgspec.Struct default wd_items [11] accepted
+msgspec.Struct default wd_map {"k": 1} accepted
+msgspec.Struct default wd_map {"k": 10} accepted
+msgspec.Struct default wd_map {"k": 0} rejected
+msgspec.Struct default wd_map {"k": 11} rejected
+msgspec.Struct default we 1 accepted
+msgspec.Struct default we 0 rejected
+msgspec.Struct default we_prop 1 accepted
+msgspec.Struct default we_prop 0 rejected
+msgspec.Struct default we_items [1] accepted
+msgspec.Struct default we_items [0] rejected
+msgspec.Struct default we_map {"k": 1} accepted
+msgspec.Struct default we_map {"k": 0} rejected
+msgspec.Struct default wf 1 accepted
+msgspec.Struct default wf 0 rejected
+msgspec.Struct default wf 1.5 rejected
+msgspec.Struct default wf_prop 1 accepted
+msgspec.Struct default wf_prop 0 rejected
+msgspec.Struct default wf_prop 1.5 rejected
+msgspec.Struct default wf_items [1] accepted
+msgspec.Struct default wf_items [0] rejected
+msgspec.Struct default wf_items [1.5] rejected
+msgspec.Struct default wf_map {"k": 1} accepted
+msgspec.Struct default wf_map {"k": 0} rejected
+msgspec.Struct default wf_map {"k": 1.5} rejected
+msgspec.Struct default wg "a" accepted
+msgspec.Struct default wg "b" accepted
+msgspec.Struct default wg "c" rejected
+msgspec.Struct default wg_prop "a" accepted
+msgspec.Struct default wg_prop "b" accepted
+msgspec.Struct default wg_prop "c" rejected
+msgspec.Struct default wg_items ["a"] accepted
+msgspec.Struct default wg_items ["b"] accepted
+msgspec.Struct default wg_items ["c"] rejected
+msgspec.Struct default wg_map {"k": "a"} accepted
+msgspec.Struct default wg_map {"k": "b"} accepted
+msgspec.Struct default wg_map {"k": "c"} rejected
+msgspec.Struct default wh "a" accepted
+msgspec.Struct default wh "b" accepted
+msgspec.Struct default wh "c" rejected
+msgspec.Struct default wh_prop "a" accepted
+msgspec.Struct default wh_prop "b" accepted
+msgspec.Struct default wh_prop "c" rejected
+msgspec.Struct default wh_items ["a"] accepted
+msgspec.Struct default wh_items ["b"] accepted
+msgspec.Struct default wh_items ["c"] rejected
+msgspec.Struct default wh_map {"k": "a"} accepted
+msgspec.Struct default wh_map {"k": "b"} accepted
+msgspec.Struct default wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints pick "b" accepted
+pydantic_v2.BaseModel --field-constraints pick "a" accepted
+pydantic_v2.BaseModel --field-constraints pick "c" rejected
+pydantic_v2.BaseModel --field-constraints pick_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints pick_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints pick_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints pick_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints pick_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints pick_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints w1 "a" accepted
+pydantic_v2.BaseModel --field-constraints w1 "b" accepted
+pydantic_v2.BaseModel --field-constraints w1 "c" rejected
+pydantic_v2.BaseModel --field-constraints w1_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints w1_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints w1_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints w1_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints w1_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints w1_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints q_sib 1 accepted
+pydantic_v2.BaseModel --field-constraints q_sib 10 accepted
+pydantic_v2.BaseModel --field-constraints q_sib 0 rejected
+pydantic_v2.BaseModel --field-constraints q_sib 11 rejected
+pydantic_v2.BaseModel --field-constraints q_sib_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints q_sib_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints q_sib_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints q_sib_prop 11 rejected
+pydantic_v2.BaseModel --field-constraints q_sib_items [1] accepted
+pydantic_v2.BaseModel --field-constraints q_sib_items [10] accepted
+pydantic_v2.BaseModel --field-constraints q_sib_items [0] rejected
+pydantic_v2.BaseModel --field-constraints q_sib_items [11] rejected
+pydantic_v2.BaseModel --field-constraints q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints looser 1 accepted
+pydantic_v2.BaseModel --field-constraints looser 5 accepted
+pydantic_v2.BaseModel --field-constraints looser -1 rejected
+pydantic_v2.BaseModel --field-constraints looser 0 accepted
+pydantic_v2.BaseModel --field-constraints looser_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints looser_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints looser_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints looser_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints looser_items [1] accepted
+pydantic_v2.BaseModel --field-constraints looser_items [5] accepted
+pydantic_v2.BaseModel --field-constraints looser_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints looser_items [0] accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints redundant_type 1 accepted
+pydantic_v2.BaseModel --field-constraints redundant_type 0 rejected
+pydantic_v2.BaseModel --field-constraints redundant_allof 1 accepted
+pydantic_v2.BaseModel --field-constraints redundant_allof 0 rejected
+pydantic_v2.BaseModel --field-constraints code_type "A" accepted
+pydantic_v2.BaseModel --field-constraints code_type "AB" accepted
+pydantic_v2.BaseModel --field-constraints code_type "a" rejected
+pydantic_v2.BaseModel --field-constraints q_desc 1 accepted
+pydantic_v2.BaseModel --field-constraints q_desc 0 rejected
+pydantic_v2.BaseModel --field-constraints examples_max 1 accepted
+pydantic_v2.BaseModel --field-constraints examples_max 9 accepted
+pydantic_v2.BaseModel --field-constraints examples_max 0 rejected
+pydantic_v2.BaseModel --field-constraints examples_max 10 rejected
+pydantic_v2.BaseModel --field-constraints examples_only 1 accepted
+pydantic_v2.BaseModel --field-constraints examples_only 0 rejected
+pydantic_v2.BaseModel --field-constraints titled "ab" accepted
+pydantic_v2.BaseModel --field-constraints titled "a" rejected
+pydantic_v2.BaseModel --field-constraints titled 1 rejected
+pydantic_v2.BaseModel --field-constraints wa "a" accepted
+pydantic_v2.BaseModel --field-constraints wa "b" accepted
+pydantic_v2.BaseModel --field-constraints wa "c" rejected
+pydantic_v2.BaseModel --field-constraints wa_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wa_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wa_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wa_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wa_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wa_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wb "b" accepted
+pydantic_v2.BaseModel --field-constraints wb "a" accepted
+pydantic_v2.BaseModel --field-constraints wb "c" rejected
+pydantic_v2.BaseModel --field-constraints wb_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wb_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wb_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wb_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wb_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wb_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wc "a" accepted
+pydantic_v2.BaseModel --field-constraints wc "b" accepted
+pydantic_v2.BaseModel --field-constraints wc "c" rejected
+pydantic_v2.BaseModel --field-constraints wc_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wc_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wc_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wc_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wc_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wc_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wd 1 accepted
+pydantic_v2.BaseModel --field-constraints wd 10 accepted
+pydantic_v2.BaseModel --field-constraints wd 0 rejected
+pydantic_v2.BaseModel --field-constraints wd 11 accepted
+pydantic_v2.BaseModel --field-constraints wd_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints wd_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints wd_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints wd_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints wd_items [1] accepted
+pydantic_v2.BaseModel --field-constraints wd_items [10] accepted
+pydantic_v2.BaseModel --field-constraints wd_items [0] rejected
+pydantic_v2.BaseModel --field-constraints wd_items [11] accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints we 1 accepted
+pydantic_v2.BaseModel --field-constraints we 0 rejected
+pydantic_v2.BaseModel --field-constraints we_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints we_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints we_items [1] accepted
+pydantic_v2.BaseModel --field-constraints we_items [0] rejected
+pydantic_v2.BaseModel --field-constraints we_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints we_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wf 1 accepted
+pydantic_v2.BaseModel --field-constraints wf 0 rejected
+pydantic_v2.BaseModel --field-constraints wf 1.5 rejected
+pydantic_v2.BaseModel --field-constraints wf_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints wf_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints wf_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints wf_items [1] accepted
+pydantic_v2.BaseModel --field-constraints wf_items [0] rejected
+pydantic_v2.BaseModel --field-constraints wf_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --field-constraints wg "a" accepted
+pydantic_v2.BaseModel --field-constraints wg "b" accepted
+pydantic_v2.BaseModel --field-constraints wg "c" rejected
+pydantic_v2.BaseModel --field-constraints wg_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wg_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wg_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wg_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wg_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wg_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wh "a" accepted
+pydantic_v2.BaseModel --field-constraints wh "b" accepted
+pydantic_v2.BaseModel --field-constraints wh "c" rejected
+pydantic_v2.BaseModel --field-constraints wh_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wh_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wh_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wh_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wh_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wh_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated pick "b" accepted
+pydantic_v2.BaseModel --use-annotated pick "a" accepted
+pydantic_v2.BaseModel --use-annotated pick "c" rejected
+pydantic_v2.BaseModel --use-annotated pick_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated pick_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated pick_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated pick_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated pick_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated pick_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated w1 "a" accepted
+pydantic_v2.BaseModel --use-annotated w1 "b" accepted
+pydantic_v2.BaseModel --use-annotated w1 "c" rejected
+pydantic_v2.BaseModel --use-annotated w1_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated w1_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated w1_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated w1_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated w1_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated w1_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated q_sib 1 accepted
+pydantic_v2.BaseModel --use-annotated q_sib 10 accepted
+pydantic_v2.BaseModel --use-annotated q_sib 0 rejected
+pydantic_v2.BaseModel --use-annotated q_sib 11 rejected
+pydantic_v2.BaseModel --use-annotated q_sib_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated q_sib_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated q_sib_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated q_sib_prop 11 rejected
+pydantic_v2.BaseModel --use-annotated q_sib_items [1] accepted
+pydantic_v2.BaseModel --use-annotated q_sib_items [10] accepted
+pydantic_v2.BaseModel --use-annotated q_sib_items [0] rejected
+pydantic_v2.BaseModel --use-annotated q_sib_items [11] rejected
+pydantic_v2.BaseModel --use-annotated q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated looser 1 accepted
+pydantic_v2.BaseModel --use-annotated looser 5 accepted
+pydantic_v2.BaseModel --use-annotated looser -1 rejected
+pydantic_v2.BaseModel --use-annotated looser 0 accepted
+pydantic_v2.BaseModel --use-annotated looser_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated looser_prop 5 accepted
+pydantic_v2.BaseModel --use-annotated looser_prop -1 rejected
+pydantic_v2.BaseModel --use-annotated looser_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated looser_items [1] accepted
+pydantic_v2.BaseModel --use-annotated looser_items [5] accepted
+pydantic_v2.BaseModel --use-annotated looser_items [-1] rejected
+pydantic_v2.BaseModel --use-annotated looser_items [0] accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated redundant_type 1 accepted
+pydantic_v2.BaseModel --use-annotated redundant_type 0 rejected
+pydantic_v2.BaseModel --use-annotated redundant_allof 1 accepted
+pydantic_v2.BaseModel --use-annotated redundant_allof 0 rejected
+pydantic_v2.BaseModel --use-annotated code_type "A" accepted
+pydantic_v2.BaseModel --use-annotated code_type "AB" accepted
+pydantic_v2.BaseModel --use-annotated code_type "a" rejected
+pydantic_v2.BaseModel --use-annotated q_desc 1 accepted
+pydantic_v2.BaseModel --use-annotated q_desc 0 rejected
+pydantic_v2.BaseModel --use-annotated examples_max 1 accepted
+pydantic_v2.BaseModel --use-annotated examples_max 9 accepted
+pydantic_v2.BaseModel --use-annotated examples_max 0 rejected
+pydantic_v2.BaseModel --use-annotated examples_max 10 rejected
+pydantic_v2.BaseModel --use-annotated examples_only 1 accepted
+pydantic_v2.BaseModel --use-annotated examples_only 0 rejected
+pydantic_v2.BaseModel --use-annotated titled "ab" accepted
+pydantic_v2.BaseModel --use-annotated titled "a" rejected
+pydantic_v2.BaseModel --use-annotated titled 1 rejected
+pydantic_v2.BaseModel --use-annotated wa "a" accepted
+pydantic_v2.BaseModel --use-annotated wa "b" accepted
+pydantic_v2.BaseModel --use-annotated wa "c" rejected
+pydantic_v2.BaseModel --use-annotated wa_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wa_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wa_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wa_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wa_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wa_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wb "b" accepted
+pydantic_v2.BaseModel --use-annotated wb "a" accepted
+pydantic_v2.BaseModel --use-annotated wb "c" rejected
+pydantic_v2.BaseModel --use-annotated wb_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wb_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wb_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wb_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wb_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wb_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wc "a" accepted
+pydantic_v2.BaseModel --use-annotated wc "b" accepted
+pydantic_v2.BaseModel --use-annotated wc "c" rejected
+pydantic_v2.BaseModel --use-annotated wc_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wc_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wc_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wc_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wc_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wc_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wd 1 accepted
+pydantic_v2.BaseModel --use-annotated wd 10 accepted
+pydantic_v2.BaseModel --use-annotated wd 0 rejected
+pydantic_v2.BaseModel --use-annotated wd 11 accepted
+pydantic_v2.BaseModel --use-annotated wd_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated wd_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated wd_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated wd_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated wd_items [1] accepted
+pydantic_v2.BaseModel --use-annotated wd_items [10] accepted
+pydantic_v2.BaseModel --use-annotated wd_items [0] rejected
+pydantic_v2.BaseModel --use-annotated wd_items [11] accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated we 1 accepted
+pydantic_v2.BaseModel --use-annotated we 0 rejected
+pydantic_v2.BaseModel --use-annotated we_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated we_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated we_items [1] accepted
+pydantic_v2.BaseModel --use-annotated we_items [0] rejected
+pydantic_v2.BaseModel --use-annotated we_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated we_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wf 1 accepted
+pydantic_v2.BaseModel --use-annotated wf 0 rejected
+pydantic_v2.BaseModel --use-annotated wf 1.5 rejected
+pydantic_v2.BaseModel --use-annotated wf_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated wf_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated wf_prop 1.5 rejected
+pydantic_v2.BaseModel --use-annotated wf_items [1] accepted
+pydantic_v2.BaseModel --use-annotated wf_items [0] rejected
+pydantic_v2.BaseModel --use-annotated wf_items [1.5] rejected
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-annotated wg "a" accepted
+pydantic_v2.BaseModel --use-annotated wg "b" accepted
+pydantic_v2.BaseModel --use-annotated wg "c" rejected
+pydantic_v2.BaseModel --use-annotated wg_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wg_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wg_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wg_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wg_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wg_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wh "a" accepted
+pydantic_v2.BaseModel --use-annotated wh "b" accepted
+pydantic_v2.BaseModel --use-annotated wh "c" rejected
+pydantic_v2.BaseModel --use-annotated wh_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wh_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wh_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wh_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wh_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wh_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models pick "b" accepted
+pydantic_v2.BaseModel --collapse-root-models pick "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick "c" rejected
+pydantic_v2.BaseModel --collapse-root-models pick_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models pick_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models pick_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models pick_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models pick_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models w1 "a" accepted
+pydantic_v2.BaseModel --collapse-root-models w1 "b" accepted
+pydantic_v2.BaseModel --collapse-root-models w1 "c" rejected
+pydantic_v2.BaseModel --collapse-root-models w1_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models w1_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models w1_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models w1_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models w1_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models w1_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib 11 rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_prop 11 rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models looser 1 accepted
+pydantic_v2.BaseModel --collapse-root-models looser 5 accepted
+pydantic_v2.BaseModel --collapse-root-models looser -1 rejected
+pydantic_v2.BaseModel --collapse-root-models looser 0 accepted
+pydantic_v2.BaseModel --collapse-root-models looser_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models looser_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models looser_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models looser_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [-1] rejected
+pydantic_v2.BaseModel --collapse-root-models looser_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models redundant_type 1 accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_type 0 rejected
+pydantic_v2.BaseModel --collapse-root-models redundant_allof 1 accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_allof 0 rejected
+pydantic_v2.BaseModel --collapse-root-models code_type "A" accepted
+pydantic_v2.BaseModel --collapse-root-models code_type "AB" accepted
+pydantic_v2.BaseModel --collapse-root-models code_type "a" rejected
+pydantic_v2.BaseModel --collapse-root-models q_desc 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_desc 0 rejected
+pydantic_v2.BaseModel --collapse-root-models examples_max 1 accepted
+pydantic_v2.BaseModel --collapse-root-models examples_max 9 accepted
+pydantic_v2.BaseModel --collapse-root-models examples_max 0 rejected
+pydantic_v2.BaseModel --collapse-root-models examples_max 10 rejected
+pydantic_v2.BaseModel --collapse-root-models examples_only 1 accepted
+pydantic_v2.BaseModel --collapse-root-models examples_only 0 rejected
+pydantic_v2.BaseModel --collapse-root-models titled "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models titled "a" rejected
+pydantic_v2.BaseModel --collapse-root-models titled 1 rejected
+pydantic_v2.BaseModel --collapse-root-models wa "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wa "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wa "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wa_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wa_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wa_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wa_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wa_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wa_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wb "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wb "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wb "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wb_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wb_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wb_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wb_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wb_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wb_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wc "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wc "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wc "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wc_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wc_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wc_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wc_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wc_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wc_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wd 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wd 10 accepted
+pydantic_v2.BaseModel --collapse-root-models wd 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wd 11 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wd_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models wd_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models we 1 accepted
+pydantic_v2.BaseModel --collapse-root-models we 0 rejected
+pydantic_v2.BaseModel --collapse-root-models we_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models we_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models we_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models we_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models we_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models we_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wf 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wf 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wf 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wf_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models wf_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models wf_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models wg "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wg "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wg "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wg_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wg_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wg_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wg_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wg_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wg_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wh "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wh "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wh "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wh_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wh_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wh_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wh_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wh_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wh_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models pick "b" accepted
+msgspec.Struct --collapse-root-models pick "a" accepted
+msgspec.Struct --collapse-root-models pick "c" rejected
+msgspec.Struct --collapse-root-models pick_prop "b" accepted
+msgspec.Struct --collapse-root-models pick_prop "a" accepted
+msgspec.Struct --collapse-root-models pick_prop "c" rejected
+msgspec.Struct --collapse-root-models pick_items ["b"] accepted
+msgspec.Struct --collapse-root-models pick_items ["a"] accepted
+msgspec.Struct --collapse-root-models pick_items ["c"] rejected
+msgspec.Struct --collapse-root-models pick_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models pick_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models pick_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models w1 "a" accepted
+msgspec.Struct --collapse-root-models w1 "b" accepted
+msgspec.Struct --collapse-root-models w1 "c" rejected
+msgspec.Struct --collapse-root-models w1_prop "a" accepted
+msgspec.Struct --collapse-root-models w1_prop "b" accepted
+msgspec.Struct --collapse-root-models w1_prop "c" rejected
+msgspec.Struct --collapse-root-models w1_items ["a"] accepted
+msgspec.Struct --collapse-root-models w1_items ["b"] accepted
+msgspec.Struct --collapse-root-models w1_items ["c"] rejected
+msgspec.Struct --collapse-root-models w1_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models w1_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models w1_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models q_sib 1 accepted
+msgspec.Struct --collapse-root-models q_sib 10 accepted
+msgspec.Struct --collapse-root-models q_sib 0 rejected
+msgspec.Struct --collapse-root-models q_sib 11 rejected
+msgspec.Struct --collapse-root-models q_sib_prop 1 accepted
+msgspec.Struct --collapse-root-models q_sib_prop 10 accepted
+msgspec.Struct --collapse-root-models q_sib_prop 0 rejected
+msgspec.Struct --collapse-root-models q_sib_prop 11 rejected
+msgspec.Struct --collapse-root-models q_sib_items [1] accepted
+msgspec.Struct --collapse-root-models q_sib_items [10] accepted
+msgspec.Struct --collapse-root-models q_sib_items [0] rejected
+msgspec.Struct --collapse-root-models q_sib_items [11] rejected
+msgspec.Struct --collapse-root-models q_sib_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models q_sib_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models q_sib_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models q_sib_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models looser 1 accepted
+msgspec.Struct --collapse-root-models looser 5 accepted
+msgspec.Struct --collapse-root-models looser -1 rejected
+msgspec.Struct --collapse-root-models looser 0 accepted
+msgspec.Struct --collapse-root-models looser_prop 1 accepted
+msgspec.Struct --collapse-root-models looser_prop 5 accepted
+msgspec.Struct --collapse-root-models looser_prop -1 rejected
+msgspec.Struct --collapse-root-models looser_prop 0 accepted
+msgspec.Struct --collapse-root-models looser_items [1] accepted
+msgspec.Struct --collapse-root-models looser_items [5] accepted
+msgspec.Struct --collapse-root-models looser_items [-1] rejected
+msgspec.Struct --collapse-root-models looser_items [0] accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models looser_map {"k": -1} rejected
+msgspec.Struct --collapse-root-models looser_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models w3 {"k": "a"} accepted
+msgspec.Struct --collapse-root-models w3 {"k": "b"} accepted
+msgspec.Struct --collapse-root-models w3 {"k": "c"} rejected
+msgspec.Struct --collapse-root-models redundant_type 1 accepted
+msgspec.Struct --collapse-root-models redundant_type 0 rejected
+msgspec.Struct --collapse-root-models redundant_allof 1 accepted
+msgspec.Struct --collapse-root-models redundant_allof 0 rejected
+msgspec.Struct --collapse-root-models code_type "A" accepted
+msgspec.Struct --collapse-root-models code_type "AB" accepted
+msgspec.Struct --collapse-root-models code_type "a" rejected
+msgspec.Struct --collapse-root-models q_desc 1 accepted
+msgspec.Struct --collapse-root-models q_desc 0 rejected
+msgspec.Struct --collapse-root-models examples_max 1 accepted
+msgspec.Struct --collapse-root-models examples_max 9 accepted
+msgspec.Struct --collapse-root-models examples_max 0 rejected
+msgspec.Struct --collapse-root-models examples_max 10 rejected
+msgspec.Struct --collapse-root-models examples_only 1 accepted
+msgspec.Struct --collapse-root-models examples_only 0 rejected
+msgspec.Struct --collapse-root-models titled "ab" accepted
+msgspec.Struct --collapse-root-models titled "a" rejected
+msgspec.Struct --collapse-root-models titled 1 rejected
+msgspec.Struct --collapse-root-models wa "a" accepted
+msgspec.Struct --collapse-root-models wa "b" accepted
+msgspec.Struct --collapse-root-models wa "c" rejected
+msgspec.Struct --collapse-root-models wa_prop "a" accepted
+msgspec.Struct --collapse-root-models wa_prop "b" accepted
+msgspec.Struct --collapse-root-models wa_prop "c" rejected
+msgspec.Struct --collapse-root-models wa_items ["a"] accepted
+msgspec.Struct --collapse-root-models wa_items ["b"] accepted
+msgspec.Struct --collapse-root-models wa_items ["c"] rejected
+msgspec.Struct --collapse-root-models wa_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wa_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wa_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wb "b" accepted
+msgspec.Struct --collapse-root-models wb "a" accepted
+msgspec.Struct --collapse-root-models wb "c" rejected
+msgspec.Struct --collapse-root-models wb_prop "b" accepted
+msgspec.Struct --collapse-root-models wb_prop "a" accepted
+msgspec.Struct --collapse-root-models wb_prop "c" rejected
+msgspec.Struct --collapse-root-models wb_items ["b"] accepted
+msgspec.Struct --collapse-root-models wb_items ["a"] accepted
+msgspec.Struct --collapse-root-models wb_items ["c"] rejected
+msgspec.Struct --collapse-root-models wb_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wb_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wb_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wc "a" accepted
+msgspec.Struct --collapse-root-models wc "b" accepted
+msgspec.Struct --collapse-root-models wc "c" rejected
+msgspec.Struct --collapse-root-models wc_prop "a" accepted
+msgspec.Struct --collapse-root-models wc_prop "b" accepted
+msgspec.Struct --collapse-root-models wc_prop "c" rejected
+msgspec.Struct --collapse-root-models wc_items ["a"] accepted
+msgspec.Struct --collapse-root-models wc_items ["b"] accepted
+msgspec.Struct --collapse-root-models wc_items ["c"] rejected
+msgspec.Struct --collapse-root-models wc_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wc_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wc_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wd 1 accepted
+msgspec.Struct --collapse-root-models wd 10 accepted
+msgspec.Struct --collapse-root-models wd 0 rejected
+msgspec.Struct --collapse-root-models wd 11 accepted
+msgspec.Struct --collapse-root-models wd_prop 1 accepted
+msgspec.Struct --collapse-root-models wd_prop 10 accepted
+msgspec.Struct --collapse-root-models wd_prop 0 rejected
+msgspec.Struct --collapse-root-models wd_prop 11 accepted
+msgspec.Struct --collapse-root-models wd_items [1] accepted
+msgspec.Struct --collapse-root-models wd_items [10] accepted
+msgspec.Struct --collapse-root-models wd_items [0] rejected
+msgspec.Struct --collapse-root-models wd_items [11] accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wd_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models we 1 accepted
+msgspec.Struct --collapse-root-models we 0 rejected
+msgspec.Struct --collapse-root-models we_prop 1 accepted
+msgspec.Struct --collapse-root-models we_prop 0 rejected
+msgspec.Struct --collapse-root-models we_items [1] accepted
+msgspec.Struct --collapse-root-models we_items [0] rejected
+msgspec.Struct --collapse-root-models we_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models we_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wf 1 accepted
+msgspec.Struct --collapse-root-models wf 0 rejected
+msgspec.Struct --collapse-root-models wf 1.5 rejected
+msgspec.Struct --collapse-root-models wf_prop 1 accepted
+msgspec.Struct --collapse-root-models wf_prop 0 rejected
+msgspec.Struct --collapse-root-models wf_prop 1.5 rejected
+msgspec.Struct --collapse-root-models wf_items [1] accepted
+msgspec.Struct --collapse-root-models wf_items [0] rejected
+msgspec.Struct --collapse-root-models wf_items [1.5] rejected
+msgspec.Struct --collapse-root-models wf_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models wf_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wf_map {"k": 1.5} rejected
+msgspec.Struct --collapse-root-models wg "a" accepted
+msgspec.Struct --collapse-root-models wg "b" accepted
+msgspec.Struct --collapse-root-models wg "c" rejected
+msgspec.Struct --collapse-root-models wg_prop "a" accepted
+msgspec.Struct --collapse-root-models wg_prop "b" accepted
+msgspec.Struct --collapse-root-models wg_prop "c" rejected
+msgspec.Struct --collapse-root-models wg_items ["a"] accepted
+msgspec.Struct --collapse-root-models wg_items ["b"] accepted
+msgspec.Struct --collapse-root-models wg_items ["c"] rejected
+msgspec.Struct --collapse-root-models wg_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wg_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wg_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wh "a" accepted
+msgspec.Struct --collapse-root-models wh "b" accepted
+msgspec.Struct --collapse-root-models wh "c" rejected
+msgspec.Struct --collapse-root-models wh_prop "a" accepted
+msgspec.Struct --collapse-root-models wh_prop "b" accepted
+msgspec.Struct --collapse-root-models wh_prop "c" rejected
+msgspec.Struct --collapse-root-models wh_items ["a"] accepted
+msgspec.Struct --collapse-root-models wh_items ["b"] accepted
+msgspec.Struct --collapse-root-models wh_items ["c"] rejected
+msgspec.Struct --collapse-root-models wh_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wh_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1 "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1 "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1 "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib 11 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_prop 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_prop 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_prop 11 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_items [11] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_prop 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_prop -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_prop 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [-1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_items [0] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_type 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_type 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_allof 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs redundant_allof 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_type "A" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_type "AB" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs code_type "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_desc 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs q_desc 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_max 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_max 9 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_max 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_max 10 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_only 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs examples_only 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs titled "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs titled "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs titled 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_prop 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_prop 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_items [11] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_prop 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs we_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_prop 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_prop 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_items [0] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_items [1.5] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_prop "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_prop "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_items ["b"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_items ["c"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs wh_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pick_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1 "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1 "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1 "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w1_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib 11 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_prop 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_prop 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_prop 11 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_items [11] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_map {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_sib_map {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_prop 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_prop -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_prop 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [-1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_items [0] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": -1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs looser_map {"k": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w3 {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w3 {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs w3 {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_type 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_type 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_allof 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs redundant_allof 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_type "A" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_type "AB" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs code_type "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_desc 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs q_desc 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_max 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_max 9 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_max 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_max 10 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_only 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs examples_only 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs titled "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs titled "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs titled 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wa_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wb_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_items [11] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_map {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wd_map {"k": 11} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_prop 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs we_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_prop 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_prop 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_items [0] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_items [1.5] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_map {"k": 0} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wf_map {"k": 1.5} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wg_map {"k": "c"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_prop "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_prop "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_items ["b"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_items ["c"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_map {"k": "b"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs wh_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pick "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pick_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pick_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs pick_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pick_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs w1 "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1 "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1 "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs w1_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs w1_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs w1_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs w1_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib 11 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_prop 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_prop 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_prop 11 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_items [11] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_sib_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_prop 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_prop -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser_prop 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [-1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser_items [0] accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": -1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs looser_map {"k": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs w3 {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs w3 {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs w3 {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs redundant_type 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_type 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs redundant_allof 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs redundant_allof 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs code_type "A" accepted
+msgspec.Struct --use-site-models-for-constrained-refs code_type "AB" accepted
+msgspec.Struct --use-site-models-for-constrained-refs code_type "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_desc 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_desc 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs examples_max 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs examples_max 9 accepted
+msgspec.Struct --use-site-models-for-constrained-refs examples_max 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs examples_max 10 rejected
+msgspec.Struct --use-site-models-for-constrained-refs examples_only 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs examples_only 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs titled "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs titled "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs titled 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wa "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wa_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wa_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wa_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wa_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wb "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wb_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wb_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wb_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wb_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wc "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wc_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wc_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wc_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wd 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wd 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_prop 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_prop 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wd_prop 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wd_items [11] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wd_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wd_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs we 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs we 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs we_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs we_prop 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs we_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs we_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs we_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs we_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wf 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs wf_prop 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_prop 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wf_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_items [1.5] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wf_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wf_map {"k": 1.5} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wg "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wg_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wg_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wg_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wg_map {"k": "c"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs wh "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wh_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_prop "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_prop "c" rejected
+msgspec.Struct --use-site-models-for-constrained-refs wh_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_items ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_items ["c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs wh_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_map {"k": "b"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1 "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1 "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1 "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib 11 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_prop 11 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_items [11] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_items [0] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_type 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_type 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_allof 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs redundant_allof 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_type "A" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_type "AB" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code_type "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_desc 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs q_desc 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_max 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_max 9 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_max 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_max 10 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_only 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs examples_only 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs titled "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs titled "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs titled 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_items [11] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs we_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pick_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1 "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1 "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1 "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w1_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib 11 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_prop 11 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_sib_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [-1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w3 {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w3 {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs w3 {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_type 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_type 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_allof 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs redundant_allof 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_type "A" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_type "AB" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs code_type "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_desc 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs q_desc 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_max 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_max 9 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_max 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_max 10 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_only 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs examples_only 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs titled "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs titled "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs titled 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd 11 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs we_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs wh_map {"k": "c"} rejected

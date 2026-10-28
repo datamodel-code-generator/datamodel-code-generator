@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstraintsOnTypingLiteralValues",
+  "type": "object",
+  "required": [
+    "floats_on_string",
+    "numbers_on_string",
+    "booleans_on_string",
+    "boolean_on_string"
+  ],
+  "properties": {
+    "floats_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[1.5, 2.5]",
+      "minimum": 2
+    },
+    "numbers_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[1, 2.5]",
+      "minimum": 2
+    },
+    "booleans_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[True, False]",
+      "minimum": 1
+    },
+    "boolean_on_string": {
+      "type": "string",
+      "x-python-type": "typing.Literal[True]",
+      "maximum": 0
+    },
+    "bytes_on_integer": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[b\"a\", b\"bb\"]",
+      "minLength": 2
+    }
+  }
+}

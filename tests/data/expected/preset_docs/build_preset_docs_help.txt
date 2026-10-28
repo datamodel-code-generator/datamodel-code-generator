@@ -1,0 +1,14 @@
+usage: build_preset_docs.py [-h] [--check] [--format {markdown,json}]
+
+Build preset documentation
+
+options:
+  -h, --help            show this help message and exit
+  --check               Check whether preset docs, preset-powered quick-start
+                        examples, and README support lists are up to date
+                        (docs/presets.md, docs/getting-started.md, and
+                        generated sections in README.md and the FastAPI server
+                        page)
+  --format {markdown,json}
+                        Print presets in the selected format instead of
+                        writing docs

@@ -13,7 +13,8 @@ from .nested_bar import bar as bar_1
 class Foo(BaseModel):
     loggerLevel: bar.LogLevels | None = bar.LogLevels.INFO
     AnotherLoggerLevel: bar_1.LogLevels | None = bar_1.LogLevels.ERROR
-    OtherLoggerLevels: list[bar_1.LogLevels] | None = [
-        bar_1.LogLevels.INFO,
+    OtherLoggerLevels: list[bar_1.LogLevels | bar.LogLevels] | None = [
         bar_1.LogLevels.ERROR,
+        bar.LogLevels.WARN,
+        'INVALID',
     ]

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "description": "An allOf value root.",
+  "allOf": [
+    {
+      "type": "integer",
+      "minimum": 2
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "title": "ExternalCoreUniqueChild",
+  "allOf": [
+    {
+      "$ref": "external_core_unique_parent.json"
+    },
+    {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  ]
+}

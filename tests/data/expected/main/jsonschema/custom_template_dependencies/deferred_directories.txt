@@ -1,0 +1,22 @@
+[
+  {
+    "directories": 1,
+    "captured": false
+  },
+  {
+    "directories": 1,
+    "captured": false
+  },
+  {
+    "directories": 1,
+    "captured": true
+  },
+  {
+    "directories": 1,
+    "captured": true
+  },
+  {
+    "directories": 1,
+    "captured": true
+  }
+]

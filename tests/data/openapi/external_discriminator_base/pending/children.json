@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Deferred discriminator parent",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "cat": {
+        "allOf": [
+          {
+            "$ref": "./parent.json#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cat"
+                ]
+              },
+              "meow": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "meow"
+            ]
+          }
+        ]
+      },
+      "dog": {
+        "allOf": [
+          {
+            "$ref": "./parent.json#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "dog"
+                ]
+              },
+              "bark": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "bark"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

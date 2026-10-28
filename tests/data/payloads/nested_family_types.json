@@ -1,0 +1,248 @@
+[
+  {
+    "name": "DataInner",
+    "payload": {
+      "values": [
+        1,
+        2
+      ]
+    },
+    "paths": [
+      []
+    ]
+  },
+  {
+    "name": "TypedInner",
+    "payload": {
+      "values": [
+        1,
+        2
+      ]
+    },
+    "paths": [
+      []
+    ]
+  },
+  {
+    "name": "ModelInner",
+    "payload": {
+      "values": [
+        1,
+        2
+      ]
+    },
+    "paths": [
+      []
+    ]
+  },
+  {
+    "name": "DataRoot",
+    "payload": {
+      "data": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "typed": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "model": {
+        "values": [
+          1,
+          2
+        ]
+      }
+    },
+    "paths": [
+      [
+        "data"
+      ],
+      [
+        "typed"
+      ],
+      [
+        "model"
+      ]
+    ]
+  },
+  {
+    "name": "TypedRoot",
+    "payload": {
+      "data": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "typed": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "model": {
+        "values": [
+          1,
+          2
+        ]
+      }
+    },
+    "paths": [
+      [
+        "data"
+      ],
+      [
+        "typed"
+      ],
+      [
+        "model"
+      ]
+    ]
+  },
+  {
+    "name": "ModelRoot",
+    "payload": {
+      "data": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "typed": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "model": {
+        "values": [
+          1,
+          2
+        ]
+      }
+    },
+    "paths": [
+      [
+        "data"
+      ],
+      [
+        "typed"
+      ],
+      [
+        "model"
+      ]
+    ]
+  },
+  {
+    "name": "DeepRoot",
+    "payload": {
+      "inner": {
+        "data": {
+          "values": [
+            1,
+            2
+          ]
+        },
+        "typed": {
+          "values": [
+            1,
+            2
+          ]
+        },
+        "model": {
+          "values": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "paths": [
+      [
+        "inner",
+        "data"
+      ],
+      [
+        "inner",
+        "typed"
+      ],
+      [
+        "inner",
+        "model"
+      ]
+    ]
+  },
+  {
+    "name": "Recursive",
+    "payload": {
+      "node": {
+        "values": [
+          1,
+          2
+        ],
+        "next": {
+          "values": [
+            3,
+            4
+          ]
+        }
+      }
+    },
+    "paths": [
+      [
+        "node"
+      ],
+      [
+        "node",
+        "next"
+      ]
+    ]
+  },
+  {
+    "name": "SameNames",
+    "payload": {
+      "left": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "right": {
+        "values": [
+          "a",
+          "b"
+        ]
+      },
+      "left_typed": {
+        "values": [
+          1,
+          2
+        ]
+      },
+      "right_typed": {
+        "values": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "paths": [
+      [
+        "left"
+      ],
+      [
+        "right"
+      ],
+      [
+        "left_typed"
+      ],
+      [
+        "right_typed"
+      ]
+    ]
+  }
+]

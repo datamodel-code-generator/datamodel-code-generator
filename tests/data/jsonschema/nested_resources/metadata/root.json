@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "item.json"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "default": {
+        "$id": "item.json",
+        "$ref": "unread-default.json",
+        "examples": [
+          {
+            "$ref": "unread-example.json"
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "$defs": {
+    "Item": {
+      "$id": "item.json",
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "$id": "item.json",
+      "$ref": "unread-example.json"
+    }
+  ],
+  "x-schema-resource-locations": {
+    "item.json": "caller"
+  },
+  "x-python-union-branch": {
+    "$ref": "unread-extension.json"
+  }
+}

@@ -1,0 +1,14 @@
+config type: ConfigDict
+config keys: ['extra', 'populate_by_name', 'use_attribute_docstrings']
+template config items: [('extra', "'forbid'"), ('populate_by_name', True), ('use_attribute_docstrings', True)]
+
+from pydantic import BaseModel, ConfigDict
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+        populate_by_name=True,
+        use_attribute_docstrings=True,
+    )
+    a: str

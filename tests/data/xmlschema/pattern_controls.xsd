@@ -1,0 +1,29 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Single"><xs:restriction base="xs:string">
+    <xs:pattern value="[A-Z]+"/><xs:minLength value="1"/><xs:maxLength value="4"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Duplicate"><xs:restriction base="xs:string">
+    <xs:pattern value="[A-Z]+"/><xs:pattern value="[A-Z]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="SameDerived"><xs:restriction base="Single">
+    <xs:pattern value="[A-Z]+"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="Unsupported"><xs:restriction base="xs:string">
+    <xs:pattern value="\i\c*"/><xs:pattern value="[A-Z]+"/><xs:pattern value="("/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="UnsupportedDerived"><xs:restriction base="Single">
+    <xs:pattern value="\i\c*"/>
+  </xs:restriction></xs:simpleType>
+  <xs:simpleType name="EmptySingle"><xs:restriction base="xs:string">
+    <xs:pattern value=""/>
+  </xs:restriction></xs:simpleType>
+  <xs:element name="Root"><xs:complexType><xs:sequence>
+    <xs:element name="single" type="Single"/>
+    <xs:element name="duplicate" type="Duplicate"/>
+    <xs:element name="same" type="SameDerived"/>
+    <xs:element name="unsupported" type="Unsupported"/>
+    <xs:element name="inherited" type="UnsupportedDerived"/>
+    <xs:element name="empty" type="EmptySingle"/>
+    <xs:element name="ordinary" type="xs:string"/>
+  </xs:sequence></xs:complexType></xs:element>
+</xs:schema>

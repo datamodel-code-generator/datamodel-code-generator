@@ -1,0 +1,7 @@
+{
+  "imported_httpcore": false,
+  "imported_httpcore2": false,
+  "imported_httpx": false,
+  "imported_httpx2": false,
+  "joined": "file:///schemas/child.json"
+}

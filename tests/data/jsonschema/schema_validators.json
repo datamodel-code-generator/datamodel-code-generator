@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "First": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string"
+        }
+      },
+      "required": ["first"]
+    },
+    "Second": {
+      "type": "object",
+      "properties": {
+        "second": {
+          "type": "string"
+        }
+      },
+      "required": ["second"]
+    },
+    "PatternBag": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z][A-Za-z0-9_]*$": {
+          "$ref": "#/$defs/Second"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PatternTarget": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/First"
+        },
+        {
+          "$ref": "#/$defs/PatternBag"
+        }
+      ]
+    },
+    "DirectPatternBag": {
+      "type": "object",
+      "patternProperties": {
+        "^item_[0-9]+$": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidatorOnlyChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/First"
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^extra_[A-Za-z]+$": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ValidatorOnlyPatternRef": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/First"
+        }
+      ],
+      "patternProperties": {
+        "^ref_extra_[A-Za-z]+$": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OneOfContact": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["email"]
+        },
+        {
+          "required": ["phone"]
+        }
+      ]
+    },
+    "AnyOfContact": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": ["email"]
+        },
+        {
+          "required": ["phone"]
+        }
+      ]
+    },
+    "ConditionalPayload": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "metric"
+          }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "properties": {
+          "metric": {
+            "type": "integer"
+          }
+        },
+        "required": ["metric"]
+      },
+      "else": {
+        "properties": {
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": ["note"]
+      }
+    },
+    "RequiredOnlyGuard": {
+      "type": "object",
+      "properties": {
+        "flag": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {},
+        {
+          "required": []
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/PatternTarget"
+}

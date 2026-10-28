@@ -1,0 +1,10 @@
+{
+  "modules": {
+    "__init__.py": "from . import shared\nfrom .shared import *\nfrom ...too_deep import Missing",
+    "shared.py": "from . import shared\nclass Shared: pass",
+    "package/__init__.py": "from . import shared\nclass ParentExport: pass",
+    "package/shared.py": "class PackageShared: pass",
+    "package/nested/consumer.py": "from ... import shared as root_shared\nfrom .. import shared as package_shared\nfrom .. import ParentExport",
+    "asset.txt": "not Python"
+  }
+}

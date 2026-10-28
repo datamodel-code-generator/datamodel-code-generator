@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Direction",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {"$ref": "#/$defs/leaf"}
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "kind": {"$ref": "#/$defs/mode"},
+        "tag": {"type": "string", "default": "Mode"}
+      }
+    },
+    "mode": {"type": "string", "enum": ["up", "down"]}
+  }
+}

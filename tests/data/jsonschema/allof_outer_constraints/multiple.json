@@ -1,0 +1,17 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "multipleOf": 2
+    }
+  ],
+  "multipleOf": 3,
+  "definitions": {
+    "Base": {
+      "type": "integer"
+    }
+  }
+}

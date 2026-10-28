@@ -1,0 +1,28 @@
+{
+  "description": "Both serializable and unsupported choices may carry caller extensions.",
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "x-python-union-branch": 99
+        },
+        {
+          "type": "string",
+          "x-python-union-branch": 0,
+          "x-python-type": "Callable[[int], int]"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "int | Callable[[int], int] | None"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "Mixed",
+  "type": "object"
+}

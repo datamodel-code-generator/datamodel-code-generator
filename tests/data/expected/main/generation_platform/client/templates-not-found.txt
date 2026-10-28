@@ -1,0 +1,4 @@
+# templates-not-found
+render pydantic_v2.BaseModel
+  Error: --custom-template-dir: client/readme.jinja2: template 'support.jinja2' not found
+  files []

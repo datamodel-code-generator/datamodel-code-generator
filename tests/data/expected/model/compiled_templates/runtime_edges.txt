@@ -1,0 +1,14 @@
+missing_repr=Undefined
+missing_iter=[]
+loop_missing=[]
+loop_empty=[]
+attribute='value'/'value'
+attribute_missing=True/True
+item='zero'/True
+item_missing=True
+concat='ab'
+scope_parent='value'/True
+indent_no_blank='head\n    tail'/'head'
+join_missing=''
+replace_all='b-b'
+select_missing=[]

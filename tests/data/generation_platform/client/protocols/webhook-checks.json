@@ -1,0 +1,72 @@
+{
+  "ok.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "keys.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "Cased.first": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "cased.second": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "missing.schema": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Missing"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "unused.schema": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Unused"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "form.event": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Form"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "mapped.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/kind"},
+      "mapping": {"circle": {"pointer": "/components/schemas/Circle"}}
+    },
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "audit.event": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Audit"},
+    "signature": {"kind": "body_hmac", "header": "X-Signature"}
+  },
+  "mapped.audit": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/kind"},
+      "mapping": {
+        "message": {"pointer": "/components/schemas/Message"},
+        "audit": {"pointer": "/components/schemas/Audit"}
+      }
+    },
+    "signature": {"kind": "none"}
+  },
+  "mapped.missing": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/kind"},
+      "mapping": {
+        "message": {"pointer": "/components/schemas/Message"},
+        "missing": {"pointer": "/components/schemas/Missing"}
+      }
+    },
+    "signature": {"kind": "adapter", "timestamp": "none", "delivery_id": "none"}
+  }
+}

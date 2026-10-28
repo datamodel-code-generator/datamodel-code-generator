@@ -1,0 +1,2 @@
+Error: Unresolved local $ref targets:
+- broken.yaml: #/components/schemas/Missing

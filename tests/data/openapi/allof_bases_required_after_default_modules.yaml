@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Inherited fields that two bases of other modules put after a default
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Code:
+      type: string
+      enum: [A, B]
+    a.Twig:
+      type: object
+      required: [code]
+      properties:
+        code:
+          $ref: '#/components/schemas/a.Code'
+    a.Local:
+      type: object
+      properties:
+        x:
+          type: string
+    a.Extra:
+      type: object
+      required: [extra]
+      properties:
+        extra:
+          $ref: '#/components/schemas/a.Code'
+    a2.Mid:
+      allOf:
+        - $ref: '#/components/schemas/a.Twig'
+        - $ref: '#/components/schemas/a.Local'
+    b.Branch:
+      allOf:
+        - $ref: '#/components/schemas/a.Twig'
+        - $ref: '#/components/schemas/a.Local'
+    b.Leaf:
+      allOf:
+        - $ref: '#/components/schemas/a2.Mid'
+        - type: object
+          required: [z]
+          properties:
+            z:
+              type: integer
+    b.Tail:
+      allOf:
+        - $ref: '#/components/schemas/a.Extra'
+        - $ref: '#/components/schemas/a2.Mid'

@@ -1,0 +1,21 @@
+input Item {
+  n: Int!
+}
+
+input Box {
+  items: [Item!]! = [{n: 3}, {n: 1}]
+  nullable_items: [Item] = [{n: 2}, null, {n: 1}]
+  nullable_container: [Item!] = [{n: 5}]
+  nonnull_nullable_items: [Item]! = [null, {n: 6}]
+  empty: [Item!]! = []
+  direct_item: Item! = {n: 8}
+  count: Int! = 9
+  numbers: [Int!]! = [3, 1, 2]
+  matrix: [[Item!]!]! = [[{n: 4}], [{n: 2}, {n: 1}]]
+  cube: [[[Item!]!]!]! = [[[{n: 7}]], [[{n: 6}, {n: 5}]]]
+  scalar_cube: [[[Int!]!]!]! = [[[3, 1], [2]]]
+}
+
+type Query {
+  value(input: Box): String
+}

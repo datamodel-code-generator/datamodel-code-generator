@@ -1,0 +1,44 @@
+{
+  "title": "DefinitionsEnvelope",
+  "$defs": {
+    "Alpha": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string"
+        },
+        "second": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "first",
+        "second"
+      ]
+    },
+    "Beta": {
+      "type": "object",
+      "properties": {
+        "third": {
+          "type": "boolean"
+        },
+        "fourth": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "third",
+        "fourth"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "context": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "context"
+  ]
+}

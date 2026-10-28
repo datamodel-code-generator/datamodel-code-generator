@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {"anyOf": [{"$ref": "#/$defs/Nothing"}, {"type": "null"}]},
+    "plain": {"$ref": "#/$defs/Nothing"},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/Nothing"}},
+    "mapped": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Nothing"}},
+    "mixed": {"anyOf": [{"$ref": "#/$defs/Nothing"}, {"type": "string"}]},
+    "both": {"anyOf": [{"$ref": "#/$defs/Nothing"}, {"$ref": "#/$defs/Other"}]},
+    "chained": {"anyOf": [{"$ref": "#/$defs/Chain"}, {"$ref": "#/$defs/Nothing"}, {"type": "null"}]},
+    "maybe": {"anyOf": [{"$ref": "#/$defs/Maybe"}, {"type": "null"}]},
+    "pair": {
+      "type": ["array", "null"],
+      "prefixItems": [{"$ref": "#/$defs/Nothing"}, {"$ref": "#/$defs/Nothing"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "items": false
+    }
+  },
+  "required": ["plain"],
+  "$defs": {
+    "Nothing": {"type": "null"},
+    "Other": {"type": "null", "description": "Another null"},
+    "Chain": {"$ref": "#/$defs/Nothing"},
+    "Maybe": {"type": ["string", "null"]}
+  }
+}

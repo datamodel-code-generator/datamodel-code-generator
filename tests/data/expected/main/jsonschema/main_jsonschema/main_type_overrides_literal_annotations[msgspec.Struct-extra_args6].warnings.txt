@@ -1,0 +1,2 @@
+msgspec.Meta does not take ge on Literal[1, 2]; TypeOverridesLiterals.integer_values is generated without this constraint.
+msgspec.Meta does not take max_length, min_length on Literal['x', 'y']; TypeOverridesLiterals.string_values is generated without these constraints.

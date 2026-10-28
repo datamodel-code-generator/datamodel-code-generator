@@ -1,0 +1,219 @@
+[
+  {
+    "module": "",
+    "exports": [
+      {
+        "name": "Apple",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "b",
+          "zed",
+          "alpha"
+        ],
+        "dump": {
+          "b": {
+            "a": null
+          },
+          "zed": {
+            "value": "z"
+          },
+          "alpha": {
+            "count": 3
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "name": "Banana",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "a"
+        ],
+        "dump": {
+          "a": {
+            "b": null,
+            "zed": null,
+            "alpha": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      },
+      {
+        "name": "Lemon",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "count"
+        ],
+        "dump": {
+          "count": 3
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      },
+      {
+        "name": "Zebra",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "value"
+        ],
+        "dump": {
+          "value": "z"
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      }
+    ],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api",
+    "exports": [],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v1",
+    "exports": [],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v2",
+    "exports": [],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v1.a",
+    "exports": [
+      {
+        "name": "Apple",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "b",
+          "zed",
+          "alpha"
+        ],
+        "dump": {
+          "b": {
+            "a": null
+          },
+          "zed": {
+            "value": "z"
+          },
+          "alpha": {
+            "count": 3
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "name": "Lemon",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "count"
+        ],
+        "dump": {
+          "count": 3
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      },
+      {
+        "name": "Zebra",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "value"
+        ],
+        "dump": {
+          "value": "z"
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": []
+      }
+    ],
+    "unknown_attribute": true
+  },
+  {
+    "module": "api.v2.b",
+    "exports": [
+      {
+        "name": "Banana",
+        "origin": "_internal",
+        "is_definition": true,
+        "fields": [
+          "a"
+        ],
+        "dump": {
+          "a": {
+            "b": null,
+            "zed": null,
+            "alpha": null
+          }
+        },
+        "access_identity": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "nested_identity": [
+          true
+        ]
+      }
+    ],
+    "unknown_attribute": true
+  }
+]

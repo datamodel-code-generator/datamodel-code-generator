@@ -1,0 +1,5 @@
+[
+  "next\u0085line",
+  "line\u2028separator",
+  "paragraph\u2029separator"
+]

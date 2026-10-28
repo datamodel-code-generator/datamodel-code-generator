@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info: {title: Photos, version: "1.0"}
+paths:
+  /photos:
+    get:
+      operationId: listPhotos
+      tags: [photos]
+      responses:
+        "200":
+          description: The photos.
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}

@@ -1,0 +1,22 @@
+{
+  "valid": {
+    "strings_on_integer": "bb",
+    "integers_on_string": 2,
+    "integer_bound_on_string": 3,
+    "extension_strings": "a",
+    "string_unions": "bb",
+    "mixed_values": 1,
+    "strings_with_none": "bb",
+    "nested_strings": "bb"
+  },
+  "invalid": {
+    "strings_on_integer": "a",
+    "integers_on_string": 1,
+    "integer_bound_on_string": 1,
+    "extension_strings": "bb",
+    "string_unions": "a",
+    "mixed_values": "a",
+    "strings_with_none": "a",
+    "nested_strings": "a"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$defs": {
+    "LooseParent": {
+      "properties": {
+        "value": {
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "LooseParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/LooseParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "minimum": 5,
+      "title": "Value",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "TightenedChild",
+  "type": "object"
+}

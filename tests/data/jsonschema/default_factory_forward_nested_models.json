@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "existing": {
+      "$ref": "#/$defs/Existing"
+    },
+    "cycle": {
+      "$ref": "#/$defs/CycleA"
+    },
+    "node": {
+      "$ref": "#/$defs/Node"
+    }
+  },
+  "$defs": {
+    "Existing": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "CycleA": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "$ref": "#/$defs/CycleB"
+        }
+      }
+    },
+    "CycleB": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/CycleA"
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "child": {
+          "$ref": "#/$defs/Node"
+        }
+      }
+    }
+  }
+}

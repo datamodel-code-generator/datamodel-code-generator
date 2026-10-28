@@ -1,0 +1,11 @@
+RequestBase {"version": "v1"}: schema accepts, model accepts
+RequestBase {"version": "v2"}: schema accepts, model accepts
+RequestBase {"version": "v3"}: schema rejects, model rejects
+RequestBase {}: schema rejects, model rejects
+RequestV1 {"version": "v1", "request_id": "a"}: schema accepts, model accepts
+RequestV1 {"version": "v2", "request_id": "a"}: schema rejects, model rejects
+RequestV1 {"version": "v1"}: schema rejects, model rejects
+RequestV2 {"version": "v2"}: schema accepts, model accepts
+RequestV2 {"version": "v1"}: schema rejects, model rejects
+RequestV2 {"version": "v3"}: schema rejects, model rejects
+RequestV2 {}: schema rejects, model rejects

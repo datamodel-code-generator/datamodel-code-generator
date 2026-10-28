@@ -1,0 +1,7 @@
+return=1
+stdout:
+stderr:
+Warning: markers not found for example.missing in <tmp>/missing.md
+Docs examples are out of date: <tmp>/outdated-one.md
+Docs examples are out of date: <tmp>/outdated-two.md
+Run 'python scripts/build_docs_examples.py' to update.

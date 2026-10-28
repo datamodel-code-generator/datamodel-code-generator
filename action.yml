@@ -45,46 +45,126 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: '3.14'
 
-    - uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: datamodel-codegen-${{ runner.os }}
+    - name: Resolve install package
+      id: install-package
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+        INPUT_EXTRAS: ${{ inputs.extras }}
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
 
-    - run: |
+        case "$INPUT_VERSION" in
+          *$'\n'*|*$'\r'*)
+            echo "::error::Version must be a single line"
+            exit 1
+            ;;
+        esac
+
         EXTRAS=""
-        if [ -n "${{ inputs.extras }}" ]; then
-          EXTRAS="[${{ inputs.extras }}]"
+        if [ -n "$INPUT_EXTRAS" ]; then
+          IFS="," read -r -a REQUESTED_EXTRAS <<< "$INPUT_EXTRAS"
+          NORMALIZED_EXTRAS=()
+          for EXTRA in "${REQUESTED_EXTRAS[@]}"; do
+            EXTRA="${EXTRA//[[:space:]]/}"
+            case "$EXTRA" in
+              graphql|http|validation|ruff|all)
+                NORMALIZED_EXTRAS+=("$EXTRA")
+                ;;
+              *)
+                echo "::error::Unsupported extras value: $EXTRA"
+                exit 1
+                ;;
+            esac
+          done
+          EXTRAS="[$(IFS=","; echo "${NORMALIZED_EXTRAS[*]}")]"
         fi
 
-        if [ -n "${{ inputs.version }}" ]; then
-          pip install "datamodel-code-generator${EXTRAS}==${{ inputs.version }}"
-        elif [[ "${{ github.action_ref }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          pip install "datamodel-code-generator${EXTRAS}==${{ github.action_ref }}"
-        else
-          pip install "datamodel-code-generator${EXTRAS}"
+        VERSION="$INPUT_VERSION"
+        if [ -z "$VERSION" ] && [[ "$ACTION_REF" =~ ^[0-9]+\.[0-9]+\.[0-9]+(rc[0-9]+|\+backport-[0-9]+)?$ ]]; then
+          VERSION="$ACTION_REF"
         fi
+
+        PACKAGE="datamodel-code-generator${EXTRAS}"
+        if [ -n "$VERSION" ]; then
+          PACKAGE="${PACKAGE}==${VERSION}"
+        fi
+
+        CACHE_KEY="$(PACKAGE="$PACKAGE" python3 - <<'PY'
+        import hashlib
+        import os
+
+        print(hashlib.sha256(os.environ["PACKAGE"].encode()).hexdigest())
+        PY
+        )"
+
+        {
+          printf 'cache-key=%s\n' "$CACHE_KEY"
+          printf 'package=%s\n' "$PACKAGE"
+        } >> "$GITHUB_OUTPUT"
       shell: bash
 
-    - run: |
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/pip
+        key: datamodel-codegen-${{ runner.os }}-python-3.14-${{ steps.install-package.outputs.cache-key }}
+
+    - name: Install datamodel-code-generator
+      env:
+        PACKAGE: ${{ steps.install-package.outputs.package }}
+      run: |
+        set -euo pipefail
+
+        python -m pip --disable-pip-version-check install --no-deps --upgrade \
+          -r "$GITHUB_ACTION_PATH/requirements-pip.txt"
+        python -m pip install "$PACKAGE" 'certifi>=2026.10.19'
+      shell: bash
+
+    - name: Run datamodel-code-generator
+      env:
+        INPUT_CHECK: ${{ inputs.check }}
+        INPUT_EXTRA_ARGS: ${{ inputs.extra-args }}
+        INPUT_INPUT: ${{ inputs.input }}
+        INPUT_INPUT_FILE_TYPE: ${{ inputs.input-file-type }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_OUTPUT_MODEL_TYPE: ${{ inputs.output-model-type }}
+        INPUT_PROFILE: ${{ inputs.profile }}
+      run: |
+        set -euo pipefail
+
         ARGS=(
-          --input "${{ inputs.input }}"
-          --output "${{ inputs.output }}"
-          --input-file-type "${{ inputs.input-file-type }}"
-          --output-model-type "${{ inputs.output-model-type }}"
+          --input "$INPUT_INPUT"
+          --output "$INPUT_OUTPUT"
+          --input-file-type "$INPUT_INPUT_FILE_TYPE"
+          --output-model-type "$INPUT_OUTPUT_MODEL_TYPE"
         )
 
-        if [ "${{ inputs.check }}" = "true" ]; then
+        if [ "$INPUT_CHECK" = "true" ]; then
           ARGS+=(--check)
         fi
 
-        if [ -n "${{ inputs.profile }}" ]; then
-          ARGS+=(--profile "${{ inputs.profile }}")
+        if [ -n "$INPUT_PROFILE" ]; then
+          ARGS+=(--profile "$INPUT_PROFILE")
         fi
 
-        datamodel-codegen "${ARGS[@]}" ${{ inputs.extra-args }}
+        if [ -n "$INPUT_EXTRA_ARGS" ]; then
+          EXTRA_ARGS_FILE="$(mktemp)"
+          trap 'rm -f "$EXTRA_ARGS_FILE"' EXIT
+          python3 -c \
+            'import shlex, sys; sys.stdout.buffer.write(b"".join(arg.encode() + b"\0" for arg in shlex.split(sys.argv[1])))' \
+            "$INPUT_EXTRA_ARGS" > "$EXTRA_ARGS_FILE"
+
+          while IFS= read -r -d "" EXTRA_ARG; do
+            ARGS+=("$EXTRA_ARG")
+          done < "$EXTRA_ARGS_FILE"
+          rm -f "$EXTRA_ARGS_FILE"
+          trap - EXIT
+        fi
+
+        datamodel-codegen "${ARGS[@]}"
       shell: bash
       working-directory: ${{ inputs.working-directory }}

@@ -1,0 +1,1 @@
+{"area": "MODEL_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH: collapsing root models reached the recursion limit instead of stopping at a cycle"}

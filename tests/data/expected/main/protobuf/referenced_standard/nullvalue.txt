@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "definitions": {
+    "Payload": {
+      "type": "object",
+      "title": "Payload",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/google__protobuf__NullValue",
+          "default": "NULL_VALUE"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__NullValue"
+          },
+          "default": []
+        },
+        "lookup": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "x-python-type": "str"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/google__protobuf__NullValue"
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "google__protobuf__NullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "title": "NullValue",
+      "description": "Represents a JSON `null`.\n\n`NullValue` is a sentinel, using an enum with only one value to represent\nthe null value for the `Value` type union.\n\nA field of type `NullValue` with any value other than `0` is considered\ninvalid. Most ProtoJSON serializers will emit a Value with a `null_value` set\nas a JSON `null` regardless of the integer value, and so will round trip to\na `0` value.",
+      "x-enum-varnames": [
+        "NULL_VALUE"
+      ],
+      "x-enum-descriptions": [
+        "Null value."
+      ]
+    }
+  }
+}

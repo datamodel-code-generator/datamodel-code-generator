@@ -1,0 +1,2 @@
+# oas32
+refused Error: /paths/~1deep/get/parameters/0: Expanded query parameter names collide

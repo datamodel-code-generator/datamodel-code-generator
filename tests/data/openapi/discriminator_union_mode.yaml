@@ -1,0 +1,48 @@
+openapi: 3.0.0
+info:
+  title: Discriminator with union mode
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required:
+        - petType
+      properties:
+        petType:
+          type: string
+          enum:
+            - cat
+        meows:
+          type: integer
+    Dog:
+      type: object
+      required:
+        - petType
+      properties:
+        petType:
+          type: string
+          enum:
+            - dog
+        barks:
+          type: number
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+    Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: petType
+        nickname:
+          oneOf:
+            - type: string
+            - type: integer

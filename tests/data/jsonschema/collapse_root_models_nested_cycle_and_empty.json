@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "values": {
+      "$ref": "#/$defs/Wrapper"
+    }
+  },
+  "required": ["values"],
+  "$defs": {
+    "Empty": {
+      "type": "object"
+    },
+    "CycleA": {
+      "type": "object",
+      "properties": {
+        "next": {
+          "$ref": "#/$defs/CycleB"
+        }
+      }
+    },
+    "CycleB": {
+      "type": "object",
+      "properties": {
+        "previous": {
+          "$ref": "#/$defs/CycleA"
+        }
+      }
+    },
+    "Wrapper": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Empty"
+          },
+          {
+            "$ref": "#/$defs/CycleA"
+          }
+        ]
+      }
+    }
+  }
+}

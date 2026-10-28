@@ -1,0 +1,6 @@
+{
+  "title": "Root",
+  "type": "integer",
+  "minimum": 3,
+  "maximum": 8
+}

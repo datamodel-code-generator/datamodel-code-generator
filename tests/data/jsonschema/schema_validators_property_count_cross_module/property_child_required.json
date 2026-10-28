@@ -1,0 +1,17 @@
+{
+  "title": "PropertyChildRequired",
+  "allOf": [
+    {
+      "$ref": "required_parent.json"
+    },
+    {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "child": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

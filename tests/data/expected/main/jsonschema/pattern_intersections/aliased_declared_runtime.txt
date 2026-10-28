@@ -1,0 +1,18 @@
+[
+  {
+    "schema_valid": false,
+    "generated": "rejected"
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x-value": 2
+    }
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "x-value": 2
+    }
+  }
+]

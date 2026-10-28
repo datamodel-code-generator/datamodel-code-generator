@@ -1,0 +1,2 @@
+syntax = 'proto2';
+message M { optional string value = 1 [default = 'key: value']; optional int32 count = 2; }

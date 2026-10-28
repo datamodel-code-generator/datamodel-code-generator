@@ -1,0 +1,60 @@
+[
+  {
+    "module": "",
+    "exports": []
+  },
+  {
+    "module": "api",
+    "exports": []
+  },
+  {
+    "module": "api.v1",
+    "exports": []
+  },
+  {
+    "module": "api.v2",
+    "exports": []
+  },
+  {
+    "module": "api.v1.user",
+    "exports": [
+      {
+        "name": "User",
+        "origin": "api.v1.user.user",
+        "is_definition": true,
+        "fields": [
+          "id",
+          "name"
+        ],
+        "dump": {
+          "id": 7,
+          "name": "user"
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v2.status",
+    "exports": [
+      {
+        "name": "Status",
+        "origin": "api.v2.status.status",
+        "is_definition": true,
+        "fields": [
+          "active"
+        ],
+        "dump": {
+          "active": true
+        }
+      }
+    ]
+  },
+  {
+    "module": "api.v1.user.user",
+    "exports": []
+  },
+  {
+    "module": "api.v2.status.status",
+    "exports": []
+  }
+]

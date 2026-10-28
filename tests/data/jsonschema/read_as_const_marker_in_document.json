@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "narrowed": {"$ref": "#/$defs/Narrowed"},
+    "mixed": {
+      "oneOf": [
+        {"const": "a", "x-datamodel-code-generator-read-as-const": true},
+        {"const": 1, "x-datamodel-code-generator-read-as-const": true}
+      ]
+    }
+  },
+  "$defs": {
+    "Narrowed": {"type": "string", "enum": ["a", "b"], "const": "b", "x-datamodel-code-generator-read-as-const": true}
+  }
+}

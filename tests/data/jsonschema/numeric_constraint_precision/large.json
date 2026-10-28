@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NumericConstraints",
+  "type": "object",
+  "properties": {
+    "greater": {
+      "type": "integer",
+      "exclusiveMinimum": 9007199254740993
+    },
+    "less": {
+      "type": "integer",
+      "exclusiveMaximum": 9007199254740993
+    },
+    "negative_greater": {
+      "type": "integer",
+      "exclusiveMinimum": -9007199254740993
+    },
+    "negative_less": {
+      "type": "integer",
+      "exclusiveMaximum": -9007199254740993
+    },
+    "multiple": {
+      "type": "integer",
+      "multipleOf": 9007199254740993
+    },
+    "overflow_greater": {
+      "type": "integer",
+      "exclusiveMinimum": 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137217
+    },
+    "overflow_less": {
+      "type": "integer",
+      "exclusiveMaximum": -179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137217
+    },
+    "overflow_multiple": {
+      "type": "integer",
+      "multipleOf": 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216
+    },
+    "nullable": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "exclusiveMinimum": 9007199254740993
+    },
+    "merged": {
+      "$ref": "#/$defs/Merged"
+    },
+    "multiple_merged": {
+      "$ref": "#/$defs/MultipleMerged"
+    }
+  },
+  "required": [
+    "greater",
+    "less",
+    "negative_greater",
+    "negative_less",
+    "multiple",
+    "overflow_greater",
+    "overflow_less",
+    "overflow_multiple",
+    "nullable",
+    "merged",
+    "multiple_merged"
+  ],
+  "$defs": {
+    "Base": {
+      "type": "integer",
+      "exclusiveMinimum": 9007199254740992
+    },
+    "MultipleBase": {
+      "type": "integer",
+      "multipleOf": 9007199254740993
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 9007199254740993
+        }
+      ]
+    },
+    "MultipleMerged": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/MultipleBase"
+        },
+        {
+          "type": "integer",
+          "multipleOf": 2
+        }
+      ]
+    }
+  }
+}

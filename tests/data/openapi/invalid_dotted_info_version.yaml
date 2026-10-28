@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted info version
+  version: 1.2.3
+paths: {}
+components:
+  schemas:
+    z.1.Model:
+      type: object
+      properties:
+        value:
+          type: string

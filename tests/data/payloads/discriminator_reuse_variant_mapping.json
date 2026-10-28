@@ -1,0 +1,67 @@
+{
+  "Feline": [
+    {
+      "kind": "cat",
+      "name": "Tom"
+    },
+    {
+      "kind": "kitty"
+    },
+    {
+      "kind": "dog"
+    }
+  ],
+  "Pet": [
+    {
+      "kind": "kitty",
+      "name": "Tom"
+    },
+    {
+      "kind": "cat"
+    },
+    {
+      "kind": "reuse"
+    },
+    {
+      "kind": "dog"
+    }
+  ],
+  "Aquarium": [
+    {
+      "kind": "goldie",
+      "fins": 2
+    },
+    {
+      "kind": "reuse"
+    },
+    {
+      "kind": "dog"
+    }
+  ],
+  "Basket": [
+    {
+      "pet": {
+        "kind": "kitty"
+      }
+    },
+    {
+      "pet": {
+        "kind": "cat"
+      }
+    },
+    {
+      "pet": {
+        "kind": "dog"
+      }
+    }
+  ],
+  "Aviary": [
+    {
+      "kind": "bird",
+      "wings": 2
+    },
+    {
+      "kind": "dog"
+    }
+  ]
+}

@@ -1,0 +1,829 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Boolean",
+      "name": "Boolean",
+      "module": "",
+      "source_ref": "[]/scalar/Boolean",
+      "source_path": null,
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "ID",
+      "name": "ID",
+      "module": "",
+      "source_ref": "[]/scalar/ID",
+      "source_path": null,
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "Int",
+      "name": "Int",
+      "module": "",
+      "source_ref": "[]/scalar/Int",
+      "source_path": null,
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "String",
+      "name": "String",
+      "module": "",
+      "source_ref": "[]/scalar/String",
+      "source_path": null,
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "Film",
+      "name": "Film",
+      "module": "",
+      "source_ref": "[]/object/Film",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "characters",
+          "alias": "characters",
+          "original_name": "characters",
+          "type": "list[Person]",
+          "required": true
+        },
+        {
+          "name": "characters_ids",
+          "alias": "characters_ids",
+          "original_name": "characters_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "director",
+          "alias": "director",
+          "original_name": "director",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "episode_id",
+          "alias": "episode_id",
+          "original_name": "episode_id",
+          "type": "Int",
+          "required": true
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "opening_crawl",
+          "alias": "opening_crawl",
+          "original_name": "opening_crawl",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "planets",
+          "alias": "planets",
+          "original_name": "planets",
+          "type": "list[Planet]",
+          "required": true
+        },
+        {
+          "name": "planets_ids",
+          "alias": "planets_ids",
+          "original_name": "planets_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "producer",
+          "alias": "producer",
+          "original_name": "producer",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "release_date",
+          "alias": "release_date",
+          "original_name": "release_date",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "species",
+          "alias": "species",
+          "original_name": "species",
+          "type": "list[Species]",
+          "required": true
+        },
+        {
+          "name": "species_ids",
+          "alias": "species_ids",
+          "original_name": "species_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "starships",
+          "alias": "starships",
+          "original_name": "starships",
+          "type": "list[Starship]",
+          "required": true
+        },
+        {
+          "name": "starships_ids",
+          "alias": "starships_ids",
+          "original_name": "starships_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "title",
+          "alias": "title",
+          "original_name": "title",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "vehicles",
+          "alias": "vehicles",
+          "original_name": "vehicles",
+          "type": "list[Vehicle]",
+          "required": true
+        },
+        {
+          "name": "vehicles_ids",
+          "alias": "vehicles_ids",
+          "original_name": "vehicles_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Film'] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Person",
+      "name": "Person",
+      "module": "",
+      "source_ref": "[]/object/Person",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "birth_year",
+          "alias": "birth_year",
+          "original_name": "birth_year",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "eye_color",
+          "alias": "eye_color",
+          "original_name": "eye_color",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "films",
+          "alias": "films",
+          "original_name": "films",
+          "type": "list[Film]",
+          "required": true
+        },
+        {
+          "name": "films_ids",
+          "alias": "films_ids",
+          "original_name": "films_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "gender",
+          "alias": "gender",
+          "original_name": "gender",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "hair_color",
+          "alias": "hair_color",
+          "original_name": "hair_color",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "height",
+          "alias": "height",
+          "original_name": "height",
+          "type": "Int | None",
+          "required": false
+        },
+        {
+          "name": "homeworld",
+          "alias": "homeworld",
+          "original_name": "homeworld",
+          "type": "Planet | None",
+          "required": false
+        },
+        {
+          "name": "homeworld_id",
+          "alias": "homeworld_id",
+          "original_name": "homeworld_id",
+          "type": "ID | None",
+          "required": false
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "mass",
+          "alias": "mass",
+          "original_name": "mass",
+          "type": "Int | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "skin_color",
+          "alias": "skin_color",
+          "original_name": "skin_color",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "species",
+          "alias": "species",
+          "original_name": "species",
+          "type": "list[Species]",
+          "required": true
+        },
+        {
+          "name": "species_ids",
+          "alias": "species_ids",
+          "original_name": "species_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "starships",
+          "alias": "starships",
+          "original_name": "starships",
+          "type": "list[Starship]",
+          "required": true
+        },
+        {
+          "name": "starships_ids",
+          "alias": "starships_ids",
+          "original_name": "starships_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "vehicles",
+          "alias": "vehicles",
+          "original_name": "vehicles",
+          "type": "list[Vehicle]",
+          "required": true
+        },
+        {
+          "name": "vehicles_ids",
+          "alias": "vehicles_ids",
+          "original_name": "vehicles_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Person'] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Planet",
+      "name": "Planet",
+      "module": "",
+      "source_ref": "[]/object/Planet",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "climate",
+          "alias": "climate",
+          "original_name": "climate",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "diameter",
+          "alias": "diameter",
+          "original_name": "diameter",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "films",
+          "alias": "films",
+          "original_name": "films",
+          "type": "list[Film]",
+          "required": true
+        },
+        {
+          "name": "films_ids",
+          "alias": "films_ids",
+          "original_name": "films_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "gravity",
+          "alias": "gravity",
+          "original_name": "gravity",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "orbital_period",
+          "alias": "orbital_period",
+          "original_name": "orbital_period",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "population",
+          "alias": "population",
+          "original_name": "population",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "residents",
+          "alias": "residents",
+          "original_name": "residents",
+          "type": "list[Person]",
+          "required": true
+        },
+        {
+          "name": "residents_ids",
+          "alias": "residents_ids",
+          "original_name": "residents_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "rotation_period",
+          "alias": "rotation_period",
+          "original_name": "rotation_period",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "surface_water",
+          "alias": "surface_water",
+          "original_name": "surface_water",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "terrain",
+          "alias": "terrain",
+          "original_name": "terrain",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Planet'] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Species",
+      "name": "Species",
+      "module": "",
+      "source_ref": "[]/object/Species",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "average_height",
+          "alias": "average_height",
+          "original_name": "average_height",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "average_lifespan",
+          "alias": "average_lifespan",
+          "original_name": "average_lifespan",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "classification",
+          "alias": "classification",
+          "original_name": "classification",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "designation",
+          "alias": "designation",
+          "original_name": "designation",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "eye_colors",
+          "alias": "eye_colors",
+          "original_name": "eye_colors",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "films",
+          "alias": "films",
+          "original_name": "films",
+          "type": "list[Film]",
+          "required": true
+        },
+        {
+          "name": "films_ids",
+          "alias": "films_ids",
+          "original_name": "films_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "hair_colors",
+          "alias": "hair_colors",
+          "original_name": "hair_colors",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "language",
+          "alias": "language",
+          "original_name": "language",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "people",
+          "alias": "people",
+          "original_name": "people",
+          "type": "list[Person]",
+          "required": true
+        },
+        {
+          "name": "people_ids",
+          "alias": "people_ids",
+          "original_name": "people_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "skin_colors",
+          "alias": "skin_colors",
+          "original_name": "skin_colors",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Species'] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Starship",
+      "name": "Starship",
+      "module": "",
+      "source_ref": "[]/object/Starship",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "MGLT",
+          "alias": "MGLT",
+          "original_name": "MGLT",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "cargo_capacity",
+          "alias": "cargo_capacity",
+          "original_name": "cargo_capacity",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "consumables",
+          "alias": "consumables",
+          "original_name": "consumables",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "cost_in_credits",
+          "alias": "cost_in_credits",
+          "original_name": "cost_in_credits",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "crew",
+          "alias": "crew",
+          "original_name": "crew",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "films",
+          "alias": "films",
+          "original_name": "films",
+          "type": "list[Film]",
+          "required": true
+        },
+        {
+          "name": "films_ids",
+          "alias": "films_ids",
+          "original_name": "films_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "hyperdrive_rating",
+          "alias": "hyperdrive_rating",
+          "original_name": "hyperdrive_rating",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "length",
+          "alias": "length",
+          "original_name": "length",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "manufacturer",
+          "alias": "manufacturer",
+          "original_name": "manufacturer",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "max_atmosphering_speed",
+          "alias": "max_atmosphering_speed",
+          "original_name": "max_atmosphering_speed",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "model",
+          "alias": "model",
+          "original_name": "model",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "passengers",
+          "alias": "passengers",
+          "original_name": "passengers",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "pilots",
+          "alias": "pilots",
+          "original_name": "pilots",
+          "type": "list[Person]",
+          "required": true
+        },
+        {
+          "name": "pilots_ids",
+          "alias": "pilots_ids",
+          "original_name": "pilots_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "starship_class",
+          "alias": "starship_class",
+          "original_name": "starship_class",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Starship'] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Vehicle",
+      "name": "Vehicle",
+      "module": "",
+      "source_ref": "[]/object/Vehicle",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "cargo_capacity",
+          "alias": "cargo_capacity",
+          "original_name": "cargo_capacity",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "consumables",
+          "alias": "consumables",
+          "original_name": "consumables",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "cost_in_credits",
+          "alias": "cost_in_credits",
+          "original_name": "cost_in_credits",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "crew",
+          "alias": "crew",
+          "original_name": "crew",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "films",
+          "alias": "films",
+          "original_name": "films",
+          "type": "list[Film]",
+          "required": true
+        },
+        {
+          "name": "films_ids",
+          "alias": "films_ids",
+          "original_name": "films_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "ID",
+          "required": true
+        },
+        {
+          "name": "length",
+          "alias": "length",
+          "original_name": "length",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "manufacturer",
+          "alias": "manufacturer",
+          "original_name": "manufacturer",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "max_atmosphering_speed",
+          "alias": "max_atmosphering_speed",
+          "original_name": "max_atmosphering_speed",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "model",
+          "alias": "model",
+          "original_name": "model",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "passengers",
+          "alias": "passengers",
+          "original_name": "passengers",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "pilots",
+          "alias": "pilots",
+          "original_name": "pilots",
+          "type": "list[Person]",
+          "required": true
+        },
+        {
+          "name": "pilots_ids",
+          "alias": "pilots_ids",
+          "original_name": "pilots_ids",
+          "type": "list[ID]",
+          "required": true
+        },
+        {
+          "name": "vehicle_class",
+          "alias": "vehicle_class",
+          "original_name": "vehicle_class",
+          "type": "String | None",
+          "required": false
+        },
+        {
+          "name": "typename__",
+          "alias": "__typename",
+          "original_name": null,
+          "type": "Literal['Vehicle'] | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

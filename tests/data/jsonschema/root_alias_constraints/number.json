@@ -1,0 +1,7 @@
+{
+  "title": "Root",
+  "type": "number",
+  "multipleOf": 0.5,
+  "minimum": 0,
+  "maximum": 3
+}

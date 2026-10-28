@@ -1,0 +1,35 @@
+{
+  "$defs": {
+    "AliasParent": {
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        }
+      },
+      "title": "AliasParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/AliasParent"
+    }
+  ],
+  "properties": {
+    "old": {
+      "default": 1,
+      "title": "Old",
+      "type": "integer"
+    },
+    "extra": {
+      "default": 3,
+      "title": "Extra",
+      "type": "integer"
+    }
+  },
+  "title": "AliasSameChild",
+  "type": "object"
+}

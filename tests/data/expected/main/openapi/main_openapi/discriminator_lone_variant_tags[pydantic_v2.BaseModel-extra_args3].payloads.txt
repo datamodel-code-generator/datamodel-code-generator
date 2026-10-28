@@ -1,0 +1,49 @@
+LoneNoField valid {}: accepted
+LoneNoField valid {"id": 1}: accepted
+LoneNoField invalid {"id": "x"}: rejected
+LoneNoField invalid []: rejected
+LoneStringTag valid {}: accepted
+LoneStringTag valid {"type": "any", "id": 2}: accepted
+LoneStringTag invalid {"type": 1}: rejected
+LoneStringTag invalid {"id": "x"}: rejected
+LoneFloatTag valid {}: accepted
+LoneFloatTag valid {"type": 1.5}: accepted
+LoneFloatTag valid {"type": 2}: accepted
+LoneFloatTag invalid {"type": "x"}: rejected
+LoneEnumTag valid {"type": "first"}: accepted
+LoneEnumTag valid {"type": "second"}: accepted
+LoneEnumTag invalid {"type": "third"}: rejected
+LoneEnumTag invalid {}: rejected
+LoneName valid "abc": accepted
+LoneName invalid 1: rejected
+LoneName invalid {}: rejected
+LoneLiteralTag valid {"type": "literal"}: accepted
+LoneLiteralTag valid {"type": "literal", "id": 3}: accepted
+LoneLiteralTag invalid {"type": "other"}: rejected
+LoneLiteralTag invalid {}: rejected
+LoneLiteralTag invalid {"type": "literal", "id": "x"}: rejected
+LoneRootTag valid {"type": "root"}: accepted
+LoneRootTag invalid {"type": "other"}: rejected
+LoneRootTag invalid {}: rejected
+LoneOptionalRootTag valid {}: accepted
+LoneOptionalRootTag valid {"type": "root"}: accepted
+LoneOptionalRootTag invalid {"type": "other"}: rejected
+LoneInheritedTag valid {"type": "inherited", "id": 1}: accepted
+LoneInheritedTag invalid {"type": "other"}: rejected
+LoneInheritedTag invalid {}: rejected
+LoneNullableWrapper valid {"type": "literal"}: accepted
+LoneNullableWrapper valid null: accepted
+LoneNullableWrapper invalid {"type": "other"}: rejected
+LoneBefore valid {"type": "Shared", "id": 1}: accepted
+LoneBefore invalid {"type": "Shared"}: rejected
+LoneBefore invalid {"type": "Shared", "id": "x"}: rejected
+LoneAfter valid {"type": "Shared", "id": 1}: accepted
+LoneAfter invalid {"type": "Shared"}: rejected
+LoneAfter invalid {"type": "Shared", "id": "x"}: rejected
+Both valid {"type": "Shared", "id": 1}: accepted
+Both valid {"type": "Other", "name": "n"}: accepted
+Both invalid {"type": "Third"}: rejected
+Both invalid {"type": "Other", "name": 1}: rejected
+LoneMember valid {"type": "shared", "id": 1}: rejected
+LoneMember invalid {"type": "third"}: rejected
+LoneMember invalid {"type": "shared", "id": "x"}: rejected

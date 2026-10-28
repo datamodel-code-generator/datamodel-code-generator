@@ -1,0 +1,7 @@
+{
+  "title": "MalformedExternalRef",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "child.json#/$defs/Child#extra"}
+  }
+}

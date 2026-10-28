@@ -1,0 +1,32 @@
+{
+  "final_original": {
+    "ApiChildSchema.x": "wire"
+  },
+  "final_field": {
+    "ApiChildSchema.renamed": "wire"
+  },
+  "global_field": {
+    "renamed": "wire"
+  },
+  "empty": {
+    "ApiChildSchema.renamed": ""
+  },
+  "raw": {
+    "Child.x": "legacy"
+  },
+  "raw_global": {
+    "Child.x": "legacy",
+    "x": "global"
+  },
+  "final_over_raw": {
+    "Child.x": "legacy",
+    "ApiChildSchema.renamed": "wire"
+  },
+  "old_global": {
+    "x": "legacy",
+    "renamed": "wire"
+  },
+  "unmatched": {
+    "Other.x": "unused"
+  }
+}

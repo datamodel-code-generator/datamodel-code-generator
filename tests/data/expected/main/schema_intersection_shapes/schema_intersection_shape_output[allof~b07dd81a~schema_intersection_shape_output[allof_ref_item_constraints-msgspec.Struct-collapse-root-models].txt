@@ -1,0 +1,3 @@
+allOf combines $ref with 2 constraint(s) that will be ignored in inherited field type resolution. Consider defining constraints in the referenced schema.
+msgspec.Meta does not take ge on Point; PointItem is generated without this constraint.
+msgspec.Meta does not take max_length on Letter; LetterItem is generated without this constraint.

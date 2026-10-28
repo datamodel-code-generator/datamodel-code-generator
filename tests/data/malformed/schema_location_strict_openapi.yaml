@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Version-specific features
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    Flag: true
+    a/b:
+      type:
+        - string
+        - 'null'
+    Pet:
+      type: object
+      properties:
+        tags:
+          type: array
+          prefixItems:
+            - type: string

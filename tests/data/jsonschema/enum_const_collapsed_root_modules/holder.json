@@ -1,0 +1,8 @@
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "u": {"$ref": "defs.json#/$defs/AUnion"},
+    "m": {"$ref": "defs.json#/$defs/AMap"}
+  }
+}

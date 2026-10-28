@@ -1,0 +1,31 @@
+{
+  "valid": {
+    "at": "2020-01-01T00:00:00Z",
+    "day": "2020-01-02",
+    "clock": "10:20:30",
+    "wait": "PT1S",
+    "id": "12345678-1234-5678-1234-567812345678",
+    "host": "192.0.2.1",
+    "amount": "12.50",
+    "tag": "12345678-1234-5678-1234-567812345678",
+    "link": "https://example.com/",
+    "links": ["https://example.com/"],
+    "email": "a@example.com",
+    "secret": "abcdefgh",
+    "blob": "aGVsbG8=",
+    "code": "AB",
+    "kind": "box",
+    "anything": "box",
+    "days": ["2020-01-02"],
+    "stamps": {"a": "2020-01-01T00:00:00Z"},
+    "slot": "10:20:30"
+  },
+  "invalid": {
+    "day": "1999-01-02",
+    "email": "a@example.org",
+    "secret": "abcdefg",
+    "blob": "aGVsbG8gd29ybGQhIQ==",
+    "code": "A",
+    "slot": "T10:20:30"
+  }
+}

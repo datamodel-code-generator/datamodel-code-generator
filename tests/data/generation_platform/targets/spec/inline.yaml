@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Inline
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      tags: [items]
+      responses:
+        "200":
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      responses:
+        "204":
+          description: None
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer

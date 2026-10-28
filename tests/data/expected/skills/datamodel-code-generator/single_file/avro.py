@@ -8,4 +8,4 @@ from pydantic import BaseModel
 
 class SkillEvent(BaseModel):
     id: str
-    count: int | None
+    count: int | None = None

@@ -1,0 +1,1 @@
+[{"x-datamodel-code-generator-field-names": {"shared": "user data"}}]

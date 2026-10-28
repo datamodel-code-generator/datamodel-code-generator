@@ -1,0 +1,36 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "$defs": {
+    "Unused": {
+      "type": "boolean",
+      "enum": [
+        true,
+        false
+      ]
+    },
+    "UnusedFloat": {
+      "type": "number",
+      "enum": [
+        1.5,
+        2.5
+      ]
+    },
+    "UnusedContainer": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/$defs/Unused"
+        }
+      }
+    }
+  }
+}

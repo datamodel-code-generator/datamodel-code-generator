@@ -1,0 +1,103 @@
+[
+  {
+    "name": "PreservedRoot",
+    "fields": [
+      "first",
+      "second",
+      "optional",
+      "annotated",
+      "nested_annotation"
+    ],
+    "annotations_equal": {
+      "first": true,
+      "second": true,
+      "optional": true,
+      "annotated": true,
+      "nested_annotation": false
+    },
+    "type_identity": {},
+    "results": {
+      "native": {
+        "valid": {
+          "first": [
+            {
+              "value": 1
+            }
+          ],
+          "second": [
+            {
+              "value": "ok"
+            }
+          ],
+          "optional": null,
+          "annotated": [
+            {
+              "value": 1
+            }
+          ],
+          "nested_annotation": [
+            [
+              {
+                "value": 1
+              }
+            ]
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "first": [
+            {
+              "value": 1
+            }
+          ],
+          "second": [
+            {
+              "value": "ok"
+            }
+          ],
+          "optional": null,
+          "annotated": [
+            {
+              "value": 1
+            }
+          ],
+          "nested_annotation": [
+            [
+              {
+                "value": 1
+              }
+            ]
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "first",
+              0,
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "first": true,
+      "second": true,
+      "optional": true,
+      "annotated": true,
+      "nested_annotation": true
+    }
+  }
+]

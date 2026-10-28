@@ -1,0 +1,102 @@
+{
+  "Request": {
+    "fields": [
+      "name",
+      "secret"
+    ],
+    "validation": [
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "other_extra": 0
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "other_extra": 0
+        }
+      },
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        },
+        "json": {
+          "name": null,
+          "secret": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        }
+      }
+    ]
+  },
+  "Response": {
+    "fields": [
+      "id",
+      "name"
+    ],
+    "validation": [
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "other_extra": 0
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "other_extra": 0
+        }
+      },
+      {
+        "python": "rejected",
+        "json": "rejected"
+      },
+      {
+        "python": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        },
+        "json": {
+          "id": null,
+          "name": null,
+          "extra_required": 1,
+          "mode": "conditional",
+          "conditional_extra": 0
+        }
+      }
+    ]
+  }
+}

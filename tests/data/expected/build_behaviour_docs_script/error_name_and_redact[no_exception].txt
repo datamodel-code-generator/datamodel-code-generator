@@ -1,0 +1,2 @@
+no exception name
+generation fixed: allOf contains a boolean false schema that makes the schema unsatisfiable

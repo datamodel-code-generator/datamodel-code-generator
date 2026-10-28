@@ -1,0 +1,7 @@
+{
+  "title": "EmptyOriginalFieldDelimiter",
+  "type": "object",
+  "properties": {
+    "first-value": {"type": "string"}
+  }
+}

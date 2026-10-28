@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Independent binding regressions",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "First": {
+        "$ref": "#/components/schemas/Second"
+      },
+      "Second": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/First"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    }
+  }
+}

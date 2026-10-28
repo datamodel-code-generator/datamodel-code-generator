@@ -1,0 +1,17 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "freeze:1:True",
+    "dispose:1",
+    "discard:1",
+    "close"
+  ],
+  "error": [
+    "RuntimeError",
+    "dispose failed"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0
+}

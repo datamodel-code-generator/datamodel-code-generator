@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: References to a component written as a constrained $ref to a schema of a mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Shrub:
+      $ref: 'shrubs.yaml#/components/schemas/Twig'
+      minProperties: 1
+    Holder:
+      type: object
+      properties:
+        shrub:
+          $ref: '#/components/schemas/Shrub'
+        shrubs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shrub'
+        either:
+          anyOf:
+            - $ref: '#/components/schemas/Shrub'
+            - type: string
+    Index:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Shrub'
+    Keyed:
+      type: object
+      propertyNames:
+        $ref: '#/components/schemas/Shrub'
+      additionalProperties:
+        type: integer
+    Extra:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        $ref: '#/components/schemas/Shrub'
+    Mixed:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        anyOf:
+          - $ref: '#/components/schemas/Shrub'
+          - $ref: '#/components/schemas/Holder'

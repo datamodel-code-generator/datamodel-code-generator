@@ -1,0 +1,73 @@
+{
+  "existingLocalValue": "kept",
+  "nestedMap": {
+    "ok": 1
+  },
+  "titledMap": {
+    "ok": 9
+  },
+  "titledRefMap": {
+    "ok": 2
+  },
+  "localTitleRefMap": {
+    "ok": 2
+  },
+  "namedMap": {
+    "ok": 5
+  },
+  "rootMap": {
+    "ok": 2
+  },
+  "nullableValueMap": {
+    "nil": null,
+    "ok": 1
+  },
+  "closedArrayValueMap": {
+    "empty": []
+  },
+  "allOfValueMap": {
+    "ok": 5
+  },
+  "titledAllOfValueMap": {
+    "ok": 5
+  },
+  "nullableAllOfValueMap": {
+    "nil": null,
+    "ok": 5
+  },
+  "unionValueMap": {
+    "int": 5,
+    "text": "good"
+  },
+  "objectValueMap": {
+    "entry": {
+      "key": "value"
+    }
+  },
+  "modeledValueMap": {
+    "entry": {
+      "value": 1
+    }
+  },
+  "titledValueMap": {
+    "ok": 2
+  },
+  "modeledIrrelevantConstraintMap": {
+    "entry": {
+      "value": "ok"
+    }
+  },
+  "arrayIrrelevantConstraintMap": {
+    "entry": [
+      1
+    ]
+  },
+  "heterogeneousValueMap": {
+    "int": 1,
+    "text": "ok"
+  },
+  "booleanIrrelevantConstraintMap": {
+    "flag": true
+  },
+  "extra": 3
+}

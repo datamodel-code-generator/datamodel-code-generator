@@ -1,0 +1,1 @@
+Value has a required field after a field with a default, in its own fields or those of its bases: Pydantic 2.13 and later cannot read its signature, and on Python 3.10 its subclasses fail at import. Pass --target-pydantic-version 2.14 to write required fields first.

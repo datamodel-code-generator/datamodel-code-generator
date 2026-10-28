@@ -1,0 +1,26 @@
+[tool.datamodel-codegen]
+generate-server = "fastapi"
+server-output = "server"
+server-package = "server"
+server-model-package = "models"
+server-layout = "routers"
+server-handler-mode = "async"
+server-include-request = true
+server-body-mode = "request"
+server-router-names = { "tag:pets" = "animals" }
+
+[tool.datamodel-codegen.server-body-modes]
+"/paths/~1pets/post" = "typed"
+
+[tool.datamodel-codegen.server-primary-responses]
+"pets.yaml#/paths/~1pets/post" = { status_code = 201, media_type = "application/json" }
+"/paths/~1pets/get" = { status_code = 200 }
+
+[tool.datamodel-codegen.server-operation-names]
+"/paths/~1pets/get" = "list_all"
+
+[tool.datamodel-codegen.server-parameter-names]
+"/paths/~1pets/get" = { "query:limit" = "page_size", "header:X-Request-Id" = "trace" }
+
+[tool.datamodel-codegen.server-handler-modes]
+"/paths/~1pets/get" = "sync"

@@ -1,0 +1,17 @@
+{
+  "title": "Root",
+  "type": "object",
+  "propertyNames": {
+    "anyOf": [
+      {
+        "minLength": 3
+      },
+      {
+        "maxLength": 1
+      }
+    ]
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

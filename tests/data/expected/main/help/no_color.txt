@@ -35,6 +35,10 @@ Options:
   --custom-formatters CUSTOM_FORMATTERS
                         List of modules with custom formatter (delimited list
                         input).
+  --emit-model-metadata EMIT_MODEL_METADATA
+                        Write a separate JSON map from generated models and
+                        fields to the JSON Pointer locations of their source
+                        schemas; module and class name identify a model.
   --external-ref-mapping FILE_PATH=PYTHON_PACKAGE [FILE_PATH=PYTHON_PACKAGE ...]
                         Map external $ref file paths to Python import packages
                         instead of generating duplicate classes. Accepts one
@@ -43,8 +47,28 @@ Options:
                         points to a mapped file, an import statement is
                         generated instead of a class definition.
   --formatters {builtin,black,isort,ruff-check,ruff-format} [{builtin,black,isort,ruff-check,ruff-format} ...]
-                        Formatters for output (default: [black, isort]; use
-                        builtin for dependency-free formatting)
+                        Formatters (current default: black, isort; future
+                        default: builtin). For Ruff projects, use --formatters
+                        ruff-check ruff-format (install with pip install
+                        'datamodel-code-generator[ruff]'). Use --formatters
+                        builtin when no external formatter is used or
+                        generation speed takes priority. Keep --formatters
+                        black isort to preserve existing formatting. Presets
+                        dated 20260909 or later include builtin; explicit
+                        formatters override presets. The future builtin
+                        default reduces installation dependencies and version
+                        constraints. Black/isort remain required today;
+                        declare [black,isort] extras for their later optional
+                        installation. Review custom-template output with
+                        builtin. Details: https://datamodel-code-
+                        generator.koxudaxi.dev/formatter-behavior/
+  --http-backend {auto,httpx,httpx2}
+                        Select the HTTP client backend. 'auto' (default)
+                        selects stable HTTPX when its client module is
+                        installed and only selects experimental HTTPX2 when
+                        that module is absent. 'httpx' and 'httpx2' require
+                        that exact backend. Explicit selections and paired
+                        dependency errors do not fall back.
   --http-headers HTTP_HEADER [HTTP_HEADER ...]
                         Set headers in HTTP requests to the remote host.
                         (example: "Authorization: Basic dXNlcjpwYXNz")
@@ -68,9 +92,10 @@ Options:
                         'xmlschema', 'protobuf', or 'avro' for schema
                         definitions. Use 'json', 'yaml', or 'csv' for raw
                         sample data to infer a schema automatically.
-  --input-model MODULE:NAME
-                        Python import path to a Pydantic v2 model or schema
-                        dict (e.g., 'mypackage.module:ClassName' or
+  --input-model MODULE_OR_PATH:NAME
+                        Python import path or file path to a Pydantic v2 model
+                        or schema dict (e.g., 'mypackage.module:ClassName',
+                        './models.py:ClassName', or
                         'mypackage.schemas:SCHEMA_DICT'). Can be specified
                         multiple times for related models with inheritance.
                         For dict input, --input-file-type is required. Cannot
@@ -82,9 +107,23 @@ Options:
                         etc.), regenerate same-family. 'reuse-all': Reuse all
                         referenced types via import. If not specified,
                         defaults to regenerate-all behavior.
+  --locked              Require an existing remote lock and validate each
+                        fetched resource against it (experimental).
+  --lockfile LOCKFILE   Select the remote reference integrity lock file
+                        (experimental). An existing selected lock is verified
+                        automatically; a missing selected lock is ignored
+                        unless --locked is used. The default is datamodel-
+                        codegen.lock beside the discovered pyproject.toml, or
+                        in the invocation working directory when no project is
+                        found. Explicit relative paths resolve from the
+                        invocation working directory.
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027}
+                        Apply an immutable built-in option preset. Preset
+                        names include the target Python version so generated
+                        syntax is pinned.
   --schema-version SCHEMA_VERSION
                         Schema version. Valid values depend on input type:
                         JsonSchema: auto, draft-04, draft-06, draft-07,
@@ -98,8 +137,20 @@ Options:
                         Schema version validation mode. 'lenient': accept all
                         features regardless of version (default). 'strict':
                         warn on features outside declared/detected version.
+  --strict-refs         Treat unresolved local $ref JSON pointers as errors
+                        instead of generating fallback Any models.
+  --update-lock         Create or atomically update the selected remote lock
+                        after generation (experimental).
   --url URL             Input file URL. `--input` is ignored when `--url` is
-                        used
+                        used. For HTTP(S), datamodel-code-generator[http]
+                        remains the stable HTTPX backend and is not
+                        deprecated, while datamodel-code-generator[httpx2] is
+                        experimental. The default --http-backend auto policy
+                        selects stable HTTPX when its client module is
+                        installed and selects HTTPX2 only when that module is
+                        absent. Select --http-backend httpx2 to require the
+                        experimental backend. Explicit selections and paired
+                        dependency errors do not fall back.
 
 Typing customization:
   --allof-class-hierarchy {if-no-conflict,always}
@@ -135,11 +186,60 @@ Typing customization:
                         "literal", "priority": "enum"}'. Overrides --enum-
                         field-as-literal for matched fields.
   --field-constraints   Use field constraints and not con* annotations
+  --filter-literal-values
+                        Keep only the values of a `const` or an `enum` that
+                        meet the `minLength`, `maxLength`, `pattern`, bound
+                        and `multipleOf` constraints beside them in its
+                        `Literal` or Enum, as JSON Schema validates them; a
+                        schema none of whose values meets them stays as
+                        written with a warning
   --ignore-enum-constraints
                         Ignore enum constraints and use the base type (e.g.,
                         str, int) instead of generating Enum classes
+  --import-overrides IMPORT_OVERRIDES
+                        Override modules for generated imports by symbol name.
+                        Format: JSON object mapping symbols to module paths.
+                        Example: '{"TypedDict": "my_project.typing_compat",
+                        "NotRequired": "my_project.typing_compat"}'.
+  --intersect-allof-keywords
+                        Combine the keywords of every part of an `allOf`, of a
+                        `$ref` with sibling keywords and of an inherited
+                        property override, as JSON Schema validates them: the
+                        tightest bounds, the `enum` values every part admits,
+                        the `type` every part admits, the conjunction of the
+                        `pattern`s, no null beside a `type` that excludes it,
+                        and the constraints of the root, item and map value
+                        positions of an `allOf`. Without it, the keyword of
+                        the last part wins where the parts disagree
+  --keep-enum-member-values
+                        Write an enum as a plain Enum where the value base of
+                        --use-specialized-enum or --use-subclass-enum would
+                        change a member value, such as 2.5 in an IntEnum;
+                        without it the base follows the schema type, as in
+                        0.86.0
+  --omit-redundant-constraints
+                        Do not write a constraint again beside a type that
+                        already enforces it: the bound of a zero-bound class
+                        such as NonNegativeInt, and the length and number
+                        constraints a const or enum Literal meets by its
+                        values
+  --read-const-beside-enum
+                        Read a `const` beside an `enum` as JSON Schema does: a
+                        value whose schema names the enum is typed by the
+                        const that narrows it (`Literal[Enum.member]`, a
+                        Literal or None) instead of the enum class that lists
+                        the values the const excludes, and under --use-single-
+                        value-enum-as-const an `enum` that admits its `const`
+                        is read as that `const` instead of an Enum, except one
+                        with `nullable: true` and a value other than null
+  --read-unevaluated-properties
+                        Read a schema-valued unevaluatedProperties as
+                        additionalProperties where no applicator evaluates the
+                        object in place, so it types the extra keys of a model
+                        and makes an object without properties a map
   --set-default-enum-member
-                        Set enum members as default values for enum field
+                        Deprecated: --set-default-enum-member is deprecated.
+                        Use --deserialize-default-values enum instead.
   --strict-types {str,bytes,int,float,bool} [{str,bytes,int,float,bool} ...]
                         Use strict types
   --type-mappings TYPE_MAPPINGS [TYPE_MAPPINGS ...]
@@ -168,6 +268,12 @@ Typing customization:
                         Use condecimal instead of confloat for float/number
                         fields with multipleOf constraint (Pydantic only).
                         Avoids floating-point precision issues in validation.
+  --use-decimal-in-field-forms
+                        Under --use-decimal-for-multiple-of, also write
+                        Decimal for a number with multipleOf in the field
+                        forms (--field-constraints, --use-annotated), with the
+                        constraints in Field(), and make the Decimal strict
+                        under --strict-types float (Pydantic only)
   --use-enum-values-in-discriminator
                         Use enum member literals in discriminator fields
                         instead of string literals
@@ -190,6 +296,27 @@ Typing customization:
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-single-dict-for-object-maps
+                        Type an object map, an object without properties whose
+                        keys patternProperties or propertyNames constrain, as
+                        one dict whose keys are those of every key class and
+                        whose value is the union of their values, beside the
+                        null and the other types of its type array
+  --use-single-value-enum-as-const
+                        Treat `enum` with a single value as `const` with that
+                        value, which JSON Schema defines as equal: oneOf/anyOf
+                        branches such as {"type": "string", "enum": ["low"]}
+                        merge into one Enum when there are two or more and all
+                        hold values of one JSON type, otherwise each branch is
+                        typed as written, and a schema with one enum value is
+                        typed Literal[...] instead of a one-member Enum,
+                        except one with `nullable: true` and a value other
+                        than null, which is read as written
+  --use-site-models-for-constrained-refs
+                        Give an allOf of $ref members whose other parts add
+                        constraints, an enum or a type its own model of the
+                        values all parts admit, instead of the referenced
+                        type, which leaves the added assertions out
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+
@@ -198,11 +325,38 @@ Typing customization:
                         dict). Default: enabled
   --use-subclass-enum   Define generic Enum class as subclass with field type
                         when enum has type (int, float, bytes, str)
+  --use-total-false-for-typed-dict
+                        Generate TypedDict with total=False and mark required
+                        fields with Required
+  --use-tuple-for-closed-arrays
+                        Generate tuple types for positional arrays that no
+                        other item can follow: a closed prefixItems tail
+                        (items, unevaluatedItems or additionalItems false)
+                        whose length the length keywords fix, so that each
+                        position keeps its own type
   --use-tuple-for-fixed-items
                         Generate tuple types for arrays with items array
                         syntax when minItems equals maxItems equals items
                         length
+  --use-tuple-for-fixed-length-arrays
+                        Generate tuple types for fixed-length arrays with a
+                        single items schema
   --use-type-alias      Use TypeAlias instead of root models (experimental)
+  --use-type-alias-type
+                        Use TypeAliasType for type aliases on Python 3.10 and
+                        3.11 (implies --use-type-alias; experimental)
+  --use-typed-map-values-beside-other-types
+                        With --use-typed-nullable-map-values, also type the
+                        map values of type arrays that list object beside
+                        other types, such as [object, string], as dict[str,
+                        int] | str instead of dict[str, Any] | str
+  --use-typed-nullable-map-values
+                        Type the values of nullable maps, schemas whose type
+                        array lists object alone or with null, such as
+                        [object, null] or [object], with additionalProperties,
+                        as their schema says, with a model for object values.
+                        Without it the 0.83.0 form is kept, dict[str, Any] |
+                        None, or dict[str, Any] without null.
   --use-union-operator, --no-use-union-operator
                         Use | operator for Union type (PEP 604). Default:
                         enabled
@@ -229,6 +383,11 @@ Field customization:
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
+  --keep-field-defaults-off-branch-roots
+                        Leave the default of a property off the root models
+                        extracted from the branches of its `anyOf` or `oneOf`,
+                        which then require their value; without it each such
+                        root takes the property's default
   --model-extra-keys MODEL_EXTRA_KEYS [MODEL_EXTRA_KEYS ...]
                         Add extra keys from schema extensions (x-* fields) to
                         model_config json_schema_extra
@@ -239,26 +398,41 @@ Field customization:
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
+  --omit-redundant-reference-null
+                        Do not write None again where a field, item or member
+                        references a model that holds null itself (a root
+                        model or type alias whose type admits None, or an enum
+                        with a None member), so that a null parses to that
+                        model
   --original-field-name-delimiter ORIGINAL_FIELD_NAME_DELIMITER
                         Set delimiter to convert to snake case. This option
                         only can be used with --snake-case-field (default: `_`
                         )
+  --read-nullable-beside-type-list
+                        Write the null that `nullable: true` declares beside a
+                        `type` list with an object into the root model of that
+                        schema under --strict-nullable or --use-missing-
+                        sentinel, as a declared field does; without it only a
+                        `type` list holding null makes that root admit None
   --remove-special-field-name-prefix
                         Remove field name prefix if it has a special meaning
                         e.g. underscores
   --serialization-aliases SERIALIZATION_ALIASES
-                        Serialization alias mapping file (JSON) for Pydantic
-                        v2. Format: {'<schema_field>':
+                        Serialization alias mapping as inline JSON or a JSON
+                        file path for Pydantic v2. Format: {'<schema_field>':
                         '<serialization_alias>'}. Supports hierarchical
                         formats: Flat: {'name': 'fullName'} applies to all
                         occurrences. Scoped: {'User.name': 'fullName'} applies
                         to specific class.
-  --snake-case-field    Change camel-case field name to snake-case
+  --snake-case-field, --no-snake-case-field
+                        Change camel-case field name to snake-case
   --special-field-name-prefix SPECIAL_FIELD_NAME_PREFIX
                         Set field name prefix when first character can't be
                         used as Python field name (default: `field`)
   --strict-nullable     Treat default field as a non-nullable field
-  --strip-default-none  Strip default None on fields
+  --strip-default-none  Strip default None on fields (no effect on
+                        msgspec.Struct: it defaults an omitted field to UNSET,
+                        and to None only when the type admits None)
   --union-mode {smart,left_to_right}
                         Union mode for only pydantic v2 field
   --use-attribute-docstrings
@@ -276,11 +450,20 @@ Field customization:
                         Use schema description to populate field docstring
   --use-field-description-example
                         Use schema example to populate field docstring
-  --use-frozen-field    Use Field(frozen=True) for readOnly fields (Pydantic
+  --use-frozen-field, --no-use-frozen-field
+                        Use Field(frozen=True) for readOnly fields (Pydantic
                         v2).
   --use-inline-field-description
                         Use schema description to populate field docstring as
                         inline docstring
+  --use-missing-sentinel
+                        Use pydantic.experimental.missing_sentinel.MISSING for
+                        optional fields without defaults (Pydantic v2.12+), or
+                        pydantic.MISSING with --target-pydantic-version 2.14
+                        or later, which --generate-server and --generate-
+                        client require with this option. Supports
+                        pydantic_v2.BaseModel and pydantic_v2.dataclass, whose
+                        server and client generation requires it.
   --use-serialization-alias
                         Use serialization_alias instead of alias for field
                         aliasing (Pydantic v2 only). This allows setting
@@ -291,6 +474,11 @@ Field customization:
                         one line
 
 Model customization:
+  --alias-generator {to_camel,to_pascal,to_snake}
+                        Pydantic v2 BaseModel alias generator to use in
+                        ConfigDict. Matching generated aliases are omitted
+                        from individual Field() calls, except with --target-
+                        pydantic-version 2, which writes every alias.
   --all-exports-collision-strategy {error,minimal-prefix,full-prefix}
                         Strategy for name collisions when using --all-exports-
                         scope=recursive. 'error': raise an error (default).
@@ -306,7 +494,7 @@ Model customization:
   --allow-leading-underscore-class-name
                         Allow an explicitly specified root class name to start
                         with an underscore
-  --allow-population-by-field-name
+  --allow-population-by-field-name, --no-allow-population-by-field-name
                         Allow population by field name
   --class-name CLASS_NAME
                         Set class name of root model
@@ -328,7 +516,7 @@ Model customization:
                         models by replacing references instead of creating
                         empty inheritance subclasses. This eliminates 'class
                         Foo(Bar): pass' patterns
-  --collapse-root-models
+  --collapse-root-models, --no-collapse-root-models
                         Models generated with a root-type field will be merged
                         into the models using that root-type model
   --collapse-root-models-name-strategy {child,parent}
@@ -336,6 +524,14 @@ Model customization:
                         reference other models. 'child': Keep inner model's
                         name (default). 'parent': Use wrapper's name for inner
                         model. Requires --collapse-root-models to be set.
+  --collapse-shared-parent-wrappers
+                        Under --collapse-root-models-name-strategy parent,
+                        make every model that references a wrapper reference
+                        the inner model that takes its name, as its first
+                        model does; without it, where --field-type-collision-
+                        strategy rename-type can rename the wrapper apart from
+                        the inner model in their module, the later models keep
+                        the wrapper
   --dataclass-arguments DATACLASS_ARGUMENTS
                         Custom dataclass arguments as a JSON dictionary, e.g.
                         '{"frozen": true, "kw_only": true}'. Overrides
@@ -365,9 +561,17 @@ Model customization:
                         extra fields.
   --frozen-dataclasses  Generate frozen dataclasses (dataclass(frozen=True)).
                         Only applies to dataclass output.
+  --infer-union-variant-names
+                        Name inline oneOf/anyOf branch models after the value
+                        of their tag field (Pet + type: "cat" -> PetCat)
+                        instead of Pet1, Pet2
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
+  --model-name-map MODEL_NAME_MAP
+                        Rename generated model classes by schema ref or
+                        current generated class name using a JSON object or
+                        JSON file.
   --module-split-mode {single}
                         Split generated models into separate files. 'single':
                         generate one file per model class.
@@ -385,6 +589,30 @@ Model customization:
                         definitions (in /definitions/ or
                         /components/schemas/), only add suffix to
                         inline/nested duplicates.
+  --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
+                        Decide the order of constructor fields by each given
+                        value. final-names: order the constructor fields of
+                        dataclass and msgspec.Struct models after every field
+                        has its final name, so a field that overrides an
+                        inherited field renamed in another module is matched
+                        to it and keeps its place; without it the override
+                        reads as a new field after the inherited default and
+                        is written keyword-only (kw_only=True). written-
+                        defaults: order the fields of msgspec.Struct and
+                        Pydantic dataclass models by the defaults they write,
+                        so under --strip-default-none an optional field whose
+                        None default is stripped but still written (UNSET, or
+                        None for a type that admits None) goes after the
+                        required fields of a Struct with the other optional
+                        fields and stays positional after an inherited
+                        default, and a required pydantic.dataclass field
+                        redeclaring it is written Field(...) (a msgspec.Struct
+                        writes a bare annotation); without it the field keeps
+                        its place among the fields without a default, as
+                        before: it is keyword-only after an inherited default,
+                        a redeclaring field inherits its None default, and the
+                        fields are reordered only where a required field would
+                        then follow a default.
   --output-date-class {date,PastDate,FutureDate}
                         Choose Date class between PastDate, FutureDate or
                         date. (Pydantic v2 only) Each output model has its
@@ -397,6 +625,17 @@ Model customization:
   --parent-scoped-naming
                         Deprecated: --parent-scoped-naming is deprecated. Use
                         --naming-strategy parent-prefixed instead.
+  --pin-aliases-with-alias-generator
+                        pydantic_v2.BaseModel and pydantic_v2.dataclass
+                        output: decide a field's alias by the alias generator
+                        its model applies, the one in its config or in the
+                        config it inherits. For a dataclass and a --target-
+                        pydantic-version older than 2.8, whose alias
+                        generators can differ from the generated aliases,
+                        write the generated alias on every field of a
+                        dataclass whose config names an alias generator.
+                        Without it a field keeps the alias it has without the
+                        generator, which the config then replaces.
   --reuse-model         Reuse models on the field when a module has the model
                         with the same content
   --reuse-scope {module,tree}
@@ -408,12 +647,38 @@ Model customization:
                         (default: "shared"). Use this option if your schema
                         has a file named "shared".
   --skip-root-model     Skip generating the model for the root schema element
-  --target-pydantic-version {2,2.11}
-                        Target Pydantic version for generated code. '2':
-                        Pydantic 2.0+ compatible (default, uses
-                        populate_by_name). '2.11': Pydantic 2.11+ (uses
-                        validate_by_name).
-  --target-python-version {3.10,3.11,3.12,3.13,3.14}
+  --strict-dotted-module-names, --no-strict-dotted-module-names
+                        Only infer dotted schema names as module paths when
+                        every segment is a canonical Python identifier. This
+                        applies only to automatic inference and does not
+                        override --treat-dot-as-module or --no-treat-dot-as-
+                        module.
+  --tag-msgspec-by-payload-name
+                        msgspec.Struct output only: tag the structs of a
+                        discriminated union with the property name the
+                        document carries (for example 'pet-kind') instead of
+                        the Python name that property resolves to (pet_kind),
+                        which msgspec looks for in the payload. --use-msgspec-
+                        tagged-unions already tags by the document's property
+                        name. Without either option the Python name is kept.
+  --target-pydantic-version {2,2.11,2.12,2.14}
+                        Oldest Pydantic version the generated code must
+                        support. Unset: the newest supported feature forms,
+                        with populate_by_name config like '2' and the
+                        experimental MISSING import like '2.12'. '2': Pydantic
+                        2.0.3+ compatible (uses populate_by_name; patterns
+                        that need Python's regex engine need 2.5+). '2.11':
+                        Pydantic 2.11+ (uses validate_by_name). '2.12':
+                        Pydantic 2.12+ (supports MISSING sentinel). '2.14':
+                        Pydantic 2.14+ (imports MISSING from pydantic; bytes
+                        patterns can select Python's regex engine;
+                        pydantic_v2.dataclass writes required Field(...)
+                        fields before the fields with defaults of the same
+                        class; a number schema keeps multipleOf on a
+                        timedelta). Constructs without an older form are
+                        written for every target, with a warning naming the
+                        Pydantic they need.
+  --target-python-version {3.10,3.11,3.12,3.13,3.14,3.15}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module
                         Treat dotted schema names as module paths, creating
@@ -428,54 +693,109 @@ Model customization:
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-nullable-enum-alias
+                        msgspec.Struct output only: write an enum that lists
+                        null as an Enum without the None member plus an Enum |
+                        None type alias, so that msgspec can decode it.
+                        Without it a plain Enum keeps the 0.83.0 None member,
+                        which msgspec cannot decode; an IntEnum or --use-
+                        subclass-enum enum, which cannot hold it, is written
+                        without it and, as its one type rejects null, without
+                        the alias.
+  --use-msgspec-tagged-unions
+                        msgspec.Struct output only: write a discriminated
+                        union as msgspec tagged structs as a whole. Every
+                        variant is tagged with the document's property name
+                        and its value, or none is and a warning says why.
+                        Without it the 0.83.0 form is kept, which tags only a
+                        variant whose discriminator is a single literal and
+                        keeps the other discriminators as Literal fields.
   --use-pendulum        use pendulum instead of datetime
+  --use-root-model-sequence-interface
+                        Make non-null sequence-like Pydantic v2 RootModel
+                        classes implement collections.abc.Sequence by adding
+                        Sequence[T] inheritance and root-delegating __iter__,
+                        __getitem__, and __len__ methods
   --use-schema-description
                         Use schema description to populate class docstring
-  --use-standard-primitive-types
+  --use-standard-primitive-types, --no-use-standard-primitive-types
                         Use Python standard library types for string formats
                         (UUID, IPv4Address, etc.) instead of str. Affects
                         dataclass, msgspec, TypedDict output. Pydantic already
                         uses these types by default.
+  --use-tag-as-union-variant-name
+                        Name inline oneOf/anyOf branch models after their tag:
+                        what --infer-union-variant-names does, skipping tags
+                        whose class names collide, plus single-branch unions
+                        (type: "exec" -> LocalShellActionExec) and single-key
+                        branches ({"granular": ...} -> AskForApprovalGranular)
   --use-title-as-name   use titles as class names of models
 
 Template customization:
-  --aliases ALIASES     Alias mapping file (JSON) for renaming fields. Format:
-                        {'<schema_field>': '<python_name>'} - the schema field
-                        name becomes the Pydantic alias. Supports hierarchical
-                        formats: Flat: {'id': 'id_'} applies to all
-                        occurrences. Scoped: {'User.name': 'user_name'}
-                        applies to specific class. Priority: scoped > flat.
-                        Multiple aliases (Pydantic v2 only): {'field':
-                        ['alt1', 'alt2']} uses AliasChoices for validation.
-                        Example: {'User.name': 'user_name', 'id': 'id_'}
-                        generates `id_: ... = Field(alias='id')`.
+  --aliases ALIASES     Alias mapping as inline JSON or a JSON file path for
+                        renaming fields. Format: {'<schema_field>':
+                        '<python_name>'} - the schema field name becomes the
+                        Pydantic alias. Supports hierarchical formats: Flat:
+                        {'id': 'id_'} applies to all occurrences. Scoped:
+                        {'User.name': 'user_name'} applies to specific class.
+                        Priority: scoped > flat. Multiple aliases (Pydantic v2
+                        only): {'field': ['alt1', 'alt2']} uses AliasChoices
+                        for validation. Example: {'User.name': 'user_name',
+                        'id': 'id_'} generates `id_: ... = Field(alias='id')`.
+  --check-pattern-maps-strictly
+                        Under --generate-schema-validators, count every key
+                        that a pattern of patternProperties admits, check
+                        declared keys against the patterns that match them,
+                        and keep the propertyNames keys and the other types of
+                        a type array of an object without properties
   --custom-file-header CUSTOM_FILE_HEADER
                         Custom file header
+  --custom-file-header-mode {replace,prepend}
+                        How to combine a custom file header with the generated
+                        header (default: replace)
   --custom-file-header-path CUSTOM_FILE_HEADER_PATH
                         Custom file header file path
   --custom-formatters-kwargs CUSTOM_FORMATTERS_KWARGS
-                        A file with kwargs for custom formatters.
+                        Custom formatter kwargs as inline JSON or a JSON file
+                        path.
   --custom-template-dir CUSTOM_TEMPLATE_DIR
                         Custom template directory
   --default-values DEFAULT_VALUES
-                        Default value overrides file (JSON). Supports
-                        hierarchical formats: Flat: {'field': value} applies
-                        to all occurrences. Scoped: {'ClassName.field': value}
-                        applies to specific class. Priority: scoped > flat.
-                        Note: Scoped keys use the generated class name for
-                        JSON Schema/OpenAPI. Required fields remain required
-                        unless --use-default is also specified. Example:
-                        {'User.status': 'active', 'page': 1, 'limit': 10}
+                        Default value overrides as inline JSON or a JSON file
+                        path. Supports hierarchical formats: Flat: {'field':
+                        value} applies to all occurrences. Scoped:
+                        {'ClassName.field': value} applies to specific class.
+                        Priority: scoped > flat. Note: Scoped keys use the
+                        generated class name for JSON Schema/OpenAPI. Required
+                        fields remain required unless --use-default is also
+                        specified. Example: {'User.status': 'active', 'page':
+                        1, 'limit': 10}
+  --deserialize-default-values {decimal,enum} [{decimal,enum} ...]
+                        Deserialize serialized schema defaults for selected
+                        generated types. Supported values: decimal, enum.
   --encoding ENCODING   The encoding of input and output (default: utf-8)
   --extra-template-data EXTRA_TEMPLATE_DATA
-                        Extra template data for output models. Input is
-                        supposed to be a json/yaml file. For OpenAPI and
-                        Jsonschema the keys are the spec path of the object,
-                        or the name of the object if you want to apply the
-                        template data to multiple objects with the same name.
-                        If you are using another input file type (e.g.
-                        GraphQL), the key is the name of the object. The value
-                        is a dictionary of the template data to add.
+                        Extra template data for output models as inline JSON
+                        or a JSON file path. For OpenAPI and Jsonschema the
+                        keys are the spec path of the object, or the name of
+                        the object if you want to apply the template data to
+                        multiple objects with the same name. If you are using
+                        another input file type (e.g. GraphQL), the key is the
+                        name of the object. The value is a dictionary of the
+                        template data to add.
+  --generate-schema-validators
+                        Generate Pydantic v2 model validators for JSON Schema
+                        rules that cannot be represented as type hints
+                        (experimental).
+  --no-deserialize-default-values
+                        Disable schema default value deserialization.
+  --schema-validator-base-class-name SCHEMA_VALIDATOR_BASE_CLASS_NAME
+                        Set the generated shared Pydantic v2 schema runtime
+                        validator base class name.
+  --schema-validator-type {pydantic-v2}
+                        Select the schema-derived runtime validator backend.
+                        'pydantic-v2' generates Pydantic v2 model validators
+                        (experimental).
   --use-double-quotes   Model generated with double quotes. Single quotes or
                         your black config skip_string_normalization value will
                         be used without this option.
@@ -487,19 +807,38 @@ Template customization:
                         at runtime. Use --no-use-type-checking-imports to
                         force runtime imports.
   --validators VALIDATORS
-                        Validators configuration file (JSON). Defines field
-                        validators for Pydantic v2 models. Keys are model
-                        names, values contain validator definitions with
-                        field, function, and mode.
+                        Validators configuration as inline JSON or a JSON file
+                        path. Defines field validators for Pydantic v2 models.
+                        Keys are model names, values contain validator
+                        definitions with field, function, and mode.
   --wrap-string-literal
                         Wrap string literal by using black `experimental-
                         string-processing` option (require black 20.8b0 or
                         later)
 
 OpenAPI-only options:
+  --dedupe-request-response-variants
+                        Decide Request/Response variants from the schema graph
+                        and build each inline model once, without the
+                        unreferenced duplicate classes and shifted class
+                        numbers of 0.86.0
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
+  --openapi-as-definitions {paths-bodies,ref-components} [{paths-bodies,ref-components} ...]
+                        Give each given kind of OpenAPI schema the model a
+                        definitions entry of the same schema gets. paths-
+                        bodies: the request and response bodies of the paths
+                        and webhooks scopes, so an object body with a type
+                        array such as [object, null], or with map keywords and
+                        no type, becomes a model instead of an inline type,
+                        and an object body with patternProperties or
+                        propertyNames becomes the root model of a map. ref-
+                        components: a component written as a $ref to a
+                        recursive schema with sibling keywords, which gets the
+                        root model; without it such a component gets no model,
+                        and a reference to it is typed by the schema its $ref
+                        names
   --openapi-include-info-version
                         Emit OpenAPI info.version as OPENAPI_INFO_VERSION in
                         generated models
@@ -508,7 +847,7 @@ OpenAPI-only options:
                         Use wildcards: '*' matches any chars, '?' matches
                         single char. Example: '/users/*' '/products'. Requires
                         '--openapi-scopes' to include 'paths'.
-  --openapi-scopes {schemas,paths,tags,parameters,webhooks,requestbodies} [{schemas,paths,tags,parameters,webhooks,requestbodies} ...]
+  --openapi-scopes {schemas,paths,tags,parameters,webhooks,requestbodies,api} [{schemas,paths,tags,parameters,webhooks,requestbodies,api} ...]
                         Scopes of OpenAPI model generation (default: schemas)
   --read-only-write-only-model-type {request-response,all}
                         Model generation for readOnly/writeOnly fields:
@@ -531,13 +870,27 @@ GraphQL-only options:
                         mutations.
 
 General options:
+  --all-jobs            Run every named job from pyproject.toml in declaration
+                        order (experimental).
   --check               Verify generated files are up-to-date without
                         modifying them. Exits with code 1 if differences
                         found, 0 if up-to-date. Useful for CI to ensure
                         generated code is committed.
   --debug               show debug message (require "debug". `$ pip install
                         'datamodel-code-generator[debug]'`)
+  --diff-against BASELINE_INPUT
+                        Generate BASELINE_INPUT and the current --input into
+                        temporary outputs, then show the generated-code diff
+                        from baseline to current. Requires --input and
+                        --output; --output is a virtual output path that
+                        selects file or directory layout and is never
+                        modified. Exits with code 1 when generated outputs
+                        differ.
   --disable-warnings    disable warnings
+  --fail-on-multi-module-stdout
+                        Return an error instead of concatenating multiple
+                        generated modules in text stdout. This does not affect
+                        single-module, JSON, or file output.
   --generate-cli-command
                         Generate CLI command from pyproject.toml configuration
                         and exit
@@ -551,20 +904,41 @@ General options:
                         Generate pyproject.toml configuration from the
                         provided CLI arguments and exit
   --ignore-pyproject    Ignore pyproject.toml configuration
+  --install-skill {codex,claude-code}
+                        Install the bundled datamodel-code-generator Agent
+                        Skill and exit (experimental). Use --skill-scope to
+                        select a project or personal installation.
+  --job NAME            Run a named job from pyproject.toml [tool.datamodel-
+                        codegen.jobs.<name>] (experimental). Can be repeated.
   --list-deprecations [{table,json,markdown}]
                         List registered deprecations and scheduled breaking
                         changes, then exit.
   --list-experimental [{table,json,markdown}]
-                        List registered experimental features, then exit.
+                        List registered experimental features and their
+                        compatibility notes, then exit.
   --no-color            disable colorized output
   --output-format {text,json}
                         Format for command output (default: text). Use json
                         for structured output when supported.
-  --output-format-json-schema {generate-prompt,generation,structured-output}
-                        Output JSON Schema for the selected structured output
-                        format and exit.
+  --output-format-json-schema {config,generate-prompt,generation,model-metadata,recommend-options,structured-output}
+                        Output JSON Schema for the selected JSON output or
+                        JSON configuration format and exit.
+  --overwrite-skill     Replace an existing regular skill directory when used
+                        with --install-skill.
   --profile PROFILE     Use a named profile from pyproject.toml
                         [tool.datamodel-codegen.profiles.<name>]
+  --recommend-options   Analyse the input schema and print the options to add
+                        on top of the latest dated preset, with the reasons,
+                        as a command and a pyproject.toml block, then exit
+                        (experimental). Schemas of up to 3000 estimated models
+                        are also compared by generating the candidate
+                        configurations in memory. With --generate-prompt, the
+                        prompt includes the recommendation instead.
+  --skill-scope {project,user}
+                        Installation scope for --install-skill (default:
+                        project). Project installs use .agents/skills or
+                        .claude/skills; user installs use the matching home
+                        directory.
   --version             show version
   --watch               Watch input file(s) for changes and regenerate output
                         automatically
@@ -573,6 +947,96 @@ General options:
                         0.5)
   -h, --help            show this help message and exit
 
+Target generation options (experimental):
+  --client-body-arguments {body,both}
+                        Take request bodies as one body argument (default) or
+                        also as field arguments (experimental).
+  --client-default-base-url CLIENT_DEFAULT_BASE_URL
+                        Server URL of the operations that declare no servers
+                        (experimental).
+  --client-model-package CLIENT_MODEL_PACKAGE
+                        Import path of the models that --output generates
+                        (experimental).
+  --client-operations CLIENT_OPERATIONS
+                        Settings per operation reference, such as
+                        /paths/~1pets/get, as inline JSON or a JSON file path;
+                        their body_arguments overrides --client-body-arguments
+                        (experimental).
+  --client-output CLIENT_OUTPUT
+                        Directory of the generated client package
+                        (experimental).
+  --client-package CLIENT_PACKAGE
+                        Import path of the generated client package
+                        (experimental).
+  --client-protocols CLIENT_PROTOCOLS
+                        Pagination, polling, stream, WebSocket, cache, upload,
+                        and webhook helpers by name, as inline JSON or a JSON
+                        file path (experimental).
+  --client-resource-names CLIENT_RESOURCE_NAMES
+                        Resource namespaces keyed by tag, such as {"pets":
+                        "store.pets"}, as inline JSON or a JSON file path
+                        (experimental).
+  --client-server-base-url CLIENT_SERVER_BASE_URL
+                        Base URL that relative server URLs of the document
+                        resolve against (experimental).
+  --client-signature-style {explicit,unpack}
+                        Declare operation arguments as keywords (default) or
+                        as one Unpack[TypedDict] (experimental).
+  --generate-client {httpx2}
+                        Generate an HTTPX2 client package for the models; the
+                        --client-* options configure it (experimental).
+  --generate-server {fastapi}
+                        Generate a FastAPI server package for the models; the
+                        --server-* options configure it (experimental).
+  --server-body-mode {typed,request}
+                        Pass request bodies as validated models (default) or
+                        as the raw Request (experimental).
+  --server-body-modes SERVER_BODY_MODES
+                        Per-operation body modes as inline JSON or a JSON file
+                        path, keyed by operation reference; overrides
+                        --server-body-mode for matched operations
+                        (experimental).
+  --server-handler-mode {sync,async}
+                        Make service methods plain functions (default) or
+                        coroutine functions (experimental).
+  --server-handler-modes SERVER_HANDLER_MODES
+                        Per-operation handler modes as inline JSON or a JSON
+                        file path, keyed by operation reference such as
+                        /paths/~1pets/get; overrides --server-handler-mode for
+                        matched operations (experimental).
+  --server-include-request, --no-server-include-request
+                        Pass the Starlette Request to every service method
+                        (experimental).
+  --server-layout {routers,single}
+                        Write one router module per tag (default) or a single
+                        routes module (experimental).
+  --server-model-package SERVER_MODEL_PACKAGE
+                        Import path of the models that --output generates
+                        (experimental).
+  --server-operation-names SERVER_OPERATION_NAMES
+                        Service method names per operation reference as inline
+                        JSON or a JSON file path (experimental).
+  --server-output SERVER_OUTPUT
+                        Directory of the generated server package
+                        (experimental).
+  --server-package SERVER_PACKAGE
+                        Import path of the generated server package
+                        (experimental).
+  --server-parameter-names SERVER_PARAMETER_NAMES
+                        Argument names per operation reference, each keyed by
+                        location and name such as query:limit, as inline JSON
+                        or a JSON file path (experimental).
+  --server-primary-responses SERVER_PRIMARY_RESPONSES
+                        The declared response a bare return value takes, per
+                        operation, as inline JSON or a JSON file path: an
+                        object with "status_code" and an optional "media_type"
+                        for each operation reference (experimental).
+  --server-router-names SERVER_ROUTER_NAMES
+                        Router group names keyed by group key, such as
+                        tag:pets, as inline JSON or a JSON file path
+                        (experimental).
+
 Documentation: https://datamodel-code-generator.koxudaxi.dev
 Agent skill: https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/
-GitHub: https://github.com/koxudaxi/datamodel-code-generator
+Option recommendations: datamodel-codegen --input SCHEMA --recommend-options (experimental)
+GitHub: https://github.com/datamodel-code-generator/datamodel-code-generator

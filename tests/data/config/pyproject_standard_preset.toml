@@ -1,0 +1,2 @@
+[tool.datamodel-codegen]
+preset = "standard-py310-20260619"

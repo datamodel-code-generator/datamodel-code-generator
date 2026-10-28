@@ -1,0 +1,7 @@
+{
+  "title": "Item",
+  "type": "object",
+  "properties": {
+    "a": {"type": "string"}
+  }
+}

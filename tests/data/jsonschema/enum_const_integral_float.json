@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "counts": {"type": "array", "items": {"type": "integer", "enum": [1, 2], "const": 1.0}},
+    "ratios": {"type": "array", "items": {"type": "number", "enum": [1.5, 2.5], "const": 1.5}}
+  }
+}

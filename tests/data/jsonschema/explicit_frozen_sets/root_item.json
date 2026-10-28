@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "x-python-type": "frozenset[Item]"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Item": {
+      "type": "integer"
+    }
+  }
+}

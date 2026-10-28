@@ -1,0 +1,36 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "values": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Values",
+      "type": "array",
+      "uniqueItems": true,
+      "x-python-type": "frozenset[int]"
+    },
+    "items": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "values",
+    "items",
+    "last"
+  ],
+  "title": "Serialization",
+  "type": "object"
+}

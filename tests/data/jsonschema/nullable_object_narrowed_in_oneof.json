@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string"},
+    "item": {"type": ["object", "null"], "properties": {"x": {"type": "integer"}}}
+  },
+  "oneOf": [
+    {"properties": {"kind": {"const": "a"}, "item": {"type": "object"}}, "required": ["kind", "item"]},
+    {"properties": {"kind": {"const": "b"}}, "required": ["kind"]}
+  ]
+}

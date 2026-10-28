@@ -1,0 +1,19 @@
+{
+  "title": "CustomTemplateDescription",
+  "type": "object",
+  "description": "class description\"\"\"; assert False; \"\"\"still a description",
+  "properties": {
+    "value": {
+      "type": "string",
+      "description": "field description\"\"\"; assert False; \"\"\"still a description"
+    },
+    "safe": {
+      "type": "string",
+      "description": "safe field description"
+    },
+    "other": {
+      "type": "integer"
+    }
+  },
+  "required": ["value", "safe", "other"]
+}

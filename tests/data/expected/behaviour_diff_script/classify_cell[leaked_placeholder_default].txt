@@ -1,0 +1,10 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [default] M:a: \"'-datamodel-code-generator-#'\" -> \"'x'\""
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[default] M:a: \"'-datamodel-code-generator-#'\" -> \"'x'\""
+  ]
+}

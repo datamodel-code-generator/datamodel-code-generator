@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnKnownTypes",
+  "type": "object",
+  "properties": {
+    "aware": {
+      "type": "string",
+      "x-python-type": "pydantic.AwareDatetime",
+      "exclusiveMinimum": 0
+    },
+    "naive": {
+      "type": "string",
+      "x-python-type": "pydantic.NaiveDatetime",
+      "maximum": 10
+    },
+    "positive": {
+      "type": "string",
+      "x-python-type": "pydantic.PositiveInt",
+      "maximum": 10
+    },
+    "past": {
+      "type": "string",
+      "x-python-type": "pydantic.PastDate",
+      "minimum": 0
+    },
+    "identifier": {
+      "type": "string",
+      "x-python-type": "pydantic.UUID4",
+      "minimum": 0
+    },
+    "secret": {
+      "type": "string",
+      "x-python-type": "pydantic.SecretStr",
+      "minimum": 0
+    },
+    "link": {
+      "type": "string",
+      "x-python-type": "pydantic.AnyUrl",
+      "minimum": 0
+    },
+    "anything": {
+      "type": "string",
+      "x-python-type": "Any",
+      "minimum": 0
+    },
+    "items": {
+      "type": "string",
+      "x-python-type": "List",
+      "minimum": 0
+    },
+    "queue": {
+      "type": "string",
+      "x-python-type": "collections.deque",
+      "minimum": 0
+    },
+    "folder": {
+      "type": "string",
+      "x-python-type": "pathlib.PurePath",
+      "minimum": 0
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "items_later": {"$ref": "#/$defs/ItemsLater"},
+    "items_first": {"$ref": "#/$defs/ItemsFirst"},
+    "unevaluated_items": {"$ref": "#/$defs/UnevaluatedItems"},
+    "ref_items": {"$ref": "#/$defs/RefItems"},
+    "ref_bounded": {"$ref": "#/$defs/RefBounded"},
+    "ref_no_parts": {"$ref": "#/$defs/RefNoParts"}
+  },
+  "$defs": {
+    "Array": {"type": "array"},
+    "Bounded": {"allOf": [{"type": "array", "items": {"type": "string"}}, {"minItems": 1}]},
+    "Anything": {"allOf": [true]},
+    "ItemsLater": {"allOf": [{"type": "array"}, {"items": {"type": "string"}}]},
+    "ItemsFirst": {"allOf": [{"items": {"type": "integer"}}, {"type": "array", "minItems": 1}]},
+    "UnevaluatedItems": {"allOf": [{"type": "array"}, {"unevaluatedItems": {"type": "string"}}]},
+    "RefItems": {"allOf": [{"$ref": "#/$defs/Array"}, {"items": {"type": "string"}}]},
+    "RefBounded": {"allOf": [{"$ref": "#/$defs/Bounded"}, {"minItems": 0}]},
+    "RefNoParts": {"allOf": [{"$ref": "#/$defs/Anything"}, {"type": "array", "items": {"type": "string"}}]}
+  }
+}

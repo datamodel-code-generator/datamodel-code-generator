@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: Integer path item name
+  version: '1.0'
+paths: {}
+components:
+  pathItems:
+    1:
+      get:
+        responses:
+          '200':
+            description: OK

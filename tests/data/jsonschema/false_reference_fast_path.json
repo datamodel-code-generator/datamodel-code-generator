@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FalseReferenceFastPath",
+  "type": "object",
+  "properties": {
+    "any_value": {
+      "anyOf": [
+        {"$ref": "#/$defs/Never"},
+        {"$ref": "#/$defs/escaped~1never~0value"},
+        {"$ref": "#/$defs/Text"}
+      ]
+    },
+    "one_value": {
+      "oneOf": [
+        {"$ref": "#/$defs/Never", "nullable": true},
+        {"type": "integer"}
+      ]
+    },
+    "allowed_value": {
+      "anyOf": [
+        {"$ref": "#/$defs/Allowed"},
+        {"type": "string"}
+      ]
+    },
+    "indirect_value": {
+      "anyOf": [
+        {"$ref": "#/$defs/Indirect"},
+        {"type": "integer"}
+      ]
+    }
+  },
+  "$defs": {
+    "Never": false,
+    "escaped/never~value": false,
+    "Allowed": true,
+    "Indirect": {"$ref": "#/$defs/Never"},
+    "Text": {"type": "string"}
+  }
+}

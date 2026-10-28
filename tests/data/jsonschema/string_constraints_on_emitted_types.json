@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StringConstraintsOnEmittedTypes",
+  "type": "object",
+  "required": ["at"],
+  "properties": {
+    "at": {"type": "string", "format": "date-time", "maxLength": 64},
+    "day": {"type": "string", "format": "date", "pattern": "^2"},
+    "clock": {"type": "string", "format": "time", "minLength": 5},
+    "wait": {"type": "string", "format": "duration", "maxLength": 32},
+    "id": {"type": ["string", "null"], "format": "uuid", "minLength": 36},
+    "host": {"type": "string", "format": "ipv4", "maxLength": 15},
+    "amount": {"type": "string", "format": "decimal", "maxLength": 12},
+    "tag": {"type": "string", "format": "uuid", "minItems": 2},
+    "link": {"type": "string", "format": "uri", "maxLength": 100},
+    "links": {"type": "array", "items": {"type": "string", "format": "uri", "maxLength": 50}},
+    "email": {"type": "string", "format": "email", "pattern": "@example\\.com$"},
+    "secret": {"type": "string", "format": "password", "minLength": 8, "pattern": "^[a-z]+$"},
+    "blob": {"type": "string", "format": "byte", "maxLength": 12},
+    "code": {"type": "string", "minItems": 2, "pattern": "^[A-Z]"},
+    "kind": {"type": "string", "const": "box", "maxLength": 5},
+    "anything": {"const": "box", "minLength": 1},
+    "days": {"type": "array", "items": {"type": "string", "format": "date", "maxLength": 10}},
+    "stamps": {"type": "object", "additionalProperties": {"type": "string", "format": "date-time", "minLength": 20}},
+    "slot": {"$ref": "#/$defs/Slot"}
+  },
+  "$defs": {
+    "Slot": {"type": "string", "format": "time", "pattern": "^[0-9]"}
+  }
+}

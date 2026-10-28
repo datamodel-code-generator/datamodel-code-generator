@@ -1,0 +1,11 @@
+[
+  {
+    "value": 1
+  },
+  {
+    "value": "text"
+  },
+  "rejected",
+  "rejected",
+  "rejected"
+]

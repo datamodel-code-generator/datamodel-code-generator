@@ -1,0 +1,5 @@
+syntax = "proto3";
+package google.protobuf;
+enum UserState { UNKNOWN = 0; READY = 1; }
+message UserChild { string name = 1; }
+message Payload { UserState state = 1; UserChild child = 2; }

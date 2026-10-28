@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "NumericConstraints",
+  "type": "object",
+  "properties": {
+    "greater": {
+      "type": "integer",
+      "minimum": 9007199254740993,
+      "exclusiveMinimum": true
+    },
+    "less": {
+      "type": "integer",
+      "maximum": 9007199254740993,
+      "exclusiveMaximum": true
+    },
+    "negative_greater": {
+      "type": "integer",
+      "minimum": -9007199254740993,
+      "exclusiveMinimum": true
+    },
+    "negative_less": {
+      "type": "integer",
+      "maximum": -9007199254740993,
+      "exclusiveMaximum": true
+    },
+    "false_minimum": {
+      "type": "integer",
+      "minimum": 1,
+      "exclusiveMinimum": false
+    },
+    "false_maximum": {
+      "type": "integer",
+      "maximum": 3,
+      "exclusiveMaximum": false
+    },
+    "without_bound": {
+      "type": "integer",
+      "exclusiveMinimum": true,
+      "exclusiveMaximum": true
+    },
+    "small_greater": {
+      "type": "integer",
+      "minimum": 1,
+      "exclusiveMinimum": true
+    },
+    "small_less": {
+      "type": "integer",
+      "maximum": 5,
+      "exclusiveMaximum": true
+    }
+  },
+  "required": [
+    "greater",
+    "less",
+    "negative_greater",
+    "negative_less",
+    "false_minimum",
+    "false_maximum",
+    "without_bound",
+    "small_greater",
+    "small_less"
+  ]
+}

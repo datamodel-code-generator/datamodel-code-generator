@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Extension",
+  "allOf": [
+    {"$ref": "package.json"},
+    {"type": "object", "properties": {"publisher": {"type": "string"}}, "required": ["name", "publisher"]}
+  ]
+}

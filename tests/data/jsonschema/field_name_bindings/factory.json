@@ -1,0 +1,10 @@
+{
+  "title": "Record",
+  "description": "Optional Field list — 名前",
+  "type": "object",
+  "properties": {
+    "items": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer"}}},
+    "Optional": {"type": "string", "default": "Optional Field list — 名前"},
+    "choice": {"enum": ["Optional", "list", "Field"], "default": "Optional"}
+  }
+}

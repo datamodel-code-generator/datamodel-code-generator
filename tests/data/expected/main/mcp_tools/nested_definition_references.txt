@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {},
+  "$defs": {
+    "DemoToolInputInner": {
+      "type": "string",
+      "title": "DemoToolInputInner"
+    },
+    "DemoToolInputOuter": {
+      "type": "object",
+      "properties": {
+        "inner": {
+          "$ref": "#/$defs/DemoToolInputInner",
+          "default": {
+            "$ref": "#/$defs/Inner"
+          }
+        }
+      },
+      "required": [
+        "inner"
+      ],
+      "title": "DemoToolInputOuter"
+    },
+    "DemoToolInputAB": {
+      "type": "integer",
+      "title": "DemoToolInputAB"
+    },
+    "DemoToolInputNode": {
+      "type": "object",
+      "properties": {
+        "child": {
+          "$ref": "#/$defs/DemoToolInputNode"
+        }
+      },
+      "title": "DemoToolInputNode"
+    },
+    "DemoToolInputAllowed": true,
+    "DemoToolInput": {
+      "type": "object",
+      "properties": {
+        "outer": {
+          "$ref": "#/$defs/DemoToolInputOuter"
+        },
+        "escaped": {
+          "$ref": "#/$defs/DemoToolInputAB"
+        },
+        "node": {
+          "$ref": "#/$defs/DemoToolInputNode"
+        },
+        "allowed": {
+          "$ref": "#/$defs/DemoToolInputAllowed"
+        }
+      },
+      "required": [
+        "outer",
+        "escaped",
+        "node"
+      ],
+      "title": "DemoToolInput"
+    },
+    "DemoToolOutputInner": {
+      "type": "string",
+      "title": "DemoToolOutputInner"
+    },
+    "DemoToolOutputOuter": {
+      "type": "object",
+      "properties": {
+        "inner": {
+          "$ref": "#/$defs/DemoToolOutputInner",
+          "default": {
+            "$ref": "#/definitions/Inner"
+          }
+        }
+      },
+      "required": [
+        "inner"
+      ],
+      "title": "DemoToolOutputOuter"
+    },
+    "DemoToolOutputAB": {
+      "type": "integer",
+      "title": "DemoToolOutputAB"
+    },
+    "DemoToolOutputAllowed": true,
+    "DemoToolOutput": {
+      "type": "object",
+      "properties": {
+        "outer": {
+          "$ref": "#/$defs/DemoToolOutputOuter"
+        },
+        "escaped": {
+          "$ref": "#/$defs/DemoToolOutputAB"
+        },
+        "allowed": {
+          "$ref": "#/$defs/DemoToolOutputAllowed"
+        }
+      },
+      "title": "DemoToolOutput"
+    },
+    "DemoToolInput2Inner": {
+      "type": "integer",
+      "title": "DemoToolInput2Inner"
+    },
+    "DemoToolInput2": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/DemoToolInput2Inner"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "DemoToolInput2"
+    }
+  }
+}

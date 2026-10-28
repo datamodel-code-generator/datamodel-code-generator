@@ -1,0 +1,9 @@
+path-item:
+  get:
+    externalDocs:
+      url: https://example.com/docs
+      extra: &items
+        - *items
+    responses:
+      '204':
+        description: Done

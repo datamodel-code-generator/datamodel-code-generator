@@ -1,0 +1,4 @@
+valid: accepted
+invalid entry: rejected
+invalid entry: accepted
+invalid entry: rejected

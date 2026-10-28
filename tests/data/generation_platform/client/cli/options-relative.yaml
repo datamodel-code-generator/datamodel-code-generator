@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: Pets
+  version: 1.0.0
+servers:
+  - url: /v1
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      summary: List the pets.
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: A page of pets.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pets'}
+    post:
+      operationId: createPet
+      tags: [pets]
+      summary: Create a pet.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewPet'}
+      responses:
+        '201':
+          description: The created pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+components:
+  schemas:
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        tag: {type: string}
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        tag: {type: string}
+    Pets:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Pet'}
+        next_cursor: {type: [string, 'null']}

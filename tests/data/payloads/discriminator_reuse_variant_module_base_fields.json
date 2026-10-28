@@ -1,0 +1,13 @@
+{
+  "pets.Animal": {
+    "valid": [
+      {"kind": "cat", "name": "Tom", "details": {"color": "grey"}, "lives": 9},
+      {"kind": "bird"}
+    ],
+    "invalid": [
+      {"kind": "cat", "details": {"color": "grey"}},
+      {"kind": "cat", "name": "Tom", "details": {"color": 1}},
+      {"kind": "fish"}
+    ]
+  }
+}

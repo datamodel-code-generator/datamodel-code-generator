@@ -1,0 +1,7 @@
+{
+  "valid": {
+    "a-name": "ok",
+    "b": "ok"
+  },
+  "invalid": {}
+}

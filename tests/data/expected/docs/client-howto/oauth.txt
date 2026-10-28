@@ -1,0 +1,4 @@
+exit 0
+> POST https://auth.shelter.example/token content-type: application/x-www-form-urlencoded authorization: Basic c2hlbHRlci1jbGk6cGE1NQ== grant_type=client_credentials&scope=pets.read
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer issued-1
+> GET https://eu.shelter.example/v1/pets/2 authorization: Bearer issued-1

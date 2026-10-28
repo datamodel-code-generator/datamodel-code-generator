@@ -1,0 +1,22 @@
+openapi: "3.1.0"
+info:
+  title: Required inherited collision
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    CollisionBase:
+      type: object
+      properties:
+        x-y:
+          type: string
+          minLength: 1
+    CollisionDerived:
+      type: object
+      required:
+        - x-y
+      allOf:
+        - $ref: "#/components/schemas/CollisionBase"
+      properties:
+        x_y:
+          type: integer

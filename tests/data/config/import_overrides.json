@@ -1,0 +1,5 @@
+{
+  "BaseModel": "my_project.model_base",
+  "NotRequired": "my_project.typing_compat",
+  "TypedDict": "my_project.typing_compat"
+}

@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "DurationDefaults",
+  "fields": [
+    {
+      "name": "zero",
+      "type": {
+        "type": "fixed",
+        "name": "D",
+        "size": 12,
+        "logicalType": "duration"
+      },
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "value",
+      "type": "D",
+      "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00e9\u0003\u0000\u0000"
+    }
+  ]
+}

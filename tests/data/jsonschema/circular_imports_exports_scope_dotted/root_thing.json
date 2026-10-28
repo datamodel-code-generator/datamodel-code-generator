@@ -1,0 +1,7 @@
+{
+  "title": "RootThing",
+  "type": "object",
+  "properties": {
+    "user": {"$ref": "p.u.user.json"}
+  }
+}

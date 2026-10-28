@@ -1,0 +1,18 @@
+{
+  "api": {
+    "name": "Example",
+    "methods": [
+      {
+        "name": "Read",
+        "request_type_url": "request",
+        "response_type_url": "response",
+        "syntax": "SYNTAX_PROTO3"
+      }
+    ],
+    "syntax": "SYNTAX_PROTO3",
+    "source_context": {
+      "file_name": "example.proto"
+    }
+  },
+  "created": "2024-01-01T00:00:00Z"
+}

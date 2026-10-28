@@ -1,0 +1,139 @@
+[
+  {
+    "name": "external_later",
+    "schema": "later",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "external_indirect",
+    "config_file": "external_later_config.json",
+    "schema": "indirect",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "external_earlier",
+    "config_file": "external_later_config.json",
+    "schema": "earlier",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "inherited_restrictive",
+    "config_file": "external_later_config.json",
+    "schema": "single",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "local_restrictive",
+    "schema": "later",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      },
+      "Child": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "local_permissive",
+    "schema": "earlier",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      },
+      "Child": {
+        "config": {
+          "protected_namespaces": []
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "known_later_permissive",
+    "schema": "later",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      },
+      "Second": {
+        "config": {
+          "protected_namespaces": []
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "known_later_restrictive",
+    "schema": "later",
+    "config": {
+      "First": {
+        "config": {
+          "protected_namespaces": []
+        }
+      },
+      "Second": {
+        "config": {
+          "protected_namespaces": [
+            "model_"
+          ]
+        }
+      }
+    },
+    "valid": false
+  }
+]

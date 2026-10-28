@@ -1,0 +1,5 @@
+returncode: 1
+stdout:
+stderr:
+README.md and docs/index.md overview blocks differ:
+  - privacy_note

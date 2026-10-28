@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "v": {
+      "$ref": "#/$defs/V"
+    },
+    "v_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "$ref": "#/$defs/BC"
+        }
+      ]
+    },
+    "v_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "$ref": "#/$defs/BC"
+          }
+        ]
+      }
+    },
+    "v_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          },
+          {
+            "$ref": "#/$defs/BC"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "BC": {
+      "type": "string",
+      "enum": [
+        "b",
+        "c"
+      ]
+    },
+    "V": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        },
+        {
+          "$ref": "#/$defs/BC"
+        }
+      ]
+    }
+  }
+}

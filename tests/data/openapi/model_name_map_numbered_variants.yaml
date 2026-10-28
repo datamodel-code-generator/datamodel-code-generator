@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: Numbered variants, version: "1"}
+paths: {}
+components:
+  schemas:
+    Shape:
+      anyOf:
+        - type: object
+          properties:
+            radius: {type: number}
+        - type: object
+          properties:
+            width: {type: number}
+            height: {type: number}

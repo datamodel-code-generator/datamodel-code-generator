@@ -1,0 +1,17 @@
+{
+  "title": "PropertyChildConditionalIntermediate",
+  "allOf": [
+    {
+      "$ref": "conditional_intermediate.json"
+    },
+    {
+      "type": "object",
+      "minProperties": 2,
+      "properties": {
+        "child": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

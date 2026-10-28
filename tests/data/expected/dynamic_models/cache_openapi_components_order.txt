@@ -1,0 +1,106 @@
+{
+  "first_then_second": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Pet": true,
+      "Owner": true
+    },
+    "cached_followup_model_order": [
+      "Owner",
+      "Pet"
+    ],
+    "uncached_followup_model_order": [
+      "Owner",
+      "Pet"
+    ],
+    "cached_followup_fields": {
+      "Owner": [
+        "first_name",
+        "last_name"
+      ],
+      "Pet": [
+        "name",
+        "age"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Owner": [
+        "first_name",
+        "last_name"
+      ],
+      "Pet": [
+        "name",
+        "age"
+      ]
+    },
+    "cached_followup_json": {
+      "Pet": "{\"name\":\"Mochi\",\"age\":3}",
+      "Owner": "{\"first_name\":\"Ada\",\"last_name\":\"Lovelace\"}"
+    },
+    "uncached_followup_json": {
+      "Pet": "{\"name\":\"Mochi\",\"age\":3}",
+      "Owner": "{\"first_name\":\"Ada\",\"last_name\":\"Lovelace\"}"
+    }
+  },
+  "second_then_first": {
+    "input_mapping_types": [
+      "mappingproxy",
+      "mappingproxy"
+    ],
+    "input_mappings_unchanged": [
+      true,
+      true
+    ],
+    "initial_cache_hit": true,
+    "followup_cache_miss": true,
+    "initial_classes_reused": {
+      "Owner": true,
+      "Pet": true
+    },
+    "cached_followup_model_order": [
+      "Pet",
+      "Owner"
+    ],
+    "uncached_followup_model_order": [
+      "Pet",
+      "Owner"
+    ],
+    "cached_followup_fields": {
+      "Pet": [
+        "name",
+        "age"
+      ],
+      "Owner": [
+        "first_name",
+        "last_name"
+      ]
+    },
+    "uncached_followup_fields": {
+      "Pet": [
+        "name",
+        "age"
+      ],
+      "Owner": [
+        "first_name",
+        "last_name"
+      ]
+    },
+    "cached_followup_json": {
+      "Pet": "{\"name\":\"Mochi\",\"age\":3}",
+      "Owner": "{\"first_name\":\"Ada\",\"last_name\":\"Lovelace\"}"
+    },
+    "uncached_followup_json": {
+      "Pet": "{\"name\":\"Mochi\",\"age\":3}",
+      "Owner": "{\"first_name\":\"Ada\",\"last_name\":\"Lovelace\"}"
+    }
+  }
+}

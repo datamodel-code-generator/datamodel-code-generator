@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "UniquePairParent": {
+      "properties": {
+        "value": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Value",
+          "type": "array",
+          "uniqueItems": true,
+          "x-python-type": "set[int]"
+        },
+        "retained": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Retained",
+          "type": "array",
+          "uniqueItems": true,
+          "x-python-type": "set[int]"
+        }
+      },
+      "required": [
+        "value",
+        "retained"
+      ],
+      "title": "UniquePairParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/UniquePairParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Value",
+      "type": "array"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "RepeatedPairChild",
+  "type": "object"
+}

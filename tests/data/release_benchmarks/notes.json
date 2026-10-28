@@ -1,0 +1,11 @@
+{
+  "notes": [
+    {
+      "version": "0.59.0",
+      "input_type": "openapi",
+      "case": "large",
+      "summary": "Fixture note for a benchmark step change.",
+      "details": "This note verifies that chart and table markers render from external note data."
+    }
+  ]
+}

@@ -1,2 +1,1 @@
 datamodel-codegen --strict-types str int
-

@@ -1,0 +1,32 @@
+{
+  "title": "NestedEnvelope",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "string"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "title": "Record",
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "string"
+          },
+          "second": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "first",
+          "second"
+        ]
+      }
+    }
+  },
+  "required": [
+    "metadata",
+    "records"
+  ]
+}

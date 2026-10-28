@@ -1,0 +1,32 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Trace",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "first"
+              ]
+            }
+          },
+          {
+            "name": "x-trace",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "second"
+              ]
+            }
+          }
+        ],
+        "responses": {}
+      }
+    }
+  }
+}

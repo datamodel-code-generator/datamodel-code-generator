@@ -1,0 +1,11 @@
+{
+  "title": "TargetUnavailable",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string",
+      "x-python-type": "enum.StrEnum"
+    }
+  },
+  "required": ["value"]
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "value": {
+      "allOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "number",
+          "minimum": 2
+        }
+      ]
+    }
+  },
+  "required": [
+    "value"
+  ]
+}

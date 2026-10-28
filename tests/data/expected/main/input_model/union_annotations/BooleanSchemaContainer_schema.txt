@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "items": false,
+          "type": "object",
+          "x-python-type": "dict[str, Callable[[int], int]]"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "int | dict[str, Callable[[int], int]]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "BooleanSchemaContainer",
+  "type": "object"
+}

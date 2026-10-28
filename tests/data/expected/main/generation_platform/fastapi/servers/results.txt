@@ -1,0 +1,104 @@
+# results
+serve pydantic_v2.BaseModel
+service DefaultService: get_blob, get_latin, get_nothing, get_plain, get_result, get_text, head_result, post_empty
+service DefaultService without its methods: TypeError
+> GET /results?case=bare
+  get_result(bare)
+< 200 application/json {"id":1}
+> GET /results?case=headers
+  get_result(headers)
+< 200 application/json {"id":1}
+< x-rate: 5
+< x-tag: t
+> GET /results?case=created
+  get_result(created)
+< 201 application/json {"id":1}
+< location: /things/1
+> GET /results?case=no-content
+  get_result(no-content)
+< 204 - b''
+> GET /results?case=no-content-body
+  get_result(no-content-body)
+< 204 - b''
+> GET /results?case=range
+  get_result(range)
+< 202 application/json {"any":[1,2.5,null]}
+> GET /results?case=invalid-body
+  get_result(invalid-body)
+< ResponseValidationError: ['Input should be a valid integer, unable to parse string as an integer']
+> GET /results?case=client-error
+  get_result(client-error)
+< 404 text/plain; charset=utf-8 missing
+> GET /results?case=client-error-number
+  get_result(client-error-number)
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /results?case=client-error-bytes
+  get_result(client-error-bytes)
+< 404 text/plain caf�
+> GET /results?case=problem
+  get_result(problem)
+< 500 application/problem+json {"title":"Broken"}
+> GET /results?case=missing-body
+  get_result(missing-body)
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
+> GET /results?case=response
+  get_result(response)
+< 200 application/json {"id":3}
+> GET /results?case=response-html
+  get_result(response-html)
+< 200 text/html; charset=utf-8 <p>
+> HEAD /results?case=head-empty
+  head_result(head-empty)
+< 200 - b''
+> HEAD /results?case=head-body
+  head_result(head-body)
+< 200 - b''
+> HEAD /results?case=head-bare
+  head_result(head-bare)
+< 200 - b''
+> HEAD /results?case=head-none
+  head_result(head-none)
+< 200 - b''
+> GET /plain?case=text
+  get_plain(text)
+< 200 text/plain; charset=utf-8 abc
+> GET /plain?case=too-long
+  get_plain(too-long)
+< 200 text/plain; charset=utf-8 abcd
+> GET /plain?case=undeclared
+  get_plain(undeclared)
+< 404 - b''
+> GET /plain?case=response-undeclared
+  get_plain(response-undeclared)
+< 500 - b''
+> GET /nothing?case=value
+  get_nothing(value)
+< 200 application/json {}
+> GET /nothing?case=anything
+  get_nothing(anything)
+< 200 application/json {}
+> POST /empty?case=none
+  post_empty(none)
+< 204 - b''
+> POST /empty?case=value
+  post_empty(value)
+< 204 - b''
+> GET /latin?case=latin
+  get_latin(latin)
+< 200 text/plain; charset=iso-8859-1 café
+> GET /latin?case=euro
+  get_latin(euro)
+< ResponseValidationError: ['The text body cannot be encoded as text/plain; charset=iso-8859-1']
+> GET /blob?case=blob
+  get_blob(blob)
+< 200 application/octet-stream b'\x00\xff'
+> GET /texts?case=none
+  get_text(none)
+< 200 application/json null
+> GET /texts?case=null
+  get_text(null)
+< 200 application/json null
+< x-rate: 5
+> GET /texts?case=word
+  get_text(word)
+< 200 application/json "abc"

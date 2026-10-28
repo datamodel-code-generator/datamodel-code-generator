@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "legacy-root.json",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "legacy-root.json#/$defs/Child"
+    }
+  },
+  "required": [
+    "child"
+  ],
+  "$defs": {
+    "Child": {
+      "$id": "child.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  }
+}

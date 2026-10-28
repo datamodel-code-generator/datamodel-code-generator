@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info:
+  title: Codec zoo
+  version: "1"
+paths:
+  /zoo:
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Zoo"
+      responses:
+        "200":
+          description: The stored zoo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zoo"
+components:
+  schemas:
+    Zoo:
+      type: object
+      properties:
+        animals:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/Cat"
+              - $ref: "#/components/schemas/Dog"
+            discriminator:
+              propertyName: kind
+        keepers:
+          type: object
+          propertyNames:
+            $ref: "#/components/schemas/Kind"
+          additionalProperties:
+            $ref: "#/components/schemas/Keeper"
+        pick:
+          anyOf:
+            - $ref: "#/components/schemas/Crowd"
+            - $ref: "#/components/schemas/Solo"
+    Kind:
+      type: string
+      enum: [cat, dog]
+    Keeper:
+      type: object
+      properties:
+        name:
+          type: string
+    Crowd:
+      type: object
+      minProperties: 2
+      properties:
+        size:
+          type: integer
+    Solo:
+      type: object
+      properties:
+        size:
+          type: integer
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: cat
+        nick-name:
+          type: string
+        contact:
+          type: string
+          format: email
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: dog
+        bark-level:
+          type: integer

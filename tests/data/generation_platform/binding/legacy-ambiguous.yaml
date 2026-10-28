@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Repeated operation objects
+  version: '1'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+paths:
+  /one:
+    get: &operation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /two:
+    get: *operation

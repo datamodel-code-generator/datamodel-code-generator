@@ -1,0 +1,24 @@
+x-levels:
+  level0: &level0 {type: object, properties: {value: {type: string}}}
+  level1: &level1 {type: object, properties: {left: *level0, right: *level0}}
+  level2: &level2 {type: object, properties: {left: *level1, right: *level1}}
+  level3: &level3 {type: object, properties: {left: *level2, right: *level2}}
+  level4: &level4 {type: object, properties: {left: *level3, right: *level3}}
+  level5: &level5 {type: object, properties: {left: *level4, right: *level4}}
+  level6: &level6 {type: object, properties: {left: *level5, right: *level5}}
+  level7: &level7 {type: object, properties: {left: *level6, right: *level6}}
+  level8: &level8 {type: object, properties: {left: *level7, right: *level7}}
+  level9: &level9 {type: object, properties: {left: *level8, right: *level8}}
+  level10: &level10 {type: object, properties: {left: *level9, right: *level9}}
+  level11: &level11 {type: object, properties: {left: *level10, right: *level10}}
+openapi: 3.1.0
+info:
+  title: Nested Catalog
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Catalog:
+      type: object
+      properties:
+        tree: *level11

@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "wa": {
+      "$ref": "#/$defs/Wa"
+    },
+    "wa_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    "wa_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wa_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wb": {
+      "$ref": "#/$defs/Wb"
+    },
+    "wb_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "wb_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wb_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wc": {
+      "$ref": "#/$defs/Wc"
+    },
+    "wc_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "description": "x"
+        }
+      ]
+    },
+    "wc_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "description": "x"
+          }
+        ]
+      }
+    },
+    "wc_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "description": "x"
+          }
+        ]
+      }
+    },
+    "wd": {
+      "$ref": "#/$defs/Wd"
+    },
+    "wd_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "maximum": 10
+        }
+      ]
+    },
+    "wd_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "wd_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "we": {
+      "$ref": "#/$defs/We"
+    },
+    "we_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "minimum": 1
+        }
+      ]
+    },
+    "we_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "we_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "wf": {
+      "$ref": "#/$defs/Wf"
+    },
+    "wf_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "type": "integer"
+        }
+      ]
+    },
+    "wf_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "wf_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Q",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "wg": {
+      "$ref": "#/$defs/Wg"
+    },
+    "wg_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "b",
+            "a"
+          ]
+        }
+      ]
+    },
+    "wg_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "b",
+              "a"
+            ]
+          }
+        ]
+      }
+    },
+    "wg_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB",
+            "enum": [
+              "b",
+              "a"
+            ]
+          }
+        ]
+      }
+    },
+    "wh": {
+      "$ref": "#/$defs/Wh"
+    },
+    "wh_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        }
+      ]
+    },
+    "wh_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          }
+        ]
+      }
+    },
+    "wh_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/AB"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Q": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Wa": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    "Wb": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "Wc": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "description": "x"
+        }
+      ]
+    },
+    "Wd": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "maximum": 10
+        }
+      ]
+    },
+    "We": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "minimum": 1
+        }
+      ]
+    },
+    "Wf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Q",
+          "type": "integer"
+        }
+      ]
+    },
+    "Wg": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB",
+          "enum": [
+            "b",
+            "a"
+          ]
+        }
+      ]
+    },
+    "Wh": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AB"
+        }
+      ]
+    }
+  }
+}

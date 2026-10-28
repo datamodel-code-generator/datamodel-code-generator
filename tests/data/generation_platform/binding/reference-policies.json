@@ -1,0 +1,22 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Reference policies", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Holder": {
+      "type": "object",
+      "required": ["record", "name", "maybe", "pair"],
+      "properties": {
+        "record": {"$ref": "#/components/schemas/NullableRecord"},
+        "name": {"$ref": "#/components/schemas/NullableName"},
+        "maybe": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "pair": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "string"}], "minItems": 2, "maxItems": 2},
+        "base": {"$ref": "#/components/schemas/Base"}
+      }
+    },
+    "NullableRecord": {"type": ["object", "null"], "properties": {"value": {"type": "string"}}},
+    "NullableName": {"type": ["string", "null"]},
+    "Base": {"type": "object", "properties": {"kind": {"type": "string"}}},
+    "Child": {"allOf": [{"$ref": "#/components/schemas/Base"}, {"type": "object", "properties": {"extra": {"type": "integer"}}}]}
+  }}
+}

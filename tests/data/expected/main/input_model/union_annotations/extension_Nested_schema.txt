@@ -1,0 +1,27 @@
+{
+  "description": "Flattened outer unions must retain the original inner extension.",
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string",
+          "x-python-union-branch": false,
+          "x-python-type": "int | Callable[[int], int]"
+        }
+      ],
+      "title": "Value",
+      "x-python-type": "str | int | Callable[[int], int]"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "Nested",
+  "type": "object"
+}

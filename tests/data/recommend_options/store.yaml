@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Store
+  version: "2"
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: "#/components/schemas/Order"
+                  receipt:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                      currency:
+                        type: string
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        profile:
+          type: object
+          properties:
+            pet:
+              type: object
+              properties:
+                name:
+                  type: string
+                species:
+                  type: string
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [available, sold]
+        type:
+          type: string
+          enum: [cat, dog]
+        owner:
+          type: object
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              color:
+                type: string
+        error404:
+          type: object
+          properties:
+            reason:
+              type: string
+            retry:
+              type: boolean
+        vec3:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+        dataData:
+          type: object
+          properties:
+            left:
+              type: string
+            right:
+              type: string
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [placed, delivered]
+        type:
+          type: string
+          enum: [online, store]
+        owner:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        order:
+          type: object
+          properties:
+            reference:
+              type: string
+            channel:
+              type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              sku:
+                type: string
+              quantity:
+                type: integer
+        shippingPreferences:
+          type: object
+          properties:
+            deliveryInstructionsForCourier:
+              type: object
+              properties:
+                note:
+                  type: string
+                leaveAtDoor:
+                  type: boolean
+    Shape:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [circle]
+            radius:
+              type: number
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [square]
+            side:
+              type: number

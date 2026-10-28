@@ -1,0 +1,141 @@
+[
+  {
+    "class_name": "StringRoot",
+    "field_order": [
+      "root"
+    ],
+    "fields": [
+      {
+        "name": "root",
+        "alias": "root",
+        "required": true,
+        "value": "text"
+      }
+    ],
+    "value": "text"
+  },
+  {
+    "class_name": "NullableRoot",
+    "field_order": [
+      "root"
+    ],
+    "fields": [
+      {
+        "name": "root",
+        "alias": "root",
+        "required": true,
+        "value": null
+      }
+    ],
+    "value": null
+  },
+  {
+    "class_name": "ArrayRoot",
+    "field_order": [
+      "root"
+    ],
+    "fields": [
+      {
+        "name": "root",
+        "alias": "root",
+        "required": true,
+        "value": [
+          1,
+          2
+        ]
+      }
+    ],
+    "value": [
+      1,
+      2
+    ]
+  },
+  {
+    "class_name": "NormalObject",
+    "field_order": [
+      "value",
+      "field_",
+      "root"
+    ],
+    "fields": [
+      {
+        "name": "value",
+        "alias": "value",
+        "required": true,
+        "value": "object"
+      },
+      {
+        "name": "field_",
+        "alias": "",
+        "required": true,
+        "value": 3
+      },
+      {
+        "name": "root",
+        "alias": "root",
+        "required": true,
+        "value": true
+      }
+    ],
+    "value": {
+      "value": "object",
+      "": 3,
+      "root": true
+    }
+  },
+  {
+    "class_name": "RootMetadata",
+    "field_order": [
+      "text",
+      "nullable",
+      "values",
+      "object"
+    ],
+    "fields": [
+      {
+        "name": "text",
+        "alias": "text",
+        "required": true,
+        "value": "text"
+      },
+      {
+        "name": "nullable",
+        "alias": "nullable",
+        "required": true,
+        "value": null
+      },
+      {
+        "name": "values",
+        "alias": "values",
+        "required": true,
+        "value": [
+          1,
+          2
+        ]
+      },
+      {
+        "name": "object",
+        "alias": "object",
+        "required": true,
+        "value": {
+          "value": "object",
+          "": 3,
+          "root": true
+        }
+      }
+    ],
+    "value": {
+      "text": "text",
+      "nullable": null,
+      "values": [
+        1,
+        2
+      ],
+      "object": {
+        "value": "object",
+        "": 3,
+        "root": true
+      }
+    }
+  }
+]

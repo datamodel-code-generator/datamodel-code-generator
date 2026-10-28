@@ -1,0 +1,12 @@
+{
+  "valid": {
+    "pair": [1, "a"],
+    "triple": [1.5, "b", true]
+  },
+  "invalid": [
+    {"pair": ["a", 1]},
+    {"pair": [1, "a", "b"]},
+    {"triple": [1.5, true, "b"]},
+    {"triple": [1.5, "b"]}
+  ]
+}

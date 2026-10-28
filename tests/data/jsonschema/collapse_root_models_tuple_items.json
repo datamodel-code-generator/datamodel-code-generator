@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "Flag": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "boolean"}
+      ]
+    },
+    "Label": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "pair": {
+      "type": "array",
+      "items": [
+        {"$ref": "#/definitions/Flag"},
+        {"type": "string"}
+      ],
+      "additionalItems": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "triple": {
+      "type": "array",
+      "items": [
+        {"type": "number"},
+        {"$ref": "#/definitions/Label"},
+        {"type": "boolean"}
+      ],
+      "additionalItems": false,
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

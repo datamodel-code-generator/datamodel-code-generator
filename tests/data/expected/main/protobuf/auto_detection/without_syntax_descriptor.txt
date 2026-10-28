@@ -1,0 +1,16 @@
+{
+  "syntax": "",
+  "edition": 0,
+  "messages": {
+    "M": [
+      [
+        "value",
+        ""
+      ],
+      [
+        "count",
+        ""
+      ]
+    ]
+  }
+}

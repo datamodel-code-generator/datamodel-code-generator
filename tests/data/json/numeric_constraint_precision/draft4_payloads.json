@@ -1,0 +1,47 @@
+{
+  "greater": {
+    "valid": 9007199254740994,
+    "invalid": 9007199254740993,
+    "error_type": "greater_than"
+  },
+  "less": {
+    "valid": 9007199254740992,
+    "invalid": 9007199254740993,
+    "error_type": "less_than"
+  },
+  "negative_greater": {
+    "valid": -9007199254740992,
+    "invalid": -9007199254740993,
+    "error_type": "greater_than"
+  },
+  "negative_less": {
+    "valid": -9007199254740994,
+    "invalid": -9007199254740993,
+    "error_type": "less_than"
+  },
+  "false_minimum": {
+    "valid": 1,
+    "invalid": 0,
+    "error_type": "greater_than_equal"
+  },
+  "false_maximum": {
+    "valid": 3,
+    "invalid": 4,
+    "error_type": "less_than_equal"
+  },
+  "without_bound": {
+    "valid": 3,
+    "invalid": "invalid",
+    "error_type": "int_parsing"
+  },
+  "small_greater": {
+    "valid": 2,
+    "invalid": 1,
+    "error_type": "greater_than"
+  },
+  "small_less": {
+    "valid": 4,
+    "invalid": 5,
+    "error_type": "less_than"
+  }
+}

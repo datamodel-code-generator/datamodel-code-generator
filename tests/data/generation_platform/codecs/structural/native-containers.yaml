@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info: {title: Native containers, version: '1'}
+paths:
+  /containers:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Container'}
+      responses:
+        '200':
+          description: Native containers
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Container'}
+components:
+  schemas:
+    Entry:
+      type: object
+      required: [wire-name]
+      properties:
+        wire-name: {type: string}
+    Container:
+      type: object
+      properties:
+        pair:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: {type: string, format: date}
+        entry:
+          anyOf:
+            - {$ref: '#/components/schemas/Entry'}
+            - {type: string}

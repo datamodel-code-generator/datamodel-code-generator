@@ -1,0 +1,336 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/C15"
+    },
+    {
+      "$ref": "#/$defs/C14"
+    }
+  ],
+  "$defs": {
+    "C0": {
+      "type": "object",
+      "properties": {
+        "field_0": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "field_0"
+      ]
+    },
+    "C1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C0"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_1": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_1"
+          ]
+        }
+      ]
+    },
+    "C2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C1"
+        },
+        {
+          "$ref": "#/$defs/C0"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_2": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_2"
+          ]
+        }
+      ]
+    },
+    "C3": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C2"
+        },
+        {
+          "$ref": "#/$defs/C1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_3": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_3"
+          ]
+        }
+      ]
+    },
+    "C4": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C3"
+        },
+        {
+          "$ref": "#/$defs/C2"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_4": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_4"
+          ]
+        }
+      ]
+    },
+    "C5": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C4"
+        },
+        {
+          "$ref": "#/$defs/C3"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_5": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_5"
+          ]
+        }
+      ]
+    },
+    "C6": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C5"
+        },
+        {
+          "$ref": "#/$defs/C4"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_6": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_6"
+          ]
+        }
+      ]
+    },
+    "C7": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C6"
+        },
+        {
+          "$ref": "#/$defs/C5"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_7": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_7"
+          ]
+        }
+      ]
+    },
+    "C8": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C7"
+        },
+        {
+          "$ref": "#/$defs/C6"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_8": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_8"
+          ]
+        }
+      ]
+    },
+    "C9": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C8"
+        },
+        {
+          "$ref": "#/$defs/C7"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_9": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_9"
+          ]
+        }
+      ]
+    },
+    "C10": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C9"
+        },
+        {
+          "$ref": "#/$defs/C8"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_10": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_10"
+          ]
+        }
+      ]
+    },
+    "C11": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C10"
+        },
+        {
+          "$ref": "#/$defs/C9"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_11": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_11"
+          ]
+        }
+      ]
+    },
+    "C12": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C11"
+        },
+        {
+          "$ref": "#/$defs/C10"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_12": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_12"
+          ]
+        }
+      ]
+    },
+    "C13": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C12"
+        },
+        {
+          "$ref": "#/$defs/C11"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_13": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_13"
+          ]
+        }
+      ]
+    },
+    "C14": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C13"
+        },
+        {
+          "$ref": "#/$defs/C12"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_14": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_14"
+          ]
+        }
+      ]
+    },
+    "C15": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/C14"
+        },
+        {
+          "$ref": "#/$defs/C13"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field_15": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "field_15"
+          ]
+        }
+      ]
+    }
+  }
+}

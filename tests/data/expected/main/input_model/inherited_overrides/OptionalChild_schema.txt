@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "RequiredParent": {
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "RequiredParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/RequiredParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "default": 2,
+      "title": "Value",
+      "type": "integer"
+    }
+  },
+  "title": "OptionalChild",
+  "type": "object"
+}

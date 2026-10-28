@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
-from pydantic import Field, RootModel, constr
+from typing import Annotated
+
+from pydantic import Field, RootModel
 
 
-class Schema(RootModel[constr(pattern=r'^[0-9a-f]{8}$')]):
-    root: constr(pattern=r'^[0-9a-f]{8}$') = Field(..., title='Sub')
+class Schema(RootModel[str]):
+    root: Annotated[str, Field(pattern='^[0-9a-f]{8}$', title='Sub')]

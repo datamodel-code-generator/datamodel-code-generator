@@ -1,0 +1,21 @@
+{
+  "title": "ExternalCorePatternChild",
+  "allOf": [
+    {
+      "$ref": "external_core_pattern_parent.json"
+    },
+    {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "values": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

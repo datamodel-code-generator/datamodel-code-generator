@@ -1,0 +1,12 @@
+{
+  "ordinary_external": {
+    "has_datetime_import": false,
+    "imported_python_type_codec": false,
+    "leaked_private_token": false
+  },
+  "raw_python_type_external": {
+    "has_datetime_import": true,
+    "imported_python_type_codec": true,
+    "leaked_private_token": false
+  }
+}

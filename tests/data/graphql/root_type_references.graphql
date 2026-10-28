@@ -1,0 +1,28 @@
+schema {
+  query: RootQuery
+  mutation: RootMutation
+  subscription: RootSubscription
+}
+
+type RootQuery {
+  value: String
+}
+
+type RootMutation {
+  update: Int
+}
+
+type RootSubscription {
+  event: Boolean
+}
+
+type Query {
+  label: String
+}
+
+type Payload {
+  queryRoot: RootQuery
+  mutationRoot: RootMutation
+  subscriptionRoot: RootSubscription
+  ordinaryQuery: Query
+}

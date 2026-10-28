@@ -1,0 +1,8 @@
+syntax = "proto3";
+import "google/protobuf/api.proto";
+import "google/protobuf/timestamp.proto";
+message Payload {
+  // Only Api and its actual field dependencies are needed.
+  google.protobuf.Api api = 1;
+  google.protobuf.Timestamp created = 2;
+}

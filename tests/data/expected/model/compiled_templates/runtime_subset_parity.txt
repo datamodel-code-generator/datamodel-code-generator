@@ -1,0 +1,19 @@
+missing|fallback|False|boolean
+none|None|True|boolean
+false|False|True|boolean
+empty_string||True|boolean
+empty_collection|[]|True|boolean
+unicode|こんにちは {braces} \ " quote
+next|True|こんにちは {braces} \ " quote
+next
+indent='->head\n->\n->tail\n->'
+join='a,,b'
+length='0'/'3'
+list='[]'/"['a', 'b']"
+pprint="{'a': [1, 2]}"
+replace='b\na'
+repr="{'brace': '{}', 'unicode': 'こんにちは'}"
+selectattr="['one', 'one']"
+loop="('a', False)('b', True)"
+namespace='second'/True
+scope=None/True

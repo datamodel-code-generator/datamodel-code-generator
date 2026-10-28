@@ -1,0 +1,239 @@
+openapi: 3.1.0
+info:
+  title: Structural codecs
+  version: "1"
+paths:
+  /leaves:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Leaves"
+      responses:
+        "200":
+          description: The stored leaves.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leaves"
+  /records:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Record"
+      responses:
+        "200":
+          description: The stored record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+  /keyed:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Keyed"
+      responses:
+        "200":
+          description: The stored maps.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Keyed"
+  /tickets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Ticket"
+      responses:
+        "200":
+          description: The stored ticket.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+components:
+  schemas:
+    Color:
+      type: string
+      enum: [red, green]
+    Level:
+      type: integer
+      enum: [1, 2]
+    Code:
+      type: string
+      pattern: "^[a-z]+$"
+    Box:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: integer
+    Leaves:
+      type: object
+      properties:
+        when:
+          type: string
+          format: date-time
+        day:
+          type: string
+          format: date
+        clock:
+          type: string
+          format: time
+        span:
+          type: string
+          format: duration
+        uid:
+          type: string
+          format: uuid
+        v4:
+          type: string
+          format: ipv4
+        v6:
+          type: string
+          format: ipv6
+        net4:
+          type: string
+          format: ipv4-network
+        net6:
+          type: string
+          format: ipv6-network
+        file:
+          type: string
+          format: path
+        price:
+          type: number
+          format: decimal
+        cents:
+          type: string
+          format: decimal
+        ratio:
+          type: number
+        count:
+          type: integer
+        flag:
+          type: boolean
+        nothing:
+          type: "null"
+        mode:
+          const: 1
+        pick:
+          enum: [1, "a", true]
+        color:
+          $ref: "#/components/schemas/Color"
+        level:
+          $ref: "#/components/schemas/Level"
+        tags:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        boxes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Box"
+          uniqueItems: true
+        pair:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+          items: false
+          minItems: 2
+          maxItems: 2
+        seq:
+          type: array
+          items:
+            type: integer
+        choice:
+          oneOf:
+            - type: string
+            - type: integer
+        rank:
+          anyOf:
+            - type: integer
+            - type: boolean
+            - type: string
+        moments:
+          type: array
+          items:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                format: date
+              - type: string
+                format: time
+              - type: string
+                format: duration
+              - type: string
+        idents:
+          type: array
+          items:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: string
+                format: ipv4
+              - $ref: "#/components/schemas/Color"
+              - type: string
+        anything: {}
+    Record:
+      type: object
+      required: [name, stamp]
+      properties:
+        name:
+          type: string
+        stamp:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            type: string
+          default: []
+        note:
+          type: string
+          init: false
+        hint:
+          type: string
+          kw_only: true
+    Keyed:
+      type: object
+      properties:
+        by_color:
+          type: object
+          propertyNames:
+            $ref: "#/components/schemas/Color"
+          additionalProperties:
+            type: integer
+        by_code:
+          type: object
+          propertyNames:
+            $ref: "#/components/schemas/Code"
+          additionalProperties:
+            type: integer
+        by_name:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Record"
+    Ticket:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          readOnly: true
+          init: false
+        label:
+          oneOf:
+            - type: string
+            - type: integer

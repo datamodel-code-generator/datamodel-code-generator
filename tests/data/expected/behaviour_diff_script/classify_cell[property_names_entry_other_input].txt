@@ -1,0 +1,10 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[type] KeyMap: dict[Key, int] -> dict[str, int]"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[type] KeyMap: dict[Key, int] -> dict[str, int]"
+  ]
+}

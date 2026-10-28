@@ -1,0 +1,42 @@
+# nested server package app.server
+stubs: app/services/__init__.py, app/services/pets.py, app/services/store.py
+serve the stubs
+  GET /store/inventory: 500 Internal Server Error
+regenerate: store kept True; pets kept True
+serve an implementation
+  GET /store/inventory: 200 {"cats":2,"dogs":1}
+serve store-mismatch
+  TypeError: The store.get_inventory method of GET /store/inventory, Store.get_inventory, cannot take the keyword arguments its route passes (none): missing a required argument: 'warehouse'
+  not chained
+serve store-without-class
+  ImportError: app.services.store defines no Store, which app.server.main imports: define it in <root>/app/services/store.py; see Next steps in <root>/app/server/README.md
+  caused by ImportError of app.services.store
+serve store-dependency
+  ModuleNotFoundError: No module named 'entrypoint_dependency_that_is_not_installed'
+  not chained
+serve store-import-name
+  ImportError: cannot import name 'name_that_sys_does_not_define' from 'sys' (unknown location)
+  not chained
+serve store-wrapped
+  GET /store/inventory: 200 {"cats":3}
+serve store-builtin
+  GET /store/inventory: 500 Internal Server Error
+serve store-deferred
+  GET /store/inventory: 200 {"cats":2}
+serve pets-import-name
+  ImportError: cannot import name 'Helper' from 'app.services.store' (<root>/app/services/store.py)
+  not chained
+serve a store package without Store
+  ImportError: app.services.store defines no Store, which app.server.main imports: define it in <root>/app/services/store/__init__.py; see Next steps in <root>/app/server/README.md
+  caused by ImportError of app.services.store
+serve without store.py
+  ImportError: No module named 'app.services.store': create <root>/app/services/store.py defining Store, which app.server.main imports. Generating the server again writes missing modules with stubs; see Next steps in <root>/app/server/README.md
+  caused by ModuleNotFoundError of app.services.store
+serve without the services package
+  ImportError: No module named 'app.services': create <root>/app/services/__init__.py, <root>/app/services/pets.py defining Pets, <root>/app/services/store.py defining Store, which app.server.main imports. Generating the server again writes missing modules with stubs; see Next steps in <root>/app/server/README.md
+  caused by ModuleNotFoundError of app.services
+# top-level server package secured, whose groups service and operations both name a class Operations
+stubs: services/__init__.py, services/authorize.py, services/operations.py, services/pets.py, services/service.py
+serve the stubs
+  GET /public: 500 Internal Server Error
+  GET /pets: 500 Internal Server Error

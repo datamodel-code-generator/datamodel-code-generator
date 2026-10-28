@@ -1,0 +1,15 @@
+root_thing {}: schema accepts, model accepts
+root_thing {"item": {"root": {}}}: schema accepts, model accepts
+root_thing {"item": {"sub": {"note": "n", "peer": {"sub": {}}}}}: schema accepts, model accepts
+root_thing {"item": {"sub": {"note": 1}}}: schema rejects, model rejects
+root_thing {"item": []}: schema rejects, model rejects
+a.item {}: schema accepts, model accepts
+a.item {"root": {"item": {}}}: schema accepts, model accepts
+a.item {"sub": {"peer": {"sub": {"note": "deep"}}}}: schema accepts, model accepts
+a.item {"sub": {"peer": {"sub": {"note": false}}}}: schema rejects, model rejects
+a.sub.s {}: schema accepts, model accepts
+a.sub.s {"note": "n", "peer": {}}: schema accepts, model accepts
+a.sub.s {"peer": {"sub": []}}: schema rejects, model rejects
+a.peer.p {}: schema accepts, model accepts
+a.peer.p {"sub": {"note": "n"}}: schema accepts, model accepts
+a.peer.p {"sub": {"note": 2}}: schema rejects, model rejects

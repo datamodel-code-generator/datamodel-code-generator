@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  title: Request compression
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+components:
+  schemas:
+    Item:
+      type: [object, 'null']
+      properties:
+        name:
+          type: string
+    Query:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+    Results:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        next_cursor:
+          type: [string, 'null']
+        next:
+          type: string
+      required: [data]
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        result:
+          $ref: '#/components/schemas/Outcome'
+      required: [id, status]
+    Outcome:
+      type: object
+      properties:
+        value:
+          type: string
+    CheckQuery:
+      type: object
+      properties:
+        id:
+          type: string
+      required: [id]
+    Message:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+paths:
+  /items:
+    post:
+      operationId: createItem
+      tags: [items]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+    get:
+      operationId: listItems
+      tags: [items]
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Results'
+  /notes:
+    post:
+      operationId: createNote
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '204':
+          description: Stored
+  /blobs:
+    put:
+      operationId: putBlob
+      tags: [items]
+      parameters:
+        - name: Content-Length
+          in: header
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Stored
+  /search:
+    post:
+      operationId: search
+      tags: [items]
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Results'
+  /feed:
+    post:
+      operationId: feed
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '200':
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Results'
+  /jobs:
+    post:
+      operationId: createJob
+      tags: [jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /checks:
+    post:
+      operationId: createCheck
+      tags: [checks]
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /checks/status:
+    post:
+      operationId: checkStatus
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckQuery'
+      responses:
+        '200':
+          description: The check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /events:
+    get:
+      operationId: reopenEvents
+      tags: [events]
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+    post:
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      operationId: watch
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '200':
+          description: Events
+          content:
+            text/event-stream:
+              schema:
+                type: string

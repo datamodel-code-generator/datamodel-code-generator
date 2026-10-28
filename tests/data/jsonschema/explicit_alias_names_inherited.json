@@ -1,0 +1,33 @@
+{
+  "title": "AliasNames",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "b": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "c": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

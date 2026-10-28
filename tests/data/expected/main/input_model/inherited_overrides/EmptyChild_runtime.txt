@@ -1,0 +1,38 @@
+[
+  {
+    "bases": [
+      "NonemptyParent"
+    ],
+    "fields": [
+      "value"
+    ]
+  },
+  {
+    "payload": {
+      "value": []
+    },
+    "source": {
+      "value": []
+    },
+    "generated": {
+      "value": []
+    }
+  },
+  {
+    "payload": {
+      "value": [
+        1
+      ]
+    },
+    "source": {
+      "value": [
+        1
+      ]
+    },
+    "generated": {
+      "value": [
+        1
+      ]
+    }
+  }
+]

@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "StringRoot",
+      "name": "StringRoot",
+      "module": "",
+      "source_ref": "root_model_metadata.json#/$defs/StringRoot",
+      "source_path": [
+        "$defs",
+        "StringRoot"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "NullableRoot",
+      "name": "NullableRoot",
+      "module": "",
+      "source_ref": "root_model_metadata.json#/$defs/NullableRoot",
+      "source_path": [
+        "$defs",
+        "NullableRoot"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "str | None",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "ArrayRoot",
+      "name": "ArrayRoot",
+      "module": "",
+      "source_ref": "root_model_metadata.json#/$defs/ArrayRoot",
+      "source_path": [
+        "$defs",
+        "ArrayRoot"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "",
+          "alias": "",
+          "original_name": null,
+          "type": "list[int]",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "NormalObject",
+      "name": "NormalObject",
+      "module": "",
+      "source_ref": "root_model_metadata.json#/$defs/NormalObject",
+      "source_path": [
+        "$defs",
+        "NormalObject"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "value",
+          "alias": "value",
+          "original_name": "value",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "field_",
+          "alias": "",
+          "original_name": "",
+          "type": "int",
+          "required": true
+        },
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": "root",
+          "type": "bool",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "RootMetadata",
+      "name": "RootMetadata",
+      "module": "",
+      "source_ref": "root_model_metadata.json#",
+      "source_path": [],
+      "title": "RootMetadata",
+      "fields": [
+        {
+          "name": "text",
+          "alias": "text",
+          "original_name": "text",
+          "type": "StringRoot",
+          "required": true
+        },
+        {
+          "name": "nullable",
+          "alias": "nullable",
+          "original_name": "nullable",
+          "type": "NullableRoot",
+          "required": true
+        },
+        {
+          "name": "values",
+          "alias": "values",
+          "original_name": "values",
+          "type": "ArrayRoot",
+          "required": true
+        },
+        {
+          "name": "object",
+          "alias": "object",
+          "original_name": "object",
+          "type": "NormalObject",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

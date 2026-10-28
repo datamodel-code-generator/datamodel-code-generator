@@ -1,0 +1,8 @@
+# pets pydantic_v2.BaseModel
+  redirect error = ("ConfigurationError(operation_id='redirect_operation', reason='redirect_refused', field_path='redirects')", 'redirect_refused')
+  redirect metadata = (True, False, True, True)
+  redirect measurements = (2, 0.25, 'redirect-request')
+  redirect safe text = (True, True)
+  redirect received headers = True
+  redirect without response = (True, 0, 0.0, None)
+  attempts omitted = 1

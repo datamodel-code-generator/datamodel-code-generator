@@ -1,0 +1,7 @@
+--- model (baseline input)
++++ model (current input)
+@@ -8,3 +8,4 @@
+ 
+ class Person(BaseModel):
+     name: str | None = None
++    age: int | None = None

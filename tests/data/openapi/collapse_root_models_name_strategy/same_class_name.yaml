@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: collapse root models
+  version: "1"
+paths: {}
+components:
+  schemas:
+    b.Thing:
+      type: object
+      properties:
+        x:
+          type: string
+    a.Thing:
+      $ref: '#/components/schemas/b.Thing'
+    c.User:
+      type: object
+      properties:
+        t:
+          $ref: '#/components/schemas/a.Thing'
+    d.Derived:
+      allOf:
+        - $ref: '#/components/schemas/b.Thing'
+        - type: object
+          properties:
+            y:
+              type: integer

@@ -1,0 +1,18 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "minLength": 18,
+      "maxLength": 24
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "number"
+    }
+  },
+  "format": "custom-number"
+}

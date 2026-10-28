@@ -17,5 +17,5 @@ class Product:
     name: constr(min_length=1, max_length=100) = Field(..., title='Product Name')
     quantity: conint(ge=0) | None = 0
     discount_rate: confloat(ge=0.0, le=1.0) | None = 0.0
-    tags: list[str] | None = []
-    metadata: dict[str, Any] | None = {}
+    tags: list[str] | None = Field(default_factory=list)
+    metadata: dict[str, Any] | None = Field(default_factory=dict)

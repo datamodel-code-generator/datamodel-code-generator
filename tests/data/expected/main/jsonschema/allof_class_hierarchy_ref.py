@@ -33,14 +33,14 @@ class Entity2(BaseModel):
 
 
 class Thing(Entity):
-    type: str | None = 'playground:Thing'
+    type: str
     type_list: list[str] | None = ['playground:Thing']
     name: constr(min_length=1) = Field(..., description='The things name')
 
 
 class Location(Entity2):
-    type: str | None = 'playground:Location'
-    type_list: list[str] | None = ['playground:Location']
+    type: str
+    type_list: list[str]
     address: constr(min_length=5) = Field(
         ..., description='The address of the location'
     )

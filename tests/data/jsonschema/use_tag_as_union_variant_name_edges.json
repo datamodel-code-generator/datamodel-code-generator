@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TagVariantNameEdges",
+  "type": "object",
+  "properties": {
+    "single_branch": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "command"],
+          "properties": {
+            "command": {"type": "string"},
+            "type": {"const": "exec"}
+          }
+        }
+      ]
+    },
+    "single_branch_first_literal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["version", "kind"],
+          "properties": {
+            "version": {"const": "v1"},
+            "kind": {"const": "created"}
+          }
+        }
+      ]
+    },
+    "single_branch_ref_literal": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"$ref": "#/definitions/KindRef"},
+            "value": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "single_branch_discriminator": {
+      "discriminator": {"propertyName": "kind"},
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["version", "kind"],
+          "properties": {
+            "version": {"const": "v1"},
+            "kind": {"const": "created"}
+          }
+        }
+      ]
+    },
+    "nullable_single_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["status", "detail"],
+          "properties": {
+            "status": {"const": "failed"},
+            "detail": {"type": "string"}
+          }
+        },
+        {"type": "null"}
+      ]
+    },
+    "single_branch_items": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "text"],
+            "properties": {
+              "type": {"const": "summary_text"},
+              "text": {"type": "string"}
+            }
+          }
+        ]
+      }
+    },
+    "single_branch_values": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "path"],
+            "properties": {
+              "type": {"const": "environment"},
+              "path": {"type": "string"}
+            }
+          }
+        ]
+      }
+    },
+    "unit_variants": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "started"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "reason"],
+          "properties": {
+            "type": {"const": "stopped"},
+            "reason": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "key_branches": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subAgent"],
+          "properties": {
+            "subAgent": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["thread_spawn"],
+          "properties": {
+            "thread_spawn": {
+              "type": "object",
+              "required": ["depth"],
+              "properties": {
+                "depth": {"type": "integer"}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["inputSchema"],
+          "properties": {
+            "inputSchema": true
+          }
+        }
+      ]
+    },
+    "literal_and_key_branches": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["type", "command"],
+          "properties": {
+            "type": {"const": "exec"},
+            "command": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["custom"],
+          "properties": {
+            "custom": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "path"],
+          "properties": {
+            "type": {"const": "read"},
+            "path": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "enum_and_key_branches": {
+      "oneOf": [
+        {"type": "string", "enum": ["review", "compact"]},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["other"],
+          "properties": {
+            "other": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "empty_literal_key_branch": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": {"const": ""}
+          }
+        }
+      ]
+    },
+    "untagged_branches": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "command"],
+          "properties": {
+            "type": {"const": "exec"},
+            "command": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["text", "uri"],
+          "properties": {
+            "text": {"type": "string"},
+            "uri": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "blob": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "colliding_literal_and_key": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "value"],
+          "properties": {
+            "type": {"const": "granular"},
+            "value": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "colliding_keys": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "shared_property_key_branches": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"const": "image"},
+        "detail": {"type": "string"}
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["url"],
+          "properties": {
+            "url": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["fileId"],
+          "properties": {
+            "fileId": {"type": "string"}
+          }
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "KindRef": {
+      "const": "ref.kind"
+    }
+  }
+}

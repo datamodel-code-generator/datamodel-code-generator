@@ -7,29 +7,84 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
+class ChildOnlyReadOnlyRequest(BaseModel):
+    pass
+
+
+class ChildOnlyReadOnlyResponse(BaseModel):
+    id: int | None = None
+
+
+class ChildOnlyWriteOnlyRequest(BaseModel):
+    secret: str | None = None
+
+
+class ChildOnlyWriteOnlyResponse(BaseModel):
+    pass
+
+
 class ChildMixedRequest(BaseModel):
     name: str | None = None
+
+
+class ChildMixedResponse(BaseModel):
+    id: int | None = None
+    name: str | None = None
+
+
+class ParentWithOnlyReadOnlyChildRequest(BaseModel):
+    child: ChildOnlyReadOnlyRequest | None = None
+
+
+class ParentWithOnlyReadOnlyChildResponse(BaseModel):
+    child: ChildOnlyReadOnlyResponse | None = None
+    name: str | None = None
+
+
+class ParentWithOnlyWriteOnlyChildRequest(BaseModel):
+    child: ChildOnlyWriteOnlyRequest | None = None
+    secret: str | None = None
+
+
+class ParentWithOnlyWriteOnlyChildResponse(BaseModel):
+    child: ChildOnlyWriteOnlyResponse | None = None
 
 
 class ParentWithMixedChildRequest(BaseModel):
     child: ChildMixedRequest | None = None
 
 
+class ParentWithMixedChildResponse(BaseModel):
+    child: ChildMixedResponse | None = None
+    name: str | None = None
+
+
 class ParentWithChildListRequest(BaseModel):
     children: list[ChildMixedRequest] | None = None
 
 
-class ChildOnlyReadOnly(BaseModel):
+class ParentWithChildListResponse(BaseModel):
+    children: list[ChildMixedResponse] | None = None
+    name: str | None = None
+
+
+class RecursiveOnlyReadOnlyRequest(BaseModel):
+    pass
+
+
+class RecursiveOnlyReadOnlyResponse(BaseModel):
     id: int | None = None
+    child: RecursiveOnlyReadOnlyResponse | None = None
 
 
-class ChildOnlyWriteOnly(BaseModel):
+class RecursiveOnlyWriteOnlyRequest(BaseModel):
     secret: str | None = None
+    child: RecursiveOnlyWriteOnlyRequest | None = None
 
 
-class ParentWithOnlyReadOnlyChildRequest(BaseModel):
-    child: ChildOnlyReadOnly | None = None
+class RecursiveOnlyWriteOnlyResponse(BaseModel):
+    pass
 
 
-class ParentWithOnlyWriteOnlyChildResponse(BaseModel):
-    child: ChildOnlyWriteOnly | None = None
+RecursiveOnlyReadOnlyResponse.model_rebuild()
+RecursiveOnlyWriteOnlyRequest.model_rebuild()

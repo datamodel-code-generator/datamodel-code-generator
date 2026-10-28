@@ -1,0 +1,20 @@
+{
+  "title": "ExternalCoreConditionalChild",
+  "allOf": [
+    {
+      "$ref": "conditional_parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

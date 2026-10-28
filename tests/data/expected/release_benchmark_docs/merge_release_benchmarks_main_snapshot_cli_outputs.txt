@@ -1,0 +1,43 @@
+returncode: 0
+stdout:
+stderr:
+Wrote <tmp>/release-benchmarks.json
+merged:
+{
+  "schema_version": 1,
+  "metadata": {
+    "generated_at": "2026-06-23T00:01:00Z",
+    "workflow": "Release Benchmarks",
+    "workflow_run_id": "merge-run",
+    "collector_sha": "merge-job-sha",
+    "os": "ubuntu-24.04",
+    "python_version": "3.14.2",
+    "runs_per_case": "3",
+    "warmups_per_case": "1",
+    "selection_strategy": "",
+    "selection_window_days": "",
+    "selected_versions": "main",
+    "download_source": "",
+    "download_window_days": "",
+    "download_versions": "",
+    "download_window_total": "",
+    "pypistats_source": "",
+    "pypistats_last_day": "",
+    "pypistats_last_week": "",
+    "pypistats_last_month": "",
+    "pypistats_timeseries_days": "",
+    "pypistats_timeseries_downloads": "",
+    "release_dates": {},
+    "main_snapshot_generated_at": "2026-06-23T00:00:00Z",
+    "main_snapshot_workflow_run_id": "main-run",
+    "main_snapshot_collector_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "entries": [
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "fields": [
+    "list",
+    "Field",
+    "Optional",
+    "list_aliased",
+    "list_aliased_1",
+    "items",
+    "count",
+    "choice",
+    "child"
+  ],
+  "items_annotation": true,
+  "choice_literals": [
+    "Field",
+    "Optional",
+    "list"
+  ],
+  "values": {
+    "list": "list",
+    "Field": "list",
+    "Optional": "list",
+    "list_aliased": "list",
+    "list_aliased_1": "list",
+    "count": 3,
+    "choice": "list"
+  },
+  "items": [
+    1,
+    2
+  ],
+  "child_value": 4
+}

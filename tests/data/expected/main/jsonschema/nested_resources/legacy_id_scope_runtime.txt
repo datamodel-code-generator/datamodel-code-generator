@@ -1,0 +1,8 @@
+[
+  "rejected",
+  {
+    "child": {
+      "value": 123
+    }
+  }
+]

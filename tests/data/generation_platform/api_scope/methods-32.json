@@ -1,0 +1,39 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/search": {
+      "query": {
+        "parameters": [
+          {
+            "in": "querystring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalOperations": {
+        "COPY": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

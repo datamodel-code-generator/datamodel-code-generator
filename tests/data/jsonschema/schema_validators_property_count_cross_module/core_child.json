@@ -1,0 +1,21 @@
+{
+  "title": "CoreChild",
+  "allOf": [
+    {
+      "$ref": "property_parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "child": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^extra_": {
+          "type": "integer"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "kind": "batch",
+  "jobs": [
+    {
+      "kind": "generation",
+      "name": "plain",
+      "output": "plain.py"
+    },
+    {
+      "kind": "generation",
+      "name": "strict",
+      "output": "strict.py"
+    }
+  ]
+}

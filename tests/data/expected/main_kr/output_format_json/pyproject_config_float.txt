@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "pyproject-config",
+  "content": "[tool.datamodel-codegen]\nhttp-timeout = 1.5\n",
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "http-timeout": 1.5
+      }
+    }
+  }
+}

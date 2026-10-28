@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: second
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        second:
+          type: string

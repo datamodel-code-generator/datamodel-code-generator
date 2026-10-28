@@ -1,0 +1,37 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Multiple Collisions Test
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+    child.Message:
+      type: object
+      properties:
+        content:
+          type: string
+    foo.Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    bar.Pet:
+      type: object
+      properties:
+        tag:
+          type: string
+    foo.Item:
+      type: object
+      properties:
+        sku:
+          type: string
+    bar.Item:
+      type: object
+      properties:
+        price:
+          type: number

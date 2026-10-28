@@ -1,0 +1,2 @@
+DecimalDefaults1(positive=Decimal('3'), negative=Decimal('-2.58'), zero=Decimal('0.0000'), trailing=Decimal('12.00'))
+{'positive': Decimal('3'), 'negative': Decimal('-2.58'), 'zero': Decimal('0.0000'), 'trailing': Decimal('12.00')}

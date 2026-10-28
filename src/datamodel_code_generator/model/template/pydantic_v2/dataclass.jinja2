@@ -9,7 +9,7 @@
 {%- endfor %}
 {%- if config %}
 {%- set config_items = [] %}
-{%- for k, v in config.items() %}
+{%- for k, v in _safe_config_items %}
     {%- set _ = config_items.append(k ~ '=' ~ v) %}
 {%- endfor %}
     {%- set _ = args.append('config=ConfigDict(' ~ config_items | join(', ') ~ ')') %}

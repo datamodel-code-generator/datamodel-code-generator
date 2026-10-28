@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "generated_at": "2026-09-04T12:34:56Z",
+    "main_snapshot_generated_at": "2026-09-04T12:00:00Z",
+    "main_snapshot_collector_sha": "0123456789abcdef0123456789abcdef01234567",
+    "release_dates": {
+      "0.50.0": "2026-08-01T12:00:00Z",
+      "0.51.0": "2026-08-02T12:00:00Z",
+      "0.52.0": "2026-08-03T12:00:00Z",
+      "0.53.0": "2026-08-04T12:00:00Z",
+      "0.54.0": "2026-08-05T12:00:00Z",
+      "0.55.0": "2026-08-06T12:00:00Z",
+      "0.56.0": "2026-08-07T12:00:00Z",
+      "0.57.0": "2026-08-08T12:00:00Z",
+      "0.58.0": "2026-08-09T12:00:00Z",
+      "0.59.0": "2026-08-10T12:00:00Z",
+      "0.60.0": "2026-08-11T12:00:00Z",
+      "0.61.0": "2026-08-12T12:00:00Z",
+      "0.62.0": "2026-08-13T12:00:00Z",
+      "0.63.0": "2026-08-14T12:00:00Z",
+      "0.64.0": "2026-08-15T12:00:00Z",
+      "0.65.0": "2026-08-16T12:00:00Z",
+      "0.66.0": "2026-08-17T12:00:00Z",
+      "0.67.0": "2026-08-18T12:00:00Z",
+      "0.68.0": "2026-08-19T12:00:00Z",
+      "0.69.0": "2026-08-20T12:00:00Z",
+      "0.70.0": "2026-08-21T12:00:00Z",
+      "0.71.0": "2026-08-22T12:00:00Z",
+      "0.72.0": "2026-08-23T12:00:00Z",
+      "0.73.0": "2026-08-24T12:00:00Z",
+      "0.74.0": "2026-08-25T12:00:00Z",
+      "0.75.0": "2026-08-26T12:00:00Z"
+    }
+  },
+  "entries": [
+    {
+      "version": "0.50.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 10000
+    },
+    {
+      "version": "0.51.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 101
+    },
+    {
+      "version": "0.52.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 102
+    },
+    {
+      "version": "0.53.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 103
+    },
+    {
+      "version": "0.54.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 104
+    },
+    {
+      "version": "0.55.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 105
+    },
+    {
+      "version": "0.56.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 106
+    },
+    {
+      "version": "0.57.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 107
+    },
+    {
+      "version": "0.58.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 108
+    },
+    {
+      "version": "0.59.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 109
+    },
+    {
+      "version": "0.60.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 110
+    },
+    {
+      "version": "0.61.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 111
+    },
+    {
+      "version": "0.62.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 112
+    },
+    {
+      "version": "0.63.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 113
+    },
+    {
+      "version": "0.64.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 114
+    },
+    {
+      "version": "0.65.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 115
+    },
+    {
+      "version": "0.66.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 116
+    },
+    {
+      "version": "0.67.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 117
+    },
+    {
+      "version": "0.68.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 118
+    },
+    {
+      "version": "0.69.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 119
+    },
+    {
+      "version": "0.70.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 120
+    },
+    {
+      "version": "0.71.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 121
+    },
+    {
+      "version": "0.72.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 122
+    },
+    {
+      "version": "0.73.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 123
+    },
+    {
+      "version": "0.74.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 124
+    },
+    {
+      "version": "0.75.0",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 125
+    },
+    {
+      "version": "main",
+      "input_type": "jsonschema",
+      "case": "small",
+      "formatter": "default",
+      "status": "ok",
+      "median_ms": 126
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[unclosed-string]
+type Alias = "unterminated
+
+[unclosed-bracket]
+TokenError

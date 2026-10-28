@@ -1,0 +1,8 @@
+base: &base
+  id: 1
+  name: example
+item:
+  <<: *base
+  tags: &tags [one, two]
+other:
+  tags: *tags

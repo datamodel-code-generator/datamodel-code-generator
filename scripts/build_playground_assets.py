@@ -17,9 +17,11 @@ from typing import Any, cast
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.cli_options import (
     CLI_OPTION_META,
+    CLI_REFERENCE_ROOT,
     OPTION_RELATION_KINDS,
     CLIOptionRelation,
     OptionCategory,
+    get_cli_option_doc_path,
     get_option_meta,
 )
 from datamodel_code_generator.enums import InputFileType
@@ -64,10 +66,12 @@ UI_PROVIDED_OPTIONS = {
 # (network access, optional extras, and local Python modules). Everything else is classified
 # dynamically from the GenerateConfig schema by _option_support() below.
 BROWSER_UNAVAILABLE_OPTIONS = {
+    "custom_template_dir": "Custom Jinja2 templates are not available in the browser playground.",
     "url": "Remote input URLs are not fetched by the browser playground.",
     "input_model": "Python module imports are not available in the browser playground.",
     "allow_remote_refs": "Resolving remote $refs needs network access.",
     "http_headers": "HTTP requests are not available in the browser playground.",
+    "http_backend": "HTTP requests are not available in the browser playground.",
     "http_ignore_tls": "HTTP requests are not available in the browser playground.",
     "http_local_ref_path": "HTTP requests are not available in the browser playground.",
     "http_query_parameters": "HTTP requests are not available in the browser playground.",
@@ -77,6 +81,36 @@ BROWSER_UNAVAILABLE_OPTIONS = {
     "formatters": "The browser playground always uses the dependency-free builtin formatter.",
     "custom_formatters": "Imports Python formatter modules that are not available in the browser.",
     "custom_formatters_kwargs": "Configures custom formatter modules, which are not available in the browser.",
+    **dict.fromkeys(
+        (
+            "generate_server",
+            "server_output",
+            "server_package",
+            "server_model_package",
+            "server_layout",
+            "server_handler_mode",
+            "server_handler_modes",
+            "server_include_request",
+            "server_body_mode",
+            "server_body_modes",
+            "server_primary_responses",
+            "server_operation_names",
+            "server_router_names",
+            "server_parameter_names",
+            "generate_client",
+            "client_output",
+            "client_package",
+            "client_model_package",
+            "client_signature_style",
+            "client_body_arguments",
+            "client_resource_names",
+            "client_operations",
+            "client_default_base_url",
+            "client_server_base_url",
+            "client_protocols",
+        ),
+        "Server and client packages are not generated in the browser playground.",
+    ),
 }
 
 CATEGORY_ORDER = [
@@ -88,6 +122,7 @@ CATEGORY_ORDER = [
     OptionCategory.TYPING.value,
     OptionCategory.OPENAPI.value,
     OptionCategory.GRAPHQL.value,
+    OptionCategory.TARGET.value,
 ]
 
 
@@ -273,6 +308,7 @@ def _option_metadata(action: argparse.Action, option_targets: dict[str, dict[str
         "value_kind": value_kind,
         "label": name.removeprefix("--"),
         "category": meta.category.value if meta else OptionCategory.GENERAL.value,
+        "docs_url": get_cli_option_doc_path(name, root=f"/{CLI_REFERENCE_ROOT}", extension="/"),
         "control": control,
         "choices": _choices(action),
         "help": _clean_help(action),

@@ -66,12 +66,11 @@ from pydantic import BaseModel
 class Model(BaseModel):
     name: Optional[str]
     age: Optional[int]
-
 ```
 
 ## 📚 Template Reference
 
-You can create more complex custom templates by copying [the default templates](https://github.com/koxudaxi/datamodel-code-generator/tree/main/src/datamodel_code_generator/model/template). Use them as a reference for understanding the structure and available variables, and customize the code generation process according to your specific requirements.
+You can create more complex custom templates by copying [the default templates](https://github.com/datamodel-code-generator/datamodel-code-generator/tree/main/src/datamodel_code_generator/model/template). Use them as a reference for understanding the structure and available variables, and customize the code generation process according to your specific requirements.
 
 ---
 

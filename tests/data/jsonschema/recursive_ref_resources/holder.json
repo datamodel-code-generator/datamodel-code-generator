@@ -1,0 +1,3 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Holder", "type": "object",
+ "properties": {"node": {"$ref": "tree.json#/properties/node", "minProperties": 1},
+                "branch": {"$ref": "tree.json#/properties/branch", "minProperties": 1}}}

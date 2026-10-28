@@ -17,4 +17,4 @@ class Thing(Entity):
 
 
 class Person(Thing):
-    type: str | None = 'playground:Person'
+    type: str

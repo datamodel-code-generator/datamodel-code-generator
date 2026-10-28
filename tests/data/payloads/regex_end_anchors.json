@@ -1,0 +1,33 @@
+{
+  "alternation": {
+    "schema": {
+      "type": "string",
+      "pattern": "(^arn:([^:]*):([^:]*):([^:]*):(|\\*|[\\d]{12}):(.+)$)|^\\*$"
+    },
+    "payloads": ["arn:::::0", "arn:::::0\n", "*", "*\n", "x\n"]
+  },
+  "top_level": {
+    "schema": {"type": "string", "pattern": "^a$"},
+    "payloads": ["a", "a\n", "a\n\n"]
+  },
+  "repeated_group": {
+    "schema": {"type": "string", "pattern": "^(a$)+"},
+    "payloads": ["a", "a\n"]
+  },
+  "class_and_escape": {
+    "schema": {"type": "string", "pattern": "^[$]a\\$$"},
+    "payloads": ["$a$", "$a$\n"]
+  },
+  "no_anchor": {
+    "schema": {"type": "string", "pattern": "a"},
+    "payloads": ["a", "a\n"]
+  },
+  "property_names": {
+    "schema": {
+      "type": "object",
+      "patternProperties": {"^k$": {"type": "integer"}},
+      "additionalProperties": false
+    },
+    "payloads": [{"k": 1}, {"k\n": 1}]
+  }
+}

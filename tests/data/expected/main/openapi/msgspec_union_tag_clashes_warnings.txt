@@ -1,0 +1,4 @@
+msgspec cannot decode the union Holder.fields: its Struct types Dog, Circle are tagged by different fields 'kind', 'shape'.
+msgspec cannot decode the union Holder.family: its Struct types Cat, Kitten share the tag 'a'.
+msgspec cannot decode the union Holder.untagged: its Struct types Dog, Plain are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Holder.kinds: its Struct types Square, Coded mix int and str tags.

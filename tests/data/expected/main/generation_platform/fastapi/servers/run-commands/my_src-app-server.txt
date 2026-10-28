@@ -1,0 +1,4 @@
+uvicorn --app-dir 'my src' app.server.main:app --reload
+  serves 'Pets' from .
+--directory 'my src' fastapi dev --entrypoint app.server.main:app
+  serves 'Pets' from my src

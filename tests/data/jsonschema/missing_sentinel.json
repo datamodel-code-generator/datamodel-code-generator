@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MissingSentinel",
+  "type": "object",
+  "required": ["required", "requiredNullable"],
+  "properties": {
+    "required": {
+      "type": "integer"
+    },
+    "requiredNullable": {
+      "type": ["integer", "null"]
+    },
+    "unrequired": {
+      "type": "integer"
+    },
+    "nullableUnrequired": {
+      "type": ["integer", "null"]
+    },
+    "withDefault": {
+      "type": "integer",
+      "default": 1
+    },
+    "nullDefault": {
+      "type": ["integer", "null"],
+      "default": null
+    },
+    "aliased-field": {
+      "type": "string"
+    }
+  }
+}

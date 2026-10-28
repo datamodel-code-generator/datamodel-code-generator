@@ -1,0 +1,12 @@
+defaults: &defaults
+  category: base
+  labels: &labels
+    - default
+entry: &entry
+  <<: *defaults
+  labels: *labels
+  nested:
+    - name: first
+      references: *labels
+copy: *entry
+legacy_bool: True

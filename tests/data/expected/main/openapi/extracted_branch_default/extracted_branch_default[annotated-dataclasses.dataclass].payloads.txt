@@ -1,0 +1,8 @@
+empty: accepted
+valid: accepted
+invalid weight: accepted
+invalid weight: rejected (float_parsing)
+invalid quantity: accepted
+invalid quantity: accepted
+invalid tags: accepted
+invalid step: accepted

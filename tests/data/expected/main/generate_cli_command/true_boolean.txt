@@ -1,2 +1,1 @@
 datamodel-codegen --input schema.yaml --snake-case-field
-

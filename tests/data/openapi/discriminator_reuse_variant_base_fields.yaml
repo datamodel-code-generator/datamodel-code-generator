@@ -1,0 +1,74 @@
+openapi: 3.1.0
+info:
+  title: Reused variants whose base keeps the tag field as a field
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          const: cat
+        name:
+          type: string
+        lives:
+          type: integer
+    Kitten:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          const: cat
+        name:
+          type: string
+        lives:
+          type: integer
+    Lone:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          const: cat
+        name:
+          type: string
+        lives:
+          type: integer
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: dog
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Kitten"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+    Animal:
+      oneOf:
+        - $ref: "#/components/schemas/Kitten"
+        - $ref: "#/components/schemas/Bird"
+      discriminator:
+        propertyName: kind
+    Holder:
+      type: object
+      properties:
+        solo:
+          oneOf:
+            - $ref: "#/components/schemas/Lone"
+          discriminator:
+            propertyName: kind
+        other:
+          oneOf:
+            - $ref: "#/components/schemas/Lone"
+          discriminator:
+            propertyName: kind

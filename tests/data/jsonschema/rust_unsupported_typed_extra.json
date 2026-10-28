@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "union": {
+      "$ref": "#/definitions/UnionExtras"
+    }
+  },
+  "additionalProperties": {
+    "type": "array",
+    "items": {
+      "type": "string",
+      "pattern": "^(?>ab|a)c$"
+    }
+  },
+  "definitions": {
+    "UnionExtras": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^(?>ab|a)c$"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  }
+}

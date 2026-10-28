@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Foo": {
+      "type": "object",
+      "properties": {
+        "bar": {
+          "$ref": "#/$defs/Bar"
+        }
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string",
+          "writeOnly": true
+        },
+        "c": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

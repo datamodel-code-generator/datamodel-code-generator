@@ -1,0 +1,1 @@
+DurationDefaults(zero=D(root=datetime.timedelta(0)), value=D(root=datetime.timedelta(seconds=1, microseconds=1000)))

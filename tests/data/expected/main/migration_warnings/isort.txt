@@ -1,0 +1,1 @@
+Support for isort <6 will end in a future release.

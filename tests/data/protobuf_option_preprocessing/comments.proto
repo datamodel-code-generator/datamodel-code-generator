@@ -1,0 +1,15 @@
+syntax = "proto2";
+/* Pretend source:
+option (unknown) = "keep this comment";
+*/
+message Payload {
+  // Docs [x(y)
+  optional string text = 1 [default = "ok"];
+  /* Docs [x(y)]
+option (unknown) = "keep this comment";
+  */
+  optional string second = 2 [default = "value"];
+  // Literal quotes ' " and /* [ ( , ]
+  optional int32 count = 3 [default = 7 /* ( ) [ ] , */];
+}
+// [(

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Invoice",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "string",
+      "format": "decimal",
+      "default": "12.340"
+    },
+    "invalid_amount": {
+      "type": "string",
+      "format": "decimal",
+      "default": "not-a-decimal"
+    },
+    "nullable_amount": {
+      "type": ["string", "null"],
+      "format": "decimal",
+      "default": null
+    },
+    "label": {
+      "type": "string",
+      "default": "retail"
+    }
+  }
+}

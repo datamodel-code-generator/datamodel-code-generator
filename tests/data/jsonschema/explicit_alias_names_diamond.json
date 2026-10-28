@@ -1,0 +1,66 @@
+{
+  "title": "AliasNames",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Left"
+    },
+    {
+      "$ref": "#/$defs/Right"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "b": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "c": {
+          "type": "string"
+        }
+      }
+    },
+    "Left": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "d": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Right": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "e": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2 @@
+[tool.datamodel-codegen.server-body-modes]
+"/paths/~1pets/post" = "raw"

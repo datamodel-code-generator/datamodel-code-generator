@@ -1,0 +1,21 @@
+{
+  "title": "Root",
+  "allOf": [
+    {
+      "$ref": "#/definitions/Base"
+    },
+    {
+      "minLength": 18
+    }
+  ],
+  "format": "email",
+  "definitions": {
+    "Base": {
+      "type": "string"
+    }
+  },
+  "enum": [
+    "long-email@example.com",
+    "a@example.com"
+  ]
+}

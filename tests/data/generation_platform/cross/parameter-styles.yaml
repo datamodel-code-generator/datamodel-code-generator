@@ -1,0 +1,121 @@
+openapi: 3.1.0
+info: {title: Parameter styles, version: "1.0"}
+servers:
+  - {url: https://styles.example.com}
+paths:
+  /labels/{name}/{names}/{point}:
+    get:
+      operationId: getLabels
+      parameters:
+        - {name: name, in: path, required: true, style: label, schema: {type: string}}
+        - {name: names, in: path, required: true, style: label, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: point, in: path, required: true, style: label, schema: {$ref: "#/components/schemas/Point"}}
+      responses:
+        "204": {description: Done.}
+  /matrix/{name}/{names}/{point}:
+    get:
+      operationId: getMatrix
+      parameters:
+        - {name: name, in: path, required: true, style: matrix, schema: {type: string}}
+        - {name: names, in: path, required: true, style: matrix, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: point, in: path, required: true, style: matrix, explode: true, schema: {$ref: "#/components/schemas/Point"}}
+      responses:
+        "204": {description: Done.}
+  /simple/{name}/{names}/{point}:
+    get:
+      operationId: getSimple
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+        - {name: names, in: path, required: true, schema: {type: array, items: {type: integer}}}
+        - {name: point, in: path, required: true, explode: true, schema: {$ref: "#/components/schemas/Point"}}
+      responses:
+        "204": {description: Done.}
+  /query:
+    get:
+      operationId: getQuery
+      parameters:
+        - {name: spaced, in: query, style: spaceDelimited, explode: false, schema: {type: array, items: {type: string}}}
+        - {name: piped, in: query, style: pipeDelimited, explode: false, schema: {type: array, items: {type: integer}}}
+        - {name: point, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: corner, in: query, style: form, explode: false, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: flags, in: query, schema: {type: array, items: {type: boolean}}}
+        - {name: reserved, in: query, allowReserved: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /headers:
+    get:
+      operationId: getHeaders
+      parameters:
+        - {name: X-Point, in: header, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: X-Corner, in: header, explode: true, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: X-Tags, in: header, schema: {type: array, items: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /header-text:
+    get:
+      operationId: getHeaderText
+      parameters:
+        - {name: X-Name, in: header, schema: {type: string}}
+        - {name: X-Items, in: header, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: X-Label, in: header, schema: {$ref: "#/components/schemas/Named"}}
+        - {name: X-Kind, in: header, schema: {type: string, enum: [plain, "caf\u00e9"]}}
+        - {name: X-Note, in: header, content: {text/plain: {schema: {type: string}}}}
+        - {name: X-Named, in: header, content: {application/json: {schema: {$ref: "#/components/schemas/Named"}}}}
+      responses:
+        "204": {description: Done.}
+  /literal/a%20b%C3%A9/{id}:
+    get:
+      operationId: getLiteral
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /labelled-text:
+    post:
+      operationId: postLabelledText
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /cookies:
+    get:
+      operationId: getCookies
+      parameters:
+        - {name: ids, in: cookie, schema: {type: array, items: {type: integer}}}
+        - {name: point, in: cookie, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: count, in: cookie, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /names/{id}:
+    get:
+      operationId: getNames
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: id, in: query, schema: {type: integer}}
+        - {name: class, in: query, schema: {type: string}}
+        - {name: from, in: query, schema: {type: string}}
+        - {name: self, in: query, schema: {type: string}}
+        - {name: options, in: query, schema: {type: string}}
+        - {name: request, in: query, schema: {type: string}}
+        - {name: "page[size]", in: query, schema: {type: integer}}
+        - {name: user-id, in: header, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Point:
+      type: object
+      additionalProperties: false
+      required: [x, y]
+      properties:
+        x: {type: integer}
+        y: {type: integer}
+    Named:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string}

@@ -1,0 +1,23 @@
+{
+  "title": "TargetNewerSymbols",
+  "type": "object",
+  "properties": {
+    "typing_symbols": {
+      "type": "string",
+      "x-python-type": "tuple[ReadOnly[str], TypeIs[str], Buffer]"
+    },
+    "numeric_symbols": {
+      "type": "string",
+      "x-python-type": "tuple[DecimalException, DecimalTuple, SafeUUID]"
+    },
+    "runtime_symbols": {
+      "type": "string",
+      "x-python-type": "tuple[timezone, ReprEnum, RegexFlag]"
+    },
+    "enum_helpers": {
+      "type": "string",
+      "x-python-type": "tuple[auto, enum.property, verify, member, nonmember]"
+    }
+  },
+  "required": ["typing_symbols", "numeric_symbols", "runtime_symbols", "enum_helpers"]
+}

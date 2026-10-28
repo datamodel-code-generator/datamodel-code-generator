@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 
 class A(BaseModel):
-    type: Literal['a'] = 'a'
+    type: Literal['a'] | None = None
 
 
 type Alias = list[A]

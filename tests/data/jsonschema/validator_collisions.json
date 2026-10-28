@@ -1,0 +1,80 @@
+{
+  "title": "Collision",
+  "type": "object",
+  "properties": {
+    "x": {
+      "type": "string"
+    },
+    "y": {
+      "type": "string"
+    },
+    "validate_validator": {
+      "type": "string"
+    },
+    "validate_validator_1": {
+      "type": "string"
+    },
+    "other": {
+      "$ref": "#/$defs/Other"
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "required": [
+    "x",
+    "y",
+    "validate_validator",
+    "validate_validator_1",
+    "other",
+    "child"
+  ],
+  "$defs": {
+    "Other": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Left": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ]
+    },
+    "Right": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Left"
+        },
+        {
+          "$ref": "#/$defs/Right"
+        }
+      ]
+    }
+  }
+}

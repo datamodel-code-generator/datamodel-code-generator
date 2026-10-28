@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Boolean schema
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Anything: true
+    User:
+      type: object
+      properties:
+        name:
+          type: string

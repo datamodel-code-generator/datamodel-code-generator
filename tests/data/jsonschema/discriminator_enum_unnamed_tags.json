@@ -1,0 +1,360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "own_enums": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "$ref": "#/$defs/B"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "mapped": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/C"
+        },
+        {
+          "$ref": "#/$defs/D"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "foo": "#/$defs/C",
+          "bar": "#/$defs/D"
+        }
+      }
+    },
+    "mixed": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/E"
+        },
+        {
+          "$ref": "#/$defs/F"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "x": "#/$defs/E",
+          "foo": "#/$defs/E",
+          "z": "#/$defs/F"
+        }
+      }
+    },
+    "shared": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/G"
+        },
+        {
+          "$ref": "#/$defs/H"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "inherited": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/I"
+        },
+        {
+          "$ref": "#/$defs/J"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k"
+      }
+    },
+    "coerced": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/N1"
+        },
+        {
+          "$ref": "#/$defs/N2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "1": "#/$defs/N1",
+          "foo": "#/$defs/N2"
+        }
+      }
+    },
+    "plain": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/P1"
+        },
+        {
+          "$ref": "#/$defs/P2"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "k",
+        "mapping": {
+          "1": "#/$defs/P1"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "z"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "C": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "D": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "z",
+            "w"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "E": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "F": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "z",
+            "w"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "Shared": {
+      "type": "string",
+      "enum": [
+        "x",
+        "y",
+        "z"
+      ]
+    },
+    "G": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Shared"
+        },
+        "g": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "g"
+      ]
+    },
+    "H": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Shared"
+        },
+        "h": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "k",
+        "h"
+      ]
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "p",
+            "q"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "I": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "i": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "J": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "r"
+          ]
+        }
+      },
+      "required": [
+        "k"
+      ]
+    },
+    "Count": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "N1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Count"
+        },
+        "n": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "n"
+      ]
+    },
+    "N2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Count"
+        },
+        "m": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "k",
+        "m"
+      ]
+    },
+    "Plain": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "P1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "$ref": "#/$defs/Plain"
+        },
+        "p": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "p"
+      ]
+    },
+    "P2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "const": 1
+        },
+        "q": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "k",
+        "q"
+      ]
+    }
+  }
+}

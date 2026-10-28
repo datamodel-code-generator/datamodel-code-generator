@@ -1,0 +1,14 @@
+openapi: 3.2.0
+$self: https://library.example.com/v2/library.yaml
+info: {title: Library, version: "1.0"}
+paths: {}
+components:
+  parameters:
+    Page: {$ref: "https://library.example.com/v2/library.yaml#/components/parameters/RealPage"}
+    RealPage: {name: page, in: query, schema: {type: integer, minimum: 1}}
+  links:
+    Alias: {$ref: "https://library.example.com/v2/library.yaml#/components/links/Owners"}
+    Owners: {operationId: listOwners, description: The owners.}
+  securitySchemes:
+    alias: {$ref: "https://library.example.com/v2/library.yaml#/components/securitySchemes/key"}
+    key: {type: apiKey, in: header, name: X-Library-Key}

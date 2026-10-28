@@ -1,0 +1,2 @@
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=18446744073709551615; ExampleShopV1Order.uint64_value is generated without this constraint.
+msgspec.Meta takes the number constraints of an int only within the 64-bit range, not le=18446744073709551615; ExampleShopV1Order.fixed64_value is generated without this constraint.

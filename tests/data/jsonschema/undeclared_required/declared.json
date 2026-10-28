@@ -1,0 +1,14 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "known": {
+      "type": "integer",
+      "default": 4
+    }
+  },
+  "required": [
+    "known"
+  ],
+  "additionalProperties": true
+}

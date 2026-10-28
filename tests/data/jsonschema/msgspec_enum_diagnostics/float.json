@@ -1,0 +1,13 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "number",
+      "enum": [
+        1.5,
+        2.5
+      ]
+    }
+  }
+}

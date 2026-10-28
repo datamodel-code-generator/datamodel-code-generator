@@ -1,0 +1,40 @@
+# minimal-typeddict
+backend typing.TypedDict
+dependencies httpx2>=2.13.0 typing-extensions>=4.16
+imports of the dependencies httpx2 typing_extensions
+other third-party imports anyio
+copied runtime
+  __init__.py
+  client/__init__.py
+  client/client.py
+  client/content.py
+  client/errors.py
+  client/logical.py
+  client/media.py
+  client/native.py
+  client/operations.py
+  client/options.py
+  client/paths.py
+  client/positions.py
+  client/raw.py
+  client/responses.py
+  client/retry.py
+  client/timing.py
+  client/urls.py
+  model_codecs/__init__.py
+  model_codecs/errors.py
+  model_codecs/media.py
+  model_codecs/parameters.py
+  model_codecs/stdlib_typeddicts.py
+  model_codecs/unset.py
+total 23 modules
+public files
+  publication_client/__init__.py
+  publication_client/errors.py
+  publication_client/options.py
+  publication_client/resources/__init__.py
+  publication_client/resources/pets/__init__.py
+  publication_client/responses.py
+  publication_client/types/__init__.py
+  publication_client/types/pets/__init__.py
+  publication_client_models.py

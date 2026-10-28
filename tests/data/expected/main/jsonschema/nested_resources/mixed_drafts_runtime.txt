@@ -1,0 +1,17 @@
+{
+  "native": [
+    true,
+    false
+  ],
+  "generated": [
+    {
+      "legacy": {
+        "value": "ok"
+      },
+      "modern": {
+        "value": "also ok"
+      }
+    },
+    "rejected"
+  ]
+}

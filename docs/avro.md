@@ -2,6 +2,9 @@
 
 Generate Python models from JSON-encoded Apache Avro schemas (`.avsc`).
 
+!!! warning "Experimental"
+    Apache Avro schema input support is experimental and may change as real-world usage is validated.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -67,13 +70,13 @@ from pydantic import BaseModel, Field
 
 
 class Role(Enum):
-    admin = 'admin'
-    member = 'member'
+    admin = "admin"
+    member = "member"
 
 
 class User(BaseModel):
     id: UUID
-    name: str = Field(..., description='Display name')
+    name: str = Field(..., description="Display name")
     email: Optional[str] = None
     roles: list[Role] = []
 ```
@@ -109,6 +112,12 @@ Avro logical types are mapped through the generator's normal type handling:
 | `timestamp-millis`, `timestamp-micros`, `timestamp-nanos` | `datetime` |
 | `local-timestamp-millis`, `local-timestamp-micros`, `local-timestamp-nanos` | local date-time format |
 | `duration` | `timedelta` |
+
+Generated temporal defaults use Avro's day, millisecond, microsecond, or nanosecond units. Timestamp defaults use UTC; local timestamp and time defaults have no timezone. Backends that map these formats to strings receive ISO strings. Defaults outside Python's date/time range, or nanosecond defaults that cannot be represented exactly at microsecond precision, produce an error.
+
+Decimal defaults decode the bytes or fixed value as a signed big-endian integer and apply the declared scale exactly. Generated `Decimal` values preserve trailing zeros and do not depend on the active decimal context's precision. A scale outside Python's Decimal range produces an error.
+
+Duration defaults with zero months and zero days preserve the milliseconds component as `timedelta`. Nonzero calendar components produce an error because their meaning depends on the calendar and cannot be represented exactly by `timedelta`. Encoded duration defaults must contain exactly 12 bytes.
 
 Avro-specific metadata is preserved in generated JSON Schema extensions such as `x-avro-fullname`, `x-avro-namespace`, `x-avro-aliases`, and `x-avro-logicalType` before model generation.
 

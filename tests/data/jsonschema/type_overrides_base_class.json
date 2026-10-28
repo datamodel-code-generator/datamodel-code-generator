@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "properties": {
+        "parent": {
+          "$ref": "#/$defs/Base"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "BareChild": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/Base"
+        },
+        "child": {
+          "$ref": "#/$defs/Child"
+        },
+        "bare_child": {
+          "$ref": "#/$defs/BareChild"
+        },
+        "other": {
+          "$ref": "#/$defs/Other"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "holder": {
+      "$ref": "#/$defs/Holder"
+    }
+  }
+}

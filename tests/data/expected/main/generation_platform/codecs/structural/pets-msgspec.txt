@@ -1,0 +1,42 @@
+use /paths/~1pets/get parameter query limit: MsgspecCodec
+use /paths/~1pets/get parameter query tags: MsgspecCodec
+use /paths/~1pets/get parameter query filter: MsgspecCodec
+use /paths/~1pets/get response_body 200: MsgspecCodec
+use /paths/~1pets/post request_body: MsgspecCodec
+use /paths/~1pets/post response_body 201: MsgspecCodec
+use /paths/~1pets~1lookup/get response_body 200: MsgspecCodec
+use /paths/~1pets~1{id}~1photo/get parameter path id: MsgspecCodec
+use /paths/~1pets~1{id}/patch parameter path id: MsgspecCodec
+use /paths/~1pets~1{id}/patch request_body: MsgspecCodec
+use /paths/~1pets~1{id}/patch response_body 200: MsgspecCodec
+create-server-decode: ValidationError
+create-client-from-wire: native Pet(id=7, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":7,"name":"Mimi","status":"new","visits":0}
+create-client-encode-native: json={"id":1,"name":"Mimi","status":"new","password":"pw","visits":0}
+created-client-decode: native Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail='ann@example.com', phone=UNSET), co_owner=UNSET, born='2020-01-01T00:00:00Z', price=Decimal('1.10'), cost=None, weight=2.0, labels={'a', 'b'}, scores={'x': 1}, visits=0) json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-encode-echo: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-encode-snapshot: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-omitted: json={"id":1,"name":"Mimi","status":"new","visits":0}
+created-server-explicit-none: json={"id":1,"name":"Mimi","status":"new","tag":null,"visits":0}
+created-server-nullable-none: json={"id":1,"name":"Mimi","status":"new","nick-name":null,"visits":0}
+created-server-too-long: json={"id":1,"name":"Mimi the cat","status":"new","visits":0}
+created-server-no-json: TypeError
+created-server-plain-dict: json={"id":1,"name":"Mimi","status":"new","unknown":1}
+created-server-missing-required: json={"id":1,"name":"Mimi"}
+created-client-decode-bad-price: ValidationError
+list-client-decode: native [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0), Pet(id=2, name='B', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels={'a', 'b'}, scores=UNSET, visits=0)] json=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","labels":["a","b"],"visits":0}]
+list-server-encode-plain: json=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","labels":["a","b"],"visits":0}]
+lookup-client-decode-map: native {'a': Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)} json={"a":{"id":1,"name":"A","status":"new","visits":0}}
+lookup-client-decode-list: native [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)] json=[{"id":1,"name":"A","status":"new","visits":0}]
+lookup-server-encode-map: json={"a":{"id":1,"name":"A","status":"new","visits":0}}
+lookup-server-encode-list: json=[{"id":1,"name":"A","status":"new","visits":0}]
+patch-client-encode-native: json={"name":"B"}
+patch-client-from-wire: native PetPatch(name='B', tag=UNSET) json={"name":"B"}
+patch-client-encode-from-wire: json={"name":"B"}
+limit-server-decode: native 5 json=5
+create-client-serialize: json={"id":1,"name":"Mimi","status":"new","password":"pw","visits":0}
+created-server-serialize-snapshot: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-client-convert: native Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":1,"name":"Mimi","status":"new","kind":"cat","visits":0}
+created-client-convert-long: ValidationError
+created-client-convert-type: ValidationError
+create-client-serialize-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}
+create-client-encode-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}

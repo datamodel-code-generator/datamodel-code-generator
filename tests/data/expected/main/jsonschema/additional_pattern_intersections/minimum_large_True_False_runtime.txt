@@ -1,0 +1,12 @@
+[
+  {
+    "native": true,
+    "json": {},
+    "python": {}
+  },
+  {
+    "native": false,
+    "json": "rejected",
+    "python": "rejected"
+  }
+]

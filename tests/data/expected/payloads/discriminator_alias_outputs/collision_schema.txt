@@ -1,0 +1,17 @@
+{
+  "discriminator": {
+    "mapping": {
+      "cat": "#/$defs/Cat",
+      "dog": "#/$defs/Dog"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Cat"
+    },
+    {
+      "$ref": "#/$defs/Dog"
+    }
+  ]
+}

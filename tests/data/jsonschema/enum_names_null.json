@@ -1,0 +1,16 @@
+{
+  "title": "EnumNamesNull",
+  "type": "object",
+  "properties": {
+    "varname": {
+      "type": "string",
+      "enum": ["first", "second"],
+      "x-enum-varnames": ["FIRST", null]
+    },
+    "name": {
+      "type": "string",
+      "enum": ["third", "fourth"],
+      "x-enumNames": ["THIRD", null]
+    }
+  }
+}

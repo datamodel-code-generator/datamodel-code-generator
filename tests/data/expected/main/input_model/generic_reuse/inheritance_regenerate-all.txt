@@ -1,0 +1,53 @@
+[
+  {
+    "name": "ChildRoot",
+    "fields": [
+      "base",
+      "child"
+    ],
+    "annotations_equal": {
+      "base": false,
+      "child": false
+    },
+    "type_identity": {
+      "base": false,
+      "child": false
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "base": {
+            "value": 1
+          },
+          "child": {
+            "value": "ok"
+          }
+        },
+        "invalid": [
+          [
+            [
+              "base",
+              "value"
+            ],
+            "value_error"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "base": {
+            "value": 1
+          },
+          "child": {
+            "value": "ok"
+          }
+        },
+        "invalid": null
+      }
+    },
+    "type_leaf_identity": {
+      "base": false,
+      "child": false
+    }
+  }
+]

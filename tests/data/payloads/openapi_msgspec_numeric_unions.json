@@ -1,0 +1,128 @@
+[
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 0
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 0.5
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 1
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 1.5
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 300
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 300.5
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "height": 301
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 0
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 0.5
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 1
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 1.5
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 1000
+    },
+    "valid": true
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 1000.5
+    },
+    "valid": false
+  },
+  {
+    "input": {
+      "id": 1,
+      "name": "test",
+      "uid": 1,
+      "weight": 1001
+    },
+    "valid": false
+  }
+]

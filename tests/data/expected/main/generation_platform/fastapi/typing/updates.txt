@@ -1,0 +1,17 @@
+== updates.yaml
+mypy updates_service.py: clean
+pyright updates_service.py: clean
+ty updates_service.py: clean
+== updates-changed.yaml
+mypy updates_service.py:
+  updates_service.py:12 override
+  updates_service.py:16 override
+  updates_service.py:23 abstract
+pyright updates_service.py:
+  updates_service.py:12 reportIncompatibleMethodOverride
+  updates_service.py:16 reportIncompatibleMethodOverride
+  updates_service.py:23 reportAbstractUsage
+ty updates_service.py:
+  updates_service.py:12 invalid-method-override
+  updates_service.py:16 invalid-method-override
+  updates_service.py:23 call-non-callable

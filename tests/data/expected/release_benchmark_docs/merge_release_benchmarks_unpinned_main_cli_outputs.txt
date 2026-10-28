@@ -1,0 +1,6 @@
+returncode: 0
+stdout:
+stderr:
+Wrote <tmp>/release-benchmarks.json
+main snapshot sha present: False
+merged collector sha: merge-job-sha

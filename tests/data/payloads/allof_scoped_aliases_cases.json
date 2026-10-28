@@ -1,0 +1,525 @@
+[
+  {
+    "name": "direct_final",
+    "schema": "direct",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "direct_normal",
+    "schema": "direct",
+    "aliases": {},
+    "baseline_aliases": {},
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "x",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "direct_global",
+    "schema": "direct",
+    "aliases": {
+      "x": "renamed"
+    },
+    "baseline_aliases": {
+      "x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "allof_final",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "allof_normal",
+    "schema": "allof",
+    "aliases": {},
+    "baseline_aliases": {},
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "x",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "allof_global",
+    "schema": "allof",
+    "aliases": {
+      "x": "renamed"
+    },
+    "baseline_aliases": {
+      "x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "merged_final",
+    "schema": "merged",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "merged_normal",
+    "schema": "merged",
+    "aliases": {},
+    "baseline_aliases": {},
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "x",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "merged_global",
+    "schema": "merged",
+    "aliases": {
+      "x": "renamed"
+    },
+    "baseline_aliases": {
+      "x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "legacy",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "precedence",
+    "schema": "allof",
+    "aliases": {
+      "x": "global_name",
+      "Child.x": "legacy",
+      "ApiChildSchema.x": "renamed",
+      "Child.y": "legacy_count",
+      "ApiChildSchema.z": "flag"
+    },
+    "baseline_aliases": {
+      "x": "global_name",
+      "Child.x": "renamed",
+      "Child.y": "legacy_count",
+      "Child.z": "flag"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "choices",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "legacy",
+      "ApiChildSchema.x": [
+        "renamed",
+        "alternate"
+      ]
+    },
+    "baseline_aliases": {
+      "Child.x": [
+        "renamed",
+        "alternate"
+      ]
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "empty_choices",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "renamed",
+      "ApiChildSchema.x": []
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed",
+      "ApiChildSchema.x": []
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "unmatched",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.missing": "ignored",
+      "Child.x": "renamed"
+    },
+    "baseline_aliases": {
+      "ApiChildSchema.missing": "ignored",
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "no_affix",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {},
+    "attribute": "renamed",
+    "class_name": "Child"
+  },
+  {
+    "name": "title",
+    "schema": "title",
+    "aliases": {
+      "ApiOtherSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "ApiOtherSchema"
+  },
+  {
+    "name": "collision",
+    "schema": "collision",
+    "aliases": {
+      "ApiOtherSchema1.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "ApiOtherSchema1"
+  },
+  {
+    "name": "nested_collision",
+    "schema": "nested_collision",
+    "aliases": {
+      "ApiOtherSchema1.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "ApiOtherSchema1"
+  },
+  {
+    "name": "nested_collision_legacy",
+    "schema": "nested_collision",
+    "aliases": {
+      "Child.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "ApiOtherSchema1"
+  },
+  {
+    "name": "repeated",
+    "schema": "repeated",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "swap",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "y",
+      "ApiChildSchema.y": "x"
+    },
+    "baseline_aliases": {
+      "Child.x": "y",
+      "Child.y": "x"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "y",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "title_no_affix",
+    "schema": "title",
+    "aliases": {
+      "Other.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "Other"
+  },
+  {
+    "name": "backend_pydantic_v2_dataclass",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "output_model_type": "pydantic_v2.dataclass"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "backend_dataclasses_dataclass",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "output_model_type": "dataclasses.dataclass"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "backend_typing_TypedDict",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "output_model_type": "typing.TypedDict"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "backend_msgspec_Struct",
+    "schema": "allof",
+    "aliases": {
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "output_model_type": "msgspec.Struct"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "raw_reserved_final",
+    "schema": "allof",
+    "aliases": {
+      "x": "model_config",
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "raw_scoped_reserved_final",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "model_config",
+      "ApiChildSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "raw_duplicate_final",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "same",
+      "Child.y": "same",
+      "ApiChildSchema.x": "renamed",
+      "ApiChildSchema.y": "other"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed",
+      "Child.y": "other"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "raw_reserved_choices",
+    "schema": "allof",
+    "aliases": {
+      "Child.x": "model_config",
+      "ApiChildSchema.x": [
+        "renamed",
+        "alternate"
+      ]
+    },
+    "baseline_aliases": {
+      "Child.x": [
+        "renamed",
+        "alternate"
+      ]
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema"
+    },
+    "attribute": "renamed",
+    "class_name": "ApiChildSchema"
+  },
+  {
+    "name": "raw_title_reserved_final",
+    "schema": "title",
+    "aliases": {
+      "Child.x": "model_config",
+      "ApiOtherSchema.x": "renamed"
+    },
+    "baseline_aliases": {
+      "Child.x": "renamed"
+    },
+    "options": {
+      "class_name_prefix": "Api",
+      "class_name_suffix": "Schema",
+      "use_title_as_name": true
+    },
+    "attribute": "renamed",
+    "class_name": "ApiOtherSchema"
+  }
+]

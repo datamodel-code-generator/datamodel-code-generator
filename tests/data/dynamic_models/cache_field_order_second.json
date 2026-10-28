@@ -1,0 +1,16 @@
+{
+  "title": "Example",
+  "type": "object",
+  "properties": {
+    "second": {
+      "type": "integer"
+    },
+    "first": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "second"
+  ]
+}

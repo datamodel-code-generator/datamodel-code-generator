@@ -1,0 +1,8 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "Invalid": []
+    }
+  }
+}

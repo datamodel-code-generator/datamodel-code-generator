@@ -1,0 +1,71 @@
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+class {{ class_name }}({%- if schema_runtime_validation_use_base -%}{{ schema_runtime_validation_base_class_name }}{% if base_class != 'BaseModel' %}, {{ base_class }}{% endif %}{%- else -%}{{ base_class }}{%- endif -%}):{% if comment is defined %}  # {{ comment }}{% endif %}
+{%- if description %}
+    {{ description }}
+{%- endif %}
+{%- if not fields and not description and not config and not class_body_lines and not schema_runtime_validation %}
+    pass
+{%- endif %}
+{%- if config %}
+{%- filter indent(4) %}
+{% include 'ConfigDict.jinja2' %}
+{%- endfilter %}
+{%- endif %}
+{%- for line in class_body_lines %}
+    {{ line }}
+{%- endfor %}
+{%- include 'schema_runtime_validation.jinja2' %}
+{%- for field in fields %}
+    {%- if not field.use_pydantic_extra_annotation_assignment and not field.annotated and field.field %}
+    {{ field.name }}: {{ field.type_hint }} = {{ field.field }}
+    {%- elif not field.use_pydantic_extra_annotation_assignment %}
+    {%- if field.annotated %}
+    {{ field.name }}: {{ field.annotated }}
+    {%- else %}
+    {{ field.name }}: {{ field.type_hint }}
+    {%- endif %}
+    {%- if not field.has_default_factory_in_field and (not field.required or field.use_default_with_required) and (field.represented_default != 'None' or not field.strip_default_none or field.data_type.is_optional)
+            %} = {{ field.represented_default }}
+    {%- endif -%}
+    {%- endif %}
+    {%- if field.docstring %}
+    {{ field.docstring }}
+{%- if field.use_inline_field_description and not loop.last %}
+
+{% endif %}
+    {%- elif field.inline_field_docstring %}
+    {{ field.inline_field_docstring }}
+{%- if not loop.last %}
+
+{% endif %}
+    {%- endif %}
+{%- for method in methods -%}
+    {{ method }}
+{%- endfor -%}
+{%- endfor -%}
+{%- if prepared_validators %}
+{% for v in prepared_validators %}
+
+    @field_validator({{ v.fields_str }}, {{ v.mode_str }})
+    @classmethod
+{%- if v.mode == 'wrap' %}
+    def {{ v.method_name }}(cls, v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:
+        return {{ v.function_name }}(v, handler, info)
+{%- elif v.mode == 'plain' %}
+    def {{ v.method_name }}(cls, v: Any) -> Any:
+        return {{ v.function_name }}(v)
+{%- else %}
+    def {{ v.method_name }}(cls, v: Any, info: ValidationInfo) -> Any:
+        return {{ v.function_name }}(v, info)
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- for field in fields %}
+{%- if field.use_pydantic_extra_annotation_assignment %}
+
+{{ class_name }}.__annotations__['__pydantic_extra__'] = {{ field.pydantic_extra_type_hint }}
+{{ class_name }}.model_rebuild(force=True)
+{%- endif %}
+{%- endfor %}

@@ -1,0 +1,11 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "External media producers", "version": "1"},
+  "paths": {"/external": {"post": {
+    "requestBody": {"$ref": "session-legacy-media.json#/components/requestBodies/scalar"},
+    "responses": {
+      "200": {"$ref": "session-legacy-media.json#/components/responses/object"},
+      "204": {"$ref": "session-media-stream.json#/paths/~1items/post/responses/204"}
+    }
+  }}}
+}

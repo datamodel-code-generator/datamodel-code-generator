@@ -1,0 +1,16 @@
+{
+  "title": "AliasNames",
+  "type": "object",
+  "properties": {
+    "a": {
+      "type": "string"
+    },
+    "b": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "a",
+    "b"
+  ]
+}

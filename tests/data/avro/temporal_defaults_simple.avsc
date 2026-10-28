@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "TemporalDefaults",
+  "fields": [
+    {
+      "name": "day",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "default": 1
+    },
+    {
+      "name": "clock",
+      "type": {
+        "type": "int",
+        "logicalType": "time-millis"
+      },
+      "default": 1000
+    }
+  ]
+}

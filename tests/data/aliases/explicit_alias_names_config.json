@@ -1,0 +1,12 @@
+{
+  "AliasNames": {
+    "config": {
+      "protected_namespaces": []
+    }
+  },
+  "Base": {
+    "config": {
+      "protected_namespaces": []
+    }
+  }
+}

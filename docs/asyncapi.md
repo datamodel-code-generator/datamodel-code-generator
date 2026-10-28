@@ -2,6 +2,9 @@
 
 Generate Python models from AsyncAPI 2.x and 3.x documents.
 
+!!! warning "Experimental"
+    AsyncAPI input support is experimental and may change as real-world usage is validated.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -66,6 +69,8 @@ Use `--schema-version auto` to detect the version from the `asyncapi` field, or 
 `--schema-version 2.0` / `--schema-version 3.0` to select a version explicitly.
 
 ## Model Generation Scope
+
+`--openapi-scopes` does not select what AsyncAPI input generates: the parser generates models from every location listed below. The `api` scope is available for OpenAPI input only, and AsyncAPI input with `api` stops with an error.
 
 datamodel-code-generator generates data models from schema-bearing fields. It does not generate clients, servers, protocol adapters, or runtime message validators.
 

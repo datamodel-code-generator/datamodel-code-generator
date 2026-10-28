@@ -1,0 +1,1 @@
+2 Decimal default values were emitted as serialized data instead of Decimal: Invoice.amount, Invoice.invalid_amount. Generated output is unchanged. Use --deserialize-default-values decimal to enable Decimal deserialization.

@@ -1,0 +1,9 @@
+[tool.datamodel-codegen]
+input = "ignored.json"
+check = true
+unknown-option = "ignored"
+[tool.datamodel-codegen.profiles.unused]
+class-name = "Ignored"
+[tool.datamodel-codegen.jobs.unused]
+input = "ignored.json"
+output = "ignored.py"

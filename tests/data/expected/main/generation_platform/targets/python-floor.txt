@@ -1,0 +1,3 @@
+# python-floor
+check
+  Error: --target-python-version: The fastapi target needs a target Python version of 3.11 or later

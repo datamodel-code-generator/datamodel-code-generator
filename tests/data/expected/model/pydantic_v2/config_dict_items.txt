@@ -1,0 +1,5 @@
+config_dict: [('extra', "'allow'")]
+dict: [('extra', "'forbid'")]
+legacy_dict: [('frozen', True)]
+none: []
+object: []

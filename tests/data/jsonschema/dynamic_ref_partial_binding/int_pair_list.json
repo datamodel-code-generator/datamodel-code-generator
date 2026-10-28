@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "int_pair_list.json",
+  "title": "IntPairList",
+  "$ref": "pair_list.json",
+  "$defs": {
+    "value": {"$dynamicAnchor": "value", "type": "integer"}
+  }
+}

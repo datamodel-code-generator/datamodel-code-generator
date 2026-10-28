@@ -1,0 +1,75 @@
+{
+  "name": "dynamic",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "$dynamicRef": "#/$defs/Value%7E1Space%7E0Name"
+      },
+      "nested": {
+        "$ref": "#/$defs/Outer"
+      },
+      "allowed": {
+        "$dynamicRef": "#/$defs/Allowed"
+      }
+    },
+    "required": [
+      "value",
+      "nested"
+    ],
+    "$defs": {
+      "Value/Space~Name": {
+        "type": "string"
+      },
+      "Outer": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$dynamicRef": "#/$defs/Value%7E1Space%7E0Name"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "Allowed": true,
+      "Unused": false
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "$dynamicRef": "#/definitions/Value%7E1Space%7E0Name"
+      },
+      "nested": {
+        "$ref": "#/definitions/Outer"
+      },
+      "allowed": {
+        "$dynamicRef": "#/definitions/Allowed"
+      }
+    },
+    "required": [
+      "value",
+      "nested"
+    ],
+    "definitions": {
+      "Value/Space~Name": {
+        "type": "string"
+      },
+      "Outer": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$dynamicRef": "#/definitions/Value%7E1Space%7E0Name"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "Allowed": true,
+      "Unused": false
+    }
+  }
+}

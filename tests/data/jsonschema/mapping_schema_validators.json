@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "$defs": {
+    "Count": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        },
+        "z": {
+          "type": "string"
+        }
+      },
+      "minProperties": 1,
+      "maxProperties": 2
+    },
+    "One": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "x"
+          ]
+        },
+        {
+          "required": [
+            "y"
+          ]
+        }
+      ]
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "x"
+          ]
+        },
+        {
+          "required": [
+            "y"
+          ]
+        }
+      ]
+    },
+    "Conditional": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "x"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "x"
+        ]
+      },
+      "else": {
+        "required": [
+          "y"
+        ]
+      }
+    },
+    "Unique": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {},
+          "uniqueItems": true
+        }
+      }
+    },
+    "Nested": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {},
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "Pattern": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^item": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PatternUnique": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^item": {
+          "type": "array",
+          "items": {},
+          "uniqueItems": true
+        }
+      }
+    },
+    "AdditionalUnique": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^skip": {}
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {},
+        "uniqueItems": true
+      }
+    }
+  },
+  "properties": {
+    "count": {
+      "$ref": "#/$defs/Count"
+    },
+    "one": {
+      "$ref": "#/$defs/One"
+    },
+    "any": {
+      "$ref": "#/$defs/Any"
+    },
+    "conditional": {
+      "$ref": "#/$defs/Conditional"
+    },
+    "unique": {
+      "$ref": "#/$defs/Unique"
+    },
+    "nested": {
+      "$ref": "#/$defs/Nested"
+    },
+    "pattern": {
+      "$ref": "#/$defs/Pattern"
+    },
+    "patternunique": {
+      "$ref": "#/$defs/PatternUnique"
+    },
+    "additionalunique": {
+      "$ref": "#/$defs/AdditionalUnique"
+    }
+  }
+}

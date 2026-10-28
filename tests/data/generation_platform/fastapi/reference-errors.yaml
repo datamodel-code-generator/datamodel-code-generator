@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info: {title: Reference errors, version: "1.0"}
+paths:
+  /unobserved:
+    get:
+      operationId: unobserved
+      security:
+        - unobserved: []
+      responses:
+        "204": {description: Done.}
+  /missing:
+    get:
+      operationId: missing
+      security:
+        - missing: []
+      responses:
+        "204": {description: Done.}
+  /refused:
+    get:
+      operationId: refused
+      security:
+        - refused: []
+      responses:
+        "204": {description: Done.}
+  /malformed:
+    get:
+      operationId: malformed
+      security:
+        - malformed: []
+      responses:
+        "204": {description: Done.}
+  /nonscheme:
+    get:
+      operationId: nonscheme
+      security:
+        - nonscheme: []
+      responses:
+        "204": {description: Done.}
+  /untyped:
+    get:
+      operationId: untyped
+      security:
+        - untyped: []
+      responses:
+        "204": {description: Done.}
+  /schemeless:
+    get:
+      operationId: schemeless
+      security:
+        - schemeless: []
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    unobserved: {$ref: "reference-errors-library.yaml#/components/securitySchemes/key"}
+    missing: {$ref: "#/components/securitySchemes/absent"}
+    refused: {$ref: "urn:example:schemes#/key"}
+    unused: {$ref: "#/components/securitySchemes/absent"}
+    malformed: {$ref: "http://[::1#/key"}
+    nonscheme: {$ref: "#"}
+    untyped: {description: No type.}
+    schemeless: {type: http}

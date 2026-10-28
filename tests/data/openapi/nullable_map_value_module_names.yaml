@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value module names
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        root_item:
+          type: string
+    stats.Item:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+    Tags:
+      type: object
+      properties:
+        root_tag:
+          type: string
+    stats.Holder:
+      type: object
+      properties:
+        items:
+          $ref: "#/components/schemas/stats.Item"
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                type: integer
+    stats.Tags:
+      type: object
+      properties:
+        label:
+          type: string

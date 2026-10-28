@@ -1,0 +1,12 @@
+[
+  "",
+  "0",
+  "-1",
+  "1.0",
+  " 4071",
+  "4071\nshould_analyze=true",
+  "4071; touch sentinel",
+  "$(touch sentinel)",
+  "1/../../secrets",
+  "\uff11\uff12\uff13"
+]

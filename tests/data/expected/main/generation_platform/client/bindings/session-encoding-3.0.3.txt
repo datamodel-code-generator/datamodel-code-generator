@@ -1,0 +1,31 @@
+# session-encoding-3.0.3
+render pydantic_v2.BaseModel schemas
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render pydantic_v2.BaseModel paths
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render pydantic_v2.BaseModel api
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render pydantic_v2.dataclass schemas
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render pydantic_v2.dataclass paths
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render pydantic_v2.dataclass api
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render dataclasses.dataclass schemas
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render dataclasses.dataclass paths
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render dataclasses.dataclass api
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render typing.TypedDict schemas
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render typing.TypedDict paths
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render typing.TypedDict api
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render msgspec.Struct schemas
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render msgspec.Struct paths
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding
+render msgspec.Struct api
+  diagnostic Error: /paths/~1values/post/parameters/0: The parameter content has no builtin encoding; /paths/~1values/post/responses/200/headers/X-Content: The parameter content has no builtin encoding

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "enum": [
+            {
+              "a": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "value": {
+          "enum": [
+            {
+              "a": 1
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

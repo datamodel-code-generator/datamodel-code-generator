@@ -1,0 +1,13 @@
+[
+  "integer_null",
+  "null_integer",
+  "null_number",
+  "number_null",
+  "outside_field",
+  "outside_null",
+  "outside_root",
+  "integer_number",
+  "number_integer",
+  "nullable_integer_first",
+  "ordinary"
+]

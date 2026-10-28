@@ -1,0 +1,18 @@
+def build_{{ class_name }}():
+    annotations = {
+{%- for field in fields %}
+        '{{ field.name }}': {{ field.type_hint }},
+{%- endfor %}
+    }
+
+    @dataclass
+    class {{ class_name }}:
+        __annotations__ = annotations
+{%- for field in fields %}
+        {{ field.name }} = {{ field.represented_default }}
+{%- endfor %}
+
+    return {{ class_name }}
+
+
+{{ class_name }} = build_{{ class_name }}()

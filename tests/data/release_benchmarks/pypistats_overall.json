@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "category": "without_mirrors",
+      "date": "2026-06-19",
+      "downloads": 100
+    },
+    {
+      "category": "without_mirrors",
+      "date": "2026-06-20",
+      "downloads": 200
+    }
+  ],
+  "package": "datamodel-code-generator",
+  "type": "overall_downloads"
+}

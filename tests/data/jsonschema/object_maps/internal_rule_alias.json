@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "box": {
+      "$ref": "#/$defs/common.Box"
+    },
+    "thing": {
+      "$ref": "#/$defs/other.Thing"
+    }
+  },
+  "$defs": {
+    "common.Box": {
+      "type": "object",
+      "properties": {
+        "holder": {
+          "$ref": "#/$defs/other.Holder"
+        }
+      }
+    },
+    "other.Holder": {
+      "type": "object",
+      "patternProperties": {
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 3
+      }
+    },
+    "other.Thing": {
+      "type": "object",
+      "properties": {
+        "box": {
+          "$ref": "#/$defs/common.Box"
+        }
+      }
+    }
+  }
+}

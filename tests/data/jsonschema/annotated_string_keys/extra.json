@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "propertyNames": {
+    "pattern": "^[a-z]+$"
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

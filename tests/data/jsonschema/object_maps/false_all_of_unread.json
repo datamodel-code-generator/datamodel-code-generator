@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "o": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "q": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "allOf": [
+          false
+        ]
+      }
+    },
+    "z": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          false
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 0
+    }
+  }
+}

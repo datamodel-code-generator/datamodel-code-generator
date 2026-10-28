@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "root.json",
+  "title": "Root",
+  "$ref": "resource.json#missing",
+  "$defs": {
+    "Embedded": {
+      "$id": "resource.json",
+      "$anchor": "present",
+      "type": "object",
+      "properties": {
+        "inside": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inside"
+      ]
+    }
+  }
+}

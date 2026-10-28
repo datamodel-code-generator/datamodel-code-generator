@@ -1,0 +1,12 @@
+{
+  "title": "RequiredObjectTypeList",
+  "type": "object",
+  "properties": {
+    "first": {"type": "string"},
+    "second": {"type": "string"}
+  },
+  "oneOf": [
+    {"required": ["first"], "type": ["object"]},
+    {"required": ["second"]}
+  ]
+}

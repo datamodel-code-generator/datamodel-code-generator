@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Backreference": {
+      "type": "string",
+      "pattern": "^([a-z])\\1$"
+    },
+    "NamedBackreference": {
+      "type": "string",
+      "pattern": "^(?P<c>[a-z])(?P=c)$"
+    },
+    "Conditional": {
+      "type": "string",
+      "pattern": "^(<)?[a-z]+(?(1)>)$"
+    },
+    "EndOfString": {
+      "type": "string",
+      "pattern": "^[a-z]+\\Z"
+    },
+    "Comment": {
+      "type": "string",
+      "pattern": "^(?#lowercase)[a-z]+$"
+    },
+    "NamedCharacter": {
+      "type": "string",
+      "pattern": "^\\N{LATIN SMALL LETTER A}+$"
+    },
+    "ClassBackspace": {
+      "type": "string",
+      "pattern": "^[\\b]$"
+    },
+    "ClassOctal": {
+      "type": "string",
+      "pattern": "^[\\101]+$"
+    },
+    "AsciiFlag": {
+      "type": "string",
+      "pattern": "(?a)^\\w+$"
+    },
+    "OmittedMinimum": {
+      "type": "string",
+      "pattern": "^[a-z]{,3}$"
+    },
+    "LiteralBrace": {
+      "type": "string",
+      "pattern": "^{[a-z]+}$"
+    },
+    "EscapedBackslash": {
+      "type": "string",
+      "pattern": "^\\\\1$"
+    },
+    "EscapedGroup": {
+      "type": "string",
+      "pattern": "^\\(\\?>[a-z]+\\)$"
+    },
+    "ClassMembers": {
+      "type": "string",
+      "pattern": "^[(?>{]+$"
+    },
+    "EscapedBrace": {
+      "type": "string",
+      "pattern": "^\\{[a-z]+\\}$"
+    },
+    "CountedRepetition": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}$"
+    },
+    "ClassEscapedBackslash": {
+      "type": "string",
+      "pattern": "^[\\\\b]+$"
+    },
+    "EscapedSlash": {
+      "type": "string",
+      "pattern": "^[a-z]+\\/[a-z]+$"
+    },
+    "AngleNamedGroup": {
+      "type": "string",
+      "pattern": "^(?<year>\\d{4})$"
+    },
+    "Possessive": {
+      "type": "string",
+      "pattern": "^[a-z]++$"
+    },
+    "ScopedAsciiFlag": {
+      "type": "string",
+      "pattern": "^(?a:\\w+)$"
+    }
+  }
+}

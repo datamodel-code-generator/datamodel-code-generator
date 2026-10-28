@@ -1,0 +1,13 @@
+{
+  "valid": {
+    "x_12": "ok"
+  },
+  "invalid": [
+    {
+      "value": {
+        "x_a": "ok"
+      },
+      "error": "string_pattern_mismatch"
+    }
+  ]
+}

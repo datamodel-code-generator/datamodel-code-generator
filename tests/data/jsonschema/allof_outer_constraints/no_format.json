@@ -1,0 +1,10 @@
+{
+  "title": "Root",
+  "allOf": [
+    {"$ref": "#/$defs/Base"},
+    {"minimum": 1}
+  ],
+  "$defs": {
+    "Base": {"type": "string"}
+  }
+}

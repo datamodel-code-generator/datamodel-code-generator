@@ -1,0 +1,825 @@
+[
+  {
+    "name": "jsonschema_independent",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_reverse",
+    "schema": "jsonschema_reverse.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_same_slots",
+    "schema": "jsonschema_same_slots.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_single",
+    "schema": "jsonschema_single.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_empty",
+    "schema": "jsonschema_empty.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_both_empty",
+    "schema": "jsonschema_both_empty.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_redundant",
+    "schema": "jsonschema_redundant.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_diamond",
+    "schema": "jsonschema_diamond.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_diamond_one",
+    "schema": "jsonschema_diamond_one.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_diamond_both",
+    "schema": "jsonschema_diamond_both.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_override",
+    "schema": "jsonschema_override.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_independent",
+    "schema": "graphql_independent.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_independent_typename",
+    "schema": "graphql_independent.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_single",
+    "schema": "graphql_single.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_single_typename",
+    "schema": "graphql_single.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_redundant",
+    "schema": "graphql_redundant.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_redundant_typename",
+    "schema": "graphql_redundant.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond",
+    "schema": "graphql_diamond.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond_typename",
+    "schema": "graphql_diamond.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond_one",
+    "schema": "graphql_diamond_one.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond_one_typename",
+    "schema": "graphql_diamond_one.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond_both",
+    "schema": "graphql_diamond_both.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": true
+    },
+    "cli": [
+      "--graphql-no-typename"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "graphql_diamond_both_typename",
+    "schema": "graphql_diamond_both.graphql",
+    "format": "graphql",
+    "options": {
+      "graphql_no_typename": false
+    },
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_alias_default",
+    "schema": "jsonschema_alias_default.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a-value": "a",
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_external_bases",
+    "schema": "jsonschema_external_bases.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_nested_diamond",
+    "schema": "jsonschema_nested_diamond.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_custom_root",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+    },
+    "cli": [
+      "--custom-template-dir",
+      "tests/data/msgspec_inheritance/templates"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_custom_other_template",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "custom_template_dir": "tests/data/msgspec_inheritance/templates_other"
+    },
+    "cli": [
+      "--custom-template-dir",
+      "tests/data/msgspec_inheritance/templates_other"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_imported_root",
+    "schema": "jsonschema_imported_root.json",
+    "format": "jsonschema",
+    "options": {
+      "keyword_only": true
+    },
+    "cli": [
+      "--keyword-only"
+    ],
+    "error": false,
+    "payload": {
+      "gt": 4,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_imported_nested_root",
+    "schema": "jsonschema_imported_nested_root.json",
+    "format": "jsonschema",
+    "options": {
+      "keyword_only": true,
+      "base_class": "msgspec.inspect.IntType"
+    },
+    "cli": [
+      "--keyword-only",
+      "--base-class",
+      "msgspec.inspect.IntType"
+    ],
+    "error": false,
+    "payload": {
+      "gt": 4,
+      "ge": 0,
+      "lt": 10,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_explicit_struct",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class": "msgspec.Struct"
+    },
+    "cli": [
+      "--base-class",
+      "msgspec.Struct"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_generic_base",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "use_generic_base_class": true,
+      "extra_fields": "forbid"
+    },
+    "cli": [
+      "--use-generic-base-class",
+      "--extra-fields",
+      "forbid"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_long_chain",
+    "schema": "jsonschema_long_chain.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "field_0": 0,
+      "field_1": 1,
+      "field_2": 2,
+      "field_3": 3,
+      "field_4": 4,
+      "field_5": 5,
+      "field_6": 6,
+      "field_7": 7,
+      "field_8": 8,
+      "field_9": 9,
+      "field_10": 10,
+      "field_11": 11,
+      "field_12": 12,
+      "field_13": 13,
+      "field_14": 14,
+      "field_15": 15
+    }
+  },
+  {
+    "name": "jsonschema_override_chain",
+    "schema": "jsonschema_override_chain.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "value": 15
+    }
+  },
+  {
+    "name": "jsonschema_redundant_dag",
+    "schema": "jsonschema_redundant_dag.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "field_0": 0,
+      "field_1": 1,
+      "field_2": 2,
+      "field_3": 3,
+      "field_4": 4,
+      "field_5": 5,
+      "field_6": 6,
+      "field_7": 7,
+      "field_8": 8,
+      "field_9": 9,
+      "field_10": 10,
+      "field_11": 11,
+      "field_12": 12,
+      "field_13": 13,
+      "field_14": 14,
+      "field_15": 15
+    }
+  },
+  {
+    "name": "jsonschema_fallback_diamond",
+    "schema": "jsonschema_fallback_diamond.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "seed": 1,
+      "other": 2
+    }
+  },
+  {
+    "name": "jsonschema_dry_nested",
+    "schema": "jsonschema_dry_nested.json",
+    "format": "jsonschema",
+    "error": false,
+    "options": {},
+    "cli": [],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3,
+      "right2": 4
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_dry_reverse",
+    "schema": "jsonschema_dry_reverse.json",
+    "format": "jsonschema",
+    "error": false,
+    "options": {},
+    "cli": [],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3,
+      "right2": 4
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_dry_empty",
+    "schema": "jsonschema_dry_empty.json",
+    "format": "jsonschema",
+    "error": false,
+    "options": {},
+    "cli": [],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_dry_redundant",
+    "schema": "jsonschema_dry_redundant.json",
+    "format": "jsonschema",
+    "error": false,
+    "options": {},
+    "cli": [],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3,
+      "right2": 4
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_dry_shared",
+    "schema": "jsonschema_dry_shared.json",
+    "format": "jsonschema",
+    "error": false,
+    "options": {},
+    "cli": [],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3,
+      "right2": 4
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_tagged_base",
+    "schema": "jsonschema_tagged_base.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "kind": "cat",
+      "name": "n",
+      "purr": "p"
+    }
+  },
+  {
+    "name": "jsonschema_untagged_base",
+    "schema": "jsonschema_untagged_base.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": true,
+    "payload": {
+      "kind": "cat",
+      "name": "n",
+      "purr": "p"
+    }
+  },
+  {
+    "name": "jsonschema_late_required",
+    "schema": "jsonschema_late_required.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "name": "n",
+      "nickname": "k",
+      "created_at": "t",
+      "id": 1
+    }
+  },
+  {
+    "name": "jsonschema_reuse_duplicate_first",
+    "schema": "jsonschema_reuse_duplicate_first.json",
+    "format": "jsonschema",
+    "options": {
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model"
+    ],
+    "error": false,
+    "payload": {
+      "name": "n",
+      "id": 1
+    }
+  },
+  {
+    "name": "jsonschema_union_variant",
+    "schema": "jsonschema_union_variant.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "error": false,
+    "payload": {
+      "pet": {
+        "name": "n",
+        "meow": "m"
+      }
+    }
+  },
+  {
+    "name": "jsonschema_required_anywhere",
+    "schema": "jsonschema_required_anywhere.json",
+    "format": "jsonschema",
+    "options": {
+      "allof_class_hierarchy": "always"
+    },
+    "cli": [
+      "--allof-class-hierarchy",
+      "always"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 1,
+      "c": 2,
+      "d": 3
+    }
+  },
+  {
+    "name": "jsonschema_required_anywhere_default",
+    "schema": "jsonschema_required_anywhere.json",
+    "format": "jsonschema",
+    "options": {
+      "allof_class_hierarchy": "always",
+      "apply_default_values_for_required_fields": true
+    },
+    "cli": [
+      "--allof-class-hierarchy",
+      "always",
+      "--use-default"
+    ],
+    "error": false,
+    "payload": {
+      "b": 1,
+      "c": 2,
+      "d": 3
+    }
+  },
+  {
+    "name": "jsonschema_inherited_options",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "extra_template_data": {
+        "A": {
+          "base_class_kwargs": {
+            "omit_defaults": true
+          }
+        },
+        "B": {
+          "base_class_kwargs": {
+            "omit_defaults": false,
+            "rename": "camel"
+          }
+        }
+      }
+    },
+    "cli": [
+      "--extra-template-data",
+      "tests/data/msgspec_inheritance/extra_data_bases.json"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "name": "jsonschema_type_override",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": false,
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "d": 4,
+      "c": 3
+    }
+  }
+]

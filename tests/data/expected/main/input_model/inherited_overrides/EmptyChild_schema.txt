@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "NonemptyParent": {
+      "properties": {
+        "value": {
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "title": "Value",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "NonemptyParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/NonemptyParent"
+    }
+  ],
+  "properties": {
+    "value": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Value",
+      "type": "array"
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "title": "EmptyChild",
+  "type": "object"
+}

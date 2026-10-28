@@ -2,13 +2,13 @@
   "version": 1,
   "format": "json",
   "kind": "deprecations",
-  "content": "ID                                          Kind        Target                                                  Warning since  Removal  Replacement                                                                                                   \n------------------------------------------  ----------  ------------------------------------------------------  -------------  -------  --------------------------------------------------------------------------------------------------------------\nformat.default-formatters                   behavior    Default formatters                                      0.52.0         TBD      Set formatters explicitly, for example black and isort or builtin.                                            \nbehavior.pydantic-v2-use-annotated-default  behavior    Pydantic v2 default for --use-annotated                 0.52.1         TBD      Explicitly pass --use-annotated or --no-use-annotated.                                                        \nbehavior.remote-ref-default                 behavior    Remote $ref fetching without --allow-remote-refs        0.56.0         TBD      Pass --allow-remote-refs for trusted remote schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching.\ncli.allow-extra-fields                      cli-option  --allow-extra-fields                                    0.31.0         TBD      --extra-fields=allow                                                                                          \ncli.parent-scoped-naming                    cli-option  --parent-scoped-naming                                  0.48.0         TBD      --naming-strategy parent-prefixed                                                                             \ncli.validation                              cli-option  --validation                                            0.24.0         TBD      --field-constraints                                                                                           \nconfig.yaml-non-lowercase-bool              config      YAML bool values True, False, TRUE, FALSE               0.48.0         TBD      Use lowercase true or false.                                                                                  \npython-api.python-version-has-type-alias    python-api  PythonVersion.has_type_alias                            0.52.1         TBD      -                                                                                                             \nschema.jsonschema-items-array               schema      JSON Schema Draft 2020-12 items array tuple validation  0.53.0         TBD      Use prefixItems.                                                                                              \nschema.openapi-nullable                     schema      OpenAPI 3.1 nullable keyword                            0.53.0         TBD      Use type arrays such as type: [\"string\", \"null\"].                                                             \n",
+  "content": "ID                                          Status     Kind        Target                                                   Since   Removal  Replacement\n------------------------------------------  ---------  ----------  -------------------------------------------------------  ------  -------  --------------------------------------------------------------------------------------------------------------\nformat.default-formatters                   active     behavior    Default formatters                                       0.52.0  TBD      Set formatters explicitly, for example black and isort or builtin.\nbehavior.pydantic-v2-use-annotated-default  active     behavior    Pydantic v2 default for --use-annotated                  0.52.1  TBD      Explicitly pass --use-annotated or --no-use-annotated.\nbehavior.remote-ref-default                 active     behavior    Remote $ref fetching without --allow-remote-refs         0.56.0  TBD      Pass --allow-remote-refs for trusted remote schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching.\ncli.allow-extra-fields                      active     cli-option  --allow-extra-fields                                     0.31.0  TBD      --extra-fields=allow\ncli.parent-scoped-naming                    active     cli-option  --parent-scoped-naming                                   0.48.0  TBD      --naming-strategy parent-prefixed\ncli.set-default-enum-member                 scheduled  cli-option  --set-default-enum-member                                0.76.0  TBD      --deserialize-default-values enum\ncli.validation                              active     cli-option  --validation                                             0.24.0  TBD      --field-constraints\nconfig.json-config-strict-validation        active     config      JSON configuration values accepted by legacy validation  0.64.2  TBD      Update the JSON configuration to match --output-format-json-schema config.\nconfig.yaml-non-lowercase-bool              active     config      YAML bool values True, False, TRUE, FALSE                0.48.0  TBD      Use lowercase true or false.\ndependency.black-minimum                    active     dependency  Black <24.3.0                                            0.78.0  TBD      Upgrade Black to >=24.3.0 before the later support change.\ndependency.external-formatters-optional     active     dependency  Black/isort installation                                 0.78.0  TBD      Declare the black/isort extras for the external formatters you select.\ndependency.pydantic-runtime-minimum         active     dependency  DCG runtime Pydantic <2.8.2                              0.78.0  TBD      Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged.\ndependency.isort-minimum                    active     dependency  isort <6                                                 0.78.0  TBD      Upgrade isort to >=6,<9 before the later support change.\npython-api.python-version-has-type-alias    active     python-api  PythonVersion.has_type_alias                             0.52.1  TBD      -\nschema.jsonschema-items-array               active     schema      JSON Schema Draft 2020-12 items array tuple validation   0.53.0  TBD      Use prefixItems.\nschema.openapi-nullable                     active     schema      OpenAPI 3.1 nullable keyword                             0.53.0  TBD      Use type arrays such as type: [\"string\", \"null\"].\ndependency.python-310-runtime               active     dependency  Running datamodel-code-generator on Python 3.10          0.84.0  0.85.0   Run datamodel-code-generator on Python 3.11 or newer.\n",
   "items": [
     {
       "id": "format.default-formatters",
       "kind": "behavior",
       "target": "Default formatters",
-      "message": "The default external formatters (black, isort) will become opt-in in a future version.",
+      "message": "Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).",
       "warning_since": "0.52.0",
       "removal_version": null,
       "replacement": "Set formatters explicitly, for example black and isort or builtin.",
@@ -65,6 +65,18 @@
       "note": null
     },
     {
+      "id": "cli.set-default-enum-member",
+      "kind": "cli-option",
+      "target": "--set-default-enum-member",
+      "message": "--set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.",
+      "warning_since": "0.76.0",
+      "removal_version": null,
+      "replacement": "--deserialize-default-values enum",
+      "status": "scheduled",
+      "warning_category": "DeprecationWarning",
+      "note": null
+    },
+    {
       "id": "cli.validation",
       "kind": "cli-option",
       "target": "--validation",
@@ -74,6 +86,18 @@
       "replacement": "--field-constraints",
       "status": "active",
       "warning_category": "DeprecationWarning",
+      "note": null
+    },
+    {
+      "id": "config.json-config-strict-validation",
+      "kind": "config",
+      "target": "JSON configuration values accepted by legacy validation",
+      "message": "JSON configuration values that do not match the documented schema are deprecated and will become validation errors in a future release.",
+      "warning_since": "0.64.2",
+      "removal_version": null,
+      "replacement": "Update the JSON configuration to match --output-format-json-schema config.",
+      "status": "active",
+      "warning_category": "FutureWarning",
       "note": null
     },
     {
@@ -87,6 +111,54 @@
       "status": "active",
       "warning_category": "DeprecationWarning",
       "note": null
+    },
+    {
+      "id": "dependency.black-minimum",
+      "kind": "dependency",
+      "target": "Black <24.3.0",
+      "message": "Support for Black <24.3.0 will end in a future release.",
+      "warning_since": "0.78.0",
+      "removal_version": null,
+      "replacement": "Upgrade Black to >=24.3.0 before the later support change.",
+      "status": "active",
+      "warning_category": "FutureWarning",
+      "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged."
+    },
+    {
+      "id": "dependency.external-formatters-optional",
+      "kind": "dependency",
+      "target": "Black/isort installation",
+      "message": "Black/isort will become optional. Declare the corresponding extras; see --help.",
+      "warning_since": "0.78.0",
+      "removal_version": null,
+      "replacement": "Declare the black/isort extras for the external formatters you select.",
+      "status": "active",
+      "warning_category": "FutureWarning",
+      "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged."
+    },
+    {
+      "id": "dependency.pydantic-runtime-minimum",
+      "kind": "dependency",
+      "target": "DCG runtime Pydantic <2.8.2",
+      "message": "Support for DCG runtime Pydantic <2.8.2 will end in a future release.",
+      "warning_since": "0.78.0",
+      "removal_version": null,
+      "replacement": "Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged.",
+      "status": "active",
+      "warning_category": "FutureWarning",
+      "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged."
+    },
+    {
+      "id": "dependency.isort-minimum",
+      "kind": "dependency",
+      "target": "isort <6",
+      "message": "Support for isort <6 will end in a future release.",
+      "warning_since": "0.78.0",
+      "removal_version": null,
+      "replacement": "Upgrade isort to >=6,<9 before the later support change.",
+      "status": "active",
+      "warning_category": "FutureWarning",
+      "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged."
     },
     {
       "id": "python-api.python-version-has-type-alias",
@@ -123,6 +195,18 @@
       "status": "active",
       "warning_category": "DeprecationWarning",
       "note": null
+    },
+    {
+      "id": "dependency.python-310-runtime",
+      "kind": "dependency",
+      "target": "Running datamodel-code-generator on Python 3.10",
+      "message": "Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.",
+      "warning_since": "0.84.0",
+      "removal_version": "0.85.0",
+      "replacement": "Run datamodel-code-generator on Python 3.11 or newer.",
+      "status": "active",
+      "warning_category": "FutureWarning",
+      "note": "Generating code for Python 3.10 with --target-python-version 3.10 is unchanged."
     }
   ]
 }

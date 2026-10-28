@@ -1,0 +1,7 @@
+{
+  "custom_template_browser_supported": false,
+  "custom_template_ignored": true,
+  "generated_person": true,
+  "imported_jinja2": false,
+  "imported_markupsafe": false
+}

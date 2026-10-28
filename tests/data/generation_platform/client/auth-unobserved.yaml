@@ -1,0 +1,10 @@
+openapi: 3.1.0
+info:
+  title: Unobserved declaration
+  version: '1'
+paths: {}
+components:
+  securitySchemes:
+    unobserved:
+      type: http
+      scheme: bearer

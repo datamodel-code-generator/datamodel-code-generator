@@ -16,15 +16,15 @@ class Entity(Base):
 
 
 class Thing(Entity):
-    type: str | None = 'Thing'
+    type: str
     name: str
 
 
 class Person(Thing):
-    type: str | None = 'Person'
+    type: str
     age: int | None = None
 
 
 class SpecificPerson(Person):
-    type: str | None = 'SpecificPerson'
-    id: str | None = 'specific-id'
+    type: str
+    id: str

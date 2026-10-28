@@ -1,0 +1,130 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Model
+type: object
+properties:
+  rust_escape:
+    allOf:
+      - {type: string, pattern: '\p{L}'}
+      - {pattern: 'a'}
+  braced_escape:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '\x{62}'}
+  repeated_name:
+    allOf:
+      - {type: string, pattern: '(?P<n>a)'}
+      - {pattern: '(?P<n>b)c'}
+  global_flags:
+    allOf:
+      - {type: string, pattern: '(?i)a'}
+      - {pattern: 'b'}
+  python_rejects:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '(?U)b+'}
+  set_operation:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '[a-z&&[^x]]'}
+  nested_class:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '[[:alpha:]]'}
+  class_escape:
+    allOf:
+      - {type: string, pattern: '1x'}
+      - {pattern: '[\d_]'}
+  backreference:
+    allOf:
+      - {type: string, pattern: '(a)\1'}
+      - {pattern: 'b'}
+  lookaround:
+    allOf:
+      - {type: string, pattern: '(?=a)'}
+      - {pattern: 'b'}
+  verbose:
+    allOf:
+      - {type: string, pattern: '(?x) a b'}
+      - {pattern: 'c'}
+  bad_range_sibling:
+    $ref: '#/$defs/BadRange'
+    pattern: 'a1'
+  backreference_sibling:
+    $ref: '#/$defs/Repeated'
+    pattern: 'b'
+  rust_escape_sibling:
+    $ref: '#/$defs/Letter'
+    pattern: 'b$'
+  scoped_flags:
+    allOf:
+      - {type: string, pattern: '(?i:a)b'}
+      - {pattern: 'c'}
+  grouped_alternation:
+    allOf:
+      - {type: string, pattern: '(a|b)c'}
+      - {pattern: 'c'}
+  non_ascii_class:
+    allOf:
+      - {type: string, pattern: '猫x'}
+      - {pattern: '[猫犬]'}
+  three_anchored:
+    allOf:
+      - {type: string, pattern: '^a'}
+      - {pattern: '^ab'}
+      - {pattern: '^abc'}
+  trailing_newline_enum:
+    type: string
+    enum: ["a\n", "b"]
+    pattern: '^a$'
+  python_rejected_enum:
+    type: string
+    enum: [aa, b]
+    pattern: '(?U)a+'
+  non_alike_enum:
+    type: string
+    enum: [aa, '1']
+    pattern: '\p{L}'
+  python_group_name:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '(?<n>b)'}
+  non_portable_enum:
+    type: string
+    enum: [aa, b]
+    pattern: '(a)\1'
+  bad_range_enum:
+    type: string
+    enum: [a, b]
+    pattern: '[z-a]'
+  non_identifier_group_name:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '(?P<ids[]>b)'}
+  spaced_repetition:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: 'a{ 2 }'}
+  spaced_repetition_enum:
+    type: string
+    enum: [aa, 'a{ 2 }']
+    pattern: '^a{ 2 }$'
+  non_ascii_class_escape_enum:
+    type: string
+    enum: ["\u00e9", '!']
+    pattern: '^\W$'
+  escaped_backslash_letter_enum:
+    type: string
+    enum: ["\u00e9", '\w']
+    pattern: '^\\w$'
+  lookaround_sibling:
+    $ref: '#/$defs/Lookahead'
+    pattern: 'b'
+  nan_sibling:
+    $ref: '#/$defs/Mixed'
+    enum: [.nan, x]
+$defs:
+  Mixed: {enum: [.nan, 1.5, x, [1]]}
+  BadRange: {type: string, pattern: '[z-a]'}
+  Letter: {type: string, pattern: '^\p{L}'}
+  Lookahead: {type: string, pattern: '(?=a)'}
+  Repeated: {type: string, pattern: '(a)\1'}

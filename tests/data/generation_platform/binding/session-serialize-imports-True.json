@@ -1,0 +1,78 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Operation-only serializer imports",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Child": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "extra": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "extra"
+            ]
+          }
+        ]
+      },
+      "Container": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/Base"
+          }
+        },
+        "required": [
+          "base"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/models": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Base"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Child",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Child"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

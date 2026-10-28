@@ -1,0 +1,28 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Numeric regression mutant",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "other": {
+            "allOf": [
+              {
+                "type": "number",
+                "multipleOf": 0.6
+              }
+            ]
+          }
+        },
+        "required": [
+          "other"
+        ]
+      }
+    }
+  }
+}

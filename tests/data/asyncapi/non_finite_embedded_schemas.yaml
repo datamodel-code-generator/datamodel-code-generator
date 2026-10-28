@@ -1,0 +1,23 @@
+asyncapi: 3.0.0
+info:
+  title: Non-finite embedded schemas
+  version: 1.0.0
+channels:
+  values:
+    address: values
+    messages:
+      protobufValue:
+        payload:
+          schemaFormat: application/vnd.google.protobuf;version=3
+          schema: |
+            syntax = "proto2";
+            message ProtobufValue {
+              optional double value = 1 [default = inf];
+            }
+      xmlValue:
+        payload:
+          schemaFormat: application/xml;version=1.0
+          schema: |
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="XmlValue" type="xs:double" default="NaN"/>
+            </xs:schema>

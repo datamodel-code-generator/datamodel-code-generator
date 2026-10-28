@@ -1,0 +1,7 @@
+[
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "Invalid API key \u00b7 Please run /login SECRET-CANARY"
+  }
+]

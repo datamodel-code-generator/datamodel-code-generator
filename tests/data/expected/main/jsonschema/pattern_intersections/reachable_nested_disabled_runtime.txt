@@ -1,0 +1,40 @@
+[
+  {
+    "schema_valid": true,
+    "generated": {
+      "value": null
+    }
+  },
+  {
+    "schema_valid": true,
+    "generated": {
+      "value": {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      }
+    }
+  },
+  {
+    "schema_valid": false,
+    "generated": {
+      "value": {
+        "x": {
+          "a": 1
+        }
+      }
+    }
+  },
+  {
+    "schema_valid": false,
+    "generated": {
+      "value": {
+        "x": {
+          "a": 1,
+          "b": "invalid"
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,7 @@
+modules.py: Discriminator 'petType' of Owner cannot be represented as ms
+modules.py: Discriminator 'species' of Zoo cannot be represented as msgs
+modules.py: Discriminator 'vehicle-type' of Garage cannot be represented
+modules.py: Discriminator 'kind' of Tank cannot be represented as msgspe
+modules.py: Discriminator 'toolType' of Shed cannot be represented as ms
+modules.py: Discriminator 'toolType' of Workshop cannot be represented a
+kept by a parser.base module filter: 0

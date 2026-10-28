@@ -1,0 +1,12 @@
+a.item {}: schema accepts, model accepts
+a.item {"thing": {"dep": {"leaf": {"code": 1}, "base": {"name": "n"}}}}: schema accepts, model accepts
+a.item {"thing": {"dep": {"base": {"name": 1}}}}: schema rejects, model rejects
+x.thing {}: schema accepts, model accepts
+x.thing {"dep": {"base": {}}}: schema accepts, model accepts
+x.thing {"dep": 1}: schema rejects, model rejects
+q.d.dep {}: schema accepts, model accepts
+q.d.dep {"leaf": {"code": 1}, "base": {"name": "n"}}: schema accepts, model accepts
+q.d.dep {"base": {"name": []}}: schema rejects, model rejects
+q.base {}: schema accepts, model accepts
+q.base {"name": "n"}: schema accepts, model accepts
+q.base {"name": 1}: schema rejects, model rejects

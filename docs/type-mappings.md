@@ -105,13 +105,19 @@ Generates Pydantic strict types that don't perform type coercion during validati
 | `bool` | `StrictBool` | Strings, integers |
 | `bytes` | `StrictBytes` | Strings |
 
+A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mappings string+byte=binary`, which decode
+base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as
+`Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which checks the lengths on the base64
+text, as JSON Schema counts them, before decoding it. Pydantic checks them so from 2.10 on, and an explicit
+`--target-pydantic-version 2` warns about each such field.
+
 ### Without `--strict-types`
 
 ```python
 class User(BaseModel):
-    id: int        # Accepts "123" and converts to 123
-    name: str      # Accepts 123 and converts to "123"
-    active: bool   # Accepts 1 and converts to True
+    id: int  # Accepts "123" and converts to 123
+    name: str  # Accepts 123 and converts to "123"
+    active: bool  # Accepts 1 and converts to True
 ```
 
 ### With `--strict-types`
@@ -124,10 +130,11 @@ datamodel-codegen --input schema.json --output models.py \
 ```python
 from pydantic import StrictBool, StrictInt, StrictStr
 
+
 class User(BaseModel):
-    id: StrictInt      # Rejects "123", requires integer
-    name: StrictStr    # Rejects 123, requires string
-    active: StrictBool # Rejects 1, requires boolean
+    id: StrictInt  # Rejects "123", requires integer
+    name: StrictStr  # Rejects 123, requires string
+    active: StrictBool  # Rejects 1, requires boolean
 ```
 
 ### When to use
@@ -154,6 +161,7 @@ Controls the Python type used for `date-time` formatted strings.
 ```python
 from datetime import datetime
 
+
 class Event(BaseModel):
     created_at: datetime  # Accepts both aware and naive
 ```
@@ -168,6 +176,7 @@ datamodel-codegen --input schema.json --output models.py \
 ```python
 from pydantic import AwareDatetime
 
+
 class Event(BaseModel):
     created_at: AwareDatetime  # Requires timezone, e.g., 2024-01-01T00:00:00Z
 ```
@@ -181,6 +190,7 @@ datamodel-codegen --input schema.json --output models.py \
 
 ```python
 from pydantic import NaiveDatetime
+
 
 class Event(BaseModel):
     created_at: NaiveDatetime  # Rejects timezone, e.g., 2024-01-01T00:00:00
@@ -210,6 +220,7 @@ datamodel-codegen --input schema.json --output models.py --use-pendulum
 
 ```python
 import pendulum
+
 
 class Event(BaseModel):
     created_at: pendulum.DateTime
@@ -265,6 +276,7 @@ The generator supports the `email` and `idn-email` string formats, which generat
 ```python
 from pydantic import BaseModel, EmailStr
 
+
 class MyModel(BaseModel):
     email: EmailStr
 ```
@@ -315,6 +327,7 @@ The generator supports the `ulid` string format, which generates [`python-ulid`]
 ```python
 from ulid import ULID
 from pydantic import BaseModel
+
 
 class MyModel(BaseModel):
     id: ULID
@@ -367,6 +380,7 @@ datamodel-codegen --input schema.json --output models.py \
 ```python
 from decimal import Decimal
 
+
 class Product(BaseModel):
     price: Decimal  # Exact decimal arithmetic
 ```
@@ -376,6 +390,16 @@ class Product(BaseModel):
 - Financial applications
 - Scientific calculations requiring precision
 - Any schema with `multipleOf` constraints
+
+### Forms and strict types
+
+The default Pydantic output writes `condecimal(...)`. With `--field-constraints` or `--use-annotated` the field is a
+`float` with its constraints in `Field()`. Add `--use-decimal-in-field-forms` (set by the 20261027 presets) to make it
+a `Decimal` with its constraints in `Field()` too, for example `Annotated[Decimal, Field(ge=0, multiple_of=0.01)]`.
+With that option, under `--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or
+`strict=True` among the `Field()` arguments. It rejects Python floats and, as Pydantic's strict `Decimal` does in JSON,
+accepts JSON numbers and numeric strings. A custom `DataTypeManager` receives every constraint of the
+schema in the field forms too, with `field_constraints=True`; the base class ignores them.
 
 ---
 

@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Modular
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [store]
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/store.Order"
+components:
+  schemas:
+    store.Order:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/pets.Pet"
+    pets.Pet:
+      type: object
+      properties:
+        name:
+          type: string

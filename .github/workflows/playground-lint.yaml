@@ -36,20 +36,20 @@ jobs:
   playground-lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           enable-cache: true
           cache-suffix: playground-lint
       - name: Setup Python
-        run: uv python install 3.14
+        run: uv python install 3.14.6
         env:
           UV_PYTHON_PREFERENCE: "only-managed"
       - name: Install tox
-        run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
+        run: uv tool install --python-preference only-managed --python 3.14.6 tox --with tox-uv
       - name: Run playground lint
         run: tox run -e playground-lint
         env:

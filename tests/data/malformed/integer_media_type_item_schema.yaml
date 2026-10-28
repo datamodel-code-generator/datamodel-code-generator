@@ -1,0 +1,18 @@
+openapi: 3.2.0
+info:
+  title: Integer media type of an item schema
+  version: '1.0'
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            1:
+              itemSchema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: string

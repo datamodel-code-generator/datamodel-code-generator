@@ -1,0 +1,38 @@
+# unions-legacy pydantic_v2.BaseModel
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle = ShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square = ShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square = InlineHolder(b=1, shape=Shape1(side=2))
+# unions-legacy pydantic_v2.dataclass
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square = InlineHolder(b=1, shape=Shape1(side=2))

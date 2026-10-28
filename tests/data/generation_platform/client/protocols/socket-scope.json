@@ -1,0 +1,11 @@
+{
+  "scope.inline": {
+    "kind": "websocket",
+    "operation": "/paths/~1chat/get",
+    "send": {
+      "codec": "json",
+      "schema": {"pointer": "/paths/~1upload/get/requestBody/content/application~1json/schema"}
+    },
+    "receive": {"codec": "utf8"}
+  }
+}

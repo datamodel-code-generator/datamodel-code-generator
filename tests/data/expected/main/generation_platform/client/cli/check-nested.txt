@@ -1,0 +1,2 @@
+MISSING: client/models.py (should be generated)
+EXTRA: client/extensions.py (no longer generated)

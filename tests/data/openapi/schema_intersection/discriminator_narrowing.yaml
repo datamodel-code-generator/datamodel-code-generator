@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: t
+  version: '1'
+paths: {}
+components:
+  schemas:
+    PetType:
+      type: string
+      enum:
+      - cat
+      - dog
+    Pet:
+      type: object
+      required:
+      - petType
+      properties:
+        petType:
+          $ref: '#/components/schemas/PetType'
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Cat:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          petType:
+            type: string
+            enum:
+            - cat
+          meow:
+            type: string
+    Dog:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          petType:
+            allOf:
+            - $ref: '#/components/schemas/PetType'
+            enum:
+            - dog
+    Holder:
+      type: object
+      properties:
+        pet:
+          oneOf:
+          - $ref: '#/components/schemas/Cat'
+          - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: petType

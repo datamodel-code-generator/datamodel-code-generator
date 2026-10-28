@@ -1,0 +1,32 @@
+openapi: "3.1.0"
+components:
+  schemas:
+    Request:
+      oneOf:
+        - $ref: '#/components/schemas/RequestV1'
+        - $ref: '#/components/schemas/RequestV2'
+      discriminator:
+        propertyName: version
+    VersionEnum:
+      type: number
+      enum: [1.5, 2.5]
+    RequestBase:
+      type: object
+      properties:
+        version:
+          $ref: '#/components/schemas/VersionEnum'
+      required: [version]
+    RequestV1:
+      allOf:
+        - $ref: '#/components/schemas/RequestBase'
+        - type: object
+          properties:
+            version:
+              const: 1.5
+    RequestV2:
+      allOf:
+        - $ref: '#/components/schemas/RequestBase'
+        - type: object
+          properties:
+            version:
+              const: 2.5

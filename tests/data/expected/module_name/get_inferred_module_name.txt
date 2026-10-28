@@ -1,0 +1,5 @@
+None, False | 'models.Pet' -> 'models'
+None, True | 'Pet' -> ''
+None, True | 'SaveTrifectaV2.1' -> ''
+False, True | 'models.Pet' -> ''
+True, True | 'SaveTrifectaV2.1' -> 'SaveTrifectaV2'

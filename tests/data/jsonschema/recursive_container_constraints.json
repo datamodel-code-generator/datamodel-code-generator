@@ -1,0 +1,18 @@
+{
+  "title": "Node",
+  "type": "object",
+  "properties": {
+    "children": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "parent": {
+      "$ref": "#",
+      "minLength": 1
+    }
+  }
+}

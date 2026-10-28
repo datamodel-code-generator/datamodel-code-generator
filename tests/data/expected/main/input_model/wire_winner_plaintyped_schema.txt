@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "first": {
+      "title": "First",
+      "type": "integer"
+    },
+    "values": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Values",
+      "type": "array",
+      "uniqueItems": true,
+      "x-python-type": "frozenset[int]"
+    },
+    "last": {
+      "title": "Last",
+      "type": "string"
+    }
+  },
+  "required": [
+    "first",
+    "values",
+    "last"
+  ],
+  "title": "PlainTyped",
+  "type": "object"
+}

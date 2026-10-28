@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NativeDecimalDefaultConstrained",
+  "type": "object",
+  "properties": {
+    "Decimal": {
+      "type": "string",
+      "default": "shadow"
+    },
+    "amount": {
+      "type": "number",
+      "multipleOf": 0.25
+    }
+  }
+}

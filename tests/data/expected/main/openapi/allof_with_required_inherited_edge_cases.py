@@ -43,8 +43,8 @@ class ObjectWithoutAdditional(BaseModel):
     nested: str | None = None
 
 
-class MultipleAdditionalProps(BaseModel):
-    pass
+class MultipleAdditionalProps(RootModel[dict[str, BaseRef]]):
+    root: dict[str, BaseRef]
 
 
 class L3(BaseModel):
@@ -82,17 +82,17 @@ class ProjectedEdgeCases(BaseModel):
 
 class EdgeCases(ProjectedEdgeCases):
     extra: str | None = None
-    single_allof_primitive: str
+    single_allof_primitive: SingleAllofPrimitive
     single_allof_ref: BaseRef
     allof_with_enum: StatusEnum
-    allof_nested_anyof: str | int
-    allof_constraint_only: Any
-    allof_max_constraints: conint(le=50)
-    allof_unique_items: list[str]
-    object_without_additional: dict[str, Any]
+    allof_nested_anyof: AllofNestedAnyof
+    allof_constraint_only: AllofConstraintOnly
+    allof_max_constraints: AllofMaxConstraints
+    allof_unique_items: AllofUniqueItems
+    object_without_additional: ObjectWithoutAdditional
     object_only_type: dict[str, Any]
-    multiple_additional_props: dict[str, BaseRef]
-    depth_limit_test: dict[str, Any]
+    multiple_additional_props: MultipleAdditionalProps
+    depth_limit_test: DepthLimitTest
     cycle_detection: BaseRef
     type_list_field: str | int
     allof_multiple_refs_only: BaseRef

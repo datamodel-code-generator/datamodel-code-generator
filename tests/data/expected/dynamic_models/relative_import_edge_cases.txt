@@ -1,0 +1,16 @@
+{
+  "__init__.py": [],
+  "shared.py": [
+    "__init__.py",
+    "package/nested/consumer.py"
+  ],
+  "package/__init__.py": [
+    "package/nested/consumer.py"
+  ],
+  "package/shared.py": [
+    "package/__init__.py",
+    "package/nested/consumer.py"
+  ],
+  "package/nested/consumer.py": [],
+  "asset.txt": []
+}

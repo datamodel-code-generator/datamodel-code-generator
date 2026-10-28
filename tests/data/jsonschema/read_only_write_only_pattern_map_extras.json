@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "item": {"$ref": "#/definitions/Item"},
+    "wrapper": {"$ref": "#/definitions/Wrapper"},
+    "direct": {"$ref": "#/definitions/Base"}
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "readOnly": true},
+        "name": {"type": "string"}
+      }
+    },
+    "Base": {
+      "type": "object",
+      "patternProperties": {"^x": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/definitions/Item"}
+    },
+    "Wrapper": {
+      "type": "object",
+      "properties": {"xa": {"type": "string"}},
+      "allOf": [{"$ref": "#/definitions/Base"}]
+    }
+  }
+}

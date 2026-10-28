@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: A const none of its enum values admits
+  version: "1"
+paths:
+  /first:
+    get:
+      responses:
+        "200":
+          $ref: '#/components/responses/Kind'
+  /second:
+    get:
+      responses:
+        "200":
+          $ref: '#/components/responses/Kind'
+components:
+  responses:
+    Kind:
+      description: A response both operations share.
+      content:
+        application/json:
+          schema:
+            type: string
+            enum: [a, b]
+            const: c

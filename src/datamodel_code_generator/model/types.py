@@ -5,9 +5,12 @@ Provides DataTypeManager implementation with type mapping factory.
 
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
+from typing_extensions import override
+
+from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator.imports import (
     IMPORT_ANY,
     IMPORT_DATE,
@@ -22,7 +25,7 @@ from datamodel_code_generator.imports import (
     IMPORT_TIMEDELTA,
     IMPORT_UUID,
 )
-from datamodel_code_generator.types import DataType, StrictTypes, Types
+from datamodel_code_generator.types import DECIMAL_DEFAULT_VALUE_DESCRIPTOR, DataType, StrictTypes, Types
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManager
 
 if TYPE_CHECKING:
@@ -104,6 +107,10 @@ def standard_primitive_type_map_factory(data_type: type[DataType]) -> dict[Types
 class DataTypeManager(_DataTypeManager):
     """Base type manager for model modules."""
 
+    DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
+        (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    })
+
     def __init__(  # noqa: PLR0913, PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
@@ -158,11 +165,12 @@ class DataTypeManager(_DataTypeManager):
             **standard_primitive_map,
         }
 
+    @override
     def get_data_type(
         self,
         types: Types,
         *,
-        field_constraints: bool = False,  # noqa: ARG002
+        field_constraints: bool = False,
         **_: Any,
     ) -> DataType:
         """Get data type for schema type."""
@@ -170,6 +178,6 @@ class DataTypeManager(_DataTypeManager):
             return self.copy_data_type(self.type_map[types])
         msg = (
             f"Type mapping for {types.name!r} not implemented. "
-            f"Please report this at https://github.com/koxudaxi/datamodel-code-generator/issues"
+            f"Please report this at https://github.com/datamodel-code-generator/datamodel-code-generator/issues"
         )
         raise NotImplementedError(msg)

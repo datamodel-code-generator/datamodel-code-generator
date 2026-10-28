@@ -1,0 +1,62 @@
+{
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "x-python-type": "set[Item]"
+    },
+    "base_items": {
+      "type": "array",
+      "x-python-type": "set[Base]",
+      "items": {
+        "$ref": "#/$defs/Base"
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Left": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ]
+    },
+    "Right": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ]
+    },
+    "Item": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Left"
+        },
+        {
+          "$ref": "#/$defs/Right"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

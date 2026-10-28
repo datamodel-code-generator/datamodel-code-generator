@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Nullable enums beside a const
+  version: "1"
+paths: {}
+components:
+  schemas:
+    NullableKind:
+      type: string
+      enum: [a, b]
+      const: a
+      nullable: true
+    Kind:
+      type: string
+      enum: [a, b]
+      const: a
+    Holder:
+      type: object
+      required: [nullable, plain]
+      properties:
+        nullable:
+          type: string
+          enum: [a, b]
+          const: b
+          nullable: true
+        plain:
+          type: string
+          enum: [a, b]
+          const: b
+        nullableKind:
+          $ref: '#/components/schemas/NullableKind'
+        kind:
+          $ref: '#/components/schemas/Kind'

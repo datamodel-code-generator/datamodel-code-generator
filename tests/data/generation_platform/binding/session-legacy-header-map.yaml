@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info:
+  title: Legacy header reference to a headers map
+  version: "1"
+paths:
+  /files:
+    get:
+      responses:
+        "200":
+          description: Whole file
+          headers:
+            Content-Type:
+              $ref: '#/components/responses/Partial/headers'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+        "206":
+          $ref: '#/components/responses/Partial'
+components:
+  schemas:
+    File:
+      type: object
+      properties:
+        name:
+          type: string
+  responses:
+    Partial:
+      description: Partial file
+      headers:
+        Content-Range:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/File'

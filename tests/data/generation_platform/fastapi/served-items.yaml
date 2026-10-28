@@ -1,0 +1,14 @@
+openapi: 3.2.0
+info: {title: Items, version: "1.0"}
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      responses:
+        "200":
+          description: The events.
+          content:
+            application/jsonl:
+              itemSchema: {$ref: "served-items-library.yaml#/$defs/Event"}
+            application/json:
+              $ref: "served-items-library.yaml#/$defs/EventsMedia"

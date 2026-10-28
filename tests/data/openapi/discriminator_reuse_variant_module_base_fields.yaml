@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: A reused variant whose base extends a model of another module that names a model of its own module
+  version: "1"
+paths: {}
+components:
+  schemas:
+    shapes.Details:
+      type: object
+      properties:
+        color:
+          type: string
+    shapes.Cat:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+        details:
+          $ref: "#/components/schemas/shapes.Details"
+    pets.Kitten:
+      allOf:
+        - $ref: "#/components/schemas/shapes.Cat"
+        - type: object
+          properties:
+            kind:
+              const: cat
+            lives:
+              type: integer
+    pets.Kitty:
+      allOf:
+        - $ref: "#/components/schemas/shapes.Cat"
+        - type: object
+          properties:
+            kind:
+              const: cat
+            lives:
+              type: integer
+    pets.Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+    pets.Animal:
+      oneOf:
+        - $ref: "#/components/schemas/pets.Kitty"
+        - $ref: "#/components/schemas/pets.Bird"
+      discriminator:
+        propertyName: kind

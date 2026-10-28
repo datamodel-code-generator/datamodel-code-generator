@@ -1,0 +1,2 @@
+--type-overrides writes Literal[1, 2] in place of conint(ge=1); TypeOverridesLiterals.integer_values is generated without this constraint.
+--type-overrides writes Literal['x', 'y'] in place of constr(min_length=1, max_length=5); TypeOverridesLiterals.string_values is generated without these constraints.

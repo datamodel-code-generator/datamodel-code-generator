@@ -1,0 +1,8 @@
+{
+  "valid": {
+    "value": 1
+  },
+  "invalid": {
+    "value": null
+  }
+}

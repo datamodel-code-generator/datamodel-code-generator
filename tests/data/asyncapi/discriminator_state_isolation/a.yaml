@@ -1,0 +1,25 @@
+asyncapi: 3.0.0
+info:
+  title: First
+  version: 1.0.0
+channels: {}
+operations: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [petType]
+      properties:
+        petType: {type: string}
+      discriminator:
+        propertyName: petType
+    Cat:
+      allOf:
+        - {$ref: '#/components/schemas/Pet'}
+        - type: object
+          properties:
+            meow: {type: string}
+    Holder:
+      type: object
+      properties:
+        pet: {$ref: '#/components/schemas/Pet'}

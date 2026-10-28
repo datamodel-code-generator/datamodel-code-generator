@@ -1,0 +1,16 @@
+19.10b0: True
+24.2.0: True
+24.3.0rc1: True
+24.3.0.dev1: True
+24.3.0: False
+24.3.0+local: False
+24.3.0.post1: False
+25.1.0: False
+5.13.2: True
+6.0: False
+7.0.0: False
+8.0.0: False
+2.8.1: True
+2.8.2: False
+2.12: False
+unknown: False

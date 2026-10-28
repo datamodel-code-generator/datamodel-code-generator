@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: A component that is only a $ref to itself, named by an alias that no class uses
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/A'
+    C:
+      $ref: '#/components/schemas/A'

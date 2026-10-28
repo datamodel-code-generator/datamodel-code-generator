@@ -1,0 +1,59 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: parameters, paths, requestbodies, webhooks)
+  components                       2, 3 operations
+  inline objects / enums           2 / 3, nesting depth 1
+  shared property names            2 (status x3, page x2)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 3 of 1 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   1
+
+Start from  --preset standard-py314-20261027
+
+Add (1 option)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 2, e.g. status x3, page
+      x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on
+      parse order and shift when the schema grows; full-path names each inline model after its
+      parent.
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 1 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input operations.yaml --naming-strategy full-path --openapi-include-paths '/pets*' --openapi-scopes paths parameters webhooks requestbodies --preset standard-py314-20261027 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "operations.yaml"
+  naming-strategy = "full-path"
+  openapi-include-paths = ["/pets*"]
+  openapi-scopes = ["paths", "parameters", "webhooks", "requestbodies"]
+  preset = "standard-py314-20261027"
+  target-python-version = "3.14"

@@ -1,0 +1,12 @@
+# builtin-shadow
+render pydantic_v2.BaseModel default
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default
+change pydantic_v2.BaseModel default shadow-0
+  @@ -7,0 +8,2 @@
+  +
+  +str = int
+change pydantic_v2.BaseModel default shadow-1
+  @@ -7,0 +8,2 @@
+  +
+  +from builtins import int as str

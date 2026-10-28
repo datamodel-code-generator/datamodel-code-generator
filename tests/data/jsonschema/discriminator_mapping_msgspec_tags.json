@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Event",
+  "oneOf": [
+    {"$ref": "#/$defs/Started"},
+    {"$ref": "#/$defs/Stopped"}
+  ],
+  "discriminator": {
+    "propertyName": "event-type",
+    "mapping": {
+      "started": "#/$defs/Started",
+      "stopped": "#/$defs/Stopped"
+    }
+  },
+  "$defs": {
+    "Started": {
+      "type": "object",
+      "required": ["event-type", "source"],
+      "properties": {
+        "event-type": {"type": "string"},
+        "source": {
+          "oneOf": [
+            {"$ref": "#/$defs/Manual"},
+            {"$ref": "#/$defs/Scheduled"}
+          ],
+          "discriminator": {"propertyName": "origin"}
+        }
+      }
+    },
+    "Stopped": {
+      "type": "object",
+      "required": ["event-type"],
+      "properties": {
+        "event-type": {"type": "string"},
+        "reason": {"type": "string"}
+      }
+    },
+    "Manual": {
+      "type": "object",
+      "required": ["origin", "user"],
+      "properties": {
+        "origin": {"type": "string"},
+        "user": {"type": "string"}
+      }
+    },
+    "Scheduled": {
+      "type": "object",
+      "required": ["origin"],
+      "properties": {
+        "origin": {"type": "string"},
+        "cron": {"type": "string"}
+      }
+    }
+  }
+}

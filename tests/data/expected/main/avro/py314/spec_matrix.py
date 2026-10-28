@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, RootModel, conbytes
 
 
 class DefaultRecord(BaseModel):
-    value: int
+    value: int | None = 1
 
 
 class DefaultEnum(StrEnum):
@@ -73,22 +73,22 @@ class Array(BaseModel):
 
 
 class SpecMatrix(BaseModel):
-    nullDefault: None
-    booleanDefault: bool
-    intDefault: int
-    longDefault: int
-    floatDefault: float
-    doubleDefault: float
-    bytesDefault: bytes
-    stringDefault: str
-    recordDefault: DefaultRecord
-    enumDefault: DefaultEnum
-    arrayDefault: list[int]
-    mapDefault: dict[str, int]
-    fixedDefault: DefaultFixed
+    nullDefault: None = Field(None)
+    booleanDefault: bool | None = False
+    intDefault: int | None = 1
+    longDefault: int | None = 2
+    floatDefault: float | None = 1.5
+    doubleDefault: float | None = 2.5
+    bytesDefault: bytes | None = b'\xff'
+    stringDefault: str | None = 'foo'
+    recordDefault: DefaultRecord | None = Field({'value': 1}, validate_default=True)
+    enumDefault: DefaultEnum | None = 'FOO'
+    arrayDefault: list[int] | None = [1]
+    mapDefault: dict[str, int] | None = {'a': 1}
+    fixedDefault: DefaultFixed | None = Field(b'\xff', validate_default=True)
     ascendingOrder: str
     descendingOrder: str
-    nullableAfterValue: str | None
+    nullableAfterValue: str | None = 'value'
     sameKindNamedUnion: RA | RB | EA | EB | FA | FB
     arrayOfRecords: list[ArrayItem]
     mapOfEnums: dict[str, MapValue]

@@ -1,0 +1,236 @@
+{
+  "ListWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "FrozenWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "CallableWins": {
+    "fields": {
+      "shared": "callback"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ],
+    "callable": true,
+    "reject_noncallable": true
+  },
+  "SkippedFrozen": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "SkippedList": {
+    "fields": {
+      "shared": "values"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "SkippedCallable": {
+    "fields": {
+      "shared": "value"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ],
+    "callable": true
+  },
+  "AllSkipped": {
+    "fields": {},
+    "order": [
+      "first",
+      "last"
+    ]
+  },
+  "ChoicesWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "Populated": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "PathWins": {
+    "fields": {
+      "values": "items"
+    },
+    "order": [
+      "first",
+      "values",
+      "last"
+    ]
+  },
+  "NestedWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ],
+    "nested": true
+  },
+  "Serialization": {
+    "fields": {
+      "values": "values",
+      "items": "items"
+    },
+    "order": [
+      "first",
+      "values",
+      "items",
+      "last"
+    ]
+  },
+  "PlainData": {
+    "fields": {
+      "values": "values"
+    },
+    "order": [
+      "first",
+      "values",
+      "last"
+    ]
+  },
+  "PlainTyped": {
+    "fields": {
+      "values": "values"
+    },
+    "order": [
+      "first",
+      "values",
+      "last"
+    ]
+  },
+  "HiddenCollision": {
+    "fields": {},
+    "order": [
+      "first",
+      "last"
+    ]
+  },
+  "NullableWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "InlinedWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ],
+    "nested": true
+  },
+  "MultipleWins": {
+    "models": [
+      "ListWins",
+      "FrozenWins"
+    ],
+    "model": "ListWins",
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last"
+    ]
+  },
+  "InheritedWins": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last",
+      "label"
+    ]
+  },
+  "UserExtensions": {
+    "fields": {
+      "shared": "values"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last",
+      "metadata"
+    ],
+    "user_extensions": true
+  },
+  "CollisionExtensions": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last",
+      "metadata"
+    ],
+    "user_extensions": true
+  },
+  "ExtensionContainer": {
+    "fields": {
+      "shared": "items"
+    },
+    "order": [
+      "first",
+      "shared",
+      "last",
+      "metadata"
+    ],
+    "user_extensions": true,
+    "nested": true
+  }
+}

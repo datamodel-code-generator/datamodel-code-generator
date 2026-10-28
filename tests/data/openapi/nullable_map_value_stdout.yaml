@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value stdout
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Value:
+      type: object
+      properties:
+        id:
+          type: integer
+    1bad.Thing:
+      type: object
+      properties:
+        x:
+          type: string
+    stats.Rank:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          v:
+            $ref: "#/components/schemas/Value"
+    Holder:
+      type: object
+      properties:
+        ranks:
+          $ref: "#/components/schemas/stats.Rank"
+        t:
+          $ref: "#/components/schemas/1bad.Thing"

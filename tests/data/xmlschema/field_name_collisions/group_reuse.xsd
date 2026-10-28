@@ -1,0 +1,3 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:one="urn:one" xmlns:alias="urn:one">
+  <xs:group name="fields"><xs:sequence><xs:element name="code" type="xs:int"/></xs:sequence></xs:group><xs:element name="root"><xs:complexType><xs:sequence><xs:group ref="fields"/><xs:group ref="fields"/></xs:sequence></xs:complexType></xs:element>
+</xs:schema>

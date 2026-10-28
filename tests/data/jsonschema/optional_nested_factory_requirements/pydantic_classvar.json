@@ -1,0 +1,23 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Item"
+    }
+  },
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "x-is-classvar": true
+        }
+      },
+      "required": [
+        "value"
+      ]
+    }
+  }
+}

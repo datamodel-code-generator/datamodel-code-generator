@@ -1,0 +1,19 @@
+asyncapi: 3.0.0
+info: {title: XML fixed values, version: 1.0.0}
+channels:
+  alerts:
+    address: alerts
+    messages:
+      alert:
+        payload:
+          schemaFormat: application/xml;version=1.0
+          schema: |
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="Alert">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="mode" fixed="fast" nillable="true"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>

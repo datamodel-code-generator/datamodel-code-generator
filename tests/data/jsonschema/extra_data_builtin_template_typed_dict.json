@@ -1,0 +1,6 @@
+{
+  "Person": {
+    "additionalPropertiesType": "__import__('os').system('id')",
+    "use_typeddict_backport": true
+  }
+}

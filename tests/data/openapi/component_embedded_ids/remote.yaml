@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Remote ids
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Pet:
+      $id: https://example.com/schemas/pet.json
+      type: object
+      properties:
+        name:
+          type: string
+    Owner:
+      type: object
+      properties:
+        pet:
+          $ref: https://example.com/schemas/pet.json

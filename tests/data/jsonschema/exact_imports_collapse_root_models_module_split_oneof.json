@@ -1,0 +1,33 @@
+{
+  "title": "Animal Home",
+  "type": "object",
+  "required": ["pets"],
+  "properties": {
+    "pets": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Pet" }
+    }
+  },
+  "definitions": {
+    "Pet": {
+      "oneOf": [
+        { "$ref": "#/definitions/Cat" },
+        { "$ref": "#/definitions/Dog" }
+      ]
+    },
+    "Cat": {
+      "type": "object",
+      "required": ["meow"],
+      "properties": {
+        "meow": { "type": "boolean" }
+      }
+    },
+    "Dog": {
+      "type": "object",
+      "required": ["bark"],
+      "properties": {
+        "bark": { "type": "boolean" }
+      }
+    }
+  }
+}

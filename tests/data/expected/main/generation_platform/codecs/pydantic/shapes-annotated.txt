@@ -1,0 +1,2 @@
+values-server-decode: native Values(amount=Decimal('2.5'), day=None, clock=None, span=None, uid=None, secret=None, blob=None, level=None, link=None, any=None, list_=None, codes=None, un=None, mark=None) set=['amount'] json={"amount":"2.5"}
+values-server-response: native Values(amount=Decimal('2.5'), day=None, clock=None, span=None, uid=None, secret=None, blob=None, level=None, link=None, any=None, list_=None, codes=None, un=None, mark=None) set=['amount'] json={"amount":"2.5"}

@@ -615,7 +615,7 @@ pre {
 .option-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px;
+  grid-template-columns: minmax(0, 1fr) auto 170px;
   align-items: start;
   gap: 10px;
   padding: 7px 12px;
@@ -627,12 +627,12 @@ pre {
 }
 
 .option-control-list {
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
 }
 
 .option-control-list .option-widget {
+  grid-column: 1 / -1;
   justify-content: stretch;
 }
 
@@ -660,7 +660,34 @@ pre {
   white-space: normal;
 }
 
+.option-doc-link {
+  grid-column: 2;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--panel-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.option-doc-link:hover,
+.option-doc-link:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--accent-soft);
+  color: #81d4fa;
+  outline: 0;
+}
+
 .option-widget {
+  grid-column: 3;
   min-width: 0;
   display: flex;
   justify-content: flex-end;
@@ -701,6 +728,11 @@ pre {
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 8px;
+  }
+
+  .option-doc-link,
+  .option-widget {
+    grid-column: 1;
   }
 
   .option-widget {
@@ -938,6 +970,11 @@ body.workspace-collapsed .output-editor-mount {
   .option-row {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .option-doc-link,
+  .option-widget {
+    grid-column: 1;
   }
 
   .option-widget {

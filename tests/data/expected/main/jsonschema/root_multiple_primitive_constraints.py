@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
-from pydantic import Field, RootModel
+from pydantic import Field, RootModel, conint, constr
 
 
-class PrimitiveUnionConstraints(RootModel[str | int]):
-    root: str | int = Field(..., title='PrimitiveUnionConstraints')
+class PrimitiveUnionConstraints(RootModel[constr(min_length=1) | conint(ge=0)]):
+    root: constr(min_length=1) | conint(ge=0) = Field(
+        ..., title='PrimitiveUnionConstraints'
+    )

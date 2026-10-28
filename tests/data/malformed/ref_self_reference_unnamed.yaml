@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: A component that is only a $ref to itself, which no type names
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/A'
+    Labels:
+      type: array
+      items:
+        type: string
+    Tree:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tree'
+    Holder:
+      type: object
+      properties:
+        labels:
+          $ref: '#/components/schemas/Labels'
+        tree:
+          $ref: '#/components/schemas/Tree'

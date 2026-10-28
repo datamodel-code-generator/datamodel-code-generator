@@ -1,0 +1,9 @@
+inner_folder/__init__.py
+inner_folder/artificial_folder/__init__.py
+subfolder/__init__.py
+__init__.py
+inner_folder/artificial_folder/type_1.py
+subfolder/type_5.py
+inner_folder/type_2.py
+inner_folder/schema.py
+type_4.py

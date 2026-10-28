@@ -1,0 +1,1 @@
+Support for DCG runtime Pydantic <2.8.2 will end in a future release.

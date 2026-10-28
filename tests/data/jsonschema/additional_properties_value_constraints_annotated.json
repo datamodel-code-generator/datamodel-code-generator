@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "type": "object",
+  "$defs": {
+    "PositiveInt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "TitledPositiveInt": {
+      "title": "TitledPositiveInt",
+      "type": "integer",
+      "minimum": 1
+    },
+    "LocalValue": {
+      "title": "LocalValue",
+      "type": "string"
+    },
+    "RootMap": {
+      "title": "RootMap",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 2,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9
+      }
+    }
+  },
+  "properties": {
+    "existingLocalValue": {
+      "$ref": "#/$defs/LocalValue"
+    },
+    "nestedMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/PositiveInt",
+        "maximum": 9
+      }
+    },
+    "titledMap": {
+      "title": "TitledMap",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9
+      }
+    },
+    "titledRefMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/TitledPositiveInt",
+        "maximum": 9
+      }
+    },
+    "localTitleRefMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/PositiveInt",
+        "title": "LocalValue",
+        "maximum": 9
+      }
+    },
+    "namedMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z]+$"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9
+      }
+    },
+    "rootMap": {
+      "$ref": "#/$defs/RootMap"
+    },
+    "nullableValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1,
+        "maximum": 9
+      }
+    },
+    "closedArrayValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": false
+      }
+    },
+    "allOfValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/PositiveInt"
+          },
+          {
+            "type": "integer",
+            "maximum": 9
+          }
+        ]
+      }
+    },
+    "titledAllOfValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/TitledPositiveInt"
+          },
+          {
+            "type": "integer",
+            "maximum": 9
+          }
+        ]
+      }
+    },
+    "nullableAllOfValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "nullable": true,
+        "x-value-kind": "bounded",
+        "minimum": 1,
+        "allOf": [
+          true,
+          {
+            "type": "integer",
+            "maximum": 9
+          }
+        ]
+      }
+    },
+    "unionValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 4
+          }
+        ]
+      }
+    },
+    "objectValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "type": "string"
+        }
+      }
+    },
+    "modeledValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "titledValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "title": "NamedValue",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9
+      }
+    },
+    "modeledIrrelevantConstraintMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "minimum": 1,
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+    },
+    "arrayIrrelevantConstraintMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minimum": 1,
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "heterogeneousValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "integer",
+          "string"
+        ],
+        "minimum": 1
+      }
+    },
+    "booleanIrrelevantConstraintMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean",
+        "minimum": 1
+      }
+    }
+  },
+  "required": [
+    "existingLocalValue",
+    "nestedMap",
+    "titledMap",
+    "titledRefMap",
+    "localTitleRefMap",
+    "namedMap",
+    "rootMap",
+    "nullableValueMap",
+    "closedArrayValueMap",
+    "allOfValueMap",
+    "titledAllOfValueMap",
+    "nullableAllOfValueMap",
+    "unionValueMap",
+    "objectValueMap",
+    "modeledValueMap",
+    "titledValueMap",
+    "modeledIrrelevantConstraintMap",
+    "arrayIrrelevantConstraintMap",
+    "heterogeneousValueMap",
+    "booleanIrrelevantConstraintMap"
+  ],
+  "patternProperties": {
+    "^pattern_": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 9
+  }
+}

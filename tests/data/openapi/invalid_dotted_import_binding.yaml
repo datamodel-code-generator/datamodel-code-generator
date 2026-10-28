@@ -1,0 +1,18 @@
+openapi: 3.0.0
+info:
+  title: Invalid dotted import binding
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    A.1.UUID:
+      type: object
+      properties:
+        value:
+          type: string
+    Root:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid

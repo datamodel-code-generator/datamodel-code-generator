@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AnchoredChild": {
+      "$anchor": "anchored-child",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"}
+      }
+    },
+    "LegacyChild": {
+      "type": "object",
+      "properties": {
+        "count": {"type": "integer"}
+      }
+    },
+    "NestedChild": {
+      "$id": "nested-child.json",
+      "$anchor": "anchored-child",
+      "type": "object",
+      "properties": {
+        "value": {"type": "number"}
+      }
+    }
+  },
+  "default": {
+    "$anchor": "anchored-child"
+  }
+}

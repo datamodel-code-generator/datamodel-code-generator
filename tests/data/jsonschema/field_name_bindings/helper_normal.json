@@ -1,0 +1,18 @@
+{
+  "title": "Record",
+  "type": "object",
+  "properties": {
+    "Optional": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    }
+  },
+  "required": [
+    "Optional"
+  ]
+}

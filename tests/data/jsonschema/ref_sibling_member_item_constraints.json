@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "narrowed_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity",
+            "maximum": 9
+          }
+        ],
+        "minimum": 2
+      }
+    },
+    "redundant_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity",
+            "minimum": 1
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    "combined_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity",
+            "maximum": 9
+          },
+          {
+            "anyOf": [
+              {
+                "maximum": 5
+              },
+              {
+                "minimum": 7
+              }
+            ]
+          }
+        ],
+        "minimum": 2
+      }
+    }
+  },
+  "$defs": {
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

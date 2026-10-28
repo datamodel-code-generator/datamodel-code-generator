@@ -1,0 +1,11 @@
+<xs:schema xmlns:b="urn:base" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="urn:base" schemaLocation="imported_base.xsd"/>
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:extension base="b:Base">
+        <xs:attribute name="label" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

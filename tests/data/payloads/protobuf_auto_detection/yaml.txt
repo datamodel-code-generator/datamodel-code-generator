@@ -1,0 +1,8 @@
+syntax: 'syntax = "proto3";'
+edition: "edition = '2023';"
+message: '/* syntax = "proto2"; */'
+title: Model
+type: object
+properties:
+  value:
+    type: string

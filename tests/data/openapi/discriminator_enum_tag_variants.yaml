@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Discriminator tags typed by one-value enums
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    LoneRequired:
+      oneOf:
+        - $ref: "#/components/schemas/RequiredTag"
+      discriminator:
+        propertyName: type
+    RequiredTagType:
+      type: string
+      enum:
+        - required
+    RequiredTag:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          $ref: "#/components/schemas/RequiredTagType"
+      required:
+        - id
+        - type
+    LoneOptional:
+      oneOf:
+        - $ref: "#/components/schemas/OptionalTag"
+      discriminator:
+        propertyName: type
+    OptionalTag:
+      type: object
+      properties:
+        note:
+          type: string
+        type:
+          type: string
+          enum:
+            - optional
+    Cat:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - cat
+      required:
+        - type
+    Dog:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - dog
+        bark:
+          type: boolean
+    BirdType:
+      type: string
+      enum:
+        - bird
+    BirdBase:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/BirdType"
+    Bird:
+      allOf:
+        - $ref: "#/components/schemas/BirdBase"
+        - type: object
+          properties:
+            wings:
+              type: integer
+    DogOrBird:
+      oneOf:
+        - $ref: "#/components/schemas/Dog"
+        - $ref: "#/components/schemas/Bird"
+    Pets:
+      type: object
+      properties:
+        choice:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/DogOrBird"
+          discriminator:
+            propertyName: type
+        inline:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - oneOf:
+                - $ref: "#/components/schemas/Dog"
+                - $ref: "#/components/schemas/Bird"
+          discriminator:
+            propertyName: type

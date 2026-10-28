@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "RecursiveInvalid",
+  "fields": [
+    {
+      "name": "child",
+      "type": [
+        "RecursiveInvalid",
+        "null"
+      ],
+      "default": {
+        "child": null
+      }
+    },
+    42,
+    {}
+  ]
+}

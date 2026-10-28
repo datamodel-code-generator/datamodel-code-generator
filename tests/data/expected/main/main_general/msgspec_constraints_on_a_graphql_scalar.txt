@@ -1,0 +1,25 @@
+from __future__ import annotations
+
+from typing import Annotated, List, Literal, TypeAlias, Union
+
+from msgspec import UNSET, Meta, Struct, UnsetType, field
+
+Boolean: TypeAlias = bool
+"""
+The `Boolean` scalar type represents `true` or `false`.
+"""
+
+
+Long: TypeAlias = str
+
+
+String: TypeAlias = str
+"""
+The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+"""
+
+
+class Thing(Struct):
+    longs: Annotated[List[Long], Meta(min_length=1)]
+    long: Union[Annotated[Long, Meta(min_length=1)], None, UnsetType] = UNSET
+    typename__: Union[Literal['Thing'], UnsetType] = field(name='__typename', default='Thing')

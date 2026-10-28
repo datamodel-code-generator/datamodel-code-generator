@@ -1,0 +1,7 @@
+{
+  "models": [
+    "User",
+    "Order",
+    "Model"
+  ]
+}

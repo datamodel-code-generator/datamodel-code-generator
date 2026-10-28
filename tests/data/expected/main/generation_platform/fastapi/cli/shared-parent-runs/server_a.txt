@@ -1,0 +1,6 @@
+Error: services: The server packages server_a, generated before, and server_b would both import their implementations from the services package: put each server package under a parent package of its own, or delete the directory server_a of server_a when it is no longer used
+Error: services: The server packages server_a, generated before, and server_b would both import their implementations from the services package: put each server package under a parent package of its own, or delete the directory server_a of server_a when it is no longer used
+Error: services: The server packages server_a, generated before, and server_b would both import their implementations from the services package: put each server package under a parent package of its own, or delete the directory server_a of server_a when it is no longer used
+Error: services: The server packages server_a, generated before, and server_b would both import their implementations from the services package: put each server package under a parent package of its own, or delete the directory server_a of server_a when it is no longer used
+stdout:
+server_b written: False

@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UniqueItemsUnionRefSiblingDraft7",
+  "anyOf": [
+    {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+    {"$ref": "#/definitions/AnyArray", "const": "ignored"}
+  ],
+  "definitions": {"AnyArray": {"type": "array", "items": {"type": "integer"}}}
+}

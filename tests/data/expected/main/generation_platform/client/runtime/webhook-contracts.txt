@@ -1,0 +1,430 @@
+# pets-protocols pydantic_v2.BaseModel
+  optional imports=[]
+  import threads unchanged=True
+  key identities=True/True/True
+  opaque key representation = KeySet()
+  empty keys = KeySet()
+  no constructor key limit = 9
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
+  operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
+  document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
+  signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  event data identity=True
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  options share UNSET=True
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  OperationRef fields=('pointer', 'document')
+  OperationRef keyword-only=True
+  OperationRef hints=('pointer', 'document')
+  KeySet fields=('keys',)
+  KeySet keyword-only=True
+  KeySet hints=('keys',)
+  VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedSignature keyword-only=True
+  VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook keyword-only=True
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions keyword-only=True
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions keyword-only=True
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  key variance=False/False
+  event covariance=True
+  key tuple hint=True/True
+  verifier key identity=True
+  verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
+  verifier synchronous=True
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
+# pets-protocols pydantic_v2.dataclass
+  optional imports=[]
+  import threads unchanged=True
+  key identities=True/True/True
+  opaque key representation = KeySet()
+  empty keys = KeySet()
+  no constructor key limit = 9
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
+  operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
+  document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
+  signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  event data identity=True
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  options share UNSET=True
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  OperationRef fields=('pointer', 'document')
+  OperationRef keyword-only=True
+  OperationRef hints=('pointer', 'document')
+  KeySet fields=('keys',)
+  KeySet keyword-only=True
+  KeySet hints=('keys',)
+  VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedSignature keyword-only=True
+  VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook keyword-only=True
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions keyword-only=True
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions keyword-only=True
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  key variance=False/False
+  event covariance=True
+  key tuple hint=True/True
+  verifier key identity=True
+  verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
+  verifier synchronous=True
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
+# pets-protocols dataclasses.dataclass
+  optional imports=[]
+  import threads unchanged=True
+  key identities=True/True/True
+  opaque key representation = KeySet()
+  empty keys = KeySet()
+  no constructor key limit = 9
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
+  operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
+  document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
+  signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  event data identity=True
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  options share UNSET=True
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  OperationRef fields=('pointer', 'document')
+  OperationRef keyword-only=True
+  OperationRef hints=('pointer', 'document')
+  KeySet fields=('keys',)
+  KeySet keyword-only=True
+  KeySet hints=('keys',)
+  VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedSignature keyword-only=True
+  VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook keyword-only=True
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions keyword-only=True
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions keyword-only=True
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  key variance=False/False
+  event covariance=True
+  key tuple hint=True/True
+  verifier key identity=True
+  verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
+  verifier synchronous=True
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
+# pets-protocols typing.TypedDict
+  optional imports=[]
+  import threads unchanged=True
+  key identities=True/True/True
+  opaque key representation = KeySet()
+  empty keys = KeySet()
+  no constructor key limit = 9
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
+  operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
+  document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
+  signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  event data identity=True
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  options share UNSET=True
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  OperationRef fields=('pointer', 'document')
+  OperationRef keyword-only=True
+  OperationRef hints=('pointer', 'document')
+  KeySet fields=('keys',)
+  KeySet keyword-only=True
+  KeySet hints=('keys',)
+  VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedSignature keyword-only=True
+  VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook keyword-only=True
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions keyword-only=True
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions keyword-only=True
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  key variance=False/False
+  event covariance=True
+  key tuple hint=True/True
+  verifier key identity=True
+  verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
+  verifier synchronous=True
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
+# pets-protocols msgspec.Struct
+  optional imports=[]
+  import threads unchanged=True
+  key identities=True/True/True
+  opaque key representation = KeySet()
+  empty keys = KeySet()
+  no constructor key limit = 9
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
+  operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
+  document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
+  signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
+  event data identity=True
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  options share UNSET=True
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  OperationRef fields=('pointer', 'document')
+  OperationRef keyword-only=True
+  OperationRef hints=('pointer', 'document')
+  KeySet fields=('keys',)
+  KeySet keyword-only=True
+  KeySet hints=('keys',)
+  VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedSignature keyword-only=True
+  VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  VerifiedWebhook keyword-only=True
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions keyword-only=True
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions keyword-only=True
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  key variance=False/False
+  event covariance=True
+  key tuple hint=True/True
+  verifier key identity=True
+  verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
+  verifier synchronous=True
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',)] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',)] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []

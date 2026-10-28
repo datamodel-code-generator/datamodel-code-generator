@@ -1,0 +1,78 @@
+[
+  {
+    "native": true,
+    "fields": [],
+    "python": {},
+    "identity": "Root",
+    "json": {}
+  },
+  {
+    "native": false,
+    "fields": [],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": false,
+    "fields": [],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": true,
+    "fields": [],
+    "python": {
+      "x": {
+        "c": 3,
+        "a": 1,
+        "b": 2
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "c": 3,
+        "a": 1,
+        "b": 2
+      }
+    }
+  },
+  {
+    "native": true,
+    "fields": [],
+    "python": {
+      "x": {
+        "c": 1,
+        "b": null
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "x": {
+        "c": 1,
+        "b": null
+      }
+    }
+  },
+  {
+    "native": false,
+    "fields": [],
+    "python": "rejected",
+    "json": "rejected"
+  },
+  {
+    "native": true,
+    "fields": [],
+    "python": {
+      "y": {
+        "c": 1
+      }
+    },
+    "identity": "Root",
+    "json": {
+      "y": {
+        "c": 1
+      }
+    }
+  }
+]

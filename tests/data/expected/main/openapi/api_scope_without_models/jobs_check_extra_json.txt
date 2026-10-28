@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "batch",
+  "jobs": [
+    {
+      "name": "models",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": false,
+        "content": "EXTRA: <ROOT>/models.py (no longer generated)",
+        "differences": [
+          {
+            "kind": "extra",
+            "path": "<ROOT>/models.py",
+            "message": "EXTRA: <ROOT>/models.py (no longer generated)",
+            "diff": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "package",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": true,
+        "content": "",
+        "differences": []
+      }
+    }
+  ]
+}

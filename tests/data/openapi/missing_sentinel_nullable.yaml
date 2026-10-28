@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: Missing Sentinel Nullable API
+paths: {}
+components:
+  schemas:
+    MissingSentinelNullable:
+      type: object
+      required:
+        - requiredNullable
+      properties:
+        requiredNullable:
+          type: integer
+          nullable: true
+        nullableUnrequired:
+          type: integer
+          nullable: true
+        unrequired:
+          type: integer

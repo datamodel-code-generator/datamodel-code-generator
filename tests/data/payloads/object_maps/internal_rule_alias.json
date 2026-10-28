@@ -1,0 +1,42 @@
+{
+  "valid": {
+    "box": {
+      "holder": {
+        "b1": 1,
+        "z": "abc"
+      }
+    },
+    "thing": {
+      "box": {
+        "holder": {
+          "b2": 2
+        }
+      }
+    }
+  },
+  "invalid": [
+    {
+      "box": {
+        "holder": {
+          "z": "abcd"
+        }
+      }
+    },
+    {
+      "box": {
+        "holder": {
+          "b1": "x"
+        }
+      }
+    },
+    {
+      "thing": {
+        "box": {
+          "holder": {
+            "z": "abcd"
+          }
+        }
+      }
+    }
+  ]
+}

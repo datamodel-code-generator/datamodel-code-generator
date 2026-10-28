@@ -1,0 +1,1 @@
+{"has_breaking_changes": false, "breaking_changes_content": "", "reasoning": "Prepared diff was read."}

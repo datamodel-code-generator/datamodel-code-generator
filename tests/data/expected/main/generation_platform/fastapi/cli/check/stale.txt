@@ -1,0 +1,566 @@
+--- models.py
++++ models.py (expected)
+@@ -51,21 +51,3 @@
+ 
+ class PetsGetResponse(RootModel[list[Pet]]):
+     root: list[Pet]
+-
+-
+-class PetsMineGetResponse(RootModel[list[Pet]]):
+-    root: list[Pet]
+-
+-
+-PetsPetIdGetPathPetIdParameter = TypeAliasType(
+-    "PetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+-)
+-
+-
+-PetsPetIdDeletePathPetIdParameter = TypeAliasType(
+-    "PetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+-)
+-
+-
+-class StoreInventoryGetResponse(RootModel[dict[str, int]]):
+-    root: dict[str, int]
+--- server/_generated/contract.py
++++ server/_generated/contract.py (expected)
+@@ -18,10 +18,6 @@
+     {
+         'list_pets': Sequence[params.Depends],
+         'create_pet': Sequence[params.Depends],
+-        'list_my_pets': Sequence[params.Depends],
+-        'get_pet': Sequence[params.Depends],
+-        'delete_pet': Sequence[params.Depends],
+-        'get_inventory': Sequence[params.Depends],
+     },
+     total=False,
+ )
+@@ -41,36 +37,3 @@
+     RESPONSES: Final = OperationResponses(
+         responses={'201': Declared(media_type='application/json', model=models.Pet)},
+     )
+-
+-
+-class ListMyPets:
+-    """Plans of the list_my_pets operation."""
+-
+-    RESPONSES: Final = OperationResponses(
+-        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
+-    )
+-
+-
+-class GetPet:
+-    """Plans of the get_pet operation."""
+-
+-    RESPONSES: Final = OperationResponses(
+-        responses={'200': Declared(media_type='application/json', model=models.Pet), '404': Declared(media_type='application/json', model=models.Error)},
+-    )
+-
+-
+-class DeletePet:
+-    """Plans of the delete_pet operation."""
+-
+-    RESPONSES: Final = OperationResponses(
+-        responses={'204': Declared()},
+-        primary=204,
+-    )
+-
+-
+-class GetInventory:
+-    """Plans of the get_inventory operation."""
+-
+-    RESPONSES: Final = OperationResponses(
+-        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
+-    )
+--- server/application.py
++++ server/application.py (expected)
+@@ -11,14 +11,12 @@
+ from ._generated.contract import OperationDependencies
+ from ._generated.openapi import serve_source_openapi
+ from ._runtime.server.application import build, error_handlers, validation_error_handler
+-from .routers import pets, store
+-from .services import PetsService, StoreService
++from .routers import pets
++from .services import PetsService
+ 
+ ROUTES: Final = (
+     *pets.LITERAL_ROUTES,
+-    *store.LITERAL_ROUTES,
+     *pets.TEMPLATED_ROUTES,
+-    *store.TEMPLATED_ROUTES,
+ )
+ INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
+ 
+@@ -26,7 +24,6 @@
+ def build_router(
+     *,
+     pets: PetsService,
+-    store: StoreService,
+     dependencies: Sequence[params.Depends] = (),
+     operation_dependencies: OperationDependencies | None = None,
+     prefix: str = "",
+@@ -34,7 +31,7 @@
+     """Register every operation on a new router, literal paths first."""
+     return build(
+         ROUTES,
+-        services={'pets': pets, 'store': store},
++        services={'pets': pets},
+         dependencies=dependencies,
+         operation_dependencies=operation_dependencies,
+         prefix=prefix,
+@@ -44,7 +41,6 @@
+ def create_app(
+     *,
+     pets: PetsService,
+-    store: StoreService,
+     operation_dependencies: OperationDependencies | None = None,
+     prefix: str = "",
+     source_openapi: bool = True,
+@@ -60,7 +56,6 @@
+     app.include_router(
+         build_router(
+             pets=pets,
+-            store=store,
+             operation_dependencies=operation_dependencies,
+             prefix=prefix,
+         )
+--- server/main.py
++++ server/main.py (expected)
+@@ -12,18 +12,15 @@
+ 
+ try:
+     from services.pets import Pets
+-    from services.store import Store
+ except ImportError as error:
+     missing_implementation(
+         error,
+         {
+             'services.pets': 'Pets',
+-            'services.store': 'Store',
+         },
+     )
+     raise
+ 
+ app = create_app(
+     pets=Pets(),
+-    store=Store(),
+ )
+--- server/routers/pets.py
++++ server/routers/pets.py (expected)
+@@ -8,8 +8,7 @@
+ from uuid import UUID
+ 
+ import models
+-from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
+-from fastapi.responses import Response
++from fastapi import APIRouter, Body, Cookie, Header, Query, params
+ from pydantic import AwareDatetime, Field
+ 
+ from .._generated import contract
+@@ -103,120 +102,11 @@
+     )
+ 
+ 
+-def _add_list_my_pets(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
+-    pets: PetsService = wiring.services['pets']
+-    list_my_pets_handler = checked(
+-        pets.list_my_pets,
+-        'The pets.list_my_pets method of GET /pets/mine',
+-        (),
+-    )
+-
+-    def list_my_pets() -> object:
+-        return dispatch(
+-            list_my_pets_handler(),
+-            contract.ListMyPets.RESPONSES,
+-        )
+-
+-    router.add_api_route(
+-        '/pets/mine',
+-        list_my_pets,
+-        methods=['GET'],
+-        status_code=200,
+-        response_model=models.PetsMineGetResponse,
+-        response_model_by_alias=True,
+-        response_model_exclude_unset=True,
+-        operation_id='listMyPets',
+-        tags=['pets'],
+-        response_description="The caller's pets.",
+-        dependencies=wiring.dependencies.get('list_my_pets'),
+-    )
+-
+-
+-def _add_get_pet(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
+-    pets: PetsService = wiring.services['pets']
+-    get_pet_handler = checked(
+-        pets.get_pet,
+-        'The pets.get_pet method of GET /pets/{petId}',
+-        ('petId',),
+-    )
+-
+-    def get_pet(
+-        *,
+-        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
+-    ) -> object:
+-        return dispatch(
+-            get_pet_handler(
+-                petId=petId,
+-            ),
+-            contract.GetPet.RESPONSES,
+-        )
+-
+-    router.add_api_route(
+-        '/pets/{petId}',
+-        get_pet,
+-        methods=['GET'],
+-        status_code=200,
+-        response_model=models.Pet,
+-        response_model_by_alias=True,
+-        response_model_exclude_unset=True,
+-        operation_id='getPet',
+-        tags=['pets'],
+-        response_description='The pet.',
+-        dependencies=wiring.dependencies.get('get_pet'),
+-    )
+-
+-
+-def _add_delete_pet(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
+-    pets: PetsService = wiring.services['pets']
+-    delete_pet_handler = checked(
+-        pets.delete_pet,
+-        'The pets.delete_pet method of DELETE /pets/{petId}',
+-        ('petId',),
+-    )
+-
+-    def delete_pet(
+-        *,
+-        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
+-    ) -> object:
+-        return dispatch(
+-            delete_pet_handler(
+-                petId=petId,
+-            ),
+-            contract.DeletePet.RESPONSES,
+-        )
+-
+-    router.add_api_route(
+-        '/pets/{petId}',
+-        delete_pet,
+-        methods=['DELETE'],
+-        status_code=204,
+-        response_model=None,
+-        response_class=Response,
+-        operation_id='deletePet',
+-        tags=['pets'],
+-        response_description='Deleted.',
+-        dependencies=wiring.dependencies.get('delete_pet'),
+-    )
+-
+-
+ LITERAL_ROUTES: Final = (
+     ('list_pets', _add_list_pets),
+     ('create_pet', _add_create_pet),
+-    ('list_my_pets', _add_list_my_pets),
+ )
+-TEMPLATED_ROUTES: Final = (
+-    ('get_pet', _add_get_pet),
+-    ('delete_pet', _add_delete_pet),
+-)
++TEMPLATED_ROUTES: Final = ()
+ 
+ 
+ def build_router(
+--- server/services.py
++++ server/services.py (expected)
+@@ -43,43 +43,3 @@
+         """
+         Handle POST /pets.
+         """
+-
+-    @abstractmethod
+-    def list_my_pets(
+-        self,
+-    ) -> models.PetsMineGetResponse | HTTPResult[models.PetsMineGetResponse] | Response:
+-        """
+-        Handle GET /pets/mine.
+-        """
+-
+-    @abstractmethod
+-    def get_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+-        """
+-        Handle GET /pets/{petId}.
+-        """
+-
+-    @abstractmethod
+-    def delete_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> None | HTTPResult[None] | Response:
+-        """
+-        Handle DELETE /pets/{petId}.
+-        """
+-
+-
+-class StoreService(Protocol):
+-    """Implement the store operations: subclass this Protocol, or give an object its methods."""
+-
+-    @abstractmethod
+-    def get_inventory(
+-        self,
+-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+-        """
+-        Handle GET /store/inventory.
+-        """
+EXTRA: server/routers/store.py (no longer generated)
+--- server/_generated/openapi.json
++++ server/_generated/openapi.json (expected)
+@@ -123,117 +123,6 @@
+      }
+     }
+    }
+-  },
+-  "/pets/mine": {
+-   "get": {
+-    "operationId": "listMyPets",
+-    "tags": [
+-     "pets"
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "The caller's pets.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "type": "array",
+-         "items": {
+-          "$ref": "#/components/schemas/Pet"
+-         }
+-        }
+-       }
+-      }
+-     }
+-    }
+-   }
+-  },
+-  "/pets/{petId}": {
+-   "get": {
+-    "operationId": "getPet",
+-    "tags": [
+-     "pets"
+-    ],
+-    "parameters": [
+-     {
+-      "name": "petId",
+-      "in": "path",
+-      "required": true,
+-      "schema": {
+-       "type": "integer",
+-       "format": "int64",
+-       "minimum": 1
+-      }
+-     }
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "The pet.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "$ref": "#/components/schemas/Pet"
+-        }
+-       }
+-      }
+-     },
+-     "404": {
+-      "description": "Missing.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "$ref": "#/components/schemas/Error"
+-        }
+-       }
+-      }
+-     }
+-    }
+-   },
+-   "delete": {
+-    "operationId": "deletePet",
+-    "tags": [
+-     "pets"
+-    ],
+-    "parameters": [
+-     {
+-      "name": "petId",
+-      "in": "path",
+-      "required": true,
+-      "schema": {
+-       "type": "integer",
+-       "format": "int64",
+-       "minimum": 1
+-      }
+-     }
+-    ],
+-    "responses": {
+-     "204": {
+-      "description": "Deleted."
+-     }
+-    }
+-   }
+-  },
+-  "/store/inventory": {
+-   "get": {
+-    "operationId": "getInventory",
+-    "tags": [
+-     "store"
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "Counts by status.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "type": "object",
+-         "additionalProperties": {
+-          "type": "integer"
+-         }
+-        }
+-       }
+-      }
+-     }
+-    }
+-   }
+   }
+  },
+  "components": {
+--- server/README.md
++++ server/README.md (expected)
+@@ -15,7 +15,6 @@
+ | Module | File | Defines |
+ | --- | --- | --- |
+ | `services.pets` | `../services/pets.py` | `class Pets(PetsService)` |
+-| `services.store` | `../services/store.py` | `class Store(StoreService)` |
+ 
+ The file paths are relative to this README.
+ Replace each stub with your code, then run the application with an ASGI server, from the directory that holds the top-level package (add `--app-dir src` for a `src` layout):
+@@ -75,63 +74,6 @@
+         Handle POST /pets.
+         """
+         raise NotImplementedError
+-
+-    def list_my_pets(
+-        self,
+-    ) -> models.PetsMineGetResponse | HTTPResult[models.PetsMineGetResponse] | Response:
+-        """
+-        Handle GET /pets/mine.
+-        """
+-        raise NotImplementedError
+-
+-    def get_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+-        """
+-        Handle GET /pets/{petId}.
+-        """
+-        raise NotImplementedError
+-
+-    def delete_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> None | HTTPResult[None] | Response:
+-        """
+-        Handle DELETE /pets/{petId}.
+-        """
+-        raise NotImplementedError
+-```
+-
+-### `services.store`
+-
+-```python
+-"""Implement StoreService of server.services; server.main imports Store from this module.
+-
+-datamodel-code-generator wrote this module once, with a stub for each method, and never overwrites it. Generating the
+-server again updates the Protocol, so type checkers point at the methods to change.
+-"""
+-
+-from __future__ import annotations
+-
+-import models
+-from fastapi.responses import Response
+-from server import HTTPResult
+-from server.services import StoreService
+-
+-
+-class Store(StoreService):
+-    """Implement the store operations."""
+-
+-    def get_inventory(
+-        self,
+-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+-        """
+-        Handle GET /store/inventory.
+-        """
+-        raise NotImplementedError
+ ```
+ 
+ ## Dependencies
+@@ -156,10 +98,6 @@
+ | --- | --- | --- | --- | --- |
+ | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
+ | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
+-| `PetsService` | `list_my_pets` | GET | `/pets/mine` | `/paths/~1pets~1mine/get` |
+-| `PetsService` | `get_pet` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
+-| `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
+-| `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
+ 
+ `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
+ 
+@@ -180,19 +118,14 @@
+ 
+ from server import create_app
+ from services.pets import Pets
+-from services.store import Store
+ 
+ 
+ class FakePets(Pets):
+     """Override the methods the test calls, such as `list_pets`."""
+ 
+ 
+-class FakeStore(Store):
+-    """Override the methods the test calls, such as `get_inventory`."""
+-
+-
+ def test_app() -> None:
+-    with TestClient(create_app(pets=FakePets(), store=FakeStore())) as client:
++    with TestClient(create_app(pets=FakePets())) as client:
+         ...
+ ```
+ 
+@@ -204,10 +137,9 @@
+ 
+ from server import build_router
+ from services.pets import Pets
+-from services.store import Store
+ 
+ app = FastAPI()
+-app.include_router(build_router(pets=Pets(), store=Store()))
++app.include_router(build_router(pets=Pets()))
+ ```
+ 
+ ## Served OpenAPI document

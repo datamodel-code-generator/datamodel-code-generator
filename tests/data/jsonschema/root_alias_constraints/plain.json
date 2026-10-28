@@ -1,0 +1,6 @@
+{
+  "title": "Root",
+  "type": "string",
+  "description": "An ordinary root alias.",
+  "default": "kept"
+}

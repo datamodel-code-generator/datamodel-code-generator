@@ -1,0 +1,28 @@
+{
+  "title": "RefNullableImportFastPath",
+  "type": "object",
+  "properties": {
+    "maybe_user": {
+      "$ref": "#/definitions/User"
+    }
+  },
+  "required": [
+    "maybe_user"
+  ],
+  "definitions": {
+    "User": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

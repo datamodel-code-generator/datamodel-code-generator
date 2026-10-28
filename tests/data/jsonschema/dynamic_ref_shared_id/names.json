@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/list.json",
+  "title": "Names",
+  "type": "array",
+  "items": {"$dynamicRef": "#item"},
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "type": "string"}
+  }
+}

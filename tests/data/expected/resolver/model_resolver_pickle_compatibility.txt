@@ -1,0 +1,48 @@
+current copy semantics
+shallow mapping shared: True
+deep mapping shared: False
+shallow mutation shared: current_3name
+deep copy isolated: field_3name
+replacement shallow shared: True
+replacement deep shared: False
+replacement pickle shared: False
+replacement pickle field: replacement_3name
+reference pickle keeps state: True
+reference pickle takes a new model key: True
+current slotted roundtrip
+state layout: private
+slot marker: current-slot
+custom state: custom-state
+custom dict state: custom-dict-state
+global reduce identity: True
+tuple reduce type: TupleReduceModelResolver
+private state accepted: field_3name
+legacy base cache ref: schema.json#/value
+main -> current
+state layout: private
+mapping: ENUM PYDANTIC CLASS MSGSPEC
+resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
+class field: legacy_3name
+pydantic field: schema_
+main slotted -> current
+state layout: private
+mapping: ENUM PYDANTIC CLASS MSGSPEC
+resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
+class field: slotted_3name
+pydantic field: schema_
+slot marker: main-slot
+current -> main
+state layout: public
+mapping: ENUM PYDANTIC CLASS MSGSPEC
+resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
+class field: current_3name
+pydantic field: schema_
+cache mutation: True
+current slotted -> main
+state layout: public
+mapping: ENUM PYDANTIC CLASS MSGSPEC
+resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
+class field: field_3name
+pydantic field: schema_
+cache mutation: True
+slot marker: current-slot

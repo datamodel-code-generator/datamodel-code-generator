@@ -1,0 +1,12 @@
+visited-array=False
+unknown-array=True
+visited-paths=set()
+fallback={()}
+fixed={(0,), (1,)}
+variable={(None,)}
+mapping={('__json_schema_mapping_values__',)}
+list-child=[(None, ('__json_schema_mapping_additional_values__', (('my_field', 'my-field', 'myField'),), ()))]
+collapsed-root=set()
+root-owned=None
+selector-owned=None
+selector-unowned=True

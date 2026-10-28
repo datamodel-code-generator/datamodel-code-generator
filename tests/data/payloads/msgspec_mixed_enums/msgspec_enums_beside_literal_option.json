@@ -1,0 +1,16 @@
+{
+  "valid": {
+    "kept": "a",
+    "mapped": 2,
+    "listed": ["d"],
+    "choice": "q",
+    "free": 4
+  },
+  "invalid": [
+    {"kept": "1"},
+    {"mapped": "2"},
+    {"listed": ["z"]},
+    {"choice": 1},
+    {"free": "4"}
+  ]
+}

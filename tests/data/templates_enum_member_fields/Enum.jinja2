@@ -1,0 +1,15 @@
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+class {{ class_name }}({{ base_class }}):
+{%- set member_fields = fields | selectattr('field') | list %}
+{%- if member_fields %}
+    __member_fields__ = {
+{%- for field in member_fields %}
+        {{ field.default }}: {{ field.field }},
+{%- endfor %}
+    }
+{%- endif %}
+{%- for field in fields %}
+    {{ field.name }} = {{ field.default }}
+{%- endfor -%}

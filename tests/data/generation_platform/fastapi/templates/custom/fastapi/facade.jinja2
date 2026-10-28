@@ -1,0 +1,20 @@
+"""{{ docstring }}"""
+{%- if imports %}
+
+{{ imports }}
+{%- endif %}
+{%- if module == "" %}
+
+OWNER = "{{ team }}"
+{%- endif %}
+{%- if exports %}
+
+__all__ = [
+{%- if module == "" %}
+    "OWNER",
+{%- endif %}
+{%- for name in exports %}
+    "{{ name }}",
+{%- endfor %}
+]
+{%- endif %}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="nillableTrue" type="xs:string" nillable="true"/>
+        <xs:element name="nillableOne" type="xs:string" nillable="1"/>
+        <xs:element name="nillableFalse" type="xs:string" nillable="false"/>
+        <xs:element name="nillableZero" type="xs:string" nillable="0"/>
+        <xs:element name="unspecified" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

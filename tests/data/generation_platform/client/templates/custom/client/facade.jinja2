@@ -1,0 +1,72 @@
+"""{{ docstring }}"""
+{%- if future %}
+
+from __future__ import annotations
+{%- endif %}
+{%- if checking %}
+
+from typing import TYPE_CHECKING
+{%- endif %}
+{%- if imports %}
+
+{{ imports }}
+{%- endif %}
+{%- if module == "" %}
+
+from models import Pet
+{%- endif %}
+{%- if checking %}
+
+if TYPE_CHECKING:
+{%- for line in checking %}
+    {{ line }}
+{%- endfor %}
+{%- endif %}
+{%- for item in classes %}
+
+
+class {{ item.name }}({{ item.base }}):
+    """{{ item.docstring }}"""
+{%- if item.attributes %}
+{% endif %}
+{%- for attribute in item.attributes %}
+    {{ attribute.name }} = {{ attribute.value }}
+{%- endfor %}
+{%- endfor %}
+{%- if exports %}
+
+{% if classes %}
+{% endif %}__all__ = [
+{%- if module == "" %}
+    'Pet',
+{%- endif %}
+{%- for name in exports %}
+    {{ name | repr }},
+{%- endfor %}
+]
+{%- endif %}
+{%- if lazy %}
+
+
+def __getattr__(name: str) -> object:
+    """{{ loader }}"""
+{%- for entry in lazy %}
+    if name in {{ entry.names }}:
+        from {{ entry.module }} import {{ entry.attribute }}
+{% if entry.cache %}
+        value = globals()[name] = getattr({{ entry.attribute }}, name)
+        return value
+{%- else %}
+        return getattr({{ entry.attribute }}, name)
+{%- endif %}
+{%- endfor %}
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+{%- endif %}
+{%- if listing %}
+
+
+def __dir__() -> list[str]:
+    """{{ listing }}"""
+    return sorted({*globals(), *__all__})
+{%- endif %}

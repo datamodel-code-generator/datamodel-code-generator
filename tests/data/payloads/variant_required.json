@@ -1,0 +1,7 @@
+[
+  {},
+  {"extra_required": 1},
+  {"extra_required": 1, "other_extra": 0},
+  {"extra_required": 1, "mode": "conditional"},
+  {"extra_required": 1, "mode": "conditional", "conditional_extra": 0}
+]

@@ -1,0 +1,4 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"M","type":"object",
+ "properties":{"m":{"type":"object","propertyNames":{"$ref":"#/$defs/Key"},"additionalProperties":{"type":"integer"}},
+ "n":{"type":"object","propertyNames":{"$ref":"#/$defs/Key2"},"additionalProperties":{"type":"integer"}}},
+ "$defs":{"Key":{"type":"string","maxLength":3},"Key2":{"type":"string","maxLength":2}}}

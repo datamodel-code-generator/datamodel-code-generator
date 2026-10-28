@@ -1,0 +1,51 @@
+{
+  "$defs": {
+    "Flagged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Patterned": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    },
+    "Wrapped": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Patterned"
+        }
+      ]
+    },
+    "Open": {
+      "type": "object"
+    },
+    "Keyed": {
+      "$ref": "#/$defs/Open",
+      "patternProperties": {
+        "^k-": {
+          "$ref": "#/$defs/Flagged"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "wrapped": {
+      "$ref": "#/$defs/Wrapped"
+    },
+    "keyed": {
+      "$ref": "#/$defs/Keyed"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniqueItemsUnionMappingRoot",
+  "anyOf": [
+    {
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "integer"},
+        "uniqueItems": true
+      }
+    },
+    {
+      "type": "object",
+      "properties": {"kind": {"type": "string"}},
+      "required": ["kind"]
+    }
+  ]
+}

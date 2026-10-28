@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Unmodeled messages
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /chat:
+    get:
+      operationId: chatSocket
+      responses:
+        '101':
+          description: The chat channel.
+  /events:
+    get:
+      operationId: streamEvents
+      responses:
+        '200':
+          description: The events.
+          content:
+            text/event-stream:
+              schema: {type: string}
+x-messages:
+  Note: {type: string}
+  Event:
+    type: object
+    properties:
+      id: {type: string}

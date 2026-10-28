@@ -1,0 +1,3 @@
+# protocols-cache-errors
+render pydantic_v2.BaseModel
+  Error: --client-protocols['bad.validator'].validator must be 'etag', 'last_modified' or 'both'; --client-protocols['bad.validator'].authenticated must be a boolean; --client-protocols['bad.missing'] needs 'validator'; --client-protocols['bad.missing'] needs 'authenticated'; --client-protocols['bad.vary'].vary_allowlist[0] must name a header, not '*'; --client-protocols['bad.vary'].vary_allowlist[3] must be a header name; --client-protocols['bad.repeated'].vary_allowlist[1] repeats a header name; --client-protocols['bad.statuses'].statuses[0] must be a status from 100 to 599

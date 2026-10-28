@@ -1,0 +1,225 @@
+# ndjson pydantic_v2.BaseModel
+  > GET https://api.example.com/records accept=application/x-ndjson
+  one byte at a time
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+    2  id=None retry=None data=Record{'text': 'crlf'} raw='{"text": "crlf"}'
+    3  id=None retry=None data=Record{'text': 'café'} raw='{"text": "café"}'
+    4  id=None retry=None data=Record{'text': 'spaced'} raw='  {"text": "spaced"}  '
+  < closed
+    end
+    response 200 progress {'reconnects': 0}
+  > GET https://api.example.com/records accept=application/x-ndjson
+  in one chunk
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+    2  id=None retry=None data=Record{'text': 'crlf'} raw='{"text": "crlf"}'
+    3  id=None retry=None data=Record{'text': 'café'} raw='{"text": "café"}'
+    4  id=None retry=None data=Record{'text': 'spaced'} raw='  {"text": "spaced"}  '
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  blank line
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.2') [operation_id='streamRecords', location=('event', 2), body_bytes=b'', truncated=False, cause=1 validation error for Record
+  Invalid JSON: EOF while parsing a value at line 1 column 0 [type=json_invalid, input_value=b'', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] malformed
+    raw prefix b'' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  whitespace line
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b' \t', truncated=False, cause=1 validation error for Record
+  Invalid JSON: EOF while parsing a value at line 1 column 2 [type=json_invalid, input_value=b' \t', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] malformed
+    raw prefix b' \t' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  invalid UTF-8
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{"text": "\xff"}', truncated=False] malformed
+    raw prefix b'{"text": "\xff"}' cause NoneType context NoneType
+  > GET https://api.example.com/records accept=application/x-ndjson
+  byte order mark
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'\xef\xbb\xbf{"text": "a"}', truncated=False, cause=1 validation error for Record
+  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'\xef\xbb\xbf{"text": "a"}', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] malformed
+    raw prefix b'\xef\xbb\xbf{"text": "a"}' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  CR without LF
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{"text": "a"}\r{"text": "b"}', truncated=False, cause=1 validation error for Record
+  Invalid JSON: trailing characters at line 1 column 15 [type=json_invalid, input_value=b'{"text": "a"}\r{"text": "b"}', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] malformed
+    raw prefix b'{"text": "a"}\r{"text": "b"}' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  record refused by its type
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='value', location='event.2') [operation_id='streamRecords', location=('event', 2), body_bytes=b'{"text": 5}', truncated=False, cause=1 validation error for Record
+text
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] value
+    raw prefix b'{"text": 5}' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  final line without a line end
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='eof', sequence=1) [operation_id='streamRecords', sequence=1] eof
+  > GET https://api.example.com/records accept=application/x-ndjson
+  end after a line end
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  empty body
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  final line allowed at the end
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+    2  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+  after the end ! StopIteration:  []
+  > GET https://api.example.com/records accept=application/x-ndjson
+  final line with a CR
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  invalid final line
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{"text"', truncated=False, cause=1 validation error for Record
+  Invalid JSON: EOF while parsing an object at line 1 column 7 [type=json_invalid, input_value=b'{"text"', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] malformed
+    raw prefix b'{"text"' cause ValidationError context ValidationError
+  > GET https://api.example.com/records accept=application/x-ndjson
+  final line not UTF-8
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'\xff', truncated=False] malformed
+    raw prefix b'\xff' cause NoneType context NoneType
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  sentinel
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  sentinel as the final line
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  sentinel with CRLF
+  < closed
+    end
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  EOF before the sentinel
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='search', reason='eof', sequence=1) [operation_id='search', sequence=1] eof
+  > GET https://api.example.com/records accept=application/x-ndjson
+  sentinel without a required line end
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='eof', sequence=0) [operation_id='streamRecords', sequence=0] eof
+  > GET https://api.example.com/records accept=application/x-ndjson
+  body discriminator
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  before the error 1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+  < closed
+  error record 'error_event' {'type': 'failed', 'message': 'nope'}
+  after the error ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.failed') [field_path=('next', 'failed')] invalid_state
+  > GET https://api.example.com/records accept=application/x-ndjson
+  missing discriminator
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='missing', location='event.1./type') [operation_id='streamRecords', location=('event', 1, '/type'), body_bytes=b'{"id": "1"}', truncated=False] missing
+  > GET https://api.example.com/records accept=application/x-ndjson
+  mapped record failing its type
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='value', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{"type": "deleted", "id": 5}', truncated=False, cause=1 validation error for Deleted
+id
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] value
+  > GET https://api.example.com/records accept=application/x-ndjson
+  first 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='next.closed') [field_path=('next', 'closed')] invalid_state
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  data [{'text': 'a'}, {'text': 'a'}]
+  > GET https://api.example.com/records accept=application/x-ndjson
+  broken connection
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='transport', sequence=1) [operation_id='streamRecords', sequence=1, cause=APIConnectionError()] transport
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  declared error status ! NotFoundError: Error code: 404 - {"detail": "missing"} [operation_id='streamRecords', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False]
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  event stream media type ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='unexpected_media_type') [operation_id='streamRecords', body_bytes=b'', truncated=False, media_type='text/event-stream'] unexpected_media_type
+  > GET https://api.example.com/records accept=application/x-ndjson
+  media type with parameters
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  response end at EOF
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  response undecodable record
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='value', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{}', truncated=False, cause=1 validation error for Record
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] value
+  > GET https://api.example.com/records accept=application/x-ndjson
+  response early close after 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async one byte at a time
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+    2  id=None retry=None data=Record{'text': 'crlf'} raw='{"text": "crlf"}'
+    3  id=None retry=None data=Record{'text': 'café'} raw='{"text": "café"}'
+    4  id=None retry=None data=Record{'text': 'spaced'} raw='  {"text": "spaced"}  '
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async final line allowed at the end
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+    2  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async invalid UTF-8
+  < closed
+    ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', reason='malformed', location='event.1') [operation_id='streamRecords', location=('event', 1), body_bytes=b'{"text": "\xff"}', truncated=False] malformed
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async body discriminator
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async error record
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamRecords', reason='error_event') [operation_id='streamRecords'] error_event
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async broken connection
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='transport', sequence=1) [operation_id='streamRecords', sequence=1, cause=APIConnectionError()] transport
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  async data [{'text': 'a'}, {'text': 'a'}]
+  > GET https://api.example.com/records accept=application/x-ndjson
+  async first 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  async after close ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='anext.closed') [field_path=('anext', 'closed')] invalid_state

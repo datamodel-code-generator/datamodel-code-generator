@@ -1,0 +1,1 @@
+{"analysis": "{\"has_breaking_changes\": false, \"breaking_changes_content\": \"\", \"reasoning\": \"Only CI, release automation, or tests changed; generated output and public interfaces are unaffected.\"}\n", "github_output": "requires_claude=false\nskip_changelog=true\n", "stderr": "", "stdout": ""}

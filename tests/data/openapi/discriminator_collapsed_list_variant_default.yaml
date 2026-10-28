@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Lists of discriminated unions that take a root model with a default as a variant, inlined by --collapse-root-models
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        type:
+          const: cat
+      required:
+        - type
+    Dog:
+      type: object
+      properties:
+        type:
+          const: dog
+      required:
+        - type
+    Bird:
+      type: object
+      properties:
+        type:
+          const: bird
+      required:
+        - type
+    DogDefault:
+      $ref: "#/components/schemas/Dog"
+      default:
+        type: dog
+    ChainedDog:
+      $ref: "#/components/schemas/DogDefault"
+    Pets:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/DogDefault"
+      discriminator:
+        propertyName: type
+    ChainedPets:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/ChainedDog"
+      discriminator:
+        propertyName: type
+    PlainPets:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Bird"
+      discriminator:
+        propertyName: type
+    Owner:
+      type: object
+      properties:
+        pets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pets"
+        chained:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChainedPets"
+        plain:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlainPets"

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CustomTemplateRootDescription",
+  "type": "array",
+  "description": "root description\"\"\"; assert False; \"\"\"still a description",
+  "items": {
+    "type": "string",
+    "description": "root field description\"\"\"; assert False; \"\"\"still a description"
+  }
+}

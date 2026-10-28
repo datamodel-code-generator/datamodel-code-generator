@@ -1,0 +1,20 @@
+{
+  "title": "RequiredParent",
+  "type": "object",
+  "properties": {
+    "left": {
+      "type": "string"
+    },
+    "right": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["left"]
+    },
+    {
+      "required": ["right"]
+    }
+  ]
+}

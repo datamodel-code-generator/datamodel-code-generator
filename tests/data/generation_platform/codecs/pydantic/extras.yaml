@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Typed extras
+  version: "1.0"
+paths:
+  /tallies:
+    post:
+      operationId: createTally
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tally"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tally"
+components:
+  schemas:
+    Tally:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+      additionalProperties:
+        type: integer

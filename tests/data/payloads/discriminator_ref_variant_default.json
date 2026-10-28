@@ -1,0 +1,22 @@
+{
+  "DogDefault": {
+    "valid": [{"type": "dog"}],
+    "invalid": [{"type": "cat"}, {"type": 1}, {}]
+  },
+  "Pets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}],
+    "invalid": [{"pet": {"type": "bird"}}, {"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  },
+  "ChainedPets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "dog"}}],
+    "invalid": [{"pet": {"type": "bird"}}, {"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  },
+  "PetList": {
+    "valid": [{}, {"pets": []}, {"pets": [{"type": "cat"}, {"type": "dog"}]}],
+    "invalid": [{"pets": [{"type": "bird"}]}, {"pets": [{"type": "fish"}]}, {"pets": ["cat"]}, {"pets": [{}]}]
+  },
+  "PlainPets": {
+    "valid": [{}, {"pet": {"type": "cat"}}, {"pet": {"type": "bird"}}],
+    "invalid": [{"pet": {"type": "dog"}}, {"pet": {"type": "fish"}}, {"pet": "cat"}, {"pet": {}}]
+  }
+}

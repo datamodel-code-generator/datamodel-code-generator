@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AliasModels",
+  "$defs": {
+    "ZNumber": {"type": "integer"},
+    "AText": {"type": "string"},
+    "TwinNumber": {"type": "integer"},
+    "Items": {"type": "array", "items": {"type": "integer"}},
+    "MaybeNumber": {"type": ["integer", "null"]},
+    "Color": {"type": "string", "enum": ["red", "blue"]},
+    "PlainObject": {
+      "type": "object",
+      "properties": {"active": {"type": "boolean"}},
+      "required": ["active"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "number": {"$ref": "#/$defs/ZNumber"},
+    "text": {"$ref": "#/$defs/AText"},
+    "twin": {"$ref": "#/$defs/TwinNumber"},
+    "items": {"$ref": "#/$defs/Items"},
+    "maybe": {"$ref": "#/$defs/MaybeNumber"},
+    "color": {"$ref": "#/$defs/Color"},
+    "plain": {"$ref": "#/$defs/PlainObject"}
+  },
+  "required": ["number", "text", "twin", "items", "maybe", "color", "plain"]
+}

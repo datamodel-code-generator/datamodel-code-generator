@@ -1,0 +1,9 @@
+{
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "preset": "standard-py311-20260909",
+  "settings_path": "$PROJECT"
+}

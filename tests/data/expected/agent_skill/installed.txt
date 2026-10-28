@@ -1,0 +1,1 @@
+Installed datamodel-code-generator skill at <target>

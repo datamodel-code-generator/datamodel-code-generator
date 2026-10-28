@@ -1,0 +1,11 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "codec_records_total",
+  "scopes": ["schemas", "paths", "api"],
+  "options": {"use_total_false_for_typed_dict": true},
+  "cases": [
+    {"name": "sealed-server-decode", "use": "/paths/~1sealed/post request_body", "op": "decode", "value": {"a": "x"}},
+    {"name": "counts-server-decode", "use": "/paths/~1counts/post request_body", "op": "decode", "value": {"x": 2}},
+    {"name": "pets-client-encode-cat", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": {"meow": true}}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "description": "An allOf value root.",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Token"
+    }
+  ],
+  "$defs": {
+    "Token": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 2
+    }
+  }
+}

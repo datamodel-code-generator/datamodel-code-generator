@@ -1,0 +1,18 @@
+{
+  "cls": "violation",
+  "notes": [
+    "[numbered-name-removed] Root1: removed",
+    "[enum-value] Color: RED='red' -> 'Red'",
+    "[enum-member-removed] Color: GREEN",
+    "[enum-member-added] Color: BLUE",
+    "[constructor-order] Point: ['x', 'y'] -> ['y', 'x']"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[numbered-name-removed] Root1: removed",
+    "[enum-value] Color: RED='red' -> 'Red'",
+    "[enum-member-removed] Color: GREEN",
+    "[enum-member-added] Color: BLUE",
+    "[constructor-order] Point: ['x', 'y'] -> ['y', 'x']"
+  ]
+}

@@ -1,0 +1,55 @@
+[
+  {
+    "name": "AnnotatedWrapperRoot",
+    "fields": [
+      "boxes"
+    ],
+    "annotations_equal": {
+      "boxes": false
+    },
+    "type_identity": {},
+    "results": {
+      "native": {
+        "valid": {
+          "boxes": [
+            {
+              "value": 4
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "boxes": [
+            {
+              "value": 4
+            }
+          ]
+        },
+        "invalid": [
+          [
+            [
+              "boxes",
+              0,
+              "value"
+            ],
+            "greater_than"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "boxes": false
+    }
+  }
+]

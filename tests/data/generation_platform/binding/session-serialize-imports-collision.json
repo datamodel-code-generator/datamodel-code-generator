@@ -1,0 +1,84 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Operation-only serializer imports",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Child": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Base"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "extra": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "extra"
+            ]
+          }
+        ]
+      },
+      "Native": {
+        "x-python-import": {
+          "module": "pydantic.functional_serializers",
+          "name": "SerializeAsAny"
+        }
+      },
+      "Container": {
+        "type": "object",
+        "properties": {
+          "native": {
+            "$ref": "#/components/schemas/Native"
+          }
+        },
+        "required": [
+          "native"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/models": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Base"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Child",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Child"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

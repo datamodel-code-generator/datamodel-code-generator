@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrefixItemsUnsatisfiableLength",
+  "type": "object",
+  "properties": {
+    "false_position": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, false],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "closed_tail": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

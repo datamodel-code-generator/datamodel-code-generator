@@ -1,0 +1,5 @@
+{
+  "explicit": {"items": [{"n": 7}, {"n": 4}]},
+  "invalid": {"items": [{"n": "invalid"}]},
+  "list_fields": ["items", "nullable_items", "nullable_container", "nonnull_nullable_items", "empty"]
+}

@@ -1,0 +1,125 @@
+{
+  "field_order": [
+    "count",
+    "cube",
+    "direct_item",
+    "empty",
+    "items",
+    "matrix",
+    "nonnull_nullable_items",
+    "nullable_container",
+    "nullable_items",
+    "numbers",
+    "scalar_cube",
+    "typename__"
+  ],
+  "defaults": {
+    "items": [
+      3,
+      1
+    ],
+    "nullable_items": [
+      2,
+      null,
+      1
+    ],
+    "nullable_container": [
+      5
+    ],
+    "nonnull_nullable_items": [
+      null,
+      6
+    ],
+    "empty": []
+  },
+  "item_types": {
+    "items": [
+      "Item",
+      "Item"
+    ],
+    "nullable_items": [
+      "Item",
+      "NoneType",
+      "Item"
+    ],
+    "nullable_container": [
+      "Item"
+    ],
+    "nonnull_nullable_items": [
+      "NoneType",
+      "Item"
+    ],
+    "empty": []
+  },
+  "explicit_items": [
+    7,
+    4
+  ],
+  "direct_item": 8,
+  "count": 9,
+  "numbers": [
+    3,
+    1,
+    2
+  ],
+  "matrix_values": [
+    [
+      4
+    ],
+    [
+      2,
+      1
+    ]
+  ],
+  "matrix_types": [
+    [
+      "Item"
+    ],
+    [
+      "Item",
+      "Item"
+    ]
+  ],
+  "cube_values": [
+    [
+      [
+        7
+      ]
+    ],
+    [
+      [
+        6,
+        5
+      ]
+    ]
+  ],
+  "cube_types": [
+    [
+      [
+        "Item"
+      ]
+    ],
+    [
+      [
+        "Item",
+        "Item"
+      ]
+    ]
+  ],
+  "scalar_cube": [
+    [
+      [
+        3,
+        1
+      ],
+      [
+        2
+      ]
+    ]
+  ],
+  "independent_items": [
+    3,
+    1
+  ],
+  "independent_direct_item": 8
+}

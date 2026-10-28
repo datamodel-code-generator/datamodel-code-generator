@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "left_kind": {"$ref": "left.json#/$defs/Kind"},
+    "right_kind": {"$ref": "right.json#/$defs/Kind"},
+    "left_point": {"$ref": "left.json#/$defs/Point"},
+    "right_point": {"$ref": "right.json#/$defs/Point"}
+  }
+}

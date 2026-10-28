@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "order": {"$ref": "#/$defs/Order"},
+    "placed": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "Order": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "state": {"type": "string", "enum": ["open", "closed"]}
+      }
+    }
+  }
+}

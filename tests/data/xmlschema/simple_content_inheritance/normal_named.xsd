@@ -1,0 +1,15 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Text">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="2"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="Derived">
+    <xs:simpleContent>
+      <xs:extension base="Text">
+        <xs:attribute name="label" type="xs:string" default="kept"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="Root" type="Derived"/>
+</xs:schema>

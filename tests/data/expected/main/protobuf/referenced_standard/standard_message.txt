@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "definitions": {
+    "Payload": {
+      "type": "object",
+      "title": "Payload",
+      "properties": {
+        "api": {
+          "$ref": "#/definitions/google__protobuf__Api",
+          "description": "Only Api and its actual field dependencies are needed."
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "google__protobuf__Api": {
+      "type": "object",
+      "title": "Api",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "",
+          "description": "The fully qualified name of this interface, including package name\nfollowed by the interface's simple name."
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__Method"
+          },
+          "default": [],
+          "description": "The methods of this interface, in unspecified order."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__Option"
+          },
+          "default": [],
+          "description": "Any metadata attached to the interface."
+        },
+        "version": {
+          "type": "string",
+          "default": "",
+          "description": "A version string for this interface. If specified, must have the form\n`major-version.minor-version`, as in `1.10`. If the minor version is\nomitted, it defaults to zero. If the entire version field is empty, the\nmajor version is derived from the package name, as outlined below. If the\nfield is not empty, the version in the package name will be verified to be\nconsistent with what is provided here.\n\nThe versioning schema uses [semantic\nversioning](http://semver.org) where the major version number\nindicates a breaking change and the minor version an additive,\nnon-breaking change. Both version numbers are signals to users\nwhat to expect from different versions, and should be carefully\nchosen based on the product plan.\n\nThe major version is also reflected in the package name of the\ninterface, which must end in `v<major-version>`, as in\n`google.feature.v1`. For major versions 0 and 1, the suffix can\nbe omitted. Zero major versions must only be used for\nexperimental, non-GA interfaces."
+        },
+        "source_context": {
+          "$ref": "#/definitions/google__protobuf__SourceContext",
+          "description": "Source context for the protocol buffer service represented by this\nmessage."
+        },
+        "mixins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__Mixin"
+          },
+          "default": [],
+          "description": "Included interfaces. See [Mixin][]."
+        },
+        "syntax": {
+          "$ref": "#/definitions/google__protobuf__Syntax",
+          "default": "SYNTAX_PROTO2",
+          "description": "The source syntax of the service."
+        },
+        "edition": {
+          "type": "string",
+          "default": "",
+          "description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Api is a light-weight descriptor for an API Interface.\n\nInterfaces are also described as \"protocol buffer services\" in some contexts,\nsuch as by the \"service\" keyword in a .proto file, but they are different\nfrom API Services, which represent a concrete implementation of an interface\nas opposed to simply a description of methods and bindings. They are also\nsometimes simply referred to as \"APIs\" in other contexts, such as the name of\nthis message itself. See https://cloud.google.com/apis/design/glossary for\ndetailed terminology.\n\nNew usages of this message as an alternative to ServiceDescriptorProto are\nstrongly discouraged. This message does not reliability preserve all\ninformation necessary to model the schema and preserve semantics. Instead\nmake use of FileDescriptorSet which preserves the necessary information."
+    },
+    "google__protobuf__Method": {
+      "type": "object",
+      "title": "Method",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "",
+          "description": "The simple name of this method."
+        },
+        "request_type_url": {
+          "type": "string",
+          "default": "",
+          "description": "A URL of the input message type."
+        },
+        "request_streaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the request is streamed."
+        },
+        "response_type_url": {
+          "type": "string",
+          "default": "",
+          "description": "The URL of the output message type."
+        },
+        "response_streaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the response is streamed."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google__protobuf__Option"
+          },
+          "default": [],
+          "description": "Any metadata attached to the method."
+        },
+        "syntax": {
+          "$ref": "#/definitions/google__protobuf__Syntax",
+          "default": "SYNTAX_PROTO2",
+          "description": "The source syntax of this method.\n\nThis field should be ignored, instead the syntax should be inherited from\nApi. This is similar to Field and EnumValue."
+        },
+        "edition": {
+          "type": "string",
+          "default": "",
+          "description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS.\n\nThis field should be ignored, instead the edition should be inherited from\nApi. This is similar to Field and EnumValue."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Method represents a method of an API interface.\n\nNew usages of this message as an alternative to MethodDescriptorProto are\nstrongly discouraged. This message does not reliability preserve all\ninformation necessary to model the schema and preserve semantics. Instead\nmake use of FileDescriptorSet which preserves the necessary information."
+    },
+    "google__protobuf__Option": {
+      "type": "object",
+      "title": "Option",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "",
+          "description": "The option's name. For protobuf built-in options (options defined in\ndescriptor.proto), this is the short name. For example, `\"map_entry\"`.\nFor custom options, it should be the fully-qualified name. For example,\n`\"google.api.http\"`."
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "The option's value packed in an Any message. If the value is a primitive,\nthe corresponding wrapper type defined in google/protobuf/wrappers.proto\nshould be used. If the value is an enum, it should be stored as an int32\nvalue using the google.protobuf.Int32Value type."
+        }
+      },
+      "additionalProperties": false,
+      "description": "A protocol buffer option, which can be attached to a message, field,\nenumeration, etc.\n\nNew usages of this message as an alternative to FileOptions, MessageOptions,\nFieldOptions, EnumOptions, EnumValueOptions, ServiceOptions, or MethodOptions\nare strongly discouraged."
+    },
+    "google__protobuf__SourceContext": {
+      "type": "object",
+      "title": "SourceContext",
+      "properties": {
+        "file_name": {
+          "type": "string",
+          "default": "",
+          "description": "The path-qualified name of the .proto file that contained the associated\nprotobuf element.  For example: `\"google/protobuf/source_context.proto\"`."
+        }
+      },
+      "additionalProperties": false,
+      "description": "`SourceContext` represents information about the source of a\nprotobuf element, like the file in which it is defined."
+    },
+    "google__protobuf__Mixin": {
+      "type": "object",
+      "title": "Mixin",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "",
+          "description": "The fully qualified name of the interface which is included."
+        },
+        "root": {
+          "type": "string",
+          "default": "",
+          "description": "If non-empty specifies a path under which inherited HTTP paths\nare rooted."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Declares an API Interface to be included in this interface. The including\ninterface must redeclare all the methods from the included interface, but\ndocumentation and options are inherited as follows:\n\n- If after comment and whitespace stripping, the documentation\nstring of the redeclared method is empty, it will be inherited\nfrom the original method.\n\n- Each annotation belonging to the service config (http,\nvisibility) which is not set in the redeclared method will be\ninherited.\n\n- If an http annotation is inherited, the path pattern will be\nmodified as follows. Any version prefix will be replaced by the\nversion of the including interface plus the [root][] path if\nspecified.\n\nExample of a simple mixin:\n\npackage google.acl.v1;\nservice AccessControl {\n// Get the underlying ACL object.\nrpc GetAcl(GetAclRequest) returns (Acl) {\noption (google.api.http).get = \"/v1/{resource=**}:getAcl\";\n}\n}\n\npackage google.storage.v2;\nservice Storage {\nrpc GetAcl(GetAclRequest) returns (Acl);\n\n// Get a data record.\nrpc GetData(GetDataRequest) returns (Data) {\noption (google.api.http).get = \"/v2/{resource=**}\";\n}\n}\n\nExample of a mixin configuration:\n\napis:\n- name: google.storage.v2.Storage\nmixins:\n- name: google.acl.v1.AccessControl\n\nThe mixin construct implies that all methods in `AccessControl` are\nalso declared with same name and request/response types in\n`Storage`. A documentation generator or annotation processor will\nsee the effective `Storage.GetAcl` method after inheriting\ndocumentation and annotations as follows:\n\nservice Storage {\n// Get the underlying ACL object.\nrpc GetAcl(GetAclRequest) returns (Acl) {\noption (google.api.http).get = \"/v2/{resource=**}:getAcl\";\n}\n...\n}\n\nNote how the version in the path pattern changed from `v1` to `v2`.\n\nIf the `root` field in the mixin is specified, it should be a\nrelative path under which inherited HTTP paths are placed. Example:\n\napis:\n- name: google.storage.v2.Storage\nmixins:\n- name: google.acl.v1.AccessControl\nroot: acls\n\nThis implies the following inherited HTTP annotation:\n\nservice Storage {\n// Get the underlying ACL object.\nrpc GetAcl(GetAclRequest) returns (Acl) {\noption (google.api.http).get = \"/v2/acls/{resource=**}:getAcl\";\n}\n...\n}"
+    },
+    "google__protobuf__Syntax": {
+      "type": "string",
+      "enum": [
+        "SYNTAX_PROTO2",
+        "SYNTAX_PROTO3",
+        "SYNTAX_EDITIONS"
+      ],
+      "title": "Syntax",
+      "description": "The syntax in which a protocol buffer element is defined.",
+      "x-enum-varnames": [
+        "SYNTAX_PROTO2",
+        "SYNTAX_PROTO3",
+        "SYNTAX_EDITIONS"
+      ],
+      "x-enum-descriptions": [
+        "Syntax `proto2`.",
+        "Syntax `proto3`.",
+        "Syntax `editions`."
+      ]
+    }
+  }
+}

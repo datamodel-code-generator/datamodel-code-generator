@@ -1,0 +1,49 @@
+# session-discriminator-copied
+render pydantic_v2.BaseModel members
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/members
+render pydantic_v2.BaseModel values
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/members
+render pydantic_v2.BaseModel alias
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/members
+render pydantic_v2.dataclass members
+  models.py
+  model_bindings.py pydantic_v2_dataclass/members
+render pydantic_v2.dataclass values
+  models.py
+  model_bindings.py pydantic_v2_dataclass/members
+render pydantic_v2.dataclass alias
+  models.py
+  model_bindings.py pydantic_v2_dataclass/members
+render dataclasses.dataclass members
+  models.py
+  model_bindings.py dataclasses_dataclass/members
+render dataclasses.dataclass values
+  models.py
+  model_bindings.py dataclasses_dataclass/values
+render dataclasses.dataclass alias
+  models.py
+  model_bindings.py dataclasses_dataclass/alias
+render typing.TypedDict members
+  models.py
+  model_bindings.py typing_TypedDict/members
+render typing.TypedDict values
+  models.py
+  model_bindings.py typing_TypedDict/members
+render typing.TypedDict alias
+  models.py
+  model_bindings.py typing_TypedDict/alias
+render msgspec.Struct members
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
+  models.py
+  model_bindings.py msgspec_Struct/members
+render msgspec.Struct values
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
+  models.py
+  model_bindings.py msgspec_Struct/members
+render msgspec.Struct alias
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
+  models.py
+  model_bindings.py msgspec_Struct/members

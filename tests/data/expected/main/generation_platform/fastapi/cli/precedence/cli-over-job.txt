@@ -1,0 +1,8 @@
+$ datamodel-codegen --job server --server-handler-mode async
+# server/services.py
+async def list_pets
+async def create_pet
+async def list_my_pets
+async def get_pet
+async def delete_pet
+async def get_inventory

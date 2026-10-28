@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Method collisions
+  version: 1.0.0
+servers:
+  - url: https://names.example.com
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '204':
+          description: One pet.
+  /pets/{petId}/copy:
+    get:
+      operationId: get_pet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '204':
+          description: Same method name.
+  /pets/{petId}/again:
+    get:
+      operationId: get_pet_
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '204':
+          description: Same PascalCase name.

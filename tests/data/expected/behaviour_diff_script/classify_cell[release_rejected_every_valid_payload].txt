@@ -1,0 +1,9 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "crash-fix [payload-verdict] payload v0: reject -> accept",
+    "crash-fix [payload-verdict] payload v1: reject -> accept"
+  ],
+  "accepted_by": [],
+  "changes": []
+}

@@ -1,0 +1,34 @@
+{
+  "$defs": {
+    "StrictParent": {
+      "properties": {
+        "value": {
+          "minimum": 5,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "StrictParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/StrictParent"
+    }
+  ],
+  "properties": {
+    "label": {
+      "default": 2,
+      "title": "Label",
+      "type": "integer"
+    }
+  },
+  "title": "CallerBooleanNormal",
+  "type": "object",
+  "x-python-field-overrides": true
+}

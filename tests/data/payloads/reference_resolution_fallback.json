@@ -1,0 +1,28 @@
+{
+  "valid": {
+    "value": {},
+    "pair": {
+      "other": {
+        "items": [
+          {
+            "other": {
+              "items": []
+            }
+          }
+        ]
+      }
+    }
+  },
+  "invalid": {
+    "value": {},
+    "pair": {
+      "other": {
+        "items": [
+          {
+            "other": 1
+          }
+        ]
+      }
+    }
+  }
+}

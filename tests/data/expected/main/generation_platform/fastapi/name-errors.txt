@@ -1,0 +1,3 @@
+# name-errors
+render pydantic_v2.BaseModel
+  Error: Several operation names become 'x1'

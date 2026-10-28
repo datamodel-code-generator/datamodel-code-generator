@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "list.json",
+  "title": "TupleList",
+  "type": "array",
+  "items": [{"type": "integer"}],
+  "additionalItems": {"$dynamicRef": "#T"},
+  "$defs": {
+    "T": {"$dynamicAnchor": "T", "not": true}
+  }
+}

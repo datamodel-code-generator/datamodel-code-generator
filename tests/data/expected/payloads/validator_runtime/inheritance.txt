@@ -1,0 +1,7 @@
+{
+  "value": "v:first:first",
+  "validators": [
+    "validate_validator",
+    "validate_validator_1"
+  ]
+}

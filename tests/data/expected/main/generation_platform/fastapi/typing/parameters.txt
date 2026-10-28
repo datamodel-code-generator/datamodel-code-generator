@@ -1,0 +1,3 @@
+mypy parameters: clean
+pyright parameters: clean
+ty parameters: clean

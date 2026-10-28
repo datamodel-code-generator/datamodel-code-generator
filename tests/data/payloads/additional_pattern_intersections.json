@@ -1,0 +1,662 @@
+{
+  "boolean": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {}
+      },
+      {
+        "x": 1
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "boolean_False_False_builtin.py",
+      "False_False_external": "boolean_False_False_builtin.py",
+      "False_True_builtin": "boolean_False_False_builtin.py",
+      "False_True_external": "boolean_False_False_builtin.py",
+      "True_False_builtin": "boolean_True_False_builtin.py",
+      "True_False_external": "boolean_True_False_builtin.py",
+      "True_True_builtin": "boolean_True_False_builtin.py",
+      "True_True_external": "boolean_True_False_builtin.py"
+    },
+    "runtime_names": {
+      "False_True": "boolean_False_False_runtime.txt",
+      "True_True": "boolean_True_False_runtime.txt"
+    }
+  },
+  "boolean_custom": {
+    "input": "boolean",
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {}
+      },
+      {
+        "x": 1
+      }
+    ],
+    "custom": "additional_pattern_context",
+    "code_names": {
+      "False_False_builtin": "boolean_custom_False_False_builtin.py",
+      "False_False_external": "boolean_custom_False_False_external.py",
+      "False_True_builtin": "boolean_custom_False_False_builtin.py",
+      "False_True_external": "boolean_custom_False_False_external.py",
+      "True_False_builtin": "boolean_custom_True_False_builtin.py",
+      "True_False_external": "boolean_custom_True_False_builtin.py",
+      "True_True_builtin": "boolean_custom_True_False_builtin.py",
+      "True_True_external": "boolean_custom_True_False_builtin.py"
+    },
+    "runtime_names": {
+      "False_False": "boolean_False_False_runtime.txt",
+      "False_True": "boolean_False_False_runtime.txt",
+      "True_False": "boolean_False_False_runtime.txt",
+      "True_True": "boolean_False_False_runtime.txt"
+    }
+  },
+  "minimum": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_False_False_builtin.py",
+      "False_False_external": "minimum_False_False_builtin.py",
+      "False_True_builtin": "minimum_False_True_builtin.py",
+      "False_True_external": "minimum_False_True_builtin.py",
+      "True_False_builtin": "minimum_True_False_builtin.py",
+      "True_False_external": "minimum_True_False_builtin.py",
+      "True_True_builtin": "minimum_True_True_builtin.py",
+      "True_True_external": "minimum_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_False_True_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "minimum_False_False_runtime.txt",
+      "True_True": "minimum_True_False_runtime.txt"
+    }
+  },
+  "minimum_custom": {
+    "input": "minimum",
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": "additional_pattern_context",
+    "code_names": {
+      "False_False_builtin": "minimum_custom_False_False_builtin.py",
+      "False_False_external": "minimum_custom_False_False_external.py",
+      "False_True_builtin": "minimum_custom_False_True_builtin.py",
+      "False_True_external": "minimum_custom_False_True_external.py",
+      "True_False_builtin": "minimum_custom_True_False_builtin.py",
+      "True_False_external": "minimum_custom_True_False_builtin.py",
+      "True_True_builtin": "minimum_custom_True_True_builtin.py",
+      "True_True_external": "minimum_custom_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_custom_False_False_external_black22.py",
+      "False_True_external_22": "minimum_custom_False_True_external_black22.py"
+    },
+    "runtime_names": {
+      "False_False": "minimum_False_False_runtime.txt",
+      "False_True": "minimum_False_False_runtime.txt",
+      "True_True": "minimum_custom_True_False_runtime.txt"
+    }
+  },
+  "prefix_suffix": {
+    "payloads": [
+      {},
+      {
+        "xy": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "xy": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "y": {
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        },
+        "y": {
+          "b": 2
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "prefix_suffix_False_False_builtin.py",
+      "False_False_external": "prefix_suffix_False_False_builtin.py",
+      "False_True_builtin": "prefix_suffix_False_False_builtin.py",
+      "False_True_external": "prefix_suffix_False_False_builtin.py",
+      "True_False_builtin": "prefix_suffix_True_False_builtin.py",
+      "True_False_external": "prefix_suffix_True_False_builtin.py",
+      "True_True_builtin": "prefix_suffix_True_False_builtin.py",
+      "True_True_external": "prefix_suffix_True_False_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "prefix_suffix_False_False_builtin_black23.py",
+      "False_True_external_22": "prefix_suffix_False_False_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "prefix_suffix_False_False_runtime.txt",
+      "True_True": "prefix_suffix_True_False_runtime.txt"
+    }
+  },
+  "prefix_suffix_custom": {
+    "input": "prefix_suffix",
+    "payloads": [
+      {},
+      {
+        "xy": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "xy": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "y": {
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        },
+        "y": {
+          "b": 2
+        }
+      }
+    ],
+    "custom": "additional_pattern_context",
+    "code_names": {
+      "False_False_builtin": "prefix_suffix_custom_False_False_builtin.py",
+      "False_False_external": "prefix_suffix_custom_False_False_external.py",
+      "False_True_builtin": "prefix_suffix_custom_False_False_builtin.py",
+      "False_True_external": "prefix_suffix_custom_False_False_external.py",
+      "True_False_builtin": "prefix_suffix_custom_True_False_builtin.py",
+      "True_False_external": "prefix_suffix_custom_True_False_builtin.py",
+      "True_True_builtin": "prefix_suffix_custom_True_False_builtin.py",
+      "True_True_external": "prefix_suffix_custom_True_False_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "prefix_suffix_custom_False_False_external_black22.py",
+      "False_True_external_22": "prefix_suffix_custom_False_False_external_black22.py"
+    },
+    "runtime_names": {
+      "False_False": "prefix_suffix_False_False_runtime.txt",
+      "False_True": "prefix_suffix_False_False_runtime.txt",
+      "True_True": "prefix_suffix_custom_True_False_runtime.txt"
+    }
+  },
+  "boolean_optional": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "x": {}
+      },
+      {
+        "x": 1
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "boolean_optional_False_False_builtin.py",
+      "False_False_external": "boolean_optional_False_False_builtin.py",
+      "False_True_builtin": "boolean_optional_False_False_builtin.py",
+      "False_True_external": "boolean_optional_False_False_builtin.py",
+      "True_False_builtin": "boolean_optional_True_False_builtin.py",
+      "True_False_external": "boolean_optional_True_False_builtin.py",
+      "True_True_builtin": "boolean_optional_True_False_builtin.py",
+      "True_True_external": "boolean_optional_True_False_builtin.py"
+    },
+    "runtime_names": {
+      "False_True": "boolean_optional_False_False_runtime.txt",
+      "True_False": "boolean_optional_False_False_runtime.txt",
+      "True_True": "boolean_optional_False_False_runtime.txt"
+    }
+  },
+  "boolean_integer": {
+    "payloads": [
+      {},
+      {
+        "x": 1
+      },
+      {
+        "x": "x"
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "boolean_integer_False_False_builtin.py",
+      "False_False_external": "boolean_integer_False_False_builtin.py",
+      "False_True_builtin": "boolean_integer_False_False_builtin.py",
+      "False_True_external": "boolean_integer_False_False_builtin.py",
+      "True_False_builtin": "boolean_integer_True_False_builtin.py",
+      "True_False_external": "boolean_integer_True_False_builtin.py",
+      "True_True_builtin": "boolean_integer_True_False_builtin.py",
+      "True_True_external": "boolean_integer_True_False_builtin.py"
+    },
+    "runtime_names": {
+      "False_True": "boolean_integer_False_False_runtime.txt",
+      "True_False": "boolean_integer_False_False_runtime.txt",
+      "True_True": "boolean_integer_False_False_runtime.txt"
+    }
+  },
+  "minimum_float": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_float_False_False_builtin.py",
+      "False_False_external": "minimum_float_False_False_builtin.py",
+      "False_True_builtin": "minimum_float_False_True_builtin.py",
+      "False_True_external": "minimum_float_False_True_builtin.py",
+      "True_False_builtin": "minimum_float_True_False_builtin.py",
+      "True_False_external": "minimum_float_True_False_builtin.py",
+      "True_True_builtin": "minimum_float_True_True_builtin.py",
+      "True_True_external": "minimum_float_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_float_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_float_False_True_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "minimum_False_False_runtime.txt",
+      "False_True": "minimum_False_False_runtime.txt",
+      "True_False": "minimum_True_False_runtime.txt",
+      "True_True": "minimum_True_False_runtime.txt"
+    }
+  },
+  "minimum_large": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 0,
+          "b": 2
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_large_False_False_builtin.py",
+      "False_False_external": "minimum_large_False_False_external.py",
+      "False_True_builtin": "minimum_large_False_True_builtin.py",
+      "False_True_external": "minimum_large_False_True_builtin.py",
+      "True_False_builtin": "minimum_large_True_False_builtin.py",
+      "True_False_external": "minimum_large_True_False_external.py",
+      "True_True_builtin": "minimum_large_True_True_builtin.py",
+      "True_True_external": "minimum_large_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_large_False_False_external_black23.py",
+      "False_True_external_22": "minimum_large_False_True_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "minimum_large_False_False_runtime.txt",
+      "True_True": "minimum_large_True_False_runtime.txt"
+    }
+  },
+  "minimum_maximum": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_maximum_False_False_builtin.py",
+      "False_False_external": "minimum_maximum_False_False_builtin.py",
+      "False_True_builtin": "minimum_maximum_False_True_builtin.py",
+      "False_True_external": "minimum_maximum_False_True_builtin.py",
+      "True_False_builtin": "minimum_maximum_True_False_builtin.py",
+      "True_False_external": "minimum_maximum_True_False_builtin.py",
+      "True_True_builtin": "minimum_maximum_True_True_builtin.py",
+      "True_True_external": "minimum_maximum_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_maximum_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_maximum_False_True_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_False": "minimum_False_False_runtime.txt",
+      "False_True": "minimum_False_False_runtime.txt",
+      "True_False": "minimum_custom_True_False_runtime.txt",
+      "True_True": "minimum_custom_True_False_runtime.txt"
+    }
+  },
+  "minimum_number": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_number_False_False_builtin.py",
+      "False_False_external": "minimum_number_False_False_builtin.py",
+      "False_True_builtin": "minimum_number_False_True_builtin.py",
+      "False_True_external": "minimum_number_False_True_builtin.py",
+      "True_False_builtin": "minimum_number_True_False_builtin.py",
+      "True_False_external": "minimum_number_True_False_builtin.py",
+      "True_True_builtin": "minimum_number_True_True_builtin.py",
+      "True_True_external": "minimum_number_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_number_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_number_False_True_builtin_black23.py"
+    }
+  },
+  "minimum_shared": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 3,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 3
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "minimum_shared_False_False_builtin.py",
+      "False_False_external": "minimum_shared_False_False_builtin.py",
+      "False_True_builtin": "minimum_shared_False_True_builtin.py",
+      "False_True_external": "minimum_shared_False_True_builtin.py",
+      "True_False_builtin": "minimum_shared_True_False_builtin.py",
+      "True_False_external": "minimum_shared_True_False_builtin.py",
+      "True_True_builtin": "minimum_shared_True_True_builtin.py",
+      "True_True_external": "minimum_shared_True_True_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_shared_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_shared_False_True_builtin_black23.py"
+    }
+  },
+  "suffix_prefix": {
+    "payloads": [
+      {},
+      {
+        "xy": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "xy": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "y": {
+          "b": 2
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "suffix_prefix_False_False_builtin.py",
+      "False_False_external": "suffix_prefix_False_False_builtin.py",
+      "False_True_builtin": "suffix_prefix_False_False_builtin.py",
+      "False_True_external": "suffix_prefix_False_False_builtin.py",
+      "True_False_builtin": "suffix_prefix_True_False_builtin.py",
+      "True_False_external": "suffix_prefix_True_False_builtin.py",
+      "True_True_builtin": "suffix_prefix_True_False_builtin.py",
+      "True_True_external": "suffix_prefix_True_False_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "suffix_prefix_False_False_builtin_black23.py",
+      "False_True_external_22": "suffix_prefix_False_False_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "suffix_prefix_False_False_runtime.txt",
+      "True_True": "suffix_prefix_True_False_runtime.txt"
+    }
+  },
+  "declared_witness": {
+    "payloads": [
+      {},
+      {
+        "xy": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      {
+        "xy": {
+          "a": 1
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "y": {
+          "b": 2
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "declared_witness_False_False_builtin.py",
+      "False_False_external": "declared_witness_False_False_builtin.py",
+      "False_True_builtin": "declared_witness_False_False_builtin.py",
+      "False_True_external": "declared_witness_False_False_builtin.py",
+      "True_False_builtin": "declared_witness_True_False_builtin.py",
+      "True_False_external": "declared_witness_True_False_builtin.py",
+      "True_True_builtin": "declared_witness_True_False_builtin.py",
+      "True_True_external": "declared_witness_True_False_builtin.py"
+    },
+    "runtime_names": {
+      "False_True": "declared_witness_False_False_runtime.txt",
+      "True_True": "declared_witness_True_False_runtime.txt"
+    }
+  },
+  "anchored_disjoint": {
+    "payloads": [
+      {},
+      {
+        "x": {
+          "a": 1
+        }
+      },
+      {
+        "y": {
+          "b": 2
+        }
+      },
+      {
+        "x": {
+          "a": 1
+        },
+        "y": {
+          "b": 2
+        }
+      }
+    ],
+    "custom": false,
+    "code_names": {
+      "False_False_builtin": "anchored_disjoint_False_False_builtin.py",
+      "False_False_external": "anchored_disjoint_False_False_builtin.py",
+      "False_True_builtin": "anchored_disjoint_False_False_builtin.py",
+      "False_True_external": "anchored_disjoint_False_False_builtin.py",
+      "True_False_builtin": "anchored_disjoint_True_False_builtin.py",
+      "True_False_external": "anchored_disjoint_True_False_builtin.py",
+      "True_True_builtin": "anchored_disjoint_True_False_builtin.py",
+      "True_True_external": "anchored_disjoint_True_False_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "anchored_disjoint_False_False_builtin_black23.py",
+      "False_True_external_22": "anchored_disjoint_False_False_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "anchored_disjoint_False_False_runtime.txt",
+      "True_True": "anchored_disjoint_True_False_runtime.txt"
+    }
+  },
+  "minimum_null": {
+    "payloads": [
+      {}
+    ],
+    "custom": false,
+    "invalid_schema": true,
+    "code_names": {
+      "False_False_builtin": "minimum_null_False_False_builtin.py",
+      "False_False_external": "minimum_null_False_False_builtin.py",
+      "False_True_builtin": "minimum_null_False_False_builtin.py",
+      "False_True_external": "minimum_null_False_False_builtin.py",
+      "True_False_builtin": "minimum_null_True_False_builtin.py",
+      "True_False_external": "minimum_null_True_False_builtin.py",
+      "True_True_builtin": "minimum_null_True_False_builtin.py",
+      "True_True_external": "minimum_null_True_False_builtin.py"
+    },
+    "legacy_code_names": {
+      "False_False_external_22": "minimum_null_False_False_builtin_black23.py",
+      "False_True_external_22": "minimum_null_False_False_builtin_black23.py"
+    },
+    "runtime_names": {
+      "False_True": "minimum_null_False_False_runtime.txt",
+      "True_False": "minimum_null_False_False_runtime.txt",
+      "True_True": "minimum_null_False_False_runtime.txt"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "$defs": {
+    "Choice": {
+      "type": "string",
+      "enum": [
+        "x",
+        "y"
+      ]
+    },
+    "Nested": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Choice"
+      }
+    },
+    "Base": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "a-value": {
+            "type": "integer"
+          },
+          "b": {
+            "$ref": "#/$defs/Nested"
+          }
+        },
+        "required": [
+          "a-value",
+          "b"
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base",
+      "enum": [
+        [
+          {
+            "a-value": 1,
+            "b": [
+              "x"
+            ]
+          }
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+swagger: '2.0'
+info:
+  title: Legacy API
+  version: 1.0.0
+paths: {}
+definitions:
+  Pet:
+    type: object
+    properties:
+      status:
+        type: string
+        enum: [available, sold]
+  Order:
+    type: object
+    properties:
+      status:
+        type: string
+        enum: [placed, delivered]
+      pet:
+        $ref: '#/definitions/Pet'

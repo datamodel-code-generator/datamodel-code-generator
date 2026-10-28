@@ -1,0 +1,148 @@
+# multipart-kinds pydantic_v2.BaseModel
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent as parts = None
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent as parts = None
+  > POST https://api.example.com/words
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent whole = None
+  > POST https://api.example.com/word-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent as parts = None
+  > POST https://api.example.com/filters
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent whole = None
+  > POST https://api.example.com/filter-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent as parts = None
+  > GET https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read whole = Choices(either=Filter(color='c'), level=<Level.a: 'a'>, words=['a', 'b'], lists=[1, 2], filters=[Filter(color='f'), Filter(color=None)], tags=['t', 'u'], count=3)
+  > GET https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read as parts = [('either', Filter(color='c')), ('level', <Level.a: 'a'>), ('words', ['a', 'b']), ('lists', [1, 2]), ('filters', Filter(color='f')), ('filters', Filter(color=None)), ('tags', 't'), ('tags', 'u'), ('count', 3), ('file', b'\x00')]
+  > GET https://api.example.com/bases
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read whole = Bases(base='b', name='n', first=Filter(color='f'), second=Filter(color=None))
+  > GET https://api.example.com/base-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read as parts = [('base', 'b'), ('name', 'n'), ('first', Filter(color='f')), ('second', Filter(color=None)), ('file', b'\x00')]
+# multipart-kinds pydantic_v2.dataclass
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent as parts = None
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent as parts = None
+  > POST https://api.example.com/words
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent whole = None
+  > POST https://api.example.com/word-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent as parts = None
+  > POST https://api.example.com/filters
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent whole = None
+  > POST https://api.example.com/filter-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent as parts = None
+  > GET https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read whole = Choices(either=Filter(color='c'), level=<Level.a: 'a'>, words=['a', 'b'], lists=[1, 2], filters=[Filter(color='f'), Filter(color=MISSING)], tags=['t', 'u'], count=3)
+  > GET https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read as parts = [('either', Filter(color='c')), ('level', <Level.a: 'a'>), ('words', ['a', 'b']), ('lists', [1, 2]), ('filters', Filter(color='f')), ('filters', Filter(color=MISSING)), ('tags', 't'), ('tags', 'u'), ('count', 3), ('file', b'\x00')]
+  > GET https://api.example.com/bases
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read whole = Bases(base='b', name='n')
+  > GET https://api.example.com/base-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read as parts = [('base', 'b'), ('name', 'n'), ('first', Filter(color='f')), ('second', Filter(color=MISSING)), ('file', b'\x00')]
+# multipart-kinds dataclasses.dataclass
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent as parts = None
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent as parts = None
+  > POST https://api.example.com/words
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>--\r\n'
+  other words sent whole = None
+  > POST https://api.example.com/word-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent as parts = None
+  > POST https://api.example.com/filters
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 124] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>--\r\n'
+  other filters sent whole = None
+  > POST https://api.example.com/filter-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent as parts = None
+  > GET https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read whole = Choices(either=Filter(color='c'), level=<Level.a: 'a'>, words=['a', 'b'], lists=[1, 2], filters=[Filter(color='f'), Filter(color=None)], tags=['t', 'u'], count=3)
+  > GET https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read as parts = [('either', Filter(color='c')), ('level', <Level.a: 'a'>), ('words', ['a', 'b']), ('lists', [1, 2]), ('filters', Filter(color='f')), ('filters', Filter(color=None)), ('tags', 't'), ('tags', 'u'), ('count', 3), ('file', b'\x00')]
+  > GET https://api.example.com/bases
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read whole = Bases(base='b', name='n')
+  > GET https://api.example.com/base-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read as parts = [('base', 'b'), ('name', 'n'), ('first', Filter(color='f')), ('second', Filter(color=None)), ('file', b'\x00')]
+# multipart-kinds typing.TypedDict
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 788] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n"plain"\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n"a"\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n["x"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nt\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nu\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n3\r\n--<boundary>--\r\n'
+  text sent as parts = None
+  > POST https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent whole = None
+  > POST https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 794] b'--<boundary>\r\nContent-Disposition: form-data; name="either"\r\nContent-Type: application/json\r\n\r\n{"color":"c"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="level"\r\nContent-Type: application/json\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>\r\nContent-Disposition: form-data; name="lists"\r\nContent-Type: application/json\r\n\r\n[1,2]\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="filters"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>--\r\n'
+  values sent as parts = None
+  > POST https://api.example.com/words
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent whole = None
+  > POST https://api.example.com/word-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 373] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n"s"\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n["a","b"]\r\n--<boundary>--\r\n'
+  other words sent as parts = None
+  > POST https://api.example.com/filters
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent whole = None
+  > POST https://api.example.com/filter-files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 507] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{"color":"f"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/json\r\n\r\n{}\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/json\r\n\r\n{"color":"g"}\r\n--<boundary>--\r\n'
+  other filters sent as parts = None
+  > GET https://api.example.com/choices
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read whole = {'either': {'color': 'c'}, 'level': 'a', 'words': ['a', 'b'], 'lists': [1, 2], 'filters': [{'color': 'f'}, {}], 'tags': ['t', 'u'], 'count': 3}
+  > GET https://api.example.com/choice-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  kinds read as parts = [('either', {'color': 'c'}), ('level', 'a'), ('words', ['a', 'b']), ('lists', [1, 2]), ('filters', {'color': 'f'}), ('filters', {}), ('tags', 't'), ('tags', 'u'), ('count', 3), ('file', b'\x00')]
+  > GET https://api.example.com/bases
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read whole = {'base': 'b', 'name': 'n', 'first': {'color': 'f'}, 'second': {}}
+  > GET https://api.example.com/base-files
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  inherited others read as parts = [('base', 'b'), ('name', 'n'), ('first', {'color': 'f'}), ('second', {}), ('file', b'\x00')]

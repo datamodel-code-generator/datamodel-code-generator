@@ -1,0 +1,2 @@
+generate()
+  Error: --client-default-base-url must be an absolute http or https URL without userinfo, query, or fragment; --client-server-base-url must be an absolute http or https URL without userinfo, query, or fragment

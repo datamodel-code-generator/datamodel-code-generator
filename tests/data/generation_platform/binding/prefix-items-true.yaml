@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Coordinates
+  version: '1'
+components:
+  schemas:
+    LabeledPoint:
+      type: array
+      prefixItems:
+        - true
+        - type: number
+        - type: number
+      minItems: 3
+      maxItems: 3

@@ -1,0 +1,13 @@
+syntax = "proto2";
+import "google/protobuf/type.proto";
+import "google/protobuf/descriptor.proto";
+// User enum retains its declaration order.
+enum UserState { UNKNOWN = 0; READY = 1; }
+message Payload {
+  // Referenced top-level standard enum.
+  optional google.protobuf.Syntax syntax = 1;
+  optional google.protobuf.Field.Kind kind = 2;
+  optional google.protobuf.FieldDescriptorProto.Type descriptor_type = 3;
+  optional UserState state = 4;
+  repeated google.protobuf.Syntax syntaxes = 5;
+}

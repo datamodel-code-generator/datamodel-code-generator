@@ -1,0 +1,11 @@
+{
+  "valid": [
+    {"ratio": 0.5, "status": 200},
+    {"ratio": 1.5, "statuses": [200, 201], "status": 201}
+  ],
+  "invalid": [
+    {"ratio": 1, "status": 200},
+    {"ratio": 0.5, "status": 404},
+    {"ratio": 0.5, "statuses": [200, 404], "status": 200}
+  ]
+}

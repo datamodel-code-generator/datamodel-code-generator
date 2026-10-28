@@ -1,0 +1,8 @@
+{
+  "definitions": {
+    "a/b~c": {
+      "type": "object",
+      "required": "name"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "Inner": {
+      "properties": {
+        "first": {
+          "title": "First",
+          "type": "integer"
+        },
+        "shared": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shared",
+          "type": "array"
+        },
+        "last": {
+          "title": "Last",
+          "type": "string"
+        }
+      },
+      "required": [
+        "first",
+        "shared",
+        "shared",
+        "last"
+      ],
+      "title": "Inner",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Inner"
+    }
+  },
+  "required": [
+    "item"
+  ],
+  "title": "NestedWins",
+  "type": "object"
+}

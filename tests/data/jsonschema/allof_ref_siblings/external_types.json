@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Values": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Element"
+      },
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "Element": {
+      "type": "integer",
+      "minimum": 2
+    }
+  }
+}

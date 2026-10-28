@@ -1,0 +1,4 @@
+valid: accepted
+parsed: Model(root=Model2(kind='b', item=None))
+invalid kind: rejected (model_type)
+invalid item: rejected (literal_error)

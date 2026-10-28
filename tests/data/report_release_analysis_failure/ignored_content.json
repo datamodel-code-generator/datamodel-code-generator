@@ -1,0 +1,56 @@
+[
+  null,
+  42,
+  [],
+  {},
+  {
+    "type": "assistant",
+    "error": []
+  },
+  {
+    "type": "assistant",
+    "error": "unknown",
+    "message": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Invalid API key SECRET-CANARY"
+        }
+      ]
+    }
+  },
+  {
+    "type": "user",
+    "message": {
+      "content": [
+        {
+          "type": "tool_result",
+          "is_error": true,
+          "content": "API Error: 401 SECRET-CANARY"
+        }
+      ]
+    }
+  },
+  {
+    "type": "result",
+    "is_error": false,
+    "result": "API Error: 401 SECRET-CANARY"
+  },
+  {
+    "type": "result",
+    "is_error": 1,
+    "result": "API Error: 401"
+  },
+  {
+    "type": "result",
+    "is_error": true,
+    "result": {},
+    "errors": []
+  },
+  {
+    "type": "result",
+    "is_error": true,
+    "result": "::error::SECRET-CANARY",
+    "errors": "API Error: 401"
+  }
+]

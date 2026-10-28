@@ -1,0 +1,25 @@
+{
+  "order": [
+    "first",
+    "values",
+    "items",
+    "last"
+  ],
+  "values": {
+    "values": {
+      "type": "frozenset",
+      "value": [
+        1,
+        2
+      ]
+    },
+    "items": {
+      "type": "list",
+      "value": [
+        3,
+        3,
+        4
+      ]
+    }
+  }
+}

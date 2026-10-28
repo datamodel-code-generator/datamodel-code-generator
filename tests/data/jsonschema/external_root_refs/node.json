@@ -1,0 +1,2 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Linked node", "type": "object",
+ "properties": {"label": {"type": "string"}, "children": {"type": "array", "items": {"$ref": "#"}}}}

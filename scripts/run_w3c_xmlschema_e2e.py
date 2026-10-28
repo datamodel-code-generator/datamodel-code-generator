@@ -196,7 +196,7 @@ def main() -> int:
     failures: list[str] = []
     started_at = time.monotonic()
     for index, schema_path in enumerate(unique_paths, start=1):
-        relative_schema_path = schema_path.relative_to(suite_root)
+        relative_schema_path = schema_path.relative_to(suite_root).as_posix()
         try:
             generated = generate(
                 schema_path,
