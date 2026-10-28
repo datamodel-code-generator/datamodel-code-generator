@@ -3698,8 +3698,7 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
     """Keep the None default of a field naming a nullable model only where the field writes no ``Field()``.
 
     ``Field()`` decides from the type's None as written before render preparation, which leaves out the None the
-    nullable model gives (row ``legacy-strip-keeps-written-null-only``): ``n_1`` and ``n2`` write ``Field()`` without
-    it, while ``n`` keeps ``= None``.
+    nullable model gives: ``n_1`` and ``n2`` write ``Field()`` without it, while ``n`` keeps ``= None``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "strip_default_none_nullable_reference.yaml",

@@ -1,0 +1,5 @@
+allowlist entry other.py Other.method_renamed sample.write-size: the signature is unknown, belongs to another home than other, or the count is below 1
+allowlist entry other.py Other.zero missing.signature: the signature is unknown, belongs to another home than sample, or the count is below 1
+gone.py:0:0: stale allowlist entry sample.read-flag: expected 1, found 0; remove or lower it in scripts/decision_homes.toml (in Gone.method)
+other.py:0:0: stale allowlist entry sample.read-flag: expected 3, found 2; remove or lower it in scripts/decision_homes.toml (in Other.method)
+other.py:0:0: stale allowlist entry sample.write-size: expected 1, found 0; remove or lower it in scripts/decision_homes.toml (in Other.method_renamed)

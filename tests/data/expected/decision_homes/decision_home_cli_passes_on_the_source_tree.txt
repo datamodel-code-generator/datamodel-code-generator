@@ -1,0 +1,4 @@
+clean exit: 0
+clean stdout: ''
+clean stderr: ''
+sizes exit: 0, printed: True
