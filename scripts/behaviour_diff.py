@@ -764,7 +764,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         ns.base = ns.base or latest_tag()
     if ns.command in {"gate", "guide", "record"}:
         index, _, total = ns.shard.partition("/")
-        ns.shard_index, ns.shard_total = int(index), int(total or 1)
+        try:
+            ns.shard_index, ns.shard_total = int(index), int(total or 1)
+        except ValueError:
+            parser.error(f"--shard {ns.shard}: I and N must be integers, e.g. 2/8")
         if not 1 <= ns.shard_index <= ns.shard_total:
             parser.error(f"--shard {ns.shard}: I must be between 1 and N")
     return ns
@@ -1094,6 +1097,9 @@ def query_main(ns: argparse.Namespace) -> int:
         if ns.base == "all"
         else [ns.base]
     )
+    if parts := [v for v in (*olds, ns.version) if "shard" in records[v]]:
+        msg = f"query: {', '.join(parts)} in {ns.records} is a shard part: merge the parts with `merge-record` first"
+        raise SystemExit(msg)
     comparisons = [compare_records(records, old, ns.version, load) for old in olds]
     data: dict[str, Any] = (
         {"schema_version": 1, "to": ns.version, "rows": comparisons} if ns.base == "all" else comparisons[0]

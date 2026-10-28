@@ -1198,3 +1198,22 @@ def test_record_shards_merge_into_the_unsharded_record(tmp_path: Path) -> None:
         f"cells per shard: {shard_cells}\n"
         f"missing shard: {missing.value.code}\n"
     )
+
+
+def test_shard_argument_and_shard_part_records(tmp_path: Path) -> None:
+    """A malformed `--shard` is a usage error and `query` refuses a record that is only one shard part."""
+    usage = []
+    for command in (["record", "0.0.0", str(ROOT)], ["gate", "0.0.0"]):
+        with pytest.raises(SystemExit) as error, redirect_stderr(StringIO()) as stderr:
+            behaviour_diff.main([*command, "--shard", "2/nope"])
+        usage.append(
+            f"{command[0]}: {error.value.code}: {stderr.getvalue().strip().splitlines()[-1].partition('error: ')[2]}"
+        )
+    for version, shard in (("0.0.1", None), ("0.0.2", [2, 3])):
+        record: dict[str, Any] = {"version": version, "types": [], "cells": {}}
+        if shard:
+            record["shard"] = shard
+        (tmp_path / f"{version}.json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(SystemExit) as part:
+        behaviour_diff.main(["query", "0.0.1", "0.0.2", "--records", str(tmp_path)])
+    assert_output("\n".join(usage) + f"\nshard part: {str(part.value.code).replace(str(tmp_path), '<records>')}\n")
