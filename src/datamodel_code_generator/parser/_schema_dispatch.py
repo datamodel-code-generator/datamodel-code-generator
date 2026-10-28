@@ -100,11 +100,12 @@ class Default(Generic[ParserT_contra, SchemaT, ResultT_co]):
 @final
 @record
 class Choice(Generic[ParserT_contra, SchemaT, ResultT_co]):
-    """What a table chooses for a site: the names of the entries taken, their parse method and the rewritten site."""
+    """What a table chooses for a site: the entries taken, their parse method, the rewritten site and what it types."""
 
     path: tuple[str, ...]
     build: Callable[[ParserT_contra, SchemaSite[SchemaT]], ResultT_co]
     site: SchemaSite[SchemaT]
+    typed: Callable[[ParserT_contra, SchemaSite[SchemaT]], Iterable[TypedChild[SchemaT]]] | None
 
 
 @final
@@ -117,17 +118,22 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
     typed: Callable[[ParserT_contra, SchemaSite[SchemaT]], Iterable[TypedChild[SchemaT]]] | None = None
     """What a site types where its row declares nothing of its own; ``None``: nothing is declared."""
 
-    def choose(self, parser: ParserT_contra, site: SchemaSite[SchemaT]) -> Choice[ParserT_contra, SchemaT, ResultT_co]:
-        """Return the first row that applies to the site after the steps before it, else the default."""
+    def choose(
+        self, parser: ParserT_contra, site: SchemaSite[SchemaT], *, upto: int | None = None
+    ) -> Choice[ParserT_contra, SchemaT, ResultT_co]:
+        """Return the first row that applies to the site after the steps before it, else the default.
+
+        ``upto`` reads only the entries before that index; the default answers where none of them applies.
+        """
         steps: list[str] = []
-        for entry in self.entries:
+        for entry in self.entries[:upto]:
             if not entry.applies(parser, site):
                 continue
             if isinstance(entry, Row):
-                return Choice((*steps, entry.name), entry.build, site)
+                return Choice((*steps, entry.name), entry.build, site, entry.typed or self.typed)
             site = entry.rewrite(parser, site)
             steps.append(entry.name)
-        return Choice((*steps, self.default.name), self.default.build, site)
+        return Choice((*steps, self.default.name), self.default.build, site, self.typed)
 
     def typed_children(
         self, parser: ParserT_contra, site: SchemaSite[SchemaT], *, as_parsed: SchemaSite[SchemaT] | None = None
@@ -138,17 +144,9 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
         siblings) where the caller reads another. The entries after the last row with a declaration of its own answer
         with the table's, so they are not read.
         """
-        chosen = site if as_parsed is None else as_parsed
         last = max(
             (index for index, entry in enumerate(self.entries) if isinstance(entry, Row) and entry.typed is not None),
             default=-1,
         )
-        for entry in self.entries[: last + 1]:
-            if not entry.applies(parser, chosen):
-                continue
-            if isinstance(entry, Row):
-                if entry.typed is not None:
-                    return entry.typed(parser, site)
-                break
-            chosen = entry.rewrite(parser, chosen)
-        return () if self.typed is None else self.typed(parser, site)
+        typed = self.choose(parser, site if as_parsed is None else as_parsed, upto=last + 1).typed
+        return () if typed is None else typed(parser, site)
