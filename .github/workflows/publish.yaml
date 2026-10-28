@@ -161,53 +161,6 @@ jobs:
         with:
           attestations: true
 
-  behaviour_record:
-    name: Record the release's behaviour
-    if: "success() && startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '+')"
-    runs-on: ubuntu-24.04
-    needs: release
-    timeout-minutes: 180
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          enable-cache: false
-      - name: Setup environment
-        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
-      - name: Wait for the release on PyPI
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          for _ in $(seq 60); do
-            if curl -fsS "https://pypi.org/pypi/datamodel-code-generator/${RELEASE_TAG}/json" > /dev/null; then
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "datamodel-code-generator ${RELEASE_TAG} did not appear on PyPI." >&2
-          exit 1
-      - name: Record the release
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-          UV_PYTHON_PREFERENCE: "only-managed"
-        run: |
-          set -euo pipefail
-          .venv/bin/python scripts/behaviour_diff.py record "$RELEASE_TAG" \
-            --cache-dir "$RUNNER_TEMP/behaviour-diff" --out "behaviour-record-${RELEASE_TAG}"
-          tar -czf "behaviour-record-${RELEASE_TAG}.tar.gz" "behaviour-record-${RELEASE_TAG}"
-      - name: Upload the record as a release asset
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release upload "$RELEASE_TAG" "behaviour-record-${RELEASE_TAG}.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"
-
   push_to_registry:
     name: Push Docker image to Docker Hub
     if: "success() && startsWith(github.ref, 'refs/tags/')"

@@ -32,6 +32,9 @@ release tiers also on a stale entry: one that accepted no change in a run that h
 the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
 Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
 inputs, so a selection may leave an entry's changes out.
+
+`record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
+`merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
 """
 
 from __future__ import annotations
@@ -692,11 +695,15 @@ def _environment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
 
+def _shard_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
+
+
 def _gate_args(parser: argparse.ArgumentParser) -> None:
     _environment_args(parser)
     parser.add_argument("--tier", choices=("pr", "nightly", "release"), default="pr")
     parser.add_argument("--types", default="", help="comma-separated --output-model-type values (default: per tier)")
-    parser.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
+    _shard_arg(parser)
     parser.add_argument(
         "--select",
         action="append",
@@ -732,6 +739,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     record.add_argument("--types", default=",".join(compare_release.DEFAULT_TYPES))
     record.add_argument("--select", action="append", default=[], help="only inputs matching this glob")
     record.add_argument("--python", type=Path, help="interpreter that has the release (default: an era environment)")
+    _shard_arg(record)
+    merge = commands.add_parser("merge-record", help="merge the records of `record --shard I/N` into one record")
+    merge.add_argument("version", help="recorded version")
+    merge.add_argument("parts", type=Path, nargs="+", help="record directories of the shards")
+    merge.add_argument("--out", type=Path, default=DEFAULT_RECORDS, help="record directory")
     query = commands.add_parser("query", help="compare two recorded releases without generating anything")
     query.add_argument("base", help="older recorded version, or `all` for every recorded version before VERSION")
     query.add_argument("version", help="newer recorded version")
@@ -750,6 +762,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     ns = parser.parse_args(argv)
     if ns.command in {"gate", "guide"}:
         ns.base = ns.base or latest_tag()
+    if ns.command in {"gate", "guide", "record"}:
         index, _, total = ns.shard.partition("/")
         ns.shard_index, ns.shard_total = int(index), int(total or 1)
         if not 1 <= ns.shard_index <= ns.shard_total:
@@ -1003,6 +1016,7 @@ def record_main(ns: argparse.Namespace) -> int:
     cells = [Cell(recorder.root / name, name, file_type, backend) for name, file_type in inputs for backend in types]
     if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
         cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
+    cells = [cell for cell in cells if shard_of(cell, gate.allowlist, ns.shard_total) == ns.shard_index]
     inventory = option_inventory(python, env)
 
     def run(cell: Cell) -> tuple[str, dict[str, Any]]:
@@ -1017,9 +1031,35 @@ def record_main(ns: argparse.Namespace) -> int:
             entries = dict(pool.map(run, cells))
     finally:
         runner.close()
-    _write_json(out / f"{ns.version}.json", {"version": ns.version, "types": types, "cells": entries})
+    record: dict[str, Any] = {"version": ns.version, "types": types, "cells": entries}
+    if ns.shard_total > 1:
+        record["shard"] = [ns.shard_index, ns.shard_total]
+    _write_json(out / f"{ns.version}.json", record)
     counts = Counter(entry["gen"] for entry in entries.values())
     print(f"recorded {ns.version}: {len(entries)} cells ({dict(counts)}) in {time.monotonic() - started:.0f}s")
+    return 0
+
+
+def merge_record_main(ns: argparse.Namespace) -> int:
+    """Merge the shard records of one release into the record an unsharded `record` writes."""
+    out = ns.out.absolute()
+    records = [json.loads((part / f"{ns.version}.json").read_text(encoding="utf-8")) for part in ns.parts]
+    shards = sorted(tuple(record.pop("shard", (1, 1))) for record in records)
+    total = shards[0][1]
+    if shards != [(index, total) for index in range(1, total + 1)]:
+        msg = f"merge-record {ns.version}: the parts are shards {shards}, not each shard of 1..{total} once"
+        raise SystemExit(msg)
+    if any(record["types"] != records[0]["types"] for record in records):
+        msg = f"merge-record {ns.version}: the parts record different types"
+        raise SystemExit(msg)
+    (out / "signatures").mkdir(parents=True, exist_ok=True)
+    for part in ns.parts:
+        for path in sorted((part / "signatures").glob("*.json")):
+            if not (target := out / "signatures" / path.name).exists():
+                shutil.copyfile(path, target)
+    cells = {key: entry for record in records for key, entry in record["cells"].items()}
+    _write_json(out / f"{ns.version}.json", {"version": ns.version, "types": records[0]["types"], "cells": cells})
+    print(f"merged {ns.version}: {len(cells)} cells from {total} shards")
     return 0
 
 
@@ -1370,7 +1410,13 @@ def main(argv: list[str] | None = None) -> int:
             _draw_payloads(Path(argv[1]), argv[2], Path(argv[3]))
         return 0
     ns = _parse_args(argv)
-    commands = {"gate": gate_main, "record": record_main, "query": query_main, "guide": guide_main}
+    commands = {
+        "gate": gate_main,
+        "record": record_main,
+        "merge-record": merge_record_main,
+        "query": query_main,
+        "guide": guide_main,
+    }
     return commands[ns.command](ns)
 
 
