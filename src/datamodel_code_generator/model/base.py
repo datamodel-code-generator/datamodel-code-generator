@@ -3887,18 +3887,20 @@ def sort_data_models_for_mro(
     models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
 ) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
-    return _sort_for_mro(models, lambda model: _model_ancestor_keys(model, stand_ins))
+    return _sort_for_mro(models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins))
 
 
-def _sort_for_mro(models: list[DataModel], ancestors_of: Callable[[DataModel], frozenset[ModelKey]]) -> list[DataModel]:
-    """Order ``models`` descendants first, stably, by the model keys of the ancestors ``ancestors_of`` gives."""
-    if len(models) <= 1:
-        return models.copy()
-    ancestor_keys = {model_key_of(model.reference): ancestors_of(model) for model in models}
-    return sorted(
-        models,
-        key=lambda model: sum(model_key_of(model.reference) in ancestors for ancestors in ancestor_keys.values()),
-    )
+def _sort_for_mro(
+    items: list[MroT], key: Callable[[MroT], Hashable | None], ancestors_of: Callable[[MroT], Collection[Hashable]]
+) -> list[MroT]:
+    """Order ``items`` descendants first, stably: by how many ancestor sets of their distinct keys hold an item's key.
+
+    ``ancestors_of`` gives the keys of an item's ancestors; an item whose key is None counts in no ancestor set.
+    """
+    if len(items) <= 1:
+        return items.copy()
+    ancestor_keys = {item_key: ancestors_of(item) for item in items if (item_key := key(item)) is not None}
+    return sorted(items, key=lambda item: sum(key(item) in ancestors for ancestors in ancestor_keys.values()))
 
 
 def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> list[MroT]:
@@ -3931,14 +3933,18 @@ def linearize_data_models(
     walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models, stand_ins)
     graph = walk.graph
     if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
-        return _linearize_depth_first(models, stand_ins)
+        return _linearize_depth_first(
+            sort_data_models_for_mro(models, stand_ins),
+            _model_key_of_model,
+            lambda model: sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins),
+        )
     node_of = walk.node_of
 
     def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
         return graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
 
     def merged(heads: list[DataModel]) -> list[DataModel]:
-        heads = _sort_for_mro(heads, ancestors_of)
+        heads = _sort_for_mro(heads, _model_key_of_model, ancestors_of)
         return c3_merge(
             [*[lineages[model_key_of(head.reference)].copy() for head in heads], heads.copy()], key=_model_key_of_model
         )
@@ -3950,39 +3956,31 @@ def linearize_data_models(
 
 
 def _linearize_depth_first(
-    models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None
-) -> list[DataModel]:
-    """Return the effective C3 order for direct generated models by a depth-first walk of their bases."""
-    linearized_models: dict[ModelKey, list[DataModel]] = {}
+    heads: list[MroT],
+    key: Callable[[MroT], Hashable],
+    parents_of: Callable[[MroT], list[MroT]],
+    node_of: Callable[[MroT], Hashable] | None = None,
+) -> list[MroT]:
+    """Return the effective C3 order of ``heads`` by a depth-first walk of the parents ``parents_of`` gives in order.
 
-    def linearize(model: DataModel, active: frozenset[ModelKey] = frozenset()) -> list[DataModel]:
-        model_key = model_key_of(model.reference)
-        if cached := linearized_models.get(model_key):
+    Each item is linearized once by ``key``; the walk cuts a cycle where it meets an item again, told apart by
+    ``node_of`` (``key`` by default).
+    """
+    lineages: dict[Hashable, list[MroT]] = {}
+
+    def linearize(item: MroT, active: frozenset[Hashable] = frozenset()) -> list[MroT]:
+        if cached := lineages.get(key(item)):
             return cached
-        if model_key in active:
-            return [model]
-        parents = sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins)
-        result = [
-            model,
-            *c3_merge(
-                [
-                    *[linearize(parent, active | {model_key}).copy() for parent in parents],
-                    parents.copy(),
-                ],
-                key=_model_key_of_model,
-            ),
+        if (node := (node_of or key)(item)) in active:
+            return [item]
+        parents = parents_of(item)
+        lineages[key(item)] = lineage = [
+            item,
+            *c3_merge([*[linearize(parent, active | {node}).copy() for parent in parents], parents.copy()], key=key),
         ]
-        linearized_models[model_key] = result
-        return result
+        return lineage
 
-    direct_models = sort_data_models_for_mro(models, stand_ins)
-    return c3_merge(
-        [
-            *[linearize(model).copy() for model in direct_models],
-            direct_models.copy(),
-        ],
-        key=_model_key_of_model,
-    )
+    return c3_merge([*[linearize(head).copy() for head in heads], heads.copy()], key=key)
 
 
 def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
