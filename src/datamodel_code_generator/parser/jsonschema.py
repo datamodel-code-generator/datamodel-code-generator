@@ -770,8 +770,6 @@ def _numeric_type_domain(schema_type: str | list[str]) -> frozenset[str] | None:
     return types | _NUMERIC_TYPE_DOMAINS["integer"] if "number" in types else types
 
 
-
-
 def _is_rw_model_variant_path(path: str) -> bool:
     """Return whether a path belongs to an internal Request/Response variant."""
     return any(marker in path for marker in _RW_MODEL_VARIANT_SPECIAL_MARKERS)
