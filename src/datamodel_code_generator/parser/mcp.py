@@ -15,8 +15,6 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_MAP_KEYS,  # noqa: F401
     SCHEMA_VALUE_KEYS,  # noqa: F401
     DefinitionKey,  # noqa: F401
-    _local_definition_ref_name,  # noqa: F401
-    _rewrite_local_definition_ref,  # noqa: F401
     _rewrite_schema_refs,
 )
 from datamodel_code_generator.util import BaseModel

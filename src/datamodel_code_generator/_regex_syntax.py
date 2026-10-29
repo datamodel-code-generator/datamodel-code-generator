@@ -35,10 +35,13 @@ _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
+_COUNTED_REPETITION: Final = (
+    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
+    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
+)
 _REGEX_TOKEN: Final = (
     rf"(?s){_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
-    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
-    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
+    rf"|(?:{_COUNTED_REPETITION}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)"
 )
 _REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])"
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
@@ -106,14 +109,10 @@ def is_portable_pattern(pattern: str) -> bool:
 
 
 _REGEX_META_CHARACTERS: Final = frozenset(r"\.^$*+?{}[]|()")
-_LITERAL_PATTERN: Final = r"(?:[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()])*"
 _HEAD_CHARACTER: Final = r"[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()]"
+_LITERAL_PATTERN: Final = rf"(?:{_HEAD_CHARACTER})*"
 _QUANTIFIER_STARTS: Final = frozenset("*+?{")
 _SINGLE_CLASS: Final = r"(?s)\\[dDwWsSntrfv]|\\x[0-9A-Fa-f]{2}|\[\^?\]?(?:[^\\\[\]]|\\.)*\]"
-_COUNTED_REPETITION: Final = (
-    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
-    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
-)
 _PLAIN_REPETITION: Final = r"\{[0-9]+(?:,[0-9]*)?\}"
 _NON_ASCII_CLASS_ESCAPE: Final = r"(?<!\\)(?:\\\\)*\\[sSwWdDbB]"
 _GROUP_NAME: Final = r"\(\?(?P<python>P?)<(?![=!])(?P<name>[^>()\\]*)>"
@@ -287,7 +286,7 @@ def _reads_alike(pattern: str) -> bool:
     Rust and Python's ``re`` parse it (``is_portable_pattern``, no syntax that needs a later Python), Python reads
     every escape, group and class of it as Rust does, and a global flag group starts it if it has one.
     """
-    if not is_portable_pattern(pattern) or (scan := scan_regex_syntax(pattern)) is None or scan[1] != _PY_310:
+    if has_lookaround(pattern) or scan_regex_syntax(pattern) != (False, _PY_310):
         return False
     structure = _structure(pattern)
     return structure.read_alike and all(position == 0 for position in structure.global_flags)
@@ -342,19 +341,13 @@ def lookahead_patterns(patterns: Sequence[str]) -> str:
     prefix of the longest get ``\A(?=[\s\S]*a)(?=[\s\S]*b)``. No check that the patterns read alike on every engine
     or conjoin into one expression (``conjoin_patterns`` does).
     """
-    match patterns:
-        case [pattern]:
-            return pattern
-        case [left, right] if left == right:
-            return left
     literals = [literal_pattern_value(pattern) for pattern in patterns]
     if all(literal is not None for literal in literals):
         longest = max((literal for literal in literals if literal is not None), key=str.__len__)
         if any(literal is not None and not longest.startswith(literal) for literal in literals):
             return r"\A" + "".join(rf"(?=[\s\S]*{pattern})" for pattern in dict.fromkeys(patterns))
-    match patterns:
-        case [left, right]:
-            return f"(?={left})(?={right})"
+    if len(patterns) <= 2:  # noqa: PLR2004
+        return pairwise_patterns(patterns)
     result = patterns[0]
     for pattern in patterns[1:]:
         result = lookahead_patterns((result, pattern))

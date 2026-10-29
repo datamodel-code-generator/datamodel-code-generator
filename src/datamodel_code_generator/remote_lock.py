@@ -59,12 +59,11 @@ def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult
         port = parsed.port
     except ValueError as exc:
         raise RemoteLockError(message) from exc
-    scheme = parsed.scheme.lower()
-    if scheme not in {"http", "https"} or not parsed.hostname:
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise RemoteLockError(message)
     if port is None:
         return parsed, None
-    match scheme, port:
+    match parsed.scheme, port:
         case ("http", 80) | ("https", 443):
             return parsed, None
         case _:
@@ -84,7 +83,7 @@ def _display_url(url: str) -> str:
     if ":" in hostname and not hostname.startswith("["):
         hostname = f"[{hostname}]"
     netloc = hostname if port is None else f"{hostname}:{port}"
-    return urlunsplit((parsed.scheme.lower(), netloc, "", "", ""))
+    return urlunsplit((parsed.scheme, netloc, "", "", ""))
 
 
 def _request_sha256(
@@ -101,7 +100,7 @@ def _request_sha256(
             "hostname": parsed.hostname,
             "path": parsed.path,
             "port": port,
-            "scheme": parsed.scheme.lower(),
+            "scheme": parsed.scheme,
         },
         "url_query_parameters": [name for name, _ in parse_qsl(parsed.query, keep_blank_values=True)],
     }
@@ -122,8 +121,7 @@ def _is_sha256(value: object) -> TypeGuard[str]:
 def _validate_persisted_display_url(url: str) -> None:
     """Reject malformed display URLs before lock verification can proceed."""
     parsed, _ = _split_remote_url(url, persisted=True)
-    has_sensitive_url_parts = any((parsed.path, parsed.query, parsed.fragment, parsed.username, parsed.password))
-    if parsed.scheme not in {"http", "https"} or has_sensitive_url_parts:
+    if any((parsed.path, parsed.query, parsed.fragment, parsed.username, parsed.password)):
         msg = "Invalid remote lock resource URL"
         raise RemoteLockError(msg)
 
@@ -229,22 +227,16 @@ class RemoteReferenceLock:
                 msg = f"Remote resource returned different content in one generation: {entry.url}"
                 raise RemoteLockError(msg)
             return
-        if (locked_entry := self._entries.get(request_sha256)) is None:
-            if self.update:
-                self._entries[request_sha256] = entry
-                self._seen[request_sha256] = entry
-                return
-            msg = f"Remote resource is not recorded in lock: {entry.url}"
-            raise RemoteLockError(msg)
-        if locked_entry.body_sha256 == entry.body_sha256:
-            self._seen[request_sha256] = entry
-            return
-        if self.update:
+        if (locked_entry := self._entries.get(request_sha256)) is None or locked_entry.body_sha256 != entry.body_sha256:
+            if not self.update:
+                msg = (
+                    f"Remote resource is not recorded in lock: {entry.url}"
+                    if locked_entry is None
+                    else f"Remote resource content does not match lock: {entry.url}"
+                )
+                raise RemoteLockError(msg)
             self._entries[request_sha256] = entry
-            self._seen[request_sha256] = entry
-            return
-        msg = f"Remote resource content does not match lock: {entry.url}"
-        raise RemoteLockError(msg)
+        self._seen[request_sha256] = entry
 
     def _write_staged_content(self, file: TextIO) -> None:
         """Stream one deterministic lock document without retaining a second full payload."""

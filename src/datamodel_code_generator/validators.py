@@ -11,9 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, RootModel, ValidationError, field_validator
 
-from datamodel_code_generator.python_literal import _normalize_string
-
-_MIN_DOTTED_PATH_PARTS = 2
+from datamodel_code_generator.python_literal import _normalize_string, _normalized_safe_public_type_name
 
 
 class ValidatorMode(str, Enum):
@@ -28,23 +26,16 @@ class ValidatorMode(str, Enum):
 _VALIDATOR_MODE_VALUES = frozenset(mode.value for mode in ValidatorMode)
 
 
-def _is_python_identifier(value: str) -> bool:
-    normalized_value = _normalize_string(value)
-    return normalized_value.isidentifier() and not keyword.iskeyword(normalized_value)
-
-
 def _validate_python_identifier(value: str) -> str:
     normalized_value = _normalize_string(value)
-    if not _is_python_identifier(normalized_value):
+    if not normalized_value.isidentifier() or keyword.iskeyword(normalized_value):
         msg = f"must be a valid Python identifier: {value!r}"
         raise ValueError(msg)
     return normalized_value
 
 
 def _validate_dotted_python_identifier_path(value: str) -> str:
-    normalized_value = _normalize_string(value)
-    parts = normalized_value.split(".")
-    if len(parts) < _MIN_DOTTED_PATH_PARTS or any(not _is_python_identifier(part) for part in parts):
+    if (normalized_value := _normalized_safe_public_type_name(value)) is None or "." not in normalized_value:
         msg = f"must be a dotted Python identifier path: {value!r}"
         raise ValueError(msg)
     return normalized_value
@@ -54,8 +45,7 @@ def _validate_python_import_path(value: object) -> str:
     """Validate an import path with an optional dotted symbol suffix."""
     if (
         not isinstance(value, str)
-        or not (normalized_value := _normalize_string(value).strip())
-        or any(not _is_python_identifier(part) for part in normalized_value.split("."))
+        or (normalized_value := _normalized_safe_public_type_name(_normalize_string(value).strip())) is None
     ):
         msg = f"must be a Python import path composed of identifiers: {value!r}"
         raise ValueError(msg)
