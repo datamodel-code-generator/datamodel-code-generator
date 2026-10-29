@@ -7223,6 +7223,9 @@ typing.TypedDict	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[t
 	main/jsonschema/ref_type_has_null.py
 [test_main_jsonschema_ref_with_additional_keywords]
 	main/jsonschema/ref_with_additional_keywords//*.py
+[test_main_jsonschema_reference_edges_of_parser_hooks]
+key	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[key].txt
+target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 [test_main_jsonschema_reference_to_schema_without_model]
 	main/jsonschema/main_jsonschema/reference_to_schema_without_model.py
 [test_main_jsonschema_remote_relative_ref_without_fragment]
@@ -12953,40 +12956,10 @@ True-True-null_pattern-api	main/jsonschema/root_alias_constraints/null_runtime.t
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_native_error.txt	?	= main/jsonschema/numeric_allof_types/native_null_error.txt
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_pattern.py	= main/jsonschema/root_alias_constraints/null_pattern_annotated_api.py
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_runtime.txt
-[test_schema_graph_check_counts_references_by_origin]
-asyncapi-bindings	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-bindings].txt
-asyncapi-converted	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-converted].txt
-asyncapi-subscribe	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-subscribe].txt
-discriminator	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[discriminator].txt
-dynamic-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[dynamic-ref].txt
-dynamic-ref-anchor-name	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[dynamic-ref-anchor-name].txt
-item-schema	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[item-schema].txt
-nested-definitions	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[nested-definitions].txt
-openapi-header-map	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[openapi-header-map].txt
-recursive-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref].txt
-recursive-ref-merged	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref-merged].txt
-x-python-type	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[x-python-type].txt
 [test_schema_graph_check_of_a_reader_that_writes_a_shared_schema]
 off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[off].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[report].report.txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reader_that_writes_a_shared_schema[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-[test_schema_graph_check_of_a_reference_its_site_cannot_resolve]
-check	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[check].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[report].report.txt
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-[test_schema_graph_check_of_read_write_splits]
-report	main/jsonschema/main_jsonschema/schema_graph_check_of_read_write_splits[report].report.txt
-[test_schema_graph_check_of_reference_edges]
-key-off	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-key-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-report].report.txt
-key-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-target-off	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-off].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-target-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-report].report.txt
-target-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
-[test_schema_graph_check_records_anchor_answers_that_differ_from_the_document]
-	main/jsonschema/main_jsonschema/schema_graph_check_records_anchor_answers_that_differ_from_the_document.txt
-[test_schema_graph_check_records_reserved_targets_of_a_rewritten_document]
-	main/jsonschema/main_jsonschema/schema_graph_check_records_reserved_targets_of_a_rewritten_document.txt
 [test_schema_import_paths_for_target]
 python-3.10	main/jsonschema/schema_import_paths_target_310.py
 python-3.12	main/jsonschema/schema_import_paths_target_312.py

@@ -48,7 +48,6 @@ from datamodel_code_generator import (
     ReuseScope,
     cached_path_exists,
 )
-from datamodel_code_generator._checks import read_check_flags
 from datamodel_code_generator._constraint_applicability import (
     overridden_declared_constraints,
     resplit_overridden_constraints,
@@ -3519,8 +3518,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         memo = PARSE_MEMO.set(self.generation_store._memo)  # noqa: SLF001
         caller = anchor_parse_caller()
         try:
-            with read_check_flags():
-                self.__runner().run_steps(PIPELINE, self, run)
+            self.__runner().run_steps(PIPELINE, self, run)
         finally:
             release_parse_caller(caller)
             PARSE_MEMO.reset(memo)

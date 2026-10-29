@@ -268,25 +268,18 @@ holder's location and document; copy-on-write, only at the keywords that hold sc
 examples, extensions, OAuth scopes, discriminator mappings or unknown keywords; `JsonSchemaObject` and the OpenAPI
 `ReferenceObject` keep the edge through a wrap validator).
 Referenced documents go through the same steps when `resolve_ref` loads them: documents enter the graph in the order
-L1 asks for them, and the graph never loads one by itself. With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH=1`, which
-`tests/conftest.py` sets for the test suite, each edge is compared with its resolution at the sites: the key `get_ref_data_type` and `resolve_ref` would compute in their own context equals the edge's key, unless that
-context raises or names no value of a loaded document (a reference resolved outside its own document, recorded as
-`fixed-context`), and the object `_load_ref_schema_object`, `get_ref_model`, `_resolve_asyncapi_ref` and the `api`
-scope load is the registered target the edge names, except a pointer the parser splits at another `/` and references
-of documents that resolve references against themselves (`_resolve_lenient_resource_ref`). Every reference whose target is static carries an
-edge: a rewrite of a reference to name its target (canonicalized, lenient or normalized) keeps it
+L1 asks for them, and the graph never loads one by itself. Every reference whose target is static carries an edge: a rewrite of a reference to name its target (canonicalized, lenient or normalized) keeps it
 (`keep_resolved_ref`); an object a reference names is read as a schema once (`SchemaGraphBuilder.read_as_schema`), so a
 `$ref` the walk read as data or names there (a nested definitions container) gets one too; schemas converted from
 another format are mounted with edges to the locations their targets are mounted at (an AsyncAPI payload converted from
 Protocol Buffers or XML Schema under the internal container of a root the graph owns for its document,
 `SchemaGraphBuilder.mount_root` and `mount_in`, so the loaded document is never written); and a reference the parser derives
-gets the edge of the reference it stands for, with its `RefOrigin` (`_derived_ref`: discriminator mappings and subtypes,
+gets the edge of the reference it stands for (`_derived_ref`: discriminator mappings and subtypes,
 `x-python-type` names, a merged `$recursiveRef` with a fixed target, an `itemSchema` projection, an AsyncAPI Reference
 Object). Only the references of the dynamic-scope rule (`_dynamic_scope_target`: a `$recursiveRef`, and a plain-name
 `$dynamicRef` bound in the dynamic scope or named by the first `$dynamicAnchor` of its name in the document being
 parsed) stay plain strings: they resolve against the dynamic scope of the model being parsed, not their own document.
-With `report:<path>`, one line per site and origin counts the references that reached it with their edge and as plain
-strings. Every L1 site takes the key of a reference from its edge (`_ref_key`, `_ref_path`): the edge's spelling
+Every L1 site takes the key of a reference from its edge (`_ref_key`, `_ref_path`): the edge's spelling
 resolved once, at its first consumption, in the document that holds it (`_home_context`: its location, root `$id`
 and, for an OpenAPI input document or under the `api` scope, its `$self`; a schema the parser keeps in a document of its
 own, an Avro schema of an AsyncAPI document, names that document as its edges' `home`) through the external mapping, the embedded
@@ -301,8 +294,9 @@ it get, whatever document is being parsed when the discriminators are collected.
 A JSON object of a loaded document is validated once per parse (`SchemaGraphBuilder.schema`): the targets
 `_load_ref_schema_object`, `_load_inherited_schema_object` and OpenAPI's `resolve_object` load, the response and request
 body targets of `get_ref_model`, and the `if`, `then`, `else` and `not` branches `_get_conditional_schema` reads share
-one object per located value and its type, which no reader writes; the schema graph check compares each shared object
-at the end of L1 with the fingerprint taken when it was validated (`kind="shared-schema"`).
+one object per located value and its type, which no reader writes; `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH`,
+which `tests/conftest.py` sets for the test suite, compares each shared object at the end of L1 with the fingerprint
+taken when it was validated (`tests/checks/schema_graph.py`).
 The walks that follow references from a schema (field flags, literal and null checks, inherited properties and
 overrides, validation sources, `uniqueItems` rules, merged `allOf` values) visit each schema graph node once
 (`SchemaNodeId`, the location of the object a reference names: `_key_node`), and a `$ref` target merged with its sibling
@@ -311,18 +305,15 @@ A local reference whose model a document has not parsed yet is reserved for that
 `_parse_file`, `_resolve_unparsed_json_pointer` and AsyncAPI's `_resolve_asyncapi_unparsed_json_pointer` take the
 targets from one worklist (`_reserved_targets`: a `ReservedTarget` with the document, the key and the node the key names
 in the document's prepared tree), in key order, repeating while a round reserves more keys (`_parse_file`) or adds
-models (the others), and parse each target from the prepared tree; the schema graph check loads the source again and
-compares the value at each target (`kind="reserved-target"`).
-`walk_schema_resources` also keeps the anchor tables of each document: its `$dynamicAnchor` names (the first in walk
-order wins) and its `$recursiveAnchor: true` schemas (`ResourceRegistry.anchor_tables`). The `$dynamicRef` analysis
+models (the others), and parse each target from the prepared tree.
+The `$dynamicRef` analysis
 (`_dynamic_anchors_used`, `_dynamic_ref_edges`) and the models specialized for a dynamic scope are keyed by the schema
 graph node a reference names, so references that spell one schema differently share its analysis and its specialized
 model. The fallbacks of the dynamic-scope rule still read the anchors L1 has registered so far (`_build_anchor_indexes`
 and `_parse_file`: the root, the definitions and each schema parsed through `_parse_raw_or_validated_obj`):
-`_resolve_dynamic_ref`, `_resolve_recursive_ref` and `_recursive_ref_target`. The schema graph check compares each of
-their answers with the one of the document's anchor tables and records a difference (`kind="anchor-answer"`): a
-`$recursiveAnchor` below `properties` is never registered, and an OpenAPI component's `$dynamicRef` parsed before the
-component that declares its anchor resolves through its edge instead.
+`_resolve_dynamic_ref`, `_resolve_recursive_ref` and `_recursive_ref_target`: a `$recursiveAnchor` below `properties`
+is never registered, and an OpenAPI component's `$dynamicRef` parsed before the component that declares its anchor
+resolves through its edge instead.
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
@@ -946,17 +937,17 @@ wrap the operations on the store keep seeing every call. The operations on `Gene
 every other caller (`@deprecated(category=None)`: ty lists the callers, and no warning is raised at run time).
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
-counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it. The owner
-(`owner_of`) is the model whose builder built this one: each model builder of `JsonSchemaParser` runs in a frame whose
-cell takes the model it built when it returns, and a model records the frames open when it is recorded. A read or
-write variant stands for its base model in those frames, so it takes the base's owner; a document parse (`_parse_file`,
-also for a `$ref` target) starts with no frame open, so its models are roots. The store keys `model_by_ref_id`,
+counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it. The store keys `model_by_ref_id`,
 `sites_by_target` and the reference counts of root collapse by it, through
 `GenerationStore.model_key`, instead of `id(reference)`, which Python reuses once a Reference is freed. Copies of a
 Reference (`deepcopy`, `model_copy`, pickling) keep the key of their original, so the store would take a copy for
 the model it was copied from. `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH` reports a Reference object that the store
 records or is asked about when another one took its key first, and, at the end of L1, a model parsed from a JSON
-document that has no owner and is not a root. Because the key sits in `__dict__`, two distinct
+document that has no owner and is not a root. The owner is the model whose builder built this one: the check
+(`tests/checks/model_graph.py`) runs each model builder of `JsonSchemaParser` in a frame whose cell takes the model it
+built when it returns, and a model records the frames open when it is recorded. A read or write variant stands for its
+base model in those frames, so it takes the base's owner; a document parse (`_parse_file`, also for a `$ref` target)
+starts with no frame open, so its models are roots. Because the key sits in `__dict__`, two distinct
 References with equal fields compare unequal under pydantic before 2.6, whose `==` compares `__dict__`; no parser
 comparison depends on that (GR5 turns the remaining `==` sites into `is`). Other parser maps still identify models by
 path, class name or `id()`.
@@ -1459,11 +1450,10 @@ paths:
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
 input-model, reference, model-composition, output-model, shared-model, schema graph, parser pass, requirement-table,
-constraint-table, subschema-position-table and debug check flag files are classified explicitly. The composition
+constraint-table and subschema-position-table files are classified explicitly. The composition
 root may select concrete backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
 `sys.modules`, including module-name constants and aliases. The requirement table may import only the standard library,
-`typing_extensions`, `_records` and `enums`, the constraint table only those and the requirement table, `_checks.py`,
-which every layer reads for the debug check flags, and `_json_schema.py`, the table of subschema positions every schema
+`typing_extensions`, `_records` and `enums`, the constraint table only those and the requirement table, `_json_schema.py`, the table of subschema positions every schema
 walker reads (by shape or through a view of its roles), only the standard library and `typing_extensions`, and the schema
 graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. Pass modules
 (`parser/_passes/`) follow the parser rules and import no parser module but the generation store, the import ledger,

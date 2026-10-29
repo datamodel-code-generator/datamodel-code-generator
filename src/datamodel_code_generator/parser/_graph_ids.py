@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Final, final
 
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
-from datamodel_code_generator.reference import SCHEMA_OWNER_FRAMES_KEY
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -22,30 +21,6 @@ if TYPE_CHECKING:
 
 UNRESOLVED_MODEL_KEY: Final = ModelKey(-1)
 """The key a lookup returns for a reference or a path naming none of the models of a site; no model takes it."""
-
-
-@final
-@record(eq=False)
-class BuildFrames:
-    """The model builder frames open when a model is recorded, innermost first, and the model they build."""
-
-    model: Reference
-    """The model the frames stand for: the recorded model, or the base model of a read or write variant."""
-    frames: tuple[list[Reference | None], ...]
-    """One cell per frame: None until its builder returns, then the model that builder built, if it built one."""
-
-
-def owner_of(reference: Reference) -> Reference | None:
-    """Return the model whose builder built the model of ``reference``, or None for a root model.
-
-    It is the innermost filled frame cell that holds another model than the one the frames stand for. A model built
-    outside every builder (a definition, a document root, a `$ref` target) has no owner; neither has a model the parser
-    did not record.
-    """
-    if (record := reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY)) is None:
-        return None
-    key = model_key_of(record.model)
-    return next((owner for (owner,) in record.frames if owner is not None and model_key_of(owner) != key), None)
 
 
 @final

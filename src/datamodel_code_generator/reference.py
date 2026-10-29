@@ -295,7 +295,6 @@ SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
 
 SCHEMA_LOCATION_KEY: Final = "_schema_location"
 SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
-SCHEMA_OWNER_FRAMES_KEY: Final = "_schema_owner_frames"
 
 
 @record

@@ -1,7 +1,8 @@
 """``MODEL_GRAPH``: the invariants of the model graph that the generation store records.
 
 Collapse stops before it would build a data type cycle; the store never meets a copied Reference; every model parsed
-from a JSON document has an owner or is a root at the end of L1; a refresh that records only the models store
+from a JSON document has an owner, the model whose builder of ``JsonSchemaParser`` built it, or is a root at the end of
+L1; a refresh that records only the models store
 operations noted records the facts and reference sites a full rebuild would; the ``parent`` of every node a refresh
 records, when set, is one of its holders, and no node contains itself; the models the output writes are the store's
 emitted models.
@@ -31,6 +32,13 @@ KNOWN_PARENT_MISMATCHES: Final[Mapping[ParentMismatch, str]] = MappingProxyType(
 
 _COPIES: Final = "reference copies"
 """The key of the Reference objects each store met first under each model key, in the state of the parse."""
+_FRAMES: Final = "builder frames"
+"""The model builder frames a parser has open, outermost first, by the id of the parser, in the state of the parse."""
+_RECORDS: Final = "build frames"
+"""The model each recorded model stands for in the frames and the frames open when it was recorded, innermost first,
+by its model key, in the state of the parse."""
+_VARIANT_BASES: Final = "variant bases"
+"""The base model of each read or write variant that a builder records, by the variant's model key."""
 
 
 def _violation(graph_mode: Mode, message: str, **details: object) -> None:
@@ -39,26 +47,122 @@ def _violation(graph_mode: Mode, message: str, **details: object) -> None:
     graph_mode.violation(Error, message, **details)
 
 
-def _is_root_or_owned(reference: Any) -> bool:
+def builds_model(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap a model builder of ``JsonSchemaParser``: it runs in a frame whose cell becomes the model it built.
+
+    A model records the frames it is built in (``record_schema_location``), so the innermost filled frame of another
+    model names the model whose parse built it (``_owner``). A returned model recorded outside the frame, such as a
+    `$ref` target, leaves the cell empty.
+    """
+
+    @wraps(original)
+    def build(self: Any, *args: Any, **kwargs: Any) -> Any:
+        if (graph_mode := mode(Area.MODEL_GRAPH)) is None:
+            return original(self, *args, **kwargs)
+        from datamodel_code_generator._model_keys import model_key_of
+        from datamodel_code_generator.types import DataType
+
+        cell: list[Any] = [None]
+        frames = graph_mode.state.setdefault((_FRAMES, id(self)), [])
+        frames.append(cell)
+        try:
+            result = original(self, *args, **kwargs)
+        finally:
+            frames.pop()
+        if (
+            isinstance(result, DataType)
+            and (reference := result.reference) is not None
+            and (record := graph_mode.state.get(_RECORDS, {}).get(model_key_of(reference))) is not None
+            and any(frame is cell for frame in record[1])
+        ):
+            cell[0] = reference
+        return result
+
+    return build
+
+
+def parses_document(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap ``JsonSchemaParser._parse_file``: a document parses with no builder frame open, so its models are roots."""
+
+    @wraps(original)
+    def parse_file(self: Any, *args: Any, **kwargs: Any) -> Any:
+        if (graph_mode := mode(Area.MODEL_GRAPH)) is None:
+            return original(self, *args, **kwargs)
+        key = (_FRAMES, id(self))
+        frames = graph_mode.state.get(key, [])
+        graph_mode.state[key] = []
+        try:
+            return original(self, *args, **kwargs)
+        finally:
+            graph_mode.state[key] = frames
+
+    return parse_file
+
+
+def get_rw_model_variant_reference(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap ``JsonSchemaParser._get_rw_model_variant_reference``: a variant a builder records takes its base's owner.
+
+    A builder asks for the variant it records as loaded; it stands for the base model in the frames.
+    """
+
+    @wraps(original)
+    def get_rw_model_variant_reference(self: Any, base_reference: Any, suffix: str, *, loaded: bool = False) -> Any:
+        reference = original(self, base_reference, suffix, loaded=loaded)
+        if loaded and (graph_mode := mode(Area.MODEL_GRAPH)) is not None:
+            from datamodel_code_generator._model_keys import model_key_of
+
+            graph_mode.state.setdefault(_VARIANT_BASES, {})[model_key_of(reference)] = base_reference
+        return reference
+
+    return get_rw_model_variant_reference
+
+
+def record_schema_location(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``JsonSchemaParser._record_schema_location``: a model records the builder frames open when it is recorded.
+
+    The record is kept by model key, so it holds for the copies of the model's Reference and when later passes change
+    ``Reference.path``. A read or write variant stands for its base model in the frames.
+    """
+
+    @wraps(original)
+    def record_schema_location(self: Any, reference: Any, location: Any) -> None:
+        original(self, reference, location)
+        if (graph_mode := mode(Area.MODEL_GRAPH)) is not None:
+            from datamodel_code_generator._model_keys import model_key_of
+
+            key, state = model_key_of(reference), graph_mode.state
+            state.setdefault(_RECORDS, {})[key] = (
+                state.get(_VARIANT_BASES, {}).get(key, reference),
+                tuple(reversed(state.get((_FRAMES, id(self)), ()))),
+            )
+
+    return record_schema_location
+
+
+def _is_root_or_owned(records: Mapping[Any, Any], reference: Any) -> bool:
     """Return whether the model of ``reference`` was recorded and has an owner or is a root model.
 
-    A root model is recorded with no builder frame open but its own builders'. A model recorded inside a builder that
-    built no model, or never recorded, breaks the rule.
+    Its owner is the innermost filled frame cell that holds another model than the one the frames stand for. A root
+    model is recorded with no builder frame open but its own builders'. A model recorded inside a builder that built no
+    model, or never recorded, breaks the rule.
     """
-    from datamodel_code_generator.parser._graph_ids import owner_of
-    from datamodel_code_generator.reference import SCHEMA_OWNER_FRAMES_KEY
+    from datamodel_code_generator._model_keys import model_key_of
 
-    if owner_of(reference) is not None:
-        return True
-    record = reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY)
-    return record is not None and all(owner is not None for (owner,) in record.frames)
+    if (record := records.get(model_key_of(reference))) is None:
+        return False
+    model, frames = record
+    key = model_key_of(model)
+    return any(owner is not None and model_key_of(owner) != key for (owner,) in frames) or all(
+        owner is not None for (owner,) in frames
+    )
 
 
 def check_model_owners(parser: Any) -> None:
     """Report the models parsed from a JSON document that have no owner and are not roots, at the end of L1."""
     if parser._schema_graph is None or (graph_mode := mode(Area.MODEL_GRAPH)) is None:
         return
-    if unowned := [model for model in parser.results if not _is_root_or_owned(model.reference)]:
+    records = graph_mode.state.get(_RECORDS, {})
+    if unowned := [model for model in parser.results if not _is_root_or_owned(records, model.reference)]:
         from datamodel_code_generator._url_redaction import redact_reference
 
         paths = [(model.class_name, redact_reference(model.reference.path)) for model in unowned]

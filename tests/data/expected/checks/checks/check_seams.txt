@@ -6,6 +6,16 @@ datamodel_code_generator.parser.generation:GenerationStore.seal_facts <- tests.c
 datamodel_code_generator.parser.generation:GenerationStore.refresh_now <- tests.checks.model_graph.refresh_now
 datamodel_code_generator.parser.generation:GenerationStore.model_key <- tests.checks.model_graph.model_key
 datamodel_code_generator.parser._passes.modules:collapse_module_root_models <- tests.checks.model_graph.collapse_module_root_models
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_object_common_part <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_all_of <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_object <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_array <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_root_type <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_enum <- tests.checks.model_graph.builds_model
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_file <- tests.checks.model_graph.parses_document
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_rw_model_variant_reference <- tests.checks.model_graph.get_rw_model_variant_reference
+datamodel_code_generator.parser.jsonschema:JsonSchemaParser._record_schema_location <- tests.checks.model_graph.record_schema_location
+datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.schema <- tests.checks.schema_graph.schema
 datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null
 datamodel_code_generator.parser._passes._shared:get_inherited_constructor_info <- tests.checks.parse.get_inherited_constructor_info
 datamodel_code_generator.parser.base:Parser._get_module_future_imports <- tests.checks.module_imports.get_module_future_imports
