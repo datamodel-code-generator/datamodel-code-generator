@@ -1321,9 +1321,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_client/render.py"."_Helpers.upload"]
 "T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-02" }
 
-[allow."src/datamodel_code_generator/_client/security.py"."_flows"]
-"T-wire.raw-key" = { home = "T-wire", count = 1, audit = "R-23" }
-
 [allow."src/datamodel_code_generator/_client/security.py"."_scheme"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-12" }
 

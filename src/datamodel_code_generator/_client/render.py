@@ -46,9 +46,9 @@ from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import UnionType
+from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_operations import described
-from datamodel_code_generator._target_operations import label as _label
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,

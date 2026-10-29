@@ -15,9 +15,15 @@ from datamodel_code_generator._runtime.client.security import (
     SecurityScheme,
     UnavailableSecurityScheme,
 )
-from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar, LiteralSequence
+from datamodel_code_generator._target_contract import (
+    LiteralMapping,
+    LiteralScalar,
+    LiteralSequence,
+    fact,
+    label,
+    operation_literal,
+)
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import fact, label, operation_literal
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -107,7 +113,7 @@ def _flows(declaration: WireDeclaration) -> tuple[tuple[Flow, str | None], ...]:
     token renews, at the refresh URL or else the token URL of the first such flow declaring one.
     """
     facts = dict(declaration.facts)
-    kind = getattr(facts.get("type"), "value", None)
+    kind = fact(declaration, "type")
     if kind == "openIdConnect":
         return (("refresh_token", None),)
     if kind != "oauth2":

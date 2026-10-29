@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from functools import cached_property
 from math import isfinite
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -23,6 +23,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     header_text,
 )
 from datamodel_code_generator._target_contract import (
+    LOCATIONS,
     WRAPPER_KINDS,
     BindingReason,
     BuiltinType,
@@ -46,6 +47,10 @@ from datamodel_code_generator._target_contract import (
     TypeUseId,
     UnionType,
     WireDeclaration,
+    fact,
+    label,
+    operation_literal,
+    type_uses,
 )
 from datamodel_code_generator._target_types import present
 
@@ -76,7 +81,6 @@ CodecReason: TypeAlias = (
     ]
 )
 
-_LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
 _STRING: Final = frozenset({"string"})
 _LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
@@ -154,12 +158,6 @@ class _PlanError(Exception):
     def __init__(self, source: SourceLocation, message: str) -> None:
         super().__init__(message)
         self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message)
-
-
-def _fact(declaration: WireDeclaration, key: str) -> object:
-    return next(
-        (value.value for name, value in declaration.facts if name == key and isinstance(value, LiteralScalar)), None
-    )
 
 
 class _WirePlanner:
@@ -260,7 +258,7 @@ def _binary_text(
     batch: GeneratedTypeContractBatch, operations: Sequence[OperationContract], requested: frozenset[TypeUseId] | None
 ) -> Iterator[CodecDiagnostic]:
     """Yield a diagnostic for each requested use of the operations that carries a raw binary string as text."""
-    labels = {operation.id: f"{operation.method.upper()} {operation.path}" for operation in operations}
+    labels = {operation.id: label(operation) for operation in operations}
     yield from (
         CodecDiagnostic(
             "MC_CODEC_UNSUPPORTED", source, f"{_carrier(use.id, labels[owner])} {_BINARY_TEXT}", owner, (use.id,)
@@ -446,12 +444,12 @@ def _distinct(
 
 def _styled(encoding: WireDeclaration) -> bool:
     """Return whether an encoding gives its member a query parameter's style or content."""
-    return any(_fact(encoding, key) is not None for key in (*STYLED, "contentType"))
+    return any(fact(encoding, key) is not None for key in (*STYLED, "contentType"))
 
 
 def content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
     """Return the media types an encoding's contentType lists, none without one, or None when one is no media type."""
-    if (declared := _fact(encoding, "contentType")) is None:
+    if (declared := fact(encoding, "contentType")) is None:
         return ()
     try:
         return tuple(normalize_media_type(item.strip()) for item in str(declared).split(","))
@@ -470,7 +468,7 @@ def _encoding(
     if (member := members.get(name)) is None:
         raise _PlanError(source, "An encoding names no member of its form")
     style, explode, reserved, content = (
-        _fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
+        fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )
     try:
         if style is None and explode is None and reserved is None:
@@ -510,12 +508,12 @@ def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> 
     """
     if multipart and (version == "3.0" or version.startswith("3.0.")):
         return False
-    return any(_fact(encoding, key) is not None for key in STYLED)
+    return any(fact(encoding, key) is not None for key in STYLED)
 
 
 def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
-    return _fact(declaration, "allowReserved") is True and not (
+    return fact(declaration, "allowReserved") is True and not (
         location == "path" and (version in ("3.0", "3.1") or version.startswith(("3.0.", "3.1.")))  # noqa: PLR6201
     )
 
@@ -526,7 +524,7 @@ def _planned(
     try:
         return _parameter(planner, declaration, names)
     except _PlanError as error:
-        _refused(planner, error, operation, _uses(declaration))
+        _refused(planner, error, operation, type_uses(declaration))
     return None
 
 
@@ -539,18 +537,14 @@ def _headers(operation: OperationContract, requested: frozenset[TypeUseId] | Non
             yield from (
                 child
                 for child in encoding.children
-                if child.kind == "header" and (requested is None or not requested.isdisjoint(_uses(child)))
+                if child.kind == "header" and (requested is None or not requested.isdisjoint(type_uses(child)))
             )
-
-
-def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
-    return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
 def _header(
     planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration
 ) -> tuple[tuple[TypeUseId, ParameterPlan], ...]:
-    if not (uses := _uses(declaration)):
+    if not (uses := type_uses(declaration)):
         return ()
     facts = (*declaration.facts, ("in", LiteralScalar("str", "header")), ("style", LiteralScalar("str", "simple")))
     plan = _planned(planner, operation, replace(declaration, facts=facts), [])
@@ -575,12 +569,12 @@ def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) 
     """Return the locations and names of the apiKey credentials the operation's security requirements send."""
     document = operation.id.use_site.document
     schemes = {scheme.name: scheme for scheme in batch.security_schemes if scheme.use_site.document == document}
-    requirements = next((value for name, value in operation.facts if name == "security"), None)
+    requirements = operation_literal(operation, "security")
     return list(
         dict.fromkeys(
-            (_fact(scheme, "in"), str(_fact(scheme, "name")))
+            (fact(scheme, "in"), str(fact(scheme, "name")))
             for name in _requirement_names(requirements)
-            if (scheme := schemes.get(name)) is not None and _fact(scheme, "type") == "apiKey"
+            if (scheme := schemes.get(name)) is not None and fact(scheme, "type") == "apiKey"
         )
     )
 
@@ -611,7 +605,7 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
     declarations = operation.parameters
     auth = auth_names(planner.batch, operation)
-    names = [*((_fact(item, "in"), item.name or "") for item in declarations), *auth]
+    names = [*((fact(item, "in"), item.name or "") for item in declarations), *auth]
     plans = [
         plan
         for declaration in declarations
@@ -639,7 +633,7 @@ def parameter_collisions(
             or len(absorbing) > 1
             or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
         ):
-            source = next(item.use_site for item in operation.parameters if _fact(item, "in") == location)
+            source = next(item.use_site for item in operation.parameters if fact(item, "in") == location)
             found.append(
                 CodecDiagnostic(
                     "MC_PARAMETER_ENCODING", source, f"Expanded {location} parameter names collide", operation.id
@@ -650,17 +644,17 @@ def parameter_collisions(
 
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
     source = declaration.use_site
-    location = _LOCATIONS[_fact(declaration, "in")]
+    location = LOCATIONS[fact(declaration, "in")]
     name = declaration.name or ""
-    required = _fact(declaration, "required") is True
+    required = fact(declaration, "required") is True
     _finite(planner, declaration)
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
-    style = str(_fact(declaration, "style") or _DEFAULT_STYLES[location])
+    style = str(fact(declaration, "style") or _DEFAULT_STYLES[location])
     if style == "cookie" and not planner.version.startswith("3.2"):
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
-    explode = _fact(declaration, "explode")
+    explode = fact(declaration, "explode")
     try:
         return ParameterPlan(
             location=location,
@@ -713,7 +707,7 @@ def _content_parameter(
 
 def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
     """Refuse a parameter whose schema declares a non-finite default, which no JSON number or parameter text writes."""
-    for use in (planner.uses[item] for item in _uses(declaration) if item in planner.uses):
+    for use in (planner.uses[item] for item in type_uses(declaration) if item in planner.uses):
         if isinstance(value := getattr(use.default, "value", None), float) and not isfinite(value):
             location = _located(use)
             raise _PlanError(

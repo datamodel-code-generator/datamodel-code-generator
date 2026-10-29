@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client.pagination import _Pages, _problem
 from datamodel_code_generator._runtime.model_codecs.media import SUCCESS_STATUSES
-from datamodel_code_generator._target_operations import label as _label
+from datamodel_code_generator._target_contract import label as _label
 
 if TYPE_CHECKING:
     from collections.abc import Container

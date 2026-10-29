@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
+from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_naming import NameScope, explicit_name
 from datamodel_code_generator._target_operations import CLIENT
-from datamodel_code_generator._target_operations import label as _label
 
 if TYPE_CHECKING:
     from collections.abc import Container
