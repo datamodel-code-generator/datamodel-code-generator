@@ -18,12 +18,16 @@ from datamodel_code_generator.model.base import BaseLayoutView, _find_base_class
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
+    DataModelTypeHost,
+    GraphBuilderHost,
     InheritedFieldHost,
+    RecursionFactsHost,
+    ReuseOptionsHost,
     _module_name_from_module_path,
     override_required_field,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts
-from datamodel_code_generator.parser._tag_plan import field_namer, iter_union_sites, possible_tag_names
+from datamodel_code_generator.parser._tag_plan import TagPlanHost, field_namer, iter_union_sites, possible_tag_names
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -33,8 +37,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
-    from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan
-    from datamodel_code_generator.parser.generation import GraphBuilder
+    from datamodel_code_generator.parser._tag_plan import TagCapabilities
     from datamodel_code_generator.reference import ModelType, Reference
 
 __all__ = [
@@ -55,21 +58,16 @@ class _Clearable(Protocol):
         """Remove every entry."""
 
 
-class FlattenHost(InheritedFieldHost, Protocol):
+class FlattenHost(InheritedFieldHost, GraphBuilderHost, Protocol):
     """What making a model declare the fields of its bases reads and writes of the parser."""
 
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
-
-class PlansHost(FlattenHost, Protocol):
+class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelTypeHost, TagPlanHost, Protocol):
     """The options, run state and hooks of the parser that the plan passes read and write."""
 
     _emitting_module_lists: list[tuple[str, list[DataModel]]]
     _emitting_module_names: dict[int, str]
     _generic_base_model: DataModel | None
-    _recursion_facts: RecursionFacts
 
     @property
     def _base_stand_ins(self) -> _Clearable:
@@ -120,32 +118,12 @@ class PlansHost(FlattenHost, Protocol):
         """The rows of the output's model and field classes that the tag passes read."""
 
     @property
-    def _tag_plan(self) -> TagPlan:
-        """What the tag passes of the parse recorded."""
-
-    @property
-    def collapse_root_models(self) -> bool:
-        """Whether root models are collapsed into their users."""
-
-    @property
     def collapse_root_models_name_strategy(self) -> CollapseRootModelsNameStrategy | None:
         """How collapsed root models name the models that replace them, if configured."""
 
     @property
-    def data_model_type(self) -> type[DataModel]:
-        """The model type of the output."""
-
-    @property
     def field_name_model_type(self) -> ModelType:
         """The model type that field names are validated for."""
-
-    @property
-    def reuse_model(self) -> bool:
-        """Whether models that render the same are reused."""
-
-    @property
-    def reuse_scope(self) -> ReuseScope | None:
-        """The scope of reuse."""
 
 
 def reset_per_run_state(parser: PlansHost, _run: StructuredRun[Any]) -> None:
