@@ -970,6 +970,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._configure_legacy_run_context_attribute("formatter_cwd", value)
 
     @property
+    def _field_option_kwargs(self) -> dict[str, Any]:
+        """The configured field options that the field builders pass to the fields they build from a schema."""
+        return {
+            "strip_default_none": self.strip_default_none,
+            "order_constructor_fields_by_written_defaults": self.order_constructor_fields_by_written_defaults,
+            "use_field_description": self.use_field_description,
+            "use_field_description_example": self.use_field_description_example,
+            "use_inline_field_description": self.use_inline_field_description,
+        }
+
+    @property
     def _preserve_circular_root_models(self) -> bool:
         return self.run_context.preserve_circular_root_models
 
