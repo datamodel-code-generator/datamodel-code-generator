@@ -2,8 +2,8 @@
 
 A helper that reads parser state takes it as arguments, or takes the parser through one of the narrow protocols below,
 which ``Parser`` satisfies structurally. This module imports no parser module but the generation store, the import
-ledger, the finality checks, the model graph ids, the shared keys and the run state, so it never imports
-``parser/base.py``.
+ledger, the finality checks, the model graph ids, the model shapes, the shared keys and the run state, so it never
+imports ``parser/base.py``.
 """
 
 from __future__ import annotations
@@ -68,13 +68,16 @@ from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_m
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator import ReuseScope
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
+    from datamodel_code_generator.parser._model_shapes import ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
@@ -475,6 +478,136 @@ def _restore_inherited_field_names_for_unique_aliases(
     return False
 
 
+class GraphBuilderHost(Protocol):
+    """The builder that the passes which change the model graph go through."""
+
+    @property
+    def _graph_builder(self) -> GraphBuilder:
+        """The builder that changes the model graph through the generation store."""
+
+
+class GenerationStoreHost(GraphBuilderHost, Protocol):
+    """The generation store of the parse, with the builder that changes the model graph through it."""
+
+    @property
+    def generation_store(self) -> GenerationStore:
+        """The generation store of the parse."""
+
+
+class CollapsedReuseHost(GraphBuilderHost, Protocol):
+    """The duplicates collapsed reuse removed and the users it redirected, with the builder that redirects them."""
+
+    @property
+    def _collapsed_reuse_models(self) -> dict[int, list[DataModel]]:
+        """The models collapsed reuse removed, by the id of their canonical model."""
+
+    @property
+    def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
+        """The data types collapsed reuse redirected, with the reference each named before."""
+
+
+class DataModelTypeHost(Protocol):
+    """The model type of the output."""
+
+    @property
+    def data_model_type(self) -> type[DataModel]:
+        """The model type of the output."""
+
+
+class OutputOptionsHost(DataModelTypeHost, Protocol):
+    """The model type of the output, the kinds of defaults it deserializes and the Pydantic version it targets."""
+
+    @property
+    def deserialize_default_value_types(self) -> frozenset[DefaultValueType]:
+        """The kinds of default values deserialized into their types."""
+
+    @property
+    def target_pydantic_version(self) -> TargetPydanticVersion | None:
+        """The Pydantic version the output targets, if configured."""
+
+
+class RootModelTypeHost(Protocol):
+    """The root model type of the output whose class body evaluates its root type."""
+
+    @property
+    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
+        """The root model type whose class body evaluates its root type, if the output has one."""
+
+
+class RootModelHost(Protocol):
+    """The hook that tells whether a model uses the configured root model representation."""
+
+    def _is_root_model(self, model: DataModel) -> bool:
+        """Return whether a model uses the configured root model representation."""
+
+
+class CollapseRootModelsHost(Protocol):
+    """The option that collapses root models into their users."""
+
+    @property
+    def collapse_root_models(self) -> bool:
+        """Whether root models are collapsed into their users."""
+
+
+class ReuseOptionsHost(CollapseRootModelsHost, Protocol):
+    """The options of model reuse, with the option that collapses root models into their users."""
+
+    @property
+    def reuse_model(self) -> bool:
+        """Whether models that render the same are reused."""
+
+    @property
+    def reuse_scope(self) -> ReuseScope | None:
+        """The scope of reuse."""
+
+
+class DeduplicationHost(CollapsedReuseHost, GenerationStoreHost, ReuseOptionsHost, RootModelHost, Protocol):
+    """What deduplicating and reusing models reads and writes of the parser: the shapes, the reuse plan and options."""
+
+    @property
+    def _reuse_groups(self) -> ReuseGroups:
+        """The plan of which model of a group of duplicates stays canonical."""
+
+    @property
+    def _reuse_optimization_context(self) -> _ReuseOptimizationContext:
+        """The constraints that type overrides put on reuse."""
+
+    @property
+    def collapse_reuse_models(self) -> bool:
+        """Whether reuse removes duplicates instead of subclassing them."""
+
+    def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
+        """Return the keys of one comparison pass of the dedup or reuse user of a row."""
+
+
+class TargetPythonVersionHost(Protocol):
+    """The Python version the output targets."""
+
+    @property
+    def target_python_version(self) -> PythonVersion:
+        """The Python version the output targets."""
+
+
+class ImportOptionsHost(TargetPythonVersionHost, Protocol):
+    """The options that writing the imports of the modules reads: the import overrides and the target Python version."""
+
+    @property
+    def _import_overrides(self) -> dict[str, str] | None:
+        """The modules ``--import-overrides`` routes imports through, by imported name."""
+
+
+class ModuleScopeView(Protocol):
+    """The internal modules of the run and the module name of each model."""
+
+    @property
+    def internal_modules(self) -> set[ModulePath]:
+        """The internal modules that import cycles merged models into."""
+
+    @property
+    def model_path_to_module_name(self) -> dict[str, str]:
+        """The module name of each model, by model path."""
+
+
 class InheritedFieldHost(Protocol):
     """The options, store and hooks that resolving inherited placeholder fields reads from the parser."""
 
@@ -502,17 +635,13 @@ class InheritedFieldHost(Protocol):
         """Return whether a model uses the configured root model representation."""
 
 
-class RuntimeExpressionFlags(Protocol):
+class RuntimeExpressionFlags(GraphBuilderHost, Protocol):
     """The shared imports and per-run flags that passes creating runtime expressions write on the parser."""
 
     imports: Imports
     _has_bound_python_types: bool
     _has_runtime_expressions: bool
     _import_ledger: ModuleImportLedger
-
-    @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
 
 
 def register_runtime_expression(host: RuntimeExpressionFlags) -> None:
@@ -654,21 +783,18 @@ def register_reference_import(  # noqa: PLR0913
 
 
 def redirect_collapsed_reuse_users(
-    builder: GraphBuilder,
-    collapsed_models: dict[int, list[DataModel]],
-    collapsed_users: dict[int, tuple[DataType, Reference]],
-    duplicate: DataModel,
-    canonical: DataModel,
+    host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel
 ) -> list[DataType]:
     """Redirect every user of a duplicate that collapsed reuse removes to the kept model, remembering the duplicate.
 
     A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
     the tags of the kept model.
     """
-    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
+    users = host._graph_builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)  # noqa: SLF001
+    collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
     for user in users:
         collapsed_users.setdefault(id(user), (user, duplicate.reference))
-    collapsed_models.setdefault(id(canonical), []).append(duplicate)
+    host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     return users
 
 

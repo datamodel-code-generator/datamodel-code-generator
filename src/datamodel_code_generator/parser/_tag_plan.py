@@ -40,6 +40,8 @@ from functools import cache
 from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, final
 
+from typing_extensions import Protocol
+
 from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
@@ -109,6 +111,7 @@ __all__ = [
     "StructTagKind",
     "TagCapabilities",
     "TagPlan",
+    "TagPlanHost",
     "UnionSite",
     "UnionTagDecision",
     "UnionView",
@@ -1220,6 +1223,14 @@ class TagPlan:
     def record_settled(self, site: UnionSite, status: SiteStatus) -> None:
         """Remember that the end of L5 drops the discriminator of a union site."""
         self.unions.setdefault(id(site.field), UnionTagDecision(site, None, status)).status = status
+
+
+class TagPlanHost(Protocol):
+    """The tag plan of the parse, which the passes that tag unions and structs read and write."""
+
+    @property
+    def _tag_plan(self) -> TagPlan:
+        """What the tag passes of the parse recorded."""
 
 
 def declared_union_tags(model: DataModel) -> tuple[HashableComparable, ...]:

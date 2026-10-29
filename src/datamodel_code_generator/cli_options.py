@@ -162,1170 +162,411 @@ MANUAL_DOCS: frozenset[str] = frozenset({
 # Backward compatibility alias
 EXCLUDED_FROM_DOCS = MANUAL_DOCS
 
+_CATEGORY_TOPIC = {
+    OptionCategory.MODEL: OptionTopic.MODEL_CUSTOMIZATION,
+    OptionCategory.TYPING: OptionTopic.TYPING_CUSTOMIZATION,
+    OptionCategory.TEMPLATE: OptionTopic.TEMPLATE_CUSTOMIZATION,
+    OptionCategory.OPENAPI: OptionTopic.OPENAPI,
+}
+_C = OptionCategory
+_G = OptionGroup
+
+
+def _words(chunks: tuple[str, ...]) -> list[str]:
+    """Split space-separated chunks of option names into one list."""
+    return [word for chunk in chunks for word in chunk.split()]
+
+
+def _opts(
+    category: OptionCategory,
+    *names: str,
+    group: OptionGroup | None = None,
+    topic: OptionTopic | None = None,
+    **fields: Any,
+) -> dict[str, CLIOptionMeta]:
+    """Build the rows of the options in ``names`` that share a category, group and the other metadata.
+
+    A group takes the topic of its category unless ``topic`` is given.
+    """
+    if group and topic is None:
+        topic = _CATEGORY_TOPIC[category]
+    return {name: CLIOptionMeta(name, category, topic, group, **fields) for name in _words(names)}
+
+
+def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
+    """Build one relation with the same ``fields`` to each option in the space-separated ``names``."""
+    return tuple(CLIOptionRelation(name, **fields) for name in names.split())
+
+
+def _target_options(generate: str, value: str, *names: str) -> dict[str, CLIOptionMeta]:
+    """Build the rows of the target options in ``names`` that only apply with ``generate value``."""
+    return {
+        name: CLIOptionMeta(
+            name,
+            OptionCategory.TARGET,
+            requires=_relations(generate, message=f"`{name}` requires `{generate} {value}`."),
+        )
+        for name in _words(names)
+    }
+
+
 # Documentation metadata for CLI options
 # Sync is verified by tests/cli_doc/test_cli_options_sync.py
 CLI_OPTION_META: dict[str, CLIOptionMeta] = {
-    # ==========================================================================
-    # Base Options (Input/Output)
-    # ==========================================================================
-    "--input": CLIOptionMeta(name="--input", category=OptionCategory.BASE),
-    "--output": CLIOptionMeta(name="--output", category=OptionCategory.BASE),
-    "--emit-model-metadata": CLIOptionMeta(name="--emit-model-metadata", category=OptionCategory.BASE),
-    "--http-backend": CLIOptionMeta(name="--http-backend", category=OptionCategory.BASE),
-    "--url": CLIOptionMeta(name="--url", category=OptionCategory.BASE),
-    "--input-model": CLIOptionMeta(name="--input-model", category=OptionCategory.BASE),
-    "--input-model-ref-strategy": CLIOptionMeta(name="--input-model-ref-strategy", category=OptionCategory.BASE),
-    "--input-file-type": CLIOptionMeta(name="--input-file-type", category=OptionCategory.BASE),
-    "--encoding": CLIOptionMeta(name="--encoding", category=OptionCategory.BASE),
-    "--schema-version": CLIOptionMeta(name="--schema-version", category=OptionCategory.BASE),
-    "--schema-version-mode": CLIOptionMeta(name="--schema-version-mode", category=OptionCategory.BASE),
-    "--external-ref-mapping": CLIOptionMeta(name="--external-ref-mapping", category=OptionCategory.BASE),
-    "--preset": CLIOptionMeta(name="--preset", category=OptionCategory.BASE),
-    # ==========================================================================
-    # Model Customization
-    # ==========================================================================
-    "--output-model-type": CLIOptionMeta(
-        name="--output-model-type",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-        implies=(
-            CLIOptionRelation(
-                option="--use-annotated",
-                value=True,
-                when=DataModelType.MsgspecStruct.value,
+    **_opts(
+        _C.BASE,
+        "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
+        "--input-file-type --encoding --schema-version --schema-version-mode --external-ref-mapping --preset",
+    ),
+    **_opts(
+        _C.MODEL,
+        "--output-model-type",
+        group=_G.MODEL_SHAPE,
+        implies=_relations("--use-annotated", value=True, when=DataModelType.MsgspecStruct.value),
+    ),
+    **_opts(
+        _C.MODEL,
+        "--target-python-version --target-pydantic-version --base-class --base-class-map",
+        group=_G.MODEL_SHAPE,
+    ),
+    **_opts(
+        _C.MODEL,
+        "--class-name --model-name-map --allow-leading-underscore-class-name --class-name-prefix",
+        "--class-name-suffix --class-name-affix-scope",
+        group=_G.MODEL_NAMING,
+    ),
+    **_opts(_C.MODEL, "--frozen-dataclasses"),
+    **_opts(
+        _C.MODEL,
+        "--keyword-only",
+        requires=_relations(
+            "--target-python-version",
+            value=f"{PythonVersion.PY_310.value}+",
+            message=(
+                f"`--keyword-only` requires `--target-python-version` "
+                f"{PythonVersion.PY_310.value} or higher for dataclasses."
             ),
         ),
     ),
-    "--target-python-version": CLIOptionMeta(
-        name="--target-python-version",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-    ),
-    "--target-pydantic-version": CLIOptionMeta(
-        name="--target-pydantic-version",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-    ),
-    "--base-class": CLIOptionMeta(
-        name="--base-class",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-    ),
-    "--base-class-map": CLIOptionMeta(
-        name="--base-class-map",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-    ),
-    "--class-name": CLIOptionMeta(
-        name="--class-name",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--model-name-map": CLIOptionMeta(
-        name="--model-name-map",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--allow-leading-underscore-class-name": CLIOptionMeta(
-        name="--allow-leading-underscore-class-name",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--class-name-prefix": CLIOptionMeta(
-        name="--class-name-prefix",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--class-name-suffix": CLIOptionMeta(
-        name="--class-name-suffix",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--class-name-affix-scope": CLIOptionMeta(
-        name="--class-name-affix-scope",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--frozen-dataclasses": CLIOptionMeta(name="--frozen-dataclasses", category=OptionCategory.MODEL),
-    "--keyword-only": CLIOptionMeta(
-        name="--keyword-only",
-        category=OptionCategory.MODEL,
-        requires=(
-            CLIOptionRelation(
-                option="--target-python-version",
-                value=f"{PythonVersion.PY_310.value}+",
-                message=(
-                    f"`--keyword-only` requires `--target-python-version` "
-                    f"{PythonVersion.PY_310.value} or higher for dataclasses."
-                ),
-            ),
+    **_opts(_C.MODEL, "--reuse-model", group=_G.MODEL_REUSE),
+    **_opts(
+        _C.MODEL,
+        "--reuse-scope",
+        group=_G.MODEL_REUSE,
+        requires=_relations(
+            "--reuse-model",
+            value=True,
+            when=ReuseScope.Tree.value,
+            message="`--reuse-scope=tree` has no effect without `--reuse-model`.",
         ),
     ),
-    "--reuse-model": CLIOptionMeta(
-        name="--reuse-model",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_REUSE,
-    ),
-    "--reuse-scope": CLIOptionMeta(
-        name="--reuse-scope",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_REUSE,
-        requires=(
-            CLIOptionRelation(
-                option="--reuse-model",
-                value=True,
-                when=ReuseScope.Tree.value,
-                message="`--reuse-scope=tree` has no effect without `--reuse-model`.",
-            ),
+    **_opts(_C.MODEL, "--collapse-root-models --no-collapse-root-models", group=_G.ROOT_MODEL),
+    **_opts(
+        _C.MODEL,
+        "--collapse-root-models-name-strategy",
+        group=_G.ROOT_MODEL,
+        requires=_relations(
+            "--collapse-root-models",
+            value=True,
+            message="`--collapse-root-models-name-strategy` requires `--collapse-root-models`.",
         ),
     ),
-    "--collapse-root-models": CLIOptionMeta(
-        name="--collapse-root-models",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-    ),
-    "--no-collapse-root-models": CLIOptionMeta(
-        name="--no-collapse-root-models",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-    ),
-    "--collapse-root-models-name-strategy": CLIOptionMeta(
-        name="--collapse-root-models-name-strategy",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-        requires=(
-            CLIOptionRelation(
-                option="--collapse-root-models",
-                value=True,
-                message="`--collapse-root-models-name-strategy` requires `--collapse-root-models`.",
-            ),
-        ),
-    ),
-    "--collapse-shared-parent-wrappers": CLIOptionMeta(
-        name="--collapse-shared-parent-wrappers",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-    ),
-    "--collapse-reuse-models": CLIOptionMeta(
-        name="--collapse-reuse-models",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_REUSE,
-    ),
-    "--keep-model-order": CLIOptionMeta(name="--keep-model-order", category=OptionCategory.MODEL),
-    "--order-constructor-fields-by": CLIOptionMeta(name="--order-constructor-fields-by", category=OptionCategory.MODEL),
-    "--allow-extra-fields": CLIOptionMeta(
-        name="--allow-extra-fields",
-        category=OptionCategory.MODEL,
+    **_opts(_C.MODEL, "--collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
+    **_opts(_C.MODEL, "--collapse-reuse-models", group=_G.MODEL_REUSE),
+    **_opts(_C.MODEL, "--keep-model-order --order-constructor-fields-by"),
+    **_opts(
+        _C.MODEL,
+        "--allow-extra-fields",
         deprecated=True,
         deprecated_message=deprecation_message("cli.allow-extra-fields"),
-        implies=(CLIOptionRelation(option="--extra-fields", value="allow"),),
+        implies=_relations("--extra-fields", value="allow"),
     ),
-    "--allow-population-by-field-name": CLIOptionMeta(
-        name="--allow-population-by-field-name", category=OptionCategory.MODEL
+    **_opts(
+        _C.MODEL,
+        "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
+        "--use-subclass-enum --force-optional --strict-nullable --omit-redundant-reference-null --use-default",
+        "--use-default-kwarg",
     ),
-    "--no-allow-population-by-field-name": CLIOptionMeta(
-        name="--no-allow-population-by-field-name", category=OptionCategory.MODEL
-    ),
-    "--enable-faux-immutability": CLIOptionMeta(name="--enable-faux-immutability", category=OptionCategory.MODEL),
-    "--use-subclass-enum": CLIOptionMeta(name="--use-subclass-enum", category=OptionCategory.MODEL),
-    "--force-optional": CLIOptionMeta(name="--force-optional", category=OptionCategory.MODEL),
-    "--strict-nullable": CLIOptionMeta(name="--strict-nullable", category=OptionCategory.MODEL),
-    "--omit-redundant-reference-null": CLIOptionMeta(
-        name="--omit-redundant-reference-null", category=OptionCategory.MODEL
-    ),
-    "--use-default": CLIOptionMeta(name="--use-default", category=OptionCategory.MODEL),
-    "--use-default-kwarg": CLIOptionMeta(name="--use-default-kwarg", category=OptionCategory.MODEL),
-    "--use-missing-sentinel": CLIOptionMeta(
-        name="--use-missing-sentinel",
-        category=OptionCategory.MODEL,
-        implies=(
-            CLIOptionRelation(
-                option="--target-pydantic-version",
-                value=TargetPydanticVersion.V2_12.value,
-            ),
-        ),
-        requires=(
-            CLIOptionRelation(
-                option="--output-model-type",
-                message=(
-                    "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
-                    "or `pydantic_v2.dataclass`."
-                ),
+    **_opts(
+        _C.MODEL,
+        "--use-missing-sentinel",
+        implies=_relations("--target-pydantic-version", value=TargetPydanticVersion.V2_12.value),
+        requires=_relations(
+            "--output-model-type",
+            message=(
+                "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+                "or `pydantic_v2.dataclass`."
             ),
         ),
     ),
-    "--strip-default-none": CLIOptionMeta(name="--strip-default-none", category=OptionCategory.MODEL),
-    "--dataclass-arguments": CLIOptionMeta(name="--dataclass-arguments", category=OptionCategory.MODEL),
-    "--use-msgspec-tagged-unions": CLIOptionMeta(name="--use-msgspec-tagged-unions", category=OptionCategory.MODEL),
-    "--tag-msgspec-by-payload-name": CLIOptionMeta(name="--tag-msgspec-by-payload-name", category=OptionCategory.MODEL),
-    "--use-msgspec-nullable-enum-alias": CLIOptionMeta(
-        name="--use-msgspec-nullable-enum-alias", category=OptionCategory.MODEL
+    **_opts(
+        _C.MODEL,
+        "--strip-default-none --dataclass-arguments --use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
+        "--use-msgspec-nullable-enum-alias",
     ),
-    "--use-frozen-field": CLIOptionMeta(
-        name="--use-frozen-field",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.READ_ONLY_WRITE_ONLY,
+    **_opts(
+        _C.MODEL, "--use-frozen-field --no-use-frozen-field", group=_G.READ_ONLY_WRITE_ONLY, topic=OptionTopic.OPENAPI
     ),
-    "--no-use-frozen-field": CLIOptionMeta(
-        name="--no-use-frozen-field",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.READ_ONLY_WRITE_ONLY,
-    ),
-    "--use-default-factory-for-optional-nested-models": CLIOptionMeta(
-        name="--use-default-factory-for-optional-nested-models", category=OptionCategory.MODEL
-    ),
-    "--union-mode": CLIOptionMeta(
-        name="--union-mode",
-        category=OptionCategory.MODEL,
-        requires=(
-            CLIOptionRelation(
-                option="--output-model-type",
-                value=DataModelType.PydanticV2BaseModel.value,
-                message="`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
-            ),
+    **_opts(_C.MODEL, "--use-default-factory-for-optional-nested-models"),
+    **_opts(
+        _C.MODEL,
+        "--union-mode",
+        requires=_relations(
+            "--output-model-type",
+            value=DataModelType.PydanticV2BaseModel.value,
+            message="`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
         ),
     ),
-    "--parent-scoped-naming": CLIOptionMeta(
-        name="--parent-scoped-naming",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
+    **_opts(
+        _C.MODEL,
+        "--parent-scoped-naming",
+        group=_G.MODEL_NAMING,
         deprecated=True,
         deprecated_message=deprecation_message("cli.parent-scoped-naming"),
-        implies=(CLIOptionRelation(option="--naming-strategy", value=NamingStrategy.ParentPrefixed.value),),
+        implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
-    "--naming-strategy": CLIOptionMeta(
-        name="--naming-strategy",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--duplicate-name-suffix": CLIOptionMeta(
-        name="--duplicate-name-suffix",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_NAMING,
-    ),
-    "--use-one-literal-as-default": CLIOptionMeta(name="--use-one-literal-as-default", category=OptionCategory.MODEL),
-    "--use-serialize-as-any": CLIOptionMeta(name="--use-serialize-as-any", category=OptionCategory.MODEL),
-    "--skip-root-model": CLIOptionMeta(
-        name="--skip-root-model",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-    ),
-    "--use-root-model-sequence-interface": CLIOptionMeta(
-        name="--use-root-model-sequence-interface",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.ROOT_MODEL,
-    ),
-    "--use-generic-base-class": CLIOptionMeta(
-        name="--use-generic-base-class",
-        category=OptionCategory.MODEL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_SHAPE,
-    ),
-    "--model-extra-keys": CLIOptionMeta(name="--model-extra-keys", category=OptionCategory.MODEL),
-    "--model-extra-keys-without-x-prefix": CLIOptionMeta(
-        name="--model-extra-keys-without-x-prefix", category=OptionCategory.MODEL
-    ),
-    # ==========================================================================
-    # Field Customization
-    # ==========================================================================
-    "--snake-case-field": CLIOptionMeta(name="--snake-case-field", category=OptionCategory.FIELD),
-    "--no-snake-case-field": CLIOptionMeta(name="--no-snake-case-field", category=OptionCategory.FIELD),
-    "--original-field-name-delimiter": CLIOptionMeta(
-        name="--original-field-name-delimiter",
-        category=OptionCategory.FIELD,
-        requires=(
-            CLIOptionRelation(
-                option="--snake-case-field",
-                value=True,
-                message="`--original-field-name-delimiter` can not be used without `--snake-case-field`.",
-            ),
+    **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
+    **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),
+    **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
+    **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
+    **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),
+    **_opts(_C.FIELD, "--snake-case-field --no-snake-case-field"),
+    **_opts(
+        _C.FIELD,
+        "--original-field-name-delimiter",
+        requires=_relations(
+            "--snake-case-field",
+            value=True,
+            message="`--original-field-name-delimiter` can not be used without `--snake-case-field`.",
         ),
     ),
-    "--capitalize-enum-members": CLIOptionMeta(name="--capitalize-enum-members", category=OptionCategory.FIELD),
-    "--special-field-name-prefix": CLIOptionMeta(name="--special-field-name-prefix", category=OptionCategory.FIELD),
-    "--remove-special-field-name-prefix": CLIOptionMeta(
-        name="--remove-special-field-name-prefix", category=OptionCategory.FIELD
+    **_opts(
+        _C.FIELD,
+        "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
+        "--empty-enum-field-name",
     ),
-    "--empty-enum-field-name": CLIOptionMeta(name="--empty-enum-field-name", category=OptionCategory.FIELD),
-    "--set-default-enum-member": CLIOptionMeta(
-        name="--set-default-enum-member",
-        category=OptionCategory.FIELD,
+    **_opts(
+        _C.FIELD,
+        "--set-default-enum-member",
         deprecated=True,
         deprecated_message=deprecation_message("cli.set-default-enum-member"),
     ),
-    "--aliases": CLIOptionMeta(name="--aliases", category=OptionCategory.FIELD),
-    "--serialization-aliases": CLIOptionMeta(name="--serialization-aliases", category=OptionCategory.FIELD),
-    "--default-values": CLIOptionMeta(name="--default-values", category=OptionCategory.FIELD),
-    "--deserialize-default-values": CLIOptionMeta(name="--deserialize-default-values", category=OptionCategory.FIELD),
-    "--no-deserialize-default-values": CLIOptionMeta(
-        name="--no-deserialize-default-values", category=OptionCategory.FIELD
+    **_opts(
+        _C.FIELD,
+        "--aliases --serialization-aliases --default-values --deserialize-default-values",
+        "--no-deserialize-default-values",
     ),
-    "--alias-generator": CLIOptionMeta(name="--alias-generator", category=OptionCategory.MODEL),
-    "--pin-aliases-with-alias-generator": CLIOptionMeta(
-        name="--pin-aliases-with-alias-generator", category=OptionCategory.MODEL
+    **_opts(_C.MODEL, "--alias-generator --pin-aliases-with-alias-generator"),
+    **_opts(
+        _C.FIELD,
+        "--no-alias --use-serialization-alias --use-title-as-name --infer-union-variant-names",
+        "--use-tag-as-union-variant-name --use-schema-description --use-field-description",
+        "--use-field-description-example --use-attribute-docstrings --use-inline-field-description",
+        "--use-single-line-docstring --field-constraints --omit-redundant-constraints",
+        "--use-site-models-for-constrained-refs --field-extra-keys --field-extra-keys-without-x-prefix",
+        "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator",
+        "--field-type-collision-strategy",
     ),
-    "--no-alias": CLIOptionMeta(name="--no-alias", category=OptionCategory.FIELD),
-    "--use-serialization-alias": CLIOptionMeta(name="--use-serialization-alias", category=OptionCategory.FIELD),
-    "--use-title-as-name": CLIOptionMeta(name="--use-title-as-name", category=OptionCategory.FIELD),
-    "--infer-union-variant-names": CLIOptionMeta(name="--infer-union-variant-names", category=OptionCategory.FIELD),
-    "--use-tag-as-union-variant-name": CLIOptionMeta(
-        name="--use-tag-as-union-variant-name", category=OptionCategory.FIELD
+    **_opts(_C.TYPING, "--use-union-operator --no-use-union-operator", group=_G.TYPE_SYNTAX),
+    **_opts(
+        _C.TYPING,
+        "--use-standard-collections --no-use-standard-collections --use-generic-container-types",
+        group=_G.COLLECTION_TYPES,
     ),
-    "--use-schema-description": CLIOptionMeta(name="--use-schema-description", category=OptionCategory.FIELD),
-    "--use-field-description": CLIOptionMeta(name="--use-field-description", category=OptionCategory.FIELD),
-    "--use-field-description-example": CLIOptionMeta(
-        name="--use-field-description-example", category=OptionCategory.FIELD
+    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_relations("--field-constraints", value=True)),
+    **_opts(_C.TYPING, "--no-use-annotated", group=_G.TYPE_SYNTAX),
+    **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
+    **_opts(
+        _C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_relations("--use-type-alias", value=True)
     ),
-    "--use-attribute-docstrings": CLIOptionMeta(name="--use-attribute-docstrings", category=OptionCategory.FIELD),
-    "--use-inline-field-description": CLIOptionMeta(
-        name="--use-inline-field-description", category=OptionCategory.FIELD
+    **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
+    **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
+    **_opts(
+        _C.TYPING,
+        "--enum-field-as-literal --enum-field-as-literal-map --ignore-enum-constraints",
+        "--use-single-value-enum-as-const --read-const-beside-enum --filter-literal-values",
+        "--intersect-allof-keywords",
     ),
-    "--use-single-line-docstring": CLIOptionMeta(name="--use-single-line-docstring", category=OptionCategory.FIELD),
-    "--field-constraints": CLIOptionMeta(name="--field-constraints", category=OptionCategory.FIELD),
-    "--omit-redundant-constraints": CLIOptionMeta(name="--omit-redundant-constraints", category=OptionCategory.FIELD),
-    "--use-site-models-for-constrained-refs": CLIOptionMeta(
-        name="--use-site-models-for-constrained-refs", category=OptionCategory.FIELD
+    **_opts(_C.MODEL, "--read-nullable-beside-type-list --keep-field-defaults-off-branch-roots"),
+    **_opts(_C.TYPING, "--disable-future-imports", group=_G.IMPORTS),
+    **_opts(
+        _C.TYPING,
+        "--use-pendulum --use-standard-primitive-types --no-use-standard-primitive-types --use-object-type",
+        "--use-typed-nullable-map-values --use-typed-map-values-beside-other-types",
+        group=_G.TYPE_MAPPING,
     ),
-    "--field-extra-keys": CLIOptionMeta(name="--field-extra-keys", category=OptionCategory.FIELD),
-    "--field-extra-keys-without-x-prefix": CLIOptionMeta(
-        name="--field-extra-keys-without-x-prefix", category=OptionCategory.FIELD
+    **_opts(_C.TYPING, "--keep-enum-member-values"),
+    **_opts(_C.TYPING, "--read-unevaluated-properties --use-single-dict-for-object-maps", group=_G.TYPE_MAPPING),
+    **_opts(_C.TEMPLATE, "--use-type-checking-imports --no-use-type-checking-imports", group=_G.IMPORTS),
+    **_opts(
+        _C.TEMPLATE,
+        "--generate-schema-validators --check-pattern-maps-strictly --schema-validator-type",
+        "--schema-validator-base-class-name",
     ),
-    "--field-include-all-keys": CLIOptionMeta(name="--field-include-all-keys", category=OptionCategory.FIELD),
-    "--extra-fields": CLIOptionMeta(name="--extra-fields", category=OptionCategory.FIELD),
-    "--use-enum-values-in-discriminator": CLIOptionMeta(
-        name="--use-enum-values-in-discriminator", category=OptionCategory.FIELD
+    **_opts(
+        _C.TYPING,
+        "--output-datetime-class --output-date-class --use-decimal-for-multiple-of",
+        "--use-decimal-in-field-forms",
+        group=_G.TYPE_MAPPING,
     ),
-    "--field-type-collision-strategy": CLIOptionMeta(
-        name="--field-type-collision-strategy", category=OptionCategory.FIELD
+    **_opts(_C.TYPING, "--use-non-positive-negative-number-constrained-types"),
+    **_opts(
+        _C.TYPING,
+        "--use-unique-items-as-set --use-tuple-for-fixed-items --use-tuple-for-closed-arrays",
+        "--use-tuple-for-fixed-length-arrays",
+        group=_G.COLLECTION_TYPES,
     ),
-    # ==========================================================================
-    # Typing Customization
-    # ==========================================================================
-    "--use-union-operator": CLIOptionMeta(
-        name="--use-union-operator",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_SYNTAX,
+    **_opts(_C.TYPING, "--use-total-false-for-typed-dict --use-closed-typed-dict --no-use-closed-typed-dict"),
+    **_opts(_C.TYPING, "--import-overrides", group=_G.IMPORTS),
+    **_opts(_C.TYPING, "--type-mappings --type-overrides", group=_G.TYPE_MAPPING),
+    **_opts(
+        _C.TYPING,
+        "--use-specialized-enum",
+        requires=_relations(
+            "--target-python-version",
+            value=f"{PythonVersion.PY_311.value}+",
+            message=(
+                f"`--use-specialized-enum` requires `--target-python-version` {PythonVersion.PY_311.value} or higher."
+            ),
+        ),
     ),
-    "--no-use-union-operator": CLIOptionMeta(
-        name="--no-use-union-operator",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_SYNTAX,
+    **_opts(_C.TYPING, "--no-use-specialized-enum --allof-merge-mode --allof-class-hierarchy"),
+    **_opts(_C.TEMPLATE, "--wrap-string-literal", group=_G.OUTPUT_FORMATTING),
+    **_opts(_C.TEMPLATE, "--custom-template-dir --extra-template-data --validators", group=_G.CUSTOM_TEMPLATES),
+    **_opts(
+        _C.TEMPLATE,
+        "--custom-file-header",
+        group=_G.GENERATED_OUTPUT,
+        conflicts=_relations(
+            "--custom-file-header-path",
+            message="`--custom-file-header` can not be used with `--custom-file-header-path`.",
+        ),
     ),
-    "--use-standard-collections": CLIOptionMeta(
-        name="--use-standard-collections",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
+    **_opts(
+        _C.TEMPLATE,
+        "--custom-file-header-path",
+        group=_G.GENERATED_OUTPUT,
+        conflicts=_relations(
+            "--custom-file-header", message="`--custom-file-header-path` can not be used with `--custom-file-header`."
+        ),
     ),
-    "--no-use-standard-collections": CLIOptionMeta(
-        name="--no-use-standard-collections",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
+    **_opts(_C.TEMPLATE, "--custom-file-header-mode", group=_G.GENERATED_OUTPUT),
+    **_opts(_C.TEMPLATE, "--additional-imports", group=_G.IMPORTS),
+    **_opts(_C.TEMPLATE, "--class-decorators", group=_G.GENERATED_OUTPUT),
+    **_opts(_C.TEMPLATE, "--use-double-quotes", group=_G.OUTPUT_FORMATTING),
+    **_opts(_C.TEMPLATE, "--use-exact-imports", group=_G.IMPORTS),
+    **_opts(_C.TEMPLATE, "--disable-appending-item-suffix --no-treat-dot-as-module"),
+    **_opts(
+        _C.TEMPLATE,
+        "--strict-dotted-module-names --no-strict-dotted-module-names --disable-timestamp",
+        "--enable-version-header --enable-command-header --enable-generated-header-marker",
+        group=_G.GENERATED_OUTPUT,
     ),
-    "--use-generic-container-types": CLIOptionMeta(
-        name="--use-generic-container-types",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
+    **_opts(_C.TEMPLATE, "--formatters --custom-formatters --custom-formatters-kwargs", group=_G.OUTPUT_FORMATTING),
+    **_opts(_C.OPENAPI, "--openapi-scopes", group=_G.OPENAPI_SCOPES),
+    **_opts(_C.OPENAPI, "--use-operation-id-as-name --use-status-code-in-response-name", group=_G.OPENAPI_NAMING),
+    **_opts(
+        _C.OPENAPI,
+        "--read-only-write-only-model-type --dedupe-request-response-variants",
+        group=_G.READ_ONLY_WRITE_ONLY,
     ),
-    "--use-annotated": CLIOptionMeta(
-        name="--use-annotated",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_SYNTAX,
-        implies=(CLIOptionRelation(option="--field-constraints", value=True),),
-    ),
-    "--no-use-annotated": CLIOptionMeta(
-        name="--no-use-annotated",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_SYNTAX,
-    ),
-    "--use-type-alias": CLIOptionMeta(
-        name="--use-type-alias",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_ALIAS,
-    ),
-    "--use-type-alias-type": CLIOptionMeta(
-        name="--use-type-alias-type",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_ALIAS,
-        implies=(CLIOptionRelation(option="--use-type-alias", value=True),),
-    ),
-    "--use-root-model-type-alias": CLIOptionMeta(
-        name="--use-root-model-type-alias",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_ALIAS,
-    ),
-    "--strict-types": CLIOptionMeta(
-        name="--strict-types",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--enum-field-as-literal": CLIOptionMeta(name="--enum-field-as-literal", category=OptionCategory.TYPING),
-    "--enum-field-as-literal-map": CLIOptionMeta(name="--enum-field-as-literal-map", category=OptionCategory.TYPING),
-    "--ignore-enum-constraints": CLIOptionMeta(name="--ignore-enum-constraints", category=OptionCategory.TYPING),
-    "--use-single-value-enum-as-const": CLIOptionMeta(
-        name="--use-single-value-enum-as-const", category=OptionCategory.TYPING
-    ),
-    "--read-const-beside-enum": CLIOptionMeta(name="--read-const-beside-enum", category=OptionCategory.TYPING),
-    "--filter-literal-values": CLIOptionMeta(name="--filter-literal-values", category=OptionCategory.TYPING),
-    "--intersect-allof-keywords": CLIOptionMeta(name="--intersect-allof-keywords", category=OptionCategory.TYPING),
-    "--read-nullable-beside-type-list": CLIOptionMeta(
-        name="--read-nullable-beside-type-list", category=OptionCategory.MODEL
-    ),
-    "--keep-field-defaults-off-branch-roots": CLIOptionMeta(
-        name="--keep-field-defaults-off-branch-roots", category=OptionCategory.MODEL
-    ),
-    "--disable-future-imports": CLIOptionMeta(
-        name="--disable-future-imports",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--use-pendulum": CLIOptionMeta(
-        name="--use-pendulum",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-standard-primitive-types": CLIOptionMeta(
-        name="--use-standard-primitive-types",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--no-use-standard-primitive-types": CLIOptionMeta(
-        name="--no-use-standard-primitive-types",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-object-type": CLIOptionMeta(
-        name="--use-object-type",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-typed-nullable-map-values": CLIOptionMeta(
-        name="--use-typed-nullable-map-values",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-typed-map-values-beside-other-types": CLIOptionMeta(
-        name="--use-typed-map-values-beside-other-types",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--keep-enum-member-values": CLIOptionMeta(name="--keep-enum-member-values", category=OptionCategory.TYPING),
-    "--read-unevaluated-properties": CLIOptionMeta(
-        name="--read-unevaluated-properties",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-single-dict-for-object-maps": CLIOptionMeta(
-        name="--use-single-dict-for-object-maps",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-type-checking-imports": CLIOptionMeta(
-        name="--use-type-checking-imports",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--no-use-type-checking-imports": CLIOptionMeta(
-        name="--no-use-type-checking-imports",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--generate-schema-validators": CLIOptionMeta(
-        name="--generate-schema-validators", category=OptionCategory.TEMPLATE
-    ),
-    "--check-pattern-maps-strictly": CLIOptionMeta(
-        name="--check-pattern-maps-strictly", category=OptionCategory.TEMPLATE
-    ),
-    "--schema-validator-type": CLIOptionMeta(name="--schema-validator-type", category=OptionCategory.TEMPLATE),
-    "--schema-validator-base-class-name": CLIOptionMeta(
-        name="--schema-validator-base-class-name", category=OptionCategory.TEMPLATE
-    ),
-    "--output-datetime-class": CLIOptionMeta(
-        name="--output-datetime-class",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--output-date-class": CLIOptionMeta(
-        name="--output-date-class",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-decimal-for-multiple-of": CLIOptionMeta(
-        name="--use-decimal-for-multiple-of",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-decimal-in-field-forms": CLIOptionMeta(
-        name="--use-decimal-in-field-forms",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-non-positive-negative-number-constrained-types": CLIOptionMeta(
-        name="--use-non-positive-negative-number-constrained-types", category=OptionCategory.TYPING
-    ),
-    "--use-unique-items-as-set": CLIOptionMeta(
-        name="--use-unique-items-as-set",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
-    ),
-    "--use-tuple-for-fixed-items": CLIOptionMeta(
-        name="--use-tuple-for-fixed-items",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
-    ),
-    "--use-tuple-for-closed-arrays": CLIOptionMeta(
-        name="--use-tuple-for-closed-arrays",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
-    ),
-    "--use-tuple-for-fixed-length-arrays": CLIOptionMeta(
-        name="--use-tuple-for-fixed-length-arrays",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.COLLECTION_TYPES,
-    ),
-    "--use-total-false-for-typed-dict": CLIOptionMeta(
-        name="--use-total-false-for-typed-dict",
-        category=OptionCategory.TYPING,
-    ),
-    "--use-closed-typed-dict": CLIOptionMeta(name="--use-closed-typed-dict", category=OptionCategory.TYPING),
-    "--no-use-closed-typed-dict": CLIOptionMeta(name="--no-use-closed-typed-dict", category=OptionCategory.TYPING),
-    "--import-overrides": CLIOptionMeta(
-        name="--import-overrides",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--type-mappings": CLIOptionMeta(
-        name="--type-mappings",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--type-overrides": CLIOptionMeta(
-        name="--type-overrides",
-        category=OptionCategory.TYPING,
-        topic=OptionTopic.TYPING_CUSTOMIZATION,
-        group=OptionGroup.TYPE_MAPPING,
-    ),
-    "--use-specialized-enum": CLIOptionMeta(
-        name="--use-specialized-enum",
-        category=OptionCategory.TYPING,
+    **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
+    **_opts(_C.OPENAPI, "--openapi-include-info-version"),
+    **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
+    **_opts(_C.OPENAPI, "--validation", deprecated=True, deprecated_message=deprecation_message("cli.validation")),
+    **_opts(_C.GRAPHQL, "--graphql-no-typename"),
+    **_opts(_C.GENERAL, "--check"),
+    **_opts(
+        _C.GENERAL,
+        "--diff-against",
         requires=(
             CLIOptionRelation(
-                option="--target-python-version",
-                value=f"{PythonVersion.PY_311.value}+",
-                message=(
-                    f"`--use-specialized-enum` requires `--target-python-version` "
-                    f"{PythonVersion.PY_311.value} or higher."
-                ),
-            ),
-        ),
-    ),
-    "--no-use-specialized-enum": CLIOptionMeta(name="--no-use-specialized-enum", category=OptionCategory.TYPING),
-    "--allof-merge-mode": CLIOptionMeta(name="--allof-merge-mode", category=OptionCategory.TYPING),
-    "--allof-class-hierarchy": CLIOptionMeta(name="--allof-class-hierarchy", category=OptionCategory.TYPING),
-    # ==========================================================================
-    # Template Customization
-    # ==========================================================================
-    "--wrap-string-literal": CLIOptionMeta(
-        name="--wrap-string-literal",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.OUTPUT_FORMATTING,
-    ),
-    "--custom-template-dir": CLIOptionMeta(
-        name="--custom-template-dir",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.CUSTOM_TEMPLATES,
-    ),
-    "--extra-template-data": CLIOptionMeta(
-        name="--extra-template-data",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.CUSTOM_TEMPLATES,
-    ),
-    "--validators": CLIOptionMeta(
-        name="--validators",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.CUSTOM_TEMPLATES,
-    ),
-    "--custom-file-header": CLIOptionMeta(
-        name="--custom-file-header",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-        conflicts=(
-            CLIOptionRelation(
-                option="--custom-file-header-path",
-                message="`--custom-file-header` can not be used with `--custom-file-header-path`.",
-            ),
-        ),
-    ),
-    "--custom-file-header-path": CLIOptionMeta(
-        name="--custom-file-header-path",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-        conflicts=(
-            CLIOptionRelation(
-                option="--custom-file-header",
-                message="`--custom-file-header-path` can not be used with `--custom-file-header`.",
-            ),
-        ),
-    ),
-    "--custom-file-header-mode": CLIOptionMeta(
-        name="--custom-file-header-mode",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--additional-imports": CLIOptionMeta(
-        name="--additional-imports",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--class-decorators": CLIOptionMeta(
-        name="--class-decorators",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--use-double-quotes": CLIOptionMeta(
-        name="--use-double-quotes",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.OUTPUT_FORMATTING,
-    ),
-    "--use-exact-imports": CLIOptionMeta(
-        name="--use-exact-imports",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.IMPORTS,
-    ),
-    "--disable-appending-item-suffix": CLIOptionMeta(
-        name="--disable-appending-item-suffix", category=OptionCategory.TEMPLATE
-    ),
-    "--no-treat-dot-as-module": CLIOptionMeta(name="--no-treat-dot-as-module", category=OptionCategory.TEMPLATE),
-    "--strict-dotted-module-names": CLIOptionMeta(
-        name="--strict-dotted-module-names",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--no-strict-dotted-module-names": CLIOptionMeta(
-        name="--no-strict-dotted-module-names",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--disable-timestamp": CLIOptionMeta(
-        name="--disable-timestamp",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--enable-version-header": CLIOptionMeta(
-        name="--enable-version-header",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--enable-command-header": CLIOptionMeta(
-        name="--enable-command-header",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--enable-generated-header-marker": CLIOptionMeta(
-        name="--enable-generated-header-marker",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.GENERATED_OUTPUT,
-    ),
-    "--formatters": CLIOptionMeta(
-        name="--formatters",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.OUTPUT_FORMATTING,
-    ),
-    "--custom-formatters": CLIOptionMeta(
-        name="--custom-formatters",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.OUTPUT_FORMATTING,
-    ),
-    "--custom-formatters-kwargs": CLIOptionMeta(
-        name="--custom-formatters-kwargs",
-        category=OptionCategory.TEMPLATE,
-        topic=OptionTopic.TEMPLATE_CUSTOMIZATION,
-        group=OptionGroup.OUTPUT_FORMATTING,
-    ),
-    # ==========================================================================
-    # OpenAPI-only Options
-    # ==========================================================================
-    "--openapi-scopes": CLIOptionMeta(
-        name="--openapi-scopes",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_SCOPES,
-    ),
-    "--use-operation-id-as-name": CLIOptionMeta(
-        name="--use-operation-id-as-name",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_NAMING,
-    ),
-    "--use-status-code-in-response-name": CLIOptionMeta(
-        name="--use-status-code-in-response-name",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_NAMING,
-    ),
-    "--read-only-write-only-model-type": CLIOptionMeta(
-        name="--read-only-write-only-model-type",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.READ_ONLY_WRITE_ONLY,
-    ),
-    "--dedupe-request-response-variants": CLIOptionMeta(
-        name="--dedupe-request-response-variants",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.READ_ONLY_WRITE_ONLY,
-    ),
-    "--include-path-parameters": CLIOptionMeta(
-        name="--include-path-parameters",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_PATHS,
-    ),
-    "--openapi-include-paths": CLIOptionMeta(
-        name="--openapi-include-paths",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_PATHS,
-    ),
-    "--openapi-include-info-version": CLIOptionMeta(
-        name="--openapi-include-info-version", category=OptionCategory.OPENAPI
-    ),
-    "--openapi-as-definitions": CLIOptionMeta(
-        name="--openapi-as-definitions",
-        category=OptionCategory.OPENAPI,
-        topic=OptionTopic.OPENAPI,
-        group=OptionGroup.OPENAPI_SCOPES,
-    ),
-    "--validation": CLIOptionMeta(
-        name="--validation",
-        category=OptionCategory.OPENAPI,
-        deprecated=True,
-        deprecated_message=deprecation_message("cli.validation"),
-    ),
-    # ==========================================================================
-    # GraphQL-only Options
-    # ==========================================================================
-    "--graphql-no-typename": CLIOptionMeta(name="--graphql-no-typename", category=OptionCategory.GRAPHQL),
-    # ==========================================================================
-    # General Options
-    # ==========================================================================
-    "--check": CLIOptionMeta(name="--check", category=OptionCategory.GENERAL),
-    "--diff-against": CLIOptionMeta(
-        name="--diff-against",
-        category=OptionCategory.GENERAL,
-        requires=(
-            CLIOptionRelation(
-                option="--input",
-                message="`--diff-against` requires --input with the current local schema path.",
+                "--input", message="`--diff-against` requires --input with the current local schema path."
             ),
             CLIOptionRelation(
-                option="--output",
-                message="`--diff-against` requires --output to select file or directory output layout.",
+                "--output", message="`--diff-against` requires --output to select file or directory output layout."
             ),
         ),
         conflicts=(
-            CLIOptionRelation(option="--check"),
-            CLIOptionRelation(option="--watch"),
-            CLIOptionRelation(option="--url"),
-            CLIOptionRelation(option="--input-model"),
-            CLIOptionRelation(option="--emit-model-metadata"),
-            CLIOptionRelation(option="--fail-on-multi-module-stdout"),
-            CLIOptionRelation(
-                option="--job",
-                message="`--diff-against` compares one profile or input and cannot run named jobs.",
-            ),
-            CLIOptionRelation(
-                option="--all-jobs",
-                message="`--diff-against` compares one profile or input and cannot run named jobs.",
+            *_relations("--check --watch --url --input-model --emit-model-metadata --fail-on-multi-module-stdout"),
+            *_relations(
+                "--job --all-jobs", message="`--diff-against` compares one profile or input and cannot run named jobs."
             ),
         ),
     ),
-    "--fail-on-multi-module-stdout": CLIOptionMeta(
-        name="--fail-on-multi-module-stdout", category=OptionCategory.GENERAL
+    **_opts(
+        _C.GENERAL,
+        "--fail-on-multi-module-stdout --allow-remote-refs --no-allow-remote-refs --strict-refs",
+        "--allow-private-network --no-allow-private-network --http-headers --http-local-ref-path",
+        "--http-ignore-tls --http-query-parameters --http-timeout --lockfile",
     ),
-    "--allow-remote-refs": CLIOptionMeta(name="--allow-remote-refs", category=OptionCategory.GENERAL),
-    "--no-allow-remote-refs": CLIOptionMeta(name="--no-allow-remote-refs", category=OptionCategory.GENERAL),
-    "--strict-refs": CLIOptionMeta(name="--strict-refs", category=OptionCategory.GENERAL),
-    "--allow-private-network": CLIOptionMeta(name="--allow-private-network", category=OptionCategory.GENERAL),
-    "--no-allow-private-network": CLIOptionMeta(name="--no-allow-private-network", category=OptionCategory.GENERAL),
-    "--http-headers": CLIOptionMeta(name="--http-headers", category=OptionCategory.GENERAL),
-    "--http-local-ref-path": CLIOptionMeta(name="--http-local-ref-path", category=OptionCategory.GENERAL),
-    "--http-ignore-tls": CLIOptionMeta(name="--http-ignore-tls", category=OptionCategory.GENERAL),
-    "--http-query-parameters": CLIOptionMeta(name="--http-query-parameters", category=OptionCategory.GENERAL),
-    "--http-timeout": CLIOptionMeta(name="--http-timeout", category=OptionCategory.GENERAL),
-    "--lockfile": CLIOptionMeta(name="--lockfile", category=OptionCategory.GENERAL),
-    "--update-lock": CLIOptionMeta(
-        name="--update-lock",
-        category=OptionCategory.GENERAL,
-        conflicts=(CLIOptionRelation(option="--locked"),),
-    ),
-    "--locked": CLIOptionMeta(
-        name="--locked",
-        category=OptionCategory.GENERAL,
-        conflicts=(CLIOptionRelation(option="--update-lock"),),
-    ),
-    "--ignore-pyproject": CLIOptionMeta(name="--ignore-pyproject", category=OptionCategory.GENERAL),
-    "--generate-cli-command": CLIOptionMeta(name="--generate-cli-command", category=OptionCategory.GENERAL),
-    "--generate-pyproject-config": CLIOptionMeta(name="--generate-pyproject-config", category=OptionCategory.GENERAL),
-    "--recommend-options": CLIOptionMeta(name="--recommend-options", category=OptionCategory.GENERAL),
-    "--shared-module-name": CLIOptionMeta(
-        name="--shared-module-name",
-        category=OptionCategory.GENERAL,
-        topic=OptionTopic.MODEL_CUSTOMIZATION,
-        group=OptionGroup.MODEL_REUSE,
-    ),
-    "--all-exports-scope": CLIOptionMeta(name="--all-exports-scope", category=OptionCategory.GENERAL),
-    "--all-exports-collision-strategy": CLIOptionMeta(
-        name="--all-exports-collision-strategy",
-        category=OptionCategory.GENERAL,
-        requires=(
-            CLIOptionRelation(
-                option="--all-exports-scope",
-                value=AllExportsScope.Recursive.value,
-                message="`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.",
-            ),
+    **_opts(_C.GENERAL, "--update-lock", conflicts=_relations("--locked")),
+    **_opts(_C.GENERAL, "--locked", conflicts=_relations("--update-lock")),
+    **_opts(_C.GENERAL, "--ignore-pyproject --generate-cli-command --generate-pyproject-config --recommend-options"),
+    **_opts(_C.GENERAL, "--shared-module-name", group=_G.MODEL_REUSE, topic=OptionTopic.MODEL_CUSTOMIZATION),
+    **_opts(_C.GENERAL, "--all-exports-scope"),
+    **_opts(
+        _C.GENERAL,
+        "--all-exports-collision-strategy",
+        requires=_relations(
+            "--all-exports-scope",
+            value=AllExportsScope.Recursive.value,
+            message="`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.",
         ),
     ),
-    "--module-split-mode": CLIOptionMeta(name="--module-split-mode", category=OptionCategory.GENERAL),
-    "--disable-warnings": CLIOptionMeta(name="--disable-warnings", category=OptionCategory.GENERAL),
-    "--watch": CLIOptionMeta(name="--watch", category=OptionCategory.GENERAL),
-    "--watch-delay": CLIOptionMeta(name="--watch-delay", category=OptionCategory.GENERAL),
-    # ==========================================================================
-    # Target Generation Options
-    # ==========================================================================
-    "--generate-server": CLIOptionMeta(
-        name="--generate-server",
-        category=OptionCategory.TARGET,
+    **_opts(_C.GENERAL, "--module-split-mode --disable-warnings --watch --watch-delay"),
+    **_opts(
+        _C.TARGET,
+        "--generate-server",
         requires=(
-            CLIOptionRelation(option="--server-output", message="`--generate-server` requires `--server-output`."),
-            CLIOptionRelation(option="--server-package", message="`--generate-server` requires `--server-package`."),
+            CLIOptionRelation("--server-output", message="`--generate-server` requires `--server-output`."),
+            CLIOptionRelation("--server-package", message="`--generate-server` requires `--server-package`."),
             CLIOptionRelation(
-                option="--server-model-package", message="`--generate-server` requires `--server-model-package`."
+                "--server-model-package", message="`--generate-server` requires `--server-model-package`."
             ),
             CLIOptionRelation(
-                option="--input-file-type",
+                "--input-file-type",
                 value=InputFileType.OpenAPI.value,
                 message="`--generate-server` requires `--input-file-type openapi`.",
             ),
         ),
-        conflicts=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--generate-server` can not be used with `--generate-client`."
-            ),
+        conflicts=_relations(
+            "--generate-client", message="`--generate-server` can not be used with `--generate-client`."
         ),
     ),
-    "--server-output": CLIOptionMeta(
-        name="--server-output",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-output` requires `--generate-server fastapi`."
-            ),
-        ),
+    **_target_options(
+        "--generate-server",
+        "fastapi",
+        "--server-output --server-package --server-model-package --server-layout --server-handler-mode",
+        "--server-handler-modes --server-include-request --no-server-include-request --server-body-mode",
+        "--server-body-modes --server-primary-responses --server-operation-names --server-router-names",
+        "--server-parameter-names",
     ),
-    "--server-package": CLIOptionMeta(
-        name="--server-package",
-        category=OptionCategory.TARGET,
+    **_opts(
+        _C.TARGET,
+        "--generate-client",
         requires=(
+            CLIOptionRelation("--client-output", message="`--generate-client` requires `--client-output`."),
+            CLIOptionRelation("--client-package", message="`--generate-client` requires `--client-package`."),
             CLIOptionRelation(
-                option="--generate-server", message="`--server-package` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-model-package": CLIOptionMeta(
-        name="--server-model-package",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-model-package` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-layout": CLIOptionMeta(
-        name="--server-layout",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-layout` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-handler-mode": CLIOptionMeta(
-        name="--server-handler-mode",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-handler-mode` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-handler-modes": CLIOptionMeta(
-        name="--server-handler-modes",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-handler-modes` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-include-request": CLIOptionMeta(
-        name="--server-include-request",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-include-request` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--no-server-include-request": CLIOptionMeta(
-        name="--no-server-include-request",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server",
-                message="`--no-server-include-request` requires `--generate-server fastapi`.",
-            ),
-        ),
-    ),
-    "--server-body-mode": CLIOptionMeta(
-        name="--server-body-mode",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-body-mode` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-body-modes": CLIOptionMeta(
-        name="--server-body-modes",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-body-modes` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-primary-responses": CLIOptionMeta(
-        name="--server-primary-responses",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-primary-responses` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-operation-names": CLIOptionMeta(
-        name="--server-operation-names",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-operation-names` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-router-names": CLIOptionMeta(
-        name="--server-router-names",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-router-names` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--server-parameter-names": CLIOptionMeta(
-        name="--server-parameter-names",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--server-parameter-names` requires `--generate-server fastapi`."
-            ),
-        ),
-    ),
-    "--generate-client": CLIOptionMeta(
-        name="--generate-client",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(option="--client-output", message="`--generate-client` requires `--client-output`."),
-            CLIOptionRelation(option="--client-package", message="`--generate-client` requires `--client-package`."),
-            CLIOptionRelation(
-                option="--client-model-package", message="`--generate-client` requires `--client-model-package`."
+                "--client-model-package", message="`--generate-client` requires `--client-model-package`."
             ),
             CLIOptionRelation(
-                option="--input-file-type",
+                "--input-file-type",
                 value=InputFileType.OpenAPI.value,
                 message="`--generate-client` requires `--input-file-type openapi`.",
             ),
         ),
-        conflicts=(
-            CLIOptionRelation(
-                option="--generate-server", message="`--generate-client` can not be used with `--generate-server`."
-            ),
+        conflicts=_relations(
+            "--generate-server", message="`--generate-client` can not be used with `--generate-server`."
         ),
     ),
-    "--client-output": CLIOptionMeta(
-        name="--client-output",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-output` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-package": CLIOptionMeta(
-        name="--client-package",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-package` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-model-package": CLIOptionMeta(
-        name="--client-model-package",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-model-package` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-signature-style": CLIOptionMeta(
-        name="--client-signature-style",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-signature-style` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-body-arguments": CLIOptionMeta(
-        name="--client-body-arguments",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-body-arguments` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-resource-names": CLIOptionMeta(
-        name="--client-resource-names",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-resource-names` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-operations": CLIOptionMeta(
-        name="--client-operations",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-operations` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-default-base-url": CLIOptionMeta(
-        name="--client-default-base-url",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-default-base-url` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-server-base-url": CLIOptionMeta(
-        name="--client-server-base-url",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-server-base-url` requires `--generate-client httpx2`."
-            ),
-        ),
-    ),
-    "--client-protocols": CLIOptionMeta(
-        name="--client-protocols",
-        category=OptionCategory.TARGET,
-        requires=(
-            CLIOptionRelation(
-                option="--generate-client", message="`--client-protocols` requires `--generate-client httpx2`."
-            ),
-        ),
+    **_target_options(
+        "--generate-client",
+        "httpx2",
+        "--client-output --client-package --client-model-package --client-signature-style --client-body-arguments",
+        "--client-resource-names --client-operations --client-default-base-url --client-server-base-url",
+        "--client-protocols",
     ),
 }
 
@@ -1348,14 +589,7 @@ _validate_option_topic_groups()
 
 
 def _canonical_option_key(option: str) -> tuple[int, str]:
-    """Key function for determining canonical option.
-
-    Canonical option is determined by:
-    1. Longest option string (--help over -h)
-    2. Lexicographically last if same length (for stability)
-
-    This ensures deterministic canonical selection.
-    """
+    """Sort key of the canonical option: the longest option string (--help over -h), then the lexicographically last."""
     return (len(option), option)
 
 

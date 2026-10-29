@@ -27,8 +27,13 @@ import subprocess
 import sys
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "src/datamodel_code_generator/_target_unicode_data.py"
@@ -144,7 +149,7 @@ def _run_probe(version: str, interpreter: str) -> dict[str, Any]:
     return result
 
 
-def _members(ranges: list[list[int]]) -> set[int]:
+def _members(ranges: Iterable[Sequence[int]]) -> set[int]:
     return {code_point for start, end in ranges for code_point in range(start, end + 1)}
 
 
@@ -249,6 +254,15 @@ def _mapping(value: str, code_point: int) -> str:
     return '""' if value == chr(code_point) else _string(value)
 
 
+def _change_rows(texts: dict[int, str]) -> list[str]:
+    """Return one row per inclusive code point range of consecutive characters that share the spelled changes."""
+    return [
+        f"    (0x{start:X}, 0x{end:X}): {text},"
+        for text, group in groupby(texts.items(), key=itemgetter(1))
+        for start, end in _ranges([code_point for code_point, _ in group])
+    ]
+
+
 def render(tables: dict[str, Any]) -> str:
     """Return the source of the data module."""
     targets = ", ".join(_string(target) for target in tables["targets"])
@@ -291,32 +305,43 @@ def render(tables: dict[str, Any]) -> str:
             else:
                 lines.append(f"    {wrapped[0].strip()},")
         lines.extend((")", f'"""{SET_DOCS[name]}"""'))
-    lines.extend(("", "CASE_CHANGES: Final[dict[int, tuple[tuple[int, str, str, str, str, int], ...]]] = {"))
-    for code_point, changes in tables["case"].items():
-        items = [
-            f"({index}, {', '.join(_mapping(value, code_point) for value in values[:4])}, {values[4]})"
-            for index, values in changes
-        ]
-        lines.append(f"    0x{code_point:X}: {_tuple(items)},")
     lines.extend((
-        "}",
-        '"""Characters whose case data differs between targets: from each listed target on, the full uppercase,',
-        "lowercase, titlecase and casefold mappings (empty for the character itself) and the Lowercase, Uppercase,",
-        'Lt and Case_Ignorable bits. Before the first listed target a character has no case data."""',
         "",
-        "NORMALIZATION_CHANGES: Final[dict[int, tuple[tuple[int, str, str, int], ...]]] = {",
+        "CASE_CHANGES: Final[dict[tuple[int, int], tuple[tuple[int, str, str, str, str, int], ...]]] = {",
     ))
-    for code_point, changes in tables["normalization"].items():
-        items = [
-            f"({index}, {_mapping(values[0], code_point)}, {_mapping(values[1], code_point)}, {values[2]})"
-            for index, values in changes
-        ]
-        lines.append(f"    0x{code_point:X}: {_tuple(items)},")
+    lines.extend(
+        _change_rows({
+            code_point: _tuple([
+                f"({index}, {', '.join(_mapping(value, code_point) for value in values[:4])}, {values[4]})"
+                for index, values in changes
+            ])
+            for code_point, changes in tables["case"].items()
+        })
+    )
     lines.extend((
         "}",
-        '"""Characters whose normalization data differs between targets: from each listed target on, the full',
-        "canonical and compatibility decompositions (empty for the character itself) and the canonical combining",
-        'class. Before the first listed target a character decomposes to itself with combining class 0."""',
+        '"""Characters whose case data differs between targets, keyed by the inclusive code point range of consecutive',
+        "characters that share the changes: from each listed target on, the full uppercase, lowercase, titlecase and",
+        "casefold mappings (empty for the character itself) and the Lowercase, Uppercase, Lt and Case_Ignorable bits.",
+        'Before the first listed target a character has no case data."""',
+        "",
+        "NORMALIZATION_CHANGES: Final[dict[tuple[int, int], tuple[tuple[int, str, str, int], ...]]] = {",
+    ))
+    lines.extend(
+        _change_rows({
+            code_point: _tuple([
+                f"({index}, {_mapping(values[0], code_point)}, {_mapping(values[1], code_point)}, {values[2]})"
+                for index, values in changes
+            ])
+            for code_point, changes in tables["normalization"].items()
+        })
+    )
+    lines.extend((
+        "}",
+        '"""Characters whose normalization data differs between targets, keyed by the inclusive code point range of',
+        "consecutive characters that share the changes: from each listed target on, the full canonical and",
+        "compatibility decompositions (empty for the character itself) and the canonical combining class. Before the",
+        'first listed target a character decomposes to itself with combining class 0."""',
         "",
         "COMPOSITION_CHANGES: Final[tuple[tuple[int, int, int, int], ...]] = (",
     ))
@@ -364,7 +389,8 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
     )
     marks = ("\u0301", "\u0323", "\u0345", "\u05b0")
     unassigned = "\u0378\U0002fffe"
-    case_characters = [chr(code_point) for code_point in (*data.CASE_CHANGES, *assigned[::97])] + list(unassigned)
+    case_characters = [chr(code_point) for code_point in (*sorted(_members(data.CASE_CHANGES)), *assigned[::97])]
+    case_characters += list(unassigned)
     for character in case_characters:
         for value in (
             character,
@@ -386,7 +412,7 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
     special = sorted({
         chr(code_point)
         for code_point in (
-            *data.NORMALIZATION_CHANGES,
+            *_members(data.NORMALIZATION_CHANGES),
             *(item for _, first, second, _ in data.COMPOSITION_CHANGES for item in (first, second)),
         )
     })
