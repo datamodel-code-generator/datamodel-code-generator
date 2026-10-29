@@ -87,7 +87,7 @@ def test_decision_home_calls_of_the_core_pass_anywhere_and_copies_do_not() -> No
     calls = """
 [homes.calls]
 decision = "the value that compute decides"
-core = ["core.py"]
+core = ["core.py", "masked_core.py", "nested_core.py"]
 
 [homes.calls.signatures.compute-call]
 kind = "call"

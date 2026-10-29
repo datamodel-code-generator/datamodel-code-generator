@@ -29,9 +29,12 @@ moves it to ``core``.
 
 A ``call`` hit is also at home wherever it occurs when its callee is a function or class that the home's ``core``
 defines: calling the core is the reuse a home is for, so its callers need no adapter entry (an adapter reads raw facts
-and hands them to the core). A name resolves through the imports of its file, ``module.name`` through the module the
-alias names, and re-exports are followed; a hand-written copy defined outside the core, a method of a value, a name
-outside the package and every other kind of signature are not exempt.
+and hands them to the core). The callee is looked up like Python does, in the scopes around the call and then in the
+module: a parameter, variable, nested definition or ``global`` rebinding of the name is not the imported function, and
+nor is a module-level rebinding of it. An import leads to a module-level function or class (re-exports followed; a
+method or nested definition of that name is not one), and ``module.name`` leads through the module the alias names.
+A hand-written copy outside the core, a method of a value, a name outside the package and every other kind of
+signature are not exempt.
 
 Every other hit must be in the allowlist, the
 section of the toml after ``ALLOWLIST_MARKER``, keyed by (file, function, signature) with a count, the home and the
@@ -459,7 +462,8 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
         }
         if not any(signatures.values()):
             continue
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)
@@ -469,7 +473,7 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
                     if not home.covers(file, function) and not (
                         signature.kind == "call"
                         and isinstance(node, ast.Call)
-                        and calls_core(home, root, file, node.func)
+                        and calls_core(home, root, file, tree, node)
                     ):
                         scan.hits.append(Hit(file, function, signature.id, node.lineno, node.col_offset))
     return scan
@@ -533,7 +537,22 @@ def _function_names(path: Path) -> frozenset[str]:
     return frozenset(names)
 
 
-Binding = tuple[str, tuple[str, ...] | None, str | None]
+Binder = tuple[str, tuple[str, ...] | None, str | None]
+Scope = (
+    ast.Module
+    | ast.FunctionDef
+    | ast.AsyncFunctionDef
+    | ast.ClassDef
+    | ast.Lambda
+    | ast.ListComp
+    | ast.SetComp
+    | ast.DictComp
+    | ast.GeneratorExp
+)
+DEFINITION: Binder = ("def", None, None)
+REBINDING: Binder = ("other", None, None)
+SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
+COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 
 
 def _module_parts(name: str, package: tuple[str, ...], module: str | None, level: int) -> tuple[str, ...] | None:
@@ -550,24 +569,103 @@ def _module_file(root: Path, parts: tuple[str, ...]) -> str | None:
     return next((file for file in (f"{base}.py", f"{base}/__init__.py".lstrip("/")) if (root / file).is_file()), None)
 
 
-@cache
-def _imports(root: Path, file: str) -> tuple[Binding, ...]:
-    """Return ``(bound name, module, imported name)`` of every import in ``file``, wherever it is written.
+def _parameters(arguments: ast.arguments) -> list[ast.arg]:
+    parameters = (*arguments.posonlyargs, *arguments.args, arguments.vararg, *arguments.kwonlyargs, arguments.kwarg)
+    return [parameter for parameter in parameters if parameter]
 
-    ``module`` is the path of the imported module under ``root`` (None outside the package); the imported name is None
-    where the import binds the module itself.
-    """
+
+def _scope_roots(scope: Scope) -> list[ast.AST]:
+    """Return the nodes that bind the names of ``scope``: its comprehension targets, parameters and body."""
+    if isinstance(scope, COMPREHENSIONS):
+        return [generator.target for generator in scope.generators]
+    if isinstance(scope, ast.Module | ast.ClassDef):
+        return list(scope.body)
+    if isinstance(scope, ast.Lambda):
+        return [*_parameters(scope.args), scope.body]
+    return [*_parameters(scope.args), *scope.body]
+
+
+def _own_nodes(scope: Scope) -> Iterator[ast.AST]:
+    """Yield the nodes of ``scope`` itself: a nested scope is yielded (it binds its name) but not entered."""
+    pending = _scope_roots(scope)
+    while pending:
+        node = pending.pop()
+        yield node
+        if isinstance(node, COMPREHENSIONS):
+            yield from (inner.target for inner in ast.walk(node) if isinstance(inner, ast.NamedExpr))
+        elif not isinstance(node, SCOPES):
+            pending.extend(ast.iter_child_nodes(node))
+
+
+def _binds(root: Path, file: str, node: ast.AST, *, module_level: bool) -> Iterator[tuple[str, Binder]]:
+    """Yield each name ``node`` binds with what binds it: an import, a definition or any other (re)binding."""
     package = PurePosixPath(file).parent.parts
-    bindings: list[Binding] = []
-    for node in ast.walk(ast.parse((root / file).read_text(encoding="utf-8"))):
-        if isinstance(node, ast.ImportFrom):
-            module = _module_parts(root.name, package, node.module, node.level)
-            bindings.extend((alias.asname or alias.name, module, alias.name) for alias in node.names)
-        elif isinstance(node, ast.Import):
-            for alias in node.names:
-                imported = alias.name if alias.asname else alias.name.partition(".")[0]
-                bindings.append((alias.asname or imported, _module_parts(root.name, package, imported, 0), None))
-    return tuple(bindings)
+    if isinstance(node, ast.Name) and not isinstance(node.ctx, ast.Load):
+        yield node.id, REBINDING
+    elif isinstance(node, ast.arg):
+        yield node.arg, REBINDING
+    elif isinstance(node, ast.ExceptHandler | ast.MatchAs | ast.MatchStar) and node.name:
+        yield node.name, REBINDING
+    elif isinstance(node, ast.MatchMapping) and node.rest:
+        yield node.rest, REBINDING
+    elif isinstance(node, ast.Global | ast.Nonlocal):
+        yield from ((name, REBINDING) for name in node.names)
+    elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+        yield node.name, DEFINITION if module_level else REBINDING
+    elif isinstance(node, ast.ImportFrom):
+        module = _module_parts(root.name, package, node.module, node.level)
+        yield from ((alias.asname or alias.name, ("import", module, alias.name)) for alias in node.names)
+    elif isinstance(node, ast.Import):
+        for alias in node.names:
+            imported = alias.name if alias.asname else alias.name.partition(".")[0]
+            yield alias.asname or imported, ("import", _module_parts(root.name, package, imported, 0), None)
+
+
+def _binders(root: Path, file: str, scope: Scope) -> dict[str, list[Binder]]:
+    """Return what binds each name in ``scope`` itself."""
+    binders: dict[str, list[Binder]] = {}
+    for node in _own_nodes(scope):
+        for name, binder in _binds(root, file, node, module_level=isinstance(scope, ast.Module)):
+            binders.setdefault(name, []).append(binder)
+    return binders
+
+
+@cache
+def _module_binders(root: Path, file: str) -> dict[str, list[Binder]]:
+    """Return what binds each module-level name of ``file``; a ``global`` statement anywhere rebinds its names."""
+    tree = ast.parse((root / file).read_text(encoding="utf-8"))
+    binders = _binders(root, file, tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Global):
+            for name in node.names:
+                binders.setdefault(name, []).append(REBINDING)
+    return binders
+
+
+def _enclosing_scopes(tree: ast.Module, target: ast.Call) -> list[Scope]:
+    """Return the scopes in which ``target`` looks a name up, innermost first and the module last.
+
+    A function, lambda or class scope starts at its body (not at its decorators, defaults or bases) and a
+    comprehension scope at the whole comprehension. A class scope counts only for code directly in the class body.
+    """
+    pending: list[tuple[ast.AST, tuple[Scope, ...]]] = [(tree, (tree,))]
+    while True:
+        node, scopes = pending.pop()
+        if node is target:
+            return [
+                scope for index, scope in enumerate(reversed(scopes)) if not (index and isinstance(scope, ast.ClassDef))
+            ]
+        children: list[tuple[ast.AST, tuple[Scope, ...]]] = []
+        for attribute, value in ast.iter_fields(node):
+            inner = scopes
+            if isinstance(node, COMPREHENSIONS) or (isinstance(node, SCOPES) and attribute == "body"):
+                inner = (*scopes, node)
+            children.extend(
+                (child, inner)
+                for child in (value if isinstance(value, list) else [value])
+                if isinstance(child, ast.AST) and (getattr(child, "end_lineno", None) or target.lineno) >= target.lineno
+            )
+        pending.extend(reversed(children))
 
 
 def _imported_origins(
@@ -584,34 +682,53 @@ def _imported_origins(
     return set(found)
 
 
-def _origins(root: Path, file: str, name: str, seen: frozenset[Origin] = frozenset()) -> frozenset[Origin]:
-    """Return what ``name`` is in the module ``file``, as ``(file, qualified name)``.
+def _binder_origins(
+    root: Path, file: str, name: str, binders: Iterable[Binder], seen: frozenset[Origin]
+) -> frozenset[Origin]:
+    """Return what ``name`` is where ``binders`` bind it, as ``(file, name)`` of a module-level definition.
 
-    That is every function and class the module defines under the name, and what its imports of the name lead to
-    (re-exports followed); a module is ``(file, "")``, and ``UNRESOLVED`` stands for a name outside the package.
+    An import leads to what it imports (re-exports followed; a module is ``(file, "")``). Any other binding, and a name
+    that nothing binds, is ``UNRESOLVED``.
     """
-    if (file, name) in seen:
-        return frozenset({UNRESOLVED})
-    seen |= {(file, name)}
-    origins = {(file, qualified) for qualified in _function_names(root / file) if qualified.rpartition(".")[2] == name}
-    for bound, module, imported in _imports(root, file):
-        if bound == name:
+    origins: set[Origin] = set()
+    for kind, module, imported in binders:
+        if kind == "import":
             origins |= _imported_origins(root, module, imported, seen)
+        else:
+            origins.add((file, name) if kind == "def" else UNRESOLVED)
     return frozenset(origins or {UNRESOLVED})
 
 
-def calls_core(home: Home, root: Path, file: str, callee: ast.expr) -> bool:
-    """Return whether ``callee``, called in ``file``, is a function or class defined in the core of ``home``.
+def _origins(root: Path, file: str, name: str, seen: frozenset[Origin] = frozenset()) -> frozenset[Origin]:
+    """Return what the module-level ``name`` of the module ``file`` is."""
+    if (file, name) in seen:
+        return frozenset({UNRESOLVED})
+    return _binder_origins(root, file, name, _module_binders(root, file).get(name, ()), seen | {(file, name)})
 
-    A name resolves through the imports of ``file`` and ``module.name`` through the module the alias names, re-exports
-    followed; a method of a value or a computed callee is not resolved.
+
+def _scoped_origins(root: Path, file: str, tree: ast.Module, call: ast.Call, name: str) -> frozenset[Origin]:
+    """Return what ``name`` is where ``call`` looks it up: the innermost scope that binds it, else the module."""
+    for scope in _enclosing_scopes(tree, call)[:-1]:
+        if binders := _binders(root, file, scope).get(name):
+            return _binder_origins(root, file, name, binders, frozenset())
+    return _origins(root, file, name)
+
+
+def calls_core(home: Home, root: Path, file: str, tree: ast.Module, call: ast.Call) -> bool:
+    """Return whether ``call`` in ``file`` (parsed as ``tree``) calls a function or class of the core of ``home``.
+
+    A name is looked up in the lexical scopes around the call, then in the module; a parameter, a local variable, a
+    nested definition or a ``global`` rebinding of the name is not the imported function. Imports lead to the
+    definition (re-exports followed), and only module-level definitions of the module count. ``module.name`` resolves
+    through the module the alias names; a method of a value or a computed callee is not resolved.
     """
+    callee = call.func
     if isinstance(callee, ast.Name):
-        origins = _origins(root, file, callee.id)
+        origins = _scoped_origins(root, file, tree, call, callee.id)
     elif isinstance(callee, ast.Attribute) and isinstance(callee.value, ast.Name):
         origins = frozenset(
             origin
-            for module, qualified in _origins(root, file, callee.value.id)
+            for module, qualified in _scoped_origins(root, file, tree, call, callee.value.id)
             for origin in (_origins(root, module, callee.attr) if module and not qualified else (UNRESOLVED,))
         )
     else:
