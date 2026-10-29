@@ -520,7 +520,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         walked = self._walked_schemas
         if walked and (parent := walked[-1]) is not None:
             tokens = path[parent[0] :]
-            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, _source_member)
+            declaration, value = parent[1].child(*tokens), descend(parent[2], tokens, "legacy-int-tokens")
         else:
             declaration = cast("SchemaLocation", obj.schema_location)
             value = self._reader.borrow(declaration)
@@ -1972,15 +1972,6 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
-def _source_member(value: YamlValue, key: str) -> YamlValue:
-    """Return a mapping's member by key, its canonical integer YAML key first, or another value's item by ``int``."""
-    if not isinstance(value, dict):
-        return cast("list[YamlValue]", value)[int(key)]
-    if key.isascii() and key.isdecimal() and str(number := int(key)) == key and number in value:  # type: ignore[comparison-overlap]
-        return value[number]  # type: ignore[index]
-    return value[key]
-
-
 def _children(  # ruff: ignore[too-many-branches, too-many-return-statements]
     node: _SchemaNode, data_type: DataType
 ) -> list[tuple[tuple[str, ...], DataType]]:
@@ -2314,7 +2305,7 @@ class _Reader(_SchemaLocations):
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.loaded.get(declaration.document), declaration.tokens, _source_member, missing)
+        return descend(self.loaded.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
 
     def node(self, declaration: SchemaLocation, raw: YamlValue = MISSING) -> _SchemaNode | None:
         """Record and return where a loaded schema declares its members, None when its document lacks it."""
@@ -2668,7 +2659,7 @@ class _Documents:
 
     def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
-        return descend(self.documents.get(declaration.document), declaration.tokens, _source_member, missing)
+        return descend(self.documents.get(declaration.document), declaration.tokens, "legacy-int-tokens", missing)
 
     def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""

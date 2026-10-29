@@ -14,7 +14,7 @@ import json
 import math
 import re
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, TypeAlias
 from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
@@ -169,7 +169,7 @@ class SourceDocument:
 
     def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
         """Return whether a pointer names a node of a loaded document."""
-        return descend(self.documents[document], tokens, _step, MISSING, (LookupError,)) is not MISSING
+        return descend(self.documents[document], tokens, "legacy-decimal-tokens", MISSING) is not MISSING
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
@@ -413,11 +413,8 @@ class SourceDocument:
         return bundled
 
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
-        """Return the node a pointer names in a loaded document."""
-        value: YamlValue = self.documents[document]
-        for token in tokens:
-            value = value[int(token)] if isinstance(value, list) else _member(as_mapping(value), token)
-        return value
+        """Return the node a pointer names in a loaded document, which ``exists`` or the index found there."""
+        return descend(self.documents[document], tokens, "legacy-decimal-tokens")
 
 
 def _uri(location: str) -> str:
@@ -428,23 +425,3 @@ def _uri(location: str) -> str:
     if _URL.match(location) or not (path := Path(location)).is_absolute():
         return location.replace("\\", "/")
     return path.as_uri()
-
-
-def _step(value: YamlValue, token: str) -> YamlValue:
-    """Return a list's item by a decimal index or a mapping's member (``_member``); raise when the value has none."""
-    if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
-        return value[int(token)]
-    if isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
-        return _member(value, token)
-    raise LookupError(token)
-
-
-def _member(mapping: dict[str, YamlValue], token: str) -> YamlValue:
-    """Return a mapping's member by key, by its integer YAML key when no string key matches."""
-    return (
-        mapping[token]
-        if token in mapping
-        else cast("dict[object, YamlValue]", mapping).get(int(token))
-        if token.isdecimal()
-        else None
-    )
