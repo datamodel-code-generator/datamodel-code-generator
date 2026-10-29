@@ -1761,6 +1761,9 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/_passes/settle.py"."sort_parsed_models"]
 "F-dedupe-request-response-variants.option-read" = { home = "F-dedupe-request-response-variants", count = 1, audit = "D-PP-06" }
 
+[allow."src/datamodel_code_generator/parser/base.py"."Parser._field_option_kwargs"]
+"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
+
 [allow."src/datamodel_code_generator/parser/base.py"."Parser._get_duplicate_root_reference"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
