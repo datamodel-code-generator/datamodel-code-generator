@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, NewType, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias
 
 if TYPE_CHECKING:
     from decimal import Decimal
@@ -354,6 +354,9 @@ class FinalModelSymbol:
     discriminator: UnionDiscriminator | None = None
     value_types: tuple[str, ...] = ()
 
+
+WRAPPER_KINDS: Final = frozenset({"alias", "root"})
+"""The kinds of the symbols that only stand for another type: aliases and root models."""
 
 BindingReason: TypeAlias = Literal[
     "BND_MODEL_SCOPE_REQUIRED",

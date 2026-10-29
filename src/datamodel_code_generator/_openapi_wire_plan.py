@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from functools import cached_property
 from math import isfinite
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
 from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -23,6 +23,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     header_text,
 )
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BindingReason,
     BuiltinType,
     ConstructorType,
@@ -75,13 +76,7 @@ CodecReason: TypeAlias = (
     ]
 )
 
-_LOCATIONS: Final[dict[object, ParameterLocation]] = {
-    "path": "path",
-    "query": "query",
-    "querystring": "querystring",
-    "header": "header",
-    "cookie": "cookie",
-}
+_LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
 _STRING: Final = frozenset({"string"})
 _LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
@@ -126,7 +121,6 @@ _BINARY_TEXT: Final = (
     "carries a binary string as text; declare it with format: byte for base64 text, optionally with "
     "--type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part"
 )
-_WRAPPERS: Final = frozenset({"alias", "root"})
 _ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 
 
@@ -914,7 +908,7 @@ class LexicalKinds:
             elif (
                 isinstance(value, GeneratedSymbolType)
                 and value.symbol not in seen
-                and self._symbols[value.symbol].kind in _WRAPPERS
+                and self._symbols[value.symbol].kind in WRAPPER_KINDS
             ):
                 seen.add(value.symbol)
                 value = self._roots.get(value.symbol)
@@ -966,7 +960,7 @@ class LexicalKinds:
     def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
         if symbol.kind == "enum":
             yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
-        elif symbol.kind in _WRAPPERS and symbol.id not in seen:
+        elif symbol.kind in WRAPPER_KINDS and symbol.id not in seen:
             yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
         else:
             yield None

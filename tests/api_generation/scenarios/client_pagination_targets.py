@@ -67,6 +67,17 @@ def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     ):
         record(lines, f"{label} pager", lambda helper=helper, settings=settings: helper.iterate(options=settings))
         record(lines, f"{label} page", lambda helper=helper, settings=settings: helper.page(options=settings))
+    for label, name, defaults in (
+        ("view default header of the cursor", "by_header", {"default_headers": {"X-Cursor": "mine"}}),
+        ("view default query of a binding", "bound", {"default_query": {"limit": "9"}}),
+        ("view default query of the cursor", "bound", {"default_query": {"cursor": "mine"}}),
+    ):
+        record(lines, f"{label} pager", getattr(api.with_options(**defaults).protocols.users, name).iterate)
+    with (
+        exchange.client() as native,
+        harness.package.Client(http_client=native, default_headers={"x-cursor": "mine"}) as patched,
+    ):
+        record(lines, "client default header of the cursor pager", patched.protocols.users.by_header.iterate)
     exchange.respond(users("1", cursor="a"))
     extra = options(extra_query={"extra": "1"})
     first = fetched(lines, "page with another query", lambda: helpers.by_header.page(options=extra))

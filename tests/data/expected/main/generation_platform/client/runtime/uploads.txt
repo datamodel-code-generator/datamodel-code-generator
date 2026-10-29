@@ -507,6 +507,9 @@ refused options
   start with a patch of the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.upload-offset') [field_path=('options', 'extra_headers', 'upload-offset')] invalid_value
   start with a patch of the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.Upload-Length') [field_path=('options', 'extra_headers', 'Upload-Length')] invalid_value
   start with a patch of the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.offset') [field_path=('options', 'extra_query', 'offset')] invalid_value
+  start through a view whose default header patches the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.Upload-Offset') [field_path=('default_headers', 'Upload-Offset')] invalid_value
+  start through a view whose default query patches the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_query.offset') [field_path=('default_query', 'offset')] invalid_value
+  start on a client whose default header patches the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.upload-length') [field_path=('default_headers', 'upload-length')] invalid_value
   upload options with zero chunk bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='chunk_bytes') [field_path=('chunk_bytes',)] invalid_value
   upload options with a removed chunk count ! TypeError: UploadOptions.__init__() got an unexpected keyword argument 'max_parts' []
 defaults from the client

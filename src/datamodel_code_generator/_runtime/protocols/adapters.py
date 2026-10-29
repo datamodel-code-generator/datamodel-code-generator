@@ -115,11 +115,8 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
         raise configuration_error(helper_id, ("verifier",), "wrong_capability")
     size(limits.max_keys, len(keys.keys), helper_id)
     delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
-    signed = None
-    if timestamp is not None:
-        signed = epoch_microseconds(timestamp)
-        if not within(now_us, signed, limits):
-            reject("timestamp_window", helper_id)
+    if timestamp is not None and not within(now_us, epoch_microseconds(timestamp), limits):
+        reject("timestamp_window", helper_id)
     return Facts(delivery_id, timestamp, matched_key_id)
 
 
@@ -157,13 +154,4 @@ async def averify_adapted(  # ruff: ignore[too-many-arguments, unused-async]
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[T]:
     """Verify with the same synchronous verifier as verify_adapted, then decode the event."""
-    authenticated = _authenticate(
-        plan,
-        raw_body,
-        headers,
-        keys,
-        verifier=verifier,
-        now=now,
-        options=options,
-    )
-    return received(plan, raw_body, authenticated)
+    return verify_adapted(plan, raw_body, headers, keys, verifier=verifier, now=now, options=options)

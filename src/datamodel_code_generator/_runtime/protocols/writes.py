@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
     from ..client.operations import OperationPlan
     from ..model_codecs.media import JSONValue
+    from .errors import Refuse
     from .records import RequestTarget, Selector
 
 __all__ = (
@@ -34,11 +35,14 @@ __all__ = (
     "ReadPaths",
     "Targeted",
     "Writes",
+    "caller_texts",
+    "dotted_path",
     "dotted_read",
     "dotted_write",
     "position",
     "query_written",
     "read_paths",
+    "refuse_dotted",
     "targeted",
     "targeted_writes",
 )
@@ -233,6 +237,38 @@ def dotted_read(
     return next((read for name, read in reads if texts[name]), reads[0][1])
 
 
+def caller_texts(
+    parameters: Sequence[ParameterSpec], dotted: ReadPaths, arguments: tuple[object, ...]
+) -> dict[str, str]:
+    """Return the texts of the caller's path arguments in a segment a read value is written to, by parameter name.
+
+    Each argument is encoded again by its parameter's codec, without validation.
+    """
+    return {
+        name: parameters[position].path_text(parameters[position].dump(arguments[position]))
+        for _, parts in dotted
+        for name, index, _, position in parts
+        if index is None
+    }
+
+
+def dotted_path(
+    parameters: Sequence[ParameterSpec],
+    dotted: ReadPaths,
+    written: tuple[JSONValue, ...],
+    callers: Callable[[], Mapping[str, str]] = dict,
+) -> Selector | None:
+    """Return the selector of the first read value that makes a path segment a dot segment once encoded, or None."""
+    return next(
+        (
+            read
+            for segment, parts in dotted
+            if (read := dotted_read(parameters, segment, parts, written, callers)) is not None
+        ),
+        None,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Targeted(Generic[T]):
     """An operation that sends only the values a helper writes into its targets, and where each value goes.
@@ -257,6 +293,10 @@ class Targeted(Generic[T]):
         """
         return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
 
+    def sent(self, values: tuple[JSONValue, ...]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+        """Return the request a child call sends writing the values, whatever their holder holds later."""
+        return lambda: (*self.request(values), None)
+
 
 def targeted_writes(
     call: OperationPlan[T],
@@ -274,12 +314,10 @@ def targeted_writes(
 
 def dotted_write(targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> Selector | None:
     """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
-    parameters = targeted.call.parameters
-    return next(
-        (
-            read
-            for segment, parts in targeted.dotted
-            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None
-        ),
-        None,
-    )
+    return dotted_path(targeted.call.parameters, targeted.dotted, written)
+
+
+def refuse_dotted(targeted: Targeted[Any], written: tuple[JSONValue, ...], refuse: Refuse) -> None:
+    """Refuse a read value that makes a path segment a dot segment once encoded, as a value a server gave."""
+    if (read := dotted_write(targeted, written)) is not None:
+        raise refuse(read, "value")

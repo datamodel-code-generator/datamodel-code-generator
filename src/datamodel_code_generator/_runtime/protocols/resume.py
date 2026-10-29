@@ -2,21 +2,35 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
+from typing_extensions import TypeVar
+
+from .errors import configuration_error
+from .records import plain_copy
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
 
 __all__ = (
     "MalformedStateError",
+    "decoded_state",
     "require_state",
     "saved_expiry",
     "state_array",
     "state_count",
     "state_expiry",
+    "state_fields",
     "state_text",
+    "unexpired",
 )
+
+V = TypeVar("V")
 
 
 class MalformedStateError(Exception):
@@ -27,6 +41,12 @@ def require_state(condition: bool) -> None:  # noqa: FBT001
     """Refuse a checkpoint's state that breaks a condition of its helper."""
     if not condition:
         raise MalformedStateError
+
+
+def state_fields(value: JSONValue, names: frozenset[str]) -> Mapping[str, JSONValue]:
+    """Return a saved object's members, refusing any other value and an object without exactly the names."""
+    require_state(isinstance(value, Mapping) and frozenset(value) == names)
+    return cast("Mapping[str, JSONValue]", value)
 
 
 def state_array(value: JSONValue) -> list[JSONValue]:
@@ -64,3 +84,17 @@ def state_expiry(value: JSONValue) -> datetime | None:
         raise MalformedStateError from None
     require_state(expires_at.utcoffset() is not None and expires_at.isoformat() == text)
     return expires_at
+
+
+def decoded_state(helper_id: str, state: object, decode: Callable[[JSONValue], V]) -> V:
+    """Return what a checkpoint's state decodes to, refusing one that is not JSON or does not fit the helper."""
+    try:
+        return decode(plain_copy(state))
+    except (MalformedStateError, TypeError, ValueError):
+        raise configuration_error(helper_id, ("state",)) from None
+
+
+def unexpired(helper_id: str, expires_at: datetime | None, clock: Clock) -> None:
+    """Refuse a checkpoint past the server's expiry by the client's wall clock."""
+    if expires_at is not None and expires_at.timestamp() <= clock.time():
+        raise configuration_error(helper_id, ("state",), "expired")
