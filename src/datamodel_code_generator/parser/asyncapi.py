@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -23,10 +24,12 @@ from datamodel_code_generator.enums import AsyncAPIVersion
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
+    _VersionSource,
     get_model_by_path,
     unescape_json_pointer_segment,
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_asyncapi_version
 from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
 
@@ -37,7 +40,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._types import AsyncAPIParserConfigDict
     from datamodel_code_generator.config import AsyncAPIParserConfig
-    from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
 
 
@@ -157,6 +159,40 @@ def _make_model_name(*parts: object) -> str:
     return "".join(words) or "AsyncAPIModel"
 
 
+def _member_schemas(
+    holder: dict[str, Any],
+    key: str,
+    walker: Callable[..., list[AsyncAPISchema]],
+    name: str,
+    path: list[str],
+    *rest: Any,
+) -> list[AsyncAPISchema]:
+    """Return the schemas ``walker`` finds in member ``key`` of ``holder`` at ``path``; none where it lacks one."""
+    return walker(holder[key], name, [*path, key], *rest) if key in holder else []
+
+
+def _map_schemas(
+    entries: Any, walker: Callable[..., list[AsyncAPISchema]], name: str, path: list[str], *rest: Any, suffix: str = ""
+) -> list[AsyncAPISchema]:
+    """Return the schemas ``walker`` finds in each entry of the map ``entries`` at ``path``, named after its key."""
+    return [
+        schema
+        for key, value in _iter_mapping_items(entries)
+        for schema in walker(value, _make_model_name(name, key, suffix), [*path, key], *rest)
+    ]
+
+
+def _message_list_schemas(
+    messages: list[Any], walker: Callable[..., list[AsyncAPISchema]], name: str, path: list[str], *rest: Any
+) -> list[AsyncAPISchema]:
+    """Return the schemas ``walker`` finds in each message of the list ``messages`` at ``path``, named by number."""
+    return [
+        schema
+        for index, message in enumerate(messages, start=1)
+        for schema in walker(message, _make_model_name(name, "Message", index), [*path, str(index - 1)], *rest)
+    ]
+
+
 def _escape_context_path_part(part: str) -> str:
     return part.removeprefix("#/").replace("~", "~0").replace("/", "~1")
 
@@ -258,24 +294,15 @@ class AsyncAPIParser(OpenAPIParser):
         """Initialize the AsyncAPI parser."""
         super().__init__(source=source, config=config, **options)
 
+    _version_source: ClassVar[_VersionSource] = _VersionSource(
+        "asyncapi_version", AsyncAPIVersion.Auto, detect_asyncapi_version, OpenAPISchemaFeatures.from_asyncapi_version
+    )
+
     @property
     def schema_features(self) -> OpenAPISchemaFeatures:
         """Get Schema Object features based on config or detected AsyncAPI version."""
         # Keep this uncached because AsyncAPI reference parsing swaps raw_obj between document contexts.
-        return self._schema_features_for(self.raw_obj)
-
-    def _schema_features_for(self, root: dict[str, YamlValue]) -> OpenAPISchemaFeatures:
-        """Get the Schema Object features of a root document based on config or its detected AsyncAPI version."""
-        from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
-            OpenAPISchemaFeatures,
-            detect_asyncapi_version,
-        )
-
-        config_version = getattr(self.config, "asyncapi_version", None)
-        if config_version is not None and config_version != AsyncAPIVersion.Auto:
-            return OpenAPISchemaFeatures.from_asyncapi_version(config_version)
-        version = detect_asyncapi_version(root) if root else AsyncAPIVersion.Auto
-        return OpenAPISchemaFeatures.from_asyncapi_version(version)
+        return cast("OpenAPISchemaFeatures", self._schema_features_for(self.raw_obj))
 
     def _collect_discriminator_schemas(self) -> None:
         """Collect discriminator metadata from component schemas."""
@@ -339,19 +366,6 @@ class AsyncAPIParser(OpenAPIParser):
             context=context or self._current_asyncapi_context(),
             parse_as_file=parse_as_file,
             location=location,
-        )
-
-    def _schema_context_for_converted_schema(
-        self,
-        converted_schema: dict[str, YamlValue],
-        path: list[str],
-    ) -> AsyncAPIContext:
-        current_context = self._current_asyncapi_context()
-        return AsyncAPIContext(
-            raw_obj=converted_schema,
-            root_parts=self._converted_schema_root_parts(path),
-            base_path=current_context.base_path,
-            base_url=current_context.base_url,
         )
 
     def _converted_schema_root_parts(self, path: list[str]) -> list[str]:
@@ -440,7 +454,11 @@ class AsyncAPIParser(OpenAPIParser):
                 converted_schema.setdefault("title", name)
                 home = self.model_resolver.join_path(tuple(self._converted_schema_root_parts(path))).partition("#")[0]
                 converted_schema = self._mount_converted_schema(converted_schema, location, home=home)
-                context = self._schema_context_for_converted_schema(converted_schema, path)
+                context = replace(
+                    self._current_asyncapi_context(),
+                    raw_obj=converted_schema,
+                    root_parts=self._converted_schema_root_parts(path),
+                )
                 self.remote_object_cache[str((self.base_path / home).resolve())] = converted_schema
                 return [self._schema(name, converted_schema, context.root_parts, context, parse_as_file=True)]
             case "protobuf":
@@ -474,8 +492,7 @@ class AsyncAPIParser(OpenAPIParser):
                     include_root_schema=True,
                     location=location,
                 )
-            case _:  # pragma: no cover
-                raise _unsupported_schema_format_error(schema_format or "", path)
+        raise _unsupported_schema_format_error(schema_format or "", path)  # pragma: no cover
 
     def _resolve_ref_object(
         self,
@@ -491,12 +508,13 @@ class AsyncAPIParser(OpenAPIParser):
         self,
         value: Any,
         name: str,
-        seen_paths: set[tuple[str, ...]],
+        seen_paths: set[tuple[str, ...]] | None,
         recurse: Callable[[Any, str, list[str], set[tuple[str, ...]]], list[AsyncAPISchema]],
         *,
         rename: bool = True,
     ) -> list[AsyncAPISchema] | None:
         """Return ref recursion results; None means no ref or an already-seen ref."""
+        seen_paths = seen_paths or set()
         if (resolved := self._resolve_ref_object(value, seen_paths)) is None:
             return None
         resolved_path = resolved.path
@@ -509,25 +527,49 @@ class AsyncAPIParser(OpenAPIParser):
                 seen_paths | {tuple(resolved_path)},
             )
 
+    def _follow(
+        self,
+        value: Any,
+        name: str,
+        seen_paths: set[tuple[str, ...]] | None,
+        walker: Callable[[Any, str, list[str], set[tuple[str, ...]]], list[AsyncAPISchema]],
+        *,
+        rename: bool = True,
+    ) -> list[AsyncAPISchema] | None:
+        """Return no schemas for a value that is no object, those of the target of a new reference, else None."""
+        if not isinstance(value, dict):
+            return []
+        return self._recurse_into_ref(value, name, seen_paths, walker, rename=rename)
+
+    def _member_format_schemas(
+        self,
+        holder: dict[str, Any],
+        key: str,
+        name: str,
+        path: list[str],
+        schema_format: str | None = None,
+    ) -> list[AsyncAPISchema]:
+        """Return the schemas of the schema in member ``key`` of ``holder`` at ``path``; none where it lacks one."""
+        if key not in holder:
+            return []
+        location = self._member_location(holder, key)
+        return self._iter_schema_format_schemas(name, holder[key], [*path, key], schema_format, location=location)
+
     def _resolve_asyncapi_ref(self, ref: str) -> AsyncAPIResolvedRef:
         """Resolve an AsyncAPI Reference Object to raw data and a parser path."""
         resolved_ref = self._ref_path(ref)
         file_part, fragment = ([*resolved_ref.split("#", 1), ""])[:2]
-        raw_doc = self._get_ref_body(file_part) if file_part else self.raw_obj
         if file_part:
-            root_parts = [file_part] if is_url(file_part) else file_part.split("/")
-            base_path = None if is_url(file_part) else Path(file_part).parent
-            base_url = file_part if is_url(file_part) else None
+            remote = is_url(file_part)
+            context = AsyncAPIContext(
+                self._get_ref_body(file_part),
+                [file_part] if remote else file_part.split("/"),
+                None if remote else Path(file_part).parent,
+                file_part if remote else None,
+            )
         else:
-            root_parts = list(self.model_resolver.current_root)
-            base_path = self.model_resolver.current_base_path
-            base_url = self.model_resolver.base_url
-        context = AsyncAPIContext(
-            raw_obj=raw_doc,
-            root_parts=root_parts,
-            base_path=base_path,
-            base_url=base_url,
-        )
+            context = self._current_asyncapi_context()
+        raw_doc, root_parts = context.raw_obj, context.root_parts
         if not fragment:
             return AsyncAPIResolvedRef(raw_doc, root_parts or [resolved_ref], context)
         pointer = [p for p in fragment.split("/") if p]
@@ -544,70 +586,24 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(message, dict):
-            return []
-        if (
-            schemas := self._recurse_into_ref(message, name, seen_paths, self._iter_message_payload_schemas)
-        ) is not None:
+        if (schemas := self._follow(message, name, seen_paths, self._iter_message_payload_schemas)) is not None:
             return schemas
         if isinstance(one_of := message.get("oneOf"), list):
-            schemas: list[AsyncAPISchema] = []
-            for index, item in enumerate(one_of, start=1):
-                schemas.extend(
-                    self._iter_message_payload_schemas(
-                        item,
-                        _make_model_name(name, "Message", index),
-                        [*path, "oneOf", str(index - 1)],
-                        seen_paths,
-                    )
-                )
-            return schemas
-
-        schemas = []
+            return _message_list_schemas(one_of, self._iter_message_payload_schemas, name, [*path, "oneOf"], seen_paths)
         payload_schema_format = message.get("schemaFormat")
         if payload_schema_format is not None and not isinstance(payload_schema_format, str):
             msg = f"AsyncAPI message schemaFormat must be a string at {_path_to_string(path)}"
             raise Error(msg)
-        if "payload" in message:
-            schemas.extend(
-                self._iter_schema_format_schemas(
-                    _make_model_name(name, "Payload"),
-                    message["payload"],
-                    [*path, "payload"],
-                    payload_schema_format,
-                    location=self._member_location(message, "payload"),
-                )
-            )
-        has_headers = "headers" in message
-        if has_headers:
-            schemas.extend(
-                self._iter_schema_format_schemas(
-                    _make_model_name(name, "Headers"),
-                    message["headers"],
-                    [*path, "headers"],
-                    location=self._member_location(message, "headers"),
-                )
-            )
+        schemas = self._member_format_schemas(
+            message, "payload", _make_model_name(name, "Payload"), path, payload_schema_format
+        )
+        headers_name = None if "headers" in message else _make_model_name(name, "Headers")
+        schemas.extend(self._member_format_schemas(message, "headers", _make_model_name(name, "Headers"), path))
         if "traits" in message:
             schemas.extend(
-                self._iter_message_trait_schemas(
-                    message["traits"],
-                    None if has_headers else _make_model_name(name, "Headers"),
-                    name,
-                    [*path, "traits"],
-                    seen_paths,
-                )
+                self._iter_message_trait_schemas(message["traits"], headers_name, name, [*path, "traits"], seen_paths)
             )
-        if "bindings" in message:
-            schemas.extend(
-                self._iter_binding_schemas(
-                    message["bindings"],
-                    name,
-                    [*path, "bindings"],
-                    seen_paths,
-                )
-            )
+        schemas.extend(_member_schemas(message, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         return schemas
 
     def _iter_binding_schemas(
@@ -617,38 +613,30 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(bindings, dict):
-            return []
-        if (schemas := self._recurse_into_ref(bindings, name, seen_paths, self._iter_binding_schemas)) is not None:
+        if (schemas := self._follow(bindings, name, seen_paths, self._iter_binding_schemas)) is not None:
             return schemas
-
         schemas: list[AsyncAPISchema] = []
         for protocol_name, binding in _iter_mapping_items(bindings):
-            binding_path = [*path, protocol_name]
-            binding_name = _make_model_name(name, protocol_name)
-            if resolved := self._resolve_ref_object(binding, seen_paths):
-                with self._asyncapi_context(resolved.context):
-                    schemas.extend(
-                        self._iter_binding_schemas(
-                            {protocol_name: resolved.value},
-                            name,
-                            resolved.path,
-                            seen_paths | {tuple(resolved.path)},
-                        )
-                    )
-                continue
-            if not isinstance(binding, dict):
-                continue
-            for field_name, field_schema in _iter_mapping_items(binding):
-                if field_name not in BINDING_SCHEMA_FIELD_NAMES:
-                    continue
+            if (
+                followed := self._recurse_into_ref(
+                    binding,
+                    name,
+                    seen_paths,
+                    lambda value, _, ref_path, seen, protocol=protocol_name: self._iter_binding_schemas(
+                        {protocol: value}, name, ref_path, seen
+                    ),
+                    rename=False,
+                )
+            ) is not None:
+                schemas.extend(followed)
+            elif isinstance(binding, dict):
+                binding_name = _make_model_name(name, protocol_name)
                 schemas.extend(
-                    self._iter_schema_format_schemas(
-                        _make_model_name(binding_name, field_name),
-                        field_schema,
-                        [*binding_path, field_name],
-                        location=self._member_location(binding, field_name),
+                    schema
+                    for field_name, _ in _iter_mapping_items(binding)
+                    if field_name in BINDING_SCHEMA_FIELD_NAMES
+                    for schema in self._member_format_schemas(
+                        binding, field_name, _make_model_name(binding_name, field_name), [*path, protocol_name]
                     )
                 )
         return schemas
@@ -660,19 +648,9 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(parameter, dict):
-            return []
-        if (schemas := self._recurse_into_ref(parameter, name, seen_paths, self._iter_parameter_schemas)) is not None:
+        if (schemas := self._follow(parameter, name, seen_paths, self._iter_parameter_schemas)) is not None:
             return schemas
-        if "schema" not in parameter:
-            return []
-        return self._iter_schema_format_schemas(
-            name,
-            parameter["schema"],
-            [*path, "schema"],
-            location=self._member_location(parameter, "schema"),
-        )
+        return self._member_format_schemas(parameter, "schema", name, path)
 
     def _iter_message_trait_schemas(
         self,
@@ -682,42 +660,36 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
         schemas: list[AsyncAPISchema] = []
         for trait, trait_path in _iter_trait_items(traits, path):
-            if resolved := self._resolve_ref_object(trait, seen_paths):
-                with self._asyncapi_context(resolved.context):
-                    schemas.extend(
-                        self._iter_message_trait_schemas(
-                            resolved.value,
-                            headers_name,
-                            binding_name,
-                            resolved.path,
-                            seen_paths | {tuple(resolved.path)},
-                        )
-                    )
+            if (
+                followed := self._recurse_into_ref(
+                    trait,
+                    binding_name,
+                    seen_paths,
+                    lambda value, _, ref_path, seen: self._iter_message_trait_schemas(
+                        value, headers_name, binding_name, ref_path, seen
+                    ),
+                    rename=False,
+                )
+            ) is not None:
+                schemas.extend(followed)
                 continue
             if "headers" in trait and headers_name is not None:
                 if any(schema.name == headers_name for schema in schemas):
                     msg = f"Multiple AsyncAPI message traits define headers for {_path_to_string(path)}"
                     raise Error(msg)
-                schemas.extend(
-                    self._iter_schema_format_schemas(
-                        headers_name,
-                        trait["headers"],
-                        [*trait_path, "headers"],
-                        location=self._member_location(trait, "headers"),
-                    )
+                schemas.extend(self._member_format_schemas(trait, "headers", headers_name, trait_path))
+            schemas.extend(
+                _member_schemas(
+                    trait,
+                    "bindings",
+                    self._iter_binding_schemas,
+                    _make_model_name(binding_name, "Trait"),
+                    trait_path,
+                    seen_paths,
                 )
-            if "bindings" in trait:
-                schemas.extend(
-                    self._iter_binding_schemas(
-                        trait["bindings"],
-                        _make_model_name(binding_name, "Trait"),
-                        [*trait_path, "bindings"],
-                        seen_paths,
-                    )
-                )
+            )
         return schemas
 
     def _iter_operation_trait_schemas(
@@ -727,46 +699,22 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
         schemas: list[AsyncAPISchema] = []
         for trait, trait_path in _iter_trait_items(traits, path):
-            if resolved := self._resolve_ref_object(trait, seen_paths):
-                with self._asyncapi_context(resolved.context):
-                    schemas.extend(
-                        self._iter_operation_trait_schemas(
-                            resolved.value,
-                            name,
-                            resolved.path,
-                            seen_paths | {tuple(resolved.path)},
-                        )
-                    )
-                continue
-            if "bindings" not in trait:
-                continue
+            followed = self._recurse_into_ref(trait, name, seen_paths, self._iter_operation_trait_schemas, rename=False)
             schemas.extend(
-                self._iter_binding_schemas(
-                    trait["bindings"],
+                _member_schemas(
+                    trait,
+                    "bindings",
+                    self._iter_binding_schemas,
                     _make_model_name(name, "Trait"),
-                    [*trait_path, "bindings"],
+                    trait_path,
                     seen_paths,
                 )
+                if followed is None
+                else followed
             )
         return schemas
-
-    def _iter_message_trait_header_schemas(
-        self,
-        traits: Any,
-        name: str,
-        path: list[str],
-        seen_paths: set[tuple[str, ...]] | None = None,
-    ) -> list[AsyncAPISchema]:
-        return self._iter_message_trait_schemas(
-            traits,
-            name,
-            name.removesuffix("Headers") or name,
-            path,
-            seen_paths,
-        )
 
     def _iter_operation_message_schemas(
         self,
@@ -775,16 +723,7 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
     ) -> list[AsyncAPISchema]:
         if isinstance(message, list):
-            schemas: list[AsyncAPISchema] = []
-            for index, item in enumerate(message, start=1):
-                schemas.extend(
-                    self._iter_operation_message_schemas(
-                        item,
-                        _make_model_name(name, "Message", index),
-                        [*path, str(index - 1)],
-                    )
-                )
-            return schemas
+            return _message_list_schemas(message, self._iter_operation_message_schemas, name, path)
         return self._iter_message_payload_schemas(message, name, path)
 
     def _iter_operation_reply_schemas(
@@ -794,19 +733,12 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(reply, dict):
-            return []
         if (
-            schemas := self._recurse_into_ref(reply, name, seen_paths, self._iter_operation_reply_schemas, rename=False)
+            schemas := self._follow(reply, name, seen_paths, self._iter_operation_reply_schemas, rename=False)
         ) is not None:
             return schemas
-        if "messages" not in reply:
-            return []
-        return self._iter_operation_message_schemas(
-            reply["messages"],
-            _make_model_name(name, "Reply"),
-            [*path, "messages"],
+        return _member_schemas(
+            reply, "messages", self._iter_operation_message_schemas, _make_model_name(name, "Reply"), path
         )
 
     def _iter_operation_schemas(
@@ -816,47 +748,14 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(operation, dict):
-            return []
-        if (schemas := self._recurse_into_ref(operation, name, seen_paths, self._iter_operation_schemas)) is not None:
+        if (schemas := self._follow(operation, name, seen_paths, self._iter_operation_schemas)) is not None:
             return schemas
-        schemas: list[AsyncAPISchema] = []
-        if "traits" in operation:
-            schemas.extend(
-                self._iter_operation_trait_schemas(
-                    operation["traits"],
-                    name,
-                    [*path, "traits"],
-                    seen_paths,
-                )
-            )
-        if "bindings" in operation:
-            schemas.extend(
-                self._iter_binding_schemas(
-                    operation["bindings"],
-                    name,
-                    [*path, "bindings"],
-                    seen_paths,
-                )
-            )
-        if "messages" in operation:
-            schemas.extend(
-                self._iter_operation_message_schemas(
-                    operation["messages"],
-                    name,
-                    [*path, "messages"],
-                )
-            )
-        if "reply" in operation:
-            schemas.extend(
-                self._iter_operation_reply_schemas(
-                    operation["reply"],
-                    name,
-                    [*path, "reply"],
-                )
-            )
-        return schemas
+        return [
+            *_member_schemas(operation, "traits", self._iter_operation_trait_schemas, name, path, seen_paths),
+            *_member_schemas(operation, "bindings", self._iter_binding_schemas, name, path, seen_paths),
+            *_member_schemas(operation, "messages", self._iter_operation_message_schemas, name, path),
+            *_member_schemas(operation, "reply", self._iter_operation_reply_schemas, name, path),
+        ]
 
     def _iter_channel_schemas(
         self,
@@ -865,49 +764,22 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
-        seen_paths = seen_paths or set()
-        if not isinstance(channel, dict):
-            return []
-        if (schemas := self._recurse_into_ref(channel, name, seen_paths, self._iter_channel_schemas)) is not None:
+        if (schemas := self._follow(channel, name, seen_paths, self._iter_channel_schemas)) is not None:
             return schemas
-        schemas: list[AsyncAPISchema] = []
-        if "parameters" in channel:
-            for parameter_name, parameter in _iter_mapping_items(channel["parameters"]):
-                schemas.extend(
-                    self._iter_parameter_schemas(
-                        parameter,
-                        _make_model_name(name, parameter_name),
-                        [*path, "parameters", parameter_name],
-                        seen_paths,
-                    )
-                )
-        if "bindings" in channel:
-            schemas.extend(
-                self._iter_binding_schemas(
-                    channel["bindings"],
-                    name,
-                    [*path, "bindings"],
-                    seen_paths,
-                )
-            )
+        schemas = _map_schemas(
+            channel.get("parameters"), self._iter_parameter_schemas, name, [*path, "parameters"], seen_paths
+        )
+        schemas.extend(_member_schemas(channel, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         for operation_name in OPERATION_NAMES:
-            operation = channel.get(operation_name)
-            if isinstance(operation, dict) and "message" in operation:
+            if isinstance(operation := channel.get(operation_name), dict) and "message" in operation:
                 schemas.extend(
                     self._iter_operation_message_schemas(
-                        operation["message"],
-                        _make_model_name(name, operation_name),
-                        [*path, operation_name, "message"],
+                        operation["message"], _make_model_name(name, operation_name), [*path, operation_name, "message"]
                     )
                 )
-        for message_name, message in _iter_mapping_items(channel.get("messages")):
-            schemas.extend(
-                self._iter_message_payload_schemas(
-                    message,
-                    _make_model_name(name, message_name),
-                    [*path, "messages", message_name],
-                )
-            )
+        schemas.extend(
+            _map_schemas(channel.get("messages"), self._iter_message_payload_schemas, name, [*path, "messages"])
+        )
         return schemas
 
     def _iter_asyncapi_schemas(
@@ -915,103 +787,41 @@ class AsyncAPIParser(OpenAPIParser):
         specification: dict[str, Any],
         path_parts: list[str],
     ) -> list[AsyncAPISchema]:
-        schemas: list[AsyncAPISchema] = []
+        """Return the schemas of a document: its component schemas, then those of each of its maps, in that order."""
         components = specification.get("components", {})
         components = components if isinstance(components, dict) else {}
-
-        for schema_name, raw_schema in _iter_mapping_items(component_schemas := components.get("schemas")):
-            if not isinstance(raw_schema, (dict, bool)):
-                continue
-            schemas.extend(
-                self._iter_schema_format_schemas(
-                    schema_name,
-                    raw_schema,
-                    [*path_parts, "#/components", "schemas", schema_name],
-                    location=self._member_location(component_schemas, str(schema_name)),
-                )
+        component_schemas = components.get("schemas")
+        schemas = [
+            schema
+            for schema_name, raw_schema in _iter_mapping_items(component_schemas)
+            if isinstance(raw_schema, (dict, bool))
+            for schema in self._iter_schema_format_schemas(
+                schema_name,
+                raw_schema,
+                [*path_parts, "#/components", "schemas", schema_name],
+                location=self._member_location(component_schemas, str(schema_name)),
             )
-
-        for message_name, message in _iter_mapping_items(components.get("messages")):
-            schemas.extend(
-                self._iter_message_payload_schemas(
-                    message,
-                    _make_model_name(message_name),
-                    [*path_parts, "#/components", "messages", message_name],
-                )
-            )
-
-        for trait_name, trait in _iter_mapping_items(components.get("messageTraits")):
-            schemas.extend(
-                self._iter_message_trait_header_schemas(
-                    trait,
-                    _make_model_name(trait_name, "Headers"),
-                    [*path_parts, "#/components", "messageTraits", trait_name],
-                )
-            )
-
-        for parameter_name, parameter in _iter_mapping_items(components.get("parameters")):
-            schemas.extend(
-                self._iter_parameter_schemas(
-                    parameter,
-                    _make_model_name(parameter_name),
-                    [*path_parts, "#/components", "parameters", parameter_name],
-                )
-            )
-
-        for channel_name, channel in _iter_mapping_items(components.get("channels")):
-            schemas.extend(
-                self._iter_channel_schemas(
-                    channel,
-                    _make_model_name(channel_name),
-                    [*path_parts, "#/components", "channels", channel_name],
-                )
-            )
-
-        for reply_name, reply in _iter_mapping_items(components.get("replies")):
-            schemas.extend(
-                self._iter_operation_reply_schemas(
-                    reply,
-                    _make_model_name(reply_name),
-                    [*path_parts, "#/components", "replies", reply_name],
-                )
-            )
-
-        for operation_name, operation in _iter_mapping_items(components.get("operations")):
-            schemas.extend(
-                self._iter_operation_schemas(
-                    operation,
-                    _make_model_name(operation_name),
-                    [*path_parts, "#/components", "operations", operation_name],
-                )
-            )
-
-        for trait_name, trait in _iter_mapping_items(components.get("operationTraits")):
-            schemas.extend(
-                self._iter_operation_trait_schemas(
-                    trait,
-                    _make_model_name(trait_name),
-                    [*path_parts, "#/components", "operationTraits", trait_name],
-                )
-            )
-
-        for channel_name, channel in _iter_mapping_items(specification.get("channels")):
-            schemas.extend(
-                self._iter_channel_schemas(
-                    channel,
-                    _make_model_name(channel_name),
-                    [*path_parts, "#/channels", channel_name],
-                )
-            )
-
-        for operation_name, operation in _iter_mapping_items(specification.get("operations")):
-            schemas.extend(
-                self._iter_operation_schemas(
-                    operation,
-                    _make_model_name(operation_name),
-                    [*path_parts, "#/operations", operation_name],
-                )
-            )
-
+        ]
+        component_maps: tuple[tuple[str, Callable[..., list[AsyncAPISchema]], str], ...] = (
+            ("messages", self._iter_message_payload_schemas, ""),
+            (
+                "messageTraits",
+                lambda trait, name, path: self._iter_message_trait_schemas(
+                    trait, name, name.removesuffix("Headers") or name, path
+                ),
+                "Headers",
+            ),
+            ("parameters", self._iter_parameter_schemas, ""),
+            ("channels", self._iter_channel_schemas, ""),
+            ("replies", self._iter_operation_reply_schemas, ""),
+            ("operations", self._iter_operation_schemas, ""),
+            ("operationTraits", self._iter_operation_trait_schemas, ""),
+        )
+        for key, walker, suffix in component_maps:
+            path = [*path_parts, "#/components", key]
+            schemas.extend(_map_schemas(components.get(key), walker, "", path, suffix=suffix))
+        for key, walker in (("channels", self._iter_channel_schemas), ("operations", self._iter_operation_schemas)):
+            schemas.extend(_map_schemas(specification.get(key), walker, "", [*path_parts, f"#/{key}"]))
         return schemas
 
     def _resolve_asyncapi_unparsed_json_pointer(

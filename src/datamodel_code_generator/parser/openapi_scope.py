@@ -30,7 +30,13 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     _locate,
 )
-from datamodel_code_generator.parser.openapi import OPERATION_NAMES, OpenAPIParser, ParameterLocation, ReferenceObject
+from datamodel_code_generator.parser.openapi import (
+    OPERATION_NAMES,
+    OpenAPIParser,
+    ParameterLocation,
+    ReferenceObject,
+    _missing_operation_id,
+)
 from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
     encoding_applies,
@@ -279,9 +285,12 @@ class ApiOpenAPIParser(OpenAPIParser):
             if validated_obj is None and isinstance(raw, bool):
                 validated_obj = _locate(self._validate_schema_object(raw, path), frame.declaration)
             super()._parse_raw_or_validated_obj(name, raw, path, validated_obj)  # pyright: ignore[reportUnknownMemberType]
-        (self._projected_declarations if frame.projection == "item_stream_array" else self._processed_declarations).add(
-            frame.declaration
-        )
+        self._mark_processed(frame)
+
+    def _mark_processed(self, frame: ApiDeclarationFrame) -> None:
+        """Record the declaration of ``frame`` as processed, or as projected where it is an item stream's array."""
+        projected = frame.projection == "item_stream_array"
+        (self._projected_declarations if projected else self._processed_declarations).add(frame.declaration)
 
     @override
     def _parse_raw_at(self, name: str, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
@@ -295,11 +304,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             (frame := self.declaration_frames[-1]).engine_path
         ) == self.model_resolver.join_path(tuple(path)):
             super().parse_obj(frame.candidate_name, obj, path)  # pyright: ignore[reportUnknownMemberType]
-            (
-                self._projected_declarations
-                if frame.projection == "item_stream_array"
-                else self._processed_declarations
-            ).add(frame.declaration)
+            self._mark_processed(frame)
             return
         ref = canonical_ref(ModelResolver.join_path(tuple(path)))
         if ref in self.reserved_refs.get(tuple(self.model_resolver.current_root), ()):
@@ -494,7 +499,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._register_discriminator_schema("#", raw)
         components = _mapping(raw.get("components", {}), [document, "components"])
         schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
-        potential: dict[str, tuple[dict[str, YamlValue], list[str]]] = {}
+        potential: list[tuple[str, dict[str, YamlValue], list[str]]] = []
         for name, schema in self._named_components(schemas, [document, "components", "schemas"]).items():
             local_ref = "#" + pointer_fragment(("components", "schemas", name))
             match schema:
@@ -509,16 +514,12 @@ class ApiOpenAPIParser(OpenAPIParser):
                             if isinstance(item, dict) and isinstance(ref := item.get("$ref"), str)
                         ]
                         if refs:
-                            potential[local_ref] = schema, refs
+                            potential.append((local_ref, schema, refs))
                 case _:
                     self._validate_member(
                         schema, [document, "components", "schemas", name], self._member_location(schemas, name)
                     )
-        for child, (schema, refs) in potential.items():
-            for parent in refs:
-                resolved = self._ref_path(parent)
-                if resolved in self._discriminator_schemas or resolved.partition("#")[0] != document[:-1]:
-                    self._discriminator_subtypes[resolved].append(self._schema_key(schema, child, "allOf"))
+        self._link_discriminator_subtypes(document, potential)
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
@@ -693,13 +694,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             headers_path = [*target.path, "headers"]
             headers = _mapping(target.value.get("headers", {}), headers_path)
             for key, value in headers.items():
-                if self._key_name(headers, key, headers_path, "header name").lower() == "content-type":
-                    self._ignore_declaration(
-                        self._declared(target.value).child("headers", key),
-                        "oas_header_ignored",
-                        "header",
-                        wire_name=key,
-                    )
+                if self._ignores_content_type(target.value, headers, key, headers_path, "header"):
                     continue
                 header = self._resolve_api_object(value, [*target.path, "headers", key])
                 with self._api_object_context(header):
@@ -771,12 +766,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         global_parameters: list[ApiParameterDeclaration],
     ) -> None:
         """Visit each path-item declaration once, retaining cyclic/reference edges."""
-        self.declaration_uses.append((use_site, target.declaration, target.value))
-        if target.declaration in self._active_api_objects or target.declaration in self._completed_api_objects:
-            return
-        self._active_api_objects.add(target.declaration)
-        try:
-            with self._api_object_context(target):
+        with self._visit_once(use_site, target) as walks:
+            if walks:
                 common = (
                     global_parameters,
                     self._parameter_declarations(target.value.get("parameters", []), [*target.path, "parameters"]),
@@ -793,6 +784,18 @@ class ApiOpenAPIParser(OpenAPIParser):
                         prefix,
                         common,
                     )
+
+    @contextmanager
+    def _visit_once(self, use_site: SchemaLocation, target: _ApiObject) -> Generator[bool, None, None]:
+        """Record a use of ``target`` and yield whether to walk it, in its context: not while or after it is walked."""
+        self.declaration_uses.append((use_site, target.declaration, target.value))
+        if target.declaration in self._active_api_objects or target.declaration in self._completed_api_objects:
+            yield False
+            return
+        self._active_api_objects.add(target.declaration)
+        try:
+            with self._api_object_context(target):
+                yield True
             self._completed_api_objects.add(target.declaration)
         finally:
             self._active_api_objects.remove(target.declaration)
@@ -867,11 +870,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             raise SchemaParseError(msg, path=path)
         operation_id = operation.get("operationId")
         if self.use_operation_id_as_name and not operation_id:
-            msg = (
-                "All operations must have an operationId when --use_operation_id_as_name is set."
-                f"The following path was missing an operationId: {prefix}"
-            )
-            raise Error(msg)
+            raise _missing_operation_id(prefix)
         name = (
             self._get_model_name(str(operation_id), "", "")
             if self.use_operation_id_as_name
@@ -952,12 +951,8 @@ class ApiOpenAPIParser(OpenAPIParser):
     def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Traverse callback expressions in declaration order without expanding cycles."""
         target = self._resolve_api_object(raw, path)
-        self.declaration_uses.append((use_site, target.declaration, target.value))
-        if target.declaration in self._active_api_objects or target.declaration in self._completed_api_objects:
-            return
-        self._active_api_objects.add(target.declaration)
-        try:
-            with self._api_object_context(target):
+        with self._visit_once(use_site, target) as walks:
+            if walks:
                 ordinal = 0
                 for expression, value in target.value.items():
                     if self._key_name(target.value, expression, target.path, "callback expression").startswith("x-"):
@@ -967,9 +962,6 @@ class ApiOpenAPIParser(OpenAPIParser):
                     child = self._resolve_api_object(_mapping(value, expression_path), expression_path)
                     child_use = use_site.child("callbacks", path[-1], expression)
                     self._walk_path_item(child, child_use, prefix + str(ordinal), [])
-            self._completed_api_objects.add(target.declaration)
-        finally:
-            self._active_api_objects.remove(target.declaration)
 
     def _ignore_declaration(
         self,
@@ -988,6 +980,22 @@ class ApiOpenAPIParser(OpenAPIParser):
         """Retain only the ignored occurrence and its finite applicability reason."""
         use_site = self.declaration_frames[-1].root_use_site if self.declaration_frames else None
         self.ignored_declarations.append(ApiIgnoredDeclaration(declaration, use_site, reason, owner, media, wire_name))
+
+    def _ignores_content_type(  # noqa: PLR0913, PLR0917
+        self,
+        holder: dict[str, YamlValue],
+        headers: dict[str, YamlValue],
+        key: str,
+        path: list[str],
+        owner: MediaOwner,
+        media: str | None = None,
+    ) -> bool:
+        """Return whether header ``key`` of ``holder`` at ``path`` is ``Content-Type``, which is recorded as ignored."""
+        if self._key_name(headers, key, path, "header name").lower() != "content-type":
+            return False
+        declaration = self._declared(holder).child("headers", key)
+        self._ignore_declaration(declaration, "oas_header_ignored", owner, media=media, wire_name=key)
+        return True
 
     def _walk_encoding(
         self, name: str, medium: dict[str, YamlValue], media: str, path: list[str], owner: MediaOwner
@@ -1020,14 +1028,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 continue
             headers_path = [*property_path, "headers"]
             for key, header_value in (headers := _mapping(headers, headers_path)).items():
-                if self._key_name(headers, key, headers_path, "header name").lower() == "content-type":
-                    self._ignore_declaration(
-                        self._declared(encoding).child("headers", key),
-                        "oas_header_ignored",
-                        owner,
-                        media=media,
-                        wire_name=key,
-                    )
+                if self._ignores_content_type(encoding, headers, key, headers_path, owner, media):
                     continue
                 property_key = self._key_name(encodings, property_name, encoding_path, "encoding property name")
                 header = self._resolve_api_object(header_value, [*property_path, "headers", key])

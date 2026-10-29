@@ -406,6 +406,24 @@ _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS = frozenset({
     JsonSchemaVersion.Draft6,
     JsonSchemaVersion.Draft7,
 })
+
+
+@record
+class _VersionSource:
+    """Where a parser reads the version of its documents: a config field unless it is ``auto``, else ``detect``.
+
+    ``features`` builds the schema features of a version.
+    """
+
+    config_field: str
+    auto: _enum.Enum
+    detect: Callable[[dict[str, YamlValue]], _enum.Enum]
+    features: Callable[[Any], JsonSchemaFeatures]
+
+
+_JSON_SCHEMA_VERSION = _VersionSource(
+    "jsonschema_version", JsonSchemaVersion.Auto, detect_jsonschema_version, JsonSchemaFeatures.from_version
+)
 _PYTHON_FIELD_OVERRIDES_KEY = "__python_field_overrides"
 _READ_AS_CONST_KEY = "x-datamodel-code-generator-read-as-const"
 
@@ -2374,6 +2392,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _non_dict_source_is_invalid: ClassVar[bool] = False
     _named_entry_maps: ClassVar[frozenset[str]] = _NAMED_ENTRY_MAP_KEYWORDS
     _component_schemas_are_resources: ClassVar[bool] = False
+    _version_source: ClassVar[_VersionSource] = _JSON_SCHEMA_VERSION
 
     COMPATIBLE_PYTHON_TYPES: ClassVar[dict[str, frozenset[str]]] = {
         "string": frozenset({"str", "String"}),
@@ -2628,11 +2647,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
-        config_version = getattr(self.config, "jsonschema_version", None)
-        if config_version is not None and config_version != JsonSchemaVersion.Auto:
-            return JsonSchemaFeatures.from_version(config_version)
-        version = detect_jsonschema_version(root) if root else JsonSchemaVersion.Auto
-        return JsonSchemaFeatures.from_version(version)
+        return self._version_source.features(self._document_version(root, self._version_source))
+
+    def _document_version(self, root: dict[str, YamlValue], source: _VersionSource) -> Any:
+        """Return the version ``source`` gives a root document: the configured one unless Auto, else as detected."""
+        if (configured := getattr(self.config, source.config_field, None)) is not None and configured != source.auto:
+            return configured
+        return source.detect(root) if root else source.auto
 
     @cached_property
     def _ref_sibling_keywords_enabled(self) -> bool:
@@ -2641,15 +2662,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _ref_sibling_keywords_enabled_in(self, root: dict[str, YamlValue]) -> bool:
         """Return whether the draft of the root document ``root`` evaluates validation beside ``$ref``."""
-        config_version = getattr(self.config, "jsonschema_version", None)
-        version = (
-            config_version
-            if config_version is not None and config_version != JsonSchemaVersion.Auto
-            else detect_jsonschema_version(root)
-            if root
-            else JsonSchemaVersion.Auto
-        )
-        return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
+        return self._document_version(root, _JSON_SCHEMA_VERSION) not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
 
     @property
     def _ref_siblings_are_parts(self) -> bool:
@@ -9576,6 +9589,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return obj
         return value.with_schema_location(obj.schema_location)
 
+    def _site_schema(self, obj: JsonSchemaObject, *, merge_ref_siblings: bool = False) -> JsonSchemaObject:
+        """Return ``obj`` as a site reads it: an array ``allOf`` as one value schema, a false allOf as ``false``.
+
+        With ``merge_ref_siblings``, a ``$ref`` whose sibling keywords are parts of it is merged with them first.
+        """
+        site = self._array_all_of_site_schema(obj)
+        if merge_ref_siblings and _merges_ref_siblings(site):
+            site = self._merge_ref_with_schema(site)
+        return self._read_false_all_of_values(site)
+
     def _ref_member_narrows_literals(
         self, member: JsonSchemaObject, target_literals: object, site: JsonSchemaObject
     ) -> bool:
@@ -11843,10 +11866,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 continue
 
-            field = self._array_all_of_site_schema(field)  # noqa: PLW2901
-            if _merges_ref_siblings(field):
-                field = self._merge_ref_with_schema(field)  # noqa: PLW2901
-            field = self._read_false_all_of_values(field)  # noqa: PLW2901
+            field = self._site_schema(field, merge_ref_siblings=True)  # noqa: PLW2901
 
             if original_field_name == variant_key:
                 self.model_resolver.name_past_parent([*path, field_name])
@@ -12000,7 +12020,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constrained_name: str | None = None,
     ) -> DataType:
         """Parse a mapping value schema while preserving supported Annotated constraints."""
-        additional_properties = self._read_false_all_of_values(self._array_all_of_site_schema(additional_properties))
+        additional_properties = self._site_schema(additional_properties)
         if not self._output_model_context.supports_annotated_constraints:
             return self.parse_item(
                 name,
@@ -12863,7 +12883,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         is built in this frame, so a nested schema costs no more frames than the parse methods it reaches.
         """
         with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
-            item = self._read_false_all_of_values(self._array_all_of_site_schema(item))
+            item = self._site_schema(item)
             python_type_override = self._get_python_type_override(item)
             if python_type_override:
                 return python_type_override
@@ -15143,9 +15163,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
     ) -> None:
         """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
-        choice = self._DEFINITION_TABLE.choose(
-            self, SchemaSite(name, self._read_false_all_of_values(self._array_all_of_site_schema(obj)), path)
-        )
+        choice = self._DEFINITION_TABLE.choose(self, SchemaSite(name, self._site_schema(obj), path))
         choice.build(self, choice.site)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:

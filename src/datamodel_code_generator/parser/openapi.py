@@ -13,6 +13,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from enum import Enum
 from functools import cache, cached_property, partial
+from operator import getitem
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
@@ -42,10 +43,11 @@ from datamodel_code_generator.parser.jsonschema import (
     _locate,
     _located,
     _located_model_schema,
-    _merges_ref_siblings,
     _named_path,
+    _VersionSource,
     get_model_by_path,
 )
+from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
 from datamodel_code_generator.types import (
     DataType,
@@ -67,7 +69,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._null_facts import NullMode
-    from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
 
 
@@ -310,6 +311,14 @@ def is_object_map_body(obj: JsonSchemaObject) -> bool:
     )
 
 
+def _missing_operation_id(path_name: str) -> Error:
+    """Return the error for an operation at ``path_name`` without the operationId --use-operation-id-as-name needs."""
+    return Error(
+        "All operations must have an operationId when --use_operation_id_as_name is set."
+        f"The following path was missing an operationId: {path_name}"
+    )
+
+
 @cache
 def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
     """Return the resolver that names operation models by the rules of the target Python version."""
@@ -326,25 +335,16 @@ class OpenAPIParser(JsonSchemaParser):
     _component_schemas_are_resources: ClassVar[bool] = True
     config: OpenAPIParserConfig
 
+    _version_source: ClassVar[_VersionSource] = _VersionSource(
+        "openapi_version", OpenAPIVersion.Auto, detect_openapi_version, OpenAPISchemaFeatures.from_openapi_version
+    )
+
     @cached_property
     def schema_features(self) -> OpenAPISchemaFeatures:
         """Get schema features based on config or detected OpenAPI version."""
         # OpenAPI parses a single document context, so caching is intentional.
         # AsyncAPI overrides this with a live property because it swaps raw_obj while resolving refs.
-        return self._schema_features_for(self.raw_obj)
-
-    def _schema_features_for(self, root: dict[str, YamlValue]) -> OpenAPISchemaFeatures:
-        """Get the Schema Object features of a root document based on config or its detected OpenAPI version."""
-        from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
-            OpenAPISchemaFeatures,
-            detect_openapi_version,
-        )
-
-        config_version = getattr(self.config, "openapi_version", None)
-        if config_version is not None and config_version != OpenAPIVersion.Auto:
-            return OpenAPISchemaFeatures.from_openapi_version(config_version)
-        version = detect_openapi_version(root) if root else OpenAPIVersion.Auto
-        return OpenAPISchemaFeatures.from_openapi_version(version)
+        return cast("OpenAPISchemaFeatures", self._schema_features_for(self.raw_obj))
 
     @property
     @override
@@ -413,10 +413,7 @@ class OpenAPIParser(JsonSchemaParser):
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:
         """Temporarily use OpenAPI 3.2 $self as the document root identifier."""
-        if not isinstance(openapi_self := specification.get("$self"), str):
-            yield
-            return
-        if not self.schema_features.openapi_self:
+        if not isinstance(openapi_self := specification.get("$self"), str) or not self.schema_features.openapi_self:
             yield
             return
 
@@ -793,11 +790,7 @@ class OpenAPIParser(JsonSchemaParser):
         )
 
     def _get_raw_media_schema(self, media_obj: object) -> RawMediaSchemaSource | None:
-        """Return raw schema data from an OpenAPI media type object.
-
-        Note: This could be a staticmethod, but @snooper_to_methods() decorator
-        converts staticmethods to regular functions when pysnooper is installed.
-        """
+        """Return raw schema data from an OpenAPI media type object."""
         try:
             raw_media_obj = RawMediaObject.model_validate(media_obj)
         except ValidationError:  # pragma: no cover
@@ -931,7 +924,7 @@ class OpenAPIParser(JsonSchemaParser):
         path: list[str],
     ) -> DataType:
         """Parse a JSON schema object into a data type (``_OPENAPI_OPERATION_TABLE``)."""
-        site = SchemaSite(name, self._read_false_all_of_values(self._array_all_of_site_schema(obj)), path)
+        site = SchemaSite(name, self._site_schema(obj), path)
         choice = self._OPENAPI_OPERATION_TABLE.choose(self, site)
         data_type = choice.build(self, choice.site)
         self.parse_ref(site.obj, path)
@@ -1083,7 +1076,7 @@ class OpenAPIParser(JsonSchemaParser):
         camel_path_name = snake_to_upper_camel(normalized, target_python_version=target)
         return f"{camel_path_name}{method.capitalize()}{suffix}"
 
-    def parse_all_parameters(  # noqa: PLR0912, PLR0914, PLR0915
+    def parse_all_parameters(  # noqa: PLR0912, PLR0915
         self,
         name: str,
         parameters: list[ReferenceObject | ParameterObject],
@@ -1091,7 +1084,11 @@ class OpenAPIParser(JsonSchemaParser):
         *,
         location: SchemaLocation | None = None,
     ) -> DataType | None:
-        """Parse all operation parameters into a data model located at the operation object."""
+        """Parse all operation parameters into a data model located at the operation object.
+
+        A parameter whose content lists several media types is the union of their types, without the schema's
+        constraints.
+        """
         fields: list[DataModelFieldBase] = []
         field_schemas: list[tuple[JsonSchemaObject, list[str]]] = []
         exclude_field_names: set[str] = set()
@@ -1123,97 +1120,52 @@ class OpenAPIParser(JsonSchemaParser):
                 class_name=name,
             )
             if parameter.schema_:
-                param_schema = self._array_all_of_site_schema(parameter.schema_)
-                if _merges_ref_siblings(param_schema):
-                    param_schema = self._merge_ref_with_schema(param_schema)
-                param_schema = self._read_false_all_of_values(param_schema)
-                field_schemas.append((param_schema, [*path, name, parameter_name]))
-                effective_required = parameter.required
-                effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
-                    parameter_name,
-                    param_schema.default,
-                    has_default=param_schema.has_default,
-                    required=effective_required,
-                    class_name=reference.name,
-                )
-                fields.append(
-                    self.get_object_field(
-                        field_name=field_name,
-                        field=param_schema,
-                        field_type=self.parse_item(field_name, param_schema, [*path, name, parameter_name]),
-                        original_field_name=parameter_name,
-                        required=effective_required,
-                        alias=alias,
-                        effective_default=effective_default,
-                        effective_has_default=effective_has_default,
-                        use_default_with_required=use_default_with_required,
-                        class_name=reference.name,
-                    )
-                )
+                field_schema = self._site_schema(parameter.schema_, merge_ref_siblings=True)
+                field_schemas.append((field_schema, [*path, name, parameter_name]))
+                field_type = partial(self.parse_item, field_name, field_schema, [*path, name, parameter_name])
             else:
                 data_types: list[DataType] = []
-                object_schema: JsonSchemaObject | None = None
-                for (
-                    media_type,
-                    media_obj,
-                ) in parameter.content.items():
-                    schema_result = self._get_media_schema(media_obj)
-                    if schema_result is None:
+                field_schema = None
+                for media_type, media_obj in parameter.content.items():
+                    if (schema_result := self._get_media_schema(media_obj)) is None:
                         continue
                     schema_path = self._media_schema_path(
-                        [*path, name, parameter_name, media_type],
-                        from_item_schema=schema_result.from_item_schema,
+                        [*path, name, parameter_name, media_type], from_item_schema=schema_result.from_item_schema
                     )
-                    object_schema = self._read_false_all_of_values(
-                        self._array_all_of_site_schema(
-                            _locate(
-                                self._validate_schema_object(schema_result.schema, schema_path), schema_result.location
-                            )
-                            if isinstance(schema_result.schema, bool)
-                            else self.resolve_object(schema_result.schema, JsonSchemaObject)
-                        )
+                    field_schema = self._site_schema(
+                        _locate(self._validate_schema_object(schema_result.schema, schema_path), schema_result.location)
+                        if isinstance(schema_result.schema, bool)
+                        else self.resolve_object(schema_result.schema, JsonSchemaObject)
                     )
-                    data_types.append(
-                        self.parse_item(
-                            field_name,
-                            object_schema,
-                            schema_path,
-                        )
-                    )
-                    field_schemas.append((object_schema, schema_path))
-
+                    data_types.append(self.parse_item(field_name, field_schema, schema_path))
+                    field_schemas.append((field_schema, schema_path))
                 if not data_types:
                     continue
                 if len(data_types) == 1:
-                    data_type = data_types[0]
+                    field_type = partial(getitem, data_types, 0)
                 else:
-                    data_type = build_union(self.data_type, data_types)
-                    # multiple data_type parse as non-constraints field
-                    object_schema = None
-                original_default = object_schema.default if object_schema else None
-                original_has_default = object_schema.has_default if object_schema else False
-                effective_required = parameter.required
-                effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
-                    parameter_name,
-                    original_default,
-                    has_default=original_has_default,
-                    required=effective_required,
+                    field_schema, field_type = None, partial(build_union, self.data_type, data_types)
+            effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
+                parameter_name,
+                field_schema.default if field_schema else None,
+                has_default=field_schema.has_default if field_schema else False,
+                required=parameter.required,
+                class_name=reference.name,
+            )
+            fields.append(
+                self.get_object_field(
+                    field_name=field_name,
+                    field=field_schema,
+                    field_type=field_type(),
+                    original_field_name=parameter_name,
+                    required=parameter.required,
+                    alias=alias,
+                    effective_default=effective_default,
+                    effective_has_default=effective_has_default,
+                    use_default_with_required=use_default_with_required,
                     class_name=reference.name,
                 )
-                fields.append(
-                    self.get_object_field(
-                        field_name=field_name,
-                        field=object_schema,
-                        required=effective_required,
-                        field_type=data_type,
-                        alias=alias,
-                        original_field_name=parameter_name,
-                        effective_default=effective_default,
-                        effective_has_default=effective_has_default,
-                        use_default_with_required=use_default_with_required,
-                        class_name=reference.name,
-                    )
-                )
+            )
 
         if OpenAPIScope.Parameters in self.open_api_scopes and fields:
             if self._types_nullable_map_values:
@@ -1255,11 +1207,7 @@ class OpenAPIParser(JsonSchemaParser):
         path_name, method = path[-2:]
         if self.use_operation_id_as_name:
             if not operation.operationId:
-                msg = (
-                    f"All operations must have an operationId when --use_operation_id_as_name is set."
-                    f"The following path was missing an operationId: {path_name}"
-                )
-                raise Error(msg)
+                raise _missing_operation_id(path_name)
             path_name = operation.operationId
             method = ""
         self.parse_all_parameters(
@@ -1407,7 +1355,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_documents.add(document)
         self._register_discriminator_schema("#", raw)
         schemas: dict[str, Any] = raw.get("components", {}).get("schemas", {})
-        potential_subtypes: dict[str, list[str]] = {}
+        potential_subtypes: list[tuple[str, dict[str, Any], list[str]]] = []
 
         for schema_name, schema in schemas.items():
             match schema:
@@ -1422,22 +1370,29 @@ class OpenAPIParser(JsonSchemaParser):
                         self._member_location(schemas, schema_name),
                     )
                     continue  # pragma: no cover - validation always raises for non-schema values
-            self._register_discriminator_schema(f"#/components/schemas/{schema_name}", schema)
+            self._register_discriminator_schema(local_ref := f"#/components/schemas/{schema_name}", schema)
 
             all_of = schema.get("allOf")
             if all_of:
                 refs = [ref for item in all_of if isinstance(item, dict) and (ref := item.get("$ref"))]
                 if refs:
-                    potential_subtypes[schema_name] = refs
+                    potential_subtypes.append((local_ref, schema, refs))
+        self._link_discriminator_subtypes(document, potential_subtypes)
 
-        for schema_name, refs in potential_subtypes.items():
+    def _link_discriminator_subtypes(
+        self, document: str, children: list[tuple[str, dict[str, Any], list[str]]]
+    ) -> None:
+        """Record each child schema of ``document`` as a subtype of the parents its ``allOf`` references.
+
+        A child is its local reference, its schema and those references; a parent counts where its discriminator is
+        registered or it is in another document.
+        """
+        for child, schema, refs in children:
             for ref_in_allof in refs:
                 resolved_ref = self._ref_path(ref_in_allof)
                 # External parents may be registered after this child document is read.
                 if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:
-                    self._discriminator_subtypes[resolved_ref].append(
-                        self._schema_key(schemas[schema_name], f"#/components/schemas/{schema_name}", "allOf")
-                    )
+                    self._discriminator_subtypes[resolved_ref].append(self._schema_key(schema, child, "allOf"))
 
     def _register_discriminator_schema(self, ref: str, schema: dict[str, Any]) -> None:
         """Register the discriminator of a schema of a loaded document under its key, if no oneOf or anyOf lists types.
