@@ -1354,6 +1354,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.order_constructor_fields_by_written_defaults = (
             ConstructorFieldOrder.WrittenDefaults in config.order_constructor_fields_by
         )
+        self._field_option_kwargs: dict[str, Any] = {
+            "strip_default_none": self.strip_default_none,
+            "order_constructor_fields_by_written_defaults": self.order_constructor_fields_by_written_defaults,
+            "use_field_description": self.use_field_description,
+            "use_field_description_example": self.use_field_description_example,
+            "use_inline_field_description": self.use_inline_field_description,
+        }
+        """The configured field options that the field builders pass to the fields they build from a schema."""
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions

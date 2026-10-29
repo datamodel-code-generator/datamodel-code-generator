@@ -1874,14 +1874,8 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_all_of_field_item"]
 "F-use-site-models-for-constrained-refs.option-read" = { home = "F-use-site-models-for-constrained-refs", count = 1, audit = "D-L1-14" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_multiple_types_with_properties"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_object_map"]
 "H06.type-has-null" = { home = "H06", count = 1, audit = "D-L1-08" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._parse_root_type_with_context"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser._reads_enum_as_const"]
 "F-read-const-beside-enum.option-read" = { home = "F-read-const-beside-enum", count = 1, audit = "D-L1-10" }
@@ -1892,20 +1886,8 @@ fix = "G05"
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.get_object_field"]
 "F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_array"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_array_fields"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
-
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_combined_schema"]
 "F-keep-field-defaults-off-branch-roots.option-read" = { home = "F-keep-field-defaults-off-branch-roots", count = 2, audit = "D-L1-30" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_enum"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 3, audit = "D-PP-18" }
-
-[allow."src/datamodel_code_generator/parser/jsonschema.py"."JsonSchemaParser.parse_object_fields"]
-"F-order-constructor-fields-by.option-read" = { home = "F-order-constructor-fields-by", count = 1, audit = "D-PP-18" }
 
 [allow."src/datamodel_code_generator/parser/jsonschema.py"."_merges_ref_siblings"]
 "H03.merge-function" = { home = "H03", count = 1, audit = "D-L1-19" }
