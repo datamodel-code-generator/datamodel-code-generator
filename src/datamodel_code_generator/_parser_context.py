@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator.enums import HTTPBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
-    from datamodel_code_generator._shared_types import DefaultPutDict
+    from datamodel_code_generator._shared_types import DefaultPutDict, ResponseObserver
     from datamodel_code_generator._source import DirectoryInputFilter
 
 
@@ -33,9 +33,7 @@ class ParserSourceContext:
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     http_timeout: float | None = None
     external_ref_mapping: Mapping[str, str] | None = None
-    remote_response_observer: (
-        Callable[[str, Sequence[tuple[str, str]] | None, Sequence[tuple[str, str]] | None, bytes], None] | None
-    ) = None
+    remote_response_observer: ResponseObserver | None = None
 
 
 __all__ = ["ParserSourceContext"]

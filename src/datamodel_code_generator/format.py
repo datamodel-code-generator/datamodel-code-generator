@@ -190,6 +190,12 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
     return replacement
 
 
+def _package_modules(name: str, modules: dict[str, ModuleType]) -> dict[str, ModuleType]:
+    """Return the modules of `modules` that are the package `name` or one of its submodules."""
+    prefix = f"{name}."
+    return {loaded: module for loaded, module in modules.items() if loaded == name or loaded.startswith(prefix)}
+
+
 def _restore_watch_package(
     module_name: str,
     modules: dict[str, ModuleType],
@@ -198,10 +204,8 @@ def _restore_watch_package(
     parent_attribute: object,
 ) -> None:
     """Restore package interpreter state after a failed transactional refresh."""
-    prefix = f"{module_name}."
-    for loaded_name in tuple(sys.modules.copy()):
-        if loaded_name == module_name or loaded_name.startswith(prefix):
-            sys.modules.pop(loaded_name, None)
+    for loaded_name in _package_modules(module_name, sys.modules.copy()):
+        sys.modules.pop(loaded_name, None)
     sys.modules.update(modules)
     for original, namespace in module_namespaces.items():
         original.__dict__.clear()
@@ -227,13 +231,8 @@ def _fresh_watch_package(module: ModuleType) -> ModuleType:
     from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
-        prefix = f"{module.__name__}."
         loaded_modules = sys.modules.copy()
-        original_modules = {
-            loaded_name: loaded_module
-            for loaded_name, loaded_module in loaded_modules.items()
-            if loaded_name == module.__name__ or loaded_name.startswith(prefix)
-        }
+        original_modules = _package_modules(module.__name__, loaded_modules)
         module_namespaces = {
             loaded_module: loaded_module.__dict__.copy()
             for loaded_module in original_modules.values()
@@ -747,12 +746,11 @@ class CodeFormatter:
         if Formatter.ISORT in self.formatters:
             code = self.apply_isort(code)
         if self.use_builtin_formatter:
-            formatter = self.apply_builtin_formatter
-            match generated:
-                case True:
-                    formatter = _builtin_formatter_attr("_apply_builtin_generated_formatter")
-                case _:
-                    pass
+            formatter = (
+                _builtin_formatter_attr("_apply_builtin_generated_formatter")
+                if generated
+                else self.apply_builtin_formatter
+            )
             code = formatter(
                 code,
                 line_length=self.builtin_line_length,
@@ -809,35 +807,23 @@ class CodeFormatter:
 
     def apply_ruff_lint(self, code: str) -> str:
         """Run ruff check with auto-fix on code."""
-        result = self._run_ruff_command(
-            self._ruff_check_command("-"),
-            stdin=code.encode(self.encoding),
-            allow_stdout_on_error=True,
-        )
-        return result.stdout.decode(self.encoding)
+        return self._ruff_check(code).decode(self.encoding)
 
     def apply_ruff_formatter(self, code: str) -> str:
         """Format code using ruff format."""
-        ruff_path = self._find_ruff_path()
-        result = self._run_ruff_command(
-            (ruff_path, "format", "-"),
-            stdin=code.encode(self.encoding),
-        )
-        return result.stdout.decode(self.encoding)
+        return self._ruff_format(self._find_ruff_path(), code.encode(self.encoding)).decode(self.encoding)
 
     def apply_ruff_check_and_format(self, code: str) -> str:
         """Run ruff check and format sequentially for reliable processing."""
         ruff_path = self._find_ruff_path()
-        check_result = self._run_ruff_command(
-            self._ruff_check_command("-", ruff_path=ruff_path),
-            stdin=code.encode(self.encoding),
-            allow_stdout_on_error=True,
-        )
-        format_result = self._run_ruff_command(
-            (ruff_path, "format", "-"),
-            stdin=check_result.stdout,
-        )
-        return format_result.stdout.decode(self.encoding)
+        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode(self.encoding)
+
+    def _ruff_check(self, code: str, ruff_path: str | None = None) -> bytes:
+        command = self._ruff_check_command("-", ruff_path=ruff_path)
+        return self._run_ruff_command(command, stdin=code.encode(self.encoding), allow_stdout_on_error=True).stdout
+
+    def _ruff_format(self, ruff_path: str, stdin: bytes) -> bytes:
+        return self._run_ruff_command((ruff_path, "format", "-"), stdin=stdin).stdout
 
     def _run_ruff_command(
         self,
