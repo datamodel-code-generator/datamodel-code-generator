@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING
 from typing_extensions import TypeVar
 
 from ..client.errors import ConfigurationError
+from .errors import configuration_error
 from .webhook_events import (
     EventPlan,
     Facts,
-    configuration_error,
     epoch_microseconds,
     local_arguments,
     received,
@@ -112,7 +112,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     helper_id = plan.helper_id
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     if not callable(verify := getattr(verifier, "verify", None)):
-        raise configuration_error(("verifier",), "wrong_capability", helper_id)
+        raise configuration_error(helper_id, ("verifier",), "wrong_capability")
     size(limits.max_keys, len(keys.keys), helper_id)
     delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
     signed = None

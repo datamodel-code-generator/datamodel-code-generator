@@ -17,14 +17,11 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import ConfigurationError
-from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError, SessionLimitError
-from .options import PaginationOptions, layered
+from .errors import ProtocolDataError, SessionLimitError, configuration_error, data_error
+from .options import HelperLimits, PaginationOptions, checked_options, layered, new_session, patched_extra
 from .records import (
     BodySelector,
     HeaderSelector,
@@ -43,12 +40,13 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
     from types import TracebackType
 
+    from ..client.errors import ConfigurationError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
-    from ..client.timing import Clock
     from ..client.urls import Origin
     from .client import AsyncClientCore, ClientCore
+    from .errors import DataRule
     from .references import OperationRef
     from .writes import ReadPaths, Writes
 
@@ -367,21 +365,14 @@ class Page(Sealed, Generic[T_co, P_co]):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
 
     max_pages: int | None = None
     max_items: int | None = None
-    total_timeout: float | None = None
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
-
-
-def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason="invalid_value", helper_id=plan.helper_id)
 
 
 def _limits(
@@ -396,22 +387,10 @@ def _limits(
     refused, since every page is a request of its own that needs its own key, and so are the call's extra headers or
     query names of a parameter the helper writes, which would replace the values it writes.
     """
-    for name, value, kind in (
-        ("pagination_options", pagination_options, PaginationOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    request = options if isinstance(options, RequestOptions) else None
-    if (fixed := core.fixed_key(request, (plan.call,))) is not None:
-        raise _invalid(plan, fixed)
-    if request is not None:
-        for name in request.extra_headers or ():
-            if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "extra_headers", name))
-        for name in request.extra_query or ():
-            if name in plan.queries:
-                raise _invalid(plan, ("options", "extra_query", name))
+    request = checked_options(plan.helper_id, "pagination_options", pagination_options, PaginationOptions, options)
+    fixed = core.fixed_key(request, (plan.call,))
+    if (path := fixed or patched_extra(request, plan.headers, plan.queries)) is not None:
+        raise configuration_error(plan.helper_id, path)
     kinds = (pagination_options, core.helper_defaults(plan.helper_id))
     return _Limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
@@ -423,14 +402,9 @@ def _limits(
 
 
 def _data_error(
-    plan: PaginationPlan[T, P],
-    info: ResponseInfo | None,
-    condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"],
-    location: Selector,
+    plan: PaginationPlan[T, P], info: ResponseInfo | None, condition: DataRule, location: Selector
 ) -> ProtocolDataError:
-    return ProtocolDataError(
-        reason=condition, location=location, helper_id=plan.helper_id, operation=plan.operation, info=info
-    )
+    return data_error(plan.helper_id, plan.operation, info, condition, location)
 
 
 def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
@@ -673,7 +647,7 @@ class _Walk(Generic[T, P]):
 
     def state_error(self, action: str, state: str) -> ConfigurationError:
         """Return the refusal of an action the pager's state forbids."""
-        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self.plan.helper_id)
+        return configuration_error(self.plan.helper_id, (action, state), "invalid_state")
 
     def ready(self) -> OperationSession | None:
         """Return the session the next page is fetched in, or None when no page remains.
@@ -695,20 +669,9 @@ class _Walk(Generic[T, P]):
             plan = self.plan
             rule = plan.continuation
             assert not isinstance(rule, CountPlan)
-            raise ProtocolDataError(
-                reason="pagination_cycle",
-                location=rule.read,
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-                info=link.response,
-            )
+            raise data_error(plan.helper_id, plan.operation, link.response, "pagination_cycle", rule.read)
         if (session := self.session) is None:
-            from ..client.logical import OperationSession  # noqa: PLC0415 - Only a fetch loads the call runtime.
-
-            session = self.session = OperationSession(
-                total_timeout=limits.total_timeout,
-                clock=limits.clock,
-            )
+            session = self.session = new_session(limits)
         return session
 
     def operation(self) -> OperationPlan[P]:
@@ -762,9 +725,7 @@ class _Walk(Generic[T, P]):
         if (position := _integer(value)) is None:
             rule = plan.continuation
             assert isinstance(rule, CountPlan)
-            raise ProtocolDataError(
-                reason="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
-            )
+            raise data_error(plan.helper_id, plan.operation, None, "type", rule.write)
         self.start = position
 
     def sent(self, url: str, headers: HeadersView) -> None:
@@ -964,7 +925,7 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     """Return the link of a page this helper fetched, refusing any other page."""
     link = page._link if isinstance(page, Page) else None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     if link is None or link.fingerprint != plan.fingerprint:
-        raise ConfigurationError(field_path=("page",), reason="binding_mismatch", helper_id=plan.helper_id)
+        raise configuration_error(plan.helper_id, ("page",), "binding_mismatch")
     return link
 
 
@@ -1007,17 +968,17 @@ def _restored(
         return walk
     rule = plan.continuation
     if isinstance(rule, CountPlan) and (not isinstance(state, int) or isinstance(state, bool) or state < 0):
-        raise _invalid(plan, ("state",))
+        raise configuration_error(plan.helper_id, ("state",))
     if isinstance(rule, (NextUrlPlan, LinkPlan)):
         if not isinstance(state, str):
-            raise _invalid(plan, ("state",))
+            raise configuration_error(plan.helper_id, ("state",))
         walk.origins = core.follow_origins(plan.call, limits.options)
         stripped = core.follow_query()
         state = _followed(plan, rule.read, state, state, None, walk.origins, stripped)
     try:
         digest = sha256(canonical_json(state)).digest()
     except (TypeError, ValueError):
-        raise _invalid(plan, ("state",)) from None
+        raise configuration_error(plan.helper_id, ("state",)) from None
     walk.seed = digest
     walk.first = _first(plan, state)
     walk.link = _Link(plan.fingerprint, request, -1, 0, state, (), digest, None, None, _History({digest: 0}, -1))
