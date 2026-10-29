@@ -585,16 +585,7 @@ def _merge_data_type_modifiers(
         new_type.is_optional = new_type.is_optional or current_type.is_optional
     if isinstance(current_type, _InheritedTypeModifiers) and current_type.excludes_null:
         new_type.is_optional = False
-    inherited_is_container = any((
-        new_type.is_dict,
-        new_type.is_list,
-        new_type.is_set,
-        new_type.is_frozen_set,
-        new_type.is_mapping,
-        new_type.is_sequence,
-        new_type.is_tuple,
-    ))
-    if preserve_container_shape or inherited_is_container or not (new_type.reference or new_type.type):
+    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):  # noqa: SLF001
         new_type.is_dict = new_type.is_dict or current_type.is_dict
         new_type.is_list = new_type.is_list or current_type.is_list
         new_type.is_set = new_type.is_set or current_type.is_set
