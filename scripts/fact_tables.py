@@ -796,7 +796,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         store_ops=(
             "append_field",
             "insert_field",
-            "remove_field",
             "set_fields",
             "use_assignment_for_forward_references",
         ),
@@ -864,7 +863,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
         FreezePoint.RENDER,
-        store_ops=("move_model", "rename_model", "update_model_reference"),
+        store_ops=("rename_model", "update_model_reference"),
     ),
     AttributeFact(
         "DataModel",
@@ -1000,7 +999,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
         FreezePoint.RENDER,
-        store_ops=("move_model", "rename_model", "update_model_reference"),
+        store_ops=("rename_model", "update_model_reference"),
     ),
     AttributeFact(
         "Reference", "original_name", FactKind.PRESENTATION, (RenderFact.CLASS_NAMES,), Phase.PARSE, FreezePoint.RENDER

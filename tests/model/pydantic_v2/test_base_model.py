@@ -34,7 +34,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UniqueItemsRule,
     _make_internal_schema_runtime_validation,
 )
-from datamodel_code_generator.parser.base import Parser, _get_builtin_pydantic_v2_field_constructor
+from datamodel_code_generator.parser.base import Parser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.reference import Reference, model_key_of
 from datamodel_code_generator.types import DataType
@@ -548,17 +548,6 @@ def test_parser_simple_field_falls_back_for_processed_values() -> None:
     assert with_extras.extras == {"examples": ["sample"]}
     assert const.const
     assert const.data_type.literals == ["fixed"]
-
-
-@pytest.mark.allow_direct_assert
-def test_parser_simple_field_constructor_requires_exact_builtin_type() -> None:
-    """Keep custom field subclasses on their public constructors."""
-
-    class CustomDataModelField(DataModelField):
-        pass
-
-    assert _get_builtin_pydantic_v2_field_constructor(DataModelField) is _construct_parser_simple_field
-    assert _get_builtin_pydantic_v2_field_constructor(CustomDataModelField) is None
 
 
 @pytest.mark.allow_direct_assert

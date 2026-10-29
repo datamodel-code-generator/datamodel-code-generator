@@ -8,11 +8,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import Error, InputFileType, generate
-from datamodel_code_generator._input_model_transport import (
-    PythonTypeExpressionCollector,
-    externalize_python_type_token,
-    is_python_type_token,
-)
+from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeName,
     PythonTypeOpaqueText,
@@ -56,12 +52,6 @@ def test_python_type_expression_collector_preserves_identity_and_prunes() -> Non
     assert loaded.name == "<stdin>"
     assert isinstance(loaded, LoadedInputModelSchema)
     assert LoadedInputModelSchema.__module__ == "datamodel_code_generator._input_model_transport"
-    assert is_python_type_token(opaque_token)
-    assert not is_python_type_token("Alias")
-    assert externalize_python_type_token(opaque_token, loaded.python_type_expressions) == "Alias"
-    assert externalize_python_type_token(opaque_token, None) == opaque_token
-    assert externalize_python_type_token("missing", loaded.python_type_expressions) == "missing"
-    assert externalize_python_type_token(object(), loaded.python_type_expressions).__class__ is object
     with pytest.raises(TypeError):
         loaded.python_type_expressions[opaque_token] = PythonTypeName("Changed")  # type: ignore[index]
 

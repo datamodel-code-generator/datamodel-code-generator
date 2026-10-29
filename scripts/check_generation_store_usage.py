@@ -973,7 +973,6 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 "assign": "set_fields",
                 "append": "append_field",
                 "insert": "insert_field",
-                "remove": "remove_field",
             }.get(method, "set_fields")
             return _ensure_generation_store_api(helper)
         return _ensure_generation_store_api("set_base_classes")

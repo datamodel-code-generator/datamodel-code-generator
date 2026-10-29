@@ -27,7 +27,6 @@ from datamodel_code_generator.parser.generation import (
     NO_SITE_EFFECT,
     SITE_EFFECTS,
     DataTypeFact,
-    GenerationIndexBuilder,
     GenerationStore,
     _GenerationModelList,
     set_model_base_classes,
@@ -87,7 +86,6 @@ def _base_model(name: str = "Model", fields: list[DataModelField] | None = None)
 def _dict_key_reference_classes(
     model_type: type[DataModel],
     *,
-    include_dict_keys: bool = False,
     target_pydantic_version: TargetPydanticVersion | None = None,
 ) -> frozenset[str]:
     reference_model = Reference(path="Model", original_name="Model", name="Model")
@@ -107,8 +105,6 @@ def _dict_key_reference_classes(
     )
     store = GenerationStore()
     store.register_model(model)
-    if include_dict_keys:
-        return store.index.reference_classes_for_model_including_dict_keys(model)
     return store.index.reference_classes_for_model(model)
 
 
@@ -165,30 +161,10 @@ def test_generation_index_does_not_use_metadata_collection_truthiness() -> None:
 
     assert {
         "reference_classes": store.index.reference_classes_for_model(model),
-        "fallback_reference_classes": store.index.reference_classes_for_model_including_dict_keys(model),
         "typed_dict_kwargs": model._internal_template_data["typed_dict_kwargs"],
     } == snapshot({
         "reference_classes": frozenset({"Metadata"}),
-        "fallback_reference_classes": frozenset({"Metadata"}),
         "typed_dict_kwargs": {"extra_items": "'Metadata'"},
-    })
-
-
-def test_generation_index_including_dict_keys_falls_back_for_untracked_model() -> None:
-    """Keep direct-model fallback behavior when no store facts are available."""
-    target = Reference(path="Target", original_name="Target", name="Target")
-    key = Reference(path="Key", original_name="Key", name="Key")
-    model = _base_model(
-        fields=[
-            DataModelField(
-                data_type=DataType(data_types=[DataType(reference=target)], dict_key=DataType(reference=key))
-            )
-        ]
-    )
-
-    assert GenerationStore().index.reference_classes_for_model_including_dict_keys(model) == frozenset({
-        "Key",
-        "Target",
     })
 
 
@@ -204,16 +180,10 @@ def test_generation_store_indexes_model_and_reference_order() -> None:
     store.register_model(model_a)
     store.register_model(model_b)
 
-    fact_a = store.index.model_fact(model_a)
-    fact_b = store.index.model_fact(model_b)
     assert {
         "models": [model.reference.path for model in store.models],
-        "facts": [
-            (fact_a.path, fact_a.parse_order) if fact_a else None,
-            (fact_b.path, fact_b.parse_order) if fact_b else None,
-        ],
+        "facts": [(fact.path, fact.parse_order) for fact in store.current_facts().model_facts.values()],
         "reference_classes": sorted(store.index.reference_classes_for_model(model_a)),
-        "model_for_reference_b": store.index.model_for_reference(reference_b) is model_b,
         "data_type_facts_for_reference_b": [
             fact.data_type is data_type_b for fact in store.index.data_type_facts_for_reference(reference_b)
         ],
@@ -222,7 +192,6 @@ def test_generation_store_indexes_model_and_reference_order() -> None:
             "models": ["A", "B"],
             "facts": [("A", 0), ("B", 1)],
             "reference_classes": ["B"],
-            "model_for_reference_b": True,
             "data_type_facts_for_reference_b": [True],
         },
     )
@@ -461,7 +430,7 @@ def test_generation_store_discard_derived_facts_preserves_identity_and_defer_con
     store = GenerationStore()
     store.register_model(model)
     store.refresh()
-    model_id = store.model_id(model)
+    model_id = store._model_ids_by_object[id(model)]
     facts_before = store._facts
     version_before = store.facts_version
 
@@ -477,7 +446,7 @@ def test_generation_store_discard_derived_facts_preserves_identity_and_defer_con
         len(store._facts.data_type_facts),
     )
     dirty_after_discard = store._dirty
-    model_id_after_discard = store.model_id(model)
+    model_id_after_discard = store._model_ids_by_object[id(model)]
     version_after_discard = store.facts_version
     classes_after_refresh = sorted(store.index.reference_classes_for_model(model))
 
@@ -521,7 +490,8 @@ def test_generation_store_records_nested_and_dict_key_roles() -> None:
     store.refresh()
 
     assert [
-        (fact.role, fact.reference.path if fact.reference else None) for fact in store.data_type_facts.values()
+        (fact.role, fact.reference.path if fact.reference else None)
+        for fact in store.current_facts().data_type_facts.values()
     ] == snapshot(
         [
             ("field", None),
@@ -566,9 +536,6 @@ def test_generation_index_dict_key_reference_policy_matrix(
     expected = frozenset({"Key", "Value"} if include_dict_key_reference else {"Value"})
 
     assert _dict_key_reference_classes(model_type, target_pydantic_version=target_pydantic_version) == expected
-    assert _dict_key_reference_classes(
-        model_type, include_dict_keys=True, target_pydantic_version=target_pydantic_version
-    ) == frozenset({"Key", "Value"})
 
 
 def test_generation_index_external_pydantic_subclasses_do_not_inherit_dict_key_reference_policy() -> None:
@@ -716,7 +683,9 @@ def test_generation_model_list_invalidates_each_list_mutation() -> None:  # noqa
 
         dirty_after_mutation = store._dirty
         model_paths = [model.path for model in store.models]
-        fact_paths = [fact.path for fact in sorted(store.model_facts.values(), key=lambda fact: fact.parse_order)]
+        fact_paths = [
+            fact.path for fact in sorted(store.current_facts().model_facts.values(), key=lambda fact: fact.parse_order)
+        ]
         match mutation:
             case "__iadd__" | "__imul__":
                 returned = "self" if result is store.models else "other"
@@ -749,7 +718,7 @@ def test_generation_model_list_sort_without_key_invalidates_facts() -> None:
     assert {
         "dirty": store._dirty,
         "models": [model.path for model in store.models],
-        "facts": [fact.path for fact in store.model_facts.values()],
+        "facts": [fact.path for fact in store.current_facts().model_facts.values()],
         "returned": result,
     } == snapshot({"dirty": True, "models": ["A"], "facts": ["A"], "returned": None})
 
@@ -771,7 +740,9 @@ def test_generation_model_list_invalidates_partial_mutation_on_iterator_error(mu
     assert {
         "dirty": store._dirty,
         "models": [model.path for model in store.models],
-        "facts": [fact.path for fact in sorted(store.model_facts.values(), key=lambda fact: fact.parse_order)],
+        "facts": [
+            fact.path for fact in sorted(store.current_facts().model_facts.values(), key=lambda fact: fact.parse_order)
+        ],
     } == snapshot({"dirty": True, "models": ["A", "B"], "facts": ["A", "B"]})
 
 
@@ -796,7 +767,9 @@ def test_generation_model_list_invalidates_on_sort_key_error() -> None:
         "dirty": store._dirty,
         "key_calls": key_calls,
         "models": [model.path for model in store.models],
-        "facts": [fact.path for fact in sorted(store.model_facts.values(), key=lambda fact: fact.parse_order)],
+        "facts": [
+            fact.path for fact in sorted(store.current_facts().model_facts.values(), key=lambda fact: fact.parse_order)
+        ],
     } == snapshot({"dirty": True, "key_calls": 2, "models": ["B", "A"], "facts": ["B", "A"]})
 
 
@@ -816,48 +789,24 @@ def test_generation_index_returns_empty_results_for_unknown_objects() -> None:
     store.register_model(model)
 
     assert {
-        "unknown_model_fact": store.index.model_fact(unknown_model),
-        "known_model_id_for_reference": store.index.model_id_for_reference(reference_model),
-        "unknown_model_for_reference": store.index.model_for_reference(reference_unknown),
         "unknown_data_type_facts_for_reference": store.index.data_type_facts_for_reference(reference_unknown),
         "unknown_has_other_refs": store.index.has_data_type_references_other_than(reference_unknown, data_type),
         "known_owner": store.index.owner_model_for_data_type(data_type) is model,
         "unknown_owner": store.index.owner_model_for_data_type(unknown_data_type),
         "unknown_reference_classes": sorted(store.index.reference_classes_for_model(unknown_model)),
-        "facts_property": store.facts is store.current_facts(),
-        "model_facts_property": len(store.model_facts),
-        "data_type_fact_by_object_property": id(data_type) in store.data_type_fact_by_object,
-        "model_by_path_property": dict(store.model_by_path),
-        "model_by_ref_id_property": sorted(store.model_by_ref_id.values()),
-        "data_types_by_model_property": {
-            model_id: list(data_type_ids) for model_id, data_type_ids in store.data_types_by_model.items()
-        },
-        "sites_by_target_property": [list(site_keys) for site_keys in store.sites_by_target.values()],
-        "sites_by_owner": list(store.facts.sites_by_owner.values()),
     } == snapshot(
         {
-            "unknown_model_fact": None,
-            "known_model_id_for_reference": 0,
-            "unknown_model_for_reference": None,
             "unknown_data_type_facts_for_reference": (),
             "unknown_has_other_refs": False,
             "known_owner": True,
             "unknown_owner": None,
             "unknown_reference_classes": ["Unknown"],
-            "facts_property": True,
-            "model_facts_property": 1,
-            "data_type_fact_by_object_property": True,
-            "model_by_path_property": {"Model": 0},
-            "model_by_ref_id_property": [0],
-            "data_types_by_model_property": {0: [0, 1]},
-            "sites_by_target_property": [[0]],
-            "sites_by_owner": [(0,)],
         },
     )
 
 
-def test_generation_index_exposes_root_collapse_helpers_independently() -> None:
-    """Split root-collapse helpers should preserve the combined query's ordering."""
+def test_generation_index_root_collapse_reference_usage_orders_wrappers_and_direct_refs() -> None:
+    """The root-collapse query lists the root-model wrappers and the direct non-base references in their order."""
 
     class RootModel(BaseModel):
         pass
@@ -884,18 +833,11 @@ def test_generation_index_exposes_root_collapse_helpers_independently() -> None:
     store.register_model(direct_model)
     store.register_model(base_model)
 
-    wrappers = store.index.root_model_wrappers_for_reference(reference_inner, RootModel)
-    direct_refs = store.index.direct_non_root_refs_for_reference(
+    wrappers, direct_refs = store.index.root_collapse_reference_usage(
         reference_inner,
         excluded_model=base_model,
-        root_model_type=RootModel,
+        is_root_model=lambda model: isinstance(model, RootModel),
     )
-    missing_direct_refs = store.index.direct_non_root_refs_for_reference(
-        reference_unknown,
-        excluded_model=base_model,
-        root_model_type=RootModel,
-    )
-    missing_root_wrappers = store.index.root_model_wrappers_for_reference(reference_unknown, RootModel)
     missing_wrappers, missing_collapse_direct_refs = store.index.root_collapse_reference_usage(
         reference_unknown,
         excluded_model=base_model,
@@ -905,16 +847,12 @@ def test_generation_index_exposes_root_collapse_helpers_independently() -> None:
     assert {
         "wrappers": [model.reference.path for model in wrappers],
         "direct_refs": [fact.owner_field_index for fact in direct_refs],
-        "missing_direct_refs": missing_direct_refs,
-        "missing_root_wrappers": missing_root_wrappers,
         "missing_wrappers": missing_wrappers,
         "missing_collapse_direct_refs": missing_collapse_direct_refs,
     } == snapshot(
         {
             "wrappers": ["Wrapper"],
             "direct_refs": [0],
-            "missing_direct_refs": [],
-            "missing_root_wrappers": [],
             "missing_wrappers": [],
             "missing_collapse_direct_refs": [],
         },
@@ -934,11 +872,10 @@ def test_generation_store_updates_model_and_field_metadata() -> None:
 
     store.append_field(model, field_a)
     store.insert_field(model, 0, field_b)
-    store.remove_field(model, field_a)
+    store.set_fields(model, [field_b])
     store.rename_model(model, class_name="RenamedModel", reference_name="Renamed")
-    store.move_model(model, new_path="pkg.Renamed", new_file_path=Path("pkg.py"))
-    fact = store.index.model_fact(model)
-    assert fact is not None
+    store.update_model_reference(model, new_path="pkg.Renamed", new_file_path=Path("pkg.py"))
+    fact = next(iter(store.current_facts().model_facts.values()))
     stored_names = (fact.path, fact.file_path, fact.name, fact.class_name)
     model.reference.name = "pkg.Resolved"
 
@@ -979,18 +916,7 @@ def test_generation_store_field_mutations_clear_model_imports_cache() -> None:
     assert list_field.parent is model
     assert IMPORT_LIST in model.imports
 
-    store.remove_field(model, list_field)
-    assert list_field.parent is None
-    assert IMPORT_LIST not in model.imports
-
     detached_field = DataModelField(data_type=DataType(is_set=True))
-    model.fields.append(detached_field)
-    assert detached_field.parent is None
-
-    store.remove_field(model, detached_field)
-    assert detached_field.parent is None
-    assert IMPORT_SET not in model.imports
-
     store.set_fields(model, [list_field])
     assert list_field.parent is model
     assert IMPORT_LIST in model.imports
@@ -1050,7 +976,7 @@ def test_generation_store_model_mutations_clear_cached_imports_contract() -> Non
     store.rename_model(model, reference_name="RenamedAgain")
 
     assert model.imports is not None
-    store.move_model(model, new_path="pkg.RenamedAgain", new_file_path=Path("pkg.py"))
+    store.update_model_reference(model, new_path="pkg.RenamedAgain", new_file_path=Path("pkg.py"))
 
     assert model.imports is not None
     store.set_base_classes(model, [BaseClassDataType(type="object")])
@@ -1084,7 +1010,7 @@ def test_generation_store_field_collection_mutations_clear_cached_imports_contra
     assert IMPORT_LIST in model.imports
     assert IMPORT_SET in model.imports
 
-    store.remove_field(model, list_field)
+    store.set_fields(model, [set_field])
     assert IMPORT_LIST not in model.imports
     assert IMPORT_SET in model.imports
 
@@ -1599,7 +1525,7 @@ def test_generation_store_field_removal_invalidates_self_reference_cache() -> No
 
     assert field.self_reference()
 
-    store.remove_field(model, field)
+    store.set_fields(model, [])
 
     assert field.parent is None
     assert not field.self_reference()
@@ -1794,39 +1720,6 @@ def test_generation_store_indexes_each_shared_base_class_owner_once() -> None:
 
     assert isinstance(owner_ids, list)
     assert [facts.model_facts[model_id].model for model_id in owner_ids] == [first_model, second_model]
-
-
-def test_generation_store_holder_order_after_an_incremental_refresh_matches_a_full_rebuild() -> None:
-    """Holders of a shared node and owners of a shared list keep the order a full rebuild traverses them in."""
-    shared_leaf = DataType(type="int")
-    shared_list = [DataType(type="str")]
-    first = _base_model(
-        "First",
-        [
-            DataModelField(name="x", data_type=DataType(data_types=[shared_leaf])),
-            DataModelField(name="y", data_type=DataType(data_types=shared_list)),
-        ],
-    )
-    second = _base_model(
-        "Second",
-        [
-            DataModelField(name="z", data_type=DataType(data_types=[shared_leaf])),
-            DataModelField(name="w", data_type=DataType(data_types=shared_list)),
-        ],
-    )
-    store = GenerationStore()
-    store.register_model(first)
-    store.register_model(second)
-    store.current_facts()
-
-    store.replace_field_type(first.fields[0], DataType(data_types=[shared_leaf]))
-    store.replace_field_type(first.fields[1], DataType(data_types=shared_list))
-    incremental = store.current_facts()
-    full = GenerationIndexBuilder(store.model_key).build(store.models, previous_model_ids_by_object={}, next_model_id=0)
-
-    assert incremental.holders_by_node == full.facts.holders_by_node
-    assert incremental.child_lists == full.facts.child_lists
-    assert incremental.child_list_owners == full.facts.child_list_owners
 
 
 def test_generation_store_rebuilds_every_fact_after_a_failed_refresh() -> None:

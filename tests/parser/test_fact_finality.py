@@ -96,9 +96,9 @@ class SealedWriteParser(JsonSchemaParser):
         super()._finalize_modules(*args)
         builder = self.generation_store.builder()
         for model in self.results:
-            builder.move_model(model, new_path=model.path)
+            builder.update_model_reference(model, new_path=model.path)
             builder.clear_target_null(model.fields[0].data_type)
-            builder.remove_field(model, model.fields[-1])
+            builder.set_fields(model, model.fields[:-1])
 
 
 class RewritingParser(JsonSchemaParser):

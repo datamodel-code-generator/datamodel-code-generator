@@ -827,13 +827,14 @@ def test_schema_validator_unique_items_paths_cover_composed_input_shapes() -> No
         },
     })
     visited_reference = _json_schema_object({"$ref": "#/$defs/UniqueValues", "uniqueItems": True})
-    visited_reference_paths = list(
-        parser._iter_unique_items_paths(
+    visited_reference_paths = [
+        rule.path
+        for rule in parser._iter_unique_items_rules(
             visited_reference,
             (),
             frozenset({parser.model_resolver.resolve_ref(visited_reference.ref)}),
         )
-    )
+    ]
     parser.raw_obj = {
         "$defs": {
             "Loop": {"$ref": "#/$defs/Loop"},
@@ -843,17 +844,18 @@ def test_schema_validator_unique_items_paths_cover_composed_input_shapes() -> No
         },
     }
     loop_ref = parser.model_resolver.resolve_ref("#/$defs/Loop")
-    visited_all_of_paths = list(
-        parser._iter_unique_items_paths(
+    visited_all_of_paths = [
+        rule.path
+        for rule in parser._iter_unique_items_rules(
             _json_schema_object({"allOf": [{"$ref": "#/$defs/Loop"}]}),
             (),
             frozenset({loop_ref}),
         )
-    )
+    ]
     union_paths = tuple(
         (
             reference_path,
-            list(parser._iter_unique_items_paths(schema, ())),
+            [rule.path for rule in parser._iter_unique_items_rules(schema, ())],
         )
         for reference_path, schema in (
             (
@@ -1066,13 +1068,19 @@ def test_schema_validator_unique_items_array_capability_branches() -> None:
         f"{name}={parser._schema_item_may_accept_container(item, 'array', visited_refs)}" for name, item in cases
     ]
     unique_array = _json_schema_object({"type": "array", "uniqueItems": True})
-    identical_union_paths = list(parser._iter_union_unique_items_paths((unique_array, unique_array), (), visited_refs))
-    unknown_path_union_paths = list(
-        parser._iter_union_unique_items_paths((unique_array, unique_array), ("unknown",), visited_refs)
-    )
-    non_array_union_paths = list(
-        parser._iter_union_unique_items_paths((False, _json_schema_object({"type": "string"})), (), visited_refs)
-    )
+    identical_union_paths = [
+        rule.path for rule in parser._iter_union_unique_items_rules((unique_array, unique_array), (), visited_refs)
+    ]
+    unknown_path_union_paths = [
+        rule.path
+        for rule in parser._iter_union_unique_items_rules((unique_array, unique_array), ("unknown",), visited_refs)
+    ]
+    non_array_union_paths = [
+        rule.path
+        for rule in parser._iter_union_unique_items_rules(
+            (False, _json_schema_object({"type": "string"})), (), visited_refs
+        )
+    ]
     path_container_type_lines = [
         f"{path!r}={parser._unique_items_path_container_type(path)!r}"
         for path in (
@@ -5048,7 +5056,6 @@ def test_jsonschema_parser_edge_case_helpers() -> None:
         })
     )
     assert JsonSchemaParser._property_names_forbids_all_keys(JsonSchemaObject.model_validate({"type": ["integer"]}))
-    assert JsonSchemaParser._get_contains_count_constraints(JsonSchemaObject.model_validate({})) == (None, None)
     assert JsonSchemaParser._get_array_items_constraints(
         JsonSchemaObject.model_validate({"contains": True, "minContains": 1, "minItems": 2})
     ) == {"minItems": 2}
