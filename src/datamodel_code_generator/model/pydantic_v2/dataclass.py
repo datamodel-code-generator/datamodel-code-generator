@@ -13,7 +13,7 @@ from typing_extensions import override
 
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
-from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model import DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model import dataclass as _dataclass_module
 from datamodel_code_generator.model._decisions.assignment import (
     PydanticDataclassWritten,
@@ -32,20 +32,17 @@ from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
     build_base_config_parameters,
+    config_attributes,
 )
 from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
-    _config_constructs,
     _config_dict_items,
     _import_rendered_alias_generator,
-    _model_references,
-    _template_config_items,
-    assigns_forward_reference_field,
+    _PydanticV2Model,
     has_lookaround_pattern,
-    models_reaching_string_pattern_aliases,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     Constraints as _Constraints,
@@ -100,21 +97,21 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
-    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import FieldRenderPlan
+    from datamodel_code_generator.model.base import BaseClassDataType
     from datamodel_code_generator.model.pydantic_base import _FieldArguments, _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
 
 Constraints = _Constraints
 
 
-class DataClass(_DataclassReuseMixin, DataModel):
+class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     """DataModel implementation for Pydantic v2 dataclasses."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "pydantic_v2/dataclass.jinja2"
@@ -139,17 +136,10 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
-    # frozen/allow_mutation are handled as dataclass decorator arguments, not ConfigDict
-    _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [
-        ConfigAttribute("allow_population_by_field_name", "populate_by_name", False),  # noqa: FBT003
-        ConfigAttribute("populate_by_name", "populate_by_name", False),  # noqa: FBT003
-        ConfigAttribute("use_attribute_docstrings", "use_attribute_docstrings", False),  # noqa: FBT003
-    ]
-    _CONFIG_ATTRIBUTES_V2_11: ClassVar[list[ConfigAttribute]] = [
-        ConfigAttribute("allow_population_by_field_name", "validate_by_name", False),  # noqa: FBT003
-        ConfigAttribute("populate_by_name", "validate_by_name", False),  # noqa: FBT003
-        ConfigAttribute("use_attribute_docstrings", "use_attribute_docstrings", False),  # noqa: FBT003
-    ]
+    _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = config_attributes(by_name="populate_by_name", frozen=False)
+    _CONFIG_ATTRIBUTES_V2_11: ClassVar[list[ConfigAttribute]] = config_attributes(
+        by_name="validate_by_name", frozen=False
+    )
 
     def __init__(  # noqa: PLR0913
         self,
@@ -255,13 +245,6 @@ class DataClass(_DataclassReuseMixin, DataModel):
         ) or (resolved_late and bool(self.dataclass_arguments.get("slots")))
 
     @override
-    def assigns_forward_reference_field(
-        self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
-    ) -> bool:
-        """Leave ``Annotated`` for a field that names a later model when the target predates Pydantic 2.11."""
-        return assigns_forward_reference_field(self, field, positions, index)
-
-    @override
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
         if not super().assign_forward_reference_fields(positions, index):
@@ -281,25 +264,13 @@ class DataClass(_DataclassReuseMixin, DataModel):
         if has_lookaround_pattern(self.fields, follow_references=True):
             self._select_python_regex_engine()
 
-    @classmethod
     @override
-    def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
-        """Select Python's regex engine in every dataclass that reaches a string pattern type alias.
+    def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
+        """Return the bases after the first: a dataclass takes the config of its first base only.
 
-        A dataclass inherits the config of its first base only and builds the fields of its other bases
-        with its own, so the references of its fields and of those bases count.
+        It builds the fields of the other bases with its own config.
         """
-        if not (reached := models_reaching_string_pattern_aliases(models)):
-            return
-        for model in models:
-            if isinstance(model, cls) and any(
-                id(reference.source) in reached for reference in _model_references(model, model.base_classes[1:])
-            ):
-                model._select_python_regex_engine()  # noqa: SLF001
-
-    def _rendered_config_items(self) -> list[tuple[str, str]]:
-        """Return the ``ConfigDict`` items the built-in dataclass template writes; imports and aliases read them."""
-        return _template_config_items(self.extra_template_data)
+        return self.base_classes[1:]
 
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
@@ -319,11 +290,6 @@ class DataClass(_DataclassReuseMixin, DataModel):
         )
 
     @override
-    def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
-        """Also yield the rows of the keys that the rendered dataclass config writes."""
-        yield from super()._pydantic_constructs()
-        yield from _config_constructs(self._rendered_config_items())
-
     def _select_python_regex_engine(self) -> None:
         """Set ``regex_engine`` in the dataclass config."""
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
@@ -346,8 +312,11 @@ class DataClass(_DataclassReuseMixin, DataModel):
         return super().render(class_name=class_name)
 
 
-class _PydanticDataclassField(DataModelFieldV2):
-    """Adapt Annotated fields to the existing dataclass template contract."""
+class DataModelField(DataModelFieldV2):
+    """Field implementation for Pydantic v2 dataclass models.
+
+    Inherits pydantic v2 Field() constraint handling from DataModelFieldV2.
+    """
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "pydantic-dataclass"
 
@@ -386,17 +355,14 @@ class _PydanticDataclassField(DataModelFieldV2):
             self.required and not self.use_default_with_required
         ):
             return factory
-        kwarg = None
         match self.default:
             case list() | dict() | set() as default:
-                kwarg = Kwarg(
+                return Kwarg(
                     "default_factory",
                     f"lambda: {represent_python_value(default)}" if default else type(default).__name__,
                     _MUTABLE_DEFAULT_FACTORY,
                 )
-            case _:
-                pass
-        return kwarg
+        return None
 
     @override
     def _written_assignment(self) -> PydanticDataclassWritten:
@@ -532,13 +498,6 @@ class _PydanticDataclassField(DataModelFieldV2):
         ):
             return imports
         return tuple(import_ for import_ in imports if import_ != IMPORT_ANNOTATED)
-
-
-class DataModelField(_PydanticDataclassField):
-    """Field implementation for Pydantic v2 dataclass models.
-
-    Inherits pydantic v2 Field() constraint handling from DataModelFieldV2.
-    """
 
 
 class DataModelFieldBackport(DataModelField):

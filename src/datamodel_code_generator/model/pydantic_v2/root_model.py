@@ -29,9 +29,20 @@ IMPORT_SUPPORTS_INDEX = Import.from_full_path("typing.SupportsIndex")
 _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY = "sequence_base_class"
 _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY = "sequence_item_type"
 _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY = "sequence_slice_type"
+_SEQUENCE_TEMPLATE_DATA_KEYS = (
+    _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY,
+    _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY,
+    _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY,
+)
 _STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
 _ROOT_MODEL_CONFIG_KEYS: frozenset[str] = frozenset({"regex_engine", "frozen"})
 _CONFIG_TEMPLATE_DATA_KEY = "config"
+
+
+def _sequence_imports(item_type: str) -> tuple[Import, ...]:
+    """Return the imports of the sequence interface helpers over items of ``item_type``."""
+    imports = (IMPORT_ABC_ITERATOR, IMPORT_ABC_SEQUENCE, IMPORT_OVERLOAD, IMPORT_SUPPORTS_INDEX)
+    return (*imports, IMPORT_ANY) if item_type == "Any" else imports
 
 
 def _root_model_config_items(config: Any) -> list[tuple[str, Any]]:
@@ -193,35 +204,29 @@ class RootModel(BaseModel):
         for lookaround patterns. Also removes custom_base_class as it cannot implement both
         BaseModel and RootModel.
         """
-        if "custom_base_class" in kwargs:
-            kwargs.pop("custom_base_class")
+        kwargs.pop("custom_base_class", None)
 
         super().__init__(**kwargs)
 
-        if not self._has_meaningful_config(self.extra_template_data.get("config")):
+        if not _root_model_config_items(self.extra_template_data.get("config")):
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
             self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
 
-    @staticmethod
-    def _has_meaningful_config(config: Any) -> bool:
-        has_config = False
-        match config:
-            case None:
-                pass
-            case _:
-                has_config = bool(_root_model_config_items(config))
-        return has_config
-
     @override
     def _rendered_config_items(self) -> list[tuple[str, str]]:
         """Return the root model's config items: its engine and freezing, literal values and a neutral ``extra``."""
-        config_items = _root_model_config_items(self.extra_template_data.get("config"))
+        config = {**dict(_root_model_config_items(self.extra_template_data.get("config"))), **self._root_config()}
+        return _safe_config_dict_items(config) if config else []
+
+    def _root_config(self) -> dict[str, Any]:
+        """Return the config a root model adds to its own: its literal values and the neutral ``extra``."""
+        config: dict[str, Any] = {}
         if literal_values := getattr(self, "_literal_values", None):
-            config_items.append(("json_schema_extra", {"enum": literal_values}))
+            config["json_schema_extra"] = {"enum": literal_values}
         if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
-            config_items.append(("extra", None))
-        return _safe_config_dict_items(dict(config_items)) if config_items else []
+            config["extra"] = None
+        return config
 
     @override
     def _decide_config_items(self) -> None:
@@ -239,12 +244,7 @@ class RootModel(BaseModel):
         self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items)
         if self.extra_template_data.get("config"):
             return
-        config: dict[str, Any] = {}
-        if literal_values := getattr(self, "_literal_values", None):
-            config["json_schema_extra"] = {"enum": literal_values}
-        if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
-            config["extra"] = None
-        self._set_internal_template_data(_CONFIG_TEMPLATE_DATA_KEY, config)
+        self._set_internal_template_data(_CONFIG_TEMPLATE_DATA_KEY, self._root_config())
 
     def _decide_config_items_outside_a_parse(self) -> None:
         """Decide the config items when the model renders outside a parse, with the ``ConfigDict`` import they need.
@@ -268,18 +268,15 @@ class RootModel(BaseModel):
 
     def add_sequence_interface(self, item_type: str, slice_type: str) -> None:
         """Add sequence interface helpers that delegate to the wrapped root value."""
-        self._additional_imports.append(IMPORT_ABC_ITERATOR)
-        self._additional_imports.append(IMPORT_ABC_SEQUENCE)
-        self._additional_imports.append(IMPORT_OVERLOAD)
-        self._additional_imports.append(IMPORT_SUPPORTS_INDEX)
-        if item_type == "Any":
-            self._additional_imports.append(IMPORT_ANY)
-        sequence_template_data = {
-            _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY: f"Sequence[{item_type}]",
-            _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY: item_type,
-            _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY: slice_type,
-        }
-        for key, value in sequence_template_data.items():
+        for import_ in _sequence_imports(item_type):
+            self._additional_imports.append(import_)
+        self._set_sequence_template_data(item_type, slice_type)
+
+    def _set_sequence_template_data(self, item_type: str, slice_type: str) -> None:
+        """Store the sequence base class, item type and slice type the template writes."""
+        for key, value in zip(
+            _SEQUENCE_TEMPLATE_DATA_KEYS, (f"Sequence[{item_type}]", item_type, slice_type), strict=True
+        ):
             self._set_internal_template_data(key, value)
 
     @override
@@ -291,16 +288,9 @@ class RootModel(BaseModel):
         if not (root_type.is_list or root_type.is_sequence or root_type.is_set):
             root_type = root_type.data_types[0]
         if root_type.is_set:
-            imports = [IMPORT_ABC_ITERATOR, IMPORT_ABC_SEQUENCE, IMPORT_OVERLOAD, IMPORT_SUPPORTS_INDEX]
-            if self._internal_template_data[_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY] == "Any":
-                imports.append(IMPORT_ANY)
-            for import_ in imports:
+            for import_ in _sequence_imports(self._internal_template_data[_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY]):
                 self._additional_imports.remove(import_)
-            for key in (
-                _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY,
-                _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY,
-                _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY,
-            ):
+            for key in _SEQUENCE_TEMPLATE_DATA_KEYS:
                 self._pop_internal_template_data(key)
             self.invalidate_render_caches()
             return
@@ -309,10 +299,7 @@ class RootModel(BaseModel):
         slice_type = root_type.type_hint
         _, bracket, item_hint = slice_type.partition("[")
         item_type = item_hint[:-1] if bracket else "Any"
-        slice_type = slice_type if bracket else f"{slice_type}[{item_type}]"
-        self._set_internal_template_data(_SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY, f"Sequence[{item_type}]")
-        self._set_internal_template_data(_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY, item_type)
-        self._set_internal_template_data(_SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY, slice_type)
+        self._set_sequence_template_data(item_type, slice_type if bracket else f"{slice_type}[{item_type}]")
 
     @override
     def render(self, *, class_name: str | None = None) -> str:

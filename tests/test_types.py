@@ -307,7 +307,6 @@ def test_hostname_regex_aliases_canonical_data_type_manager() -> None:
     assert model_types.HOSTNAME_REGEX is BaseDataTypeManager.HOSTNAME_REGEX
     assert model_types.DataTypeManager.HOSTNAME_REGEX is BaseDataTypeManager.HOSTNAME_REGEX
     assert pydantic_v2_types.HOSTNAME_REGEX is BaseDataTypeManager.HOSTNAME_REGEX
-    assert pydantic_v2_types._PydanticDataTypeManager.HOSTNAME_REGEX is BaseDataTypeManager.HOSTNAME_REGEX
     assert pydantic_v2_types.DataTypeManager.HOSTNAME_REGEX is BaseDataTypeManager.HOSTNAME_REGEX
 
 

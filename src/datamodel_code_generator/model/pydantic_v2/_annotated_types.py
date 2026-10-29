@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
+from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _RuntimeAnnotatedDataType
 from datamodel_code_generator.python_literal import represent_python_value
 
 if TYPE_CHECKING:
@@ -53,7 +53,7 @@ def annotated_constraint_metadata(base: str, keywords: Mapping[str, Any]) -> tup
     return field_keywords, multiple_of
 
 
-class AnnotatedConstraintDataType(PydanticV2DataType):
+class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
     """Render a ``con*`` call as ``Annotated`` constraints, which type checkers accept in type aliases.
 
     The data type keeps the ``con*`` import and keywords, so code that reads constraints sees the call it
@@ -61,9 +61,6 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
     """
 
     constrained_base: str = "str"
-
-    def _binding(self, name: str) -> str:
-        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
 
     @property
     def annotated_base_type(self) -> str:
@@ -91,10 +88,3 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
         if not metadata:
             return self.annotated_base_type
         return f"{self._binding('Annotated')}[{self.annotated_base_type}, {', '.join(metadata)}]"
-
-    @property
-    @override
-    def imports(self) -> Iterator[Import]:
-        """Replace the ``con*`` import with the annotation imports."""
-        yield from (import_ for import_ in super().imports if import_ != self.import_)
-        yield from self.runtime_expression_imports

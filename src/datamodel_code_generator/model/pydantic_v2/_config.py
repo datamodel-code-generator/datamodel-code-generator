@@ -32,6 +32,26 @@ _CONFIG_EXTRA_KEYS: frozenset[str] = frozenset({
 })
 
 
+def config_attributes(*, by_name: str, frozen: bool) -> list[ConfigAttribute]:
+    """Return the template-data keys a ``ConfigDict`` takes, writing population by field name as ``by_name``.
+
+    A Pydantic dataclass takes ``frozen`` as a decorator argument (``frozen=False``) instead.
+    """
+    return [
+        ConfigAttribute("allow_population_by_field_name", by_name, invert=False),
+        ConfigAttribute("populate_by_name", by_name, invert=False),
+        *(
+            (
+                ConfigAttribute("allow_mutation", "frozen", invert=True),
+                ConfigAttribute("frozen", "frozen", invert=False),
+            )
+            if frozen
+            else ()
+        ),
+        ConfigAttribute("use_attribute_docstrings", "use_attribute_docstrings", invert=False),
+    ]
+
+
 def get_config_extra(extra_template_data: dict[str, Any]) -> ConfigExtra | None:
     """Get extra field configuration for ConfigDict."""
     if extra_template_data.get("force_extra_allow"):
@@ -68,11 +88,11 @@ def get_config_attributes(
 ) -> list[ConfigAttribute]:
     """Get config attributes based on target Pydantic version."""
     target_version = extra_template_data.get("target_pydantic_version")
-    match target_version:
-        case TargetPydanticVersion() | str() if pydantic_target_meets("pydantic.validate_by_name", target_version):
-            return config_attributes_v2_11
-        case _:
-            return config_attributes_v2
+    if isinstance(target_version, TargetPydanticVersion | str) and pydantic_target_meets(
+        "pydantic.validate_by_name", target_version
+    ):
+        return config_attributes_v2_11
+    return config_attributes_v2
 
 
 def build_base_config_parameters(

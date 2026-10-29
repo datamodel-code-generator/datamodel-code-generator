@@ -14,7 +14,6 @@ from pydantic import Field as _Field
 from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
-from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
 from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
@@ -43,7 +42,6 @@ from datamodel_code_generator.model.base import (
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
-    _remember_custom_template_dependency,
 )
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
@@ -723,11 +721,8 @@ class BaseModelBase(DataModel, ABC):
         # This property is for Backward compatibility
         # Current version supports '{custom_template_dir}/BaseModel.jinja'
         # But, Future version will support only '{custom_template_dir}/pydantic/BaseModel.jinja'
-        if self._custom_template_dir is not None:
-            custom_template_file_path = self._custom_template_dir / Path(self.TEMPLATE_FILE_PATH).name
-            _remember_custom_template_dependency(self._custom_template_dir, custom_template_file_path)
-            if cached_path_exists(custom_template_file_path):
-                return custom_template_file_path.resolve()
+        if (custom_template_file_path := self._custom_template_path(Path(self.TEMPLATE_FILE_PATH).name)) is not None:
+            return custom_template_file_path.resolve()
         return super().template_file_path
 
 
