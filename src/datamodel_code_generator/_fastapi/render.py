@@ -88,7 +88,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
-_MIN_CONTENT_STATUS: Final = 200
 _METADATA: Final = frozenset({"Field", "StringConstraints"})
 _CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
     (None, "list"): "is_list",
@@ -219,11 +218,6 @@ def _keeps_extras(spec: OperationSpec) -> bool:
             *(((str(primary.status), primary.media),) if primary is not None else ()),
         )
     )
-
-
-def _python(value: object) -> str:
-    """Return a Python literal for a finite configuration or schema value."""
-    return repr(value)
 
 
 def _route_names(spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
@@ -830,7 +824,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
         options = f"dict[str, {module.name('typing', 'Any')}]"
-        info = "{" + ", ".join(f"{key!r}: {_python(value)}" for key, value in self.plan.info) + "}"
+        info = "{" + ", ".join(f"{key!r}: {value!r}" for key, value in self.plan.info) + "}"
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
         exports = sorted({
@@ -1277,7 +1271,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
     keywords = [f"alias={field.alias!r}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
-    keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
+    keywords.extend(f"{key}={value!r}" for key, value in field.keywords)
     if field.default is Default.ABSENT:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"

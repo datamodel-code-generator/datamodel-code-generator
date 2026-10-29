@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 from urllib.parse import unquote
 
-from datamodel_code_generator._target_naming import PATH_PLACEHOLDER
+from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
 from datamodel_code_generator._target_operations import group_tag
 
 if TYPE_CHECKING:
@@ -78,11 +78,10 @@ class RouteError(ValueError):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PathSlot:
-    """One placeholder the route path renames: its wire name, internal slot name, and occurrence index."""
+    """One placeholder the route path renames: its wire name, and internal slot name."""
 
     wire_name: str
     slot: str
-    occurrence: int
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -117,8 +116,9 @@ def placeholders(path: str) -> tuple[str, ...]:
     Starlette routes by the percent-decoded path, so literal text that encodes `/`, `{`, or `}` is refused too: no
     route of decoded text matches it as a client sends it.
     """
-    names = tuple(PATH_PLACEHOLDER.findall(path))
-    if PATH_PLACEHOLDER.sub("", path).count("{") or PATH_PLACEHOLDER.sub("", path).count("}"):
+    names = tuple(path_placeholders(path))
+    literal = PATH_PLACEHOLDER.sub("", path)
+    if literal.count("{") or literal.count("}"):
         msg = "The path has an unmatched brace"
         raise RouteError(msg)
     if any(_UNMATCHABLE.search(text) for text in PATH_PLACEHOLDER.split(path)[::2]):
@@ -142,22 +142,19 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
         msg = "OpenAPI 3.2 does not allow a placeholder twice in one path"
         raise RouteError(msg)
     reserved = {*names, *taken}
-    counts: dict[str, int] = {}
     slots: list[PathSlot] = []
     index = 0
     parts: list[str] = []
     position = 0
     for match in PATH_PLACEHOLDER.finditer(path):
         name = match.group(1)
-        occurrence = counts.get(name, 0)
-        counts[name] = occurrence + 1
         if _plain(name) and names.count(name) == 1 and name not in taken:
             slot = name
         else:
             while (slot := f"{_SLOT_PREFIX}{index}") in reserved:
                 index += 1
             index += 1
-            slots.append(PathSlot(wire_name=name, slot=slot, occurrence=occurrence))
+            slots.append(PathSlot(wire_name=name, slot=slot))
         parts.extend((unquote(path[position : match.start()]), f"{{{slot}}}"))
         position = match.end()
     parts.append(unquote(path[position:]))

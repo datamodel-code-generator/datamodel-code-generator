@@ -84,7 +84,7 @@ from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
@@ -118,6 +118,8 @@ Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
+ItemT = TypeVar("ItemT")
+ReadT = TypeVar("ReadT")
 
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 _JSON: Final = "application/json"
@@ -265,9 +267,7 @@ class ParameterSpec:
     location: ParameterLocation
     wire_name: str
     required: bool
-    use: TypeUseBinding | None
     plan: ParameterPlan | None
-    decision: Decision
     type: TypeView | None = None
     native: NativeField | None = None
     default: ParameterDefault = Default.ABSENT
@@ -360,7 +360,6 @@ class Argument:
     kind: ArgumentKind
     location: ArgumentLocation
     wire_name: str | None = None
-    required: bool = True
     native: NativeField | None = None
     parameter: ParameterSpec | None = None
 
@@ -374,7 +373,6 @@ class OperationSpec:
     pascal: str
     group: str
     route: RoutePath
-    parameters: tuple[ParameterSpec, ...]
     body: BodySpec | None
     responses: tuple[ResponseSpec, ...]
     primary: PrimarySpec | None
@@ -405,9 +403,8 @@ class OperationSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, name, service Protocol name, and operations in declaration order."""
+    """One router group: its name, service Protocol name, and operations in declaration order."""
 
-    key: str
     stem: str
     service: str
     operations: tuple[OperationSpec, ...]
@@ -469,11 +466,16 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
     return tuple(problems)
 
 
+def _single_media(encoding: WireDeclaration) -> str | None:
+    """Return the one contentType of an encoding, or None when it names several media types or a range."""
+    if (found := content_types(encoding)) is None or len(found) != 1 or "*" in essence(found[0]):
+        return None
+    return found[0]
+
+
 def _json_type(encoding: WireDeclaration) -> bool:
     """Return whether an encoding's contentType names one JSON media type, rather than several or a range."""
-    if (found := content_types(encoding)) is None or len(found) != 1:
-        return False
-    return "*" not in essence(found[0]) and media_kind(found[0]) == "json"
+    return (single := _single_media(encoding)) is not None and media_kind(single) == "json"
 
 
 def _part_text(encoding: WireDeclaration) -> bool:
@@ -481,14 +483,16 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
     Starlette reads a field part as UTF-8, whatever media type the part names.
     """
-    if (found := content_types(encoding)) is None or len(found) != 1:
-        return False
-    single = found[0]
     return (
-        "*" not in essence(single)
+        (single := _single_media(encoding)) is not None
         and media_kind(single) == "text"
         and charset(single, as_written=True).lower() in _PART_CHARSETS
     )
+
+
+def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
+    """Return the encodings a media declares."""
+    return (child for child in media.declaration.children if child.kind == "encoding")
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -508,11 +512,8 @@ def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
     texts = {name for name, part in parts.members if not part.file}
     return frozenset(
         child.name
-        for child in media.declaration.children
-        if child.kind == "encoding"
-        and child.name in texts
-        and _json_type(child)
-        and not form_styled(child, version, multipart=True)
+        for child in _encodings(media)
+        if child.name in texts and _json_type(child) and not form_styled(child, version, multipart=True)
     )
 
 
@@ -527,9 +528,8 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> froze
     scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
     return _json_members(media, version) | {
         child.name
-        for child in media.declaration.children
-        if child.kind == "encoding"
-        and (
+        for child in _encodings(media)
+        if (
             (child.name in files and content_types(child) is not None)
             or (child.name in scalars and child.name not in files and _part_text(child))
         )
@@ -549,12 +549,9 @@ def _encoded(media: MediaSpec, kinds: LexicalKinds, version: str) -> WireDeclara
     return next(
         (
             child
-            for child in media.declaration.children
-            if child.kind == "encoding"
-            and (
-                bool(child.children)
-                or (child.name in files if form_styled(child, version, multipart=True) else _untyped(child, typed))
-            )
+            for child in _encodings(media)
+            if child.children
+            or (child.name in files if form_styled(child, version, multipart=True) else _untyped(child, typed))
         ),
         None,
     )
@@ -754,7 +751,6 @@ class Planner:  # noqa: PLR0904
         )
         return tuple(
             GroupSpec(
-                key=key,
                 stem=stems[key],
                 service=f"{services[key]}Service" if key in services else "Service",
                 operations=tuple(values),
@@ -806,7 +802,6 @@ class Planner:  # noqa: PLR0904
             pascal=pascal,
             group=group_key(operation, single=self.config.layout == "single"),
             route=route,
-            parameters=parameters,
             body=body,
             responses=responses,
             primary=primary,
@@ -946,9 +941,7 @@ class Planner:  # noqa: PLR0904
             location=location,
             wire_name=name,
             required=required,
-            use=use,
             plan=plan,
-            decision=Decision(transport="adapter"),
             type=value,
             default=Default.ABSENT if required else default,
             local=declared_by(declaration, operation),
@@ -962,7 +955,7 @@ class Planner:  # noqa: PLR0904
             keywords=tuple(self.documentation(declaration, use)),
             default=Default.REQUIRED if plan.required else default,
         )
-        return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
+        return replace(spec, native=native)
 
     def parameter_type(self, use: TypeUseBinding | None) -> tuple[TypeView | None, ParameterDefault]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
@@ -1319,9 +1312,7 @@ class Planner:  # noqa: PLR0904
         textless = frozenset(member.name for member in members if member.kind is None)
         multipart = media.kind == "multipart"
         encodings = tuple(
-            child
-            for child in media.declaration.children
-            if child.kind == "encoding" and _planned(child, self.wire.version, textless, multipart=multipart)
+            child for child in _encodings(media) if _planned(child, self.wire.version, textless, multipart=multipart)
         )
         if not encodings:
             return {}
@@ -1495,11 +1486,9 @@ class Planner:  # noqa: PLR0904
         if secured:
             support.append(Argument(name="principal", kind="principal", location="principal"))
         if body is not None and not raw:
-            support.append(Argument(name="body", kind="body", location="body", required=body.required))
+            support.append(Argument(name="body", kind="body", location="body"))
             if len(body.media) > 1:
-                support.append(
-                    Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
-                )
+                support.append(Argument(name="media_type", kind="media_type", location="media_type"))
         self.problems.extend(
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {label(operation)} take {name!r} twice", operation.id.use_site
@@ -1519,7 +1508,6 @@ class Planner:  # noqa: PLR0904
                 kind="native" if parameter.native is not None else "adapter",
                 location=parameter.location,
                 wire_name=parameter.wire_name,
-                required=parameter.required,
                 native=parameter.native,
                 parameter=parameter,
             )
@@ -1529,35 +1517,33 @@ class Planner:  # noqa: PLR0904
         return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
 
 
+def _all(items: Sequence[ItemT], read: Callable[[ItemT], ReadT | None]) -> tuple[ReadT, ...] | None:
+    """Return what `read` takes from every item, or None when it takes nothing from one."""
+    found = tuple(value for item in items if (value := read(item)) is not None)
+    return found if len(found) == len(items) else None
+
+
+def _text(value: FrozenLiteral) -> str | None:
+    return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) else None
+
+
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
     if value is None:
         return ()
-    if not isinstance(value, LiteralSequence):
-        return None
-    found = [requirement for item in value.items if (requirement := _requirement(item)) is not None]
-    return tuple(found) if len(found) == len(value.items) else None
+    return _all(value.items, _requirement) if isinstance(value, LiteralSequence) else None
 
 
 def _requirement(value: FrozenLiteral) -> Requirement | None:
-    if not isinstance(value, LiteralMapping):
-        return None
-    found = [
-        (name, scopes)
-        for key, item in value.entries
-        if isinstance(key, LiteralScalar)
-        and isinstance(name := key.value, str)
-        and (scopes := _scopes(item)) is not None
-    ]
-    return tuple(found) if len(found) == len(value.entries) else None
+    return _all(value.entries, _entry) if isinstance(value, LiteralMapping) else None
+
+
+def _entry(entry: tuple[FrozenLiteral, FrozenLiteral]) -> tuple[str, tuple[str, ...]] | None:
+    key, item = entry
+    return None if (name := _text(key)) is None or (scopes := _scopes(item)) is None else (name, scopes)
 
 
 def _scopes(value: FrozenLiteral) -> tuple[str, ...] | None:
-    if not isinstance(value, LiteralSequence):
-        return None
-    found = tuple(
-        scope for item in value.items if isinstance(item, LiteralScalar) and isinstance(scope := item.value, str)
-    )
-    return found if len(found) == len(value.items) else None
+    return _all(value.items, _text) if isinstance(value, LiteralSequence) else None
 
 
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
@@ -1585,7 +1571,7 @@ def json_literal(value: FrozenLiteral) -> JSONValue:
     """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
     if isinstance(value, LiteralSequence):
         return [json_literal(item) for item in value.items]
-    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
+    if isinstance(value, LiteralMapping) and (names := _all(value.entries, lambda entry: _text(entry[0]))) is not None:
         return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
     if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
         return scalar
@@ -1603,11 +1589,6 @@ def json_value(value: FrozenLiteral) -> JSONValue | None:
 def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
     """Return whether a value is a finite JSON scalar."""
     return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
-
-
-def _names(value: LiteralMapping) -> list[str] | None:
-    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
-    return names if len(names) == len(value.entries) else None
 
 
 def _member(source: object, key: str) -> JSONValue | None:
