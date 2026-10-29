@@ -18,6 +18,7 @@ from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.protocol_plan import HelperPlanner
 from datamodel_code_generator._client.protocol_plan import _problem as _error
+from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
@@ -154,10 +155,6 @@ def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: Ope
     return _error(code, stage, at, message, OperationRef(pointer=spec.contract.id.use_site.pointer))
 
 
-def _tokens(pointer: str) -> list[str]:
-    return [token.replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:]]
-
-
 def _json_type(value: object) -> str:
     """Return the JSON type of a JSON value, a number being an integer exactly when its canonical JSON is one.
 
@@ -227,7 +224,7 @@ class _Pages(HelperPlanner):
         facts = self.facts
         steps: list[ItemStep] = []
         member: FieldUseBinding | None = None
-        for token in _tokens(pointer):
+        for token in pointer_tokens(pointer):
             if _branches(value := facts.unwrapped(value, steps)):
                 return "unsupported"
             symbol = facts.symbol(value)
@@ -701,7 +698,7 @@ def credential_place(
     give are known only once written, which a checkpoint refuses.
     """
     name = target.get("name", "")
-    field = next(iter(_tokens(target.get("pointer", ""))), None)
+    field = next(iter(pointer_tokens(target.get("pointer", ""))), None)
     place = None
     match target["in"]:
         case "cookie":

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -58,7 +58,7 @@ class CallbackIndex:
                 continue
             name = str(callback.name)
             for tokens, operation in self.walked.get(location, ()):
-                child = "/".join((key, "callbacks", *(escape_pointer_token(token) for token in (name, *tokens))))
+                child = key + join_pointer(("callbacks", name, *tokens))
                 nodes.append(
                     CallbackNode(
                         key=child,

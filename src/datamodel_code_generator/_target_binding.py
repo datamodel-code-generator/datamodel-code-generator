@@ -9,7 +9,6 @@ batch; it reads no schema of the loaded documents.
 
 from __future__ import annotations
 
-import re
 from contextlib import suppress
 from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
@@ -25,6 +24,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
+from datamodel_code_generator._json_pointer import NONCANONICAL_ESCAPE, NONCANONICAL_PERCENT, fragment_tokens
 from datamodel_code_generator._json_schema import (
     MODEL_VALUE_POSITIONS,
     SCHEMA_SHAPES,
@@ -818,17 +818,11 @@ _NOT_OBJECT: Final = "A URL-encoded value must be an object"
 _PATTERNS: Final = "Pattern properties have no builtin parameter encoding"
 _UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
 _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
-_BAD_PERCENT: Final = re.compile(r"%(?![0-9a-fA-F]{2})")
-_BAD_ESCAPE: Final = re.compile(r"~(?![01])")
 
 
 def _pointer_tokens(ref: str) -> tuple[str, ...] | None:
     """Decode a reference's JSON pointer fragment, or return None for a named anchor."""
-    if not (fragment := unquote(ref.partition("#")[2])):
-        return ()
-    if not fragment.startswith("/"):
-        return None
-    return tuple(token.replace("~1", "/").replace("~0", "~") for token in fragment[1:].split("/"))
+    return fragment_tokens(unquote(ref.partition("#")[2]))
 
 
 def _result_key(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
@@ -3393,7 +3387,7 @@ class _Contracts(_SchemaUses):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
                 break
             fragment = ref.partition("#")[2]
-            noncanonical = _BAD_PERCENT.search(fragment) or _BAD_ESCAPE.search(unquote(fragment))
+            noncanonical = NONCANONICAL_PERCENT.search(fragment) or NONCANONICAL_ESCAPE.search(unquote(fragment))
             if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break

@@ -7,13 +7,15 @@ its home as
 
     decision <X> has its home in <file:function>
 
-Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature scans, ``what`` words the message):
+Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature scans, ``exclude`` leaves places out of
+them, ``what`` words the message):
 
 * ``name``: a read, write or any use (``ctx`` = ``load`` (default), ``store`` or ``any``) of an attribute or a name
   in ``names``; ``receivers`` limits an attribute to values whose last name is listed (``reference.name``).
 * ``call``: a call whose callee ends in one of ``names`` (any callee when omitted), that passes every keyword in
   ``keywords`` and none of ``without`` (a keyword passed a literal ``False`` does not count; a call that unpacks
-  ``**`` is skipped when ``without`` is set), and whose positional arguments name one of ``mentions`` (when given).
+  ``**`` is skipped when ``without`` is set), whose positional arguments name one of ``mentions`` (when given) and hold
+  one of ``strings`` as a string literal (when given).
 * ``function``: a ``def`` whose name matches the regular expression ``pattern``.
 * ``compare-in``: ``"x" in y`` or ``"x" not in y`` for a string ``x`` in ``values``.
 * ``number``: an integer in ``literals`` or ``2 ** n`` / ``1 << n`` for an ``n`` in ``powers``.
@@ -86,7 +88,7 @@ LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])
 DOC_ROW = re.compile(r"^\| `(legacy[-.][^`]+)` \| (\S+) \| .* \| (#\d+|[A-Za-z0-9-]+) \|$", re.MULTILINE)
 FIX_FORMAT = re.compile(r"#\d+|keep|[A-Z]{1,4}-?\d+[a-z]?(?:-\d+)?")
 ALLOWLIST_START = re.compile(rf"^(?:{re.escape(ALLOWLIST_MARKER)}|\[allow\.)", re.MULTILINE)
-STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "values", "receivers", "keys"})
+STRING_OPTIONS = frozenset({"names", "keywords", "without", "mentions", "strings", "values", "receivers", "keys"})
 INTEGER_OPTIONS = frozenset({"powers", "literals"})
 REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "keywords", "key": "keys"}
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
@@ -168,6 +170,7 @@ class Signature:
     options: dict[str, Any]
     paths: tuple[Place, ...]
     audit: Any
+    exclude: tuple[Place, ...] = ()
 
     def audit_for(self, file: str, function: str) -> str:
         """Return the audit entry id of a hit; a table maps files (or ``file:function``) to ids."""
@@ -274,7 +277,7 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
     if not (isinstance(audit, str) or (isinstance(audit, dict) and isinstance(audit.get("default"), str))):
         msg = f'{owner}: audit must be an entry id or a table with a "default" id'
         raise ConfigError(msg)
-    options = {key: value for key, value in table.items() if key not in {"kind", "what", "paths", "audit"}}
+    options = {key: value for key, value in table.items() if key not in {"kind", "what", "paths", "exclude", "audit"}}
     for key in STRING_OPTIONS & options.keys():
         _strings(options, key, owner)
     for key in INTEGER_OPTIONS & options.keys():
@@ -297,6 +300,7 @@ def _signature(home: str, name: str, table: dict[str, Any]) -> Signature:
         options=options,
         paths=tuple(Place.parse(path) for path in _strings(table, "paths", owner)),
         audit=audit,
+        exclude=tuple(Place.parse(path) for path in _strings(table, "exclude", owner)),
     )
 
 
@@ -353,6 +357,12 @@ def _names_in(nodes: Iterable[ast.AST]) -> Iterator[str]:
                 yield name
 
 
+def _string_arguments(nodes: Iterable[ast.AST]) -> Iterator[str]:
+    for node in nodes:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            yield node.value
+
+
 def _string_elements(node: ast.AST) -> Iterator[str]:
     items = node.keys if isinstance(node, ast.Dict) else getattr(node, "elts", ())
     for item in items:
@@ -394,6 +404,8 @@ def _matches(signature: Signature, node: ast.AST) -> bool:  # ruff: ignore[too-m
             if not set(options.get("keywords", ())) <= keywords:
                 return False
             if "mentions" in options and not (set(options["mentions"]) & set(_names_in(node.args))):
+                return False
+            if "strings" in options and not (set(options["strings"]) & set(_string_arguments(node.args))):
                 return False
             without = set(options.get("without", ()))
             excluding = {
@@ -467,7 +479,9 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
             for signature in signatures.get(type(node), ()):
                 if _matches(signature, node):
                     function = store.function_at(path, node.lineno)
-                    if signature.paths and not any(place.covers(file, function) for place in signature.paths):
+                    if (signature.paths and not any(place.covers(file, function) for place in signature.paths)) or any(
+                        place.covers(file, function) for place in signature.exclude
+                    ):
                         continue
                     home = config.homes[signature.home]
                     if not home.covers(file, function) and not (

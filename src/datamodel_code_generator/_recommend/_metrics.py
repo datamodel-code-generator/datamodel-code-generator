@@ -14,6 +14,8 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
+from datamodel_code_generator._json_pointer import fragment_tokens
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
@@ -206,8 +208,8 @@ def readable_location(tokens: Sequence[str]) -> str:
 def _identity_steps(identity: str) -> list[str]:
     """Return the steps of a model's identity path: its decoded pointer, or its parts after the document."""
     _, separator, fragment = identity.partition("#")
-    if separator and fragment.startswith("/"):
-        return [part.replace("~1", "/").replace("~0", "~") for part in fragment[1:].split("/")]
+    if separator and (tokens := fragment_tokens(fragment)):
+        return list(tokens)
     return [part for part in _ROOT_REF.sub("", identity).split("/") if part]
 
 

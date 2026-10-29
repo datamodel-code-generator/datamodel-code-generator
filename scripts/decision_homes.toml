@@ -401,6 +401,19 @@ default = "R-02"
 "_fastapi/source_document.py" = "R-21"
 "_fastapi/callbacks.py" = "R-22"
 
+[homes.Hx-pointer]
+decision = "how an RFC 6901 JSON Pointer escapes, joins, splits and decodes its reference tokens"
+core = ["_json_pointer.py"]
+adapters = []
+
+[homes.Hx-pointer.signatures.token-codec]
+kind = "call"
+names = ["replace"]
+strings = ["~0", "~1"]
+exclude = ["_runtime/"]
+what = "escapes or unescapes a JSON Pointer token itself; call _json_pointer.py (the generated runtime keeps its own copy)"
+audit = "C01"
+
 [homes.T-resolver]
 decision = "where a $ref or a JSON pointer of a loaded document leads"
 core = ["parser/_schema_graph.py", "parser/_api_reference.py", "parser/openapi_scope.py"]

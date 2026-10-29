@@ -75,6 +75,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
+from datamodel_code_generator._json_pointer import escape_token, is_array_index, join_pointer, unescape_token
 from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     REF_PRE_PASS_FIELDS,
@@ -1113,10 +1114,9 @@ def __getattr__(name: str) -> Any:
 
 def unescape_json_pointer_segment(segment: str) -> str:
     """Decode one URI-fragment JSON Pointer token in RFC evaluation order."""
-    return unquote(segment).replace("~1", "/").replace("~0", "~")
+    return unescape_token(unquote(segment))
 
 
-_JSON_POINTER_ARRAY_INDEX = re.compile(r"0|[1-9][0-9]*")
 _MISSING_JSON_POINTER = Sentinel("_MISSING_JSON_POINTER")
 
 
@@ -1127,7 +1127,7 @@ class _JSONPointerArrayIndexOutOfRangeError(Error):
 def _resolve_json_pointer_array_index(sequence: list[YamlValue], segment: object) -> YamlValue:
     """Resolve a JSON-pointer segment against a list per the RFC 6901 array-index grammar."""
     text = str(segment)
-    if not _JSON_POINTER_ARRAY_INDEX.fullmatch(text):
+    if not is_array_index(text):
         msg = f"Invalid JSON pointer array index {text!r}: expected a non-negative integer."
         raise Error(msg)
     try:
@@ -1606,7 +1606,7 @@ def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | No
         if path and "$id" in value:
             continue
         if value.get("$anchor") == anchor:
-            return "/" + "/".join(part.replace("~", "~0").replace("/", "~1") for part in path)
+            return "/" + "/".join(escape_token(part) for part in path)
         for keyword, child in value.items():
             match SCHEMA_SHAPES.get(keyword), child:
                 case "map", dict():
@@ -2280,7 +2280,7 @@ def _file_uri_path(uri: str) -> Path:
 
 def _pointer_ref(parts: Sequence[str]) -> str:
     """Return the local reference of a JSON pointer given as decoded parts."""
-    return "#" + "".join(f"/{part.replace('~', '~0').replace('/', '~1')}" for part in parts)
+    return "#" + join_pointer(parts)
 
 
 def _nearest_recursive_anchor(anchors: Iterable[str], current_ref: str) -> str:
@@ -5969,7 +5969,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         first = suffix_parts[0]
         if first.startswith("#"):
             suffix_parts = [first[1:].lstrip("/"), *suffix_parts[1:]]
-        return "#/" + "/".join(part.replace("~", "~0").replace("/", "~1") for part in suffix_parts if part)
+        return "#/" + "/".join(escape_token(part) for part in suffix_parts if part)
 
     def _build_anchor_indexes(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Build $recursiveAnchor and $dynamicAnchor indexes for a schema object."""
@@ -6200,7 +6200,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             tuple_items = isinstance(current.get("items"), list)
             stack.extend(
                 (
-                    current_pointer + "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path),
+                    current_pointer + join_pointer(path),
                     child,
                 )
                 for path, child in self._iter_schema_resource_children(current)

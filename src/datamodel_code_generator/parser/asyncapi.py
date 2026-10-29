@@ -17,6 +17,7 @@ from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._document_reader import string_keys
+from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -194,7 +195,7 @@ def _message_list_schemas(
 
 
 def _escape_context_path_part(part: str) -> str:
-    return part.removeprefix("#/").replace("~", "~0").replace("/", "~1")
+    return escape_token(part.removeprefix("#/"))
 
 
 def _schema_format_media_type(schema_format: str) -> str:

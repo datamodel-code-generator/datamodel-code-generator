@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend
-from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens
 from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
@@ -231,7 +231,7 @@ class SourceDocument:
     def subtyped(self) -> dict[tuple[str, str], None]:
         """Return the wanted components, with the schemas whose allOf extends a wanted discriminator base."""
         bases = {
-            f"#/components/schemas/{escape_pointer_token(name)}"
+            "#" + join_pointer(("components", "schemas", name))
             for kind, name in self.wanted
             if kind == "schemas" and isinstance(as_mapping(self.schemas.get(name)).get("discriminator"), dict)
         }
@@ -322,7 +322,8 @@ class SourceDocument:
             return True
         if pointer_tokens(unquote(ref[1:]))[1] in self.selected:
             return True
-        self.problems[f"{_pointer(at)}: The served document leaves out the link, whose operation it leaves out"] = None
+        problem = f"{join_pointer(at)}: The served document leaves out the link, whose operation it leaves out"
+        self.problems[problem] = None
         return False
 
     def discriminator(self, value: dict[str, YamlValue], document: int, base: str, at: tuple[str, ...]) -> JSON:
@@ -351,7 +352,7 @@ class SourceDocument:
             or (isinstance(value, float) and math.isfinite(value))
         ):
             return True
-        self.problems[f"{_pointer(at)}: The served document leaves out {at[-1]}, which has no JSON form"] = None
+        self.problems[f"{join_pointer(at)}: The served document leaves out {at[-1]}, which has no JSON form"] = None
         return False
 
     def inline(
@@ -376,12 +377,12 @@ class SourceDocument:
         """
         if (resolved := self.resolve(document, base, ref)) is None:
             self.problems[
-                f"{_pointer(at)}: The served document keeps {redact_reference(ref)}, "
+                f"{join_pointer(at)}: The served document keeps {redact_reference(ref)}, "
                 "which names nothing the generation loaded"
             ] = None
             return ref
         target, tokens, resource = resolved
-        local = "#" + "".join(f"/{escape_pointer_token(token)}" for token in tokens)
+        local = "#" + join_pointer(tokens)
         if target == 0:
             if tokens[:1] == ("components",) and len(tokens) >= 3:  # ruff: ignore[magic-value-comparison] - components, kind, name.
                 self.wanted.setdefault((tokens[1], tokens[2]), None)
@@ -406,7 +407,7 @@ class SourceDocument:
         while unique in items or unique in root:
             count += 1
             unique = f"{name}_{count}"
-        self.bundled[key] = bundled = f"#/components/{escape_pointer_token(kind)}/{escape_pointer_token(unique)}"
+        self.bundled[key] = bundled = "#" + join_pointer(("components", kind, unique))
         items[unique] = None
         items[unique] = self.copy(node, target, resource, tokens, role)
         return bundled
@@ -427,10 +428,6 @@ def _uri(location: str) -> str:
     if _URL.match(location) or not (path := Path(location)).is_absolute():
         return location.replace("\\", "/")
     return path.as_uri()
-
-
-def _pointer(at: tuple[str, ...]) -> str:
-    return "/" + "/".join(escape_pointer_token(token) for token in at)
 
 
 def _step(value: YamlValue, token: str) -> YamlValue:
