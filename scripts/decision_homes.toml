@@ -1424,9 +1424,6 @@ fix = "G05"
 [allow."src/datamodel_code_generator/_fastapi/plan.py"."default_media"]
 "T-operation.twin-planner" = { home = "T-operation", count = 1, audit = "C-08" }
 
-[allow."src/datamodel_code_generator/_fastapi/render.py"."<module>"]
-"T-operation.status-number" = { home = "T-operation", count = 1, audit = "C-11" }
-
 [allow."src/datamodel_code_generator/_fastapi/render.py"."_keeps_extras"]
 "Hx-closedness.closedness-function" = { home = "Hx-closedness", count = 1, audit = "M-06" }
 
