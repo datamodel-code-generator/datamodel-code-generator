@@ -1174,9 +1174,12 @@ literal `2 ** 63`, a read of an option outside the place that owns it. `scripts/
 `tests/test_decision_homes.py`) fails with "decision X has its home in file:function" for such a shape anywhere else;
 the sites that exist today are the allowlist at the end of the toml, which only shrinks. A new site goes through the
 home: build the facts in an adapter and call the core, or, for a decision with no home yet, add the home with the change
-instead of a second copy. An allowlist entry needs the owner's agreement and names the audit entry it belongs to
-(`audit`). After a change routes sites to a home, `python scripts/check_decision_homes.py --write-allowlist` lowers the
-list.
+instead of a second copy. Calling the core is never a site: a call whose callee is a function or class that the home's
+core defines (found through the imports of the calling file, re-exports followed) passes wherever it is made, so a
+caller needs no adapter entry; a hand-written copy, a raw read and a call of a helper the signature names but the core
+does not define are still reported. An adapter is a place that reads raw facts and hands them to the core. An allowlist
+entry needs the owner's agreement and names the audit entry it belongs to (`audit`). After a change routes sites to a
+home, `python scripts/check_decision_homes.py --write-allowlist` lowers the list.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names is a table of `legacy_rows` in the toml with its home and what deletes it (`fix`: an issue, a plan group, or

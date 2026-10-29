@@ -24,9 +24,16 @@ Signature kinds (``kind`` in the toml; ``paths`` limits the files a signature sc
 
 A hit counts as at home when its file and enclosing function are covered by the home's ``core``, ``adapters`` or
 ``planned`` places (``file``, ``file:Qualified.function`` or ``file:Class``; a directory ends in ``/``). A ``planned``
-place is the
-core a later change creates: it need not exist yet, and the check fails once it does, so that the change moves it to
-``core``. Every other hit must be in the allowlist, the
+place is the core a later change creates: it need not exist yet, and the check fails once it does, so that the change
+moves it to ``core``.
+
+A ``call`` hit is also at home wherever it occurs when its callee is a function or class that the home's ``core``
+defines: calling the core is the reuse a home is for, so its callers need no adapter entry (an adapter reads raw facts
+and hands them to the core). A name resolves through the imports of its file, ``module.name`` through the module the
+alias names, and re-exports are followed; a hand-written copy defined outside the core, a method of a value, a name
+outside the package and every other kind of signature are not exempt.
+
+Every other hit must be in the allowlist, the
 section of the toml after ``ALLOWLIST_MARKER``, keyed by (file, function, signature) with a count, the home and the
 entry of ``docs`` / the audit it belongs to. A new hit fails, and so does an entry whose count is higher than what the
 scan finds (the list only shrinks). ``--write-allowlist`` lowers it after hits were routed to their home and refuses
@@ -48,7 +55,7 @@ import sys
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 if sys.version_info >= (3, 11):
@@ -82,6 +89,8 @@ REQUIRED_STRINGS = {"name": "names", "compare-in": "values", "keyword-set": "key
 KEY_METHODS = frozenset({"get", "pop", "setdefault"})
 ITEM_KEYS = frozenset({"home", "count", "audit"})
 Key = tuple[str, str, str]
+Origin = tuple[str, str]
+UNRESOLVED: Origin = ("", "")
 
 
 class ConfigError(ValueError):
@@ -134,6 +143,10 @@ class Home:
     def covers(self, file: str, function: str) -> bool:
         """Return whether the hit is in the core, an adapter or a planned place."""
         return any(place.covers(file, function) for place in (*self.core, *self.adapters, *self.planned))
+
+    def in_core(self, file: str, function: str) -> bool:
+        """Return whether the function or class ``function`` defined in ``file`` is part of the core."""
+        return any(place.covers(file, function) for place in self.core)
 
     @property
     def where(self) -> str:
@@ -452,7 +465,12 @@ def scan_tree(config: Config, source_root: Path | None = None) -> Scan:
                     function = store.function_at(path, node.lineno)
                     if signature.paths and not any(place.covers(file, function) for place in signature.paths):
                         continue
-                    if not config.homes[signature.home].covers(file, function):
+                    home = config.homes[signature.home]
+                    if not home.covers(file, function) and not (
+                        signature.kind == "call"
+                        and isinstance(node, ast.Call)
+                        and calls_core(home, root, file, node.func)
+                    ):
                         scan.hits.append(Hit(file, function, signature.id, node.lineno, node.col_offset))
     return scan
 
@@ -513,6 +531,92 @@ def _function_names(path: Path) -> frozenset[str]:
             else:
                 pending.append((child, scope))
     return frozenset(names)
+
+
+Binding = tuple[str, tuple[str, ...] | None, str | None]
+
+
+def _module_parts(name: str, package: tuple[str, ...], module: str | None, level: int) -> tuple[str, ...] | None:
+    """Return the path under the package ``name`` of the module an import names, or None for a module outside it."""
+    parts = tuple(module.split(".")) if module else ()
+    if level:
+        return (*package[: len(package) - level + 1], *parts) if level <= len(package) + 1 else None
+    return parts[1:] if parts[:1] == (name,) else None
+
+
+def _module_file(root: Path, parts: tuple[str, ...]) -> str | None:
+    """Return the file under ``root`` of the module at ``parts``, or None when the package has no such module."""
+    base = "/".join(parts)
+    return next((file for file in (f"{base}.py", f"{base}/__init__.py".lstrip("/")) if (root / file).is_file()), None)
+
+
+@cache
+def _imports(root: Path, file: str) -> tuple[Binding, ...]:
+    """Return ``(bound name, module, imported name)`` of every import in ``file``, wherever it is written.
+
+    ``module`` is the path of the imported module under ``root`` (None outside the package); the imported name is None
+    where the import binds the module itself.
+    """
+    package = PurePosixPath(file).parent.parts
+    bindings: list[Binding] = []
+    for node in ast.walk(ast.parse((root / file).read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ImportFrom):
+            module = _module_parts(root.name, package, node.module, node.level)
+            bindings.extend((alias.asname or alias.name, module, alias.name) for alias in node.names)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                imported = alias.name if alias.asname else alias.name.partition(".")[0]
+                bindings.append((alias.asname or imported, _module_parts(root.name, package, imported, 0), None))
+    return tuple(bindings)
+
+
+def _imported_origins(
+    root: Path, module: tuple[str, ...] | None, imported: str | None, seen: frozenset[Origin]
+) -> set[Origin]:
+    if module is None:
+        return {UNRESOLVED}
+    target = _module_file(root, module)
+    if imported is None:
+        return {(target, "")} if target else {UNRESOLVED}
+    found = _origins(root, target, imported, seen) if target else {UNRESOLVED}
+    if found == {UNRESOLVED} and (submodule := _module_file(root, (*module, imported))):
+        return {(submodule, "")}
+    return set(found)
+
+
+def _origins(root: Path, file: str, name: str, seen: frozenset[Origin] = frozenset()) -> frozenset[Origin]:
+    """Return what ``name`` is in the module ``file``, as ``(file, qualified name)``.
+
+    That is every function and class the module defines under the name, and what its imports of the name lead to
+    (re-exports followed); a module is ``(file, "")``, and ``UNRESOLVED`` stands for a name outside the package.
+    """
+    if (file, name) in seen:
+        return frozenset({UNRESOLVED})
+    seen |= {(file, name)}
+    origins = {(file, qualified) for qualified in _function_names(root / file) if qualified.rpartition(".")[2] == name}
+    for bound, module, imported in _imports(root, file):
+        if bound == name:
+            origins |= _imported_origins(root, module, imported, seen)
+    return frozenset(origins or {UNRESOLVED})
+
+
+def calls_core(home: Home, root: Path, file: str, callee: ast.expr) -> bool:
+    """Return whether ``callee``, called in ``file``, is a function or class defined in the core of ``home``.
+
+    A name resolves through the imports of ``file`` and ``module.name`` through the module the alias names, re-exports
+    followed; a method of a value or a computed callee is not resolved.
+    """
+    if isinstance(callee, ast.Name):
+        origins = _origins(root, file, callee.id)
+    elif isinstance(callee, ast.Attribute) and isinstance(callee.value, ast.Name):
+        origins = frozenset(
+            origin
+            for module, qualified in _origins(root, file, callee.value.id)
+            for origin in (_origins(root, module, callee.attr) if module and not qualified else (UNRESOLVED,))
+        )
+    else:
+        return False
+    return all(function and home.in_core(defined_in, function) for defined_in, function in origins)
 
 
 def _place_exists(place: Place, source_root: Path) -> bool:

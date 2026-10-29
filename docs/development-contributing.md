@@ -231,11 +231,13 @@ python scripts/check_decision_homes.py
 after a change. A shape found outside its home fails with "decision X has its
 home in file:function": build the facts in the adapter and call the core, or, for
 a decision without a home, add the home to the toml in the same change instead of
-writing a second copy. The sites that exist today are the allowlist at the end of
-the toml; it only shrinks, and `--write-allowlist` lowers it after you route a
-site. A new `legacy-*` row needs a `legacy_rows` entry (home and `fix`) and a row
-of the "Legacy rows" table in `docs/architecture.md`. The check runs as
-`tests/test_decision_homes.py`; its fixtures are under `tests/data/decision_homes/`.
+writing a second copy. A call of a function that the home's core defines is never
+reported, wherever it is made, so a caller of the core needs no adapter entry. The
+sites that exist today are the allowlist at the end of the toml; it only shrinks,
+and `--write-allowlist` lowers it after you route a site. A new `legacy-*` row
+needs a `legacy_rows` entry (home and `fix`) and a row of the "Legacy rows" table
+in `docs/architecture.md`. The check runs as `tests/test_decision_homes.py`; its
+fixtures are under `tests/data/decision_homes/`.
 
 ## Parser generation state
 

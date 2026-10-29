@@ -14,6 +14,7 @@ from tests.conftest import assert_output
 ROOT = Path(__file__).parents[1]
 FIXTURE_ROOT = Path(__file__).parent / "data" / "decision_homes"
 FIXTURE_SOURCE = FIXTURE_ROOT / "src"
+CORE_CALLS_SOURCE = FIXTURE_ROOT / "core_calls"
 FIXTURE_CONFIG = (FIXTURE_ROOT / "homes.toml").read_text(encoding="utf-8")
 FIXTURE_DOCS = FIXTURE_ROOT / "architecture.md"
 ALLOWED = """
@@ -49,12 +50,12 @@ MALFORMED = """
 FIXTURE_ARGS = ["--source-root", str(FIXTURE_SOURCE), "--docs", str(FIXTURE_DOCS)]
 
 
-def _scan_report(config_text: str) -> str:
+def _scan_report(config_text: str, source: Path = FIXTURE_SOURCE) -> str:
     config = check_decision_homes.parse_config(config_text)
-    scan = check_decision_homes.scan_tree(config, FIXTURE_SOURCE)
+    scan = check_decision_homes.scan_tree(config, source)
     problems = [
-        *check_decision_homes.table_problems(config, FIXTURE_SOURCE),
-        *check_decision_homes.apply_allowlist(config, scan, FIXTURE_SOURCE),
+        *check_decision_homes.table_problems(config, source),
+        *check_decision_homes.apply_allowlist(config, scan, source),
     ]
     return check_decision_homes.format_report(problems)
 
@@ -79,6 +80,30 @@ def test_decision_home_allowlist_accepts_known_sites_only() -> None:
 
     assert_output(_scan_report(FIXTURE_CONFIG + ALLOWED), name="complete")
     assert_output(_scan_report(FIXTURE_CONFIG + lowered), name="beyond")
+
+
+def test_decision_home_calls_of_the_core_pass_anywhere_and_copies_do_not() -> None:
+    """A call whose callee the imports lead to a function of the core is no hit in any file; other callees are."""
+    calls = """
+[homes.calls]
+decision = "the value that compute decides"
+core = ["core.py"]
+
+[homes.calls.signatures.compute-call]
+kind = "call"
+names = ["compute"]
+keywords = ["mode"]
+what = "computes the value itself"
+audit = "X-4"
+
+[homes.calls.signatures.read-flag]
+kind = "name"
+names = ["flag"]
+receivers = ["cfg"]
+what = "reads the flag of a configuration"
+audit = "X-1"
+"""
+    assert_output(_scan_report(calls, CORE_CALLS_SOURCE))
 
 
 def test_decision_home_function_scoped_paths_check_that_function() -> None:

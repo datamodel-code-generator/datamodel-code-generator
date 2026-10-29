@@ -5,6 +5,8 @@
 # live objects and calls the core, or is declared to decide for a position). A place is `file`, `dir/` or
 # `file:Qualified.function` or `file:Class` below src/datamodel_code_generator/. `planned` lists the core that a later change creates:
 # it covers its hits like the core, need not exist yet, and the check fails once it does (move it to `core`).
+# A `call` signature never reports a call of a function the home's `core` defines, wherever it is made: callers of the
+# core need no adapter entry (an adapter reads raw facts and hands them to the core).
 # [homes.<id>.signatures.<name>]: an AST shape that means "this code decides it" (kinds: see the script's docstring).
 # The `audit` entry is the id the site was filed under in the DRY audit of 0.87.0 (D-L1-nn, D-PP-nn, D-X-nn).
 # [legacy_rows."<row id>"]: every `legacy-*` / `legacy.*` row id that src/ names, with its home and `fix` ("#nnnn" the
@@ -139,11 +141,7 @@ audit = "D-PP-01"
 [homes.H20]
 decision = "recursion facts: strongly connected components, cycles and dependency order of the reference graph"
 core = ["_reference_graph.py", "_scc.py", "_graph.py"]
-adapters = [
-    "dynamic.py",
-    "parser/generation.py:GenerationIndex.reference_graph",
-    "parser/jsonschema.py:JsonSchemaParser._dynamic_anchors_used",
-]
+adapters = ["parser/generation.py:GenerationIndex.reference_graph"]
 
 [homes.H20.signatures.graph-algorithm]
 kind = "call"
