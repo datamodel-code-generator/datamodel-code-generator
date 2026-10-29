@@ -6,18 +6,10 @@ Annotated[{{ _field.type_hint }}, {{ _field.field }}]
 {%- else -%}
 {{ _field.type_hint }}
 {%- endif -%}
-{%- endmacro -%}
-
-{%- if fields %}
-type {{ class_name }} = {{ get_type_annotation(fields[0]) }}{% if comment is defined %}  # {{ comment }}{% endif %}
+{%- endmacro %}
+type {{ class_name }} = {% if fields %}{{ get_type_annotation(fields[0]) }}{% else %}{{ base_class }}{% endif %}{% if comment is defined %}  # {{ comment }}{% endif %}
 {%- if description %}
 {{ description }}
-{%- elif fields[0].docstring %}
+{%- elif fields and fields[0].docstring %}
 {{ fields[0].docstring }}
-{%- endif %}
-{%- else %}
-type {{ class_name }} = {{ base_class }}{% if comment is defined %}  # {{ comment }}{% endif %}
-{%- if description %}
-{{ description }}
-{%- endif %}
 {%- endif %}
