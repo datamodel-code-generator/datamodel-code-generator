@@ -454,7 +454,7 @@ def _find_tag_enum(model: DataModel, field_name: str, tag_name: str, *, use_fiel
         (
             enum_source
             for field_ in model.fields
-            if _tag_field_matches(field_, "source-name" if use_field_name else "python-or-original-name", tag_name)
+            if _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
             and (enum_source := field_.data_type.find_source(Enum))
         ),
         None,
@@ -490,7 +490,7 @@ def _written_enum_member_keys(
     is the one ``Literal`` of the variant's tag is kept as it is.
     """
     literal_kept = any(
-        _tag_field_matches(field_, "source-name" if use_field_name else "python-or-original-name", tag_name)
+        _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
         and len(literals := field_.data_type.literals) == 1
         and same_tag(literals[0], values[0], "legacy-python-equality")
         for field_ in model.fields
@@ -728,6 +728,11 @@ def _iter_derived_fields(
         yield from _iter_derived_fields(derived_model, derived_models, visited)
 
 
+def _base_fields(model: DataModel) -> Iterator[DataModelFieldBase]:
+    """Return the fields of the bases of a model, each base's own and those it inherits."""
+    return (field_ for base_model in _find_base_classes(model) for field_ in base_model.iter_all_fields())
+
+
 def _has_related_instance_field(
     model: DataModel,
     source_name: str,
@@ -744,13 +749,7 @@ def _has_related_instance_field(
     return any(
         id(field_) not in tagged_fields and _keeps_instance_field(field_, source_name)
         for field_ in chain(
-            (
-                field_
-                for base_model in (
-                    () if flattens_reused and model.reused_reference is not None else _find_base_classes(model)
-                )
-                for field_ in base_model.iter_all_fields()
-            ),
+            () if flattens_reused and model.reused_reference is not None else _base_fields(model),
             _iter_derived_fields(model, derived_models, _ModelKeys()),
         )
     )
@@ -970,11 +969,7 @@ def _redeclared_tag_field(tag_fields: AbstractSet[str], field_: DataModelFieldBa
 
 def _bases_keep_instance_field(model: DataModel, source_name: str) -> bool:
     """Return whether a base of a model, or a base of that, keeps an instance field that the document names so."""
-    return any(
-        _keeps_instance_field(field_, source_name)
-        for base_model in _find_base_classes(model)
-        for field_ in base_model.iter_all_fields()
-    )
+    return any(_keeps_instance_field(field_, source_name) for field_ in _base_fields(model))
 
 
 def _structs_of_union(data_type: DataType) -> set[int]:
